@@ -103,10 +103,22 @@ export default function TasksPage() {
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
-    if (newTask.assigned_user_ids.length === 0) return alert('Select at least one assignee.');
+    
+    const isAdmin = canDo('tasks', 'assign');
+    let assignees = [];
+    let isPersonal = false;
+    
+    if (isAdmin) {
+      if (newTask.assigned_user_ids.length === 0) return alert('Select at least one assignee.');
+      assignees = newTask.assigned_user_ids;
+    } else {
+      assignees = [employeeProfile.id];
+      isPersonal = true;
+    }
+
     setActionLoading(true);
 
-    const insertPayload = newTask.assigned_user_ids.map(uid => ({
+    const insertPayload = assignees.map(uid => ({
       title: newTask.title,
       description: newTask.description,
       assigned_to: uid,
@@ -116,24 +128,27 @@ export default function TasksPage() {
       checklist: newTask.checklist || [],
       status: 'open',
       approval_status: 'not_required',
-      logged_minutes: 0
+      logged_minutes: 0,
+      is_personal_reminder: isPersonal
     }));
 
     const { error } = await supabase.from('tasks').insert(insertPayload);
 
     if (!error) {
-      newTask.assigned_user_ids.forEach(uid => {
-        fetch('/api/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            assigned_to: uid,
-            title: "New Task: " + newTask.priority.toUpperCase() + " Priority",
-            body: newTask.title,
-            url: "/tasks"
-          })
-        }).catch(() => {});
-      });
+      if (isAdmin) {
+        assignees.forEach(uid => {
+          fetch('/api/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              assigned_to: uid,
+              title: "New Task: " + newTask.priority.toUpperCase() + " Priority",
+              body: newTask.title,
+              url: "/tasks"
+            })
+          }).catch(() => {});
+        });
+      }
       setShowCreate(false);
       setNewTask({ title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', checklist: [] });
       fetchTasks();
@@ -238,7 +253,7 @@ export default function TasksPage() {
 
     await supabase.from('tasks').update({
       status: 'done',
-      approval_status: 'pending_review',
+      approval_status: selectedTask.is_personal_reminder ? 'approved' : 'pending_review',
       completion_note: completionNote,
       completed_at: new Date().toISOString(),
       proof_url: proofUrl,
@@ -312,19 +327,17 @@ export default function TasksPage() {
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Task Manager</h1>
           <p className="text-slate-500 mt-1 font-medium">Assign, track, and review operational tasks.</p>
         </div>
-        {canDo('tasks', 'assign') && (
-          <button onClick={() => setShowCreate(!showCreate)} 
-            className="flex items-center px-5 py-2.5 bg-teal-800 text-white font-bold rounded-xl hover:bg-teal-900 transition-colors shadow-sm text-sm uppercase tracking-wide">
-            <Plus className="w-4 h-4 mr-2" /> Assign Task
-          </button>
-        )}
+        <button onClick={() => setShowCreate(!showCreate)} 
+          className="flex items-center px-5 py-2.5 bg-teal-800 text-white font-bold rounded-xl hover:bg-teal-900 transition-colors shadow-sm text-sm uppercase tracking-wide">
+          <Plus className="w-4 h-4 mr-2" /> {canDo('tasks', 'assign') ? 'Assign Task' : 'Add Reminder'}
+        </button>
       </div>
 
       {/* Create Task Form */}
-      {showCreate && canDo('tasks', 'assign') && (
+      {showCreate && (
         <form onSubmit={handleCreateTask} className="glass-card rounded-3xl p-8 animate-in fade-in slide-in-from-top-4">
           <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-            <ListChecks className="w-5 h-5 text-teal-600"/> Create & Assign Task
+            <ListChecks className="w-5 h-5 text-teal-600"/> {canDo('tasks', 'assign') ? 'Create & Assign Task' : 'Set Personal Reminder'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <div className="md:col-span-2">
@@ -342,23 +355,29 @@ export default function TasksPage() {
             </div>
             <div>
               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Assign To *</label>
-              <div className="max-h-32 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1">
-                {employees.map(e => (
-                  <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-slate-100 rounded cursor-pointer transition-colors">
-                    <input type="checkbox" 
-                      checked={newTask.assigned_user_ids.includes(e.id)}
-                      onChange={(ev) => {
-                        const ids = ev.target.checked 
-                          ? [...newTask.assigned_user_ids, e.id]
-                          : newTask.assigned_user_ids.filter(id => id !== e.id);
-                        setNewTask({...newTask, assigned_user_ids: ids});
-                      }}
-                      className="rounded text-teal-600 focus:ring-teal-500 flex-shrink-0"
-                    />
-                    <span className="text-sm font-medium text-slate-700 truncate">{e.full_name}</span>
-                  </label>
-                ))}
-              </div>
+              {canDo('tasks', 'assign') ? (
+                <div className="max-h-32 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1">
+                  {employees.map(e => (
+                    <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                      <input type="checkbox" 
+                        checked={newTask.assigned_user_ids.includes(e.id)}
+                        onChange={(ev) => {
+                          const ids = ev.target.checked 
+                            ? [...newTask.assigned_user_ids, e.id]
+                            : newTask.assigned_user_ids.filter(id => id !== e.id);
+                          setNewTask({...newTask, assigned_user_ids: ids});
+                        }}
+                        className="rounded text-teal-600 focus:ring-teal-500 flex-shrink-0"
+                      />
+                      <span className="text-sm font-medium text-slate-700 truncate">{e.full_name}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-100 px-4 py-3 rounded-xl border border-slate-200 flex items-center text-slate-600">
+                  <span className="text-sm font-bold truncate">Self-Assigned (Personal Reminder)</span>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -473,16 +492,23 @@ export default function TasksPage() {
                 </div>
 
                 <div className="flex justify-between items-start mb-3 pl-1">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${
-                    task.priority === 'urgent' ? 'bg-red-100 text-red-800 border-red-200' : 
-                    task.priority === 'high' ? 'bg-amber-100 text-amber-800 border-amber-200' : 
-                    task.priority === 'medium' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                    'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    {task.priority}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${
+                      task.priority === 'urgent' ? 'bg-red-100 text-red-800 border-red-200' : 
+                      task.priority === 'high' ? 'bg-amber-100 text-amber-800 border-amber-200' : 
+                      task.priority === 'medium' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                      'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                      {task.priority}
+                    </span>
+                    {task.is_personal_reminder && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border bg-purple-50 text-purple-700 border-purple-200">
+                        Reminder
+                      </span>
+                    )}
+                  </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
                     task.status === 'done' ? 'bg-emerald-100 text-emerald-800' : 
-                    task.status === 'in-progress' ? 'bg-purple-100 text-purple-800' : 
+                    task.status === 'in-progress' ? 'bg-indigo-100 text-indigo-800' : 
                     'bg-slate-100 text-slate-600'}`}>
                     {task.status}
                   </span>
@@ -649,8 +675,8 @@ export default function TasksPage() {
                   <button type="submit" disabled={actionLoading || uploading}
                     className="w-full py-3 bg-teal-800 text-white font-black rounded-2xl hover:bg-teal-900 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
                     {uploading ? <><Loader2 className="w-4 h-4 animate-spin"/> Uploading...</> : 
-                     actionLoading ? 'Submitting...' : 
-                     <><FileCheck className="w-4 h-4"/> Submit for Review</>}
+                     actionLoading ? 'Saving...' : 
+                     <><FileCheck className="w-4 h-4"/> {selectedTask.is_personal_reminder ? 'Mark Complete' : 'Submit for Review'}</>}
                   </button>
                 </form>
               )}
