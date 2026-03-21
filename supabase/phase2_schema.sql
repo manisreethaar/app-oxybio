@@ -1,9 +1,6 @@
--- ==========================================
--- PHASE 2: O₂B Food-Tech Pipeline & CAPA Engine
--- ==========================================
-
 -- 1. UNIVERSAL PRODUCTION REGISTRY (Food-Tech)
 ALTER TABLE batches ADD COLUMN IF NOT EXISTS current_stage TEXT DEFAULT 'media_prep';
+ALTER TABLE batches ADD COLUMN IF NOT EXISTS process_flow JSONB; -- e.g., ["media_prep", "formulation", "fermentation", "thermal", "qc"]
 
 CREATE TABLE IF NOT EXISTS lab_logs (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -15,9 +12,24 @@ CREATE TABLE IF NOT EXISTS lab_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS stage_transitions (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  batch_id UUID REFERENCES batches(id) ON DELETE CASCADE,
+  from_stage TEXT,
+  to_stage TEXT NOT NULL,
+  changed_by UUID REFERENCES employees(id),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 ALTER TABLE lab_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stage_transitions ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY "Enable read access for all users" ON lab_logs FOR SELECT USING (true);
 CREATE POLICY "Enable insert for authenticated users" ON lab_logs FOR INSERT WITH CHECK (auth.uid() = logged_by);
+
+CREATE POLICY "Enable read access for all users" ON stage_transitions FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON stage_transitions FOR INSERT WITH CHECK (auth.uid() = changed_by);
 
 -- 2. PERSONAL REMINDERS
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_personal_reminder BOOLEAN DEFAULT FALSE;
@@ -25,6 +37,7 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_personal_reminder BOOLEAN DEFAULT 
 -- 3. CAPA ENGINE (Corrective & Preventive Action)
 CREATE TABLE IF NOT EXISTS deviations (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  batch_id UUID REFERENCES batches(id) ON DELETE CASCADE, -- Linked to batch if applicable
   title TEXT NOT NULL,
   severity TEXT NOT NULL, -- 'Low', 'Major', 'Critical'
   source TEXT NOT NULL, -- 'Internal Audit', 'Batch Deviation', 'Equipment Failure', 'Other'

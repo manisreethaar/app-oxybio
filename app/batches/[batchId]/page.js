@@ -3,18 +3,35 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { ArrowLeft, AlertTriangle, CheckCircle, Clock, Loader2, Save } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ArrowLeft, AlertTriangle, CheckCircle, Clock, Loader2, Save, ChevronRight, Activity, Beaker, Thermometer, Droplets } from 'lucide-react';
 import Link from 'next/link';
+
+const STAGES = [
+  { id: 'media_prep', label: 'Media Prep', icon: Beaker, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  { id: 'formulation', label: 'Formulation', icon: Droplets, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'fermentation', label: 'Fermentation', icon: Activity, color: 'text-teal-600', bg: 'bg-teal-50' },
+  { id: 'thermal', label: 'Thermal Processing', icon: Thermometer, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { id: 'qc', label: 'Quality Control', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+];
+
+const PARAMETERS = {
+  media_prep: [{ name: 'pH', unit: '', type: 'ph' }, { name: 'Temperature', unit: '°C', type: 'temp' }],
+  formulation: [{ name: 'Brix', unit: '°Bx', type: 'brix' }, { name: 'Viscosity', unit: 'cP', type: 'viscosity' }],
+  fermentation: [{ name: 'pH', unit: '', type: 'ph' }, { name: 'Temperature', unit: '°C', type: 'temp' }, { name: 'OD600', unit: '', type: 'od' }],
+  thermal: [{ name: 'Hold Temp', unit: '°C', type: 'temp' }, { name: 'Hold Time', unit: 'min', type: 'time' }],
+  qc: [{ name: 'Final Brix', unit: '°Bx', type: 'brix' }, { name: 'Contamination', unit: '/ml', type: 'cont' }]
+};
 
 export default function BatchDetailPage() {
   const { batchId } = useParams();
   const { role, employeeProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [batch, setBatch] = useState(null);
-  const [phValue, setPhValue] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [paramValue, setParamValue] = useState('');
+  const [selectedParam, setSelectedParam] = useState(null);
   const [notes, setNotes] = useState('');
-  const [deviationNotes, setDeviationNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const supabase = createClient();
@@ -26,84 +43,88 @@ export default function BatchDetailPage() {
   const fetchBatchDetail = async () => {
     const { data: b, error } = await supabase
       .from('batches')
-      .select('*, ph_readings(*, employees(full_name)), activity_log(*)')
+      .select('*, ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name))')
       .eq('id', batchId)
       .single();
 
     if (error || !b) {
-      // Batch not found or access denied — redirect back to list
       router.replace('/batches');
       return;
     }
-    if (b.ph_readings) {
-      b.ph_readings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    }
+
+    // Unify logs into a single timeline
+    const unifiedLogs = [
+      ...(b.ph_readings || []).map(l => ({ ...l, type: 'ph', parameter_name: 'pH', parameter_value: l.ph_value })),
+      ...(b.lab_logs || [])
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
     setBatch(b);
+    setLogs(unifiedLogs);
+    
+    // Set default parameter based on stage
+    const currentParams = PARAMETERS[b.current_stage || 'media_prep'] || [];
+    if (!selectedParam && currentParams.length > 0) {
+      setSelectedParam(currentParams[0]);
+    }
   };
 
-  const handleLogPh = async (e) => {
+  const handleLogData = async (e) => {
     e.preventDefault();
+    if (!selectedParam || !paramValue) return;
     setIsSubmitting(true);
     
     try {
-      const res = await fetch('/api/ph/log', {
+      // If it's pH in fermentation, use old API for backward compatibility/logic
+      const isLegacyPh = selectedParam.type === 'ph' && batch.current_stage === 'fermentation';
+      const endpoint = isLegacyPh ? '/api/ph/log' : '/api/lab/log';
+      const body = isLegacyPh 
+        ? { batch_id: batchId, ph_value: parseFloat(paramValue), notes }
+        : { batch_id: batchId, process_type: batch.current_stage, parameter_name: selectedParam.name, parameter_value: parseFloat(paramValue), notes };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_id: batchId, ph_value: parseFloat(phValue), notes })
+        body: JSON.stringify(body)
       });
       
       if (res.ok) {
-        setPhValue('');
+        setParamValue('');
         setNotes('');
         await fetchBatchDetail();
       } else {
-        alert('Failed to log pH. Please try again.');
+        alert('Failed to log data. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const acknowledgeDeviation = async (phId) => {
-    if (!deviationNotes.trim()) {
-      alert('Action taken is required to acknowledge a deviation.');
-      return;
-    }
-    setActionLoading(true);
-    const res = await fetch(`/api/ph/${phId}/acknowledge`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action_taken: deviationNotes })
-    });
-    
-    if (res.ok) {
-      setDeviationNotes('');
-      await fetchBatchDetail();
-    }
-    setActionLoading(false);
-  };
-
-  const updateBatchStatus = async (newStatus) => {
-    if (!confirm(`Are you sure you want to change the status to ${newStatus.toUpperCase()}?`)) return;
+  const handleStageTransition = async (toStage) => {
+    if (!confirm(`Move batch to ${toStage.toUpperCase()}? This will be recorded in the audit trail.`)) return;
     setActionLoading(true);
     
-    // Simplification for the UI. Instead of creating a new API route, update directly via Supabase if admin.
-    // In production we might use a dedicated API for strict security.
-    const updateData = { status: newStatus };
-    if (newStatus === 'released') {
-      if (!employeeProfile?.id) {
-        alert('Session error: could not identify your account. Please refresh.');
-        setActionLoading(false);
-        return;
+    try {
+      const res = await fetch(`/api/batches/${batchId}/stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          from_stage: batch.current_stage, 
+          to_stage: toStage,
+          notes: `Transitioned during production run.`
+        })
+      });
+      
+      if (res.ok) {
+        await fetchBatchDetail();
+        // Reset selected param for new stage
+        const nextParams = PARAMETERS[toStage] || [];
+        if (nextParams.length > 0) setSelectedParam(nextParams[0]);
+      } else {
+        alert('Failed to transition stage.');
       }
-      updateData.released_by = employeeProfile.id;
-      updateData.released_at = new Date().toISOString();
+    } finally {
+      setActionLoading(false);
     }
-
-    await supabase.from('batches').update(updateData).eq('id', batchId);
-    
-    await fetchBatchDetail();
-    setActionLoading(false);
   };
 
   if (authLoading || !batch) {
@@ -114,231 +135,224 @@ export default function BatchDetailPage() {
     );
   }
 
-  const unacknowledgedDeviations = batch.ph_readings?.filter(p => p.is_deviation && !p.deviation_acknowledged) || [];
+  const currentStageIndex = STAGES.findIndex(s => s.id === (batch.current_stage || 'media_prep'));
+  const currentParams = PARAMETERS[batch.current_stage || 'media_prep'] || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+    <div className="max-w-7xl mx-auto space-y-6 pb-24">
       <Link href="/batches" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-teal-700 transition-colors">
-        <ArrowLeft className="w-4 h-4 mr-1" /> Back to Batch Manager
+        <ArrowLeft className="w-4 h-4 mr-1" /> Back to Production Registry
       </Link>
 
-      {/* Hero Section */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-gray-100">
-        <div className="p-8 md:w-2/3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-800 border border-gray-200">{batch.variant}</span>
-            <span className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${batch.status === 'fermenting' ? 'bg-amber-100 text-amber-800' : batch.status === 'released' ? 'bg-green-100 text-green-800' : batch.status === 'deviation' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-              {batch.status}
-            </span>
-          </div>
-          <h1 className="text-3xl font-black text-teal-950 font-mono tracking-wider mb-4">{batch.batch_id}</h1>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Volume</p>
-              <p className="font-semibold text-gray-900">{batch.volume_litres} L</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Strain</p>
-              <p className="font-semibold text-gray-900">{batch.probiotic_strain}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Started At</p>
-              <p className="font-semibold text-gray-900">{new Date(batch.start_time).toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Admin Controls Area */}
-        {role === 'admin' && batch.status !== 'released' && batch.status !== 'rejected' && (
-          <div className="p-8 flex flex-col justify-center bg-gray-50 md:w-1/3">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Batch Actions</h3>
-            <div className="space-y-3">
-              <button onClick={() => updateBatchStatus('released')} disabled={actionLoading || unacknowledgedDeviations.length > 0} className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-700 hover:bg-green-800 disabled:opacity-50">
-                <CheckCircle className="w-4 h-4 mr-2" /> Release Batch
-              </button>
-              <button onClick={() => updateBatchStatus('qc-hold')} disabled={actionLoading} className="w-full py-2 px-4 border border-amber-300 rounded-lg shadow-sm text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100">
-                Move to QC Hold
-              </button>
-              <button onClick={() => updateBatchStatus('rejected')} disabled={actionLoading} className="w-full py-2 px-4 border border-red-300 rounded-lg shadow-sm text-sm font-medium text-red-800 bg-red-50 hover:bg-red-100">
-                Reject Batch
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {unacknowledgedDeviations.map(ph => (
-        <div key={ph.id} className="bg-red-50 border border-red-300 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-start">
-            <AlertTriangle className="w-6 h-6 text-red-600 mr-4 mt-0.5. shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-red-800 mb-1">Unacknowledged CCP Deviation</h3>
-              <p className="text-sm text-red-700 mb-4">pH of <span className="font-bold">{ph.ph_value}</span> recorded at {new Date(ph.created_at).toLocaleTimeString()} ({ph.time_elapsed_hours?.toFixed(1)} hrs in) violates the acceptable range of 4.2 to 4.5.</p>
-              
-              {role === 'admin' && (
-                <div className="bg-white rounded-xl p-4 border border-red-200">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Deviation Review & Corrective Action required:</label>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input type="text" value={deviationNotes} onChange={(e) => setDeviationNotes(e.target.value)} placeholder="Action taken (e.g., Extended fermentation, Adjusted temp)" className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm" />
-                    <button onClick={() => acknowledgeDeviation(ph.id)} disabled={actionLoading} className="px-6 py-2 bg-red-700 text-white text-sm font-medium rounded-lg hover:bg-red-800 disabled:opacity-70 whitespace-nowrap">
-                      Acknowledge & Sign
-                    </button>
+      {/* Stage Controller */}
+      <div className="bg-white rounded-[2rem] border border-gray-200 shadow-sm p-4 overflow-x-auto no-scrollbar">
+        <div className="flex items-center justify-between min-w-[800px] px-4">
+          {STAGES.map((stage, idx) => {
+            const Icon = stage.icon;
+            const isCompleted = idx < currentStageIndex;
+            const isCurrent = idx === currentStageIndex;
+            
+            return (
+              <div key={stage.id} className="flex items-center flex-1 last:flex-none">
+                <div className={`flex flex-col items-center group relative ${isCurrent ? 'scale-110 z-10' : ''} transition-all`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all 
+                    ${isCompleted ? 'bg-teal-500 border-teal-500 text-white' : 
+                      isCurrent ? `${stage.bg} border-teal-600 ${stage.color} shadow-lg shadow-teal-100` : 
+                      'bg-gray-50 border-gray-200 text-gray-400'}`}>
+                    {isCompleted ? <CheckCircle className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
                   </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest mt-2 
+                    ${isCurrent ? 'text-teal-900' : isCompleted ? 'text-teal-600' : 'text-gray-400'}`}>
+                    {stage.label}
+                  </span>
+                  
+                  {isCurrent && idx < STAGES.length - 1 && (
+                    <button 
+                      onClick={() => handleStageTransition(STAGES[idx + 1].id)}
+                      disabled={actionLoading}
+                      className="absolute -right-16 top-3 p-2 bg-teal-800 text-white rounded-full shadow-md hover:bg-teal-900 transition-all active:scale-90 disabled:opacity-50"
+                      title="Promote to next stage"
+                    >
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+                {idx < STAGES.length - 1 && (
+                  <div className={`h-0.5 flex-1 mx-4 rounded-full ${isCompleted ? 'bg-teal-500' : 'bg-gray-100'}`}></div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      ))}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Chart Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-6 w-full">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Fermentation pH Profile</h2>
-            <div className="h-80 w-full ml-[-20px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={batch.ph_readings || []} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis 
-                    dataKey="time_elapsed_hours" 
-                    type="number"
-                    domain={[0, 'auto']}
-                    name="Hours"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    label={{ value: 'Hours Elapsed', position: 'bottom', fill: '#4B5563', fontSize: 13, dy: 10 }}
-                  />
-                  <YAxis 
-                    domain={[3.5, 6.0]} 
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    label={{ value: 'pH Value', angle: -90, position: 'insideLeft', fill: '#4B5563', fontSize: 13 }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(val) => [val, 'pH']}
-                    labelFormatter={(val) => `Hour ${val.toFixed(1)}`}
-                  />
-                  
-                  {/* Danger zones */}
-                  <ReferenceArea y1={3.5} y2={4.2} fill="#FEE2E2" fillOpacity={0.4} />
-                  <ReferenceArea y1={4.5} y2={6.0} fill="#FEE2E2" fillOpacity={0.4} />
-                  
-                  {/* Safe zone lines */}
-                  <ReferenceLine y={4.2} stroke="#DC2626" strokeDasharray="3 3" opacity={0.6} />
-                  <ReferenceLine y={4.5} stroke="#DC2626" strokeDasharray="3 3" opacity={0.6} />
-
-                  <Line 
-                    type="monotone" 
-                    dataKey="ph_value" 
-                    stroke="#0F766E" 
-                    strokeWidth={3}
-                    dot={(props) => {
-                      const { cx, cy, payload } = props;
-                      return payload.is_deviation ? (
-                        <circle cx={cx} cy={cy} r={6} fill="#DC2626" stroke="#FFFFFF" strokeWidth={2} />
-                      ) : (
-                        <circle cx={cx} cy={cy} r={5} fill="#0F766E" stroke="#FFFFFF" strokeWidth={2} />
-                      );
-                    }}
-                    activeDot={{ r: 7, strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+          {/* Main Info Card */}
+          <div className="bg-white rounded-[2rem] border border-gray-200 shadow-sm p-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-teal-50 rounded-full translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
+            <div className="relative z-10 flex flex-col md:flex-row justify-between gap-6">
+              <div>
+                <h1 className="text-4xl font-black text-teal-950 font-mono tracking-tighter mb-2">{batch.batch_id}</h1>
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-full uppercase tracking-widest">{batch.variant}</span>
+                  <span className="text-sm font-bold text-slate-500">Volume: {batch.volume_litres}L</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-8 text-right">
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Current State</p>
+                  <p className={`font-black text-xl uppercase ${batch.status === 'deviation' ? 'text-red-600' : 'text-teal-700'}`}>{batch.status}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Process Age</p>
+                  <p className="font-black text-xl">{( (new Date() - new Date(batch.start_time)) / 3600000 ).toFixed(1)}h</p>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* pH Table */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-900">pH Read Log</h2>
+
+          {/* Unified Timeline Table */}
+          <div className="bg-white rounded-[2rem] border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-100 bg-slate-50/50 flex justify-between items-center">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight">Activity & Metrics Log</h2>
+              <div className="flex gap-2">
+                <span className="flex items-center text-[10px] font-bold text-slate-400 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                  <Activity className="w-3 h-3 mr-1.5 text-teal-500" /> Total Logs: {logs.length}
+                </span>
+              </div>
             </div>
-            <table className="min-w-full divide-y divide-gray-200 hidden sm:table">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Time</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">pH Value</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Operator</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {batch.ph_readings?.map((ph) => (
-                  <tr key={ph.id} className={ph.is_deviation ? 'bg-red-50/30' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      <div>{new Date(ph.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">Hr {ph.time_elapsed_hours?.toFixed(1)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-lg font-bold ${ph.is_deviation ? 'text-red-700' : 'text-gray-900'}`}>{ph.ph_value}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {ph.employees?.full_name || 'System'}
-                      {ph.notes && <div className="text-xs text-gray-400 mt-0.5 italic max-w-xs truncate">{ph.notes}</div>}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {ph.is_deviation ? (
-                        ph.deviation_acknowledged ? (
-                          <span className="px-2.5 py-1 text-xs font-bold text-amber-800 bg-amber-100 rounded-md">ACKNOWLEDGED</span>
-                        ) : (
-                          <span className="px-2.5 py-1 text-xs font-bold text-red-800 bg-red-100 rounded-md">UNRESOLVED DEVIATION</span>
-                        )
-                      ) : (
-                        <span className="px-2.5 py-1 text-xs font-bold text-green-800 bg-green-100 rounded-md">NORMAL</span>
-                      )}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-slate-50/50">
+                  <tr>
+                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
+                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Process / Stage</th>
+                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Metric Detected</th>
+                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Operator Signature</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-50">
+                  {logs.slice(0, 15).map((log, i) => (
+                    <tr key={log.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <p className="text-sm font-bold text-slate-800">{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[10px] font-bold text-slate-400">{new Date(log.created_at).toLocaleDateString()}</p>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                          {log.process_type || 'FERMENTATION'}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <p className="text-lg font-black text-slate-800 mr-2">{log.parameter_value}</p>
+                          <p className="text-xs font-bold text-slate-400 uppercase">{log.parameter_name}</p>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 whitespace-nowrap">
+                        <p className="text-sm font-bold text-slate-700">{log.employees?.full_name || 'System'}</p>
+                        {log.notes && <p className="text-[10px] font-medium text-slate-400 italic">&quot;{log.notes}&quot;</p>}
+                      </td>
+                    </tr>
+                  ))}
+                  {logs.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="px-8 py-12 text-center">
+                        <p className="text-slate-400 font-bold italic">No metrics recorded for this batch yet.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        {/* Action Sidebar */}
+        {/* Sidebar Controls */}
         <div className="space-y-6">
-          {/* Record pH Form */}
-          {(batch.status === 'fermenting' || batch.status === 'deviation') && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-teal-50">
-                <h2 className="text-lg font-bold text-teal-950 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-teal-700" /> Log Checkpoint
+          {/* Universal Data Entry */}
+          {(!batch.status || batch.status === 'fermenting' || batch.status === 'deviation') && (
+            <div className="bg-white rounded-[2rem] border border-gray-200 shadow-xl overflow-hidden ring-4 ring-teal-50">
+              <div className="px-8 py-6 bg-teal-800 text-white">
+                <h2 className="text-lg font-black tracking-tight flex items-center capitalize">
+                  <Beaker className="w-5 h-5 mr-3 text-teal-300" /> Log {STAGES[currentStageIndex]?.label}
                 </h2>
               </div>
-              <form onSubmit={handleLogPh} className="p-6 space-y-4">
+              <form onSubmit={handleLogData} className="p-8 space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">pH Value *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="1.00"
-                    max="14.00"
-                    required
-                    value={phValue}
-                    onChange={(e) => setPhValue(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-2xl font-bold font-mono tracking-widest text-center shadow-inner"
-                    placeholder="4.35"
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-gray-500 mt-2 text-center">Acceptable range: 4.20 - 4.50</p>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Select Parameter</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {currentParams.map(p => (
+                      <button 
+                        key={p.type} 
+                        type="button"
+                        onClick={() => setSelectedParam(p)}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all 
+                          ${selectedParam?.type === p.type ? 'bg-teal-500 border-teal-500 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-white hover:border-teal-200'}`}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Observation Notes</label>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Detected Value {selectedParam?.unit && `(${selectedParam.unit})`}</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={paramValue}
+                      onChange={(e) => setParamValue(e.target.value)}
+                      className="w-full pl-6 pr-16 py-4 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-teal-100 text-3xl font-black font-mono tracking-tighter text-slate-800 transition-all shadow-inner"
+                      placeholder="0.00"
+                      disabled={isSubmitting}
+                    />
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 font-black tracking-tighter pointer-events-none">
+                      {selectedParam?.unit || 'VAL'}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Observation / Notes</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
-                    rows="2"
-                    placeholder="Optional appearance/odor notes"
+                    className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-teal-100 text-sm font-medium text-slate-600 shadow-inner"
+                    rows="3"
+                    placeholder="Enter process observations..."
                     disabled={isSubmitting}
                   />
                 </div>
+
                 <button
                   type="submit"
-                  disabled={isSubmitting || !phValue}
-                  className="w-full flex justify-center items-center py-3 px-4 rounded-xl shadow-md shadow-teal-900/10 text-sm font-bold text-white bg-teal-800 hover:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-70 transition-all mt-2"
+                  disabled={isSubmitting || !paramValue || !selectedParam}
+                  className="w-full py-4 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white font-black rounded-2xl shadow-lg shadow-teal-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center uppercase tracking-widest text-xs"
                 >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5 mr-2" /> Record Data</>}
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5 mr-2" /> Commit to Registry</>}
                 </button>
               </form>
+            </div>
+          )}
+
+          {/* Compliance & Deviations Summary */}
+          {batch.status === 'deviation' && (
+            <div className="bg-red-50 border border-red-100 rounded-[2rem] p-8 space-y-4">
+              <div className="flex items-center text-red-700">
+                <AlertTriangle className="w-6 h-6 mr-3 animate-bounce" />
+                <h3 className="text-lg font-black tracking-tight">Active Deviation</h3>
+              </div>
+              <p className="text-sm text-red-600 font-medium leading-relaxed">
+                Critical parameter violation detected in <span className="font-black">Fermentation</span> stage. 
+                Full NCR process initiated. Monitor log for corrective instructions.
+              </p>
+              <Link href="/capa" className="block w-full text-center py-3 bg-red-600 text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-red-700 transition-all">
+                View Investigation
+              </Link>
             </div>
           )}
         </div>
