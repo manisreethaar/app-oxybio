@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 const COMPANY_PREFIX = 'O2B';
 
 const DESIGNATION_PRESETS = [
-  { label: 'Chief of Excellence (COE)', code: 'CE' },
+  { label: 'Chief Executive Officer (CEO)', code: 'CE' },
   { label: 'Chief Technology Officer (CTO)', code: 'CT' },
   { label: 'Research Fellow', code: 'RF' },
   { label: 'Scientist', code: 'SC' },
