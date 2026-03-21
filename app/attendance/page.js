@@ -137,22 +137,22 @@ export default function AttendancePage() {
     }
     
     try {
-      // Convert base64 String (WebP) to Blob for Supabase Storage
+      // Convert base64 String (WebP) to Blob for Cloudinary
       const res = await fetch(imageSrc);
       const blob = await res.blob();
       
-      // Upload to Supabase Storage Ephemeral Bucket
-      const filename = `${employeeProfile.id}_${Date.now()}.webp`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('attendance-proofs')
-        .upload(filename, blob, { contentType: 'image/webp' });
+      const formData = new FormData();
+      formData.append('file', blob, 'selfie.webp');
+      
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json();
 
-      if (uploadError) throw new Error("Photo upload failed: " + uploadError.message);
+      if (!uploadRes.ok || uploadData.error) {
+        throw new Error("Photo upload failed: " + (uploadData.error || 'Unknown error'));
+      }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('attendance-proofs')
-        .getPublicUrl(filename);
+      // Get public URL from Cloudinary response
+      const publicUrl = uploadData.url;
 
       // DB Insert with Geo and Photo data
       const todayStr = new Date().toISOString().split('T')[0];

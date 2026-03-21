@@ -25,10 +25,16 @@ export async function GET(req) {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // 2. Fetch all active compliance items that are NOT done
+    // 2. Fetch compliance items that are active and due within the next 35 days (or overdue)
+    // This prevents pulling 10,000 future records and hitting Vercel's 10s lambda timeout limit.
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 35);
+
     const { data: items, error: itemsError } = await supabaseAdmin
       .from('compliance_items')
-      .select('id, title, due_date, status');
+      .select('id, title, due_date, status')
+      .neq('status', 'done')
+      .lte('due_date', maxDate.toISOString());
 
     if (itemsError) throw itemsError;
 

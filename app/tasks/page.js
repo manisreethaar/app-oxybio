@@ -154,14 +154,24 @@ export default function TasksPage() {
     setTimerRunning(false);
     const newMins = Math.floor(elapsedSeconds / 60);
     if (newMins > 0) {
-      await supabase.from('tasks').update({ 
-        logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
-      }).eq('id', selectedTask.id);
-      // Update selectedTask state directly (avoids stale tasks-array lookup)
-      setSelectedTask(t => ({ ...t, logged_minutes: (t.logged_minutes || 0) + newMins }));
+      try {
+        const { error } = await supabase.from('tasks').update({ 
+          logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
+        }).eq('id', selectedTask.id);
+        
+        if (error) throw error;
+        
+        // Update selectedTask state directly (avoids stale tasks-array lookup)
+        setSelectedTask(t => ({ ...t, logged_minutes: (t.logged_minutes || 0) + newMins }));
+        setElapsedSeconds(0); // reset for next session
+        fetchTasks();
+      } catch (err) {
+        console.error("Timer save failed:", err);
+        alert("Network Error: Failed to save time to the cloud. Your exact time has been preserved locally. Please connect to WiFi and try pressing Start then Pause again.");
+      }
+    } else {
+      setElapsedSeconds(0);
     }
-    setElapsedSeconds(0); // reset for next session
-    fetchTasks();
   };
 
   // Save time to DB first, then close — prevents losing time if user closes mid-timer
@@ -170,9 +180,14 @@ export default function TasksPage() {
       setTimerRunning(false);
       const newMins = Math.floor(elapsedSeconds / 60);
       if (newMins > 0) {
-        await supabase.from('tasks').update({ 
-          logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
-        }).eq('id', selectedTask.id);
+        try {
+          const { error } = await supabase.from('tasks').update({ 
+            logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
+          }).eq('id', selectedTask.id);
+          if (error) throw error;
+        } catch (err) {
+          alert("Warning: Could not save final timer data due to a network error.");
+        }
       }
     }
     setSelectedTask(null);
