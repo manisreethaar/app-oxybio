@@ -81,6 +81,8 @@ export default function TasksPage() {
 
     if (!canDo('tasks', 'assign')) {
       query = query.eq('assigned_to', employeeProfile.id);
+      // Staff: still need their own name for form display
+      setEmployees([{ id: employeeProfile.id, full_name: employeeProfile.full_name }]);
     } else {
       const { data: emps } = await supabase.from('employees').select('id, full_name').eq('is_active', true);
       setEmployees(emps || []);
@@ -152,6 +154,8 @@ export default function TasksPage() {
       setShowCreate(false);
       setNewTask({ title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', checklist: [] });
       fetchTasks();
+    } else {
+      alert('Failed to create task: ' + error.message);
     }
     setActionLoading(false);
   };

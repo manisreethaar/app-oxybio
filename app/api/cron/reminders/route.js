@@ -39,10 +39,11 @@ export async function GET(req) {
       const dueDate = startOfDay(parseISO(task.due_date));
       const daysLeft = differenceInDays(dueDate, today);
 
-      // We notify if it's due today (0) or overdue (< 0)
-      if (daysLeft <= 0) {
-        const emp = task.employees;
-        if (!emp || !emp.push_subscription) continue; // No push sub for this user
+      // Notify if due today or overdue — but cap at 30 days to avoid stale ghost alerts
+      if (daysLeft <= 0 && daysLeft >= -30) {
+        // Supabase FK join can return an array or object depending on cardinality — normalize
+        const emp = Array.isArray(task.employees) ? task.employees[0] : task.employees;
+        if (!emp || !emp.push_subscription) continue;
 
         if (!userAlerts[task.assigned_to]) {
           userAlerts[task.assigned_to] = {

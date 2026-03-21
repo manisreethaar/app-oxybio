@@ -22,8 +22,12 @@ function DigitalIDCard({ emp }) {
           <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
           <p className="text-teal-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
         </div>
-        <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] text-white font-black uppercase tracking-widest border border-white/30">
-          <CheckSquare className="w-3 h-3"/> Active
+        <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
+          emp.is_active 
+            ? 'bg-white/20 text-white border-white/30' 
+            : 'bg-red-500/40 text-white border-red-300/50'
+        }`}>
+          <CheckSquare className="w-3 h-3"/> {emp.is_active ? 'Active' : 'Inactive'}
         </div>
       </div>
 
