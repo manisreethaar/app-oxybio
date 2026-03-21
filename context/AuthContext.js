@@ -13,24 +13,35 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchUser = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // Implement a strict 8-second timeout on the Supabase network request
+        // so the app NEVER freezes if the connection stutters.
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Auth request timeout")), 8000)
+        );
+        
+        const { data: { user }, error } = await Promise.race([
+          supabase.auth.getUser(),
+          timeoutPromise
+        ]);
+        
         if (error) throw error;
         
-        if (user) {
+        if (user && isMounted) {
           setUser(user);
-          const { data: profile } = await supabase
-            .from('employees')
-            .select('*')
-            .eq('email', user.email)
-            .single();
+          const { data: profile } = await Promise.race([
+            supabase.from('employees').select('*').eq('email', user.email).single(),
+            timeoutPromise
+          ]);
           setEmployeeProfile(profile);
         }
       } catch (err) {
-        console.error("Auth initialization error:", err);
+        console.error("Auth initialization securely aborted:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 

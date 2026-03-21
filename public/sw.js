@@ -3,7 +3,11 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => 
+      Promise.all(cacheNames.map((cache) => caches.delete(cache)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
