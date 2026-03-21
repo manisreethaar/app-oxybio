@@ -33,10 +33,10 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });
     }
 
-    const { email, password, full_name, role, department } = await req.json();
+    const { email, password, full_name, role, department, employee_code, designation, joined_date } = await req.json();
 
     if (!email || !password || !full_name || !role || !department) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Variables serviceKey and supabaseAdmin are already declared above
@@ -61,6 +61,9 @@ export async function POST(req) {
         full_name: full_name,
         role: role,
         department: department,
+        employee_code: employee_code || null,
+        designation: designation || null,
+        joined_date: joined_date || new Date().toISOString().split('T')[0],
         is_active: true
       });
 
