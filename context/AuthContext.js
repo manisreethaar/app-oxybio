@@ -15,12 +15,24 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
+    
+    // SAFETY TIMEOUT: Never let the app buffer for more than 5 seconds
+    const timeoutGuard = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn("Auth initialization timed out - forcing loading state to false");
+        setLoading(false);
+      }
+    }, 5000);
 
     const initializeAuth = async () => {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error("Session fetch error:", sessionError);
+          if (mounted) setLoading(false);
+          return;
+        }
 
         if (session?.user) {
           setUser(session.user);
@@ -31,7 +43,7 @@ export const AuthProvider = ({ children }) => {
             .single();
             
           if (profileError && profileError.code !== 'PGRST116') {
-            console.warn('Could not fetch profile:', profileError);
+             console.warn('Profile fetch error:', profileError.message);
           }
           if (mounted) setEmployeeProfile(profile || null);
         } else {
@@ -41,13 +53,12 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
-        if (mounted) {
-          setUser(null);
-          setEmployeeProfile(null);
-        }
+        console.error('Critical Auth error:', error);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          clearTimeout(timeoutGuard);
+        }
       }
     };
 
@@ -56,34 +67,30 @@ export const AuthProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-        
-        if (event === 'SIGNED_OUT') {
+
+        if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setEmployeeProfile(null);
           setLoading(false);
           return;
         }
 
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
-          try {
-            setUser(session.user);
-            const { data: profile } = await supabase
-              .from('employees')
-              .select('*')
-              .eq('email', session.user.email)
-              .single();
-            if (mounted) setEmployeeProfile(profile || null);
-          } catch (error) {
-            console.error('Session update error:', error);
-          } finally {
-            if (mounted) setLoading(false);
-          }
+        if (session?.user) {
+          setUser(session.user);
+          const { data: profile } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+          if (mounted) setEmployeeProfile(profile || null);
+          if (mounted) setLoading(false);
         }
       }
     );
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutGuard);
       subscription.unsubscribe();
     };
   }, []);
