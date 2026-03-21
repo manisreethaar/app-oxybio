@@ -24,42 +24,41 @@ export default function Sidebar() {
   // This means the permissions matrix in lib/permissions.js is the SINGLE source of truth.
   const menuSections = [
     {
-      title: 'OVERVIEW',
+      title: 'OPERATIONS HUB',
       items: [
-        { name: 'Dashboard',  href: '/dashboard',  icon: LayoutDashboard, show: canDo('dashboard', 'view') },
+        { name: 'Dashboard',         href: '/dashboard',  icon: LayoutDashboard, show: canDo('dashboard', 'view') },
+        { name: 'Operations Center', href: '/activity',   icon: Activity,        show: canDo('activity', 'view') },
+        { name: 'Task Manager',      href: '/tasks',      icon: CheckSquare,     show: canDo('tasks', 'view') },
       ]
     },
     {
-      title: 'LAB OPERATIONS',
+      title: 'LABORATORY',
       items: [
-        { name: 'Batch Manager',  href: '/batches',   icon: FlaskConical, show: canDo('batches', 'view') },
-        { name: 'Activity Feed',  href: '/activity',  icon: Activity,     show: canDo('activity', 'view') },
-        { name: 'SOPs',           href: '/sops',      icon: BookOpen,     show: canDo('sops', 'view') },
+        { name: 'Batch Tracking',    href: '/batches',    icon: FlaskConical,    show: canDo('batches', 'view') },
+        { name: 'SOP Library',       href: '/sops',       icon: BookOpen,        show: canDo('sops', 'view') },
       ]
     },
     {
-      title: 'PEOPLE',
+      title: 'MY WORKSPACE',
       items: [
-        { name: 'Leave Manager',  href: '/leave',       icon: CalendarOff, show: canDo('leave', 'view') },
-        { name: 'Attendance',     href: '/attendance',  icon: Clock,       show: canDo('attendance', 'view') },
-        { name: 'Tasks',          href: '/tasks',       icon: CheckSquare, show: canDo('tasks', 'view') },
+        { name: 'Attendance & GPS',  href: '/attendance', icon: Clock,           show: canDo('attendance', 'view') },
+        { name: 'Leave Requests',    href: '/leave',      icon: CalendarOff,     show: canDo('leave', 'view') },
+        { name: 'My Payslips',       href: '/payslips',   icon: Receipt,         show: canDo('payslips', 'view_own') },
       ]
     },
     {
-      title: 'COMPLIANCE',
+      title: 'ADMIN & COMPLIANCE',
       items: [
-        { name: 'Documents',          href: '/documents',   icon: FileText,    show: canDo('documents', 'view') },
-        { name: 'Compliance',         href: '/compliance',  icon: CalendarDays,show: canDo('compliance', 'view') },
-        { name: 'Payslips',           href: '/payslips',    icon: Receipt,     show: canDo('payslips', 'view_own') },
-        { name: 'Team Management',    href: '/admin/users', icon: Users,       show: canDo('admin', 'manage_users') },
+        { name: 'Document Vault',    href: '/documents',    icon: FileText,      show: canDo('documents', 'view') },
+        { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,  show: canDo('compliance', 'view') },
+        { name: 'Access Control',    href: '/admin/users',  icon: Users,         show: canDo('admin', 'manage_users') },
       ]
     },
     {
       title: 'ACCOUNT',
       items: [
-        { name: 'Notifications',      href: '/notifications', icon: Bell,        show: canDo('notifications', 'view') },
-        { name: 'My Profile',         href: '/profile',       icon: UserCircle,  show: canDo('dashboard', 'view') },
-        { name: 'Employee Directory', href: '/directory',     icon: Contact,     show: canDo('admin', 'view') },
+        { name: 'My Profile',        href: '/profile',      icon: UserCircle,    show: canDo('dashboard', 'view') },
+        { name: 'Staff Directory',   href: '/directory',    icon: Contact,       show: canDo('admin', 'view') },
       ]
     }
   ];
