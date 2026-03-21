@@ -7,7 +7,7 @@
   "background_color": "#f8fafc",
   "theme_color": "#115e59",
   "id": "/dashboard",
-  "orientation": "any",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192x192.png",
