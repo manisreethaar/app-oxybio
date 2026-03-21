@@ -82,7 +82,7 @@ export default function AttendancePage() {
       
       const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
       
-      const combined = allEmps.map(emp => {
+      const combined = (allEmps || []).map(emp => {
         const log = (teamLogs || []).find(l => l.employee_id === emp.id);
         return { ...emp, attendance: log };
       });
@@ -128,6 +128,11 @@ export default function AttendancePage() {
   const captureSelfieAndCheckIn = useCallback(async () => {
     setActionLoading(true);
     setCheckInError('');
+    if (!webcamRef.current) {
+      setCheckInError('Camera not ready. Please wait and try again.');
+      setActionLoading(false);
+      return;
+    }
     const imageSrc = webcamRef.current.getScreenshot();
     
     if (!imageSrc) {
@@ -156,6 +161,9 @@ export default function AttendancePage() {
 
       // DB Insert with Geo and Photo data
       const todayStr = new Date().toISOString().split('T')[0];
+      if (!geoData) {
+        throw new Error('Location data is missing. Please restart the check-in process.');
+      }
       const { error: dbError } = await supabase.from('attendance_log').insert({
         employee_id: employeeProfile.id,
         date: todayStr,
@@ -184,7 +192,11 @@ export default function AttendancePage() {
       check_out_time: new Date().toISOString()
     }).eq('id', todayLog.id);
     
-    if (!error) fetchAttendanceData();
+    if (error) {
+      alert('Check-out failed: ' + error.message);
+    } else {
+      fetchAttendanceData();
+    }
     setActionLoading(false);
   };
 

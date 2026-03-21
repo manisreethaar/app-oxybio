@@ -162,7 +162,11 @@ export default function TasksPage() {
 
   const handleDeleteTask = async (taskId) => {
     if (!confirm('Are you sure you want to permanently delete this task?')) return;
-    await supabase.from('tasks').delete().eq('id', taskId);
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) {
+      alert('Delete failed: ' + error.message);
+      return;
+    }
     setSelectedTask(null);
     fetchTasks();
   };
@@ -183,8 +187,10 @@ export default function TasksPage() {
   };
 
   const handlePauseTimer = async () => {
+    // Capture elapsedSeconds synchronously before any state updates to avoid stale closure
+    const capturedSeconds = elapsedSeconds;
     setTimerRunning(false);
-    const newMins = Math.floor(elapsedSeconds / 60);
+    const newMins = Math.floor(capturedSeconds / 60);
     if (newMins > 0) {
       try {
         const { error } = await supabase.from('tasks').update({ 

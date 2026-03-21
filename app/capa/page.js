@@ -48,7 +48,7 @@ export default function CapaPage() {
   const [actioning, setActioning] = useState(false);
   const [actionForm, setActionForm] = useState({ action_type: 'Corrective', title: '', description: '', assigned_to: '', due_date: '' });
 
-  const isAdmin = canDo && canDo('capa', 'manage') || role === 'admin';
+  const isAdmin = (canDo && canDo('capa', 'manage')) || role === 'admin';
 
   useEffect(() => {
     fetchAll();
@@ -66,7 +66,10 @@ export default function CapaPage() {
   };
 
   const loadDetail = async (dev) => {
+    // Clear stale investigation state immediately before loading new one
     setSelected(dev);
+    setInvestigation(null);
+    setCapaActions([]);
     const [{ data: inv }, { data: actions }] = await Promise.all([
       supabase.from('investigations').select('*').eq('deviation_id', dev.id).maybeSingle(),
       supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', dev.id)
@@ -92,6 +95,8 @@ export default function CapaPage() {
       setRaiseForm({ title: '', severity: 'Major', source: 'Internal Audit', description: '' });
       setShowRaise(false);
       await fetchAll();
+    } else if (error) {
+      alert('Failed to submit NCR: ' + error.message);
     }
     setRaising(false);
   };
@@ -100,15 +105,23 @@ export default function CapaPage() {
   const handleSaveInvestigation = async (e) => {
     e.preventDefault();
     setInvestigating(true);
+    let saveError = null;
     if (investigation) {
-      await supabase.from('investigations').update({ ...whyForm, investigator_id: employeeProfile.id }).eq('id', investigation.id);
+      const { error } = await supabase.from('investigations').update({ ...whyForm, investigator_id: employeeProfile.id }).eq('id', investigation.id);
+      saveError = error;
     } else {
-      const { data } = await supabase.from('investigations').insert({
+      const { data, error } = await supabase.from('investigations').insert({
         deviation_id: selected.id,
         investigator_id: employeeProfile.id,
         ...whyForm
       }).select().single();
-      setInvestigation(data);
+      saveError = error;
+      if (!error) setInvestigation(data);
+    }
+    if (saveError) {
+      alert('Failed to save investigation: ' + saveError.message);
+      setInvestigating(false);
+      return;
     }
     await supabase.from('deviations').update({ status: 'Investigating' }).eq('id', selected.id);
     setSelected(s => ({ ...s, status: 'Investigating' }));
