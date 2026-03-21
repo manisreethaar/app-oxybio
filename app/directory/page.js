@@ -144,7 +144,12 @@ export default function DirectoryPage() {
                     <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
-                      {emp.full_name?.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                      {(() => {
+                        const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+                        const parts = emp.full_name?.split(' ') || [];
+                        const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
+                        return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
+                      })()}
                     </div>
                   )}
                 </div>

@@ -8,12 +8,22 @@ export default function DashboardPage() {
 
   if (loading || !employeeProfile) return null;
 
-  const firstName = employeeProfile.full_name?.split(' ')?.[0] || 'there';
+  const getNameForGreeting = (fullName) => {
+    if (!fullName) return 'there';
+    const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+    const parts = fullName.split(' ');
+    if (parts.length > 1 && titles.includes(parts[0])) {
+      return parts[1]; // Return the first name after the title
+    }
+    return parts[0];
+  };
 
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Good {new Date().getHours() < 12 ? 'Morning' : 'Afternoon'}, {employeeProfile?.full_name?.split(' ')[0]}</h1>
+        <h1 className="text-3xl font-bold text-teal-950 tracking-tight">
+          Good {new Date().getHours() < 12 ? 'Morning' : 'Afternoon'}, {getNameForGreeting(employeeProfile?.full_name)}
+        </h1>
         <p className="text-gray-500 mt-1">Here&apos;s what&apos;s happening across Oxygen Bioinnovations today.</p>
       </div>
 

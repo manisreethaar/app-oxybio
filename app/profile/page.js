@@ -42,7 +42,7 @@ function DigitalIDCard({ emp }) {
         )}
       </div>
 
-      <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase text-center leading-none mt-2">{emp.full_name}</h2>
+      <h2 className="text-xl font-black text-slate-800 tracking-tight text-center leading-none mt-2">{emp.full_name}</h2>
       <p className="text-xs font-bold text-teal-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
       
       <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">

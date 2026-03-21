@@ -18,7 +18,11 @@ export default function Sidebar() {
   if (!employeeProfile) return null;
 
   const getInitials = (name) => {
-    return name ? name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'O2';
+    if (!name) return 'OB';
+    const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+    const parts = name.split(' ');
+    const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
+    return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
   };
 
   // ── Sidebar Menu Definition ─────────────────────────────────────────────

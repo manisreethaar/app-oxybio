@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 const COMPANY_PREFIX = 'O2B';
 
 const DESIGNATION_PRESETS = [
-  { label: 'Chief Executive Officer (CEO)', code: 'CE' },
+  { label: 'Chief of Excellence (COE)', code: 'CE' },
   { label: 'Chief Technology Officer (CTO)', code: 'CT' },
   { label: 'Research Fellow', code: 'RF' },
   { label: 'Scientist', code: 'SC' },
@@ -171,7 +171,14 @@ export default function UsersPage() {
                       <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0 mr-3 flex items-center justify-center">
                         {emp.photo_url
                           ? <img src={emp.photo_url} className="w-full h-full object-cover" alt=""/>
-                          : <span className="text-teal-700 font-black text-sm">{emp.full_name?.substring(0,2).toUpperCase()}</span>
+                          : <span className="text-teal-700 font-black text-sm">
+                              {(() => {
+                                const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+                                const parts = emp.full_name?.split(' ') || [];
+                                const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
+                                return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
+                              })()}
+                            </span>
                         }
                       </div>
                       <div>
