@@ -167,18 +167,15 @@ export default function UsersPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <select value={inviteForm.role} onChange={e => setInviteForm({...inviteForm, role: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
+                    <option value="admin">Administrator</option>
+                    <option value="staff">Staff / R&D</option>
+                    <option value="intern">Intern</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <select value={inviteForm.department} onChange={e => setInviteForm({...inviteForm, department: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
-                    <option value="Production">Production</option>
-                    <option value="Quality Control">Quality Control</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Management">Management</option>
-                  </select>
+                  {/* Free text to allow completely custom departments without breaking */}
+                  <input required type="text" value={inviteForm.department} onChange={e => setInviteForm({...inviteForm, department: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. R&D, Admin, Intern" />
                 </div>
               </div>
 

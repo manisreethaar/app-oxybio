@@ -9,12 +9,25 @@ export async function POST(req) {
     
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Check if requester is admin
-    const { data: requesterProfile } = await supabaseServer
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
+    // Check if requester is admin using Admin client to bypass RLS quirks matching
+    let { data: requesterProfile } = await supabaseAdmin
       .from('employees')
       .select('role')
       .eq('id', user.id)
       .single();
+
+    if (!requesterProfile) {
+      // Fallback: check by email in case UUID was mismatched during manual insert
+      const { data: profileByEmail } = await supabaseAdmin.from('employees').select('role').eq('email', user.email).single();
+      requesterProfile = profileByEmail;
+    }
 
     if (!requesterProfile || requesterProfile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });
@@ -26,21 +39,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!serviceKey) {
-      return NextResponse.json({ error: 'Server configuration error: SUPABASE_SERVICE_ROLE_KEY missing in Environment Variables' }, { status: 500 });
-    }
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      serviceKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    // Variables serviceKey and supabaseAdmin are already declared above
 
     // Create user in Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
