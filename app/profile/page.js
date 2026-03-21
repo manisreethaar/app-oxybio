@@ -8,6 +8,7 @@ import {
   CreditCard, ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import { QRCodeSVG } from 'qrcode.react';
 
 function DigitalIDCard({ emp }) {
   return (
@@ -41,8 +42,11 @@ function DigitalIDCard({ emp }) {
       </div>
 
       {/* Card Body */}
-      <div className="px-6 pt-2 pb-6">
-        <h2 className="text-xl font-black text-slate-800 leading-tight tracking-tight uppercase">{emp.full_name}</h2>
+      <div className="px-6 pt-2 pb-6 relative">
+        <div className="absolute top-2 right-6 p-1 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <QRCodeSVG value={`https://o2b.app/verify/${emp.id}`} size={48} level="L" includeMargin={false} />
+        </div>
+        <h2 className="text-xl font-black text-slate-800 leading-tight tracking-tight uppercase pr-16">{emp.full_name}</h2>
         <p className="text-xs font-bold text-slate-500 mt-0.5 uppercase tracking-wider">Emp. Code: {emp.employee_code || 'N/A'}</p>
         <p className="text-sm font-bold text-yellow-600 mt-1 uppercase tracking-wide">{emp.designation || emp.role}</p>
 
