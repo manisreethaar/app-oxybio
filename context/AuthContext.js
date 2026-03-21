@@ -14,17 +14,24 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        const { data: profile } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('email', user.email)
-          .single();
-        setEmployeeProfile(profile);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        
+        if (user) {
+          setUser(user);
+          const { data: profile } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('email', user.email)
+            .single();
+          setEmployeeProfile(profile);
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUser();
