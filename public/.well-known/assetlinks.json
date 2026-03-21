@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.oxygenbioinnovations.app.twa",
+        "sha256_cert_fingerprints": ["76:CD:E6:1B:11:BF:7C:A0:04:34:A2:F2:EF:D0:F5:E1:7F:FE:E9:80:BA:1C:B9:4A:B9:1B:38:91:80:F3:D2:CC"]
+      }
+    }]
