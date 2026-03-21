@@ -41,27 +41,33 @@ export default function PayslipsPage() {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    await supabase.from('payslips').insert({
+    if (!form.employee_id || !form.month || !form.gross_salary || !form.net_salary) {
+      alert('Employee, month, gross salary, and net salary are required.');
+      return;
+    }
+    const { error } = await supabase.from('payslips').insert({
       employee_id: form.employee_id,
       month: form.month,
       year: parseInt(form.year),
       gross_salary: parseFloat(form.gross_salary),
-      pf_deduction: parseFloat(form.pf_deduction),
-      esi_deduction: parseFloat(form.esi_deduction),
+      pf_deduction: parseFloat(form.pf_deduction) || 0,
+      esi_deduction: parseFloat(form.esi_deduction) || 0,
       net_salary: parseFloat(form.net_salary),
       payslip_url: form.payslip_url,
       uploaded_by: employeeProfile.id,
       uploaded_at: new Date().toISOString()
     });
 
+    if (error) {
+      alert('Failed to upload payslip: ' + error.message);
+      return;
+    }
     setShowUpload(false);
     setForm({
       employee_id: '', month: '', year: new Date().getFullYear(),
       gross_salary: '', pf_deduction: '', esi_deduction: '', net_salary: '', payslip_url: ''
     });
     fetchPayslips();
-    
-    // Notifications trigger could be added here
   };
 
   if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading payslips...</div>;

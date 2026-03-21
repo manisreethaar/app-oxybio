@@ -30,12 +30,15 @@ export default function BatchDetailPage() {
       .eq('id', batchId)
       .single();
 
-    if (b) {
-      if (b.ph_readings) {
-        b.ph_readings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      }
-      setBatch(b);
+    if (error || !b) {
+      // Batch not found or access denied — redirect back to list
+      router.replace('/batches');
+      return;
     }
+    if (b.ph_readings) {
+      b.ph_readings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }
+    setBatch(b);
   };
 
   const handleLogPh = async (e) => {
@@ -88,6 +91,11 @@ export default function BatchDetailPage() {
     // In production we might use a dedicated API for strict security.
     const updateData = { status: newStatus };
     if (newStatus === 'released') {
+      if (!employeeProfile?.id) {
+        alert('Session error: could not identify your account. Please refresh.');
+        setActionLoading(false);
+        return;
+      }
       updateData.released_by = employeeProfile.id;
       updateData.released_at = new Date().toISOString();
     }

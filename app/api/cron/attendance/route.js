@@ -19,11 +19,18 @@ export async function GET(request) {
     );
 
     const now = new Date();
-    // 1. Find all attendance logs that do not have a check_out_time
+    const todayStr = now.toISOString().split('T')[0];
+    // Also include yesterday to cover overnight grace period (shifts started late and still running)
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // 1. Find attendance logs that do not have a check_out_time, only for today (or yesterday — overnight grace)
     const { data: openLogs, error: fetchError } = await supabaseAdmin
       .from('attendance_log')
       .select('id, check_in_time')
-      .is('check_out_time', null);
+      .is('check_out_time', null)
+      .in('date', [todayStr, yesterdayStr]);
 
     if (fetchError) throw fetchError;
     if (!openLogs || openLogs.length === 0) {
