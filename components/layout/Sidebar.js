@@ -117,8 +117,8 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-50 pb-safe overflow-x-auto">
-        {menuSections.flatMap(s => s.items).filter(item => item.roles.includes(employeeProfile.role)).slice(0, 5).map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-start sm:justify-around items-center z-50 pb-safe overflow-x-auto hide-scrollbar scroll-smooth">
+        {menuSections.flatMap(s => s.items).filter(item => item.roles.includes(employeeProfile.role)).map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
@@ -126,11 +126,11 @@ export default function Sidebar() {
               key={item.name} 
               href={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center min-w-[70px] py-3 h-16 min-h-[44px]",
+                "flex flex-col items-center justify-center min-w-[72px] px-2 py-3 h-16 min-h-[44px] flex-shrink-0 transition-colors",
                 isActive ? "text-teal-800" : "text-gray-500 hover:text-gray-900"
               )}
             >
-              <Icon className="w-5 h-5 mb-1" />
+              <Icon className={clsx("w-5 h-5 mb-1", isActive ? "stroke-[2.5px]" : "stroke-2")} />
               <span className="text-[10px] font-medium whitespace-nowrap">{item.name}</span>
             </Link>
           )
