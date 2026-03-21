@@ -26,11 +26,14 @@ export default function PushManager() {
   }, [user]);
 
   const saveSubscription = async (subscription) => {
-    await fetch('/api/push/subscribe', {
+    const res = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subscription })
     });
+    if (!res.ok) {
+      console.error('Failed to save push subscription to server.');
+    }
   };
 
   const subscribeUser = async () => {
@@ -39,9 +42,12 @@ export default function PushManager() {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const reg = await navigator.serviceWorker.ready;
+        // VAPID key must be converted from base64 string to Uint8Array for Web Push spec compliance
+        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        const keyBytes = Uint8Array.from(atob(vapidKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+          applicationServerKey: keyBytes
         });
         await saveSubscription(sub);
         setSubscribed(true);

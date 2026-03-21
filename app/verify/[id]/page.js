@@ -61,7 +61,7 @@ export default async function VerifyEmployeePage({ params }) {
             
             <div className="mt-4 text-center z-10">
               <h2 className="text-2xl font-black text-white tracking-tight leading-tight">{emp.full_name}</h2>
-              <p className="text-teal-200 font-medium text-sm mt-1">{emp.designation || emp.role.toUpperCase()}</p>
+              <p className="text-teal-200 font-medium text-sm mt-1">{emp.designation || emp.role?.toUpperCase() || 'STAFF'}</p>
             </div>
           </div>
 

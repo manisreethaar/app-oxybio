@@ -10,7 +10,8 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    // Lookup by UUID (from JWT) — not email, which could be spoofed in a misconfigured RLS setup
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
     if (!emp || emp.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Forbidden. Admin only.' }, { status: 403 });
     }
@@ -18,6 +19,10 @@ export async function POST(request, { params }) {
     const { id } = params;
     const body = await request.json();
     const { action_taken } = body;
+
+    if (!id || !action_taken || !action_taken.trim()) {
+      return NextResponse.json({ success: false, error: 'Deviation ID and action_taken are required.' }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from('ph_readings')
