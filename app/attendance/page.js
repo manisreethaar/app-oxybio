@@ -257,11 +257,11 @@ export default function AttendancePage() {
                     <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] mt-1">Elapsed</p>
                   </div>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 flex items-center justify-center gap-3">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 flex flex-col items-center gap-3">
                   {todayLog.photo_url && (
-                    <img src={todayLog.photo_url} alt="Selfie" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
+                    <img src={todayLog.photo_url} alt="Check-in Selfie" className="w-40 h-40 rounded-2xl object-cover border-2 border-white shadow-lg ring-2 ring-teal-500/20" />
                   )}
-                  <div className="text-left text-sm font-medium text-slate-500">
+                  <div className="text-center text-sm font-medium text-slate-500">
                     Checked in at <br/><strong className="text-slate-800 text-lg">{formatTime(todayLog.check_in_time)}</strong>
                   </div>
                 </div>
