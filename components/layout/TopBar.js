@@ -108,8 +108,6 @@ export default function TopBar() {
         <Link href="/notifications" className="relative p-2.5 text-slate-400 hover:text-teal-600 rounded-full hover:bg-white/60 transition-all duration-300">
           <span className="sr-only">View notifications</span>
           <Bell className="w-5 h-5" />
-          {/* Temporary hardcoded notification badge, we'll make this dynamic later */}
-          <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse"></span>
         </Link>
       </div>
     </header>
