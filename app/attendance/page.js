@@ -45,12 +45,15 @@ export default function AttendancePage() {
     if (employeeProfile) fetchAttendanceData();
     
     const interval = setInterval(() => {
-      if (todayLog && !todayLog.check_out_time) {
-        setTodayLog({ ...todayLog, current_time: new Date() });
-      }
+      setTodayLog(prev => {
+        if (prev && !prev.check_out_time) {
+          return { ...prev, current_time: new Date() };
+        }
+        return prev;
+      });
     }, 60000);
     return () => clearInterval(interval);
-  }, [employeeProfile, todayLog?.id]);
+  }, [employeeProfile]);
 
   const fetchAttendanceData = async () => {
     setLoading(true);
