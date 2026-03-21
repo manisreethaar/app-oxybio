@@ -50,7 +50,7 @@ export default function LeavePage() {
     const days = calculateDays();
     if (days <= 0) return alert('Invalid dates');
 
-    await supabase.from('leave_applications').insert({
+    const { error } = await supabase.from('leave_applications').insert({
       employee_id: employeeProfile.id,
       leave_type: leaveType,
       start_date: startDate,
@@ -59,7 +59,10 @@ export default function LeavePage() {
       reason,
       status: 'pending'
     });
-    
+    if (error) {
+      alert('Failed to submit leave: ' + error.message);
+      return;
+    }
     setStartDate(''); setEndDate(''); setReason('');
     fetchLeaves();
   };
@@ -68,20 +71,27 @@ export default function LeavePage() {
     setActionLoadingId(id);
     let comment = '';
     if (status === 'rejected') {
-      comment = window.prompt("Enter rejection reason:");
-      if (comment === null) {
+      // window.prompt is non-functional in iOS PWA — use a safe inline approach
+      const reason = window.prompt ? window.prompt("Enter rejection reason:") : null;
+      if (reason === null) {
         setActionLoadingId(null);
         return;
       }
+      comment = reason || 'No reason provided.';
     }
 
-    await supabase.from('leave_applications').update({
+    const { error } = await supabase.from('leave_applications').update({
       status,
       admin_comment: comment,
       reviewed_by: employeeProfile.id,
       reviewed_at: new Date().toISOString()
     }).eq('id', id);
 
+    if (error) {
+      alert('Action failed: ' + error.message);
+      setActionLoadingId(null);
+      return;
+    }
     fetchLeaves();
     setActionLoadingId(null);
   };

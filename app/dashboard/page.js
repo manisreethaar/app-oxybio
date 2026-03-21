@@ -8,7 +8,7 @@ export default function DashboardPage() {
 
   if (loading || !employeeProfile) return null;
 
-  const firstName = employeeProfile.full_name.split(' ')[0];
+  const firstName = employeeProfile.full_name?.split(' ')?.[0] || 'there';
 
   return (
     <div className="space-y-6">

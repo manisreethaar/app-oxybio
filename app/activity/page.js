@@ -14,7 +14,7 @@ export default function ActivityLogPage() {
   const [issues, setIssues] = useState([]);
   const [activeBatches, setActiveBatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(canDo ? 'brief' : 'feed');
+  const [tab, setTab] = useState('feed'); // will be corrected in useEffect once canDo resolves
   const supabase = createClient();
 
   // Form State (Log Activity tab)
@@ -37,6 +37,11 @@ export default function ActivityLogPage() {
     openIssues: [],
     activeExperiments: [],
   });
+
+  // Fix: canDo is async-loaded — set correct default tab once auth is hydrated
+  useEffect(() => {
+    if (canDo && canDo('activity', 'view')) setTab('brief');
+  }, [canDo]);
 
   useEffect(() => {
     if (employeeProfile) {

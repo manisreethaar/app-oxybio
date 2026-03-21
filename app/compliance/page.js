@@ -29,6 +29,7 @@ export default function CompliancePage() {
     
     // Auto-update overdue UI state if it hasn't been trigger updated
     const processedItems = (compItems || []).map(i => {
+      if (!i.due_date) return { ...i, calculated_status: i.status };
       const isOverdueState = i.status !== 'done' && differenceInDays(new Date(i.due_date), new Date()) < 0;
       return { ...i, calculated_status: isOverdueState ? 'overdue' : i.status };
     });
@@ -44,17 +45,25 @@ export default function CompliancePage() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    await supabase.from('compliance_items').insert({
+    const { error } = await supabase.from('compliance_items').insert({
       ...newItem,
       status: 'upcoming'
     });
+    if (error) {
+      alert('Failed to save item: ' + error.message);
+      return;
+    }
     setShowAdd(false);
     fetchCompliance();
   };
 
   const markDone = async (item) => {
     // 1. Mark current done
-    await supabase.from('compliance_items').update({ status: 'done' }).eq('id', item.id);
+    const { error: markError } = await supabase.from('compliance_items').update({ status: 'done' }).eq('id', item.id);
+    if (markError) {
+      alert('Failed to mark done: ' + markError.message);
+      return;
+    }
 
     // 2. If recurring, create next iteration
     if (item.is_recurring && item.recurrence) {

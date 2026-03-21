@@ -30,6 +30,7 @@ const DESIGNATION_PRESETS = [
 ];
 
 function generateEmployeeCode(existingCodes, designationCode) {
+  if (!designationCode || designationCode.trim().length < 1) return '';
   const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-`;
   const existing = existingCodes
     .filter(c => c && c.startsWith(prefix))
@@ -82,7 +83,11 @@ export default function UsersPage() {
 
   const deactivateUser = async (id, currentStatus) => {
     if (id === employeeProfile.id) return alert('You cannot deactivate your own account.');
-    await supabase.from('employees').update({ is_active: !currentStatus }).eq('id', id);
+    const { error } = await supabase.from('employees').update({ is_active: !currentStatus }).eq('id', id);
+    if (error) {
+      alert('Failed to update user status: ' + error.message);
+      return;
+    }
     fetchUsers();
   };
 
