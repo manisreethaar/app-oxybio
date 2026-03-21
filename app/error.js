@@ -51,7 +51,7 @@ export default function GlobalError({ error, reset }) {
         
         <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-3">Something went wrong!</h1>
         <p className="text-sm font-medium text-slate-500 mb-8 px-4">
-          A temporary network or cache error crashed this page. Don't worry, your data is safe. Let's get you back on track.
+          A temporary network or cache error crashed this page. Don&apos;t worry, your data is safe. Let&apos;s get you back on track.
         </p>
 
         <div className="flex flex-col gap-3 w-full">
