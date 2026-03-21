@@ -9,10 +9,7 @@ const withPWA = withPWAInit({
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   cacheStartUrl: false,
-  dynamicStartUrl: false,
-  workboxOptions: {
-    runtimeCaching: [] // Completely disables runtime caching for API calls & pages so data is ALWAYS live
-  }
+  dynamicStartUrl: false
 });
 
 /** @type {import('next').NextConfig} */
