@@ -31,23 +31,9 @@ export default function ClientLayout({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center mesh-bg gap-6">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 border-4 border-teal-100 border-t-teal-600 rounded-full animate-spin shadow-lg"></div>
-          <p className="text-teal-900 font-black uppercase tracking-widest text-[10px] animate-pulse">Establishing Secure Session...</p>
-        </div>
-        
-        {/* EMERGENCY RECOVERY: If stuck for too long, allow user to force a clean reload */}
-        <button 
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              window.location.reload(true);
-            }
-          }}
-          className="px-4 py-2 bg-white/50 backdrop-blur border border-teal-100 rounded-lg text-[10px] font-bold text-teal-700 hover:bg-teal-50 transition-all opacity-0 animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-[5000ms] fill-mode-forwards"
-        >
-          Taking too long? Force Reload
-        </button>
+      <div className="min-h-screen flex flex-col items-center justify-center mesh-bg gap-4">
+        <div className="w-14 h-14 border-4 border-teal-100 border-t-teal-600 rounded-full animate-spin shadow-lg"></div>
+        <p className="text-teal-900 font-black uppercase tracking-widest text-[10px] animate-pulse">Establishing Secure Session...</p>
       </div>
     );
   }

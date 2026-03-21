@@ -17,11 +17,26 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({ children }) {
+import { createClient } from "@/utils/supabase/server";
+
+export default async function RootLayout({ children }) {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  let profile = null;
+  if (session?.user) {
+    const { data } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('email', session.user.email)
+      .single();
+    profile = data;
+  }
+
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
+        <AuthProvider initialSession={session} initialProfile={profile}>
           <ClientLayout>
             {children}
           </ClientLayout>

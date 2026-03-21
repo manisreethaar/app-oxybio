@@ -6,23 +6,15 @@ import { can, getPermissionsForRole } from '@/lib/permissions';
 
 const AuthContext = createContext({});
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [employeeProfile, setEmployeeProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const AuthProvider = ({ children, initialSession, initialProfile }) => {
+  const [user, setUser] = useState(initialSession?.user || null);
+  const [employeeProfile, setEmployeeProfile] = useState(initialProfile || null);
+  const [loading, setLoading] = useState(!initialSession); // Start as not loading if we have initial session
   const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
-    
-    // SAFETY TIMEOUT: Never let the app buffer for more than 5 seconds
-    const timeoutGuard = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn("Auth initialization timed out - forcing loading state to false");
-        setLoading(false);
-      }
-    }, 5000);
 
     const initializeAuth = async () => {
       try {
@@ -57,7 +49,6 @@ export const AuthProvider = ({ children }) => {
       } finally {
         if (mounted) {
           setLoading(false);
-          clearTimeout(timeoutGuard);
         }
       }
     };
@@ -90,7 +81,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutGuard);
       subscription.unsubscribe();
     };
   }, []);
