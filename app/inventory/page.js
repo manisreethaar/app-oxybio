@@ -73,14 +73,18 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       const [stockRes, itemsRes, vendorsRes] = await Promise.all([
-        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }),
-        supabase.from('inventory_items').select('*').order('name'),
-        supabase.from('vendors').select('*').order('name')
+        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }).limit(200),
+        supabase.from('inventory_items').select('*').order('name').limit(1000),
+        supabase.from('vendors').select('*').order('name').limit(500)
       ]);
+
+      if (stockRes.error) throw stockRes.error;
 
       if (stockRes.data) setStock(stockRes.data);
       if (itemsRes.data) setItems(itemsRes.data);
       if (vendorsRes.data) setVendors(vendorsRes.data);
+    } catch (err) {
+      console.error("Data synchronization failed:", err);
     } finally {
       setLoading(false);
     }
@@ -89,18 +93,26 @@ export default function InventoryPage() {
   const handleAddStock = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const res = await fetch('/api/inventory/stock', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newStock)
-    });
-    
-    if (res.ok) {
-      setIsModalOpen(false);
-      setNewStock({ item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '' });
-      await fetchData();
+    try {
+      const res = await fetch('/api/inventory/stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStock)
+      });
+      
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewStock({ item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '' });
+        await fetchData();
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Failed to log stock entry.');
+      }
+    } catch (err) {
+      alert("Network Error: Could not connect to the operations server. Please check connection.");
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const filteredStock = stock.filter(s => 

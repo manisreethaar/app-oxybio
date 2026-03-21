@@ -5,10 +5,16 @@ import { useAuth } from '@/context/AuthContext';
 import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database } from 'lucide-react';
 
 export default function EquipmentPage() {
-  const { role, loading: authLoading } = useAuth();
+  const { role, employeeProfile, loading: authLoading } = useAuth();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Maintenance Modal State
+  const [activeDevice, setActiveDevice] = useState(null);
+  const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
+  const [maintForm, setMaintForm] = useState({ calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', status: 'Operational' });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newEquip, setNewEquip] = useState({ name: '', model: '', serial_number: '', calibration_due_date: '', status: 'Operational' });
 
@@ -39,6 +45,32 @@ export default function EquipmentPage() {
       await fetchEquipment();
     }
     setIsSubmitting(false);
+  };
+
+  const handleMaintenanceSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // 1. Insert log
+    await supabase.from('calibration_logs').insert({
+      equipment_id: activeDevice.id,
+      calibration_date: maintForm.calibration_date,
+      next_due_date: maintForm.next_due_date || null,
+      result: maintForm.result,
+      logged_by: employeeProfile.id
+    });
+    
+    // 2. Update equipment status and due date
+    const updates = { status: maintForm.status };
+    if (maintForm.next_due_date) updates.calibration_due_date = maintForm.next_due_date;
+    
+    await supabase.from('equipment').update(updates).eq('id', activeDevice.id);
+    
+    setIsMaintenanceOpen(false);
+    setActiveDevice(null);
+    setMaintForm({ calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', status: 'Operational' });
+    setIsSubmitting(false);
+    fetchEquipment();
   };
 
   if (authLoading || loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
@@ -88,8 +120,8 @@ export default function EquipmentPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <button className="flex-1 py-3 bg-white border border-gray-200 text-teal-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Log Maintenance</button>
-                  <button className="flex-1 py-3 bg-teal-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-900 shadow-md transition-all active:scale-95">Calibrate Now</button>
+                  <button onClick={() => { setActiveDevice(device); setMaintForm({ ...maintForm, status: device.status }); setIsMaintenanceOpen(true); }} className="flex-1 py-3 bg-white border border-gray-200 text-teal-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Log Maintenance</button>
+                  <button onClick={() => { setActiveDevice(device); setMaintForm({ ...maintForm, status: 'Operational' }); setIsMaintenanceOpen(true); }} className="flex-1 py-3 bg-teal-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-900 shadow-md transition-all active:scale-95">Calibrate Now</button>
                 </div>
               </div>
             </div>
@@ -127,10 +159,64 @@ export default function EquipmentPage() {
                 <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
                   value={newEquip.calibration_due_date} onChange={(e) => setNewEquip({...newEquip, calibration_due_date: e.target.value})} />
               </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Initial Status</label>
+                <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                  value={newEquip.status} onChange={(e) => setNewEquip({...newEquip, status: e.target.value})}>
+                  <option value="Operational">Operational</option>
+                  <option value="Out of Service">Out of Service</option>
+                  <option value="Under Maintenance">Under Maintenance</option>
+                </select>
+              </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register Asset'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isMaintenanceOpen && activeDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="px-8 py-6 bg-slate-800 text-white">
+              <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
+              <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance & Calibration Log</p>
+            </div>
+            <form onSubmit={handleMaintenanceSubmit} className="p-8 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Log Date</label>
+                  <input type="date" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    value={maintForm.calibration_date} onChange={(e) => setMaintForm({...maintForm, calibration_date: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Due Date</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    value={maintForm.next_due_date} onChange={(e) => setMaintForm({...maintForm, next_due_date: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Equipment Status</label>
+                <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                  value={maintForm.status} onChange={(e) => setMaintForm({...maintForm, status: e.target.value})}>
+                  <option value="Operational">Operational</option>
+                  <option value="Out of Service">Out of Service</option>
+                  <option value="Under Maintenance">Under Maintenance</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes & Results</label>
+                <textarea required rows="3" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold resize-none" 
+                  value={maintForm.result} onChange={(e) => setMaintForm({...maintForm, result: e.target.value})} placeholder="Maintenance performed..."/>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setIsMaintenanceOpen(false); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Log'}
                 </button>
               </div>
             </form>

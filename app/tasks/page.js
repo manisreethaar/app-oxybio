@@ -261,18 +261,25 @@ export default function TasksPage() {
     }
     setUploading(false);
 
+    let finalLoggedMinutes = selectedTask.logged_minutes || 0;
+    if (timerRunning && elapsedSeconds > 0) {
+      finalLoggedMinutes += Math.floor(elapsedSeconds / 60);
+    }
+
     await supabase.from('tasks').update({
       status: 'done',
       approval_status: selectedTask.is_personal_reminder ? 'approved' : 'pending_review',
       completion_note: completionNote,
       completed_at: new Date().toISOString(),
       proof_url: proofUrl,
+      logged_minutes: finalLoggedMinutes
     }).eq('id', selectedTask.id);
 
     setSelectedTask(null);
     setCompletionNote('');
     setProofFile(null);
     setTimerRunning(false);
+    setElapsedSeconds(0);
     fetchTasks();
     setActionLoading(false);
   };

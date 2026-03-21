@@ -106,16 +106,23 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if (!file) return;
     setUploadingPhoto(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'employee_photos');
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.url) {
-      await supabase.from('employees').update({ photo_url: data.url }).eq('id', emp.id);
-      setEmp({ ...emp, photo_url: data.url });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'employee_photos');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error("Network response was not OK");
+      
+      const data = await res.json();
+      if (data.url) {
+        await supabase.from('employees').update({ photo_url: data.url }).eq('id', emp.id);
+        setEmp({ ...emp, photo_url: data.url });
+      }
+    } catch (err) {
+      alert("Network Error: Could not connect to the upload server.");
+    } finally {
+      setUploadingPhoto(false);
     }
-    setUploadingPhoto(false);
   };
 
   if (!emp) return (

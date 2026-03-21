@@ -1,14 +1,16 @@
 'use client';
 import { usePathname } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const { loading } = useAuth();
+  const [isOffline, setIsOffline] = useState(false);
   
   useEffect(() => {
     // FORCE CACHE BUSTING: Nuke any old Service Workers and Caches that are trapping the app
@@ -25,17 +27,24 @@ export default function ClientLayout({ children }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      const handleOnline = () => setIsOffline(false);
+      const handleOffline = () => setIsOffline(true);
+      
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
   if (pathname === '/login') {
     return <main className="min-h-screen mesh-bg flex items-center justify-center p-4">{children}</main>;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center mesh-bg gap-4">
-        <div className="w-14 h-14 border-4 border-teal-100 border-t-teal-600 rounded-full animate-spin shadow-lg"></div>
-        <p className="text-teal-900 font-black uppercase tracking-widest text-[10px] animate-pulse">Establishing Secure Session...</p>
-      </div>
-    );
   }
 
   return (
@@ -44,8 +53,22 @@ export default function ClientLayout({ children }) {
       <div className="flex flex-col flex-1 overflow-hidden pb-16 md:pb-0 relative z-10">
         <TopBar />
         <PushManager />
+        
+        {isOffline && (
+          <div className="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest py-1.5 px-4 text-center animate-in slide-in-from-top duration-300 flex items-center justify-center gap-2">
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+            Offline Mode: Check-ins and Logs will fail until reconnected.
+          </div>
+        )}
+
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          {children}
+          {loading ? (
+            <div className="flex justify-center items-center h-full min-h-[50vh]">
+              <Loader2 className="w-10 h-10 animate-spin text-teal-800" />
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

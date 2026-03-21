@@ -4,6 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req) {
   try {
+    // SECURITY: Ensure the requester is authenticated
+    const supabaseClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    const authHeader = req.headers.get('Authorization');
+    
+    // Check if it's an internal server request or an authenticated user
+    const { data: { user }, error: authError } = await createServerClient().auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized push trigger' }, { status: 401 });
+    }
+
     const { assigned_to, title, body, url } = await req.json();
     if (!assigned_to) return NextResponse.json({ error: 'Missing assignee ID' }, { status: 400 });
 

@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
 
   // Everything else: straight to network, no caching at all
   // This is the safest approach for Next.js with Vercel deployments
-  return; // Let browser handle natively
+  event.respondWith(fetch(event.request));
 });
 
 // Push Notification handler - preserved fully

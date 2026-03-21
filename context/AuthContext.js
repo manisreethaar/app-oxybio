@@ -69,10 +69,15 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   }, [supabase, initialSession]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setEmployeeProfile(null);
-    router.push('/login');
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("SignOut network fault:", err);
+    } finally {
+      setUser(null);
+      setEmployeeProfile(null);
+      router.push('/login');
+    }
   };
 
   const role = employeeProfile?.role;

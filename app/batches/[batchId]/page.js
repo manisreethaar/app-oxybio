@@ -159,7 +159,12 @@ export default function BatchDetailPage() {
         setParamValue('');
         setNotes('');
         await fetchBatchDetail();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || 'Failed to log parameter.');
       }
+    } catch (err) {
+      alert("Network Error: Could not reach the server to commit metric.");
     } finally {
       setIsSubmitting(false);
     }
@@ -183,6 +188,8 @@ export default function BatchDetailPage() {
         const err = await res.json();
         alert(err.error || 'Failed to link ingredient');
       }
+    } catch (err) {
+      alert("Network Error: Could not link material usage.");
     } finally {
       setIsSubmitting(false);
     }
@@ -203,7 +210,12 @@ export default function BatchDetailPage() {
         await fetchBatchDetail();
         const nextParams = PARAMETERS[toStage] || [];
         if (nextParams.length > 0) setSelectedParam(nextParams[0]);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to promote batch stage');
       }
+    } catch (err) {
+      alert("Network Error: Could not execute stage transition.");
     } finally {
       setActionLoading(false);
     }

@@ -188,6 +188,17 @@ export default function CapaPage() {
     setActioning(false);
   };
 
+  const handleVerifyEffectiveness = async (actionId) => {
+    if (!confirm('Mark this corrective action as Effectiveness Verified?')) return;
+    const { error } = await supabase.from('capa_actions').update({ effectiveness_verified: true, verified_by: employeeProfile.id }).eq('id', actionId);
+    if (error) {
+      alert('Verification failed: ' + error.message);
+      return;
+    }
+    const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id);
+    setCapaActions(reloaded || []);
+  };
+
   // ─── Close Deviation ──────────────────────────────────────────────────────
   const handleClose = async () => {
     if (!confirm('Mark this NCR as Closed? This action indicates all corrective measures have been verified effective.')) return;
@@ -273,12 +284,20 @@ export default function CapaPage() {
         ) : (
           <div className="space-y-3">
             {capaActions.map(a => (
-              <div key={a.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div key={a.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 gap-3">
                 <div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded mr-2 ${a.action_type === 'Corrective' ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}`}>{a.action_type}</span>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${a.action_type === 'Corrective' ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}`}>{a.action_type}</span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${a.task?.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>{a.task?.status || '—'}</span>
+                    {a.effectiveness_verified && <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-700 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Verified</span>}
+                  </div>
                   <span className="text-sm font-bold text-slate-700">{a.task?.title?.replace('[CAPA] ','')}</span>
                 </div>
-                <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${a.task?.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>{a.task?.status || '—'}</span>
+                {isAdmin && a.task?.status === 'done' && !a.effectiveness_verified && (
+                  <button onClick={() => handleVerifyEffectiveness(a.id)} className="px-3 py-1.5 bg-white border border-slate-200 shadow-sm rounded-lg text-xs font-bold text-teal-700 hover:bg-slate-100 transition-colors flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4 mr-1"/> Verify Effectiveness
+                  </button>
+                )}
               </div>
             ))}
           </div>

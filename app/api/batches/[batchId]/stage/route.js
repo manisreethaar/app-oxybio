@@ -28,6 +28,9 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'Employee profile not found.' }, { status: 404 });
     }
 
+    // SANITIZE: Prevent XSS in audit trail notes
+    const cleanNotes = notes ? notes.substring(0, 500).replace(/[<>]/g, '') : '';
+
     // 1. Update batch stage
     const { error: updateError } = await supabase
       .from('batches')
@@ -44,7 +47,7 @@ export async function POST(request, { params }) {
         from_stage,
         to_stage,
         changed_by: emp.id,
-        notes
+        notes: cleanNotes
       });
 
     if (transError) throw transError;

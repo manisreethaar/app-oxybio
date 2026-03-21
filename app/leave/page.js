@@ -67,17 +67,20 @@ export default function LeavePage() {
     fetchLeaves();
   };
 
-  const processLeave = async (id, status, type) => {
+  const [rejectionId, setRejectionId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  const processLeave = async (id, status) => {
     setActionLoadingId(id);
     let comment = '';
+    
     if (status === 'rejected') {
-      // window.prompt is non-functional in iOS PWA — use a safe inline approach
-      const reason = window.prompt ? window.prompt("Enter rejection reason:") : null;
-      if (reason === null) {
+      if (!rejectionId) {
+        setRejectionId(id);
         setActionLoadingId(null);
         return;
       }
-      comment = reason || 'No reason provided.';
+      comment = rejectionReason || 'No reason provided.';
     }
 
     const { error } = await supabase.from('leave_applications').update({
@@ -89,10 +92,11 @@ export default function LeavePage() {
 
     if (error) {
       alert('Action failed: ' + error.message);
-      setActionLoadingId(null);
-      return;
+    } else {
+      setRejectionId(null);
+      setRejectionReason('');
+      fetchLeaves();
     }
-    fetchLeaves();
     setActionLoadingId(null);
   };
 
@@ -122,13 +126,30 @@ export default function LeavePage() {
                 
                 <p className="text-sm text-gray-600 italic line-clamp-2 mb-4">&quot;{leave.reason}&quot;</p>
                 
-                <div className="flex space-x-2 mt-auto">
-                  <button onClick={() => processLeave(leave.id, 'approved')} disabled={actionLoadingId === leave.id} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1.5 rounded-lg text-sm font-semibold flex justify-center items-center">
-                    <CheckCircle className="w-4 h-4 mr-1" /> Approve
-                  </button>
-                  <button onClick={() => processLeave(leave.id, 'rejected')} disabled={actionLoadingId === leave.id} className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded-lg text-sm font-semibold flex justify-center items-center">
-                    <XCircle className="w-4 h-4 mr-1" /> Reject
-                  </button>
+                <div className="flex flex-col space-y-2 mt-auto">
+                  {rejectionId === leave.id ? (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <textarea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Reason for rejection..."
+                        className="w-full p-2 text-xs border border-red-100 rounded-lg bg-red-50 focus:ring-red-500 outline-none h-20"
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={() => processLeave(leave.id, 'rejected')} disabled={actionLoadingId === leave.id} className="flex-1 bg-red-600 text-white py-1.5 rounded-lg text-xs font-bold">Confirm Reject</button>
+                        <button onClick={() => setRejectionId(null)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-1.5 rounded-lg text-xs font-bold">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex space-x-2">
+                       <button onClick={() => processLeave(leave.id, 'approved')} disabled={actionLoadingId === leave.id} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1.5 rounded-lg text-sm font-semibold flex justify-center items-center">
+                        <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                      </button>
+                      <button onClick={() => setRejectionId(leave.id)} disabled={actionLoadingId === leave.id} className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded-lg text-sm font-semibold flex justify-center items-center">
+                        <XCircle className="w-4 h-4 mr-1" /> Reject
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

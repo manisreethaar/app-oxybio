@@ -308,7 +308,7 @@ export default function UsersPage() {
                     <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{inviteForm.employee_code || '—'}</span>
                     <span className="text-xs text-teal-500 font-medium">Auto-assigned · Cannot be changed by employee</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">Format: O2B · {inviteForm.designation_code || inviteForm.custom_code} · {ROLE_TYPE[inviteForm.role]} · Sequential No.</p>
+                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">Format: O2B · {inviteForm.designation_code || inviteForm.custom_code} · {inviteForm.role.toUpperCase()} · Sequential No.</p>
                 </div>
               </div>
 

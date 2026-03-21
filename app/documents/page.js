@@ -11,31 +11,71 @@ export default function DocumentsPage() {
   const [filteredDocs, setFilteredDocs] = useState([]);
   const [category, setCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadForm, setUploadForm] = useState({ title: '', category: 'Legal', version: '1.0', file: null, access_level: 'all-staff' });
+  const [uploading, setUploading] = useState(false);
   const supabase = createClient();
 
   const categories = ['All', 'Legal', 'HR', 'Regulatory', 'Finance', 'IP', 'QC', 'SOP'];
 
   useEffect(() => {
     if (employeeProfile) fetchDocuments();
-  }, [employeeProfile]);
-
-  useEffect(() => {
-    if (category === 'All') setFilteredDocs(documents);
-    else setFilteredDocs(documents.filter(d => d.category === category));
-  }, [category, documents]);
+  }, [employeeProfile, category]); // Re-fetch when category changes
 
   const fetchDocuments = async () => {
     setLoading(true);
-    let query = supabase.from('documents').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('documents').select('*');
     
-    // Only fetch what they are allowed to see
+    // Server-side category filtering
+    if (category !== 'All') {
+      query = query.eq('category', category);
+    }
+
+    // Role-based access control
     if (role !== 'admin') {
       query = query.eq('access_level', 'all-staff');
     }
 
-    const { data } = await query;
+    const { data } = await query.order('created_at', { ascending: false });
     setDocuments(data || []);
+    setFilteredDocs(data || []); // No need for secondary client-side filter
     setLoading(false);
+  };
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!uploadForm.file) return alert("Please select a file.");
+    setUploading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadForm.file);
+      formData.append('folder', 'document_vault');
+      
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!uploadRes.ok) throw new Error("File upload failed.");
+      const uploadData = await uploadRes.json();
+
+      const { error: dbError } = await supabase.from('documents').insert({
+        doc_id: `DOC-${Date.now().toString(36).toUpperCase().slice(-4)}${Math.floor(10 + Math.random() * 90)}`,
+        title: uploadForm.title,
+        category: uploadForm.category,
+        version: uploadForm.version,
+        file_url: uploadData.url || uploadData.download_url,
+        access_level: uploadForm.access_level,
+        effective_date: new Date().toISOString()
+      });
+
+      if (dbError) throw dbError;
+      
+      setShowUploadModal(false);
+      setUploadForm({ title: '', category: 'Legal', version: '1.0', file: null, access_level: 'all-staff' });
+      fetchDocuments();
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const getExpiryWarning = (expiryDate) => {
@@ -56,7 +96,7 @@ export default function DocumentsPage() {
           <p className="text-gray-500 mt-1">Secure repository for GMP guidelines, regulatory filings, and company policies.</p>
         </div>
         {role === 'admin' && (
-          <button className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
+          <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
             <Plus className="w-5 h-5 mr-1" /> Upload Document
           </button>
         )}
@@ -121,6 +161,54 @@ export default function DocumentsPage() {
           })
         )}
       </div>
+
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative shadow-2xl">
+            <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600">×</button>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Document to Vault</h2>
+            
+            <form onSubmit={handleUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
+                <input required type="text" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Q3 Financial Report" />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select value={uploadForm.category} onChange={e => setUploadForm({...uploadForm, category: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                    {categories.filter(c => c !== 'All').map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                  <input required type="text" value={uploadForm.version} onChange={e => setUploadForm({...uploadForm, version: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="1.0" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
+                <select value={uploadForm.access_level} onChange={e => setUploadForm({...uploadForm, access_level: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                  <option value="all-staff">Public (All Staff)</option>
+                  <option value="admin-only">Confidential (Admin Only)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Document File</label>
+                <input required type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" onChange={e => setUploadForm({...uploadForm, file: e.target.files[0]})} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none bg-gray-50 text-sm" />
+              </div>
+
+              <button disabled={uploading} type="submit" className="w-full bg-teal-800 text-white font-bold py-3 mt-4 rounded-xl hover:bg-teal-900 transition-colors disabled:opacity-50">
+                {uploading ? 'Uploading securely...' : 'Upload & Commit to Vault'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

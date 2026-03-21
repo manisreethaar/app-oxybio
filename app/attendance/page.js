@@ -42,9 +42,11 @@ export default function AttendancePage() {
   const supabase = createClient();
 
   useEffect(() => {
+    let mounted = true;
     if (employeeProfile) fetchAttendanceData();
     
     const interval = setInterval(() => {
+      if (!mounted) return;
       setTodayLog(prev => {
         if (prev && !prev.check_out_time) {
           return { ...prev, current_time: new Date() };
@@ -52,44 +54,51 @@ export default function AttendancePage() {
         return prev;
       });
     }, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [employeeProfile]);
 
   const fetchAttendanceData = async () => {
     setLoading(true);
     const todayStr = new Date().toISOString().split('T')[0];
 
-    if (role !== 'admin') {
-      const { data: today } = await supabase.from('attendance_log')
-        .select('*')
-        .eq('employee_id', employeeProfile.id)
-        .eq('date', todayStr)
-        .single();
-      
-      setTodayLog(today || null);
+    try {
+      if (role !== 'admin') {
+        const { data: today } = await supabase.from('attendance_log')
+          .select('*')
+          .eq('employee_id', employeeProfile.id)
+          .eq('date', todayStr)
+          .single();
+        
+        setTodayLog(today || null);
 
-      const { data: history } = await supabase.from('attendance_log')
-        .select('*')
-        .eq('employee_id', employeeProfile.id)
-        .order('date', { ascending: false })
-        .limit(30);
-      
-      setMyHistory(history || []);
-    } else {
-      const { data: teamLogs } = await supabase.from('attendance_log')
-        .select('*, employees(full_name, role)')
-        .eq('date', todayStr);
-      
-      const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
-      
-      const combined = (allEmps || []).map(emp => {
-        const log = (teamLogs || []).find(l => l.employee_id === emp.id);
-        return { ...emp, attendance: log };
-      });
-      
-      setTeamToday(combined);
+        // SECURITY: Paginate history to prevent O(N) memory overflow
+        const { data: history } = await supabase.from('attendance_log')
+          .select('*')
+          .eq('employee_id', employeeProfile.id)
+          .order('date', { ascending: false })
+          .range(0, 30); // Explicit range
+        
+        setMyHistory(history || []);
+      } else {
+        const { data: teamLogs } = await supabase.from('attendance_log')
+          .select('*, employees(full_name, role)')
+          .eq('date', todayStr);
+        
+        const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
+        
+        const combined = (allEmps || []).map(emp => {
+          const log = (teamLogs || []).find(l => l.employee_id === emp.id);
+          return { ...emp, attendance: log };
+        });
+        
+        setTeamToday(combined);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const initiateCheckIn = () => {
@@ -102,14 +111,14 @@ export default function AttendancePage() {
       return;
     }
 
+    // Fixed timeout and maxAge for mobile GPS stability
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
         
-        // If testing override is enabled, bypass the distance check
         if (distance > MAX_RADIUS_METERS && !overrideLocation) {
-          setCheckInError(`Check-in blocked: You are ${Math.round(distance)}m away from the facility. Must be within ${MAX_RADIUS_METERS}m.`);
+          setCheckInError(`Blocked: You are ${Math.round(distance)}m away. Must be within ${MAX_RADIUS_METERS}m.`);
           setActionLoading(false);
         } else {
           setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= MAX_RADIUS_METERS, distance: Math.round(distance) });
@@ -118,10 +127,10 @@ export default function AttendancePage() {
         }
       },
       (err) => {
-        setCheckInError("Unable to retrieve location. Please enable GPS permissions for this site.");
+        setCheckInError("Unable to retrieve location. Please enable GPS permissions.");
         setActionLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
 

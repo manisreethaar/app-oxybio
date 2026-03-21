@@ -23,6 +23,17 @@ export default function PayslipsPage() {
     if (employeeProfile) fetchPayslips();
   }, [employeeProfile]);
 
+  // Auto-calculate Net Salary
+  useEffect(() => {
+    const gross = parseFloat(form.gross_salary) || 0;
+    const pf = parseFloat(form.pf_deduction) || 0;
+    const esi = parseFloat(form.esi_deduction) || 0;
+    
+    if (form.gross_salary !== '') {
+      setForm(prev => ({ ...prev, net_salary: (gross - pf - esi).toString() }));
+    }
+  }, [form.gross_salary, form.pf_deduction, form.esi_deduction]);
+
   const fetchPayslips = async () => {
     setLoading(true);
     let query = supabase.from('payslips').select('*, employees(full_name)').order('created_at', { ascending: false });
@@ -120,7 +131,7 @@ export default function PayslipsPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Net Salary (₹) *</label>
-              <input type="number" required value={form.net_salary} onChange={e => setForm({...form, net_salary: e.target.value})} className="w-full px-4 py-2 bg-teal-50 font-bold text-teal-900 border border-teal-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" readOnly required value={form.net_salary} className="w-full px-4 py-2 bg-teal-50 font-bold text-teal-900 border border-teal-200 rounded-lg text-sm outline-none cursor-not-allowed" title="Auto-calculated from Gross - Deductions" />
             </div>
             
             <div className="lg:col-span-4">

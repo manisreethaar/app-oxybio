@@ -12,6 +12,11 @@ export default function BatchesPage() {
   const [history, setHistory] = useState([]);
   const [isAlert, setIsAlert] = useState(false);
   const [loadingBatches, setLoadingBatches] = useState(true);
+  
+  const [showNewBatchModal, setShowNewBatchModal] = useState(false);
+  const [newBatchForm, setNewBatchForm] = useState({ variant: 'O2B-Agri' });
+  const [creatingBatch, setCreatingBatch] = useState(false);
+  
   const supabase = createClient();
 
   useEffect(() => {
@@ -39,7 +44,35 @@ export default function BatchesPage() {
       .limit(10);
     
     setHistory(completed || []);
+    setHistory(completed || []);
     setLoadingBatches(false);
+  };
+
+  const handleCreateBatch = async (e) => {
+    e.preventDefault();
+    setCreatingBatch(true);
+    try {
+      // Auto-generate a beautiful BATCH ID format
+      const batchIdStr = `BTCH-${newBatchForm.variant.split('-')[1].toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+      
+      const { error } = await supabase.from('batches').insert({
+        batch_id: batchIdStr,
+        variant: newBatchForm.variant,
+        current_stage: 'fermentation',
+        status: 'fermenting',
+        start_time: new Date().toISOString()
+      });
+
+      if (error) throw error;
+      
+      setShowNewBatchModal(false);
+      setNewBatchForm({ variant: 'O2B-Agri' });
+      fetchBatches();
+    } catch (err) {
+      alert("Failed to initialize production sequence: " + err.message);
+    } finally {
+      setCreatingBatch(false);
+    }
   };
 
   if (loading) return null;
@@ -61,7 +94,7 @@ export default function BatchesPage() {
           <p className="text-gray-500 mt-1">Track active fermentations and log critical control points (CCPs).</p>
         </div>
         {role === 'admin' && (
-          <button className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm shrink-0">
+          <button onClick={() => setShowNewBatchModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm shrink-0">
             <Plus className="w-5 h-5 mr-1" /> New Batch
           </button>
         )}
@@ -163,6 +196,46 @@ export default function BatchesPage() {
           </div>
         </div>
       </section>
+
+      {/* New Batch Initialization Modal */}
+      {showNewBatchModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-8 relative shadow-2xl border border-teal-100">
+            <button onClick={() => setShowNewBatchModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-2xl font-black text-slate-800 mb-1 tracking-tight">Initialize Sequence</h2>
+            <p className="text-sm font-semibold text-teal-600 mb-6 uppercase tracking-wider">Production Setup</p>
+            
+            <form onSubmit={handleCreateBatch} className="space-y-5">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Biological Variant</label>
+                <select 
+                  value={newBatchForm.variant} 
+                  onChange={e => setNewBatchForm({...newBatchForm, variant: e.target.value})} 
+                  className="w-full border-2 border-slate-100 rounded-xl p-3 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-slate-50 font-bold text-slate-700 transition-all"
+                >
+                  <option value="O2B-Agri">O2B-Agri (Agricultural Inoculant)</option>
+                  <option value="O2B-Aqua">O2B-Aqua (Aquaculture Probiotics)</option>
+                  <option value="O2B-Pro">O2B-Pro (Human Grade Probiotics)</option>
+                  <option value="O2B-Enzyme">O2B-Enzyme (Industrial Catalysts)</option>
+                </select>
+                <p className="text-[10px] text-slate-400 font-medium mt-2">Selecting a variant binds specific parameter constraints and QC targets for the fermentation lifecycle.</p>
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  disabled={creatingBatch} 
+                  type="submit" 
+                  className="w-full bg-gradient-to-br from-teal-600 to-cyan-700 text-white font-black py-3.5 rounded-xl hover:from-teal-500 hover:to-cyan-600 transition-all disabled:opacity-50 uppercase tracking-widest shadow-lg shadow-teal-700/20 active:scale-95"
+                >
+                  {creatingBatch ? 'Initializing...' : 'Commence Production'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
