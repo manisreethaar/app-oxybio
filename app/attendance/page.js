@@ -208,7 +208,7 @@ export default function AttendancePage() {
         </div>
         
         {/* Admin Debug Override (Lets User Test Without Being in Hosur) */}
-        {!todayLog && role !== 'admin' && (
+        {!todayLog && role === 'admin' && (
           <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 flex items-center justify-between text-xs max-w-sm">
             <span className="text-amber-800 font-bold mr-3"><ShieldCheck className="inline w-4 h-4 mr-1"/> Admin Test Mode</span>
             <label className="flex items-center cursor-pointer">
