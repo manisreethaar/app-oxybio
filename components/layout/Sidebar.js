@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, FlaskConical, Activity, CheckSquare, 
   CalendarOff, Clock, FileText, CalendarDays, Receipt, 
-  BookOpen, Users, Settings, LogOut, Menu, X
+  BookOpen, Users, LogOut, UserCircle, Contact
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -49,6 +49,13 @@ export default function Sidebar() {
         { name: 'Compliance Calendar', href: '/compliance', icon: CalendarDays, roles: ['admin'] },
         { name: 'Payslips', href: '/payslips', icon: Receipt, roles: ['admin', 'staff'] },
         { name: 'Team Management', href: '/admin/users', icon: Users, roles: ['admin'] }
+      ]
+    },
+    {
+      title: 'ACCOUNT',
+      items: [
+        { name: 'My Profile', href: '/profile', icon: UserCircle, roles: ['admin', 'staff', 'intern'] },
+        { name: 'Employee Directory', href: '/directory', icon: Contact, roles: ['admin'] }
       ]
     }
   ];
