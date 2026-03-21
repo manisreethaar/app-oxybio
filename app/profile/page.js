@@ -5,77 +5,58 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   User, Phone, MapPin, Calendar, Droplets, AlertCircle, 
   Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X, 
-  CreditCard, ArrowLeft
+  CreditCard, ArrowLeft, ShieldCheck, CheckSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 
 function DigitalIDCard({ emp }) {
   return (
-    <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-[340px] mx-auto border border-slate-100" style={{fontFamily: 'system-ui'}}>
-      {/* Card Top - Dark header */}
-      <div className="relative bg-slate-800 p-6 pb-8">
-        {/* Topo pattern overlay */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, white 1px, transparent 1px),
-            radial-gradient(circle at 80% 20%, white 1px, transparent 1px)`,
-          backgroundSize: '30px 30px'
-        }}/>
-        <div className="flex items-start justify-between relative z-10">
-          <div>
-            <p className="text-yellow-400 font-black text-xs tracking-[0.2em] uppercase leading-tight">OXYGEN</p>
-            <p className="text-yellow-400 font-black text-xs tracking-[0.15em] uppercase leading-tight">BIOINNOVATIONS</p>
-          </div>
-          {/* Photo */}
-          <div className="w-20 h-24 rounded-xl overflow-hidden bg-slate-600 border-2 border-white/20 shadow-lg">
-            {emp.photo_url ? (
-              <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <User className="w-10 h-10 text-slate-400"/>
-              </div>
-            )}
-          </div>
+    <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full max-w-[340px] mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
+      {/* Subtle modern background gradient */}
+      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-teal-800 to-cyan-900"/>
+      
+      {/* Header */}
+      <div className="w-full relative z-10 flex justify-between items-start mb-8">
+        <div>
+          <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
+          <p className="text-teal-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
         </div>
-        {/* Diagonal cut */}
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-white" style={{clipPath: 'polygon(0 100%, 100% 100%, 100% 0)'}}/>
-      </div>
-
-      {/* Card Body */}
-      <div className="px-6 pt-2 pb-6 relative">
-        <div className="absolute top-2 right-6 p-1 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-          <QRCodeSVG value={`https://o2b.app/verify/${emp.id}`} size={48} level="L" includeMargin={false} />
-        </div>
-        <h2 className="text-xl font-black text-slate-800 leading-tight tracking-tight uppercase pr-16">{emp.full_name}</h2>
-        <p className="text-xs font-bold text-slate-500 mt-0.5 uppercase tracking-wider">Emp. Code: {emp.employee_code || 'N/A'}</p>
-        <p className="text-sm font-bold text-yellow-600 mt-1 uppercase tracking-wide">{emp.designation || emp.role}</p>
-
-        <div className="mt-4 space-y-2.5 border-t border-slate-100 pt-4">
-          <div className="flex items-center text-sm text-slate-600">
-            <Phone className="w-3.5 h-3.5 mr-3 text-slate-400 shrink-0"/>
-            <span className="font-medium">{emp.phone || '—'}</span>
-          </div>
-          <div className="flex items-center text-sm text-slate-600">
-            <Calendar className="w-3.5 h-3.5 mr-3 text-slate-400 shrink-0"/>
-            <span className="font-medium">{emp.date_of_birth ? new Date(emp.date_of_birth).toLocaleDateString('en-GB') : '—'}</span>
-          </div>
-          {emp.blood_group && (
-            <div className="flex items-center text-sm text-slate-600">
-              <Droplets className="w-3.5 h-3.5 mr-3 text-red-400 shrink-0"/>
-              <span className="font-bold text-red-600">{emp.blood_group}</span>
-            </div>
-          )}
-          <div className="flex items-start text-sm text-slate-600">
-            <MapPin className="w-3.5 h-3.5 mr-3 text-slate-400 shrink-0 mt-0.5"/>
-            <span className="font-medium leading-snug">{emp.address || '—'}</span>
-          </div>
+        <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] text-white font-black uppercase tracking-widest border border-white/30">
+          <CheckSquare className="w-3 h-3"/> Active
         </div>
       </div>
 
-      {/* Card Footer */}
-      <div className="bg-slate-50 border-t border-slate-100 px-6 py-3 flex items-center justify-between">
-        <div className="text-xs text-slate-400 font-medium">HOSUR – 635130</div>
-        <div className="text-xs text-slate-400 font-medium">oxygenbio.com</div>
+      {/* Profile Core */}
+      <div className="relative z-10 w-28 h-28 rounded-2xl overflow-hidden bg-white border-[3px] border-white shadow-lg mb-4">
+        {emp.photo_url ? (
+          <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-100">
+            <User className="w-10 h-10 text-slate-300"/>
+          </div>
+        )}
+      </div>
+
+      <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase text-center leading-none mt-2">{emp.full_name}</h2>
+      <p className="text-xs font-bold text-teal-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
+      
+      <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
+        <p className="font-mono text-2xl font-black text-slate-800 tracking-widest">{emp.employee_code || 'PENDING'}</p>
+      </div>
+
+      {/* QR Code Section */}
+      <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
+        <div className="text-left pr-4">
+          <p className="text-[9px] font-black text-teal-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
+          <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
+            Scan to securely verify identity & log compliance checkpoint access.
+          </p>
+        </div>
+        <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 hover:scale-105 transition-transform origin-bottom-right">
+          <QRCodeSVG value={`https://app-oxybio.vercel.app/verify/${emp.id}`} size={64} level="M" />
+        </div>
       </div>
     </div>
   );
