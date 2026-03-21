@@ -9,76 +9,43 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [employeeProfile, setEmployeeProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const fetchUser = async () => {
-      try {
-        setError(null);
-
-        // Helper: creates a FRESH timeout per call so the timer never carries over
-        const withTimeout = (promise, ms = 15000) =>
-          Promise.race([
-            promise,
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Connection timed out. Please check your internet.")), ms)
-            )
-          ]);
-
-        const { data: { user }, error: authErr } = await withTimeout(supabase.auth.getUser());
-        if (authErr) throw authErr;
-
-        if (user && isMounted) {
-          setUser(user);
-          const { data: profile, error: profileErr } = await withTimeout(
-            supabase.from('employees').select('*').eq('email', user.email).single()
-          );
-          if (profileErr) throw profileErr;
-          setEmployeeProfile(profile);
-        }
-      } catch (err) {
-        console.error("Auth initialization aborted:", err);
-        if (isMounted) setError(err.message || "Failed to connect. Please retry.");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    // onAuthStateChange is the ONLY source of truth.
+    // It fires immediately on mount with the current session (INITIAL_SESSION event),
+    // so there is no need for a separate getUser() call.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
-          // Fetch profile if it's a new sign-in
-          if (event === 'SIGNED_IN' || !employeeProfile) {
-             const { data: profile } = await supabase
-               .from('employees')
-               .select('*')
-               .eq('email', session.user.email)
-               .single();
-             setEmployeeProfile(profile);
-          }
+          // Fetch the employee profile from the DB
+          const { data: profile } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+          setEmployeeProfile(profile || null);
         } else {
           setUser(null);
           setEmployeeProfile(null);
         }
+        // Always stop loading once we get any auth event
+        setLoading(false);
       }
     );
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setUser(null);
+    setEmployeeProfile(null);
     router.push('/login');
-    router.refresh();
   };
 
   const value = {
@@ -89,8 +56,8 @@ export const AuthProvider = ({ children }) => {
     isStaff: employeeProfile?.role === 'staff',
     isIntern: employeeProfile?.role === 'intern',
     loading,
-    error,
-    signOut
+    error: null,
+    signOut,
   };
 
   return (
