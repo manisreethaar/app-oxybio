@@ -262,7 +262,12 @@ export default function AttendancePage() {
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 flex flex-col items-center gap-3">
                   {todayLog.photo_url && (
-                    <img src={todayLog.photo_url} alt="Check-in Selfie" className="w-40 h-40 rounded-2xl object-cover border-2 border-white shadow-lg ring-2 ring-teal-500/20" />
+                    <img 
+                      src={todayLog.photo_url} 
+                      alt="Check-in Selfie" 
+                      className="w-40 h-40 rounded-2xl object-cover border-2 border-white shadow-lg ring-2 ring-teal-500/20" 
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
                   )}
                   <div className="text-center text-sm font-medium text-slate-500">
                     Checked in at <br/><strong className="text-slate-800 text-lg">{formatTime(todayLog.check_in_time)}</strong>
@@ -317,6 +322,14 @@ export default function AttendancePage() {
                             {formatTime(log.check_in_time)} &rarr; {formatTime(log.check_out_time)}
                           </p>
                         </div>
+                        {log.photo_url && (
+                          <img 
+                            src={log.photo_url} 
+                            alt="Selfie" 
+                            className="w-12 h-12 rounded-xl object-cover border border-slate-200 mt-2 hover:scale-150 transform transition-transform origin-top-left cursor-zoom-in" 
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        )}
                       </div>
                       <div className="hidden sm:block">
                         {log.in_geofence && <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded inline-flex items-center uppercase tracking-wider"><MapPin className="w-3 h-3 mr-1"/> Verified</span>}
@@ -353,7 +366,16 @@ export default function AttendancePage() {
                     <div className="relative">
                       {emp.attendance?.photo_url ? (
                         <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white shadow-md">
-                          <img src={emp.attendance.photo_url} className="w-full h-full object-cover" alt=""/>
+                          <img 
+                            src={emp.attendance.photo_url} 
+                            alt="Selfie" 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              e.target.onerror = null; // prevents looping
+                              e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>'; 
+                              e.target.className = 'w-14 h-14 rounded-full bg-slate-100 border-2 border-white p-2 shadow-md';
+                            }}
+                          />
                         </div>
                       ) : (
                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 font-black flex items-center justify-center text-lg border-2 border-white shadow-md">
