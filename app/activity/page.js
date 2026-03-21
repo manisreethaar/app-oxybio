@@ -151,7 +151,7 @@ export default function ActivityLogPage() {
       alert('Failed to save log.');
     } else {
       setDesc(''); setBatchId(''); setHasIssue(false); setIssueDesc('');
-      setTab('brief');
+      setTab(role === 'admin' ? 'brief' : 'feed');
       fetchData();
     }
   };
