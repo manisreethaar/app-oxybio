@@ -42,19 +42,44 @@ export default function BatchDetailPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
     if (batchId) {
-      fetchBatchDetail();
-      fetchStock();
+      const load = async () => {
+        try {
+          await Promise.all([
+            fetchBatchDetail(controller.signal),
+            fetchStock(controller.signal)
+          ]);
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error("Load failed:", err);
+        }
+      };
+      load();
     }
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
   }, [batchId]);
 
   useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
     if (employeeProfile && batch?.current_stage) {
-      checkTraining();
+      checkTraining(controller.signal);
     }
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
   }, [employeeProfile, batch?.current_stage]);
 
-  const checkTraining = async () => {
+  const checkTraining = async (signal) => {
     if (role === 'admin') {
       setTrainingStatus({ isTrained: true });
       return;
@@ -69,17 +94,17 @@ export default function BatchDetailPage() {
         qc: 'QC'
       };
       const category = stageToCategory[batch.current_stage] || 'Fermentation';
-      const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=${category}`);
+      const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=${category}`, { signal });
       const data = await res.json();
       setTrainingStatus(data);
     } catch (err) {
-      console.error("Training check failed:", err);
+      if (err.name !== 'AbortError') console.error("Training check failed:", err);
     } finally {
       setCheckingTraining(false);
     }
   };
 
-  const fetchBatchDetail = async () => {
+  const fetchBatchDetail = async (signal) => {
     const { data: b, error } = await supabase
       .from('batches')
       .select('*, ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))')
@@ -105,7 +130,7 @@ export default function BatchDetailPage() {
     }
   };
 
-  const fetchStock = async () => {
+  const fetchStock = async (signal) => {
     const { data } = await supabase
       .from('inventory_stock')
       .select('*, inventory_items(name, unit, category)')
@@ -116,7 +141,7 @@ export default function BatchDetailPage() {
 
   const handleLogData = async (e) => {
     e.preventDefault();
-    if (!selectedParam || !paramValue) return;
+    if (!selectedParam || !paramValue || isSubmitting) return; // Prevent double commit
     setIsSubmitting(true);
     try {
       const isLegacyPh = selectedParam.type === 'ph' && batch.current_stage === 'fermentation';
@@ -142,7 +167,7 @@ export default function BatchDetailPage() {
 
   const handleLinkIngredient = async (e) => {
     e.preventDefault();
-    if (!ingredientStockId || !ingredientQty) return;
+    if (!ingredientStockId || !ingredientQty || isSubmitting) return; // Prevent double commit
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/usage', {
@@ -153,8 +178,7 @@ export default function BatchDetailPage() {
       if (res.ok) {
         setIngredientStockId('');
         setIngredientQty('');
-        await fetchBatchDetail();
-        await fetchStock();
+        await Promise.all([fetchBatchDetail(), fetchStock()]);
       } else {
         const err = await res.json();
         alert(err.error || 'Failed to link ingredient');
@@ -165,19 +189,24 @@ export default function BatchDetailPage() {
   };
 
   const handleStageTransition = async (toStage) => {
+    if (actionLoading) return; // Concurrency lock
     if (!confirm(`Move batch to ${toStage.toUpperCase()}? This will be recorded in the audit trail.`)) return;
+    
     setActionLoading(true);
-    const res = await fetch(`/api/batches/${batchId}/stage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from_stage: batch.current_stage, to_stage: toStage, notes: `Transitioned during production run.` })
-    });
-    if (res.ok) {
-      await fetchBatchDetail();
-      const nextParams = PARAMETERS[toStage] || [];
-      if (nextParams.length > 0) setSelectedParam(nextParams[0]);
+    try {
+      const res = await fetch(`/api/batches/${batchId}/stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_stage: batch.current_stage, to_stage: toStage, notes: `Transitioned during production run.` })
+      });
+      if (res.ok) {
+        await fetchBatchDetail();
+        const nextParams = PARAMETERS[toStage] || [];
+        if (nextParams.length > 0) setSelectedParam(nextParams[0]);
+      }
+    } finally {
+      setActionLoading(false);
     }
-    setActionLoading(false);
   };
 
   if (authLoading || !batch) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;

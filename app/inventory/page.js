@@ -29,39 +29,61 @@ export default function InventoryPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchData();
-    if (employeeProfile) checkTraining();
+    let mounted = true;
+    const controller = new AbortController();
+
+    const loadAll = async () => {
+      try {
+        await fetchData(controller.signal);
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error("Inventory fetch failed:", err);
+      }
+    };
+
+    loadAll();
+
+    if (employeeProfile) {
+      checkTraining(controller.signal);
+    }
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
   }, [employeeProfile]);
 
-  const checkTraining = async () => {
+  const checkTraining = async (signal) => {
     if (role === 'admin') {
       setTrainingStatus({ isTrained: true });
       return;
     }
     setCheckingTraining(true);
     try {
-      const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=Sanitation`);
+      const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=Sanitation`, { signal });
       const data = await res.json();
       setTrainingStatus(data);
     } catch (err) {
-      console.error("Training check failed:", err);
+      if (err.name !== 'AbortError') console.error("Training check failed:", err);
     } finally {
       setCheckingTraining(false);
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (signal) => {
     setLoading(true);
-    const [stockRes, itemsRes, vendorsRes] = await Promise.all([
-      supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }),
-      supabase.from('inventory_items').select('*').order('name'),
-      supabase.from('vendors').select('*').order('name')
-    ]);
+    try {
+      const [stockRes, itemsRes, vendorsRes] = await Promise.all([
+        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }),
+        supabase.from('inventory_items').select('*').order('name'),
+        supabase.from('vendors').select('*').order('name')
+      ]);
 
-    if (stockRes.data) setStock(stockRes.data);
-    if (itemsRes.data) setItems(itemsRes.data);
-    if (vendorsRes.data) setVendors(vendorsRes.data);
-    setLoading(false);
+      if (stockRes.data) setStock(stockRes.data);
+      if (itemsRes.data) setItems(itemsRes.data);
+      if (vendorsRes.data) setVendors(vendorsRes.data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddStock = async (e) => {

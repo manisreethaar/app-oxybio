@@ -134,21 +134,22 @@ ALTER TABLE inventory_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE equipment ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calibration_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow read vendors" ON vendors FOR SELECT USING (true);
-CREATE POLICY "Allow read items" ON inventory_items FOR SELECT USING (true);
-CREATE POLICY "Allow read stock" ON inventory_stock FOR SELECT USING (true);
-CREATE POLICY "Allow read usage" ON inventory_usage FOR SELECT USING (true);
-CREATE POLICY "Allow read equipment" ON equipment FOR SELECT USING (true);
-CREATE POLICY "Allow read calibration" ON calibration_logs FOR SELECT USING (true);
+CREATE POLICY "Allow read vendors" ON vendors FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
+CREATE POLICY "Allow read items" ON inventory_items FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
+CREATE POLICY "Allow read stock" ON inventory_stock FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
+CREATE POLICY "Allow read usage" ON inventory_usage FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
+CREATE POLICY "Allow read equipment" ON equipment FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
+CREATE POLICY "Allow read calibration" ON calibration_logs FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
 
 -- Admin/Staff inserts
 CREATE POLICY "Allow insert log" ON lab_logs FOR INSERT WITH CHECK (auth.uid() = logged_by);
-CREATE POLICY "Allow insert usage" ON inventory_usage FOR INSERT WITH CHECK (true); -- Check handled in code
-CREATE POLICY "Allow insert calibration" ON calibration_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow insert usage" ON inventory_usage FOR INSERT WITH CHECK (auth.uid() = logged_by); 
+CREATE POLICY "Allow insert calibration" ON calibration_logs FOR INSERT WITH CHECK (auth.uid() = logged_by);
 -- 7. SOP ENHANCEMENTS (Module 8)
 ALTER TABLE sop_acknowledgements ADD COLUMN IF NOT EXISTS signature_text TEXT;
 ALTER TABLE sop_acknowledgements ADD COLUMN IF NOT EXISTS ip_address TEXT;
 ALTER TABLE sop_acknowledgements ADD COLUMN IF NOT EXISTS user_agent TEXT;
 
 -- Policy for staff to insert their own acks
-CREATE POLICY " Allow insert own ack\ ON sop_acknowledgements FOR INSERT WITH CHECK (auth.uid() = employee_id);
+CREATE POLICY "Allow insert own ack" ON sop_acknowledgements FOR INSERT WITH CHECK (auth.uid() = employee_id);
+

@@ -58,23 +58,6 @@ export async function middleware(request) {
     return NextResponse.redirect(url);
   }
 
-  // Server-side RBAC: Block /admin routes for non-admin users
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
-  if (isAdminRoute && user) {
-    // Fetch the employee profile to check role
-    const { data: profile } = await supabase
-      .from('employees')
-      .select('role')
-      .eq('email', user.email)
-      .single();
-    
-    if (profile?.role !== 'admin') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      return NextResponse.redirect(url);
-    }
-  }
-
   return supabaseResponse;
 }
 
