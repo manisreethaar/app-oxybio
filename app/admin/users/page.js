@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { UserPlus, UserCog, ShieldCheck, Mail, Loader2, UserX } from 'lucide-react';
+import { UserPlus, UserCog, ShieldCheck, Mail, Loader2, UserX, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function UsersPage() {
@@ -10,6 +10,12 @@ export default function UsersPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Modal State
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ full_name: '', email: '', password: '', role: 'staff', department: 'Production' });
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState('');
 
   useEffect(() => {
     if (role === 'admin') fetchUsers();
@@ -33,6 +39,33 @@ export default function UsersPage() {
     fetchUsers();
   };
 
+  const handleInviteSubmit = async (e) => {
+    e.preventDefault();
+    setInviting(true);
+    setInviteError('');
+
+    try {
+      const res = await fetch('/api/admin/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inviteForm)
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to invite user');
+      }
+
+      setShowInviteModal(false);
+      setInviteForm({ full_name: '', email: '', password: '', role: 'staff', department: 'Production' });
+      fetchUsers();
+    } catch (err) {
+      setInviteError(err.message);
+    } finally {
+      setInviting(false);
+    }
+  };
+
   if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading directory...</div>;
   if (role !== 'admin') return null;
 
@@ -43,7 +76,7 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Team Directory</h1>
           <p className="text-gray-500 mt-1">Manage platform access, roles, and profiles for Oxygen Bioinnovations staff.</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
+        <button onClick={() => setShowInviteModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
           <UserPlus className="w-5 h-5 mr-2" /> Invite Employee
         </button>
       </div>
@@ -105,6 +138,57 @@ export default function UsersPage() {
           </table>
         </div>
       </div>
+
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative shadow-2xl">
+            <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Invite Employee</h2>
+            
+            {inviteError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100">{inviteError}</div>}
+            
+            <form onSubmit={handleInviteSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input required type="text" value={inviteForm.full_name} onChange={e => setInviteForm({...inviteForm, full_name: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="John Doe" />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input required type="email" value={inviteForm.email} onChange={e => setInviteForm({...inviteForm, email: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="john@oxygenbioinnovations.com" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Temporary Password</label>
+                <input required type="text" value={inviteForm.password} onChange={e => setInviteForm({...inviteForm, password: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="Initial password for login" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select value={inviteForm.role} onChange={e => setInviteForm({...inviteForm, role: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                  <select value={inviteForm.department} onChange={e => setInviteForm({...inviteForm, department: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                    <option value="Production">Production</option>
+                    <option value="Quality Control">Quality Control</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Management">Management</option>
+                  </select>
+                </div>
+              </div>
+
+              <button disabled={inviting} type="submit" className="w-full bg-teal-800 text-white font-bold py-3 mt-4 rounded-xl hover:bg-teal-900 transition-colors disabled:opacity-50 flex justify-center items-center">
+                {inviting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
