@@ -50,86 +50,89 @@ export default function ActivityLogPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    try {
+      // Fetch batches for dropdown
+      const { data: batches } = await supabase.from('batches').select('batch_id').eq('status', 'fermenting');
+      setActiveBatches(batches || []);
 
-    // Fetch batches for dropdown
-    const { data: batches } = await supabase.from('batches').select('batch_id').eq('status', 'fermenting');
-    setActiveBatches(batches || []);
+      // Fetch activity log
+      let query = supabase
+        .from('activity_log')
+        .select('*, employees(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (role !== 'admin') {
+        query = query.eq('employee_id', employeeProfile.id);
+      }
+      const { data: logData } = await query;
+      setActivities(logData || []);
+      if (role === 'admin') {
+        setIssues((logData || []).filter(a => a.issue_observed));
+      }
 
-    // Fetch activity log
-    let query = supabase
-      .from('activity_log')
-      .select('*, employees(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    
-    if (role !== 'admin') {
-      query = query.eq('employee_id', employeeProfile.id);
+      // ── Founder Brief data (admin only) ────────────────────────────────────────
+      if (role === 'admin') {
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. All active employees
+        const { data: allStaff } = await supabase
+          .from('employees')
+          .select('id, full_name, designation, role')
+          .eq('is_active', true)
+          .neq('role', 'admin');
+
+        // 2. Who checked in today
+        const { data: todayLogs } = await supabase
+          .from('attendance_log')
+          .select('employee_id')
+          .eq('date', today);
+
+        const checkedInIds = new Set((todayLogs || []).map(l => l.employee_id));
+        const present = (allStaff || []).filter(s => checkedInIds.has(s.id));
+        const absent = (allStaff || []).filter(s => !checkedInIds.has(s.id));
+
+        // 3. Overdue tasks
+        const { data: overdueTasks } = await supabase
+          .from('tasks')
+          .select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+          .neq('status', 'done')
+          .neq('status', 'cancelled')
+          .lt('due_date', today)
+          .order('due_date', { ascending: true })
+          .limit(5);
+
+        // 4. Pending approvals
+        const { data: pendingApprovals } = await supabase
+          .from('tasks')
+          .select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+          .eq('approval_status', 'pending_review')
+          .limit(5);
+
+        // 5. Active experiments
+        const { data: activeExps } = await supabase
+          .from('batches')
+          .select('batch_id, product_name, status')
+          .in('status', ['fermenting', 'in-progress', 'testing'])
+          .limit(5);
+
+        // 6. Open issues (unreviewed)
+        const openIssues = (logData || []).filter(a => a.issue_observed && !a.founder_comment);
+
+        setBrief({
+          presentToday: present || [],
+          absentToday: absent || [],
+          overdueTasks: overdueTasks || [],
+          pendingApprovals: pendingApprovals || [],
+          activeExperiments: activeExps || [],
+          openIssues,
+        });
+      }
+    } catch (err) {
+      console.error("Activity page fetch error:", err);
+    } finally {
+      setLoading(false);
     }
-    const { data: logData } = await query;
-    setActivities(logData || []);
-    if (role === 'admin') {
-      setIssues((logData || []).filter(a => a.issue_observed));
-    }
-
-    // ── Founder Brief data (admin only) ────────────────────────────────────────
-    if (role === 'admin') {
-      const today = new Date().toISOString().split('T')[0];
-
-      // 1. All active employees
-      const { data: allStaff } = await supabase
-        .from('employees')
-        .select('id, full_name, designation, role')
-        .eq('is_active', true)
-        .neq('role', 'admin');
-
-      // 2. Who checked in today
-      const { data: todayLogs } = await supabase
-        .from('attendance_log')
-        .select('employee_id')
-        .eq('date', today);
-
-      const checkedInIds = new Set((todayLogs || []).map(l => l.employee_id));
-      const present = (allStaff || []).filter(s => checkedInIds.has(s.id));
-      const absent = (allStaff || []).filter(s => !checkedInIds.has(s.id));
-
-      // 3. Overdue tasks
-      const { data: overdueTasks } = await supabase
-        .from('tasks')
-        .select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
-        .neq('status', 'done')
-        .neq('status', 'cancelled')
-        .lt('due_date', today)
-        .order('due_date', { ascending: true })
-        .limit(5);
-
-      // 4. Pending approvals
-      const { data: pendingApprovals } = await supabase
-        .from('tasks')
-        .select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
-        .eq('approval_status', 'pending_review')
-        .limit(5);
-
-      // 5. Active experiments
-      const { data: activeExps } = await supabase
-        .from('batches')
-        .select('batch_id, product_name, status')
-        .in('status', ['fermenting', 'in-progress', 'testing'])
-        .limit(5);
-
-      // 6. Open issues (unreviewed)
-      const openIssues = (logData || []).filter(a => a.issue_observed && !a.founder_comment);
-
-      setBrief({
-        presentToday: present || [],
-        absentToday: absent || [],
-        overdueTasks: overdueTasks || [],
-        pendingApprovals: pendingApprovals || [],
-        activeExperiments: activeExps || [],
-        openIssues,
-      });
-    }
-
-    setLoading(false);
   };
 
   const handleSubmit = async (e) => {

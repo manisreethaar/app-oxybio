@@ -14,26 +14,76 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // onAuthStateChange is the ONLY source of truth.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) throw sessionError;
+
         if (session?.user) {
           setUser(session.user);
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('employees')
             .select('*')
             .eq('email', session.user.email)
             .single();
-          setEmployeeProfile(profile || null);
+            
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.warn('Could not fetch profile:', profileError);
+          }
+          if (mounted) setEmployeeProfile(profile || null);
         } else {
+          if (mounted) {
+            setUser(null);
+            setEmployeeProfile(null);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
           setUser(null);
           setEmployeeProfile(null);
         }
-        setLoading(false);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setEmployeeProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+          try {
+            setUser(session.user);
+            const { data: profile } = await supabase
+              .from('employees')
+              .select('*')
+              .eq('email', session.user.email)
+              .single();
+            if (mounted) setEmployeeProfile(profile || null);
+          } catch (error) {
+            console.error('Session update error:', error);
+          } finally {
+            if (mounted) setLoading(false);
+          }
+        }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
