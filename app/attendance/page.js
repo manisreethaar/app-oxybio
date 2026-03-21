@@ -219,10 +219,9 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {role !== 'admin' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Main Action Card */}
-          <div className="glass-card rounded-[2rem] p-8 relative overflow-hidden flex flex-col items-center justify-center text-center min-h-[400px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Main Action Card */}
+        <div className="glass-card rounded-[2rem] p-8 relative overflow-hidden flex flex-col items-center justify-center text-center min-h-[400px]">
             <h2 className="text-lg font-black text-slate-800 mb-8 absolute top-6 left-6 flex items-center gap-2">
               <Clock className="w-5 h-5 text-teal-600" /> Today&apos;s Shift
             </h2>
@@ -322,11 +321,10 @@ export default function AttendancePage() {
                     </div>
                   )
                 })}
-              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Admin Roster View */}
       {role === 'admin' && (
