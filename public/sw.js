@@ -1,1 +1,47 @@
-if(!self.define){let e,a={};const s=(s,n)=>(s=new URL(s+".js",n).href,a[s]||new Promise(a=>{if("document"in self){const e=document.createElement("script");e.src=s,e.onload=a,document.head.appendChild(e)}else e=s,importScripts(s),a()}).then(()=>{let e=a[s];if(!e)throw new Error(`Module ${s} didn’t register its module`);return e}));self.define=(n,i)=>{const d=e||("document"in self?document.currentScript.src:"")||location.href;if(a[d])return;let t={};const c=e=>s(e,d),f={module:{uri:d},exports:t,require:c};a[d]=Promise.all(n.map(e=>f[e]||c(e))).then(e=>(i(...e),t))}}define(["./workbox-1ab968a5"],function(e){"use strict";importScripts("/worker-338a03bb6c860ad3.js"),self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"/_next/static/OR51Q7pqBfypXnd71aYdm/_buildManifest.js",revision:"c155cce658e53418dec34664328b51ac"},{url:"/_next/static/OR51Q7pqBfypXnd71aYdm/_ssgManifest.js",revision:"b6652df95db52feb4daf4eca35380933"},{url:"/_next/static/chunks/396-a35ad6583d8c8bdc.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/630-161550ebafc34a32.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/648-c57e7411816ad74f.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/721-2c81e229c0ae820f.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/878-5b99361030e7ea25.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/884-db5a75298dd0d485.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/997-6787e613affe23d3.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/_not-found/page-e73f982fb2f5269f.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/activity/page-f440ad2f6fa62269.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/admin/users/page-7e1fe6c4da095d5c.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/attendance/page-7edba38edd860aaa.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/batches/%5BbatchId%5D/page-4586c86f24c05145.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/batches/page-a584fd5b06d7357e.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/compliance/page-352364e953c11edd.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/dashboard/page-a24459b80035b490.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/documents/page-5649239e932b4199.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/layout-2da2bc0a21f59318.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/leave/page-ac5b4ff1bd5e1fff.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/login/page-9e787e74f100f3cd.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/offline/page-67fb62b4eb78916f.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/page-7c45fea13df8be1c.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/payslips/page-98ce934342f3777d.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/sops/page-b38e8545137f38ec.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/app/tasks/page-e45e0e7097e1f312.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/fd9d1056-76f9c2f95998a851.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/framework-f66176bb897dc684.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/main-a0feacbbf845de13.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/main-app-1bd71ef6083e9ff2.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/pages/_app-72b849fbd24ac258.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/pages/_error-7ba65e1336b92748.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/chunks/polyfills-42372ed130431b0a.js",revision:"846118c33b2c0e922d7b3a7676f81f6f"},{url:"/_next/static/chunks/webpack-4389cfca6a3a09f5.js",revision:"OR51Q7pqBfypXnd71aYdm"},{url:"/_next/static/css/a5966377dbd01d36.css",revision:"a5966377dbd01d36"},{url:"/_next/static/media/19cfc7226ec3afaa-s.woff2",revision:"9dda5cfc9a46f256d0e131bb535e46f8"},{url:"/_next/static/media/21350d82a1f187e9-s.woff2",revision:"4e2553027f1d60eff32898367dd4d541"},{url:"/_next/static/media/8e9860b6e62d6359-s.woff2",revision:"01ba6c2a184b8cba08b0d57167664d75"},{url:"/_next/static/media/ba9851c3c22cd980-s.woff2",revision:"9e494903d6b0ffec1a1e14d34427d44d"},{url:"/_next/static/media/c5fe6dc8356a8c31-s.woff2",revision:"027a89e9ab733a145db70f09b8a18b42"},{url:"/_next/static/media/df0a9ae256c0569c-s.woff2",revision:"d54db44de5ccb18886ece2fda72bdfe0"},{url:"/_next/static/media/e4af272ccee01ff0-s.p.woff2",revision:"65850a373e258f1c897a2b3d75eb74de"},{url:"/icon-192x192.png",revision:"a70157685789fbf3127c0136d238c75e"},{url:"/icon-512x512.png",revision:"374a71e70efbe76f19e53d5a4c8f6bd3"},{url:"/manifest.json",revision:"cb71eea35cb59d8138cd5debf6141ec3"},{url:"/worker-338a03bb6c860ad3.js",revision:"722188319e6695862dc82da6d4fe662e"}],{ignoreURLParametersMatching:[/^utm_/,/^fbclid$/]}),e.cleanupOutdatedCaches()});
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  // We explicitly do not try to serve anything from the cache 
+  // to prevent stale bugs, while simply satisfying Chrome's "is a PWA" requirement.
+  return; 
+});
+
+self.addEventListener('push', function (event) {
+  const data = event.data?.json() ?? {};
+  const title = data.title || "OxyOS Notification";
+  const options = {
+    body: data.body || "Current Activity Updated.",
+    icon: data.icon || "/icon-192x192.png",
+    badge: "/icon-192x192.png",
+    data: data.url || "/dashboard",
+    vibrate: [200, 100, 200]
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const targetUrl = event.notification.data || '/dashboard';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

@@ -4,11 +4,18 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
+import { useEffect } from 'react';
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const { loading } = useAuth();
   
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.error("SW manual registration failed:", err));
+    }
+  }, []);
+
   if (pathname === '/login') {
     return <main className="min-h-screen bg-[#f5fbfa] flex items-center justify-center p-4">{children}</main>;
   }
