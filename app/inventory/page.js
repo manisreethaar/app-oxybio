@@ -1,0 +1,217 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter } from 'lucide-react';
+
+export default function InventoryPage() {
+  const { role, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState('stock');
+  const [stock, setStock] = useState([]);
+  const [items, setItems] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [newStock, setNewStock] = useState({
+    item_id: '',
+    vendor_id: '',
+    supplier_batch_number: '',
+    received_quantity: '',
+    expiry_date: '',
+    location: ''
+  });
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [stockRes, itemsRes, vendorsRes] = await Promise.all([
+      supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }),
+      supabase.from('inventory_items').select('*').order('name'),
+      supabase.from('vendors').select('*').order('name')
+    ]);
+
+    if (stockRes.data) setStock(stockRes.data);
+    if (itemsRes.data) setItems(itemsRes.data);
+    if (vendorsRes.data) setVendors(vendorsRes.data);
+    setLoading(false);
+  };
+
+  const handleAddStock = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const res = await fetch('/api/inventory/stock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newStock)
+    });
+    
+    if (res.ok) {
+      setIsModalOpen(false);
+      setNewStock({ item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '' });
+      await fetchData();
+    }
+    setIsSubmitting(false);
+  };
+
+  const filteredStock = stock.filter(s => 
+    s.inventory_items?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.supplier_batch_number?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (authLoading || loading) {
+    return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Inventory & Supply Chain</h1>
+          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
+            <Plus className="w-4 h-4 mr-2" /> Receive New Stock
+          </button>
+        </div>
+      </div>
+
+      <div className="flex border-b border-gray-200">
+        <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
+        <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
+        <button onClick={() => setActiveTab('vendors')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
+      </div>
+
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search by name, lot number, or category..."
+          className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {activeTab === 'stock' && (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredStock.map((s) => {
+            const isNearExpiry = s.expiry_date && (new Date(s.expiry_date) - new Date() < 30 * 24 * 60 * 60 * 1000);
+            const isExpired = s.expiry_date && (new Date(s.expiry_date) < new Date());
+            
+            return (
+              <div key={s.id} className={`bg-white rounded-3xl border ${isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} p-6 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center gap-6 group`}>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${s.inventory_items?.category === 'Raw Material' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {s.inventory_items?.category}
+                    </span>
+                    {(isExpired || isNearExpiry) && (
+                      <span className={`flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${isExpired ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                        <AlertTriangle className="w-3 h-3 mr-1" /> {isExpired ? 'Expired' : 'Near Expiry'}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-black text-teal-950 mb-1">{s.inventory_items?.name}</h3>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <Truck className="w-3.5 h-3.5 mr-1.5" /> Lot: <span className="text-teal-900 ml-1">{s.supplier_batch_number || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-teal-900 ml-1">{s.location || 'Central Store'}</span>
+                    </div>
+                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${isExpired ? 'text-red-600' : 'text-teal-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-8 lg:text-right">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Available Balanced</p>
+                    <p className={`text-2xl font-black font-mono tracking-tighter ${s.current_quantity <= 0 ? 'text-gray-300' : 'text-teal-800'}`}>
+                      {s.current_quantity} <span className="text-xs">{s.inventory_items?.unit}</span>
+                    </p>
+                  </div>
+                  <div className="h-12 w-[1px] bg-gray-100"></div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Vendor</p>
+                    <p className="text-sm font-black text-gray-800">{s.vendors?.name || 'Approved Local supplier'}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal for adding stock */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-8 py-6 bg-teal-800 text-white">
+              <h2 className="text-xl font-black tracking-tight">Receive Warehouse Shipment</h2>
+              <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">Digital Material Input (DMI)</p>
+            </div>
+            <form onSubmit={handleAddStock} className="p-8 space-y-5">
+              <div className="grid grid-cols-1 gap-5">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
+                  <select 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
+                    value={newStock.item_id}
+                    onChange={(e) => setNewStock({...newStock, item_id: e.target.value})}
+                  >
+                    <option value="">Select Item...</option>
+                    {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Quantity Recvd</label>
+                    <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                      value={newStock.received_quantity} onChange={(e) => setNewStock({...newStock, received_quantity: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Supplier Batch #</label>
+                    <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold font-mono" 
+                      value={newStock.supplier_batch_number} onChange={(e) => setNewStock({...newStock, supplier_batch_number: e.target.value})} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Expiry Date</label>
+                    <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                      value={newStock.expiry_date} onChange={(e) => setNewStock({...newStock, expiry_date: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Warehouse Location</label>
+                    <input type="text" placeholder="e.g. Shelf A1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                      value={newStock.location} onChange={(e) => setNewStock({...newStock, location: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log Entry'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
