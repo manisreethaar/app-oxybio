@@ -404,7 +404,12 @@ export default function AttendancePage() {
                 audio={false}
                 ref={webcamRef}
                 screenshotFormat="image/webp"
-                videoConstraints={{ facingMode: "user" }}
+                screenshotQuality={1}
+                videoConstraints={{ 
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 },
+                  facingMode: "user" 
+                }}
                 className="w-full h-full object-cover"
                 mirrored={true}
               />
