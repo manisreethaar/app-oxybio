@@ -39,11 +39,22 @@ export default function TasksPage() {
   const [proofFile, setProofFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);  // NEW seconds only in this session
   const timerRef = useRef(null);
   const fileRef = useRef(null);
   const [rejectNote, setRejectNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Reset all action-state whenever a different task is opened
+  useEffect(() => {
+    if (selectedTask) {
+      setCompletionNote('');
+      setProofFile(null);
+      setElapsedSeconds(0);
+      setTimerRunning(false);
+      setRejectNote('');
+    }
+  }, [selectedTask?.id]);
 
   const supabase = createClient();
 
@@ -132,7 +143,8 @@ export default function TasksPage() {
         status: 'in-progress'
       }).eq('id', task.id);
     }
-    setElapsedSeconds(Math.floor((task.logged_minutes || 0) * 60));
+    // Reset to 0 — we only track NEW seconds in this session to avoid double-counting
+    setElapsedSeconds(0);
     setTimerRunning(true);
     setSelectedTask(t => ({ ...t, status: 'in-progress' }));
     fetchTasks();
@@ -140,14 +152,31 @@ export default function TasksPage() {
 
   const handlePauseTimer = async () => {
     setTimerRunning(false);
-    const additionalMins = Math.floor(elapsedSeconds / 60);
-    await supabase.from('tasks').update({ 
-      logged_minutes: (selectedTask?.logged_minutes || 0) + additionalMins
-    }).eq('id', selectedTask.id);
-    
-    const updated = tasks.find(t => t.id === selectedTask.id);
-    if (updated) setSelectedTask({ ...updated, logged_minutes: (updated.logged_minutes || 0) + additionalMins });
+    const newMins = Math.floor(elapsedSeconds / 60);
+    if (newMins > 0) {
+      await supabase.from('tasks').update({ 
+        logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
+      }).eq('id', selectedTask.id);
+      // Update selectedTask state directly (avoids stale tasks-array lookup)
+      setSelectedTask(t => ({ ...t, logged_minutes: (t.logged_minutes || 0) + newMins }));
+    }
+    setElapsedSeconds(0); // reset for next session
     fetchTasks();
+  };
+
+  // Save time to DB first, then close — prevents losing time if user closes mid-timer
+  const handleCloseModal = async () => {
+    if (timerRunning && elapsedSeconds > 0) {
+      setTimerRunning(false);
+      const newMins = Math.floor(elapsedSeconds / 60);
+      if (newMins > 0) {
+        await supabase.from('tasks').update({ 
+          logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
+        }).eq('id', selectedTask.id);
+      }
+    }
+    setSelectedTask(null);
+    setElapsedSeconds(0);
   };
 
   // ─── Checklist Toggle ───────────────────────────────────────────────────────
@@ -481,7 +510,7 @@ export default function TasksPage() {
                 <h3 className="text-lg font-black text-slate-800">{selectedTask.title}</h3>
                 {selectedTask.description && <p className="text-sm text-slate-500 mt-1">{selectedTask.description}</p>}
               </div>
-              <button onClick={() => { setSelectedTask(null); setTimerRunning(false); }} 
+              <button onClick={handleCloseModal} 
                 className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 shrink-0">
                 <X className="w-5 h-5"/>
               </button>
