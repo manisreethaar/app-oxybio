@@ -54,6 +54,18 @@ export default function TasksPage() {
     });
     
     if (!error) {
+      // Fire Push Notification in background
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assigned_to: newTask.assigned_to,
+          title: "New Task: " + newTask.priority.toUpperCase() + " Priority",
+          body: newTask.title,
+          url: "/tasks"
+        })
+      }).catch(err => console.error("Push trigger failed:", err));
+
       setShowCreate(false);
       setNewTask({ title: '', description: '', assigned_to: '', due_date: '', priority: 'low' });
       fetchTasks();

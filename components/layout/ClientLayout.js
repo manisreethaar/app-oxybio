@@ -2,6 +2,7 @@
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ClientLayout({ children }) {
@@ -25,6 +26,7 @@ export default function ClientLayout({ children }) {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden pb-16 md:pb-0">
         <TopBar />
+        <PushManager />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
