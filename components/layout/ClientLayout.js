@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
-  const { loading } = useAuth();
+  const { loading, error } = useAuth();
   
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
