@@ -37,6 +37,8 @@ export default function BatchDetailPage() {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
+  const [checkingTraining, setCheckingTraining] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -45,6 +47,37 @@ export default function BatchDetailPage() {
       fetchStock();
     }
   }, [batchId]);
+
+  useEffect(() => {
+    if (employeeProfile && batch?.current_stage) {
+      checkTraining();
+    }
+  }, [employeeProfile, batch?.current_stage]);
+
+  const checkTraining = async () => {
+    if (role === 'admin') {
+      setTrainingStatus({ isTrained: true });
+      return;
+    }
+    setCheckingTraining(true);
+    try {
+      const stageToCategory = {
+        media_prep: 'Fermentation',
+        formulation: 'Fermentation',
+        fermentation: 'Fermentation',
+        thermal: 'QC',
+        qc: 'QC'
+      };
+      const category = stageToCategory[batch.current_stage] || 'Fermentation';
+      const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=${category}`);
+      const data = await res.json();
+      setTrainingStatus(data);
+    } catch (err) {
+      console.error("Training check failed:", err);
+    } finally {
+      setCheckingTraining(false);
+    }
+  };
 
   const fetchBatchDetail = async () => {
     const { data: b, error } = await supabase
@@ -172,7 +205,17 @@ export default function BatchDetailPage() {
                   </div>
                   <span className={`text-[10px] font-black uppercase tracking-widest mt-2 ${isCurrent ? 'text-teal-900' : isCompleted ? 'text-teal-600' : 'text-gray-400'}`}>{stage.label}</span>
                   {isCurrent && idx < STAGES.length - 1 && (
-                    <button onClick={() => handleStageTransition(STAGES[idx + 1].id)} disabled={actionLoading} className="absolute -right-16 top-3 p-2 bg-teal-800 text-white rounded-full shadow-md hover:bg-teal-900 transition-all active:scale-90 disabled:opacity-50">
+                    <button 
+                      onClick={() => {
+                        if (!trainingStatus.isTrained) {
+                          alert(`Training Required: Please sign the latest SOP for this stage before promoting.`);
+                          return;
+                        }
+                        handleStageTransition(STAGES[idx + 1].id);
+                      }} 
+                      disabled={actionLoading} 
+                      className={`absolute -right-16 top-3 p-2 text-white rounded-full shadow-md transition-all active:scale-90 disabled:opacity-50 ${!trainingStatus.isTrained ? 'bg-slate-400 cursor-not-allowed' : 'bg-teal-800 hover:bg-teal-900'}`}
+                    >
                       {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                   )}
@@ -279,11 +322,27 @@ export default function BatchDetailPage() {
         <div className="space-y-6">
           {/* Dynamic Data Logger */}
           <div className="bg-white rounded-[2rem] border border-gray-200 shadow-xl overflow-hidden ring-4 ring-teal-50">
-            <div className="px-8 py-6 bg-teal-800 text-white flex items-center">
-              <Beaker className="w-5 h-5 mr-3 text-teal-300" />
-              <h2 className="text-lg font-black tracking-tight capitalize">Log {STAGES[currentStageIndex]?.label}</h2>
+            <div className={`px-8 py-6 bg-teal-800 text-white flex items-center justify-between`}>
+              <div className="flex items-center">
+                <Beaker className="w-5 h-5 mr-3 text-teal-300" />
+                <h2 className="text-lg font-black tracking-tight capitalize">Log {STAGES[currentStageIndex]?.label}</h2>
+              </div>
+              {!trainingStatus.isTrained && <span className="bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-lg animate-pulse uppercase tracking-widest">Training Required</span>}
             </div>
-            <form onSubmit={handleLogData} className="p-8 space-y-5">
+            
+            {!trainingStatus.isTrained ? (
+              <div className="p-8 bg-slate-50 flex flex-col items-center text-center gap-4">
+                <AlertTriangle className="w-10 h-10 text-amber-500" />
+                <div>
+                  <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Access Restricted</p>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    You must read and sign the <b>{trainingStatus.version ? `v${trainingStatus.version}` : 'latest'}</b> SOP for this category before logging data.
+                  </p>
+                </div>
+                <Link href="/sops" className="text-[10px] font-black uppercase text-teal-700 hover:text-teal-800 border-b-2 border-teal-700 pb-0.5">Go to SOP Library</Link>
+              </div>
+            ) : (
+              <form onSubmit={handleLogData} className="p-8 space-y-5">
               <div className="grid grid-cols-2 gap-2">
                 {currentParams.map(p => (
                   <button key={p.type} type="button" onClick={() => setSelectedParam(p)} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${selectedParam?.type === p.type ? 'bg-teal-500 border-teal-500 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white'}`}>{p.name}</button>
@@ -297,7 +356,8 @@ export default function BatchDetailPage() {
               <button type="submit" disabled={isSubmitting || !paramValue || !selectedParam} className="w-full py-4 bg-teal-800 text-white font-black rounded-2xl shadow-lg hover:bg-teal-900 transition-all uppercase tracking-widest text-[10px]">
                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Commit Metric'}
               </button>
-            </form>
+              </form>
+            )}
           </div>
 
           {/* Ingredient Linker */}

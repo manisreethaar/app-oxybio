@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter } from 'lucide-react';
+import Link from 'next/link';
 
 export default function InventoryPage() {
   const { role, loading: authLoading } = useAuth();
@@ -23,12 +24,31 @@ export default function InventoryPage() {
     expiry_date: '',
     location: ''
   });
-
+  const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
+  const [checkingTraining, setCheckingTraining] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     fetchData();
-  }, []);
+    if (employeeProfile) checkTraining();
+  }, [employeeProfile]);
+
+  const checkTraining = async () => {
+    if (role === 'admin') {
+      setTrainingStatus({ isTrained: true });
+      return;
+    }
+    setCheckingTraining(true);
+    try {
+      const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=Sanitation`);
+      const data = await res.json();
+      setTrainingStatus(data);
+    } catch (err) {
+      console.error("Training check failed:", err);
+    } finally {
+      setCheckingTraining(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -159,11 +179,34 @@ export default function InventoryPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-8 py-6 bg-teal-800 text-white">
-              <h2 className="text-xl font-black tracking-tight">Receive Warehouse Shipment</h2>
-              <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">Digital Material Input (DMI)</p>
+            <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black tracking-tight">Receive Warehouse Shipment</h2>
+                <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">Digital Material Input (DMI)</p>
+              </div>
+              {!trainingStatus.isTrained && <AlertTriangle className="w-6 h-6 text-amber-400 animate-pulse" />}
             </div>
-            <form onSubmit={handleAddStock} className="p-8 space-y-5">
+            
+            {!trainingStatus.isTrained ? (
+              <div className="p-12 bg-white flex flex-col items-center text-center gap-6">
+                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center">
+                  <Package className="w-10 h-10 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Training Required</h3>
+                  <p className="text-sm text-slate-500 font-medium mt-2 max-w-xs mx-auto">
+                    To maintain GMP compliance, you must read and sign the <b>Sanitation SOP</b> before handling warehouse stock.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 w-full">
+                  <Link href="/sops" className="w-full py-4 bg-teal-800 text-white font-black rounded-2xl shadow-lg hover:bg-teal-900 transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                    Open SOP Library
+                  </Link>
+                  <button onClick={() => setIsModalOpen(false)} className="text-xs font-bold text-slate-400 hover:text-slate-600">Close Window</button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleAddStock} className="p-8 space-y-5">
               <div className="grid grid-cols-1 gap-5">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
@@ -209,7 +252,8 @@ export default function InventoryPage() {
                 </button>
               </div>
             </form>
-          </div>
+          )}
+        </div>
         </div>
       )}
     </div>

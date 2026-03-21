@@ -145,3 +145,10 @@ CREATE POLICY "Allow read calibration" ON calibration_logs FOR SELECT USING (tru
 CREATE POLICY "Allow insert log" ON lab_logs FOR INSERT WITH CHECK (auth.uid() = logged_by);
 CREATE POLICY "Allow insert usage" ON inventory_usage FOR INSERT WITH CHECK (true); -- Check handled in code
 CREATE POLICY "Allow insert calibration" ON calibration_logs FOR INSERT WITH CHECK (true);
+-- 7. SOP ENHANCEMENTS (Module 8)
+ALTER TABLE sop_acknowledgements ADD COLUMN IF NOT EXISTS signature_text TEXT;
+ALTER TABLE sop_acknowledgements ADD COLUMN IF NOT EXISTS ip_address TEXT;
+ALTER TABLE sop_acknowledgements ADD COLUMN IF NOT EXISTS user_agent TEXT;
+
+-- Policy for staff to insert their own acks
+CREATE POLICY " Allow insert own ack\ ON sop_acknowledgements FOR INSERT WITH CHECK (auth.uid() = employee_id);

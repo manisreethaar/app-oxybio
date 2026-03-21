@@ -34,17 +34,34 @@ export default function SOPLibraryPage() {
     setLoading(false);
   };
 
-  const acknowledgeSOP = async (sopId) => {
-    const { error } = await supabase.from('sop_acknowledgements').insert({
-      sop_id: sopId,
-      employee_id: employeeProfile.id
-    });
-    if (error && error.code !== '23505') {
-      // 23505 = unique_violation (already acknowledged) — safe to ignore
-      alert('Failed to acknowledge: ' + error.message);
-      return;
+  const [showAckModal, setShowAckModal] = useState(null); // stores SOP object
+  const [signatureText, setSignatureText] = useState("");
+  const [submittingAck, setSubmittingAck] = useState(false);
+
+  const acknowledgeSOP = async () => {
+    if (!signatureText.trim()) return alert("Please type the confirmation statement to sign.");
+    setSubmittingAck(true);
+    
+    try {
+      const res = await fetch(`/api/sops/${showAckModal.id}/acknowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: employeeProfile.id,
+          signature_text: signatureText
+        })
+      });
+      
+      if (!res.ok) throw new Error("Failed to sign SOP");
+
+      setShowAckModal(null);
+      setSignatureText("");
+      fetchSOPs();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSubmittingAck(false);
     }
-    fetchSOPs();
   };
 
   const handleUpload = async (e) => {
@@ -141,13 +158,72 @@ export default function SOPLibraryPage() {
             </div>
 
             {!sop.is_acknowledged && (
-              <button onClick={() => acknowledgeSOP(sop.id)} className="w-full mt-4 bg-teal-800 text-white font-medium text-sm py-2.5 rounded-lg hover:bg-teal-900 shadow-sm transition-colors uppercase tracking-wider">
-                Acknowledge Receipt
+              <button 
+                onClick={() => {
+                  setShowAckModal(sop);
+                  setSignatureText(`I confirm that I have read and understood ${sop.sop_id} (${sop.title}) and will follow it strictly.`);
+                }} 
+                className="w-full mt-4 bg-teal-800 text-white font-black text-xs py-3 rounded-xl hover:bg-teal-900 shadow-lg shadow-teal-950/20 transition-all uppercase tracking-widest active:scale-95"
+              >
+                Sign-off SOP
               </button>
             )}
           </div>
         ))}
       </div>
+
+      {/* Digital Signature Modal */}
+      {showAckModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-[2.5rem] max-w-lg w-full p-8 relative shadow-2xl border border-teal-100 flex flex-col gap-6 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setShowAckModal(null)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 transition-colors">
+              <span className="text-2xl">×</span>
+            </button>
+            
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Standard Operating Procedure</h2>
+              <p className="text-teal-600 font-bold uppercase tracking-widest text-[10px]">Digital Signature & Acknowledgment</p>
+            </div>
+
+            <div className="p-5 bg-slate-50 border border-slate-100 rounded-2xl">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Procedure Details</p>
+              <p className="text-lg font-black text-slate-800 leading-tight">{showAckModal.title}</p>
+              <div className="flex gap-4 mt-2">
+                <span className="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">{showAckModal.sop_id}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">v{showAckModal.version}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <Mail className="w-3 h-3"/> Statement of Understanding
+              </label>
+              <textarea
+                value={signatureText}
+                onChange={(e) => setSignatureText(e.target.value)}
+                rows={4}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all resize-none shadow-inner"
+              />
+              <p className="text-[10px] text-slate-400 font-medium italic">
+                By signing, you agree that your electronic signature is the legal equivalent of your manual signature on this document.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button 
+                disabled={submittingAck}
+                onClick={acknowledgeSOP}
+                className="w-full bg-gradient-to-br from-teal-600 to-cyan-700 text-white font-black py-4 rounded-2xl hover:from-teal-500 hover:to-cyan-600 shadow-xl shadow-teal-700/20 transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest flex items-center justify-center gap-2"
+              >
+                {submittingAck ? "Processing..." : "Securely Sign-off Procedure"}
+              </button>
+              <button onClick={() => setShowAckModal(null)} className="w-full text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
