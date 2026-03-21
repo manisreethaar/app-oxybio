@@ -1,13 +1,10 @@
 // OxyOS Service Worker - App Shell Pattern
-// Version: 3 - bump this number to force update on all devices
-const CACHE_NAME = 'oxyos-shell-v3';
+// Version: 4 - bumped to force update on all devices and fix Next.js chunk mismatches
+const CACHE_NAME = 'oxyos-shell-v4';
 
 // These are the ONLY files we cache - the minimal app shell.
 // All data/API calls always go to the live network.
 const SHELL_URLS = [
-  '/',
-  '/login',
-  '/dashboard',
   '/icon-192x192.png',
   '/icon-512x512.png',
   '/manifest.json',
@@ -51,12 +48,12 @@ self.addEventListener('fetch', (event) => {
     return; // let the browser handle it directly
   }
 
-  // For page navigations: cache-first with network fallback
+  // For page navigations: NETWORK FIRST, NO CACHE FALLBACK (prevents chunk 404s)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/').then((cached) => {
-        // Always try the network first for navigations
-        return fetch(event.request).catch(() => cached || caches.match('/'));
+      fetch(event.request).catch(() => {
+        // If offline completely, try to serve root if exists, but typically let browser handle offline
+        return caches.match('/');
       })
     );
     return;
