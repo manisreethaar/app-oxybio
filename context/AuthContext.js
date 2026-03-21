@@ -19,30 +19,30 @@ export const AuthProvider = ({ children }) => {
     const fetchUser = async () => {
       try {
         setError(null);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Connection timed out waiting for the database.")), 8000)
-        );
-        
-        const { data: { user }, error: authErr } = await Promise.race([
-          supabase.auth.getUser(),
-          timeoutPromise
-        ]);
-        
+
+        // Helper: creates a FRESH timeout per call so the timer never carries over
+        const withTimeout = (promise, ms = 15000) =>
+          Promise.race([
+            promise,
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Connection timed out. Please check your internet.")), ms)
+            )
+          ]);
+
+        const { data: { user }, error: authErr } = await withTimeout(supabase.auth.getUser());
         if (authErr) throw authErr;
-        
+
         if (user && isMounted) {
           setUser(user);
-          const { data: profile, error: profileErr } = await Promise.race([
-            supabase.from('employees').select('*').eq('email', user.email).single(),
-            timeoutPromise
-          ]);
-          
+          const { data: profile, error: profileErr } = await withTimeout(
+            supabase.from('employees').select('*').eq('email', user.email).single()
+          );
           if (profileErr) throw profileErr;
           setEmployeeProfile(profile);
         }
       } catch (err) {
-        console.error("Auth initialization securely aborted:", err);
-        if (isMounted) setError(err.message || "Failed to securely connect to the database.");
+        console.error("Auth initialization aborted:", err);
+        if (isMounted) setError(err.message || "Failed to connect. Please retry.");
       } finally {
         if (isMounted) setLoading(false);
       }
