@@ -7,41 +7,34 @@ import { useRouter } from 'next/navigation';
 
 // ─── Employee ID Auto-Generation Logic ──────────────────────────────────────
 //
-// Format: O2B-{DESIG}-{TYPE}-{SEQ}
+// Format: O2B-{DESIG}-{SEQ}
 //   O2B  = Company prefix (fixed)
-//   DESIG = Designation abbreviation (admin picks), e.g. RF, TL, LA, PM, IA
-//   TYPE  = Role type: S (Staff), I (Intern), A (Admin)
-//   SEQ   = 3-digit padded sequential number auto-calculated from existing codes
+//   DESIG = Designation abbreviation (admin picks), e.g. RF, LA, TL, PM
+//   SEQ   = 3-digit padded sequential number, increments per designation
 //
 // Examples:
-//   Research Fellow → O2B-RF-S-001
-//   Lab Analyst     → O2B-LA-S-002
-//   Intern          → O2B-IA-I-001
-//   Admin           → O2B-AD-A-001
+//   O2B-RF-001  → 1st Research Fellow
+//   O2B-RF-002  → 2nd Research Fellow
+//   O2B-LA-001  → 1st Lab Analyst
+//   O2B-IA-001  → 1st Intern Associate
 //
 const COMPANY_PREFIX = 'O2B';
-const ROLE_TYPE = { admin: 'A', staff: 'S', intern: 'I' };
 
 const DESIGNATION_PRESETS = [
+  { label: 'Chief of Excellence (COE)', code: 'CE' },
+  { label: 'Chief Technology Officer (CTO)', code: 'CT' },
   { label: 'Research Fellow', code: 'RF' },
-  { label: 'Lab Analyst', code: 'LA' },
-  { label: 'Team Lead', code: 'TL' },
-  { label: 'Project Manager', code: 'PM' },
-  { label: 'Intern Associate', code: 'IA' },
-  { label: 'Admin / Manager', code: 'AD' },
+  { label: 'Scientist', code: 'SC' },
+  { label: 'Intern', code: 'IN' },
   { label: 'Custom...', code: '' },
 ];
 
-function generateEmployeeCode(existingCodes, designationCode, role) {
-  const type = ROLE_TYPE[role] || 'S';
-  const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-${type}-`;
-  
-  // Find all codes with the same prefix to determine next number
+function generateEmployeeCode(existingCodes, designationCode) {
+  const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-`;
   const existing = existingCodes
     .filter(c => c && c.startsWith(prefix))
     .map(c => parseInt(c.replace(prefix, ''), 10))
     .filter(n => !isNaN(n));
-
   const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
   return `${prefix}${String(nextNum).padStart(3, '0')}`;
 }
@@ -76,7 +69,7 @@ export default function UsersPage() {
     const code = inviteForm.designation_code || inviteForm.custom_code;
     if (code.length < 1) return;
     const existingCodes = employees.map(e => e.employee_code);
-    const generated = generateEmployeeCode(existingCodes, code, inviteForm.role);
+    const generated = generateEmployeeCode(existingCodes, code);
     setInviteForm(f => ({ ...f, employee_code: generated }));
   }, [inviteForm.designation_code, inviteForm.custom_code, inviteForm.role, employees]);
 
@@ -262,7 +255,10 @@ export default function UsersPage() {
                   </select>
                 </Field>
                 <Field label="Department">
-                  <input type="text" value={inviteForm.department} onChange={e => setInviteForm({...inviteForm, department: e.target.value})} className="input-field" placeholder="R&D"/>
+                  <select value={inviteForm.department} onChange={e => setInviteForm({...inviteForm, department: e.target.value})} className="input-field">
+                    <option value="R&D">R&amp;D</option>
+                    <option value="Admin">Admin</option>
+                  </select>
                 </Field>
               </div>
               <Field label="Date of Joining">
