@@ -4,14 +4,16 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, FlaskConical, Activity, CheckSquare, 
   CalendarOff, Clock, FileText, CalendarDays, Receipt, 
-  BookOpen, Users, LogOut, UserCircle, Contact, Bell
+  BookOpen, Users, LogOut, UserCircle, Contact, Bell, Menu, X
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
+import { useState } from 'react';
 
 export default function Sidebar() {
   const { employeeProfile, role, canDo, signOut } = useAuth();
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   if (!employeeProfile) return null;
 
@@ -133,26 +135,91 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation - show only key items for mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/60 flex justify-start sm:justify-around items-center z-50 pb-safe overflow-x-auto hide-scrollbar scroll-smooth px-2 shadow-[0_-8px_32px_0_rgba(31,38,135,0.05)]">
-        {menuSections.flatMap(s => s.items).filter(item => item.show).map((item) => {
-          const isActive = pathname.startsWith(item.href);
+      {/* Mobile Slide-Up Full Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end bg-slate-900/40 backdrop-blur-sm transition-all">
+          <div className="bg-white/90 backdrop-blur-xl w-full h-[85vh] rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom border-t border-white/50">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200/50">
+              <span className="text-xl font-black text-slate-800 tracking-tight">OxyOS Hubs</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 bg-slate-100 rounded-full flex justify-center items-center text-slate-600 hover:bg-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <nav className="flex-1 overflow-y-auto px-6 py-6 pb-24">
+              {menuSections.map((section, idx) => {
+                const visibleItems = section.items.filter(i => i.show);
+                if (visibleItems.length === 0) return null;
+                return (
+                  <div key={idx} className="mb-6">
+                    <h3 className="text-[11px] font-black text-slate-400 tracking-[0.2em] mb-3 uppercase pl-2">
+                      {section.title}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {visibleItems.map(item => {
+                        const Icon = item.icon;
+                        const isActive = pathname.startsWith(item.href);
+                        return (
+                          <Link 
+                            key={item.href} href={item.href} 
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={clsx(
+                              "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all",
+                              isActive ? "bg-teal-50 border-teal-200 text-teal-800 shadow-sm" : "bg-white border-slate-100 text-slate-600 shadow-sm"
+                            )}
+                          >
+                            <Icon className={clsx("w-6 h-6 mb-2", isActive ? "text-teal-600 stroke-[2.5px]" : "text-slate-400")} />
+                            <span className="text-xs font-bold">{item.name}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <button onClick={signOut} className="mt-4 w-full py-4 rounded-2xl bg-red-50 text-red-600 font-bold flex items-center justify-center border border-red-100">
+                <LogOut className="w-5 h-5 mr-2" /> Sign Out
+              </button>
+            </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Dock (Fixed, No Scrolling) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/60 flex justify-around items-center z-50 pb-safe shadow-[0_-8px_32px_0_rgba(31,38,135,0.05)] px-2">
+        {/* Render only 4 explicit quick actions in the dock */}
+        {[
+          { name: 'Dash', href: '/dashboard', icon: LayoutDashboard, show: canDo('dashboard', 'view') },
+          { name: 'Activity', href: '/activity', icon: Activity, show: canDo('activity', 'view') },
+          { name: 'Check-In', href: '/attendance', icon: Clock, show: canDo('attendance', 'view') },
+          { name: 'Tasks', href: '/tasks', icon: CheckSquare, show: canDo('tasks', 'view') }
+        ].filter(i=>i.show).slice(0, 4).map((item) => {
+          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
             <Link 
-              key={item.name} 
-              href={item.href}
+              key={item.name} href={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center min-w-[76px] px-2 py-3 h-[72px] flex-shrink-0 transition-all duration-300 relative",
+                "flex flex-col items-center justify-center w-16 h-[72px] transition-all relative",
                 isActive ? "text-teal-700" : "text-slate-400 hover:text-slate-700"
               )}
             >
               {isActive && <span className="absolute top-0 w-8 h-1 bg-teal-500 rounded-b-full"></span>}
-              <Icon className={clsx("w-6 h-6 mb-1.5 transition-all duration-300", isActive ? "stroke-[2.5px] scale-110" : "stroke-2")} />
-              <span className={clsx("text-[10px] whitespace-nowrap transition-all duration-300", isActive ? "font-bold" : "font-medium")}>{item.name}</span>
+              <Icon className={clsx("w-6 h-6 mb-1.5 transition-all", isActive ? "stroke-[2.5px] scale-110" : "stroke-2")} />
+              <span className={clsx("text-[10px] whitespace-nowrap", isActive ? "font-bold" : "font-medium")}>{item.name}</span>
             </Link>
           )
         })}
+
+        {/* The Menu Toggle Button */}
+        <button 
+          onClick={() => setMobileMenuOpen(true)}
+          className="flex flex-col items-center justify-center w-16 h-[72px] text-slate-400 hover:text-slate-700 transition-all"
+        >
+          <Menu className="w-6 h-6 mb-1.5 stroke-2" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Menu</span>
+        </button>
       </nav>
     </>
   );
