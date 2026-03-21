@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [employeeProfile, setEmployeeProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -17,29 +18,31 @@ export const AuthProvider = ({ children }) => {
     
     const fetchUser = async () => {
       try {
-        // Implement a strict 8-second timeout on the Supabase network request
-        // so the app NEVER freezes if the connection stutters.
+        setError(null);
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Auth request timeout")), 8000)
+          setTimeout(() => reject(new Error("Connection timed out waiting for the database.")), 8000)
         );
         
-        const { data: { user }, error } = await Promise.race([
+        const { data: { user }, error: authErr } = await Promise.race([
           supabase.auth.getUser(),
           timeoutPromise
         ]);
         
-        if (error) throw error;
+        if (authErr) throw authErr;
         
         if (user && isMounted) {
           setUser(user);
-          const { data: profile } = await Promise.race([
+          const { data: profile, error: profileErr } = await Promise.race([
             supabase.from('employees').select('*').eq('email', user.email).single(),
             timeoutPromise
           ]);
+          
+          if (profileErr) throw profileErr;
           setEmployeeProfile(profile);
         }
       } catch (err) {
         console.error("Auth initialization securely aborted:", err);
+        if (isMounted) setError(err.message || "Failed to securely connect to the database.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -86,6 +89,7 @@ export const AuthProvider = ({ children }) => {
     isStaff: employeeProfile?.role === 'staff',
     isIntern: employeeProfile?.role === 'intern',
     loading,
+    error,
     signOut
   };
 
