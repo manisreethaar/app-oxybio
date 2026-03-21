@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { can, getPermissionsForRole } from '@/lib/permissions';
@@ -97,12 +97,17 @@ export const AuthProvider = ({ children }) => {
 
   const role = employeeProfile?.role;
 
-  // Convenience: check if the current user can perform an action
-  // Usage in any component: const { canDo } = useAuth(); if (canDo('tasks', 'approve')) { ... }
-  const canDo = (module, action) => can(role, module, action);
+  // Memoized: stable reference prevents infinite re-renders in child useEffect dependency arrays
+  const canDo = useCallback(
+    (module, action) => can(role, module, action),
+    [role]
+  );
 
-  // Full permissions map for the current user (useful for complex UIs)
-  const permissions = role ? getPermissionsForRole(role) : {};
+  // Memoized: only recomputes when role changes
+  const permissions = useMemo(
+    () => role ? getPermissionsForRole(role) : {},
+    [role]
+  );
 
   const value = {
     user,

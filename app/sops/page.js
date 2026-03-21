@@ -24,7 +24,9 @@ export default function SOPLibraryPage() {
     const { data } = await query;
     
     const mappedSops = (data || []).map(sop => {
-      const isAck = sop.sop_acknowledgements.some(ack => ack.employee_id === employeeProfile.id);
+      // Guard: sop_acknowledgements may be null instead of [] if no related rows exist
+      const acks = Array.isArray(sop.sop_acknowledgements) ? sop.sop_acknowledgements : [];
+      const isAck = acks.some(ack => ack.employee_id === employeeProfile?.id);
       return { ...sop, is_acknowledged: isAck };
     });
     
@@ -37,7 +39,12 @@ export default function SOPLibraryPage() {
       sop_id: sopId,
       employee_id: employeeProfile.id
     });
-    if (!error) fetchSOPs();
+    if (error && error.code !== '23505') {
+      // 23505 = unique_violation (already acknowledged) — safe to ignore
+      alert('Failed to acknowledge: ' + error.message);
+      return;
+    }
+    fetchSOPs();
   };
 
   const handleUpload = async (e) => {
@@ -54,7 +61,8 @@ export default function SOPLibraryPage() {
       if (!uploadRes.ok) throw new Error(uploadData.error);
 
       const { error: dbError } = await supabase.from('sop_library').insert({
-        sop_id: `SOP-${Math.floor(1000 + Math.random() * 9000)}`,
+        // Use timestamp + random suffix to prevent ID collisions on concurrent uploads
+        sop_id: `SOP-${Date.now().toString(36).toUpperCase().slice(-4)}${Math.floor(10 + Math.random() * 90)}`,
         title: uploadForm.title,
         category: uploadForm.category,
         version: uploadForm.version,

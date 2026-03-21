@@ -71,7 +71,7 @@ function EmployeeIDCard({ emp, onClose }) {
 }
 
 export default function DirectoryPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading: authLoading } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -80,9 +80,10 @@ export default function DirectoryPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to resolve before checking permissions
     if (isAdmin === false) { router.push('/dashboard'); return; }
     fetchEmployees();
-  }, [isAdmin]);
+  }, [isAdmin, authLoading]);
 
   const fetchEmployees = async () => {
     const { data } = await supabase
@@ -143,7 +144,7 @@ export default function DirectoryPage() {
                     <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
-                      {emp.full_name?.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                      {emp.full_name?.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0,2).toUpperCase()}
                     </div>
                   )}
                 </div>

@@ -10,14 +10,21 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get employee id
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-    if (!emp || (emp.role !== 'admin' && emp.role !== 'staff')) {
+    // Get employee id — lookup by UUID, not email, for security
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
+    const ALLOWED_ROLES = ['admin', 'staff', 'research_fellow', 'scientist', 'intern'];
+    if (!emp || !ALLOWED_ROLES.includes(emp.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
     const { batch_id, ph_value, notes } = body;
+
+    // Input validation: ph_value must be a finite number in a realistic biological range
+    const phNum = parseFloat(ph_value);
+    if (!batch_id || isNaN(phNum) || phNum < 1.0 || phNum > 14.0) {
+      return NextResponse.json({ success: false, error: 'Invalid input. pH must be a number between 1.0 and 14.0.' }, { status: 400 });
+    }
 
     // Get batch start time
     const { data: batch } = await supabase.from('batches').select('start_time').eq('id', batch_id).single();
