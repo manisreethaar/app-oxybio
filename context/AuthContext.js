@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { can, getPermissionsForRole } from '@/lib/permissions';
 
 const AuthContext = createContext({});
 
@@ -14,13 +15,10 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // onAuthStateChange is the ONLY source of truth.
-    // It fires immediately on mount with the current session (INITIAL_SESSION event),
-    // so there is no need for a separate getUser() call.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
-          // Fetch the employee profile from the DB
           const { data: profile } = await supabase
             .from('employees')
             .select('*')
@@ -31,7 +29,6 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
           setEmployeeProfile(null);
         }
-        // Always stop loading once we get any auth event
         setLoading(false);
       }
     );
@@ -48,16 +45,28 @@ export const AuthProvider = ({ children }) => {
     router.push('/login');
   };
 
+  const role = employeeProfile?.role;
+
+  // Convenience: check if the current user can perform an action
+  // Usage in any component: const { canDo } = useAuth(); if (canDo('tasks', 'approve')) { ... }
+  const canDo = (module, action) => can(role, module, action);
+
+  // Full permissions map for the current user (useful for complex UIs)
+  const permissions = role ? getPermissionsForRole(role) : {};
+
   const value = {
     user,
     employeeProfile,
-    role: employeeProfile?.role,
-    isAdmin: employeeProfile?.role === 'admin',
-    isStaff: employeeProfile?.role === 'staff',
-    isIntern: employeeProfile?.role === 'intern',
+    role,
+    isAdmin: role === 'admin',
+    isResearchFellow: role === 'research_fellow',
+    isScientist: role === 'scientist',
+    isIntern: role === 'intern',
     loading,
     error: null,
     signOut,
+    canDo,         // ← NEW: granular permission check
+    permissions,   // ← NEW: full permissions map for current role
   };
 
   return (
