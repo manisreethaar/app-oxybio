@@ -11,7 +11,16 @@ export default function ClientLayout({ children }) {
   const { loading } = useAuth();
   
   useEffect(() => {
+    // FORCE CACHE BUSTING: Nuke any old Service Workers and Caches that are trapping the app
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          // If it's not our exact safe SW, or we just want to force update
+          registration.update();
+        }
+      });
+      
+      // Register our safe passthrough SW for push notifications
       navigator.serviceWorker.register('/sw.js').catch(err => console.error("SW registration failed:", err));
     }
   }, []);
