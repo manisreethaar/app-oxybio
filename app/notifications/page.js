@@ -20,9 +20,9 @@ export default function NotificationsPage() {
           <span className="absolute top-4 right-4 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
         </div>
         
-        <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">You're All Caught Up</h2>
+        <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">You&apos;re All Caught Up</h2>
         <p className="text-slate-500 font-medium max-w-sm mb-8 leading-relaxed">
-          Critical alerts (like expiring compliance documents and high-priority task assignments) are actively routed straight to your mobile device's lock screen via Web Push.
+          Critical alerts (like expiring compliance documents and high-priority task assignments) are actively routed straight to your mobile device&apos;s lock screen via Web Push.
         </p>
 
         <div className="flex items-center gap-2 text-sm font-bold text-slate-400 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100">
