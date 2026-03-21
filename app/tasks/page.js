@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2, 
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp, 
-  ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck
+  ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 
@@ -28,7 +28,7 @@ export default function TasksPage() {
   // New task form
   const [showCreate, setShowCreate] = useState(false);
   const [newTask, setNewTask] = useState({ 
-    title: '', description: '', assigned_to: '', due_date: '', 
+    title: '', description: '', assigned_user_ids: [], due_date: '', 
     priority: 'medium', checklist: [] 
   });
   const [checklistInput, setChecklistInput] = useState('');
@@ -103,11 +103,13 @@ export default function TasksPage() {
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
+    if (newTask.assigned_user_ids.length === 0) return alert('Select at least one assignee.');
     setActionLoading(true);
-    const { error } = await supabase.from('tasks').insert({
+
+    const insertPayload = newTask.assigned_user_ids.map(uid => ({
       title: newTask.title,
       description: newTask.description,
-      assigned_to: newTask.assigned_to,
+      assigned_to: uid,
       assigned_by: employeeProfile.id,
       due_date: newTask.due_date,
       priority: newTask.priority,
@@ -115,24 +117,35 @@ export default function TasksPage() {
       status: 'open',
       approval_status: 'not_required',
       logged_minutes: 0
-    });
+    }));
+
+    const { error } = await supabase.from('tasks').insert(insertPayload);
 
     if (!error) {
-      fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assigned_to: newTask.assigned_to,
-          title: "New Task: " + newTask.priority.toUpperCase() + " Priority",
-          body: newTask.title,
-          url: "/tasks"
-        })
-      }).catch(() => {});
+      newTask.assigned_user_ids.forEach(uid => {
+        fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assigned_to: uid,
+            title: "New Task: " + newTask.priority.toUpperCase() + " Priority",
+            body: newTask.title,
+            url: "/tasks"
+          })
+        }).catch(() => {});
+      });
       setShowCreate(false);
-      setNewTask({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', checklist: [] });
+      setNewTask({ title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', checklist: [] });
       fetchTasks();
     }
     setActionLoading(false);
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!confirm('Are you sure you want to permanently delete this task?')) return;
+    await supabase.from('tasks').delete().eq('id', taskId);
+    setSelectedTask(null);
+    fetchTasks();
   };
 
   // ─── Timer ─────────────────────────────────────────────────────────────────
@@ -329,11 +342,23 @@ export default function TasksPage() {
             </div>
             <div>
               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Assign To *</label>
-              <select required value={newTask.assigned_to} onChange={e => setNewTask({...newTask, assigned_to: e.target.value})} 
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500">
-                <option value="">Select team member...</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
-              </select>
+              <div className="max-h-32 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1">
+                {employees.map(e => (
+                  <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                    <input type="checkbox" 
+                      checked={newTask.assigned_user_ids.includes(e.id)}
+                      onChange={(ev) => {
+                        const ids = ev.target.checked 
+                          ? [...newTask.assigned_user_ids, e.id]
+                          : newTask.assigned_user_ids.filter(id => id !== e.id);
+                        setNewTask({...newTask, assigned_user_ids: ids});
+                      }}
+                      className="rounded text-teal-600 focus:ring-teal-500 flex-shrink-0"
+                    />
+                    <span className="text-sm font-medium text-slate-700 truncate">{e.full_name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -525,10 +550,18 @@ export default function TasksPage() {
                 <h3 className="text-lg font-black text-slate-800">{selectedTask.title}</h3>
                 {selectedTask.description && <p className="text-sm text-slate-500 mt-1">{selectedTask.description}</p>}
               </div>
-              <button onClick={handleCloseModal} 
-                className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 shrink-0">
-                <X className="w-5 h-5"/>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {canDo('tasks', 'assign') && (
+                  <button onClick={() => handleDeleteTask(selectedTask.id)} 
+                    className="p-2 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                    <Trash2 className="w-5 h-5"/>
+                  </button>
+                )}
+                <button onClick={handleCloseModal} 
+                  className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+                  <X className="w-5 h-5"/>
+                </button>
+              </div>
             </div>
 
             <div className="p-6 space-y-5">

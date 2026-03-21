@@ -95,9 +95,9 @@ export default function AdminDashboard({ employeeId }) {
         <StatCard title="Compliance Due" value={stats.compliance} icon={CalendarDays} color="from-amber-400 to-orange-500" link="/compliance" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Production Panel */}
-        <div className="lg:col-span-2 glass-card rounded-[2.5rem] overflow-hidden flex flex-col">
+        <div className="glass-card rounded-[2.5rem] overflow-hidden flex flex-col">
           <div className="px-8 py-6 border-b border-white/40 flex justify-between items-center bg-white/20">
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">Live Production Hub</h2>
             <Link href="/batches" className="text-sm font-bold text-teal-600 hover:text-teal-800 bg-white/50 px-4 py-2 rounded-xl shadow-sm border border-white/60 transition-all hover:bg-white/80">View Registry</Link>
@@ -109,7 +109,7 @@ export default function AdminDashboard({ employeeId }) {
                 <p className="text-slate-500 font-medium">No fermenting batches currently active.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {activeBatches.map(batch => {
                   const hoursElapsed = differenceInHours(new Date(), new Date(batch.start_time));
                   const latestPh = batch.ph_readings && batch.ph_readings.length > 0 
@@ -148,43 +148,6 @@ export default function AdminDashboard({ employeeId }) {
                 })}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Phase 0 Tracker */}
-        <div className="glass-card rounded-[2.5rem] overflow-hidden flex flex-col">
-          <div className="px-8 py-6 border-b border-white/40 bg-white/20">
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Phase 0 Tracker</h2>
-          </div>
-          <div className="p-8 flex-1 flex flex-col bg-white/10">
-            <div className="space-y-4 mb-8">
-              {[
-                { label: 'Formulation Design', done: true },
-                { label: 'Consumer Taste Panel', done: false },
-                { label: 'NABL Shelf-Life', done: false },
-                { label: 'Patent Provisional', done: false },
-                { label: 'FSSAI Application', done: false },
-                { label: 'Hosur Site Lease', done: true },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center group cursor-default">
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center mr-4 transition-colors shadow-sm border ${item.done ? 'bg-gradient-to-br from-teal-400 to-emerald-500 border-none text-white' : 'bg-white/50 border-white/60 text-transparent'}`}>
-                    <CheckCircle2 className={`w-4 h-4 ${item.done ? 'opacity-100' : 'opacity-0'}`} />
-                  </div>
-                  <span className={`text-sm font-bold transition-colors ${item.done ? 'text-slate-400 line-through decoration-slate-300 decoration-2' : 'text-slate-700 group-hover:text-slate-900'}`}>{item.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-auto bg-white/40 p-5 rounded-2xl border border-white/50 shadow-sm">
-              <div className="flex justify-between items-end mb-3">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Operation Progress</span>
-                <span className="text-lg font-black text-teal-700 leading-none">33%</span>
-              </div>
-              <div className="w-full bg-slate-200/50 rounded-full h-3 inner-shadow overflow-hidden">
-                <div className="bg-gradient-to-r from-teal-400 to-cyan-500 h-full rounded-full relative" style={{ width: '33%' }}>
-                  <div className="absolute inset-0 bg-white/20 w-full animate-[pulse_2s_ease-in-out_infinite]"></div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
