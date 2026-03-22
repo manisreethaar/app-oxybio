@@ -22,16 +22,13 @@ export async function POST(request) {
 
     if (fetchErr || !stock) return NextResponse.json({ error: 'Stock item not found' }, { status: 404 });
 
-    // 2. Perform ATOMIC TRANSACTION: Only deduct if stock is sufficient
-    const { data: updatedStock, error: updateErr } = await supabase
-      .from('inventory_stock')
-      .update({ current_quantity: stock.current_quantity - parseFloat(quantity_used) })
-      .eq('id', stock_id)
-      .gte('current_quantity', parseFloat(quantity_used))
-      .select()
-      .single();
+    // 2. Perform ATOMIC TRANSACTION via Database RPC
+    const { error: updateErr } = await supabase.rpc('deduct_inventory_stock', {
+      id_to_deduct: stock_id,
+      quantity_to_deduct: parseFloat(quantity_used)
+    });
 
-    if (updateErr || !updatedStock) {
+    if (updateErr) {
       return NextResponse.json({ 
         error: 'Concurrency Error or Insufficient Stock: The inventory level changed or was too low.' 
       }, { status: 409 });
