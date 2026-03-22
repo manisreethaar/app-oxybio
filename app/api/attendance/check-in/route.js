@@ -56,8 +56,8 @@ export async function POST(request) {
          return NextResponse.json({ error: 'Location override restricted to Administrators' }, { status: 403 });
     }
 
-    // 3. Prevent Duplicate Log (Same Day)
-    const todayStr = new Date().toISOString().split('T')[0];
+    // 3. Prevent Duplicate Log (Same Day IST)
+    const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
     const { data: existing } = await supabase.from('attendance_log')
         .select('id')
         .eq('employee_id', emp.id)

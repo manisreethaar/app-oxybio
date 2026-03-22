@@ -35,6 +35,17 @@ export async function POST(request) {
         }, { status: 400 });
     }
 
+    // New Fix: Validate Calendar Overlaps
+    const { data: overlapping } = await supabase.from('leave_applications')
+        .select('id')
+        .eq('employee_id', emp.id)
+        .in('status', ['approved', 'pending'])
+        .or(`and(start_date.lte.${end_date},end_date.gte.${start_date})`);
+
+    if (overlapping?.length > 0) {
+        return NextResponse.json({ error: 'Scheduling Conflict: You already have approved/pending leave during this selected range.' }, { status: 400 });
+    }
+
     // 4. Atomic Insert
     const { data, error: dbError } = await supabase.from('leave_applications').insert({
         employee_id: emp.id,
