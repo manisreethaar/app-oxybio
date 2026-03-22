@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap, TrendingUp, X } from 'lucide-react';
@@ -21,13 +21,13 @@ export default function ConsumerResearchPage() {
 
   const supabase = createClient();
 
-  useEffect(() => { fetchSessions(); }, []);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from('taste_panels').select('*').order('created_at', { ascending: false });
     setSessions(data || []); setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
   const handleCreateSession = async (e) => {
     e.preventDefault();

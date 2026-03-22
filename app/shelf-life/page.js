@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
@@ -22,11 +22,7 @@ export default function ShelfLifePage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const [{ data: studyData }, { data: batchData }] = await Promise.all([
       supabase.from('shelf_life_studies').select('*, batches(batch_id, variant)').order('created_at', { ascending: false }),
@@ -35,7 +31,11 @@ export default function ShelfLifePage() {
     setStudies(studyData || []);
     setBatches(batchData || []);
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

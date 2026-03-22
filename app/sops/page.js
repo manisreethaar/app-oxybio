@@ -15,15 +15,15 @@ export default function SOPLibraryPage() {
   const [uploadForm, setUploadForm] = useState({ title: '', category: 'QC', version: '1.0', file: null });
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { if (employeeProfile) fetchSOPs(); }, [employeeProfile]);
-
-  const fetchSOPs = async () => {
+  const fetchSOPs = useCallback(async () => {
     setLoading(true);
     let query = supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true);
     const { data } = await query;
     const mapped = (data || []).map(sop => ({ ...sop, is_acknowledged: (sop.sop_acknowledgements || []).some(ack => ack.employee_id === employeeProfile?.id) }));
     setSops(mapped); setLoading(false);
-  };
+  }, [supabase, employeeProfile]);
+
+  useEffect(() => { if (employeeProfile) fetchSOPs(); }, [employeeProfile, fetchSOPs]);
 
   const [showAckModal, setShowAckModal] = useState(null);
   const [signatureText, setSignatureText] = useState("");
