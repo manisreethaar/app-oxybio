@@ -163,38 +163,63 @@ export default function TasksPage() {
     setActionLoading(true); setUploading(true);
     let proofUrl = null;
 
-    if (proofFile) {
-      const formData = new FormData(); formData.append('file', proofFile);
-      try { const res = await fetch('/api/upload', { method: 'POST', body: formData }); const data = await res.json(); proofUrl = data.url; } catch {}
+    try {
+      if (proofFile) {
+        const formData = new FormData(); formData.append('file', proofFile);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData }); 
+        if (res.ok) {
+          const data = await res.json(); 
+          proofUrl = data.url; 
+        } else {
+          alert("Failed to upload proof attachment.");
+          setUploading(false); setActionLoading(false); return;
+        }
+      }
+      setUploading(false);
+
+      let finalMins = (selectedTask.logged_minutes || 0);
+      if (timerRunning && selectedTask?.time_started_at) {
+        finalMins += Math.floor((new Date().getTime() - new Date(selectedTask.time_started_at).getTime()) / 60000);
+      }
+
+      const { error: submitErr } = await supabase.from('tasks').update({
+        status: 'done', approval_status: selectedTask.is_personal_reminder ? 'approved' : 'pending_review',
+        completion_note: completionNote, completed_at: new Date().toISOString(), proof_url: proofUrl,
+        logged_minutes: finalMins, time_started_at: null
+      }).eq('id', selectedTask.id);
+
+      if (submitErr) throw submitErr;
+
+      setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks();
+    } catch (err) {
+      alert("Failed to submit review: " + err.message);
+    } finally {
+      setActionLoading(false);
     }
-    setUploading(false);
-
-    let finalMins = (selectedTask.logged_minutes || 0);
-    if (timerRunning && selectedTask?.time_started_at) {
-      finalMins += Math.floor((new Date().getTime() - new Date(selectedTask.time_started_at).getTime()) / 60000);
-    }
-
-    await supabase.from('tasks').update({
-      status: 'done', approval_status: selectedTask.is_personal_reminder ? 'approved' : 'pending_review',
-      completion_note: completionNote, completed_at: new Date().toISOString(), proof_url: proofUrl,
-      logged_minutes: finalMins, time_started_at: null
-    }).eq('id', selectedTask.id);
-
-    setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); setActionLoading(false);
   };
 
   const handleApprove = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
-    await supabase.from('tasks').update({ approval_status: 'approved' }).eq('id', taskId);
-    if (task?.assigned_to) notifyEmployee(task.assigned_to, '✅ Task Approved', `Your task "${task.title}" has been approved.`, '/tasks');
-    setSelectedTask(null); fetchTasks();
+    try {
+      const { error } = await supabase.from('tasks').update({ approval_status: 'approved' }).eq('id', taskId);
+      if (error) throw error;
+      if (task?.assigned_to) notifyEmployee(task.assigned_to, '✅ Task Approved', `Your task "${task.title}" has been approved.`, '/tasks');
+      setSelectedTask(null); fetchTasks();
+    } catch (err) {
+      alert("Failed to approve task: " + err.message);
+    }
   };
 
   const handleReject = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
-    await supabase.from('tasks').update({ approval_status: 'rejected', status: 'in-progress', completion_note: rejectNote || 'Revision required.' }).eq('id', taskId);
-    if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks');
-    setRejectNote(''); setSelectedTask(null); fetchTasks();
+    try {
+      const { error } = await supabase.from('tasks').update({ approval_status: 'rejected', status: 'in-progress', completion_note: rejectNote || 'Revision required.' }).eq('id', taskId);
+      if (error) throw error;
+      if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks');
+      setRejectNote(''); setSelectedTask(null); fetchTasks();
+    } catch (err) {
+      alert("Failed to return task: " + err.message);
+    }
   };
 
   if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading task queue...</div>;

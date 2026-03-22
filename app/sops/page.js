@@ -34,8 +34,19 @@ export default function SOPLibraryPage() {
     setSubmittingAck(true);
     try {
       const res = await fetch(`/api/sops/${showAckModal.id}/acknowledge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employee_id: employeeProfile.id, signature_text: signatureText }) });
-      if (res.ok) { setShowAckModal(null); setSignatureText(""); fetchSOPs(); notifyEmployee(employeeProfile.id, '📋 SOP Signed', `Acknowledged: "${showAckModal.title}".`, '/sops'); }
-    } finally { setSubmittingAck(false); }
+      if (res.ok) { 
+        setShowAckModal(null); 
+        setSignatureText(""); 
+        fetchSOPs(); 
+        notifyEmployee(employeeProfile.id, '📋 SOP Signed', `Acknowledged: "${showAckModal.title}".`, '/sops'); 
+      } else {
+        alert("Failed to sign SOP. Please try again.");
+      }
+    } catch (err) {
+      alert("Error acknowledging SOP: " + err.message);
+    } finally { 
+      setSubmittingAck(false); 
+    }
   };
 
   const handleUpload = async (e) => {
