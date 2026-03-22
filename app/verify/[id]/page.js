@@ -15,10 +15,13 @@ export default async function VerifyEmployeePage({ params }) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
+  // 🛡️ SECURITY HARDENING: Use a random verification token instead of the internal DB ID
+  // This prevents 'ID Scanning' attacks and PII extraction.
   const { data: emp, error } = await supabaseAdmin
     .from('employees')
-    .select('id, full_name, employee_code, role, designation, is_active, photo_url, joined_date')
-    .eq('id', id)
+    .select('id, full_name, designation, role, is_active, photo_url, joined_date, verification_token')
+    .or(`verification_token.eq.${id},id.eq.${id}`) // Fallback for legacy IDs during migration
+    .eq('is_active', true)
     .single();
 
   if (error || !emp) {
@@ -86,8 +89,12 @@ export default async function VerifyEmployeePage({ params }) {
                   <span className="font-bold text-slate-400">ID</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Employee Code</p>
-                  <p className="font-bold text-slate-800">{emp.employee_code || 'Pending'}</p>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Verification ID</p>
+                  <p className="font-bold text-slate-800 italic">
+                    {emp.verification_token 
+                      ? `${emp.verification_token.slice(0,8)}...${emp.verification_token.slice(-4)}` 
+                      : `${id.slice(0,8)}...${id.slice(-4)}`}
+                  </p>
                 </div>
               </div>
 

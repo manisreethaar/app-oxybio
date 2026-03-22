@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
+import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import { format, differenceInHours } from 'date-fns';
 
@@ -14,22 +14,30 @@ export default function BatchesPage() {
   const [loadingBatches, setLoadingBatches] = useState(true);
   
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
-  const [newBatchForm, setNewBatchForm] = useState({ variant: 'O2B-Agri' });
+  const [formulations, setFormulations] = useState([]);
+  const [newBatchForm, setNewBatchForm] = useState({ variant: 'O2B-Agri', formulation_id: '' });
   const [creatingBatch, setCreatingBatch] = useState(false);
   
   const supabase = createClient();
 
   useEffect(() => {
     fetchBatches();
+    fetchFormulations();
   }, []);
+
+  const fetchFormulations = async () => {
+    const { data } = await supabase.from('formulations').select('id, name, code, version').order('created_at', { ascending: false });
+    setFormulations(data || []);
+  };
 
   const fetchBatches = async () => {
     setLoadingBatches(true);
     const { data: fermenting } = await supabase
       .from('batches')
-      .select('*, ph_readings(ph_value, is_deviation, deviation_acknowledged)')
+      .select('*, formulations(name, code, version)')
       .in('status', ['fermenting', 'deviation', 'qc-hold'])
       .order('start_time', { ascending: false });
+    // ...
 
     // Check for unacknowledged deviations
     const hasDeviation = fermenting?.some(b => b.ph_readings?.some(ph => ph.is_deviation && !ph.deviation_acknowledged));
@@ -44,29 +52,30 @@ export default function BatchesPage() {
       .limit(10);
     
     setHistory(completed || []);
-    setHistory(completed || []);
     setLoadingBatches(false);
   };
 
   const handleCreateBatch = async (e) => {
     e.preventDefault();
+    if (!newBatchForm.formulation_id) return alert("Please select a valid Formulation version.");
     setCreatingBatch(true);
     try {
-      // Auto-generate a beautiful BATCH ID format
-      const batchIdStr = `BTCH-${newBatchForm.variant.split('-')[1].toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+      const salt = crypto.randomUUID().split('-')[0].slice(-4).toUpperCase();
+      const batchIdStr = `BTCH-${newBatchForm.variant.split('-')[1].toUpperCase()}-${salt}`;
       
       const { error } = await supabase.from('batches').insert({
         batch_id: batchIdStr,
         variant: newBatchForm.variant,
-        current_stage: 'fermentation',
-        status: 'fermenting',
+        formulation_id: newBatchForm.formulation_id,
+        current_stage: 'media_prep',
+        status: 'pending',
         start_time: new Date().toISOString()
       });
 
       if (error) throw error;
       
       setShowNewBatchModal(false);
-      setNewBatchForm({ variant: 'O2B-Agri' });
+      setNewBatchForm({ variant: 'O2B-Agri', formulation_id: '' });
       fetchBatches();
     } catch (err) {
       alert("Failed to initialize production sequence: " + err.message);
@@ -209,18 +218,19 @@ export default function BatchesPage() {
             
             <form onSubmit={handleCreateBatch} className="space-y-5">
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Biological Variant</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Scientific Formulation</label>
                 <select 
-                  value={newBatchForm.variant} 
-                  onChange={e => setNewBatchForm({...newBatchForm, variant: e.target.value})} 
-                  className="w-full border-2 border-slate-100 rounded-xl p-3 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-slate-50 font-bold text-slate-700 transition-all"
+                  required
+                  value={newBatchForm.formulation_id} 
+                  onChange={e => setNewBatchForm({...newBatchForm, formulation_id: e.target.value})} 
+                  className="w-full border-2 border-slate-100 rounded-xl p-3 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-slate-50 font-bold text-slate-700 transition-all font-mono"
                 >
-                  <option value="O2B-Agri">O2B-Agri (Agricultural Inoculant)</option>
-                  <option value="O2B-Aqua">O2B-Aqua (Aquaculture Probiotics)</option>
-                  <option value="O2B-Pro">O2B-Pro (Human Grade Probiotics)</option>
-                  <option value="O2B-Enzyme">O2B-Enzyme (Industrial Catalysts)</option>
+                  <option value="">Select Recipe Version...</option>
+                  {formulations.map(f => (
+                    <option key={f.id} value={f.id}>{f.code} - {f.name} (v{f.version})</option>
+                  ))}
                 </select>
-                <p className="text-[10px] text-slate-400 font-medium mt-2">Selecting a variant binds specific parameter constraints and QC targets for the fermentation lifecycle.</p>
+                <p className="text-[10px] text-slate-400 font-medium mt-2">Linking a batch to a formulation version ensures experiment traceability and CCP compliance.</p>
               </div>
 
               <div className="pt-2">

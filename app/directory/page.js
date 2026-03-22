@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
-import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 function EmployeeIDCard({ emp, onClose }) {
@@ -67,44 +67,82 @@ function EmployeeIDCard({ emp, onClose }) {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
 }
 
 export default function DirectoryPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { canDo, loading: authLoading } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 24;
+  
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    if (authLoading) return; // Wait for auth to resolve before checking permissions
-    if (isAdmin === false) { router.push('/dashboard'); return; }
-    fetchEmployees();
-  }, [isAdmin, authLoading]);
+    if (authLoading) return;
+    if (!canDo('view_directory')) {
+      router.push('/dashboard');
+      return;
+    }
+    fetchEmployees(0, false);
+  }, [canDo, authLoading]);
 
-  const fetchEmployees = async () => {
-    const { data } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('is_active', true)
-      .order('full_name');
-    setEmployees(data || []);
-    setLoading(false);
+  const fetchEmployees = async (pageNum = 0, append = false) => {
+    if (!append) setLoading(true);
+    try {
+      const start = pageNum * PAGE_SIZE;
+      const end = start + PAGE_SIZE - 1;
+
+      let query = supabase
+        .from('employees')
+        .select('id, full_name, designation, role, department, photo_url, employee_code, email, phone, blood_group, is_active')
+        .eq('is_active', true)
+        .order('full_name')
+        .range(start, end);
+
+      if (search) {
+        query = query.ilike('full_name', `%${search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (append) {
+        setEmployees(prev => [...prev, ...(data || [])]);
+      } else {
+        setEmployees(data || []);
+      }
+      setHasMore(data?.length === PAGE_SIZE);
+    } catch (err) {
+      console.error("Directory fetch failed:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = employees.filter(e =>
-    e.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    e.email?.toLowerCase().includes(search.toLowerCase()) ||
-    e.department?.toLowerCase().includes(search.toLowerCase()) ||
-    e.designation?.toLowerCase().includes(search.toLowerCase()) ||
-    e.employee_code?.toLowerCase().includes(search.toLowerCase())
-  );
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchEmployees(nextPage, true);
+  };
+
+  // Debounced search reset
+  useEffect(() => {
+    if (authLoading) return;
+    setPage(0);
+    setHasMore(true);
+    const handler = setTimeout(() => fetchEmployees(0, false), 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  const filtered = employees;
 
   return (
     <div className="space-y-8 pb-20">
@@ -119,7 +157,7 @@ export default function DirectoryPage() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
         <input
           type="text"
-          placeholder="Search by name, department, code..."
+          placeholder="Search by name..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full pl-12 pr-4 py-4 glass-card rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 placeholder:text-slate-400"
@@ -127,7 +165,7 @@ export default function DirectoryPage() {
       </div>
 
       {/* Employee Cards Grid */}
-      {loading ? (
+      {loading && employees.length === 0 ? (
         <div className="flex justify-center py-20">
           <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
         </div>
@@ -137,48 +175,60 @@ export default function DirectoryPage() {
           <p className="font-bold text-lg">No employees found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(emp => (
-            <div key={emp.id} className="glass-card rounded-[1.75rem] p-6 flex flex-col gap-4 cursor-pointer" onClick={() => setSelected(emp)}>
-              <div className="flex items-start gap-4">
-                {/* Avatar */}
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0">
-                  {emp.photo_url ? (
-                    <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
-                      {(() => {
-                        const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
-                        const parts = emp.full_name?.split(' ') || [];
-                        const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
-                        return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
-                      })()}
-                    </div>
-                  )}
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(emp => (
+              <div key={emp.id} className="glass-card rounded-[1.75rem] p-6 flex flex-col gap-4 cursor-pointer" onClick={() => setSelected(emp)}>
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0">
+                    {emp.photo_url ? (
+                      <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
+                        {(() => {
+                          const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+                          const parts = emp.full_name?.split(' ') || [];
+                          const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
+                          return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
+                    <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role}</p>
+                    <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
-                  <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role}</p>
-                  <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
+
+                <div className="space-y-1.5 text-xs text-slate-500 border-t border-white/40 pt-4">
+                  {emp.employee_code && <div className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-slate-400"/><span className="font-bold">{emp.employee_code}</span></div>}
+                  <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400"/><span className="truncate">{emp.email}</span></div>
+                  {emp.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400"/>{emp.phone}</div>}
+                  {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
                 </div>
-              </div>
 
-              <div className="space-y-1.5 text-xs text-slate-500 border-t border-white/40 pt-4">
-                {emp.employee_code && <div className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-slate-400"/><span className="font-bold">{emp.employee_code}</span></div>}
-                <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400"/><span className="truncate">{emp.email}</span></div>
-                {emp.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400"/>{emp.phone}</div>}
-                {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
+                <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-teal-700 border border-white transition-all">
+                  <CreditCard className="w-3.5 h-3.5"/> View ID Card
+                </button>
               </div>
-
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-teal-700 border border-white transition-all">
-                <CreditCard className="w-3.5 h-3.5"/> View ID Card
+            ))}
+          </div>
+          
+          {hasMore && (
+            <div className="pt-4 flex justify-center">
+              <button 
+                onClick={loadMore}
+                disabled={loading}
+                className="px-8 py-3 bg-white border border-teal-100 text-teal-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-teal-100 transition-all flex items-center gap-2"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Load More Teammates'}
               </button>
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {/* Full ID Card Modal */}
       {selected && <EmployeeIDCard emp={selected} onClose={() => setSelected(null)}/>}
     </div>
   );

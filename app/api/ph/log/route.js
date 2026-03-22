@@ -48,11 +48,21 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    // Check if deviation to trigger email (Mocked Resend for now, or use Supabase trigger)
-    // The trigger sets is_deviation automatically but we can check here to send emails
+    // Check if deviation to trigger alert and update status
+    // Thresholds: pH < 4.2 or pH > 4.5
     if (ph_value < 4.2 || ph_value > 4.5) {
-        // Send email to admins logic here
-        await supabase.from('batches').update({ status: 'deviation' }).eq('id', batch_id);
+        const { error: updateError } = await supabase
+          .from('batches')
+          .update({ 
+            status: 'deviation',
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', batch_id);
+        
+        if (updateError) {
+          console.error("Deviation status sync failed:", updateError);
+          // We don't throw here to avoid losing the log entry, but we log the sync failure
+        }
     }
 
     return NextResponse.json({ success: true, data });

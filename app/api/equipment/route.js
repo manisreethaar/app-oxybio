@@ -19,8 +19,15 @@ export async function GET() {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { name, model, serial_number, calibration_due_date, status } = await request.json();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { data: emp } = await supabase.from('employees').select('role').eq('id', user.id).single();
+    if (emp?.role !== 'admin') {
+      return NextResponse.json({ error: 'Permission Denied: Administrator role required' }, { status: 403 });
+    }
+
+    const { name, model, serial_number, calibration_due_date, status } = await request.json();
     if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
     const { data, error } = await supabase

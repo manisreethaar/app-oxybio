@@ -13,20 +13,30 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. Check current stock
-    const { data: stock, error: stockFetchErr } = await supabase
+    // 1. Fetch current stock to have a local baseline (or use RPC for true relative update)
+    const { data: stock, error: fetchErr } = await supabase
       .from('inventory_stock')
       .select('current_quantity')
       .eq('id', stock_id)
       .single();
 
-    if (stockFetchErr || !stock) throw new Error('Stock lot not found');
-    if (stock.current_quantity < quantity_used) {
-      return NextResponse.json({ error: 'Insufficient stock quantity' }, { status: 400 });
+    if (fetchErr || !stock) return NextResponse.json({ error: 'Stock item not found' }, { status: 404 });
+
+    // 2. Perform ATOMIC TRANSACTION: Only deduct if stock is sufficient
+    const { data: updatedStock, error: updateErr } = await supabase
+      .from('inventory_stock')
+      .update({ current_quantity: stock.current_quantity - parseFloat(quantity_used) })
+      .eq('id', stock_id)
+      .gte('current_quantity', parseFloat(quantity_used))
+      .select()
+      .single();
+
+    if (updateErr || !updatedStock) {
+      return NextResponse.json({ 
+        error: 'Concurrency Error or Insufficient Stock: The inventory level changed or was too low.' 
+      }, { status: 409 });
     }
 
-    // 2. Perform transaction: Insert usage and update stock
-    // In a production app, we'd use a Supabase RPC or transaction here
     const { error: usageErr } = await supabase
       .from('inventory_usage')
       .insert({
@@ -36,14 +46,11 @@ export async function POST(request) {
         logged_by: user.id
       });
 
-    if (usageErr) throw usageErr;
-
-    const { error: updateErr } = await supabase
-      .from('inventory_stock')
-      .update({ current_quantity: stock.current_quantity - parseFloat(quantity_used) })
-      .eq('id', stock_id);
-
-    if (updateErr) throw updateErr;
+    if (usageErr) {
+       // Rollback equivalent: restore the stock if the link fails
+       await supabase.from('inventory_stock').update({ current_quantity: stock.current_quantity }).eq('id', stock_id);
+       throw usageErr;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

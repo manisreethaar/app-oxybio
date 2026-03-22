@@ -10,19 +10,23 @@ export default function PushManager() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     if (!user) return;
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.ready.then(reg => {
+        if (!isMounted) return;
         reg.pushManager.getSubscription().then(sub => {
+          if (!isMounted) return;
           if (sub) {
             setSubscribed(true);
-            saveSubscription(sub); // keep sync with DB
+            saveSubscription(sub);
           } else if (Notification.permission !== 'denied') {
             setShowBanner(true);
           }
         });
       });
     }
+    return () => { isMounted = false; };
   }, [user]);
 
   const saveSubscription = async (subscription) => {

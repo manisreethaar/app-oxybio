@@ -6,7 +6,7 @@ import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, External
 import Link from 'next/link';
 
 export default function InventoryPage() {
-  const { role, loading: authLoading } = useAuth();
+  const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState([]);
   const [items, setItems] = useState([]);
@@ -26,6 +26,12 @@ export default function InventoryPage() {
   });
   const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
   const [checkingTraining, setCheckingTraining] = useState(false);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 25;
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -34,15 +40,14 @@ export default function InventoryPage() {
 
     const loadAll = async () => {
       try {
-        await fetchData(controller.signal);
+        await fetchData(0, false, controller.signal);
       } catch (err) {
         if (err.name !== 'AbortError') console.error("Inventory fetch failed:", err);
       }
     };
 
-    loadAll();
-
     if (employeeProfile) {
+      loadAll();
       checkTraining(controller.signal);
     }
 
@@ -51,6 +56,13 @@ export default function InventoryPage() {
       controller.abort();
     };
   }, [employeeProfile]);
+
+  // Reset pagination when searching
+  useEffect(() => {
+    setPage(0);
+    setHasMore(true);
+    fetchData(0, false);
+  }, [searchTerm]);
 
   const checkTraining = async (signal) => {
     if (role === 'admin') {
@@ -69,25 +81,53 @@ export default function InventoryPage() {
     }
   };
 
-  const fetchData = async (signal) => {
-    setLoading(true);
+  const fetchData = async (pageNum = 0, append = false, signal = null) => {
+    if (!append) setLoading(true);
     try {
+      const start = pageNum * PAGE_SIZE;
+      const end = start + PAGE_SIZE - 1;
+
+      let stockQuery = supabase
+        .from('inventory_stock')
+        .select('*, inventory_items(name, unit, category), vendors(name)')
+        .order('expiry_date', { ascending: true })
+        .range(start, end);
+
+      if (searchTerm) {
+        stockQuery = stockQuery.ilike('supplier_batch_number', `%${searchTerm}%`);
+      }
+
       const [stockRes, itemsRes, vendorsRes] = await Promise.all([
-        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }).limit(200),
-        supabase.from('inventory_items').select('*').order('name').limit(1000),
-        supabase.from('vendors').select('*').order('name').limit(500)
+        stockQuery,
+        pageNum === 0 ? supabase.from('inventory_items').select('*').order('name').limit(1000) : Promise.resolve({ data: items }),
+        pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: vendors })
       ]);
 
       if (stockRes.error) throw stockRes.error;
 
-      if (stockRes.data) setStock(stockRes.data);
-      if (itemsRes.data) setItems(itemsRes.data);
-      if (vendorsRes.data) setVendors(vendorsRes.data);
+      if (append) {
+        setStock(prev => [...prev, ...(stockRes.data || [])]);
+      } else {
+        setStock(stockRes.data || []);
+      }
+
+      setHasMore(stockRes.data?.length === PAGE_SIZE);
+
+      if (pageNum === 0) {
+        if (itemsRes.data) setItems(itemsRes.data);
+        if (vendorsRes.data) setVendors(vendorsRes.data);
+      }
     } catch (err) {
       console.error("Data synchronization failed:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchData(nextPage, true);
   };
 
   const handleAddStock = async (e) => {
@@ -103,7 +143,8 @@ export default function InventoryPage() {
       if (res.ok) {
         setIsModalOpen(false);
         setNewStock({ item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '' });
-        await fetchData();
+        setPage(0);
+        await fetchData(0, false);
       } else {
         const errData = await res.json();
         alert(errData.error || 'Failed to log stock entry.');
@@ -115,10 +156,7 @@ export default function InventoryPage() {
     }
   };
 
-  const filteredStock = stock.filter(s => 
-    s.inventory_items?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.supplier_batch_number?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStock = stock; // Filtering is handled server-side via ilike in fetchData
 
   if (authLoading || loading) {
     return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
@@ -150,7 +188,7 @@ export default function InventoryPage() {
         </div>
         <input
           type="text"
-          placeholder="Search by name, lot number, or category..."
+          placeholder="Search by lot number..."
           className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -206,6 +244,51 @@ export default function InventoryPage() {
               </div>
             );
           })}
+          
+          {hasMore && (
+            <div className="pt-4 flex justify-center">
+              <button 
+                onClick={loadMore}
+                disabled={loading}
+                className="px-8 py-3 bg-white border border-teal-100 text-teal-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-teal-50 transition-all flex items-center gap-2"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Load More Records'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Item Registry Tab */}
+      {activeTab === 'items' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {items.map(item => (
+            <div key={item.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600 mb-2 inline-block">{item.category}</span>
+              <h3 className="text-lg font-black text-teal-950">{item.name}</h3>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Unit: {item.unit}</p>
+              <div className="mt-4 pt-4 border-t border-gray-50">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reorder Point</p>
+                <p className="text-sm font-black text-teal-800">{item.reorder_level || 'Not set'} {item.unit}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Vendors Tab */}
+      {activeTab === 'vendors' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {vendors.map(vendor => (
+            <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+              <h3 className="text-lg font-black text-teal-950">{vendor.name}</h3>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
+              <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
+                <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><ExternalLink className="w-3 h-3"/> {vendor.email || 'No email'}</p>
+                <div className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded inline-block">Approved Supplier</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -223,71 +306,69 @@ export default function InventoryPage() {
             
             {!trainingStatus.isTrained ? (
               <div className="p-12 bg-white flex flex-col items-center text-center gap-6">
-                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center">
-                  <Package className="w-10 h-10 text-amber-500" />
-                </div>
+                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center"><Package className="w-10 h-10 text-amber-500" /></div>
                 <div>
                   <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Training Required</h3>
-                  <p className="text-sm text-slate-500 font-medium mt-2 max-w-xs mx-auto">
-                    To maintain GMP compliance, you must read and sign the <b>Sanitation SOP</b> before handling warehouse stock.
-                  </p>
+                  <p className="text-sm text-slate-500 font-medium mt-2 max-w-xs mx-auto">To maintain GMP compliance, you must read and sign the <b>Sanitation SOP</b> before handling warehouse stock.</p>
                 </div>
                 <div className="flex flex-col gap-3 w-full">
-                  <Link href="/sops" className="w-full py-4 bg-teal-800 text-white font-black rounded-2xl shadow-lg hover:bg-teal-900 transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
-                    Open SOP Library
-                  </Link>
+                  <Link href="/sops" className="w-full py-4 bg-teal-800 text-white font-black rounded-2xl shadow-lg hover:bg-teal-900 transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">Open SOP Library</Link>
                   <button onClick={() => setIsModalOpen(false)} className="text-xs font-bold text-slate-400 hover:text-slate-600">Close Window</button>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleAddStock} className="p-8 space-y-5">
-              <div className="grid grid-cols-1 gap-5">
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
-                  <select 
-                    required 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
-                    value={newStock.item_id}
-                    onChange={(e) => setNewStock({...newStock, item_id: e.target.value})}
-                  >
-                    <option value="">Select Item...</option>
-                    {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-                  </select>
+                <div className="grid grid-cols-1 gap-5">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
+                    <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
+                      value={newStock.item_id} onChange={(e) => setNewStock({...newStock, item_id: e.target.value})}>
+                      <option value="">Select Item...</option>
+                      {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Supplier / Vendor</label>
+                    <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
+                      value={newStock.vendor_id} onChange={(e) => setNewStock({...newStock, vendor_id: e.target.value})}>
+                      <option value="">Select Supplier...</option>
+                      {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Quantity Recvd</label>
+                      <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                        value={newStock.received_quantity} onChange={(e) => setNewStock({...newStock, received_quantity: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Supplier Batch #</label>
+                      <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold font-mono" 
+                        value={newStock.supplier_batch_number} onChange={(e) => setNewStock({...newStock, supplier_batch_number: e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Expiry Date</label>
+                      <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                        value={newStock.expiry_date} onChange={(e) => setNewStock({...newStock, expiry_date: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Warehouse Location</label>
+                      <input type="text" placeholder="e.g. Shelf A1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                        value={newStock.location} onChange={(e) => setNewStock({...newStock, location: e.target.value})} />
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Quantity Recvd</label>
-                    <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                      value={newStock.received_quantity} onChange={(e) => setNewStock({...newStock, received_quantity: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Supplier Batch #</label>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold font-mono" 
-                      value={newStock.supplier_batch_number} onChange={(e) => setNewStock({...newStock, supplier_batch_number: e.target.value})} />
-                  </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log Entry'}
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Expiry Date</label>
-                    <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                      value={newStock.expiry_date} onChange={(e) => setNewStock({...newStock, expiry_date: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Warehouse Location</label>
-                    <input type="text" placeholder="e.g. Shelf A1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                      value={newStock.location} onChange={(e) => setNewStock({...newStock, location: e.target.value})} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log Entry'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>

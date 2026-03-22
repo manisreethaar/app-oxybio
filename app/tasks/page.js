@@ -39,7 +39,7 @@ export default function TasksPage() {
   const [proofFile, setProofFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);  // NEW seconds only in this session
+  const [elapsedSeconds, setElapsedSeconds] = useState(0); 
   const timerRef = useRef(null);
   const fileRef = useRef(null);
   const [rejectNote, setRejectNote] = useState('');
@@ -50,9 +50,8 @@ export default function TasksPage() {
     if (selectedTask) {
       setCompletionNote('');
       setProofFile(null);
-      setElapsedSeconds(0);
-      setTimerRunning(false);
       setRejectNote('');
+      // Note: we don't reset timerRunning/elapsedSeconds here if the same task is re-opened
     }
   }, [selectedTask?.id]);
 
@@ -62,15 +61,20 @@ export default function TasksPage() {
     if (employeeProfile) fetchTasks();
   }, [employeeProfile]);
 
-  // Live timer
+  // Live timer calculation (Crash-resistant)
   useEffect(() => {
-    if (timerRunning) {
-      timerRef.current = setInterval(() => setElapsedSeconds(s => s + 1), 1000);
+    let interval;
+    if (timerRunning && selectedTask?.time_started_at) {
+      interval = setInterval(() => {
+        const start = new Date(selectedTask.time_started_at).getTime();
+        const now = new Date().getTime();
+        setElapsedSeconds(Math.floor((now - start) / 1000));
+      }, 1000);
     } else {
-      clearInterval(timerRef.current);
+      setElapsedSeconds(0);
     }
-    return () => clearInterval(timerRef.current);
-  }, [timerRunning]);
+    return () => clearInterval(interval);
+  }, [timerRunning, selectedTask?.time_started_at]);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -81,7 +85,6 @@ export default function TasksPage() {
 
     if (!canDo('tasks', 'assign')) {
       query = query.eq('assigned_to', employeeProfile.id);
-      // Staff: still need their own name for form display
       setEmployees([{ id: employeeProfile.id, full_name: employeeProfile.full_name }]);
     } else {
       const { data: emps } = await supabase.from('employees').select('id, full_name').eq('is_active', true);
@@ -90,6 +93,19 @@ export default function TasksPage() {
 
     const { data } = await query;
     setTasks(data || []);
+    
+    // Sync selectedTask if it's currently open
+    if (selectedTask) {
+      const updated = data?.find(t => t.id === selectedTask.id);
+      if (updated) {
+        setSelectedTask(updated);
+        if (updated.time_started_at) {
+          setTimerRunning(true);
+        } else {
+          setTimerRunning(false);
+        }
+      }
+    }
     setLoading(false);
   };
 
@@ -105,7 +121,6 @@ export default function TasksPage() {
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
-    
     const isAdmin = canDo('tasks', 'assign');
     let assignees = [];
     let isPersonal = false;
@@ -119,7 +134,6 @@ export default function TasksPage() {
     }
 
     setActionLoading(true);
-
     const insertPayload = assignees.map(uid => ({
       title: newTask.title,
       description: newTask.description,
@@ -171,65 +185,63 @@ export default function TasksPage() {
     fetchTasks();
   };
 
-  // ─── Timer ─────────────────────────────────────────────────────────────────
+  // ─── Timer (Robust Version) ────────────────────────────────────────────────
   const handleStartTimer = async (task) => {
-    if (!task.time_started_at) {
-      await supabase.from('tasks').update({ 
-        time_started_at: new Date().toISOString(),
+    setActionLoading(true);
+    try {
+      const startTime = new Date().toISOString();
+      const { error } = await supabase.from('tasks').update({ 
+        time_started_at: startTime,
         status: 'in-progress'
       }).eq('id', task.id);
+      
+      if (error) throw error;
+      
+      setSelectedTask(t => ({ ...t, time_started_at: startTime, status: 'in-progress' }));
+      setTimerRunning(true);
+      fetchTasks();
+    } catch (err) {
+      console.error("Timer start failed:", err);
+    } finally {
+      setActionLoading(false);
     }
-    // Reset to 0 — we only track NEW seconds in this session to avoid double-counting
-    setElapsedSeconds(0);
-    setTimerRunning(true);
-    setSelectedTask(t => ({ ...t, status: 'in-progress' }));
-    fetchTasks();
   };
 
   const handlePauseTimer = async () => {
-    // Capture elapsedSeconds synchronously before any state updates to avoid stale closure
-    const capturedSeconds = elapsedSeconds;
-    setTimerRunning(false);
-    const newMins = Math.floor(capturedSeconds / 60);
-    if (newMins > 0) {
-      try {
-        const { error } = await supabase.from('tasks').update({ 
-          logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
-        }).eq('id', selectedTask.id);
-        
-        if (error) throw error;
-        
-        // Update selectedTask state directly (avoids stale tasks-array lookup)
-        setSelectedTask(t => ({ ...t, logged_minutes: (t.logged_minutes || 0) + newMins }));
-        setElapsedSeconds(0); // reset for next session
-        fetchTasks();
-      } catch (err) {
-        console.error("Timer save failed:", err);
-        alert("Network Error: Failed to save time to the cloud. Your exact time has been preserved locally. Please connect to WiFi and try pressing Start then Pause again.");
-      }
-    } else {
+    if (!selectedTask || !selectedTask.time_started_at) return;
+    
+    setActionLoading(true);
+    const start = new Date(selectedTask.time_started_at).getTime();
+    const now = new Date().getTime();
+    const sessionSeconds = Math.floor((now - start) / 1000);
+    const newMins = Math.floor(sessionSeconds / 60);
+
+    try {
+      const { error } = await supabase.from('tasks').update({ 
+        time_started_at: null,
+        logged_minutes: (selectedTask.logged_minutes || 0) + newMins
+      }).eq('id', selectedTask.id);
+      
+      if (error) throw error;
+      
+      setTimerRunning(false);
       setElapsedSeconds(0);
+      fetchTasks();
+    } catch (err) {
+      console.error("Timer pause failed:", err);
+      alert("Network Error: Could not stop timer.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  // Save time to DB first, then close — prevents losing time if user closes mid-timer
   const handleCloseModal = async () => {
-    if (timerRunning && elapsedSeconds > 0) {
-      setTimerRunning(false);
-      const newMins = Math.floor(elapsedSeconds / 60);
-      if (newMins > 0) {
-        try {
-          const { error } = await supabase.from('tasks').update({ 
-            logged_minutes: (selectedTask?.logged_minutes || 0) + newMins
-          }).eq('id', selectedTask.id);
-          if (error) throw error;
-        } catch (err) {
-          alert("Warning: Could not save final timer data due to a network error.");
-        }
-      }
+    if (timerRunning && selectedTask?.time_started_at) {
+      await handlePauseTimer();
     }
     setSelectedTask(null);
     setElapsedSeconds(0);
+    setTimerRunning(false);
   };
 
   // ─── Checklist Toggle ───────────────────────────────────────────────────────
@@ -261,9 +273,11 @@ export default function TasksPage() {
     }
     setUploading(false);
 
-    let finalLoggedMinutes = selectedTask.logged_minutes || 0;
-    if (timerRunning && elapsedSeconds > 0) {
-      finalLoggedMinutes += Math.floor(elapsedSeconds / 60);
+    let finalLoggedMinutes = (selectedTask.logged_minutes || 0);
+    if (timerRunning && selectedTask?.time_started_at) {
+      const start = new Date(selectedTask.time_started_at).getTime();
+      const now = new Date().getTime();
+      finalLoggedMinutes += Math.floor((now - start) / 60000);
     }
 
     await supabase.from('tasks').update({
@@ -272,7 +286,8 @@ export default function TasksPage() {
       completion_note: completionNote,
       completed_at: new Date().toISOString(),
       proof_url: proofUrl,
-      logged_minutes: finalLoggedMinutes
+      logged_minutes: finalLoggedMinutes,
+      time_started_at: null
     }).eq('id', selectedTask.id);
 
     setSelectedTask(null);
@@ -321,7 +336,6 @@ export default function TasksPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-24">
-      
       {/* Alert banners */}
       <div className="space-y-3">
         {overdueCount > 0 && (
@@ -577,7 +591,6 @@ export default function TasksPage() {
       {selectedTask && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-            
             {/* Header */}
             <div className="p-6 border-b border-slate-100 flex items-start justify-between sticky top-0 bg-white rounded-t-3xl z-10">
               <div className="pr-4">
@@ -698,8 +711,8 @@ export default function TasksPage() {
                 </form>
               )}
 
-              {/* Approval Proof (Admin) */}
-              {selectedTask.proof_url && (
+               {/* Approval Proof (Admin) */}
+               {selectedTask.proof_url && (
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Proof of Work</p>
                   <a href={selectedTask.proof_url} target="_blank" rel="noopener noreferrer"

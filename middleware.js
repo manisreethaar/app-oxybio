@@ -36,7 +36,7 @@ export async function middleware(request) {
   const isAuthRoute = request.nextUrl.pathname === '/login';
   
   // Protect specific routes
-  const protectedRoutes = ['/dashboard', '/leave', '/attendance', '/tasks', '/activity', '/batches', '/compliance', '/documents', '/payslips', '/sops', '/admin', '/notifications'];
+  const protectedRoutes = ['/dashboard', '/leave', '/attendance', '/tasks', '/activity', '/batches', '/compliance', '/documents', '/payslips', '/sops', '/admin', '/notifications', '/directory'];
   
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 

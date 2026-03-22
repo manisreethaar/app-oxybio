@@ -9,11 +9,11 @@ import {
 } from 'lucide-react';
 
 const SOURCES = ['Internal Audit', 'Batch Deviation', 'Equipment Failure', 'Customer Complaint', 'Regulatory Inspection', 'Other'];
-const SEVERITIES = ['Low', 'Major', 'Critical'];
+const SEVERITIES = ['Minor', 'Major', 'Critical']; // Refined for GMP compliance
 const ACTION_TYPES = ['Corrective', 'Preventive'];
 
 const SEVERITY_STYLE = {
-  Low:      'bg-sky-50 text-sky-800 border-sky-200',
+  Minor:    'bg-sky-50 text-sky-800 border-sky-200',
   Major:    'bg-amber-50 text-amber-800 border-amber-200',
   Critical: 'bg-red-50 text-red-800 border-red-200',
 };
@@ -201,6 +201,13 @@ export default function CapaPage() {
 
   // ─── Close Deviation ──────────────────────────────────────────────────────
   const handleClose = async () => {
+    // 🛡️ STAGE 3 REMEDIATION: Prevent closure if actions are pending verification
+    const pendingCount = capaActions.filter(a => !a.effectiveness_verified).length;
+    if (pendingCount > 0) {
+      alert(`GMP Violation: Cannot close NCR. There are ${pendingCount} Corrective Actions that have not been Effectiveness Verified.`);
+      return;
+    }
+
     if (!confirm('Mark this NCR as Closed? This action indicates all corrective measures have been verified effective.')) return;
     await supabase.from('deviations').update({ status: 'Closed' }).eq('id', selected.id);
     setSelected(s => ({ ...s, status: 'Closed' }));

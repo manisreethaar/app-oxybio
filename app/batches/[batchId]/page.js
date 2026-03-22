@@ -4,23 +4,31 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { ArrowLeft, AlertTriangle, CheckCircle, Clock, Loader2, Save, ChevronRight, Activity, Beaker, Thermometer, Droplets, ShoppingCart, Tag } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, CheckCircle, Clock, Loader2, Save, ChevronRight, Activity, Beaker, Thermometer, Droplets, ShoppingCart, Tag, Archive, Filter, ShieldCheck, XCircle, Pipette } from 'lucide-react';
 import Link from 'next/link';
 
 const STAGES = [
   { id: 'media_prep', label: 'Media Prep', icon: Beaker, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  { id: 'formulation', label: 'Formulation', icon: Droplets, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'sterilisation', label: 'Sterilisation', icon: ShieldCheck, color: 'text-slate-600', bg: 'bg-slate-50' },
+  { id: 'inoculation', label: 'Inoculation', icon: Droplets, color: 'text-sky-600', bg: 'bg-sky-50' },
   { id: 'fermentation', label: 'Fermentation', icon: Activity, color: 'text-teal-600', bg: 'bg-teal-50' },
-  { id: 'thermal', label: 'Thermal Processing', icon: Thermometer, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { id: 'qc', label: 'Quality Control', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+  { id: 'harvest', label: 'Harvest', icon: Archive, color: 'text-amber-600', bg: 'bg-amber-50' },
+  { id: 'downstream', label: 'Downstream', icon: Filter, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50' },
+  { id: 'qc_hold', label: 'QC Hold', icon: Clock, color: 'text-rose-600', bg: 'bg-rose-50' },
+  { id: 'released', label: 'Released', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { id: 'rejected', label: 'Rejected', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' }
 ];
 
 const PARAMETERS = {
-  media_prep: [{ name: 'pH', unit: '', type: 'ph' }, { name: 'Temperature', unit: '°C', type: 'temp' }],
-  formulation: [{ name: 'Brix', unit: '°Bx', type: 'brix' }, { name: 'Viscosity', unit: 'cP', type: 'viscosity' }],
-  fermentation: [{ name: 'pH', unit: '', type: 'ph' }, { name: 'Temperature', unit: '°C', type: 'temp' }, { name: 'OD600', unit: '', type: 'od' }],
-  thermal: [{ name: 'Hold Temp', unit: '°C', type: 'temp' }, { name: 'Hold Time', unit: 'min', type: 'time' }],
-  qc: [{ name: 'Final Brix', unit: '°Bx', type: 'brix' }, { name: 'Contamination', unit: '/ml', type: 'cont' }]
+  media_prep: [{ name: 'pH', unit: '', type: 'ph' }, { name: 'Raw Weight', unit: 'kg', type: 'weight' }],
+  sterilisation: [{ name: 'Autoclave Temp', unit: '°C', type: 'temp' }, { name: 'Time', unit: 'min', type: 'time' }],
+  inoculation: [{ name: 'Seed Volume', unit: 'L', type: 'vol' }, { name: 'Initial OD', unit: '', type: 'od' }],
+  fermentation: [{ name: 'pH', unit: '', type: 'ph' }, { name: 'Temperature', unit: '°C', type: 'temp' }, { name: 'DO', unit: '%', type: 'do' }],
+  harvest: [{ name: 'Volume Recovered', unit: 'L', type: 'vol' }, { name: 'Cell Density', unit: 'g/L', type: 'density' }],
+  downstream: [{ name: 'Flow Rate', unit: 'L/min', type: 'flow' }, { name: 'Purity', unit: '%', type: 'purity' }],
+  qc_hold: [{ name: 'Contamination', unit: '/ml', type: 'cont' }, { name: 'Appearance', unit: '', type: 'text' }],
+  released: [],
+  rejected: []
 };
 
 export default function BatchDetailPage() {
@@ -87,11 +95,15 @@ export default function BatchDetailPage() {
     setCheckingTraining(true);
     try {
       const stageToCategory = {
-        media_prep: 'Fermentation',
-        formulation: 'Fermentation',
+        media_prep: 'Production',
+        sterilisation: 'Sanitation',
+        inoculation: 'Fermentation',
         fermentation: 'Fermentation',
-        thermal: 'QC',
-        qc: 'QC'
+        harvest: 'Production',
+        downstream: 'QC',
+        qc_hold: 'QC',
+        released: 'QA',
+        rejected: 'QA'
       };
       const category = stageToCategory[batch.current_stage] || 'Fermentation';
       const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=${category}`, { signal });

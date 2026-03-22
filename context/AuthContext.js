@@ -21,7 +21,6 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       async (event, session) => {
         if (!mounted) return;
         
-        // Handle immediate sign out
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setEmployeeProfile(null);
@@ -30,12 +29,9 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
           return;
         }
 
-        // Handle session events
         if (session?.user) {
           setUser(session.user);
-          
-          // Only fetch profile if it's missing or changed
-          if (!employeeProfile || employeeProfile.email !== session.user.email || !initialized.current) {
+          if (!employeeProfile || !initialized.current) {
             try {
               const { data: profile } = await supabase
                 .from('employees')
@@ -56,7 +52,6 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       }
     );
 
-    // Initial check in case onAuthStateChange didn't fire immediately
     if (initialSession && !initialized.current) {
       setLoading(false);
       initialized.current = true;
@@ -67,6 +62,31 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       subscription.unsubscribe();
     };
   }, [supabase, initialSession]);
+
+  // Root-Cause Fix: Real-time Profile Synchronization (CDC)
+  useEffect(() => {
+    if (!user?.email) return;
+
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'employees', 
+          filter: `email=eq.${user.email}` 
+        },
+        (payload) => {
+          setEmployeeProfile(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.email, supabase]);
 
   const signOut = async () => {
     try {

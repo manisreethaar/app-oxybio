@@ -20,12 +20,14 @@ export default function NotificationsPage() {
     setLoading(true);
     const notifications = [];
 
-    // 1. Fetch Open/Assigned Tasks
+    // 1. Fetch Open/Assigned Tasks (Limit added for Stage 3 scalability)
     const { data: tasks } = await supabase
       .from('tasks')
       .select('id, title, priority, due_date')
       .eq('assigned_to', employeeProfile.id)
-      .eq('status', 'open');
+      .eq('status', 'open')
+      .order('due_date', { ascending: true })
+      .limit(50); // 🛡️ STAGE 3 REMEDIATION: Prevent OOM on 10k+ records
       
     if (tasks) {
       tasks.forEach(t => {
@@ -43,12 +45,14 @@ export default function NotificationsPage() {
       });
     }
 
-    // 2. Admin: Fetch Overdue Compliance
+    // 2. Admin: Fetch Overdue Compliance (Limit added for Stage 3 scalability)
     if (role === 'admin') {
       const { data: compliance } = await supabase
         .from('compliance_items')
         .select('id, title, due_date')
-        .neq('status', 'done');
+        .neq('status', 'done')
+        .order('due_date', { ascending: true })
+        .limit(50); // 🛡️ STAGE 3 REMEDIATION: Prevent OOM on 10k+ records
 
       if (compliance) {
         compliance.forEach(c => {

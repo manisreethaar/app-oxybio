@@ -110,24 +110,34 @@ export default function PayslipsPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Month *</label>
-              <input type="text" required value={form.month} onChange={e => setForm({...form, month: e.target.value.toUpperCase()})} placeholder="MAR-2026" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500 uppercase font-mono" />
+              <select 
+                required 
+                value={form.month} 
+                onChange={e => setForm({...form, month: e.target.value})} 
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500 font-bold"
+              >
+                <option value="">Month...</option>
+                {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Year *</label>
-              <input type="number" required value={form.year} onChange={e => setForm({...form, year: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="2020" max="2100" required value={form.year} onChange={e => setForm({...form, year: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Gross Salary (₹) *</label>
-              <input type="number" required value={form.gross_salary} onChange={e => setForm({...form, gross_salary: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="0" required value={form.gross_salary} onChange={e => setForm({...form, gross_salary: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">PF Deduction (₹)</label>
-              <input type="number" required value={form.pf_deduction} onChange={e => setForm({...form, pf_deduction: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="0" required value={form.pf_deduction} onChange={e => setForm({...form, pf_deduction: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">ESI Deduction (₹)</label>
-              <input type="number" required value={form.esi_deduction} onChange={e => setForm({...form, esi_deduction: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="0" required value={form.esi_deduction} onChange={e => setForm({...form, esi_deduction: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Net Salary (₹) *</label>
@@ -135,8 +145,9 @@ export default function PayslipsPage() {
             </div>
             
             <div className="lg:col-span-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Payslip Document URL (Cloudinary) *</label>
-              <input type="url" required value={form.payslip_url} onChange={e => setForm({...form, payslip_url: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" placeholder="https://res.cloudinary.com/.../payslip.pdf" />
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Secure Google Drive File ID *</label>
+              <input type="text" required value={form.payslip_url} onChange={e => setForm({...form, payslip_url: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" placeholder="paste_the_file_id_here" />
+              <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">Files are served via secure auth-mediated proxy. Never use public URLs.</p>
             </div>
           </div>
           
@@ -201,7 +212,7 @@ export default function PayslipsPage() {
                     ₹{parseFloat(slip.net_salary).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <a href={slip.payslip_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700 transition-colors focus:ring-2 focus:ring-teal-500 outline-none">
+                    <a href={`/api/files/${slip.payslip_url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700 transition-colors focus:ring-2 focus:ring-teal-500 outline-none">
                       <Download className="w-4 h-4 mr-2 text-gray-400" /> View / Download
                     </a>
                   </td>

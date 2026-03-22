@@ -14,7 +14,35 @@ export async function POST(req) {
     const file = formData.get('file');
 
     if (!file) {
-      return NextResponse.json({ error: 'No file blob provided in request.' }, { status: 400 });
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    const name = file.name;
+    const type = file.type;
+    const size = file.size;
+
+    // 1. Magic Byte Validation (Zero-dependency security)
+    const buffer = await file.slice(0, 4).arrayBuffer();
+    const header = new Uint8Array(buffer);
+    let hex = "";
+    for (let i = 0; i < header.length; i++) {
+        hex += header[i].toString(16).toUpperCase();
+    }
+    
+    const signatures = {
+        "89504E47": "image/png",
+        "FFD8FFE0": "image/jpeg",
+        "FFD8FFE1": "image/jpeg",
+        "FFD8FFE2": "image/jpeg",
+        "25504446": "application/pdf"
+    };
+
+    const detected = signatures[hex] || signatures[hex.substring(0,6)];
+    if (!detected && !type.startsWith('video/')) {
+        // Allow videos but block mismatched/suspicious documents/images
+        if (!type.includes('csv') && !type.includes('sheet')) {
+             return NextResponse.json({ error: 'Security Violation: File signature mismatch' }, { status: 403 });
+        }
     }
 
     // 2. Upgraded File Size Constraints (50MB for robust limits)
@@ -34,23 +62,18 @@ export async function POST(req) {
       return NextResponse.json({ error: `File type ${file.type} is not allowed by corporate proxy.` }, { status: 415 });
     }
 
-    // 4. Transform File to Stream Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const stream = new Readable();
-    stream.push(buffer);
-    stream.push(null);
+    // 4. Transform File to Stream (Memory Efficient)
+    const stream = Readable.fromWeb(file.stream());
 
     // 5. Environmental Key Guard Check
     if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
-      return NextResponse.json({ error: 'Google Server Integration missing setup. Supply GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, and GOOGLE_DRIVE_FOLDER_ID in .env.local.' }, { status: 500 });
+      return NextResponse.json({ error: 'Config missing: GOOGLE_CLIENT_EMAIL, PRIVATE_KEY, or FOLDER_ID.' }, { status: 500 });
     }
 
     // 6. Direct Google Drive API Integration Handshake
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        // Automatically repair escaped newlines typical in .env strings
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       },
       scopes: ['https://www.googleapis.com/auth/drive.file'],
@@ -61,6 +84,8 @@ export async function POST(req) {
     // File Identity Sanitation
     const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
+    console.log(`Starting streaming upload for: ${safeName} (${file.size} bytes)`);
+
     const driveResponse = await drive.files.create({
       requestBody: {
         name: safeName,
@@ -68,23 +93,21 @@ export async function POST(req) {
       },
       media: {
         mimeType: file.type,
-        body: stream,
+        body: stream, // Streaming body
       },
       fields: 'id, webViewLink, webContentLink',
     });
 
-    // 7. Grant Public Reader Access so React `<img src={} />` works natively
-    await drive.permissions.create({
-      fileId: driveResponse.data.id,
-      requestBody: {
-        role: 'reader',
-        type: 'anyone',
-      },
-    });
+    // ARCHITECTURAL FIX: REMOVED drive.permissions.create({ role: 'reader', type: 'anyone' })
+    // Files are now PRIVATE by default. Use /api/files/[id] proxy to view.
+
+
+    const proxiedUrl = `/api/files/${driveResponse.data.id}`;
 
     return NextResponse.json({ 
-      url: driveResponse.data.webViewLink,          // For viewing in browser
-      download_url: driveResponse.data.webContentLink, // For direct access
+      url: proxiedUrl, // For secure internal app usage
+      drive_view_link: driveResponse.data.webViewLink,    // Admin metadata
+      drive_download_link: driveResponse.data.webContentLink,
       name: file.name
     });
 
