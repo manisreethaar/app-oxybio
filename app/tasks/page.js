@@ -121,6 +121,7 @@ export default function TasksPage() {
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
+    if (actionLoading) return; // Concurrency Lock
     const isAdmin = canDo('tasks', 'assign');
     let assignees = [];
     let isPersonal = false;
@@ -187,6 +188,7 @@ export default function TasksPage() {
 
   // ─── Timer (Robust Version) ────────────────────────────────────────────────
   const handleStartTimer = async (task) => {
+    if (actionLoading) return; // Concurrency Lock
     setActionLoading(true);
     try {
       const startTime = new Date().toISOString();
@@ -209,6 +211,7 @@ export default function TasksPage() {
 
   const handlePauseTimer = async () => {
     if (!selectedTask || !selectedTask.time_started_at) return;
+    if (actionLoading) return; // Concurrency Lock
     
     setActionLoading(true);
     const start = new Date(selectedTask.time_started_at).getTime();
@@ -256,6 +259,7 @@ export default function TasksPage() {
   // ─── Submit for Review ──────────────────────────────────────────────────────
   const handleSubmitForReview = async (e) => {
     e.preventDefault();
+    if (actionLoading) return; // Concurrency Lock
     setActionLoading(true);
     setUploading(true);
     let proofUrl = null;
