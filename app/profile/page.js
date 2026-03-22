@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   User, Phone, MapPin, Calendar, Droplets, AlertCircle, 
   Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X, 
-  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock
+  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock, Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';

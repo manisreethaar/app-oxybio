@@ -35,7 +35,7 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     setLoading(true);
-    let query = supabase.from('documents').select('*');
+    let query = supabase.from('documents').select('*, employees(full_name)');
     
     // Server-side category filtering
     if (category !== 'All') {
@@ -166,6 +166,7 @@ export default function DocumentsPage() {
                 <div className="text-sm text-gray-500 space-y-1 mb-6 mt-2 flex-1">
                   <p>Version <span className="font-semibold text-gray-700">{doc.version || '1.0'}</span></p>
                   <p>Effective: {doc.effective_date ? new Date(doc.effective_date).toLocaleDateString() : 'N/A'}</p>
+                  <p className="text-[10px] text-teal-600 font-bold uppercase tracking-wider mt-2">Uploaded By: <span className="text-gray-700">{doc.employees?.full_name || 'System / Admin'}</span></p>
                 </div>
                 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
