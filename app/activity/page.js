@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -14,8 +14,13 @@ export default function ActivityLogPage() {
   const [issues, setIssues] = useState([]);
   const [activeBatches, setActiveBatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('feed'); // will be corrected in useEffect once canDo resolves
+  const [tab, setTab] = useState('feed'); 
   const supabase = createClient();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
 
   // Form State (Log Activity tab)
   const [desc, setDesc] = useState('');
@@ -53,11 +58,12 @@ export default function ActivityLogPage() {
     }
   }, [employeeProfile]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches').select('batch_id').eq('status', 'fermenting');
+      if (!isMounted.current) return;
       setActiveBatches(batches || []);
 
       // Fetch activity log
@@ -68,9 +74,10 @@ export default function ActivityLogPage() {
         .limit(50);
       
       if (role !== 'admin') {
-        query = query.eq('employee_id', employeeProfile.id);
+        query = query.eq('employee_id', employeeProfile?.id);
       }
       const { data: logData } = await query;
+      if (!isMounted.current) return;
       setActivities(logData || []);
       if (role === 'admin') {
         setIssues((logData || []).filter(a => a.issue_observed));
@@ -80,65 +87,44 @@ export default function ActivityLogPage() {
       if (role === 'admin') {
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. All active employees
-        const { data: allStaff } = await supabase
-          .from('employees')
-          .select('id, full_name, designation, role')
-          .eq('is_active', true)
-          .neq('role', 'admin');
+        // Parallelize fetching to avoid consecutive await locks
+        const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
+          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin'),
+          supabase.from('attendance_log').select('employee_id').eq('date', today),
+          supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
+          supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
+          supabase.from('batches').select('batch_id, product_name, status').in('status', ['fermenting', 'in-progress', 'testing']).limit(5)
+        ]);
 
-        // 2. Who checked in today
-        const { data: todayLogs } = await supabase
-          .from('attendance_log')
-          .select('employee_id')
-          .eq('date', today);
+        if (!isMounted.current) return;
 
-        const checkedInIds = new Set((todayLogs || []).map(l => l.employee_id));
-        const present = (allStaff || []).filter(s => checkedInIds.has(s.id));
-        const absent = (allStaff || []).filter(s => !checkedInIds.has(s.id));
+        const allStaff = staffRes.data || [];
+        const todayLogs = logsRes.data || [];
+        const overdueTasks = overdueRes.data || [];
+        const pendingApprovals = approvalRes.data || [];
+        const activeExps = expRes.data || [];
 
-        // 3. Overdue tasks
-        const { data: overdueTasks } = await supabase
-          .from('tasks')
-          .select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
-          .neq('status', 'done')
-          .neq('status', 'cancelled')
-          .lt('due_date', today)
-          .order('due_date', { ascending: true })
-          .limit(5);
+        const checkedInIds = new Set(todayLogs.map(l => l.employee_id));
+        const present = allStaff.filter(s => checkedInIds.has(s.id));
+        const absent = allStaff.filter(s => !checkedInIds.has(s.id));
 
-        // 4. Pending approvals
-        const { data: pendingApprovals } = await supabase
-          .from('tasks')
-          .select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
-          .eq('approval_status', 'pending_review')
-          .limit(5);
-
-        // 5. Active experiments
-        const { data: activeExps } = await supabase
-          .from('batches')
-          .select('batch_id, product_name, status')
-          .in('status', ['fermenting', 'in-progress', 'testing'])
-          .limit(5);
-
-        // 6. Open issues (unreviewed)
         const openIssues = (logData || []).filter(a => a.issue_observed && !a.founder_comment);
 
         setBrief({
-          presentToday: present || [],
-          absentToday: absent || [],
-          overdueTasks: overdueTasks || [],
-          pendingApprovals: pendingApprovals || [],
-          activeExperiments: activeExps || [],
+          presentToday: present,
+          absentToday: absent,
+          overdueTasks,
+          pendingApprovals,
+          activeExperiments: activeExps,
           openIssues,
         });
       }
     } catch (err) {
       console.error("Activity page fetch error:", err);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, [supabase, role, employeeProfile]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -166,13 +152,18 @@ export default function ActivityLogPage() {
 
   const handleAddComment = async (id) => {
     if (!commentText.trim()) return;
-    await supabase.from('activity_log').update({ 
-      founder_comment: commentText,
-      reviewed_by: employeeProfile.id 
-    }).eq('id', id);
-    setCommentText('');
-    setActiveCommentId(null);
-    fetchData();
+    try {
+      const { error } = await supabase.from('activity_log').update({ 
+        founder_comment: commentText,
+        reviewed_by: employeeProfile.id 
+      }).eq('id', id);
+      if (error) throw error;
+      setCommentText('');
+      setActiveCommentId(null);
+      fetchData();
+    } catch (err) {
+      alert("Failed to save review note: " + err.message);
+    }
   };
 
   if (authLoading || loading) {
