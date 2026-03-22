@@ -5,10 +5,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap } from 'lucide-react';
 
 export default function ConsumerResearchPage() {
+  const { role, employeeProfile, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-amber-500" /></div>;
+  if (!employeeProfile) return null;
   
   const [newSession, setNewSession] = useState({
     session_title: '',

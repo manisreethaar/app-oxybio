@@ -40,25 +40,34 @@ export default function Sidebar() {
     {
       title: 'LABORATORY',
       items: [
-        { name: 'Batch Tracking',    href: '/batches',    icon: FlaskConical,    show: canDo('batches', 'view') },
-        { name: 'SOP Library',       href: '/sops',       icon: BookOpen,        show: canDo('sops', 'view') },
+        { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: canDo('batches', 'view') },
+        { name: 'Scientific SVCS',   href: '/formulations', icon: Beaker,          show: canDo('batches', 'view') },
+        { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: canDo('sops', 'view') },
+      ]
+    },
+    {
+      title: 'SCIENCE & OPS',
+      items: [
+        { name: 'Shelf-Life Info',   href: '/shelf-life',   icon: Clock,           show: canDo('batches', 'view') },
+        { name: 'Consumer Panels',   href: '/research',     icon: Activity,        show: canDo('batches', 'view') },
+        { name: 'Grant Calendar',    href: '/calendar',     icon: CalendarDays,    show: canDo('batches', 'view') },
       ]
     },
     {
       title: 'MY WORKSPACE',
       items: [
-        { name: 'Attendance & GPS',  href: '/attendance', icon: Clock,           show: canDo('attendance', 'view') },
-        { name: 'Leave Requests',    href: '/leave',      icon: CalendarOff,     show: canDo('leave', 'view') },
-        { name: 'My Payslips',       href: '/payslips',   icon: Receipt,         show: canDo('payslips', 'view_own') },
+        { name: 'Attendance & GPS',  href: '/attendance',   icon: Clock,           show: canDo('attendance', 'view') },
+        { name: 'Leave Requests',    href: '/leave',        icon: CalendarOff,     show: canDo('leave', 'view') },
+        { name: 'My Payslips',       href: '/payslips',     icon: Receipt,         show: canDo('payslips', 'view_own') },
       ]
     },
     {
       title: 'ADMIN & COMPLIANCE',
       items: [
-        { name: 'Document Vault',    href: '/documents',    icon: FileText,      show: canDo('documents', 'view') },
-        { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,  show: canDo('compliance', 'view') },
-        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,   show: role === 'admin' },
-        { name: 'Access Control',    href: '/admin/users',  icon: Users,         show: canDo('admin', 'manage_users') },
+        { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: canDo('documents', 'view') },
+        { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: canDo('compliance', 'view') },
+        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: role === 'admin' },
+        { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: canDo('admin', 'manage_users') },
       ]
     },
     {

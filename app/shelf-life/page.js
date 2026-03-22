@@ -6,12 +6,15 @@ import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, Alert
 import Link from 'next/link';
 
 export default function ShelfLifePage() {
-  const { employeeProfile } = useAuth();
+  const { employeeProfile, loading: authLoading } = useAuth();
   const [studies, setStudies] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-indigo-600" /></div>;
+  if (!employeeProfile) return null;
   
   const [newStudy, setNewStudy] = useState({
     batch_id: '',

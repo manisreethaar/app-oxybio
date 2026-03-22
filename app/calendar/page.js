@@ -5,11 +5,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Calendar as CalendarIcon, Flag, Clock, CheckCircle2, AlertTriangle, Plus, ChevronRight, Loader2, Info } from 'lucide-react';
 
 export default function RegulatoryCalendarPage() {
-  const { role } = useAuth();
+  const { role, employeeProfile, loading: authLoading } = useAuth();
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-rose-600" /></div>;
+  if (!employeeProfile) return null;
   
   const [newMilestone, setNewMilestone] = useState({
     title: '',

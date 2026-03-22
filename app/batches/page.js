@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { format, differenceInHours } from 'date-fns';
 
 export default function BatchesPage() {
-  const { role, loading } = useAuth();
+  const { employeeProfile, role, loading: authLoading } = useAuth();
   const [activeBatches, setActiveBatches] = useState([]);
   const [history, setHistory] = useState([]);
   const [isAlert, setIsAlert] = useState(false);
@@ -19,6 +19,9 @@ export default function BatchesPage() {
   const [creatingBatch, setCreatingBatch] = useState(false);
   
   const supabase = createClient();
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  if (!employeeProfile) return null;
 
   useEffect(() => {
     fetchBatches();

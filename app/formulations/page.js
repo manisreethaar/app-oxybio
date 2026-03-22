@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical } from 'lucide-react';
 
 export default function FormulationsPage() {
-  const { role, employeeProfile } = useAuth();
+  const { role, employeeProfile, loading: authLoading } = useAuth();
   const [formulations, setFormulations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -13,6 +13,9 @@ export default function FormulationsPage() {
   const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: '', notes: '' });
   
   const supabase = createClient();
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  if (!employeeProfile) return null;
 
   useEffect(() => {
     fetchFormulations();
