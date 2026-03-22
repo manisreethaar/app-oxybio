@@ -87,8 +87,6 @@ export default function BatchesPage() {
     }
   };
 
-  if (loading) return null;
-
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10">
       {isAlert && (

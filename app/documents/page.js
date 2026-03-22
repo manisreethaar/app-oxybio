@@ -14,13 +14,24 @@ export default function DocumentsPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadForm, setUploadForm] = useState({ title: '', category: 'Legal', version: '1.0', file: null, access_level: 'all-staff' });
   const [uploading, setUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(''); // SEARCH STATE
   const supabase = createClient();
 
   const categories = ['All', 'Legal', 'HR', 'Regulatory', 'Finance', 'IP', 'QC', 'SOP'];
 
   useEffect(() => {
     if (employeeProfile) fetchDocuments();
-  }, [employeeProfile, category]); // Re-fetch when category changes
+  }, [employeeProfile, category]);
+
+  // Client-Side Search Filter
+  useEffect(() => {
+    const query = searchQuery.toLowerCase();
+    const filtered = documents.filter(doc => 
+      doc.title?.toLowerCase().includes(query) || 
+      doc.category?.toLowerCase().includes(query)
+    );
+    setFilteredDocs(filtered);
+  }, [searchQuery, documents]);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -63,7 +74,8 @@ export default function DocumentsPage() {
         version: uploadForm.version,
         file_url: uploadData.url || uploadData.download_url,
         access_level: uploadForm.access_level,
-        effective_date: new Date().toISOString()
+        effective_date: new Date().toISOString(),
+        created_by: employeeProfile.id // AUDIT TRAIL
       });
 
       if (dbError) throw dbError;
@@ -116,7 +128,13 @@ export default function DocumentsPage() {
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search documents..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
+          <input 
+            type="text" 
+            placeholder="Search documents..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" 
+          />
         </div>
       </div>
 
