@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   User, Phone, MapPin, Calendar, Droplets, AlertCircle, 
   Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X, 
-  CreditCard, ArrowLeft, ShieldCheck, CheckSquare
+  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock
 } from 'lucide-react';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
@@ -74,6 +74,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [view, setView] = useState('info'); // 'info' | 'card'
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const fileRef = useRef();
   const supabase = createClient();
 
@@ -125,6 +128,28 @@ export default function ProfilePage() {
     }
   };
 
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    if (passwordForm.password !== passwordForm.confirm) {
+      alert("Passwords do not match!");
+      return;
+    }
+    if (passwordForm.password.length < 6) {
+      alert("Password must be at least 6 characters!");
+      return;
+    }
+    setPasswordLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
+    if (error) {
+      alert(error.message || "Failed to update password.");
+    } else {
+      alert("Password updated successfully!");
+      setShowPasswordModal(false);
+      setPasswordForm({ password: '', confirm: '' });
+    }
+    setPasswordLoading(false);
+  };
+
   if (!emp) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
@@ -140,6 +165,13 @@ export default function ProfilePage() {
           <p className="text-slate-500 font-medium mt-1">Your personal information & digital ID</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
+          >
+            <Lock className="w-4 h-4"/>
+            Password
+          </button>
           <button
             onClick={() => setView(view === 'info' ? 'card' : 'info')}
             className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm font-bold text-teal-700 hover:bg-white transition-all"
@@ -292,6 +324,29 @@ export default function ProfilePage() {
             <button onClick={() => setEditing(false)} className="w-full py-3 glass-card rounded-2xl text-sm font-bold text-slate-500 hover:bg-white/80 transition-all flex items-center justify-center gap-2">
               <X className="w-4 h-4"/> Cancel
             </button>
+          )}
+
+          {showPasswordModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200 p-8">
+                <button onClick={() => setShowPasswordModal(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition-all"><X className="w-5 h-5 text-gray-400"/></button>
+                <h3 className="text-xl font-black text-slate-800 mb-1">Update Password</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Security Access Control</p>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">New Password</label>
+                    <input required type="password" value={passwordForm.password} onChange={e => setPasswordForm({...passwordForm, password: e.target.value})} className="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-sm border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-teal-600 transition-all outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Confirm Password</label>
+                    <input required type="password" value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} className="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-sm border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-teal-600 transition-all outline-none" />
+                  </div>
+                  <button disabled={passwordLoading} type="submit" className="w-full py-4 bg-teal-800 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Update Password'}
+                  </button>
+                </form>
+              </div>
+            </div>
           )}
         </>
       )}

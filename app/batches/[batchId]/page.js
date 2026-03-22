@@ -123,22 +123,19 @@ export default function BatchDetailPage() {
       .eq('id', batchId)
       .single();
 
-    if (error || !b) {
-      router.replace('/batches');
-      return;
-    }
-
     const unifiedLogs = [
-      ...(b.ph_readings || []).map(l => ({ ...l, type: 'ph', parameter_name: 'pH', parameter_value: l.ph_value })),
-      ...(b.lab_logs || [])
-    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      ...Array.isArray(b.ph_readings) ? b.ph_readings.map(l => ({ ...l, type: 'ph', parameter_name: 'pH', parameter_value: l.ph_value })) : [],
+      ...Array.isArray(b.lab_logs) ? b.lab_logs : []
+    ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
-    setBatch(b);
-    setLogs(unifiedLogs);
-    
-    const currentParams = PARAMETERS[b.current_stage || 'media_prep'] || [];
-    if (!selectedParam && currentParams.length > 0) {
-      setSelectedParam(currentParams[0]);
+    if (mounted) {
+      setBatch(b);
+      setLogs(unifiedLogs);
+      
+      const currentParams = PARAMETERS[b.current_stage || 'media_prep'] || [];
+      if (!selectedParam && currentParams.length > 0) {
+        setSelectedParam(currentParams[0]);
+      }
     }
   };
 
@@ -148,7 +145,7 @@ export default function BatchDetailPage() {
       .select('*, inventory_items(name, unit, category)')
       .gt('current_quantity', 0)
       .eq('status', 'Available');
-    if (data) setAvailableStock(data);
+    if (data && mounted) setAvailableStock(data);
   };
 
   const handleLogData = async (e) => {

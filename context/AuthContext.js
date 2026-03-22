@@ -38,7 +38,12 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
                 .select('*')
                 .eq('email', session.user.email)
                 .single();
-              if (mounted) setEmployeeProfile(profile || null);
+                
+              // Permanent Fix: Verify the session hasn't shifted while query was pending
+              const current = await supabase.auth.getSession();
+              if (mounted && current.data.session?.user?.email === session.user.email) {
+                setEmployeeProfile(profile || null);
+              }
             } catch (err) {
               console.error("Profile sync error:", err);
             }
