@@ -132,6 +132,7 @@ export default function InventoryPage() {
 
   const handleAddStock = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Concurrency Lock
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/stock', {

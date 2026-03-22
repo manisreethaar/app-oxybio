@@ -39,6 +39,7 @@ export default function SOPLibraryPage() {
   const [submittingAck, setSubmittingAck] = useState(false);
 
   const acknowledgeSOP = async () => {
+    if (submittingAck) return; // Concurrency Lock
     if (!signatureText.trim()) return alert("Please type the confirmation statement to sign.");
     setSubmittingAck(true);
     

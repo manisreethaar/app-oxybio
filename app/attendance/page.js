@@ -73,6 +73,7 @@ export default function AttendancePage() {
   };
 
   const initiateCheckIn = () => {
+    if (actionLoading) return; // Concurrency Lock
     setCheckInError('');
     setActionLoading(true);
     if (!navigator.geolocation) {
@@ -146,6 +147,7 @@ export default function AttendancePage() {
   };
 
   const handleCheckOut = async () => {
+    if (actionLoading) return; // Concurrency Lock
     setActionLoading(true);
     const { error } = await supabase.from('attendance_log').update({
       check_out_time: new Date().toISOString()
