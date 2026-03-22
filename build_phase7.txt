@@ -1,0 +1,220 @@
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/46) ...
+Attendance Export Error: n [Error]: Dynamic server usage: Route /api/reports/attendance couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (E:\OXYBIO\.next\server\chunks\9379.js:1:37156)
+    at f (E:\OXYBIO\.next\server\chunks\8485.js:23:4126)
+    at s (E:\OXYBIO\.next\server\app\api\cron\backup\route.js:1:2652)
+    at l (E:\OXYBIO\.next\server\app\api\reports\attendance\route.js:1:831)
+    at E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/reports/attendance couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Reminders Cron Error: B [Error]: Dynamic server usage: Route /api/cron/reminders couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21777)
+    at Object.get (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29137)
+    at f (E:\OXYBIO\.next\server\app\api\cron\reminders\route.js:1:1035)
+    at E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/cron/reminders couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (11/46) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /batches. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /batches. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /activity. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /activity. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/users. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/users. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /compliance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /compliance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /calendar. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /calendar. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /attendance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /attendance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (22/46) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /formulations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /formulations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /inventory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /inventory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /leave. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /leave. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /capa. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /capa. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /documents. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /documents. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /offline. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /offline. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /directory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /directory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sops. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sops. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /shelf-life. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /shelf-life. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /payslips. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /payslips. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /tasks. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /tasks. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /profile. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /profile. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (34/46) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /equipment. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /equipment. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Compliance Cron Error: B [Error]: Dynamic server usage: Route /api/cron/compliance couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21777)
+    at Object.get (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29137)
+    at m (E:\OXYBIO\.next\server\app\api\cron\compliance\route.js:1:1033)
+    at E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/cron/compliance couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /research. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /research. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ✓ Generating static pages (46/46)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ƒ /                                    152 B          87.5 kB
+├ ƒ /_not-found                          880 B          88.2 kB
+├ ƒ /activity                            7.39 kB         151 kB
+├ ƒ /admin/users                         9.21 kB         153 kB
+├ ƒ /api/admin/invite                    0 B                0 B
+├ ƒ /api/attendance/check-in             0 B                0 B
+├ ƒ /api/batches/[batchId]/stage         0 B                0 B
+├ ƒ /api/cron/attendance                 0 B                0 B
+├ ƒ /api/cron/backup                     0 B                0 B
+├ ƒ /api/cron/compliance                 0 B                0 B
+├ ƒ /api/cron/reminders                  0 B                0 B
+├ ƒ /api/equipment                       0 B                0 B
+├ ƒ /api/files/[id]                      0 B                0 B
+├ ƒ /api/formulations                    0 B                0 B
+├ ƒ /api/inventory/items                 0 B                0 B
+├ ƒ /api/inventory/stock                 0 B                0 B
+├ ƒ /api/inventory/usage                 0 B                0 B
+├ ƒ /api/lab/log                         0 B                0 B
+├ ƒ /api/leave/apply                     0 B                0 B
+├ ƒ /api/ph/[id]/acknowledge             0 B                0 B
+├ ƒ /api/ph/log                          0 B                0 B
+├ ƒ /api/push/send                       0 B                0 B
+├ ƒ /api/push/subscribe                  0 B                0 B
+├ ƒ /api/reports/attendance              0 B                0 B
+├ ƒ /api/sops/[id]/acknowledge           0 B                0 B
+├ ƒ /api/training/check                  0 B                0 B
+├ ƒ /api/upload                          0 B                0 B
+├ ƒ /attendance                          9.87 kB         260 kB
+├ ƒ /batches                             5.22 kB         162 kB
+├ ƒ /batches/[batchId]                   7.87 kB         158 kB
+├ ƒ /calendar                            3.99 kB         147 kB
+├ ƒ /capa                                14.9 kB         265 kB
+├ ƒ /compliance                          4.83 kB         154 kB
+├ ƒ /dashboard                           10 kB           266 kB
+├ ƒ /directory                           4.42 kB         155 kB
+├ ƒ /documents                           5.53 kB         149 kB
+├ ƒ /equipment                           4.49 kB         148 kB
+├ ƒ /formulations                        3.89 kB         147 kB
+├ ƒ /inventory                           6.66 kB         157 kB
+├ ƒ /leave                               6 kB            149 kB
+├ ƒ /login                               1.46 kB         145 kB
+├ ƒ /notifications                       4.25 kB         155 kB
+├ ƒ /offline                             1.54 kB        88.9 kB
+├ ƒ /payslips                            4.62 kB         148 kB
+├ ƒ /profile                             6.15 kB         163 kB
+├ ƒ /research                            6.18 kB         255 kB
+├ ƒ /shelf-life                          3.96 kB         154 kB
+├ ƒ /sops                                4.98 kB         148 kB
+├ ƒ /tasks                               9.55 kB         153 kB
+└ ƒ /verify/[id]                         152 B          87.5 kB
++ First Load JS shared by all            87.4 kB
+  ├ chunks/2117-5c80dedaf217e7d7.js      31.8 kB
+  ├ chunks/fd9d1056-cd7db2d3e27319ff.js  53.6 kB
+  └ other shared chunks (total)          1.96 kB
+
+
+ƒ Middleware                             75.2 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+

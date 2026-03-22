@@ -198,6 +198,45 @@ export default function InventoryPage() {
 
       {activeTab === 'stock' && (
         <div className="grid grid-cols-1 gap-4">
+
+          {/* Reorder Intelligence Panel */}
+          {(() => {
+            const flagged = stock.filter(s => {
+              const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : 999;
+              return daysLeft < 30 || (s.current_quantity !== undefined && s.current_quantity <= 0);
+            });
+            if (flagged.length === 0) return null;
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  <h3 className="text-sm font-black text-amber-800 uppercase tracking-widest">Reorder Intelligence — {flagged.length} Item{flagged.length > 1 ? 's' : ''} Need Attention</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {flagged.map(s => {
+                    const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                    const isExpired = daysLeft !== null && daysLeft < 0;
+                    const isZero = s.current_quantity <= 0;
+                    return (
+                      <div key={s.id} className={`flex items-center gap-3 p-3 rounded-xl border text-sm font-bold ${
+                        isExpired ? 'bg-red-50 border-red-200 text-red-800' : isZero ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-orange-50 border-orange-200 text-orange-800'
+                      }`}>
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="truncate">{s.inventory_items?.name || 'Unknown Item'}</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider mt-0.5 opacity-70">
+                            {isExpired ? `Expired ${Math.abs(daysLeft)}d ago` : isZero ? 'Out of Stock' : `Expires in ${daysLeft}d`}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+
           {filteredStock.map((s) => {
             const isNearExpiry = s.expiry_date && (new Date(s.expiry_date) - new Date() < 30 * 24 * 60 * 60 * 1000);
             const isExpired = s.expiry_date && (new Date(s.expiry_date) < new Date());

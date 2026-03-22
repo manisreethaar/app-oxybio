@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap } from 'lucide-react';
+import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap, TrendingUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 
 export default function ConsumerResearchPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
@@ -51,6 +52,39 @@ export default function ConsumerResearchPage() {
           <Plus className="w-4 h-4 mr-2" /> New Panel Session
         </button>
       </div>
+
+      {/* Yield Trend Chart */}
+      {sessions.length >= 2 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h2 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-1 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-amber-500" /> Sensory Score Trend
+          </h2>
+          <p className="text-xs text-slate-400 font-medium mb-5">7.0+ threshold = consumer-ready formulation</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={[...sessions].reverse().map((s, i) => ({
+              name: `S${i + 1}`,
+              score: parseFloat(calculateScore(s.scores)),
+              label: s.session_title
+            })).filter(d => !isNaN(d.score))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
+              <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: '#94a3b8' }}/>
+              <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} unit="/10"/>
+              <Tooltip
+                formatter={(val, name, props) => [`${val}/10`, props.payload.label || 'Score']}
+                contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}
+              />
+              <ReferenceLine y={7} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: '7.0 Threshold', fill: '#f59e0b', fontSize: 10, fontWeight: 700 }} />
+              <Line
+                type="monotone" dataKey="score" stroke="#0d9488" strokeWidth={2.5}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  return <circle key={cx} cx={cx} cy={cy} r={5} fill={payload.score >= 7 ? '#0d9488' : '#f87171'} stroke="white" strokeWidth={2} />;
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (

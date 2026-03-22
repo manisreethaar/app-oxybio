@@ -1,12 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import {
   AlertTriangle, Plus, X, ShieldCheck, Loader2, ChevronRight,
   FlaskConical, Wrench, ClipboardList, CheckCircle2, ArrowLeft,
-  FileWarning, Microscope, BadgeAlert
+  FileWarning, Microscope, BadgeAlert, BarChart2
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 
 const SOURCES = ['Internal Audit', 'Batch Deviation', 'Equipment Failure', 'Customer Complaint', 'Regulatory Inspection', 'Other'];
 const SEVERITIES = ['Minor', 'Major', 'Critical']; // Refined for GMP compliance
@@ -427,6 +428,54 @@ export default function CapaPage() {
           </div>
         ))}
       </div>
+
+      {/* Analytics Panel — Admin only */}
+      {isAdmin && deviations.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Severity Bar Chart */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4 flex items-center gap-2"><BarChart2 className="w-4 h-4 text-teal-600"/>Deviation by Severity</h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={[
+                { name: 'Minor', count: deviations.filter(d => d.severity === 'Minor').length, fill: '#38bdf8' },
+                { name: 'Major', count: deviations.filter(d => d.severity === 'Major').length, fill: '#f59e0b' },
+                { name: 'Critical', count: deviations.filter(d => d.severity === 'Critical').length, fill: '#ef4444' },
+              ]} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
+                <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: '#94a3b8' }}/>
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }}/>
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}/>
+                <Bar dataKey="count" radius={[6,6,0,0]}>
+                  {[{ fill: '#38bdf8' }, { fill: '#f59e0b' }, { fill: '#ef4444' }].map((e, i) => <Cell key={i} fill={e.fill}/>)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Status Donut */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Status Breakdown</h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Open', value: deviations.filter(d => d.status === 'Open').length, fill: '#f87171' },
+                    { name: 'Investigating', value: deviations.filter(d => d.status === 'Investigating').length, fill: '#a78bfa' },
+                    { name: 'CAPA Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, fill: '#fbbf24' },
+                    { name: 'Closed', value: deviations.filter(d => d.status === 'Closed').length, fill: '#34d399' },
+                  ].filter(d => d.value > 0)}
+                  cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                  dataKey="value" nameKey="name"
+                >
+                  {[{ fill: '#f87171' },{ fill: '#a78bfa' },{ fill: '#fbbf24' },{ fill: '#34d399' }].map((e, i) => <Cell key={i} fill={e.fill}/>)}
+                </Pie>
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700 }}/>
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* NCR List */}
       {deviations.length === 0 ? (
