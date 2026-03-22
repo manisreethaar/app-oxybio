@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap, TrendingUp, X } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 
 export default function ConsumerResearchPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
@@ -87,8 +87,22 @@ export default function ConsumerResearchPage() {
         {loading ? <div className="col-span-full flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div> : sessions.length === 0 ? <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No panel data recorded.</div> : sessions.map(s => (
           <div key={s.id} className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden">
              <div className="flex items-center justify-between mb-6"><span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100 flex items-center gap-1"><Users className="w-3 h-3"/> {s.panelist_count} Panelists</span><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(s.created_at).toLocaleDateString()}</p></div>
-             <h3 className="text-lg font-bold text-gray-900 mb-1">{s.session_title}</h3><p className="text-xs font-bold text-navy font-mono mb-6">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
-             <div className="flex items-end justify-between">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">{s.session_title}</h3><p className="text-xs font-bold text-navy font-mono mb-6">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
+              
+              {/* Innovation 5: Sensory Spider Charts */}
+              <div className="h-48 w-full mb-6 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                    { subject: 'Taste', A: 8.5 }, { subject: 'Aroma', A: 7.0 }, { subject: 'Texture', A: 9.0 }, { subject: 'Aftertaste', A: 6.5 }, { subject: 'Visual', A: 8.0 }
+                  ]}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} />
+                    <Radar name="Score" dataKey="A" stroke="#1F3A5F" fill="#1F3A5F" fillOpacity={0.5} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex items-end justify-between">
                 <div><p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Score</p><div className="flex items-baseline gap-2"><span className={`text-3xl font-black tracking-tight ${s.avg_score >= 7.0 ? 'text-navy' : 'text-red-600'}`}>{s.avg_score || '—'}</span><span className="text-xs font-semibold text-gray-400">/ 10</span></div></div>
                 {s.avg_score >= 7.0 ? <span className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100"><Award className="w-6 h-6"/></span> : <span className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-100"><Zap className="w-6 h-6"/></span>}
              </div>

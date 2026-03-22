@@ -29,7 +29,6 @@ export async function POST(request, { params }) {
     if (!employee) {
       return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
     }
-
     // SANITIZE: Prevent XSS in audit logs. Cap length to prevent extreme payload.
     const cleanSignature = DOMPurify.sanitize(signature_text.substring(0, 1000), { ALLOWED_TAGS: [] });
 

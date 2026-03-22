@@ -20,6 +20,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('feed'); 
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [equipmentList, setEquipmentList] = useState<any[]>([]);
   const supabase = useMemo(() => createClient(), []);
 
   const [error, setError] = useState(null);
@@ -40,14 +41,18 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       activity_description: z.string().min(1),
       start_time: z.string().min(1),
       end_time: z.string().min(1),
-      issue_observed: z.boolean(),
-      issue_description: z.string().optional(),
-      batch_id: z.string().optional()
-    })),
-    defaultValues: { activity_description: '', start_time: '', end_time: '', issue_observed: false, issue_description: '', batch_id: '' }
-  });
-
-  const hasIssue = watchLog('issue_observed');
+       issue_observed: z.boolean(),
+       issue_description: z.string().optional(),
+       batch_id: z.string().optional(),
+       equipment_id: z.string().optional()
+     })),
+     defaultValues: { activity_description: '', start_time: '', end_time: '', issue_observed: false, issue_description: '', batch_id: '', equipment_id: '' }
+   });
+ 
+   const hasIssue = watchLog('issue_observed');
+   const selectedEquipmentId = watchLog('equipment_id');
+   const selectedEquipment = equipmentList.find(e => e.id === selectedEquipmentId);
+   const isCalOverdue = selectedEquipment && selectedEquipment.calibration_due_date && new Date(selectedEquipment.calibration_due_date) < new Date();
 
   // Founder Brief State
   const [brief, setBrief] = useState({
@@ -83,8 +88,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     try {
       // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches').select('batch_id').eq('status', 'fermenting');
+      // Fetch equipment for dropdown
+      const { data: equip } = await supabase.from('equipment').select('*').eq('status', 'Operational');
       if (!isMounted.current) return;
       setActiveBatches(batches || []);
+      setEquipmentList(equip || []);
 
       // Fetch activity log
       let query = supabase
@@ -478,6 +486,24 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   {activeBatches.map(b => <option key={b.batch_id} value={b.batch_id}>{b.batch_id}</option>)}
                 </select>
               </div>
+              <div className="flex-1">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Hardware / Equipment</label>
+                <select {...regLog('equipment_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
+                  <option value="">— None —</option>
+                  {equipmentList.map(e => <option key={e.id} value={e.id}>{e.name} ({e.model})</option>)}
+                </select>
+              </div>
+            </div>
+            {isCalOverdue && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl animate-pulse">
+                <div className="flex items-center gap-2 text-red-700 mb-1">
+                  <AlertTriangle className="w-4 h-4"/>
+                  <p className="text-xs font-black uppercase">Calibration Lock Active</p>
+                </div>
+                <p className="text-[11px] text-red-600">This equipment passed its calibration due date ({new Date(selectedEquipment.calibration_due_date).toLocaleDateString()}). Logging is disabled for compliance safety.</p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start</label>
@@ -506,9 +532,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 </div>
               )}
             </div>
-            <button type="submit" disabled={isSubmitting}
+            <button type="submit" disabled={isSubmitting || isCalOverdue}
               className="w-full flex justify-center items-center py-3 px-4 rounded-xl text-sm font-black text-white bg-teal-800 hover:bg-teal-900 disabled:opacity-60 transition-all">
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : 'Save Activity Entry'}
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : isCalOverdue ? 'Locked (Calibration Required)' : 'Save Activity Entry'}
             </button>
           </form>
         </div>

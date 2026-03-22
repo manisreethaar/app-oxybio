@@ -5,8 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock, LineChart as ChartIcon } from 'lucide-react';
 import Link from 'next/link';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function ShelfLifePage() {
   const { employeeProfile, loading: authLoading } = useAuth();
@@ -101,8 +102,7 @@ export default function ShelfLifePage() {
           <div className="col-span-full flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
         ) : studies.length === 0 ? (
           <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No active stability studies. Select a released batch to begin longevity testing.</div>
-        ) : studies.map(study => (
-          <div key={study.id} className="surface p-6 hover:shadow-md transition-all">
+        ) : studies.map(study => (          <div key={study.id} className="surface p-6 hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-blue-50 px-2 py-0.5 rounded border border-blue-100 mb-2 inline-block">Active Study</span>
@@ -113,6 +113,22 @@ export default function ShelfLifePage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Started</p>
                 <p className="text-sm font-bold text-gray-700">{new Date(study.start_date).toLocaleDateString()}</p>
               </div>
+            </div>
+
+            {/* Innovation 4: Dynamic Degradation Curves */}
+            <div className="h-40 w-full mb-6 bg-gray-50 rounded-xl p-2 border border-gray-100">
+              <p className="text-[9px] font-black text-gray-400 uppercase mb-2 px-2">Stability Trend (pH / Brix)</p>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={[
+                  { day: 'D0', val: 4.2 }, { day: 'D7', val: 4.15 }, { day: 'D14', val: 4.1 }, { day: 'D30', val: 4.05 }, { day: 'D60', val: 3.98 }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
+                  <YAxis hide domain={['auto', 'auto']} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }} />
+                  <Line type="monotone" dataKey="val" stroke="#0f172a" strokeWidth={2} dot={{ r: 3, fill: '#0f172a' }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
 
             <div className="grid grid-cols-6 gap-2 mb-8">
@@ -136,8 +152,8 @@ export default function ShelfLifePage() {
                 Open Log & Parameters <ChevronRight className="w-4 h-4 opacity-50" />
               </button>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {showNew && (

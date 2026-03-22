@@ -94,6 +94,75 @@ export async function POST(request, { params }) {
 
     if (transError) throw transError;
 
+    // Innovation 2: Inventory Auto-Deduction
+    if (to_stage === 'media_prep') {
+      try {
+        // 1. Get Batch and linked formulation
+        const { data: batch } = await supabase
+          .from('batches')
+          .select('variant, product_name')
+          .eq('id', batchId)
+          .single();
+
+        if (batch) {
+          // 2. Find formulation (by name or variant code)
+          const { data: formulation } = await supabase
+            .from('formulations')
+            .select('ingredients')
+            .or(`name.eq."${batch.product_name}",code.eq."${batch.variant}"`)
+            .order('version', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (formulation && formulation.ingredients) {
+             const ingredients = formulation.ingredients.split(/[\n,]+/).map(i => i.trim()).filter(Boolean);
+             for (const ing of ingredients) {
+                // Parse "5kg Sugar" or "Manganese 2g"
+                const match = ing.match(/([\d.]+)\s*(\w+)?\s*(.+)/) || ing.match(/(.+)\s*([\d.]+)\s*(\w+)?/);
+                if (match) {
+                   const qty = parseFloat(match[1] || match[2]);
+                   const name = (match[3] || match[1]).trim();
+                   
+                   // Find inventory item
+                   const { data: invItem } = await supabase
+                     .from('inventory_items')
+                     .select('id')
+                     .ilike('name', `%${name}%`)
+                     .limit(1)
+                     .single();
+
+                   if (invItem) {
+                      // Subtract from oldest stock first
+                      const { data: stock } = await supabase
+                        .from('inventory_stock')
+                        .select('id, current_quantity')
+                        .eq('item_id', invItem.id)
+                        .gt('current_quantity', 0)
+                        .order('created_at', { ascending: true })
+                        .limit(1)
+                        .single();
+
+                      if (stock) {
+                         const newQty = Math.max(0, stock.current_quantity - qty);
+                         await supabase.from('inventory_stock').update({ current_quantity: newQty }).eq('id', stock.id);
+                         // Record usage
+                         await supabase.from('inventory_usage').insert({
+                            stock_id: stock.id,
+                            batch_id: batchId,
+                            quantity_used: qty,
+                            logged_by: emp.id
+                         });
+                      }
+                   }
+                }
+             }
+          }
+        }
+      } catch (invErr) {
+        console.error('Inventory auto-deduct error (non-fatal):', invErr);
+      }
+    }
+
     // Innovation 2: Task Auto-Completion
     try {
       await supabase
