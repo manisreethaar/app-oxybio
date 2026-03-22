@@ -31,6 +31,9 @@ export default function LeavePage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [rejectionId, setRejectionId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+
   const supabase = createClient();
   const isPermission = leaveType === 'Permission';
 
@@ -51,7 +54,7 @@ export default function LeavePage() {
   };
 
   const calculateDays = () => {
-    if (isPermission) return 0; // permissions are hours-based
+    if (isPermission) return 0;
     if (!startDate || !endDate) return 0;
     const days = differenceInBusinessDays(new Date(endDate), new Date(startDate)) + 1;
     return days > 0 ? days : 0;
@@ -59,7 +62,7 @@ export default function LeavePage() {
 
   const handleApply = async (e) => {
     e.preventDefault();
-    if (submitting) return; // Concurrency lock
+    if (submitting) return;
     setSubmitting(true);
     setErrorMsg('');
     
@@ -69,7 +72,7 @@ export default function LeavePage() {
             leave_type: 'Permission',
             start_date: permissionDate,
             end_date: permissionDate,
-            total_days: 0,        // Permission = 0 full days; hours tracked in reason
+            total_days: 0,
             reason: `Permission Request: ${permissionHours} hour(s). ${reason}`
           }
         : {
@@ -88,14 +91,13 @@ export default function LeavePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
 
-      // 1. Confirm to the applicant
       notifyEmployee(
         employeeProfile.id,
         '🗓️ Leave Submitted',
         `Your ${payload.leave_type} leave request has been submitted and is pending HR approval.`,
         '/leave'
       );
-      // 2. Notify all admins to review
+      
       const { data: admins } = await supabase.from('employees').select('id').eq('role', 'admin').eq('is_active', true);
       notifyAll((admins || []).map(a => a.id), '📄 Leave Request Pending', `${employeeProfile.full_name} has submitted a ${payload.leave_type} leave request. Review required.`, '/leave');
 
@@ -109,9 +111,6 @@ export default function LeavePage() {
     }
   };
 
-  const [rejectionId, setRejectionId] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-
   const processLeave = async (id, status) => {
     setActionLoadingId(id);
     let comment = '';
@@ -124,7 +123,6 @@ export default function LeavePage() {
       comment = rejectionReason || 'No reason provided.';
     }
 
-    // 1. Update the DB
     const { data: updatedLeave, error } = await supabase.from('leave_applications').update({
       status,
       admin_comment: comment,
@@ -138,13 +136,9 @@ export default function LeavePage() {
       return;
     }
 
-    // 2. Push notification TO the employee whose leave was acted on
     const employeeId = updatedLeave?.employee_id;
-    const employeeName = updatedLeave?.employees?.full_name || 'Team Member';
     if (employeeId) {
-      const notifTitle = status === 'approved'
-        ? `✅ Leave Approved`
-        : `❌ Leave Rejected`;
+      const notifTitle = status === 'approved' ? `✅ Leave Approved` : `❌ Leave Rejected`;
       const notifBody = status === 'approved'
         ? `Your ${updatedLeave.leave_type} leave request has been approved by HR.`
         : `Your ${updatedLeave.leave_type} leave request was rejected. Reason: ${comment}`;
@@ -152,13 +146,8 @@ export default function LeavePage() {
       fetch('/api/push/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assigned_to: employeeId,
-          title: notifTitle,
-          body: notifBody,
-          url: '/leave'
-        })
-      }).catch(() => {}); // Non-blocking — notification failure must never block leave processing
+        body: JSON.stringify({ assigned_to: employeeId, title: notifTitle, body: notifBody, url: '/leave' })
+      }).catch(() => {});
     }
 
     setRejectionId(null);
@@ -167,58 +156,56 @@ export default function LeavePage() {
     setActionLoadingId(null);
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading leave data...</div>;
+  if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading leave ledger data...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12 px-4">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-black text-teal-950 tracking-tight italic uppercase">Leave Hub</h1>
-          <p className="text-gray-500 mt-1 font-medium font-mono">GMP Compliance Leave Protocols</p>
-        </div>
+    <div className="page-container">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Leave Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Submit submittals and review platform attendance queries.</p>
       </div>
 
       {role === 'admin' && pendingLeaves.length > 0 && (
-        <section className="bg-amber-50 rounded-3xl border-2 border-amber-100 p-8 shadow-inner">
-          <h2 className="text-xl font-black text-amber-900 mb-6 flex items-center tracking-tighter uppercase">
-            <CalendarOff className="w-6 h-6 mr-3" /> Approval Queue ({pendingLeaves.length})
+        <section className="surface p-6 bg-amber-50/30 border-amber-200">
+          <h2 className="text-base font-bold text-amber-900 mb-6 flex items-center tracking-tight">
+            <CalendarOff className="w-5 h-5 mr-2 text-amber-700" /> Approval Queue ({pendingLeaves.length})
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pendingLeaves.map(leave => (
-              <div key={leave.id} className="bg-white rounded-2xl border border-amber-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-                <p className="font-black text-slate-800 text-lg">{leave.employees?.full_name}</p>
+              <div key={leave.id} className="bg-white rounded-xl border border-amber-200 p-5 shadow-sm hover:shadow hover:border-amber-300 transition-all duration-150">
+                <p className="font-bold text-gray-900 text-base">{leave.employees?.full_name || 'Staff'}</p>
                 <div className="flex justify-between items-center mt-1 mb-4">
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${
-                    leave.leave_type === 'Permission' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'
+                    leave.leave_type === 'Permission' ? 'bg-sky-50 text-sky-700 border border-sky-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
                   }`}>
                     {leave.leave_type === 'Permission' ? <><Clock className="w-3 h-3 inline mr-1"/>Permission</> : leave.leave_type}
                   </span>
-                  <span className="text-sm font-black text-slate-400">
+                  <span className="text-xs font-bold text-gray-500">
                     {leave.leave_type === 'Permission' ? 'Short Leave' : `${leave.total_days} Days`}
                   </span>
                 </div>
                 
-                <div className="text-xs font-bold text-slate-600 bg-slate-50 p-2.5 rounded-xl text-center border border-slate-100 mb-4 tabular-nums">
+                <div className="text-xs font-bold text-gray-600 bg-gray-50 p-2.5 rounded-lg text-center border border-gray-100 mb-4 tabular-nums">
                   {new Date(leave.start_date).toLocaleDateString()} → {new Date(leave.end_date).toLocaleDateString()}
                 </div>
                 
-                <p className="text-sm text-slate-500 italic mb-6 line-clamp-3 leading-relaxed">&quot;{leave.reason}&quot;</p>
+                <p className="text-sm text-gray-600 italic mb-6 line-clamp-3 leading-relaxed">&quot;{leave.reason}&quot;</p>
                 
                 {rejectionId === leave.id ? (
                   <div className="space-y-3">
-                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="State rejection reason..." className="w-full p-3 text-sm border-2 border-red-100 rounded-xl bg-red-50 focus:ring-red-500 outline-none h-24 font-medium" />
+                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="State rejection reason..." className="w-full p-3 text-sm border border-red-200 rounded-lg bg-red-50 focus:ring-1 focus:ring-red-500 outline-none h-20 font-medium resize-none" />
                     <div className="flex gap-2">
-                      <button onClick={() => processLeave(leave.id, 'rejected')} disabled={actionLoadingId === leave.id} className="flex-1 bg-red-600 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest">Confirm Reject</button>
-                      <button onClick={() => setRejectionId(null)} className="flex-1 bg-white border-2 border-slate-100 text-slate-400 py-3 rounded-xl text-xs font-black uppercase tracking-widest">Cancel</button>
+                      <button onClick={() => processLeave(leave.id, 'rejected')} disabled={actionLoadingId === leave.id} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-xs font-bold">Confirm Reject</button>
+                      <button onClick={() => setRejectionId(null)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-lg text-xs font-bold">Cancel</button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex gap-3">
-                    <button onClick={() => processLeave(leave.id, 'approved')} disabled={actionLoadingId === leave.id} className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest flex justify-center items-center shadow-lg shadow-emerald-900/10">
-                      {actionLoadingId === leave.id ? <Loader2 className="w-4 h-4 animate-spin"/> : <><CheckCircle className="w-4 h-4 mr-2" /> Approve</>}
+                    <button onClick={() => processLeave(leave.id, 'approved')} disabled={actionLoadingId === leave.id} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold flex justify-center items-center shadow-sm">
+                      {actionLoadingId === leave.id ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Approve'}
                     </button>
-                    <button onClick={() => setRejectionId(leave.id)} className="px-4 bg-red-50 text-red-600 hover:bg-red-100 py-3 rounded-xl flex items-center justify-center border border-red-100 transition-colors">
-                      <XCircle className="w-5 h-5" />
+                    <button onClick={() => setRejectionId(leave.id)} className="px-3 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 py-2 rounded-lg flex items-center justify-center transition-colors text-gray-400">
+                      <XCircle className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -230,13 +217,13 @@ export default function LeavePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm">
-            <h2 className="text-xl font-black text-slate-800 mb-8 uppercase tracking-tighter">Apply for Leave</h2>
-            {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-xs font-bold border border-red-200 flex items-start text-left"><AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />{errorMsg}</div>}
-            <form onSubmit={handleApply} className="space-y-5">
+          <div className="surface p-6">
+            <h2 className="text-base font-bold text-gray-900 mb-6 tracking-tight">Apply for Leave</h2>
+            {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-100 flex items-start"><AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />{errorMsg}</div>}
+            <form onSubmit={handleApply} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Leave Category</label>
-                <select value={leaveType} onChange={e => setLeaveType(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl focus:ring-4 focus:ring-teal-100 text-sm font-bold">
+                <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Leave Category</label>
+                <select value={leaveType} onChange={e => setLeaveType(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
                   <option value="Casual">Casual Leave (CL)</option>
                   <option value="Sick">Sick Leave (SL)</option>
                   <option value="Earned">Earned Leave (EL)</option>
@@ -245,97 +232,91 @@ export default function LeavePage() {
               </div>
 
               {isPermission ? (
-                // Permission mode: single date + hours duration
-                <div className="space-y-4 p-4 bg-sky-50 rounded-2xl border border-sky-100">
-                  <p className="text-[10px] font-black text-sky-700 uppercase tracking-widest">Short Leave — Hours Based</p>
+                <div className="space-y-3 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                  <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Short Leave — Hours Based</p>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Date of Permission</label>
-                    <input type="date" required value={permissionDate} onChange={e => setPermissionDate(e.target.value)} className="w-full px-4 py-3 bg-white border-none ring-1 ring-sky-200 rounded-xl text-sm font-bold" />
+                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Date</label>
+                    <input type="date" required value={permissionDate} onChange={e => setPermissionDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Duration (Hours)</label>
-                    <select value={permissionHours} onChange={e => setPermissionHours(e.target.value)} className="w-full px-4 py-3 bg-white border-none ring-1 ring-sky-200 rounded-xl text-sm font-bold">
+                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Duration</label>
+                    <select value={permissionHours} onChange={e => setPermissionHours(e.target.value)} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none">
                       <option value="1">1 Hour</option>
                       <option value="2">2 Hours</option>
                       <option value="3">3 Hours</option>
                       <option value="4">Half Day (4 Hours)</option>
                     </select>
                   </div>
-                  <p className="text-[10px] font-black text-sky-600 bg-sky-100 py-1.5 px-3 rounded-full inline-block">
-                    Permission: {permissionHours}h on {permissionDate || '—'}
-                  </p>
                 </div>
               ) : (
-                // Standard multi-day leave
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Start Date</label>
-                    <input type="date" required value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl text-sm font-bold" />
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Start Date</label>
+                    <input type="date" required value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">End Date</label>
-                    <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl text-sm font-bold" />
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">End Date</label>
+                    <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                 </div>
               )}
 
               {!isPermission && calculateDays() > 0 && (
-                <p className="text-[10px] font-black text-teal-600 bg-teal-50 py-2 px-4 rounded-full inline-block border border-teal-100 uppercase tracking-widest">
-                  Selected Payload: {calculateDays()} Business Days
+                <p className="text-[10px] font-black text-navy bg-gray-100 py-1.5 px-3 rounded-md border border-gray-200 uppercase tracking-widest">
+                  Selected: {calculateDays()} Business Days
                 </p>
               )}
 
               <div>
-                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">
-                  {isPermission ? 'Reason for Permission' : 'Justification / Reason'}
+                <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">
+                  {isPermission ? 'Reason for Permission' : 'Justification'}
                 </label>
-                <textarea required value={reason} onChange={e => setReason(e.target.value)} rows="4" className="w-full px-4 py-3 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl text-sm font-bold resize-none" placeholder={isPermission ? 'Brief reason for permission...' : 'Brief explanation...'}></textarea>
+                <textarea required value={reason} onChange={e => setReason(e.target.value)} rows="3" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold resize-none outline-none focus:ring-2 focus:ring-accent-light" placeholder={isPermission ? 'Brief reason...' : 'Brief explanation...'}></textarea>
               </div>
 
-              <button type="submit" disabled={submitting} className="w-full py-4 bg-teal-800 text-white font-black rounded-2xl hover:bg-teal-900 shadow-xl shadow-teal-900/20 transition-all active:scale-95 flex items-center justify-center uppercase tracking-widest text-xs">
-                {submitting ? <Loader2 className="w-5 h-5 animate-spin"/> : <><Send className="w-4 h-4 mr-2"/> Dispatch Request</>}
+              <button type="submit" disabled={submitting} className="w-full py-3 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center uppercase tracking-wider text-xs">
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Send className="w-3.5 h-3.5 mr-1.5"/> Dispatch Request</>}
               </button>
             </form>
           </div>
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
-            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">My Leave Ledger</h2>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ISO 9001 Records</span>
+          <div className="surface overflow-hidden flex flex-col h-full">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h2 className="text-base font-bold text-gray-900 tracking-tight">Leave Ledger</h2>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-100">
-                <thead className="bg-white/50">
-                  <tr>
-                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Category</th>
-                    <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Cycle</th>
-                    <th className="px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Net Days</th>
-                    <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Audit Status</th>
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cycle</th>
+                    <th className="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">Net Days</th>
+                    <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-50">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {leaves.map((l) => (
-                    <tr key={l.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-8 py-5 text-sm font-black text-slate-800 flex items-center gap-2">
-                        {l.leave_type === 'Permission' && <Clock className="w-3.5 h-3.5 text-sky-500"/>}
+                    <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                        {l.leave_type === 'Permission' && <Clock className="w-3.5 h-3.5 text-blue-500"/>}
                         {l.leave_type}
                       </td>
-                      <td className="px-8 py-5 text-xs text-slate-500 font-bold tabular-nums">
+                      <td className="px-6 py-4 text-xs text-gray-500 font-medium tabular-nums">
                         {new Date(l.start_date).toLocaleDateString([], { month: 'short', day: 'numeric'})} - {new Date(l.end_date).toLocaleDateString([], { month: 'short', day: 'numeric'})}
                       </td>
-                      <td className="px-8 py-5 text-center text-sm font-black text-slate-900">
-                        {l.leave_type === 'Permission' ? <span className="text-sky-600">Short</span> : l.total_days}
+                      <td className="px-6 py-4 text-center text-sm font-bold text-gray-900">
+                        {l.leave_type === 'Permission' ? <span className="text-blue-600">Short</span> : l.total_days}
                       </td>
-                      <td className="px-8 py-5 text-right">
-                        <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${STATUS_STYLE[l.status] || STATUS_STYLE.pending}`}>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md border ${STATUS_STYLE[l.status] || STATUS_STYLE.pending}`}>
                           {l.status}
                         </span>
                       </td>
                     </tr>
                   ))}
-                  {leaves.length === 0 && <tr><td colSpan="4" className="px-8 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">No ledger entries found.</td></tr>}
+                  {leaves.length === 0 && <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-400 font-medium text-sm">No ledger entries found.</td></tr>}
                 </tbody>
               </table>
             </div>

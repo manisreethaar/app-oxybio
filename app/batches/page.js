@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X } from 'lucide-react';
-import Link from 'next/link';
 import { format, differenceInHours } from 'date-fns';
+import Link from 'next/link';
 
 export default function BatchesPage() {
   const { employeeProfile, role, loading: authLoading } = useAuth();
@@ -21,12 +21,8 @@ export default function BatchesPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchBatches();
-    fetchFormulations();
+    fetchBatches(); fetchFormulations();
   }, []);
-
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
-  if (!employeeProfile) return null;
 
   const fetchFormulations = async () => {
     const { data } = await supabase.from('formulations').select('id, name, code, version').order('created_at', { ascending: false });
@@ -35,125 +31,83 @@ export default function BatchesPage() {
 
   const fetchBatches = async () => {
     setLoadingBatches(true);
-    const { data: fermenting } = await supabase
-      .from('batches')
-      .select('*, formulations(name, code, version)')
-      .in('status', ['fermenting', 'deviation', 'qc-hold'])
-      .order('start_time', { ascending: false });
-    // ...
-
-    // Check for unacknowledged deviations
+    const { data: fermenting } = await supabase.from('batches').select('*, formulations(name, code, version)').in('status', ['fermenting', 'deviation', 'qc-hold']).order('start_time', { ascending: false });
     const hasDeviation = fermenting?.some(b => b.ph_readings?.some(ph => ph.is_deviation && !ph.deviation_acknowledged));
-    setIsAlert(hasDeviation);
-    setActiveBatches(fermenting || []);
+    setIsAlert(hasDeviation); setActiveBatches(fermenting || []);
 
-    const { data: completed } = await supabase
-      .from('batches')
-      .select('*')
-      .in('status', ['released', 'rejected'])
-      .order('created_at', { ascending: false })
-      .limit(10);
-    
-    setHistory(completed || []);
-    setLoadingBatches(false);
+    const { data: completed } = await supabase.from('batches').select('*').in('status', ['released', 'rejected']).order('created_at', { ascending: false }).limit(10);
+    setHistory(completed || []); setLoadingBatches(false);
   };
 
   const handleCreateBatch = async (e) => {
-    e.preventDefault();
-    if (!newBatchForm.formulation_id) return alert("Please select a valid Formulation version.");
+    e.preventDefault(); if (!newBatchForm.formulation_id) return alert("Select formulation.");
     setCreatingBatch(true);
     try {
       const salt = crypto.randomUUID().split('-')[0].slice(-4).toUpperCase();
       const batchIdStr = `BTCH-${newBatchForm.variant.split('-')[1].toUpperCase()}-${salt}`;
-      
-      const { error } = await supabase.from('batches').insert({
-        batch_id: batchIdStr,
-        variant: newBatchForm.variant,
-        formulation_id: newBatchForm.formulation_id,
-        current_stage: 'media_prep',
-        status: 'pending',
-        start_time: new Date().toISOString()
-      });
-
+      const { error } = await supabase.from('batches').insert({ batch_id: batchIdStr, variant: newBatchForm.variant, formulation_id: newBatchForm.formulation_id, current_stage: 'media_prep', status: 'pending', start_time: new Date().toISOString() });
       if (error) throw error;
-      
-      setShowNewBatchModal(false);
-      setNewBatchForm({ variant: 'O2B-Agri', formulation_id: '' });
-      fetchBatches();
-    } catch (err) {
-      alert("Failed to initialize production sequence: " + err.message);
-    } finally {
-      setCreatingBatch(false);
-    }
+      setShowNewBatchModal(false); setNewBatchForm({ variant: 'O2B-Agri', formulation_id: '' }); fetchBatches();
+    } catch (err) { alert(err.message); } finally { setCreatingBatch(false); }
   };
 
+  if (authLoading || loadingBatches) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing Batch Registry...</div>;
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-10">
+    <div className="page-container">
       {isAlert && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center justify-between shadow-sm animate-pulse">
-          <div className="flex items-center text-red-800">
-            <AlertTriangle className="w-6 h-6 mr-3" />
-            <span className="font-bold text-lg">CCP DEVIATION ALERT: Unacknowledged pH deviations detected. Immediate review required!</span>
+        <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center justify-between shadow-sm">
+          <div className="flex items-center text-red-800 text-sm font-bold">
+            <AlertTriangle className="w-5 h-5 mr-2 text-red-600" /> CCP DEVIATION DETECTED: Immediate review required!
           </div>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Batch Manager</h1>
-          <p className="text-gray-500 mt-1">Track active fermentations and log critical control points (CCPs).</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Production Batches</h1>
+          <p className="text-sm text-gray-500 mt-1">Track fermentations and record CCP logs.</p>
         </div>
         {role === 'admin' && (
-          <button onClick={() => setShowNewBatchModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm shrink-0">
-            <Plus className="w-5 h-5 mr-1" /> New Batch
+          <button onClick={() => setShowNewBatchModal(true)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
+            <Plus className="w-4 h-4 mr-1" /> New Batch
           </button>
         )}
       </div>
 
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-          <FlaskConical className="w-5 h-5 mr-2 text-teal-700" /> Active Fermentations
+        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
+          <FlaskConical className="w-4 h-4 mr-1.5 text-navy" /> Active Fermentations
         </h2>
-        {loadingBatches ? (
-          <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-teal-700" /></div>
-        ) : activeBatches.length === 0 ? (
-          <div className="p-8 text-center bg-white border border-gray-200 rounded-2xl shadow-sm text-gray-500">
-            No active batches. Create one to begin tracking fermentation.
-          </div>
+        {activeBatches.length === 0 ? (
+          <div className="surface p-8 text-center text-gray-400 font-medium text-sm">No active batches running.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeBatches.map(batch => {
-               const latestPhList = batch.ph_readings || [];
-               const latestPh = latestPhList.length > 0 ? latestPhList[latestPhList.length - 1] : null;
+               const latestPh = batch.ph_readings?.[batch.ph_readings.length - 1];
                const hours = differenceInHours(new Date(), new Date(batch.start_time));
+               const isDev = latestPh?.is_deviation && !latestPh?.deviation_acknowledged;
 
                return (
-                 <div key={batch.id} className={`bg-white rounded-2xl border ${latestPh?.is_deviation && !latestPh?.deviation_acknowledged ? 'border-red-400 ring-2 ring-red-400 text-red-900' : 'border-gray-200'} shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md`}>
-                   <div className={`px-6 py-4 flex justify-between items-start border-b ${latestPh?.is_deviation && !latestPh?.deviation_acknowledged ? 'bg-red-50 border-red-100' : 'border-gray-100'}`}>
+                 <div key={batch.id} className={`surface overflow-hidden flex flex-col hover:border-gray-300 transition-colors ${isDev ? 'border-red-300 bg-red-50/10' : ''}`}>
+                   <div className="px-6 py-4 flex justify-between items-start border-b border-gray-100 bg-gray-50/30">
                      <div>
-                       <p className="font-mono text-lg font-bold text-teal-900 tracking-wider mb-1">{batch.batch_id}</p>
-                       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">{batch.variant}</span>
+                       <p className="font-mono text-base font-black text-gray-900 tracking-wider mb-1">{batch.batch_id}</p>
+                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">{batch.variant}</span>
                      </div>
-                     <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${batch.status === 'deviation' || (latestPh?.is_deviation) ? 'bg-red-100 text-red-800' : batch.status === 'qc-hold' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
-                       {batch.status === 'fermenting' && latestPh?.is_deviation ? 'DEVIATION' : batch.status}
+                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${isDev ? 'bg-red-50 text-red-700 border-red-100' : batch.status === 'qc-hold' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                       {isDev ? 'DEVIATION' : batch.status}
                      </span>
                    </div>
                    <div className="px-6 py-5 flex-1 flex justify-between">
-                     <div>
-                       <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1.5">Elapsed Time</p>
-                       <p className="text-xl font-semibold text-gray-700">{hours} <span className="text-sm">hrs</span></p>
-                     </div>
+                     <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Elapsed</p><p className="text-xl font-black text-gray-800">{hours} <span className="text-xs">HRS</span></p></div>
                      <div className="text-right">
-                       <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1.5">Latest pH</p>
-                       {latestPh ? (
-                         <p className={`text-4xl font-black tracking-tighter tabular-nums ${latestPh.is_deviation ? 'text-red-600' : 'text-green-600'}`}>{latestPh.ph_value}</p>
-                       ) : (
-                         <p className="text-xl font-medium text-gray-300">—</p>
-                       )}
+                       <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Latest pH</p>
+                       {latestPh ? <p className={`text-3xl font-black tracking-tighter tabular-nums ${latestPh.is_deviation ? 'text-red-600' : 'text-emerald-600'}`}>{latestPh.ph_value}</p> : <p className="text-base font-bold text-gray-300">—</p>}
                      </div>
                    </div>
-                   <Link href={`/batches/${batch.id}`} className={`w-full py-3.5 flex justify-center items-center text-sm font-semibold transition-colors border-t ${latestPh?.is_deviation && !latestPh?.deviation_acknowledged ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-50 hover:bg-gray-100 text-teal-800 border-gray-100'}`}>
-                     {latestPh?.is_deviation && !latestPh?.deviation_acknowledged ? 'Review Deviation Now' : 'View Details & Log pH'} <ArrowRight className="w-4 h-4 ml-2" />
+                   <Link href={`/batches/${batch.id}`} className={`w-full py-3 flex justify-center items-center text-xs font-bold transition-colors border-t border-gray-100 ${isDev ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-50/50 hover:bg-gray-100 text-navy'}`}>
+                     {isDev ? 'Review Deviation' : 'View Details & Log'} <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                    </Link>
                  </div>
                )
@@ -162,87 +116,54 @@ export default function BatchesPage() {
         )}
       </section>
 
-      <section className="pt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Batch History & QC</h2>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <section>
+        <h2 className="text-sm font-bold text-gray-900 mb-4">Batch History & QC</h2>
+        <div className="surface overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch ID</th>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Variant</th>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Started</th>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Batch ID</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Variant</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {history.map((batch) => (
-                  <tr key={batch.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-teal-800 tracking-wider">
-                      {batch.batch_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{batch.variant}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2.5 py-1 inline-flex text-xs font-bold uppercase tracking-wider rounded-md ${batch.status === 'released' ? 'bg-green-100 text-green-800' : batch.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {batch.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                      {format(new Date(batch.start_time), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link href={`/batches/${batch.id}`} className="text-teal-600 hover:text-teal-900 focus:outline-none underline-offset-4 hover:underline">View Report</Link>
-                    </td>
+                {history.map((l) => (
+                  <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-3.5 text-xs font-mono font-bold text-gray-800">{l.batch_id}</td>
+                    <td className="px-6 py-3.5 text-xs font-semibold text-gray-700">{l.variant}</td>
+                    <td className="px-6 py-3.5"><span className={`px-2 py-0.5 inline-flex text-[9px] font-black uppercase tracking-wider rounded border ${l.status === 'released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>{l.status}</span></td>
+                    <td className="px-6 py-3.5 text-xs text-gray-500 font-semibold">{format(new Date(l.start_time), 'MMM d, yyyy')}</td>
+                    <td className="px-6 py-3.5 text-right"><Link href={`/batches/${l.id}`} className="text-xs font-bold text-accent hover:underline">Report</Link></td>
                   </tr>
                 ))}
-                {history.length === 0 && !loadingBatches && (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-sm text-gray-500">No completed batches in history.</td>
-                  </tr>
-                )}
+                {history.length === 0 && <tr><td colSpan="5" className="px-6 py-8 text-center text-xs text-gray-400 font-medium">No completed batches found.</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      {/* New Batch Initialization Modal */}
       {showNewBatchModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-8 relative shadow-2xl border border-teal-100">
-            <button onClick={() => setShowNewBatchModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-2xl font-black text-slate-800 mb-1 tracking-tight">Initialize Sequence</h2>
-            <p className="text-sm font-semibold text-teal-600 mb-6 uppercase tracking-wider">Production Setup</p>
-            
-            <form onSubmit={handleCreateBatch} className="space-y-5">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 relative shadow-xl border border-gray-100">
+            <button onClick={() => setShowNewBatchModal(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+            <h2 className="text-base font-bold text-gray-900 mb-4 tracking-tight">Initialize Production</h2>
+            <form onSubmit={handleCreateBatch} className="space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Scientific Formulation</label>
-                <select 
-                  required
-                  value={newBatchForm.formulation_id} 
-                  onChange={e => setNewBatchForm({...newBatchForm, formulation_id: e.target.value})} 
-                  className="w-full border-2 border-slate-100 rounded-xl p-3 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-slate-50 font-bold text-slate-700 transition-all font-mono"
-                >
-                  <option value="">Select Recipe Version...</option>
-                  {formulations.map(f => (
-                    <option key={f.id} value={f.id}>{f.code} - {f.name} (v{f.version})</option>
-                  ))}
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Recipe Variant</label>
+                <select required value={newBatchForm.formulation_id} onChange={e => setNewBatchForm({...newBatchForm, formulation_id: e.target.value})} className="w-full border border-gray-200 rounded-lg p-2.5 outline-none bg-white font-semibold text-gray-800 text-sm">
+                  <option value="">Select Version...</option>
+                  {formulations.map(f => <option key={f.id} value={f.id}>{f.code} - {f.name} (v{f.version})</option>)}
                 </select>
-                <p className="text-[10px] text-slate-400 font-medium mt-2">Linking a batch to a formulation version ensures experiment traceability and CCP compliance.</p>
+                <p className="text-[10px] text-gray-400 font-medium mt-1">Traceability matrix requires valid binding version.</p>
               </div>
-
-              <div className="pt-2">
-                <button 
-                  disabled={creatingBatch} 
-                  type="submit" 
-                  className="w-full bg-gradient-to-br from-teal-600 to-cyan-700 text-white font-black py-3.5 rounded-xl hover:from-teal-500 hover:to-cyan-600 transition-all disabled:opacity-50 uppercase tracking-widest shadow-lg shadow-teal-700/20 active:scale-95"
-                >
-                  {creatingBatch ? 'Initializing...' : 'Commence Production'}
-                </button>
-              </div>
+              <button disabled={creatingBatch} type="submit" className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+                {creatingBatch ? 'Initializing...' : 'Commence Production'}
+              </button>
             </form>
           </div>
         </div>

@@ -4,36 +4,41 @@
 
 @layer base {
   body {
-    @apply text-slate-800 antialiased bg-slate-50 selection:bg-teal-200 selection:text-teal-900;
+    @apply text-gray-900 antialiased bg-gray-50 selection:bg-blue-100 selection:text-blue-900;
     font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  :root {
+    --background: #F9FAFB;
+    --foreground: #111827;
   }
 }
 
 @layer utilities {
+  /* Deprecating old glass-panel/glass-card for clean flats */
   .glass-panel {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+    @apply bg-white border border-gray-200 shadow-sm;
   }
   
   .glass-card {
-    @apply bg-white/60 backdrop-blur-lg border border-white/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300;
+    @apply bg-white border border-gray-200 shadow-sm hover:shadow hover:-translate-y-0.5 transition-all duration-200;
+  }
+  
+  /* Standard premium containers */
+  .surface {
+    @apply bg-white border border-gray-200 shadow-sm rounded-xl;
+  }
+  
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8;
   }
   
   .mesh-bg {
-    background-color: #f8fafc;
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(173, 80%, 94%, 1) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(200, 85%, 94%, 1) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(160, 75%, 90%, 1) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, hsla(190, 80%, 95%, 1) 0px, transparent 50%);
-    background-attachment: fixed;
-  }
-  
-  .text-balance {
-    text-wrap: balance;
+    @apply bg-gray-50; /* Flattening old noisy mesh bg */
   }
 }
 
-/* Custom Webkit Scrollbar */
+/* Standard Premium Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -42,5 +47,5 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-teal-200 rounded-full hover:bg-teal-300 transition-colors;
+  @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
 }

@@ -48,7 +48,7 @@ export default function ClientLayout({ children }) {
   }
 
   return (
-    <div className="flex h-screen mesh-bg overflow-hidden text-slate-800">
+    <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-900 border-t-4 border-navy">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden pb-16 md:pb-0 relative z-10">
         <TopBar />
@@ -64,7 +64,7 @@ export default function ClientLayout({ children }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           {loading ? (
             <div className="flex justify-center items-center h-full min-h-[50vh]">
-              <Loader2 className="w-10 h-10 animate-spin text-teal-800" />
+              <Loader2 className="w-10 h-10 animate-spin text-navy" />
             </div>
           ) : (
             children

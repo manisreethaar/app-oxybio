@@ -88,13 +88,13 @@ export default function Sidebar() {
         <Link
           href={item.href}
           className={clsx(
-            "flex items-center px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-300",
+            "flex items-center px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-150",
             isActive 
-              ? "text-teal-900 bg-white/80 shadow-sm border border-white/60" 
-              : "text-slate-500 hover:bg-white/40 hover:text-slate-800 border border-transparent"
+              ? "text-navy bg-blue-50/80 shadow-sm border border-blue-100/50" 
+              : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-transparent"
           )}
         >
-          <Icon className={clsx("w-5 h-5 mr-3 transition-colors", isActive ? "text-teal-600 stroke-[2.5px]" : "text-slate-400")} />
+          <Icon className={clsx("w-5 h-5 mr-3 transition-colors", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
           {item.name}
         </Link>
       </li>
@@ -104,12 +104,12 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 glass-panel h-full border-r border-white/50 relative z-20">
-        <div className="p-8 flex items-center space-x-3 border-b border-slate-200/50">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-cyan-700 text-white font-bold flex items-center justify-center shadow-md">
+      <aside className="hidden md:flex flex-col w-64 bg-white h-full border-r border-gray-200 relative z-20">
+        <div className="p-8 flex items-center space-x-3 border-b border-gray-100">
+          <div className="w-10 h-10 rounded-xl bg-navy text-white font-bold flex items-center justify-center shadow-sm">
             O₂
           </div>
-          <span className="text-2xl font-black tracking-tighter text-slate-800">OxyOS</span>
+          <span className="text-2xl font-black tracking-tighter text-gray-900">OxyOS</span>
         </div>
         
         <nav className="flex-1 overflow-y-auto py-6 custom-scrollbar">
@@ -129,14 +129,14 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="p-5 border-t border-slate-200/50 bg-white/30 backdrop-blur-md">
-          <div className="flex items-center mb-4 p-3 bg-white/60 rounded-2xl border border-white/60 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-100 to-cyan-100 text-teal-800 font-bold flex items-center justify-center shrink-0 border border-white shadow-sm">
+        <div className="p-5 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex items-center mb-4 p-3 bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-navy/10 text-navy font-bold flex items-center justify-center shrink-0 border border-gray-100">
               {getInitials(employeeProfile.full_name)}
             </div>
             <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-bold text-slate-800 truncate">{employeeProfile.full_name}</p>
-              <p className="text-[11px] font-bold text-teal-600 uppercase tracking-wider">{employeeProfile.designation || employeeProfile.role || 'Staff'}</p>
+              <p className="text-sm font-bold text-gray-800 truncate">{employeeProfile.full_name}</p>
+              <p className="text-[11px] font-bold text-navy uppercase tracking-wider">{employeeProfile.designation || employeeProfile.role || 'Staff'}</p>
             </div>
           </div>
           <button 
@@ -179,10 +179,10 @@ export default function Sidebar() {
                             onClick={() => setMobileMenuOpen(false)}
                             className={clsx(
                               "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all",
-                              isActive ? "bg-teal-50 border-teal-200 text-teal-800 shadow-sm" : "bg-white border-slate-100 text-slate-600 shadow-sm"
+                              isActive ? "bg-blue-50 border-blue-200 text-navy shadow-sm" : "bg-white border-gray-100 text-gray-600 shadow-sm"
                             )}
                           >
-                            <Icon className={clsx("w-6 h-6 mb-2", isActive ? "text-teal-600 stroke-[2.5px]" : "text-slate-400")} />
+                            <Icon className={clsx("w-6 h-6 mb-2", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
                             <span className="text-xs font-bold">{item.name}</span>
                           </Link>
                         )
@@ -216,10 +216,10 @@ export default function Sidebar() {
               key={item.name} href={item.href}
               className={clsx(
                 "flex flex-col items-center justify-center w-16 h-[72px] transition-all relative",
-                isActive ? "text-teal-700" : "text-slate-400 hover:text-slate-700"
+                isActive ? "text-navy" : "text-gray-400 hover:text-gray-700"
               )}
             >
-              {isActive && <span className="absolute top-0 w-8 h-1 bg-teal-500 rounded-b-full"></span>}
+              {isActive && <span className="absolute top-0 w-8 h-1 bg-navy rounded-b-full"></span>}
               <Icon className={clsx("w-6 h-6 mb-1.5 transition-all", isActive ? "stroke-[2.5px] scale-110" : "stroke-2")} />
               <span className={clsx("text-[10px] whitespace-nowrap", isActive ? "font-bold" : "font-medium")}>{item.name}</span>
             </Link>

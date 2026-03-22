@@ -9,7 +9,7 @@ export const metadata = {
   title: "OxyOS Platform",
   description: "Internal operations for Oxygen Bioinnovations",
   manifest: "/manifest.json",
-  themeColor: "#115e59",
+  themeColor: "#1F3A5F",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
