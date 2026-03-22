@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
+import { notifyEmployee } from '@/lib/notifyEmployee';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ArrowLeft, AlertTriangle, CheckCircle, Clock, Loader2, Save, ChevronRight, Activity, Beaker, Thermometer, Droplets, ShoppingCart, Tag, Archive, Filter, ShieldCheck, XCircle, Pipette } from 'lucide-react';
 import Link from 'next/link';
@@ -219,6 +220,15 @@ export default function BatchDetailPage() {
         await fetchBatchDetail();
         const nextParams = PARAMETERS[toStage] || [];
         if (nextParams.length > 0) setSelectedParam(nextParams[0]);
+        // Notify the user who made the transition
+        const stageLabel = STAGES.find(s => s.id === toStage)?.label || toStage;
+        const isTerminal = toStage === 'released' || toStage === 'rejected';
+        notifyEmployee(
+          employeeProfile.id,
+          isTerminal ? (toStage === 'released' ? '🎉 Batch Released' : '🚫 Batch Rejected') : `➡️ Stage: ${stageLabel}`,
+          `Batch ${batch?.batch_code || batchId} has moved to ${stageLabel}.`,
+          `/batches/${batchId}`
+        );
       } else {
         const err = await res.json();
         alert(err.error || 'Failed to promote batch stage');

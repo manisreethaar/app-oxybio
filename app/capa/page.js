@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { notifyEmployee } from '@/lib/notifyEmployee';
 import {
   AlertTriangle, Plus, X, ShieldCheck, Loader2, ChevronRight,
   FlaskConical, Wrench, ClipboardList, CheckCircle2, ArrowLeft,
@@ -95,6 +96,8 @@ export default function CapaPage() {
     if (!error && data) {
       setRaiseForm({ title: '', severity: 'Major', source: 'Internal Audit', description: '' });
       setShowRaise(false);
+      // Notify the reporter confirming NCR submission
+      notifyEmployee(employeeProfile.id, '🚨 NCR Raised', `Your non-conformance report "${raiseForm.title}" has been submitted and is under review.`, '/capa');
       await fetchAll();
     } else if (error) {
       alert('Failed to submit NCR: ' + error.message);
@@ -210,8 +213,12 @@ export default function CapaPage() {
     }
 
     if (!confirm('Mark this NCR as Closed? This action indicates all corrective measures have been verified effective.')) return;
-    await supabase.from('deviations').update({ status: 'Closed' }).eq('id', selected.id);
+    const { data: closedDev } = await supabase.from('deviations').update({ status: 'Closed' }).eq('id', selected.id).select('*, reporter:employees!deviations_reported_by_fkey(id)').single();
     setSelected(s => ({ ...s, status: 'Closed' }));
+    // Notify the original reporter that NCR is officially closed
+    if (closedDev?.reported_by) {
+      notifyEmployee(closedDev.reported_by, '✅ NCR Closed', `NCR "${selected.title}" has been verified effective and officially closed.`, '/capa');
+    }
     fetchAll();
   };
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } from 'lucide-react';
 import { differenceInBusinessDays } from 'date-fns';
 
@@ -86,6 +87,17 @@ export default function LeavePage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
+
+      // 1. Confirm to the applicant
+      notifyEmployee(
+        employeeProfile.id,
+        '🗓️ Leave Submitted',
+        `Your ${payload.leave_type} leave request has been submitted and is pending HR approval.`,
+        '/leave'
+      );
+      // 2. Notify all admins to review
+      const { data: admins } = await supabase.from('employees').select('id').eq('role', 'admin').eq('is_active', true);
+      notifyAll((admins || []).map(a => a.id), '📄 Leave Request Pending', `${employeeProfile.full_name} has submitted a ${payload.leave_type} leave request. Review required.`, '/leave');
 
       setStartDate(''); setEndDate(''); setReason('');
       setPermissionDate(''); setPermissionHours('1');

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { notifyEmployee } from '@/lib/notifyEmployee';
 import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail } from 'lucide-react';
 
 export default function SOPLibraryPage() {
@@ -58,6 +59,8 @@ export default function SOPLibraryPage() {
       setShowAckModal(null);
       setSignatureText("");
       fetchSOPs();
+      // Notify self (self-confirmation) + signal admin
+      notifyEmployee(employeeProfile.id, '📋 SOP Signed', `You have successfully acknowledged: "${showAckModal.title}". Recorded under your digital signature.`, '/sops');
     } catch (err) {
       alert(err.message);
     } finally {

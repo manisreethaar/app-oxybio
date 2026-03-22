@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import { 
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2, 
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp, 
@@ -305,17 +306,27 @@ export default function TasksPage() {
 
   // ─── Admin Approve/Reject ───────────────────────────────────────────────────
   const handleApprove = async (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
     await supabase.from('tasks').update({ approval_status: 'approved' }).eq('id', taskId);
+    // Notify the assignee
+    if (task?.assigned_to) {
+      notifyEmployee(task.assigned_to, '✅ Task Approved', `Your task "${task.title}" has been approved.`, '/tasks');
+    }
     setSelectedTask(null);
     fetchTasks();
   };
 
   const handleReject = async (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
     await supabase.from('tasks').update({ 
       approval_status: 'rejected', 
       status: 'in-progress',
       completion_note: rejectNote || 'Task returned for revision.'
     }).eq('id', taskId);
+    // Notify the assignee
+    if (task?.assigned_to) {
+      notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote || 'Please review and resubmit.'}`, '/tasks');
+    }
     setRejectNote('');
     setSelectedTask(null);
     fetchTasks();

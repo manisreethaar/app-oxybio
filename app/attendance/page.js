@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { notifyEmployee } from '@/lib/notifyEmployee';
 import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck, Loader2, BarChart2, TrendingUp } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -190,6 +191,13 @@ export default function AttendancePage() {
       if (!checkInRes.ok) throw new Error(checkInData.error || 'Check-in failed');
 
       setShowWebcam(false);
+      // Notify the employee with a check-in confirmation
+      notifyEmployee(
+        employeeProfile.id,
+        '🟢 Checked In',
+        `You have successfully checked in at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST. Have a great shift!`,
+        '/attendance'
+      );
       fetchAttendanceData();
     } catch (err) {
       setCheckInError(err.message);
@@ -205,7 +213,16 @@ export default function AttendancePage() {
       check_out_time: new Date().toISOString()
     }).eq('id', todayLog.id);
     if (error) alert('Check-out failed: ' + error.message);
-    else fetchAttendanceData();
+    else {
+      // Notify the employee of successful checkout
+      notifyEmployee(
+        employeeProfile.id,
+        '🔴 Checked Out',
+        `Shift completed at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST. Great work today!`,
+        '/attendance'
+      );
+      fetchAttendanceData();
+    }
     setActionLoading(false);
   };
 
