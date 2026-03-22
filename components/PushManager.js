@@ -69,21 +69,21 @@ export default function PushManager() {
   if (!showBanner || subscribed || !user) return null;
 
   return (
-    <div className="bg-gradient-to-r from-teal-800 to-teal-700 text-white px-4 py-3 shadow-md flex flex-col sm:flex-row items-center justify-between z-40 relative">
+    <div className="bg-gradient-to-r from-gray-900 to-navy text-white px-4 py-3 shadow-md flex flex-col sm:flex-row items-center justify-center sm:justify-between z-40 relative">
       <div className="flex items-center mb-3 sm:mb-0">
-        <div className="bg-amber-300 p-2 rounded-full mr-3 shadow-inner hidden sm:block">
-          <BellRing className="w-5 h-5 text-teal-900 animate-pulse" />
+        <div className="bg-amber-100 p-2 rounded-full mr-3 shadow-inner hidden sm:block border border-amber-200">
+          <BellRing className="w-5 h-5 text-amber-700 animate-pulse" />
         </div>
         <div>
-          <h4 className="font-bold text-sm">Enable Native Notifications</h4>
-          <p className="text-teal-100 text-xs mt-0.5 max-w-xl">Get instant lock-screen alerts when you are assigned a new protocol or task.</p>
+          <h4 className="font-bold text-sm">Enable Standard Notifications</h4>
+          <p className="text-gray-300 text-xs mt-0.5 max-w-xl">Get instant alerts when you are assigned a new protocol or task.</p>
         </div>
       </div>
       <div className="flex items-center space-x-3 shrink-0">
-        <button onClick={subscribeUser} disabled={loading} className="bg-white text-teal-900 font-bold px-4 py-2 rounded-lg text-sm hover:bg-gray-100 shadow-sm transition-colors flex items-center">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1"/> : "Enable Alerts"}
+        <button onClick={subscribeUser} disabled={loading} className="bg-white text-navy font-bold px-4 py-2 rounded-lg text-xs hover:bg-gray-100 shadow-sm transition-colors flex items-center">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1"/> : "Enable"}
         </button>
-        <button onClick={() => setShowBanner(false)} className="text-teal-200 hover:text-white p-2 rounded-full hover:bg-teal-600 transition-colors"><X className="w-5 h-5" /></button>
+        <button onClick={() => setShowBanner(false)} className="text-gray-400 hover:text-white p-2 rounded-full transition-colors"><X className="w-4 h-4" /></button>
       </div>
     </div>
   );
