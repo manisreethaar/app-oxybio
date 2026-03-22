@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, FlaskConical, Activity, CheckSquare, 
   CalendarOff, Clock, FileText, CalendarDays, Receipt, 
-  BookOpen, Users, LogOut, UserCircle, Contact, Bell, Menu, X, ShieldAlert
+  BookOpen, Users, LogOut, UserCircle, Contact, Bell, Menu, X, ShieldAlert, Beaker
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
