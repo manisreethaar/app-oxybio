@@ -68,21 +68,26 @@ export default function CompliancePage() {
     // 2. If recurring, create next iteration
     if (item.is_recurring && item.recurrence) {
       let nextDate = new Date(item.due_date);
+      if (item.recurrence === 'weekly') nextDate = addWeeks(nextDate, 1);
       if (item.recurrence === 'monthly') nextDate = addMonths(nextDate, 1);
       if (item.recurrence === 'annual') nextDate = addYears(nextDate, 1);
-      if (item.recurrence === 'weekly') nextDate = addWeeks(nextDate, 1);
       
-      await supabase.from('compliance_items').insert({
+      const { error: recurError } = await supabase.from('compliance_items').insert({
         title: item.title,
         category: item.category,
         due_date: nextDate.toISOString().split('T')[0],
-        responsible_person: item.responsible_person,
-        document_link: item.document_link,
-        notes: item.notes,
+        responsible_person: item.responsible_person || null,
+        document_link: item.document_link || null,
+        notes: item.notes || null,
         is_recurring: true,
         recurrence: item.recurrence,
         status: 'upcoming'
       });
+
+      if (recurError) {
+        alert('Task marked done, but failed to schedule next recurring instance: ' + recurError.message);
+        return;
+      }
     }
 
     fetchCompliance();

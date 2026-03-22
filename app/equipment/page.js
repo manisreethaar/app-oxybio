@@ -34,43 +34,56 @@ export default function EquipmentPage() {
   const handleAddEquipment = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const res = await fetch('/api/equipment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newEquip)
-    });
-    if (res.ok) {
-      setIsModalOpen(false);
-      setNewEquip({ name: '', model: '', serial_number: '', calibration_due_date: '', status: 'Operational' });
-      await fetchEquipment();
+    try {
+      const res = await fetch('/api/equipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEquip)
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewEquip({ name: '', model: '', serial_number: '', calibration_due_date: '', status: 'Operational' });
+        await fetchEquipment();
+      } else {
+        alert("Failed to register equipment. Please check required fields.");
+      }
+    } catch (err) {
+      alert("Network error: " + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleMaintenanceSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // 1. Insert log
-    await supabase.from('calibration_logs').insert({
-      equipment_id: activeDevice.id,
-      calibration_date: maintForm.calibration_date,
-      next_due_date: maintForm.next_due_date || null,
-      result: maintForm.result,
-      logged_by: employeeProfile.id
-    });
-    
-    // 2. Update equipment status and due date
-    const updates = { status: maintForm.status };
-    if (maintForm.next_due_date) updates.calibration_due_date = maintForm.next_due_date;
-    
-    await supabase.from('equipment').update(updates).eq('id', activeDevice.id);
-    
-    setIsMaintenanceOpen(false);
-    setActiveDevice(null);
-    setMaintForm({ calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', status: 'Operational' });
-    setIsSubmitting(false);
-    fetchEquipment();
+    try {
+      // 1. Insert log
+      const { error: logErr } = await supabase.from('calibration_logs').insert({
+        equipment_id: activeDevice.id,
+        calibration_date: maintForm.calibration_date,
+        next_due_date: maintForm.next_due_date || null,
+        result: maintForm.result,
+        logged_by: employeeProfile.id
+      });
+      if (logErr) throw logErr;
+
+      // 2. Update equipment status and due date
+      const updates = { status: maintForm.status };
+      if (maintForm.next_due_date) updates.calibration_due_date = maintForm.next_due_date;
+      
+      const { error: updateErr } = await supabase.from('equipment').update(updates).eq('id', activeDevice.id);
+      if (updateErr) throw updateErr;
+
+      setIsMaintenanceOpen(false);
+      setActiveDevice(null);
+      setMaintForm({ calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', status: 'Operational' });
+      await fetchEquipment();
+    } catch (err) {
+      alert("Database error saving log: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (authLoading || loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
