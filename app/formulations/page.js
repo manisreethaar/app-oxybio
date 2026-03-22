@@ -14,9 +14,6 @@ export default function FormulationsPage() {
   
   const supabase = createClient();
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
-  if (!employeeProfile) return null;
-
   useEffect(() => {
     fetchFormulations();
   }, []);
@@ -43,6 +40,9 @@ export default function FormulationsPage() {
     }
     setSubmitting(false);
   };
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  if (!employeeProfile) return null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">

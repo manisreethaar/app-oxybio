@@ -13,9 +13,6 @@ export default function ShelfLifePage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-indigo-600" /></div>;
-  if (!employeeProfile) return null;
-  
   const [newStudy, setNewStudy] = useState({
     batch_id: '',
     storage_condition: 'Refrigerated (4°C)',
@@ -57,6 +54,9 @@ export default function ShelfLifePage() {
   };
 
   const TIMEPOINTS = [0, 7, 14, 30, 60, 90];
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-indigo-600" /></div>;
+  if (!employeeProfile) return null;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20">

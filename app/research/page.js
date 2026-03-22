@@ -11,9 +11,6 @@ export default function ConsumerResearchPage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-amber-500" /></div>;
-  if (!employeeProfile) return null;
-  
   const [newSession, setNewSession] = useState({
     session_title: '',
     panelist_count: 5,
@@ -39,6 +36,9 @@ export default function ConsumerResearchPage() {
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
     return avg.toFixed(1);
   };
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-amber-500" /></div>;
+  if (!employeeProfile) return null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">

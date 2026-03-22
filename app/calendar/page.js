@@ -11,8 +11,6 @@ export default function RegulatoryCalendarPage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-rose-600" /></div>;
-  if (!employeeProfile) return null;
   
   const [newMilestone, setNewMilestone] = useState({
     title: '',
@@ -46,6 +44,9 @@ export default function RegulatoryCalendarPage() {
     }
     setSubmitting(false);
   };
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-rose-600" /></div>;
+  if (!employeeProfile) return null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 pb-20">

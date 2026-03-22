@@ -20,13 +20,13 @@ export default function BatchesPage() {
   
   const supabase = createClient();
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
-  if (!employeeProfile) return null;
-
   useEffect(() => {
     fetchBatches();
     fetchFormulations();
   }, []);
+
+  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  if (!employeeProfile) return null;
 
   const fetchFormulations = async () => {
     const { data } = await supabase.from('formulations').select('id, name, code, version').order('created_at', { ascending: false });

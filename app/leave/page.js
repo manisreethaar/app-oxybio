@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { CalendarOff, CheckCircle, XCircle, Loader2, Send } from 'lucide-react';
+import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle } from 'lucide-react';
 import { differenceInBusinessDays } from 'date-fns';
 
 export default function LeavePage() {

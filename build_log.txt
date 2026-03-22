@@ -1,0 +1,93 @@
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/activity/page.js
+54:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/admin/users/page.js
+65:6  Warning: React Hook useEffect has missing dependencies: 'fetchUsers' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+173:29  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/attendance/page.js
+44:6  Warning: React Hook useEffect has a missing dependency: 'fetchAttendanceData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+207:42  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/batches/page.js
+26:6  Warning: React Hook useEffect has missing dependencies: 'fetchBatches' and 'fetchFormulations'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/batches/[batchId]/page.js
+74:6  Warning: React Hook useEffect has missing dependencies: 'fetchBatchDetail' and 'fetchStock'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+88:6  Warning: React Hook useEffect has a missing dependency: 'checkTraining'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/calendar/page.js
+27:6  Warning: React Hook useEffect has a missing dependency: 'fetchMilestones'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/capa/page.js
+55:6  Warning: React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/compliance/page.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'fetchCompliance'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/dashboard/components/AdminDashboard.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'fetchDashboardData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/dashboard/components/StaffDashboard.js
+15:6  Warning: React Hook useEffect has a missing dependency: 'fetchStaffData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/directory/page.js
+37:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+95:6  Warning: React Hook useEffect has missing dependencies: 'fetchEmployees' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+143:6  Warning: React Hook useEffect has missing dependencies: 'authLoading' and 'fetchEmployees'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+185:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/documents/page.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'fetchDocuments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/equipment/page.js
+25:6  Warning: React Hook useEffect has a missing dependency: 'fetchEquipment'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/formulations/page.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'fetchFormulations'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/inventory/page.js
+58:6  Warning: React Hook useEffect has missing dependencies: 'checkTraining' and 'fetchData'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+65:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/leave/page.js
+27:6  Warning: React Hook useEffect has a missing dependency: 'fetchLeaves'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/notifications/page.js
+17:6  Warning: React Hook useEffect has a missing dependency: 'fetchAlerts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/payslips/page.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'fetchPayslips'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/profile/page.js
+37:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+174:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/research/page.js
+17:39  Error: React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+26:3  Error: React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+28:6  Warning: React Hook useEffect has a missing dependency: 'fetchSessions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/shelf-life/page.js
+27:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/sops/page.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'fetchSOPs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/tasks/page.js
+56:6  Warning: React Hook useEffect has a missing dependency: 'selectedTask'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+62:6  Warning: React Hook useEffect has a missing dependency: 'fetchTasks'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/verify/[id]/page.js
+58:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
