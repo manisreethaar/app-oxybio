@@ -1,0 +1,286 @@
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./app/activity/page.js
+54:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/admin/users/page.js
+65:6  Warning: React Hook useEffect has missing dependencies: 'fetchUsers' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+173:29  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/attendance/page.js
+44:6  Warning: React Hook useEffect has a missing dependency: 'fetchAttendanceData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+209:42  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/batches/page.js
+26:6  Warning: React Hook useEffect has missing dependencies: 'fetchBatches' and 'fetchFormulations'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/batches/[batchId]/page.js
+74:6  Warning: React Hook useEffect has missing dependencies: 'fetchBatchDetail' and 'fetchStock'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+88:6  Warning: React Hook useEffect has a missing dependency: 'checkTraining'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/calendar/page.js
+27:6  Warning: React Hook useEffect has a missing dependency: 'fetchMilestones'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/capa/page.js
+55:6  Warning: React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/compliance/page.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'fetchCompliance'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/dashboard/components/AdminDashboard.js
+23:6  Warning: React Hook useEffect has a missing dependency: 'fetchDashboardData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/dashboard/components/StaffDashboard.js
+15:6  Warning: React Hook useEffect has a missing dependency: 'fetchStaffData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/directory/page.js
+37:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+95:6  Warning: React Hook useEffect has missing dependencies: 'fetchEmployees' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+143:6  Warning: React Hook useEffect has missing dependencies: 'authLoading' and 'fetchEmployees'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+185:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/documents/page.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'fetchDocuments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/equipment/page.js
+25:6  Warning: React Hook useEffect has a missing dependency: 'fetchEquipment'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/formulations/page.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'fetchFormulations'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/inventory/page.js
+58:6  Warning: React Hook useEffect has missing dependencies: 'checkTraining' and 'fetchData'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+65:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/leave/page.js
+27:6  Warning: React Hook useEffect has a missing dependency: 'fetchLeaves'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/notifications/page.js
+17:6  Warning: React Hook useEffect has a missing dependency: 'fetchAlerts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/payslips/page.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'fetchPayslips'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/profile/page.js
+37:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+206:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/research/page.js
+25:6  Warning: React Hook useEffect has a missing dependency: 'fetchSessions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/shelf-life/page.js
+27:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/sops/page.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'fetchSOPs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/tasks/page.js
+56:6  Warning: React Hook useEffect has a missing dependency: 'selectedTask'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+62:6  Warning: React Hook useEffect has a missing dependency: 'fetchTasks'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/verify/[id]/page.js
+58:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/44) ...
+Reminders Cron Error: B [Error]: Dynamic server usage: Route /api/cron/reminders couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21777)
+    at Object.get (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29137)
+    at f (E:\OXYBIO\.next\server\app\api\cron\reminders\route.js:1:1035)
+    at E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/cron/reminders couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Compliance Cron Error: B [Error]: Dynamic server usage: Route /api/cron/compliance couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21777)
+    at Object.get (E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29137)
+    at m (E:\OXYBIO\.next\server\app\api\cron\compliance\route.js:1:1033)
+    at E:\OXYBIO\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (E:\OXYBIO\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at E:\OXYBIO\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/cron/compliance couldn't be rendered statically because it used `request.headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (11/44) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /attendance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /attendance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /activity. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /activity. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /compliance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /compliance. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /capa. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /capa. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /calendar. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /calendar. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/users. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/users. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /offline. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /offline. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /inventory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /inventory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /batches. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /batches. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (22/44) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /tasks. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /tasks. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /leave. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /leave. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /documents. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /documents. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /payslips. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /payslips. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /directory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /directory. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sops. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sops. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /shelf-life. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /shelf-life. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /profile. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /profile. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (33/44) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /formulations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /formulations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /equipment. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /equipment. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /research. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /research. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ✓ Generating static pages (44/44)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ƒ /                                    146 B          87.5 kB
+├ ƒ /_not-found                          876 B          88.2 kB
+├ ƒ /activity                            7.38 kB         151 kB
+├ ƒ /admin/users                         9.21 kB         153 kB
+├ ƒ /api/admin/invite                    0 B                0 B
+├ ƒ /api/attendance/check-in             0 B                0 B
+├ ƒ /api/batches/[batchId]/stage         0 B                0 B
+├ ƒ /api/cron/attendance                 0 B                0 B
+├ ƒ /api/cron/compliance                 0 B                0 B
+├ ƒ /api/cron/reminders                  0 B                0 B
+├ ƒ /api/equipment                       0 B                0 B
+├ ƒ /api/files/[id]                      0 B                0 B
+├ ƒ /api/formulations                    0 B                0 B
+├ ƒ /api/inventory/items                 0 B                0 B
+├ ƒ /api/inventory/stock                 0 B                0 B
+├ ƒ /api/inventory/usage                 0 B                0 B
+├ ƒ /api/lab/log                         0 B                0 B
+├ ƒ /api/leave/apply                     0 B                0 B
+├ ƒ /api/ph/[id]/acknowledge             0 B                0 B
+├ ƒ /api/ph/log                          0 B                0 B
+├ ƒ /api/push/send                       0 B                0 B
+├ ƒ /api/push/subscribe                  0 B                0 B
+├ ƒ /api/sops/[id]/acknowledge           0 B                0 B
+├ ƒ /api/training/check                  0 B                0 B
+├ ƒ /api/upload                          0 B                0 B
+├ ƒ /attendance                          8.14 kB         152 kB
+├ ƒ /batches                             5.21 kB         162 kB
+├ ƒ /batches/[batchId]                   7.86 kB         158 kB
+├ ƒ /calendar                            3.98 kB         147 kB
+├ ƒ /capa                                7.36 kB         151 kB
+├ ƒ /compliance                          4.83 kB         154 kB
+├ ƒ /dashboard                           111 kB          261 kB
+├ ƒ /directory                           4.42 kB         155 kB
+├ ƒ /documents                           5.52 kB         149 kB
+├ ƒ /equipment                           4.49 kB         148 kB
+├ ƒ /formulations                        3.89 kB         147 kB
+├ ƒ /inventory                           6.28 kB         157 kB
+├ ƒ /leave                               6 kB            149 kB
+├ ƒ /login                               1.45 kB         145 kB
+├ ƒ /notifications                       4.24 kB         155 kB
+├ ƒ /offline                             1.54 kB        88.9 kB
+├ ƒ /payslips                            4.62 kB         148 kB
+├ ƒ /profile                             6.15 kB         163 kB
+├ ƒ /research                            3.77 kB         147 kB
+├ ƒ /shelf-life                          3.95 kB         154 kB
+├ ƒ /sops                                4.97 kB         148 kB
+├ ƒ /tasks                               9.55 kB         153 kB
+└ ƒ /verify/[id]                         146 B          87.5 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/117-14cac515c9da48ad.js       31.8 kB
+  ├ chunks/fd9d1056-453cde8251251149.js  53.6 kB
+  └ other shared chunks (total)          1.96 kB
+
+
+ƒ Middleware                             75.2 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+
