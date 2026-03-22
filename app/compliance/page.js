@@ -1,5 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock } from 'lucide-react';
@@ -11,13 +14,24 @@ export default function CompliancePage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   
-  const [newItem, setNewItem] = useState({
-    title: '', category: 'FSSAI', due_date: '', responsible_person: '',
-    document_link: '', notes: '', is_recurring: false, recurrence: 'monthly'
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(z.object({
+      title: z.string().min(1, 'Title required'),
+      category: z.string(),
+      due_date: z.string().min(1, 'Date required'),
+      responsible_person: z.string().optional(),
+      is_recurring: z.boolean(),
+      recurrence: z.string().optional()
+    })),
+    defaultValues: { title: '', category: 'FSSAI', due_date: '', responsible_person: '', is_recurring: false, recurrence: 'monthly' }
   });
+  
+  const watchedRecurring = watch('is_recurring');
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     if (employeeProfile) fetchCompliance();
@@ -25,72 +39,58 @@ export default function CompliancePage() {
 
   const fetchCompliance = async () => {
     setLoading(true);
-    const { data: compItems } = await supabase.from('compliance_items').select('*, employees(full_name)').order('due_date', { ascending: true });
-    
-    // Auto-update overdue UI state if it hasn't been trigger updated
-    const processedItems = (compItems || []).map(i => {
-      if (!i.due_date) return { ...i, calculated_status: i.status };
-      const isOverdueState = i.status !== 'done' && differenceInDays(new Date(i.due_date), new Date()) < 0;
-      return { ...i, calculated_status: isOverdueState ? 'overdue' : i.status };
-    });
-    
-    setItems(processedItems);
+    try {
+      const fetchPromises = [
+        supabase.from('compliance_items').select('*, employees(full_name)').order('due_date', { ascending: true })
+      ];
+      if (role === 'admin') {
+        fetchPromises.push(supabase.from('employees').select('id, full_name').eq('is_active', true));
+      }
 
-    if (role === 'admin') {
-      const { data: emps } = await supabase.from('employees').select('id, full_name').eq('is_active', true);
-      setEmployees(emps || []);
+      const results = await Promise.all(fetchPromises);
+      const compItems = results[0].data || [];
+
+      const processedItems = compItems.map(i => {
+        if (!i.due_date) return { ...i, calculated_status: i.status };
+        const isOverdueState = i.status !== 'done' && differenceInDays(new Date(i.due_date), new Date()) < 0;
+        return { ...i, calculated_status: isOverdueState ? 'overdue' : i.status };
+      });
+      
+      setItems(processedItems);
+
+      if (role === 'admin' && results[1]) {
+        setEmployees(results[1].data || []);
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    const { error } = await supabase.from('compliance_items').insert({
-      ...newItem,
-      status: 'upcoming'
-    });
-    if (error) {
+  const handleCreate = async (data) => {
+    if (actionLoading) return; setActionLoading(true);
+    try {
+      const res = await fetch('/api/compliance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create item');
+      setShowAdd(false); 
+      reset(); 
+      fetchCompliance();
+    } catch (error) {
       alert('Failed to save item: ' + error.message);
-      return;
+    } finally {
+      setActionLoading(false);
     }
-    setShowAdd(false);
-    fetchCompliance();
   };
 
   const markDone = async (item) => {
-    // 1. Mark current done
-    const { error: markError } = await supabase.from('compliance_items').update({ status: 'done' }).eq('id', item.id);
-    if (markError) {
-      alert('Failed to mark done: ' + markError.message);
-      return;
+    try {
+      const res = await fetch('/api/compliance', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_done', item_id: item.id }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to mark done');
+      fetchCompliance();
+    } catch (err) {
+      alert(err.message);
     }
-
-    // 2. If recurring, create next iteration
-    if (item.is_recurring && item.recurrence) {
-      let nextDate = new Date(item.due_date);
-      if (item.recurrence === 'weekly') nextDate = addWeeks(nextDate, 1);
-      if (item.recurrence === 'monthly') nextDate = addMonths(nextDate, 1);
-      if (item.recurrence === 'annual') nextDate = addYears(nextDate, 1);
-      
-      const { error: recurError } = await supabase.from('compliance_items').insert({
-        title: item.title,
-        category: item.category,
-        due_date: nextDate.toISOString().split('T')[0],
-        responsible_person: item.responsible_person || null,
-        document_link: item.document_link || null,
-        notes: item.notes || null,
-        is_recurring: true,
-        recurrence: item.recurrence,
-        status: 'upcoming'
-      });
-
-      if (recurError) {
-        alert('Task marked done, but failed to schedule next recurring instance: ' + recurError.message);
-        return;
-      }
-    }
-
-    fetchCompliance();
   };
 
   if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading compliance data...</div>;
@@ -134,26 +134,28 @@ export default function CompliancePage() {
       </div>
 
       {showAdd && role === 'admin' && (
-        <form onSubmit={handleCreate} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm lg:w-2/3">
+        <form onSubmit={handleSubmit(handleCreate)} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm lg:w-2/3">
           <h2 className="text-xl font-bold text-gray-900 mb-6">New Compliance Requirement</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Title *</label>
-              <input type="text" required value={newItem.title} onChange={e => setNewItem({...newItem, title: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" placeholder="e.g., FSSAI License Renewal" />
+              <input type="text" {...register('title')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" placeholder="e.g., FSSAI License Renewal" />
+              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Category & Dept *</label>
-              <select required value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500">
+              <select {...register('category')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500">
                 {['FSSAI', 'TIIC', 'PF', 'ESI', 'Patent', 'NABL', 'Equipment', 'Lease', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Due Date *</label>
-              <input type="date" required value={newItem.due_date} onChange={e => setNewItem({...newItem, due_date: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="date" {...register('due_date')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              {errors.due_date && <p className="text-red-500 text-xs mt-1">{errors.due_date.message}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Responsible Person (Optional)</label>
-              <select value={newItem.responsible_person} onChange={e => setNewItem({...newItem, responsible_person: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Responsible Person</label>
+              <select {...register('responsible_person')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500">
                 <option value="">Unassigned</option>
                 {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
               </select>
@@ -161,11 +163,11 @@ export default function CompliancePage() {
             
             <div className="md:col-span-2 flex items-center space-x-6 mt-2 pb-4 border-b border-gray-100">
               <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                <input type="checkbox" checked={newItem.is_recurring} onChange={e => setNewItem({...newItem, is_recurring: e.target.checked})} className="rounded text-teal-600 focus:ring-teal-500" />
+                <input type="checkbox" {...register('is_recurring')} className="rounded text-teal-600 focus:ring-teal-500" />
                 <span>Is Recurring?</span>
               </label>
-              {newItem.is_recurring && (
-                <select value={newItem.recurrence} onChange={e => setNewItem({...newItem, recurrence: e.target.value})} className="px-3 py-1 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500">
+              {watchedRecurring && (
+                <select {...register('recurrence')} className="px-3 py-1 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500">
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
                   <option value="annual">Annually</option>
@@ -174,8 +176,8 @@ export default function CompliancePage() {
             </div>
           </div>
           <div className="flex justify-end space-x-3">
-            <button type="button" onClick={() => setShowAdd(false)} className="px-5 py-2 hover:bg-gray-100 border border-transparent rounded-lg text-sm font-medium text-gray-700">Cancel</button>
-            <button type="submit" className="px-5 py-2 bg-teal-800 text-white font-medium rounded-lg text-sm shadow-sm hover:bg-teal-900">Save Item</button>
+            <button type="button" onClick={() => { setShowAdd(false); reset(); }} className="px-5 py-2 hover:bg-gray-100 border border-transparent rounded-lg text-sm font-medium text-gray-700">Cancel</button>
+            <button type="submit" disabled={actionLoading} className="px-5 py-2 bg-teal-800 text-white font-medium rounded-lg text-sm shadow-sm hover:bg-teal-900 disabled:opacity-50">Save Item</button>
           </div>
         </form>
       )}

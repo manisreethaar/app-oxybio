@@ -42,7 +42,7 @@ export async function POST(request, { params }) {
     if (categoryNeeded) {
       // 🛡️ PRINCIPAL HARDENING: Require acknowledgment of the LATEST version
       const { data: latestSop, error: sopErr } = await supabase
-        .from('sops')
+        .from('sop_library')
         .select('id, version')
         .eq('category', categoryNeeded)
         .eq('is_active', true)
@@ -55,7 +55,7 @@ export async function POST(request, { params }) {
       }
 
       const { data: training, error: trainingErr } = await supabase
-        .from('sop_acknowledgments')
+        .from('sop_acknowledgements')
         .select('*')
         .eq('employee_id', emp.id)
         .eq('sop_id', latestSop.id)

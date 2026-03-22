@@ -1,17 +1,18 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter } from 'lucide-react';
 import Link from 'next/link';
 
-export default function InventoryPage() {
+export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
   const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('stock');
-  const [stock, setStock] = useState([]);
-  const [items, setItems] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [stock, setStock] = useState(initialStock || []);
+  const [items, setItems] = useState(initialItems || []);
+  const [vendors, setVendors] = useState(initialVendors || []);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +33,8 @@ export default function InventoryPage() {
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 25;
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     let mounted = true;
@@ -47,7 +49,9 @@ export default function InventoryPage() {
     };
 
     if (employeeProfile) {
-      loadAll();
+      if (!initialStock || initialStock.length === 0) {
+        loadAll();
+      }
       checkTraining(controller.signal);
     }
 
@@ -55,7 +59,7 @@ export default function InventoryPage() {
       mounted = false;
       controller.abort();
     };
-  }, [employeeProfile]);
+  }, [employeeProfile, initialStock]);
 
   // Reset pagination when searching
   useEffect(() => {
@@ -159,7 +163,7 @@ export default function InventoryPage() {
 
   const filteredStock = stock; // Filtering is handled server-side via ilike in fetchData
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
   }
 
@@ -171,6 +175,9 @@ export default function InventoryPage() {
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
         </div>
         <div className="flex gap-3">
+          <button className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+            <Filter className="w-4 h-4 mr-2" /> Options
+          </button>
           <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
             <Plus className="w-4 h-4 mr-2" /> Receive New Stock
           </button>
@@ -202,7 +209,7 @@ export default function InventoryPage() {
           {/* Reorder Intelligence Panel */}
           {(() => {
             const flagged = stock.filter(s => {
-              const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : 999;
+              const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
               return daysLeft < 30 || (s.current_quantity !== undefined && s.current_quantity <= 0);
             });
             if (flagged.length === 0) return null;
@@ -214,7 +221,7 @@ export default function InventoryPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {flagged.map(s => {
-                    const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                    const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
                     const isExpired = daysLeft !== null && daysLeft < 0;
                     const isZero = s.current_quantity <= 0;
                     return (
@@ -238,7 +245,7 @@ export default function InventoryPage() {
 
 
           {filteredStock.map((s) => {
-            const isNearExpiry = s.expiry_date && (new Date(s.expiry_date) - new Date() < 30 * 24 * 60 * 60 * 1000);
+            const isNearExpiry = s.expiry_date && (new Date(s.expiry_date).getTime() - new Date().getTime() < 30 * 24 * 60 * 60 * 1000);
             const isExpired = s.expiry_date && (new Date(s.expiry_date) < new Date());
             
             return (

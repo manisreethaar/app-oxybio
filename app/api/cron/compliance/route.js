@@ -7,14 +7,8 @@ export async function GET(req) {
   try {
     // 1. Verify Vercel Cron Secret to prevent unauthorized triggers
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.warn("Unauthorized Cron request:", authHeader);
-      // Fallback: If not enforced tightly during dev, we can still run it or return 401.
-      // For Next.js App Router, returning 401 immediately is safest.
-      // But let's allow bypassing if CRON_SECRET is not set in env (for local testing).
-      if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-         return new Response('Unauthorized', { status: 401 });
-      }
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response('Unauthorized', { status: 401 });
     }
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

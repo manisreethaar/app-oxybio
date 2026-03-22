@@ -7,10 +7,8 @@ export async function GET(req) {
   try {
     // 1. Verify Vercel Cron Secret
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-         return new Response('Unauthorized', { status: 401 });
-      }
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response('Unauthorized', { status: 401 });
     }
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

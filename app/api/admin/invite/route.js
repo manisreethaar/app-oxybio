@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { Resend } from 'resend';
 
 export async function POST(req) {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
     const supabaseServer = createServerClient();
     const { data: { user } } = await supabaseServer.auth.getUser();
     
@@ -71,6 +73,31 @@ export async function POST(req) {
         // Rollback user creation (best effort) if db insert fails
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return NextResponse.json({ error: dbError.message }, { status: 400 });
+    }
+
+    // Send Welcome Email (Fire and forget or parallel, don't block success)
+    if (process.env.RESEND_API_KEY) {
+      resend.emails.send({
+        from: 'OxyOS Onboarding <onboarding@resend.dev>', // Should ideally be your verified domain
+        to: email,
+        subject: 'Welcome to OxyBio - Your OxyOS Credentials',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; rounded-lg: 12px;">
+            <h1 style="color: #1F3A5F; font-size: 24px; font-weight: 800; margin-bottom: 8px;">Welcome to OxyBio, ${full_name}!</h1>
+            <p style="color: #4b5563; font-size: 14px;">Your official employee account has been created on the OxyOS platform.</p>
+            
+            <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 24px 0;">
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em;">Your Credentials</p>
+              <p style="margin: 8px 0; font-size: 16px; color: #1f2937;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 4px 0; font-size: 16px; color: #1f2937;"><strong>Temp Password:</strong> ${password}</p>
+              <p style="margin: 4px 0; font-size: 16px; color: #1f2937;"><strong>Employee ID:</strong> ${employee_code || 'TBD'}</p>
+            </div>
+
+            <p style="color: #4b5563; font-size: 14px;">Please login at <a href="https://app-oxybio.vercel.app/login" style="color: #1F3A5F; font-weight: 700; text-decoration: none;">OxyOS Login</a> and update your profile details.</p>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 32px; border-top: 1px solid #f3f4f6; pt: 16px;">This is an automated system email. For support, contact your HR administrator.</p>
+          </div>
+        `
+      }).catch(e => console.error("Welcome email failed:", e));
     }
 
     return NextResponse.json({ success: true, user: authData.user });

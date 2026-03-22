@@ -1,5 +1,14 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const equipmentSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  model: z.string().optional(),
+  serial_number: z.string().optional(),
+  calibration_due_date: z.string().optional().or(z.literal('')),
+  status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational')
+});
 
 export async function GET() {
   try {
@@ -27,12 +36,18 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Permission Denied: Administrator role required' }, { status: 403 });
     }
 
-    const { name, model, serial_number, calibration_due_date, status } = await request.json();
-    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    const body = await request.json();
+    const parsed = equipmentSchema.safeParse(body);
+    
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
+    }
+
+    const { name, model, serial_number, calibration_due_date, status } = parsed.data;
 
     const { data, error } = await supabase
       .from('equipment')
-      .insert({ name, model, serial_number, calibration_due_date, status: status || 'Operational' })
+      .insert({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status })
       .select()
       .single();
 

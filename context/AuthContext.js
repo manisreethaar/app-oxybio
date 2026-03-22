@@ -11,6 +11,8 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   const [user, setUser] = useState(initialSession?.user || null);
   const [employeeProfile, setEmployeeProfile] = useState(initialProfile || null);
   const [loading, setLoading] = useState(!initialSession);
+  // FIX #10: Track session expiry separately so UI can show a toast
+  const [sessionExpired, setSessionExpired] = useState(false);
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
@@ -22,6 +24,11 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
         if (!mounted) return;
         
         if (event === 'SIGNED_OUT' || !session) {
+          // If there was a previous user but this isn't a manual sign-out,
+          // mark session as expired so the UI can notify the user
+          if (initialized.current && user) {
+            setSessionExpired(true);
+          }
           setUser(null);
           setEmployeeProfile(null);
           setLoading(false);
@@ -117,6 +124,8 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
     [role]
   );
 
+  const clearSessionExpired = useCallback(() => setSessionExpired(false), []);
+
   const value = {
     user,
     employeeProfile,
@@ -126,6 +135,8 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
     isScientist: role === 'scientist',
     isIntern: role === 'intern',
     loading,
+    sessionExpired,
+    clearSessionExpired,
     error: null,
     signOut,
     canDo,

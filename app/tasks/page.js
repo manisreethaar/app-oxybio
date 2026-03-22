@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
@@ -26,11 +30,20 @@ export default function TasksPage() {
   const [assigneeFilter, setAssigneeFilter] = useState('All');
 
   const [showCreate, setShowCreate] = useState(false);
-  const [newTask, setNewTask] = useState({ 
-    title: '', description: '', assigned_user_ids: [], due_date: '', 
-    priority: 'medium', checklist: [] 
-  });
+  const [checklistBuffer, setChecklistBuffer] = useState([]);
   const [checklistInput, setChecklistInput] = useState('');
+
+  const { register: regTask, handleSubmit: handTask, formState: { errors: taskErrors, isSubmitting: isTaskSubmitting }, reset: resetTask, watch, setValue } = useForm({
+    resolver: zodResolver(z.object({
+      title: z.string().min(1, 'Title required'),
+      description: z.string().optional(),
+      assigned_user_ids: z.array(z.string()),
+      due_date: z.string().min(1, 'Date required'),
+      priority: z.enum(['low', 'medium', 'high', 'urgent'])
+    })),
+    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium' }
+  });
+  const watchedAssignees = watch('assigned_user_ids') || [];
 
   const [selectedTask, setSelectedTask] = useState(null);
   const [completionNote, setCompletionNote] = useState('');
@@ -49,7 +62,8 @@ export default function TasksPage() {
     }
   }, [selectedTask?.id]);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     if (employeeProfile) fetchTasks();
@@ -69,69 +83,83 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     setLoading(true);
-    let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
-    if (!canDo('tasks', 'assign')) {
-      query = query.eq('assigned_to', employeeProfile.id);
-      setEmployees([{ id: employeeProfile.id, full_name: employeeProfile.full_name }]);
-    } else {
-      const { data: emps } = await supabase.from('employees').select('id, full_name').eq('is_active', true);
-      setEmployees(emps || []);
-    }
-    const { data } = await query; setTasks(data || []);
-    if (selectedTask) {
-      const updated = data?.find(t => t.id === selectedTask.id);
-      if (updated) { setSelectedTask(updated); setTimerRunning(!!updated.time_started_at); }
-    }
-    setLoading(false);
+    try {
+      let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
+      let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
+
+      if (!canDo('tasks', 'assign')) {
+        query = query.eq('assigned_to', employeeProfile.id);
+      } else {
+        empsPromise = supabase.from('employees').select('id, full_name').eq('is_active', true);
+      }
+
+      const [empsRes, tasksRes] = await Promise.all([empsPromise, query]);
+      if (tasksRes.error) throw tasksRes.error;
+
+      setEmployees(empsRes.data || []);
+      setTasks(tasksRes.data || []);
+      if (selectedTask) {
+        const updated = tasksRes.data?.find(t => t.id === selectedTask.id);
+        if (updated) { setSelectedTask(updated); setTimerRunning(!!updated.time_started_at); }
+      }
+    } catch (err) { console.error('Fetch tasks error:', err); }
+    finally { setLoading(false); }
   };
+
 
   const addChecklistItem = () => {
     if (!checklistInput.trim()) return;
-    setNewTask(t => ({ ...t, checklist: [...(t.checklist || []), { text: checklistInput.trim(), done: false }] }));
+    setChecklistBuffer(prev => [...prev, { text: checklistInput.trim(), done: false }]);
     setChecklistInput('');
   };
 
-  const handleCreateTask = async (e) => {
-    e.preventDefault(); if (actionLoading) return;
+  const executeTaskPatch = async (action, taskId, payload = {}) => {
+    try {
+      const res = await fetch('/api/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, task_id: taskId, payload }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to update task');
+      return true;
+    } catch(err) { alert(err.message); return false; }
+  };
+
+  const handleCreateTask = async (data) => {
+    if (actionLoading) return;
     const isAdmin = canDo('tasks', 'assign');
-    let assignees = isAdmin ? newTask.assigned_user_ids : [employeeProfile.id];
+    let assignees = isAdmin ? data.assigned_user_ids : [employeeProfile.id];
     if (isAdmin && assignees.length === 0) return alert('Select at least one assignee.');
 
     setActionLoading(true);
     const insertPayload = assignees.map(uid => ({
-      title: newTask.title, description: newTask.description, assigned_to: uid, assigned_by: employeeProfile.id,
-      due_date: newTask.due_date, priority: newTask.priority, checklist: newTask.checklist || [],
-      status: 'open', approval_status: 'not_required', logged_minutes: 0, is_personal_reminder: !isAdmin
+      title: data.title, description: data.description, assigned_to: uid,
+      due_date: data.due_date, priority: data.priority, checklist: checklistBuffer,
+      is_personal_reminder: !isAdmin
     }));
 
-    const { error } = await supabase.from('tasks').insert(insertPayload);
-    if (!error) {
+    try {
+      const res = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(insertPayload) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create tasks');
+      
       if (isAdmin) {
-        assignees.forEach(uid => {
-          fetch('/api/push/send', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ assigned_to: uid, title: "New Task: " + newTask.priority.toUpperCase(), body: newTask.title, url: "/tasks" })
-          }).catch(() => {});
-        });
+        assignees.forEach(uid => { fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: uid, title: "New Task: " + data.priority.toUpperCase(), body: data.title, url: "/tasks" }) }).catch(() => {}); });
       }
-      setShowCreate(false); setNewTask({ title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', checklist: [] }); fetchTasks();
-    } else alert('Failed: ' + error.message);
-    setActionLoading(false);
+      setShowCreate(false); resetTask(); setChecklistBuffer([]); fetchTasks();
+    } catch(err) { alert(err.message); }
+    finally { setActionLoading(false); }
   };
 
   const handleDeleteTask = async (taskId) => {
     if (!confirm('Permanently delete this task?')) return;
-    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-    if (!error) { setSelectedTask(null); fetchTasks(); }
+    try {
+      const res = await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
+      if (res.ok) { setSelectedTask(null); fetchTasks(); }
+      else alert('Delete failed');
+    } catch (err) { alert('Error: ' + err.message); }
   };
 
   const handleStartTimer = async (task) => {
     if (actionLoading) return; setActionLoading(true);
-    try {
-      const startTime = new Date().toISOString();
-      const { error } = await supabase.from('tasks').update({ time_started_at: startTime, status: 'in-progress' }).eq('id', task.id);
-      if (!error) { setSelectedTask(t => ({ ...t, time_started_at: startTime, status: 'in-progress' })); setTimerRunning(true); fetchTasks(); }
-    } finally { setActionLoading(false); }
+    const success = await executeTaskPatch('start_timer', task.id);
+    if (success) { setSelectedTask(t => ({ ...t, time_started_at: new Date().toISOString(), status: 'in-progress' })); setTimerRunning(true); fetchTasks(); }
+    setActionLoading(false);
   };
 
   const handlePauseTimer = async () => {
@@ -140,10 +168,9 @@ export default function TasksPage() {
     const sessionSeconds = Math.floor((new Date().getTime() - new Date(selectedTask.time_started_at).getTime()) / 1000);
     const newMins = Math.floor(sessionSeconds / 60);
 
-    try {
-      const { error } = await supabase.from('tasks').update({ time_started_at: null, logged_minutes: (selectedTask.logged_minutes || 0) + newMins }).eq('id', selectedTask.id);
-      if (!error) { setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); }
-    } finally { setActionLoading(false); }
+    const success = await executeTaskPatch('pause_timer', selectedTask.id, { logged_minutes: (selectedTask.logged_minutes || 0) + newMins });
+    if (success) { setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); }
+    setActionLoading(false);
   };
 
   const handleCloseModal = async () => {
@@ -153,9 +180,8 @@ export default function TasksPage() {
 
   const toggleChecklistItem = async (task, index) => {
     const updated = [...(task.checklist || [])]; updated[index].done = !updated[index].done;
-    await supabase.from('tasks').update({ checklist: updated }).eq('id', task.id);
-    if (selectedTask?.id === task.id) setSelectedTask(t => ({ ...t, checklist: updated }));
-    fetchTasks();
+    const success = await executeTaskPatch('update_checklist', task.id, { checklist: updated });
+    if (success) { if (selectedTask?.id === task.id) setSelectedTask(t => ({ ...t, checklist: updated })); fetchTasks(); }
   };
 
   const handleSubmitForReview = async (e) => {
@@ -167,59 +193,32 @@ export default function TasksPage() {
       if (proofFile) {
         const formData = new FormData(); formData.append('file', proofFile);
         const res = await fetch('/api/upload', { method: 'POST', body: formData }); 
-        if (res.ok) {
-          const data = await res.json(); 
-          proofUrl = data.url; 
-        } else {
-          alert("Failed to upload proof attachment.");
-          setUploading(false); setActionLoading(false); return;
-        }
+        if (!res.ok) { alert("Failed to upload proof"); return; }
+        proofUrl = (await res.json()).url;
       }
-      setUploading(false);
-
       let finalMins = (selectedTask.logged_minutes || 0);
       if (timerRunning && selectedTask?.time_started_at) {
         finalMins += Math.floor((new Date().getTime() - new Date(selectedTask.time_started_at).getTime()) / 60000);
       }
 
-      const { error: submitErr } = await supabase.from('tasks').update({
-        status: 'done', approval_status: selectedTask.is_personal_reminder ? 'approved' : 'pending_review',
-        completion_note: completionNote, completed_at: new Date().toISOString(), proof_url: proofUrl,
-        logged_minutes: finalMins, time_started_at: null
-      }).eq('id', selectedTask.id);
+      const success = await executeTaskPatch('submit_review', selectedTask.id, {
+        completion_note: completionNote, proof_url: proofUrl, logged_minutes: finalMins, is_personal_reminder: selectedTask.is_personal_reminder
+      });
 
-      if (submitErr) throw submitErr;
-
-      setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks();
-    } catch (err) {
-      alert("Failed to submit review: " + err.message);
-    } finally {
-      setActionLoading(false);
-    }
+      if (success) { setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); }
+    } finally { setUploading(false); setActionLoading(false); }
   };
 
   const handleApprove = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
-    try {
-      const { error } = await supabase.from('tasks').update({ approval_status: 'approved' }).eq('id', taskId);
-      if (error) throw error;
-      if (task?.assigned_to) notifyEmployee(task.assigned_to, '✅ Task Approved', `Your task "${task.title}" has been approved.`, '/tasks');
-      setSelectedTask(null); fetchTasks();
-    } catch (err) {
-      alert("Failed to approve task: " + err.message);
-    }
+    const success = await executeTaskPatch('approve', taskId);
+    if (success) { if (task?.assigned_to) notifyEmployee(task.assigned_to, '✅ Task Approved', `Your task "${task.title}" has been approved.`, '/tasks'); setSelectedTask(null); fetchTasks(); }
   };
 
   const handleReject = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
-    try {
-      const { error } = await supabase.from('tasks').update({ approval_status: 'rejected', status: 'in-progress', completion_note: rejectNote || 'Revision required.' }).eq('id', taskId);
-      if (error) throw error;
-      if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks');
-      setRejectNote(''); setSelectedTask(null); fetchTasks();
-    } catch (err) {
-      alert("Failed to return task: " + err.message);
-    }
+    const success = await executeTaskPatch('reject', taskId, { reject_note: rejectNote });
+    if (success) { if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks'); setRejectNote(''); setSelectedTask(null); fetchTasks(); }
   };
 
   if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading task queue...</div>;
@@ -257,18 +256,19 @@ export default function TasksPage() {
       </div>
 
       {showCreate && (
-        <form onSubmit={handleCreateTask} className="surface p-6 animate-in fade-in duration-200">
+        <form onSubmit={handTask(handleCreateTask)} className="surface p-6 animate-in fade-in duration-200">
           <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-1.5">
             <ListChecks className="w-5 h-5 text-navy"/> {canDo('tasks', 'assign') ? 'Create & Assign Task' : 'Set Personal Reminder'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <div className="md:col-span-2">
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Task Title *</label>
-              <input type="text" required value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-semibold" placeholder="Title..."/>
+              <input type="text" {...regTask('title')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-semibold" placeholder="Title..."/>
+              {taskErrors.title && <p className="text-red-500 text-xs mt-1">{taskErrors.title.message}</p>}
             </div>
             <div className="md:col-span-2">
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Description</label>
-              <textarea value={newTask.description} onChange={e => setNewTask({...newTask, description: e.target.value})} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Instructions..."/>
+              <textarea {...regTask('description')} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Instructions..."/>
             </div>
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Assign To *</label>
@@ -276,21 +276,23 @@ export default function TasksPage() {
                 <div className="max-h-28 overflow-y-auto bg-gray-50 border border-gray-100 rounded-lg p-2 space-y-1">
                   {employees.map(e => (
                     <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-gray-700">
-                      <input type="checkbox" checked={newTask.assigned_user_ids.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...newTask.assigned_user_ids, e.id] : newTask.assigned_user_ids.filter(id => id !== e.id); setNewTask({...newTask, assigned_user_ids: ids}); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
+                      <input type="checkbox" checked={watchedAssignees.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...watchedAssignees, e.id] : watchedAssignees.filter(id => id !== e.id); setValue('assigned_user_ids', ids); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
                       {e.full_name}
                     </label>
                   ))}
                 </div>
               ) : <div className="bg-gray-100 px-3 py-2 rounded-lg text-xs font-bold text-gray-600">Self</div>}
+              {taskErrors.assigned_user_ids && <p className="text-red-500 text-xs mt-1">{taskErrors.assigned_user_ids.message}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Due Date *</label>
-                <input type="date" required value={newTask.due_date} onChange={e => setNewTask({...newTask, due_date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none"/>
+                <input type="date" {...regTask('due_date')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none"/>
+                {taskErrors.due_date && <p className="text-red-500 text-xs mt-1">{taskErrors.due_date.message}</p>}
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Priority</label>
-                <select value={newTask.priority} onChange={e => setNewTask({...newTask, priority: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
+                <select {...regTask('priority')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
                   <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
                 </select>
               </div>
@@ -301,13 +303,13 @@ export default function TasksPage() {
                 <input value={checklistInput} onChange={e => setChecklistInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-medium" placeholder="Step title..."/>
                 <button type="button" onClick={addChecklistItem} className="px-3 bg-gray-100 border border-gray-200 text-gray-700 font-bold rounded-lg text-xs hover:bg-gray-200">Add</button>
               </div>
-              {newTask.checklist.length > 0 && (
+              {checklistBuffer.length > 0 && (
                 <ul className="space-y-1">
-                  {newTask.checklist.map((item, i) => (
+                  {checklistBuffer.map((item, i) => (
                     <li key={i} className="flex items-center gap-2 text-xs bg-gray-50 px-2 py-1.5 rounded border border-gray-100">
                       <span className="w-3.5 h-3.5 rounded border border-gray-300 inline-block shrink-0"></span>
                       <span className="flex-1 text-gray-700 font-medium">{item.text}</span>
-                      <button type="button" onClick={() => setNewTask(t => ({ ...t, checklist: t.checklist.filter((_, j) => j !== i) }))} className="text-gray-400 hover:text-red-500"><X className="w-3 h-3"/></button>
+                      <button type="button" onClick={() => setChecklistBuffer(prev => prev.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500"><X className="w-3 h-3"/></button>
                     </li>
                   ))}
                 </ul>
@@ -315,8 +317,8 @@ export default function TasksPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={actionLoading} className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60">{actionLoading ? 'Saving...' : 'Create'}</button>
+            <button type="button" onClick={() => { setShowCreate(false); setChecklistBuffer([]); resetTask(); }} className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={isTaskSubmitting || actionLoading} className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60">{isTaskSubmitting || actionLoading ? 'Saving...' : 'Create'}</button>
           </div>
         </form>
       )}

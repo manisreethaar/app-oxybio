@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, FlaskConical, Activity, CheckSquare, 
   CalendarOff, Clock, FileText, CalendarDays, Receipt, 
-  BookOpen, Users, LogOut, UserCircle, Contact, Bell, Menu, X, ShieldAlert, Beaker
+  BookOpen, Users, LogOut, UserCircle, Contact, Bell, Menu, X, ShieldAlert, Beaker, Wrench, Package
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -42,6 +42,9 @@ export default function Sidebar() {
       items: [
         { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: canDo('batches', 'view') },
         { name: 'Scientific SVCS',   href: '/formulations', icon: Beaker,          show: canDo('batches', 'view') },
+        { name: 'Digital LNB',       href: '/lab-notebook', icon: BookOpen,        show: canDo('lab_notebook', 'view') },
+        { name: 'Equipment Maint.',  href: '/equipment',    icon: Wrench,          show: canDo('equipment', 'view') },
+        { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: canDo('inventory', 'view') },
         { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: canDo('sops', 'view') },
       ]
     },
@@ -56,7 +59,7 @@ export default function Sidebar() {
     {
       title: 'MY WORKSPACE',
       items: [
-        { name: 'Attendance & GPS',  href: '/attendance',   icon: Clock,           show: canDo('attendance', 'view') },
+        { name: 'Check-In & Attendance', href: '/attendance', icon: Clock, show: canDo('attendance', 'view') },
         { name: 'Leave Requests',    href: '/leave',        icon: CalendarOff,     show: canDo('leave', 'view') },
         { name: 'My Payslips',       href: '/payslips',     icon: Receipt,         show: canDo('payslips', 'view_own') },
       ]
@@ -74,7 +77,7 @@ export default function Sidebar() {
       title: 'ACCOUNT',
       items: [
         { name: 'My Profile',        href: '/profile',      icon: UserCircle,    show: canDo('dashboard', 'view') },
-        { name: 'Staff Directory',   href: '/directory',    icon: Contact,       show: canDo('admin', 'view') },
+        { name: 'Staff Directory',   href: '/directory',    icon: Contact,       show: canDo('directory', 'view') },
       ]
     }
   ];
@@ -201,7 +204,7 @@ export default function Sidebar() {
       )}
 
       {/* Mobile Bottom Dock (Fixed, No Scrolling) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/60 flex justify-around items-center z-50 pb-safe shadow-[0_-8px_32px_0_rgba(31,38,135,0.05)] px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/60 flex justify-around items-center z-40 pb-safe shadow-[0_-8px_32px_0_rgba(31,38,135,0.05)] px-2">
         {/* Render only 4 explicit quick actions in the dock */}
         {[
           { name: 'Dash', href: '/dashboard', icon: LayoutDashboard, show: canDo('dashboard', 'view') },

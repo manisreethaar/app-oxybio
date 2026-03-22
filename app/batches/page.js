@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X } from 'lucide-react';
@@ -15,40 +19,65 @@ export default function BatchesPage() {
   
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
   const [formulations, setFormulations] = useState([]);
-  const [newBatchForm, setNewBatchForm] = useState({ variant: 'O2B-Agri', formulation_id: '' });
   const [creatingBatch, setCreatingBatch] = useState(false);
+
+  const { register, handleSubmit, reset } = useForm({
+    resolver: zodResolver(z.object({
+      variant: z.string().min(1),
+      formulation_id: z.string().uuid('Select a formulation')
+    })),
+    defaultValues: { variant: 'O2B-Agri', formulation_id: '' }
+  });
   
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     fetchBatches(); fetchFormulations();
   }, []);
 
   const fetchFormulations = async () => {
-    const { data } = await supabase.from('formulations').select('id, name, code, version').order('created_at', { ascending: false });
-    setFormulations(data || []);
+    try {
+      const { data, error } = await supabase.from('formulations').select('id, name, code, version').order('created_at', { ascending: false });
+      if (!error) setFormulations(data || []);
+    } catch (err) { console.error('Fetch formulations error:', err); }
   };
+
 
   const fetchBatches = async () => {
     setLoadingBatches(true);
-    const { data: fermenting } = await supabase.from('batches').select('*, formulations(name, code, version)').in('status', ['fermenting', 'deviation', 'qc-hold']).order('start_time', { ascending: false });
-    const hasDeviation = fermenting?.some(b => b.ph_readings?.some(ph => ph.is_deviation && !ph.deviation_acknowledged));
-    setIsAlert(hasDeviation); setActiveBatches(fermenting || []);
+    try {
+      const [fermentingRes, completedRes] = await Promise.all([
+        supabase.from('batches').select('*, formulations(name, code, version), ph_readings(ph_value, is_deviation, deviation_acknowledged)').in('status', ['fermenting', 'deviation', 'qc-hold']).order('start_time', { ascending: false }),
+        supabase.from('batches').select('*').in('status', ['released', 'rejected']).order('created_at', { ascending: false }).limit(10)
+      ]);
 
-    const { data: completed } = await supabase.from('batches').select('*').in('status', ['released', 'rejected']).order('created_at', { ascending: false }).limit(10);
-    setHistory(completed || []); setLoadingBatches(false);
+      const fermenting = fermentingRes.data;
+      const completed = completedRes.data;
+
+      const hasDeviation = fermenting?.some(b => b.ph_readings?.some(ph => ph.is_deviation && !ph.deviation_acknowledged));
+      setIsAlert(hasDeviation); 
+      setActiveBatches(fermenting || []);
+      setHistory(completed || []);
+    } catch (err) {
+      console.error('Fetch batches error:', err);
+    } finally {
+      setLoadingBatches(false);
+    }
   };
 
-  const handleCreateBatch = async (e) => {
-    e.preventDefault(); if (!newBatchForm.formulation_id) return alert("Select formulation.");
+
+  const handleBatchSubmit = async (data) => {
     setCreatingBatch(true);
     try {
-      const salt = crypto.randomUUID().split('-')[0].slice(-4).toUpperCase();
-      const batchIdStr = `BTCH-${newBatchForm.variant.split('-')[1].toUpperCase()}-${salt}`;
-      const { error } = await supabase.from('batches').insert({ batch_id: batchIdStr, variant: newBatchForm.variant, formulation_id: newBatchForm.formulation_id, current_stage: 'media_prep', status: 'pending', start_time: new Date().toISOString() });
-      if (error) throw error;
-      setShowNewBatchModal(false); setNewBatchForm({ variant: 'O2B-Agri', formulation_id: '' }); fetchBatches();
-    } catch (err) { alert(err.message); } finally { setCreatingBatch(false); }
+      const res = await fetch('/api/batches', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to start batch');
+      setShowNewBatchModal(false); reset(); fetchBatches();
+    } catch (err) { alert(err.message); }
+    finally { setCreatingBatch(false); }
   };
 
   if (authLoading || loadingBatches) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing Batch Registry...</div>;
@@ -152,10 +181,10 @@ export default function BatchesPage() {
           <div className="bg-white rounded-xl max-w-sm w-full p-6 relative shadow-xl border border-gray-100">
             <button onClick={() => setShowNewBatchModal(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
             <h2 className="text-base font-bold text-gray-900 mb-4 tracking-tight">Initialize Production</h2>
-            <form onSubmit={handleCreateBatch} className="space-y-4">
+            <form onSubmit={handleSubmit(handleBatchSubmit)} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Recipe Variant</label>
-                <select required value={newBatchForm.formulation_id} onChange={e => setNewBatchForm({...newBatchForm, formulation_id: e.target.value})} className="w-full border border-gray-200 rounded-lg p-2.5 outline-none bg-white font-semibold text-gray-800 text-sm">
+                <select {...register('formulation_id')} className="w-full border border-gray-200 rounded-lg p-2.5 outline-none bg-white font-semibold text-gray-800 text-sm">
                   <option value="">Select Version...</option>
                   {formulations.map(f => <option key={f.id} value={f.id}>{f.code} - {f.name} (v{f.version})</option>)}
                 </select>

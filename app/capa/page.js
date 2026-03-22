@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
@@ -18,7 +22,8 @@ const STATUS_STYLE = { Open: 'bg-gray-100 text-gray-600', Investigating: 'bg-ind
 
 export default function CapaPage() {
   const { role, canDo, employeeProfile } = useAuth();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
   const [deviations, setDeviations] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,15 +33,24 @@ export default function CapaPage() {
 
   const [showRaise, setShowRaise] = useState(false);
   const [raising, setRaising] = useState(false);
-  const [raiseForm, setRaiseForm] = useState({ title: '', severity: 'Major', source: 'Internal Audit', description: '' });
+  const { register: regRaise, handleSubmit: handRaise, formState: { errors: raiseErrors }, reset: resetRaise } = useForm({
+    resolver: zodResolver(z.object({ title: z.string().min(1), severity: z.enum(['Minor', 'Major', 'Critical']), source: z.string(), description: z.string().min(1) })),
+    defaultValues: { title: '', severity: 'Major', source: 'Internal Audit', description: '' }
+  });
 
   const [showInvestigate, setShowInvestigate] = useState(false);
   const [investigating, setInvestigating] = useState(false);
-  const [whyForm, setWhyForm] = useState({ why_1: '', why_2: '', why_3: '', why_4: '', why_5: '', root_cause_identified: '' });
+  const { register: regWhy, handleSubmit: handWhy, formState: { errors: whyErrors }, reset: resetWhy, setValue: setWhyValue } = useForm({
+    resolver: zodResolver(z.object({ why_1: z.string().optional(), why_2: z.string().optional(), why_3: z.string().optional(), why_4: z.string().optional(), why_5: z.string().optional(), root_cause_identified: z.string().min(1) })),
+    defaultValues: { why_1: '', why_2: '', why_3: '', why_4: '', why_5: '', root_cause_identified: '' }
+  });
 
   const [showAction, setShowAction] = useState(false);
   const [actioning, setActioning] = useState(false);
-  const [actionForm, setActionForm] = useState({ action_type: 'Corrective', title: '', description: '', assigned_to: '', due_date: '' });
+  const { register: regAction, handleSubmit: handAction, formState: { errors: actionErrors }, reset: resetAction } = useForm({
+    resolver: zodResolver(z.object({ action_type: z.enum(['Corrective', 'Preventive']), title: z.string().min(1), description: z.string().optional(), assigned_to: z.string().min(1), due_date: z.string().min(1) })),
+    defaultValues: { action_type: 'Corrective', title: '', description: '', assigned_to: '', due_date: '' }
+  });
 
   const isAdmin = (canDo && canDo('capa', 'manage')) || role === 'admin';
 
@@ -44,12 +58,16 @@ export default function CapaPage() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: devs }, { data: emps }] = await Promise.all([
-      supabase.from('deviations').select('*, reporter:employees!deviations_reported_by_fkey(full_name)').order('created_at', { ascending: false }),
-      supabase.from('employees').select('id, full_name').eq('is_active', true)
-    ]);
-    setDeviations(devs || []); setEmployees(emps || []); setLoading(false);
+    try {
+      const [{ data: devs }, { data: emps }] = await Promise.all([
+        supabase.from('deviations').select('*, reporter:employees!deviations_reported_by_fkey(full_name)').order('created_at', { ascending: false }),
+        supabase.from('employees').select('id, full_name').eq('is_active', true)
+      ]);
+      setDeviations(devs || []); setEmployees(emps || []);
+    } catch (err) { console.error('CAPA fetch error:', err); }
+    finally { setLoading(false); }
   };
+
 
   const loadDetail = async (dev) => {
     setSelected(dev); setInvestigation(null); setCapaActions([]);
@@ -58,47 +76,57 @@ export default function CapaPage() {
       supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', dev.id)
     ]);
     setInvestigation(inv || null); setCapaActions(actions || []);
-    if (inv) setWhyForm({ why_1: inv.why_1||'', why_2: inv.why_2||'', why_3: inv.why_3||'', why_4: inv.why_4||'', why_5: inv.why_5||'', root_cause_identified: inv.root_cause_identified||'' });
+    if (inv) {
+      ['why_1','why_2','why_3','why_4','why_5','root_cause_identified'].forEach(k => setWhyValue(k, inv[k] || ''));
+    } else {
+      resetWhy();
+    }
   };
 
-  const handleRaise = async (e) => {
-    e.preventDefault(); setRaising(true);
-    const { data, error } = await supabase.from('deviations').insert({ ...raiseForm, reported_by: employeeProfile.id, status: 'Open' }).select().single();
-    if (!error) { setRaiseForm({ title: '', severity: 'Major', source: 'Internal Audit', description: '' }); setShowRaise(false); notifyEmployee(employeeProfile.id, '🚨 NCR Raised', `Submitted: "${raiseForm.title}".`, '/capa'); fetchAll(); }
+  const executeApi = async (method, action, payload = {}) => {
+    try {
+      const res = await fetch('/api/capa', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, payload }) });
+      if (!res.ok) throw new Error((await res.json()).error || `Failed: ${action}`);
+      return await res.json();
+    } catch (err) { alert(err.message); return null; }
+  };
+
+  const handleRaise = async (data) => {
+    setRaising(true);
+    const res = await executeApi('POST', 'raise', data);
+    if (res?.success) { resetRaise(); setShowRaise(false); fetchAll(); }
     setRaising(false);
   };
 
-  const handleSaveInvestigation = async (e) => {
-    e.preventDefault(); setInvestigating(true); let saveError = null;
-    if (investigation) { const { error } = await supabase.from('investigations').update({ ...whyForm, investigator_id: employeeProfile.id }).eq('id', investigation.id); saveError = error; }
-    else { const { data, error } = await supabase.from('investigations').insert({ deviation_id: selected.id, investigator_id: employeeProfile.id, ...whyForm }).select().single(); saveError = error; if (!error) setInvestigation(data); }
-    if (!saveError) { await supabase.from('deviations').update({ status: 'Investigating' }).eq('id', selected.id); setSelected(s => ({ ...s, status: 'Investigating' })); setShowInvestigate(false); }
+  const handleSaveInvestigation = async (data) => {
+    setInvestigating(true);
+    const res = await executeApi('POST', 'investigate', { deviation_id: selected.id, investigation_id: investigation?.id, ...data });
+    if (res?.success) { setInvestigation(res.data); setSelected(s => ({ ...s, status: 'Investigating' })); setShowInvestigate(false); }
     setInvestigating(false);
   };
 
-  const handleSpawnAction = async (e) => {
-    e.preventDefault(); if (!investigation) return; setActioning(true);
-    const { data: task, error: taskErr } = await supabase.from('tasks').insert({ title: `[CAPA] ${actionForm.title}`, description: actionForm.description, assigned_to: actionForm.assigned_to, assigned_by: employeeProfile.id, due_date: actionForm.due_date, priority: 'high', status: 'open', approval_status: 'not_required', checklist: [], logged_minutes: 0, is_personal_reminder: false }).select().single();
-    if (!taskErr) {
-      await supabase.from('capa_actions').insert({ investigation_id: investigation.id, action_type: actionForm.action_type, task_id: task.id, effectiveness_verified: false });
-      await supabase.from('deviations').update({ status: 'CAPA Assigned' }).eq('id', selected.id); setSelected(s => ({ ...s, status: 'CAPA Assigned' }));
-      fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: actionForm.assigned_to, title: `CAPA: ${actionForm.action_type}`, body: actionForm.title, url: '/tasks' }) }).catch(() => {});
-      setActionForm({ action_type: 'Corrective', title: '', description: '', assigned_to: '', due_date: '' }); setShowAction(false);
+  const handleSpawnAction = async (data) => {
+    if (!investigation) return; setActioning(true);
+    const res = await executeApi('POST', 'spawn_action', { deviation_id: selected.id, investigation_id: investigation.id, ...data });
+    if (res?.success) {
+      fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: data.assigned_to, title: `CAPA: ${data.action_type}`, body: data.title, url: '/tasks' }) }).catch(() => {});
+      resetAction(); setShowAction(false); setSelected(s => ({ ...s, status: 'CAPA Assigned' }));
       const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []);
     }
     setActioning(false);
   };
 
   const handleVerifyEffectiveness = async (actionId) => {
-    const { error } = await supabase.from('capa_actions').update({ effectiveness_verified: true, verified_by: employeeProfile.id }).eq('id', actionId);
-    if (!error) { const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []); }
+    const res = await executeApi('PATCH', 'verify_effectiveness', { action_id: actionId });
+    if (res?.success) { const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []); }
   };
 
   const handleClose = async () => {
     if (capaActions.some(a => !a.effectiveness_verified)) return alert("Cannot close. Unverified actions exist.");
-    const { data } = await supabase.from('deviations').update({ status: 'Closed' }).eq('id', selected.id).select('*, reporter:employees!deviations_reported_by_fkey(id)').single();
-    setSelected(s => ({ ...s, status: 'Closed' })); if (data?.reported_by) notifyEmployee(data.reported_by, '✅ NCR Closed', `NCR "${selected.title}" closed.`, '/capa'); fetchAll();
+    const res = await executeApi('PATCH', 'close_deviation', { deviation_id: selected.id });
+    if (res?.success) { setSelected(s => ({ ...s, status: 'Closed' })); fetchAll(); }
   };
+
 
   if (loading) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing CAPA Registry...</div>;
 
@@ -163,12 +191,12 @@ export default function CapaPage() {
 
       {showInvestigate && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleSaveInvestigation} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handWhy(handleSaveInvestigation)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900">5-Why Analysis</h3><button type="button" onClick={() => setShowInvestigate(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
             {['why_1','why_2','why_3','why_4','why_5'].map((k,i) => (
-              <div key={k}><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Why {i+1}</label><input value={whyForm[k]} onChange={e => setWhyForm(f => ({...f, [k]: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" /></div>
+              <div key={k}><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Why {i+1}</label><input {...regWhy(k)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" /></div>
             ))}
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Root Cause *</label><textarea required value={whyForm.root_cause_identified} onChange={e => setWhyForm(f => ({...f, root_cause_identified: e.target.value}))} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" placeholder="Statement..." /></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Root Cause *</label><textarea {...regWhy('root_cause_identified')} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" placeholder="Statement..." />{whyErrors.root_cause_identified && <p className="text-red-500 text-[10px]">{whyErrors.root_cause_identified.message}</p>}</div>
             <button type="submit" disabled={investigating} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1"><Microscope className="w-4 h-4"/> Save Analysis</button>
           </form>
         </div>
@@ -176,14 +204,14 @@ export default function CapaPage() {
 
       {showAction && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleSpawnAction} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handAction(handleSpawnAction)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900">Assign Action</h3><button type="button" onClick={() => setShowAction(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label><select value={actionForm.action_type} onChange={e => setActionForm(f => ({...f, action_type: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input required value={actionForm.title} onChange={e => setActionForm(f => ({...f, title: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" /></div>
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Description</label><textarea value={actionForm.description} onChange={e => setActionForm(f => ({...f, description: e.target.value}))} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" /></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label><select {...regAction('action_type')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regAction('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{actionErrors.title && <p className="text-red-500 text-[10px] mt-1">{actionErrors.title.message}</p>}</div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Description</label><textarea {...regAction('description')} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" /></div>
             <div className="grid grid-cols-2 gap-2">
-              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Assign To</label><select required value={actionForm.assigned_to} onChange={e => setActionForm(f => ({...f, assigned_to: e.target.value}))} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold">{employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}</select></div>
-              <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Due</label><input required type="date" value={actionForm.due_date} onChange={e => setActionForm(f => ({...f, due_date: e.target.value}))} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs" /></div>
+              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Assign To</label><select {...regAction('assigned_to')} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold"><option value="">Select...</option>{employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}</select>{actionErrors.assigned_to && <p className="text-red-500 text-[10px] mt-1">{actionErrors.assigned_to.message}</p>}</div>
+              <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Due</label><input type="date" {...regAction('due_date')} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs" />{actionErrors.due_date && <p className="text-red-500 text-[10px] mt-1">{actionErrors.due_date.message}</p>}</div>
             </div>
             <button type="submit" disabled={actioning} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase shadow-sm">Spawn Task</button>
           </form>
@@ -194,6 +222,7 @@ export default function CapaPage() {
 
   const openCount = deviations.filter(d => d.status === 'Open').length;
   const criticalCount = deviations.filter(d => d.severity === 'Critical' && d.status !== 'Closed').length;
+  const pieData = [{ name: 'Open', value: openCount, fill: '#ef4444' }, { name: 'Investigation', value: deviations.filter(d => d.status === 'Investigating').length, fill: '#8b5cf6' }, { name: 'Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, fill: '#f59e0b' }, { name: 'Closed', value: deviations.filter(d => d.status === 'Closed').length, fill: '#10b981' }].filter(d => d.value > 0);
 
   return (
     <div className="page-container">
@@ -214,7 +243,7 @@ export default function CapaPage() {
       {isAdmin && deviations.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Severity Breakdown</h3><ResponsiveContainer width="100%" height={150}><BarChart data={[{ name: 'Minor', count: deviations.filter(d => d.severity === 'Minor').length, fill: '#3b82f6' }, { name: 'Major', count: deviations.filter(d => d.severity === 'Major').length, fill: '#f59e0b' }, { name: 'Critical', count: deviations.filter(d => d.severity === 'Critical').length, fill: '#ef4444' }]} barCategoryGap="30%"><CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false}/><XAxis dataKey="name" tick={{ fontSize: 10, fontStyle: 'semibold', fill: '#9ca3af' }}/><YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#9ca3af' }}/><Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }}/><Bar dataKey="count" radius={[4,4,0,0]}>{[{ fill: '#3b82f6' }, { fill: '#f59e0b' }, { fill: '#ef4444' }].map((e, i) => <Cell key={i} fill={e.fill}/>)}</Bar></BarChart></ResponsiveContainer></div>
-          <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Status Breakdown</h3><ResponsiveContainer width="100%" height={150}><PieChart><Pie data={[{ name: 'Open', value: openCount, fill: '#ef4444' }, { name: 'Investigation', value: deviations.filter(d => d.status === 'Investigating').length, fill: '#8b5cf6' }, { name: 'Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, fill: '#f59e0b' }, { name: 'Closed', value: deviations.filter(d => d.status === 'Closed').length, fill: '#10b981' }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={60} dataKey="value" nameKey="name">{[ '#ef4444', '#8b5cf6', '#f59e0b', '#10b981' ].map((c, i) => <Cell key={i} fill={c}/>)}</Pie><Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }}/></PieChart></ResponsiveContainer></div>
+          <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Status Breakdown</h3><ResponsiveContainer width="100%" height={150}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} dataKey="value" nameKey="name">{pieData.map((entry, index) => <Cell key={index} fill={entry.fill}/>)}</Pie><Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }}/></PieChart></ResponsiveContainer></div>
         </div>
       )}
 
@@ -242,14 +271,14 @@ export default function CapaPage() {
 
       {showRaise && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleRaise} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handRaise(handleRaise)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900 flex items-center gap-1"><FileWarning className="w-4 h-4 text-red-600"/> Raise NCR</h3><button type="button" onClick={() => setShowRaise(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input required value={raiseForm.title} onChange={e => setRaiseForm(f => ({...f, title: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" /></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.title.message}</p>}</div>
             <div className="grid grid-cols-2 gap-2">
-              <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Severity</label><select value={raiseForm.severity} onChange={e => setRaiseForm(f => ({...f, severity: e.target.value}))} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SEVERITIES.map(s => <option key={s}>{s}</option>)}</select></div>
-              <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Source</label><select value={raiseForm.source} onChange={e => setRaiseForm(f => ({...f, source: e.target.value}))} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SOURCES.map(s => <option key={s}>{s}</option>)}</select></div>
+              <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Severity</label><select {...regRaise('severity')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SEVERITIES.map(s => <option key={s}>{s}</option>)}</select></div>
+              <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Source</label><select {...regRaise('source')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SOURCES.map(s => <option key={s}>{s}</option>)}</select></div>
             </div>
-            <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Description *</label><textarea required value={raiseForm.description} onChange={e => setRaiseForm(f => ({...f, description: e.target.value}))} rows="3" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" /></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Description *</label><textarea {...regRaise('description')} rows="3" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" />{raiseErrors.description && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.description.message}</p>}</div>
             <button type="submit" disabled={raising} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs uppercase shadow-sm">Submit NCR</button>
           </form>
         </div>

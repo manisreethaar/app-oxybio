@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -70,40 +74,56 @@ export default function ProfilePage() {
   const { employeeProfile, signOut } = useAuth();
   const [emp, setEmp] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [view, setView] = useState('info'); // 'info' | 'card'
+
+  const { register, handleSubmit, reset } = useForm({
+    resolver: zodResolver(z.object({
+      phone: z.string().optional().nullable(),
+      designation: z.string().optional().nullable(),
+      date_of_birth: z.string().optional().nullable(),
+      address: z.string().optional().nullable(),
+      blood_group: z.string().optional().nullable(),
+      emergency_contact_name: z.string().optional().nullable(),
+      emergency_contact: z.string().optional().nullable()
+    }))
+  });
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const fileRef = useRef();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     if (employeeProfile) {
       setEmp(employeeProfile);
-      setForm(employeeProfile);
+      reset({
+        phone: employeeProfile.phone || '',
+        designation: employeeProfile.designation || '',
+        date_of_birth: employeeProfile.date_of_birth ? new Date(employeeProfile.date_of_birth).toISOString().split('T')[0] : '',
+        address: employeeProfile.address || '',
+        blood_group: employeeProfile.blood_group || '',
+        emergency_contact_name: employeeProfile.emergency_contact_name || '',
+        emergency_contact: employeeProfile.emergency_contact || ''
+      });
     }
-  }, [employeeProfile]);
+  }, [employeeProfile, reset]);
 
-  const handleSave = async () => {
+  const handleSaveSubmit = async (data) => {
     setSaving(true);
-    const { error } = await supabase.from('employees').update({
-      phone: form.phone,
-      designation: form.designation,
-      date_of_birth: form.date_of_birth || null,
-      address: form.address,
-      blood_group: form.blood_group,
-      emergency_contact_name: form.emergency_contact_name,
-      emergency_contact: form.emergency_contact,
-    }).eq('id', emp.id);
-    if (!error) {
-      setEmp({ ...emp, ...form });
-      setEditing(false);
-    }
-    setSaving(false);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
+      setEmp({ ...emp, ...data }); setEditing(false);
+    } catch (err) { alert('Error: ' + err.message); }
+    finally { setSaving(false); }
   };
+
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -118,7 +138,12 @@ export default function ProfilePage() {
       
       const data = await res.json();
       if (data.url) {
-        await supabase.from('employees').update({ photo_url: data.url }).eq('id', emp.id);
+        const patchRes = await fetch('/api/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photo_url: data.url })
+        });
+        if (!patchRes.ok) throw new Error("Failed to save profile photo binding.");
         setEmp({ ...emp, photo_url: data.url });
       }
     } catch (err) {
@@ -130,25 +155,17 @@ export default function ProfilePage() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    if (passwordForm.password !== passwordForm.confirm) {
-      alert("Passwords do not match!");
-      return;
-    }
-    if (passwordForm.password.length < 6) {
-      alert("Password must be at least 6 characters!");
-      return;
-    }
+    if (passwordForm.password !== passwordForm.confirm) { alert("Passwords do not match!"); return; }
+    if (passwordForm.password.length < 6) { alert("Password must be at least 6 characters!"); return; }
     setPasswordLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
-    if (error) {
-      alert(error.message || "Failed to update password.");
-    } else {
-      alert("Password updated successfully!");
-      setShowPasswordModal(false);
-      setPasswordForm({ password: '', confirm: '' });
-    }
-    setPasswordLoading(false);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
+      if (error) { alert(error.message || "Failed to update password."); }
+      else { alert("Password updated successfully!"); setShowPasswordModal(false); setPasswordForm({ password: '', confirm: '' }); }
+    } catch (err) { alert('Error: ' + err.message); }
+    finally { setPasswordLoading(false); }
   };
+
 
   if (!emp) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -233,19 +250,29 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => editing ? handleSave() : setEditing(true)}
-                disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md hover:from-teal-400 hover:to-cyan-500"
-              >
-                {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : editing ? <Save className="w-4 h-4"/> : <Edit3 className="w-4 h-4"/>}
-                {editing ? (saving ? 'Saving...' : 'Save Changes') : 'Edit Profile'}
-              </button>
+              {editing ? (
+                <button
+                  type="submit"
+                  form="profile-form"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md hover:from-teal-400 hover:to-cyan-500"
+                >
+                  {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Save className="w-4 h-4"/>}
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md hover:from-teal-400 hover:to-cyan-500"
+                >
+                  <Edit3 className="w-4 h-4"/> Edit Profile
+                </button>
+              )}
             </div>
           </div>
 
           {/* Info Fields */}
-          <div className="glass-card rounded-[2rem] p-8">
+          <form id="profile-form" onSubmit={handleSubmit(handleSaveSubmit)} className="glass-card rounded-[2rem] p-8">
             <h3 className="text-lg font-black text-slate-700 mb-6 uppercase tracking-wider text-sm">Personal Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <InfoField label="Full Name" value={emp.full_name} icon={User} readonly />
@@ -258,16 +285,14 @@ export default function ProfilePage() {
                 value={emp.phone} 
                 icon={Phone} 
                 editing={editing}
-                onChange={v => setForm({...form, phone: v})}
-                formValue={form.phone}
+                registerProps={register('phone')}
               />
               <InfoField 
                 label="Designation" 
                 value={emp.designation} 
                 icon={Briefcase} 
                 editing={editing}
-                onChange={v => setForm({...form, designation: v})}
-                formValue={form.designation}
+                registerProps={register('designation')}
               />
               <InfoField 
                 label="Date of Birth" 
@@ -275,16 +300,14 @@ export default function ProfilePage() {
                 icon={Calendar}
                 editing={editing}
                 inputType="date"
-                onChange={v => setForm({...form, date_of_birth: v})}
-                formValue={form.date_of_birth}
+                registerProps={register('date_of_birth')}
               />
               <InfoField 
                 label="Blood Group" 
                 value={emp.blood_group} 
                 icon={Droplets}
                 editing={editing}
-                onChange={v => setForm({...form, blood_group: v})}
-                formValue={form.blood_group}
+                registerProps={register('blood_group')}
               />
             </div>
 
@@ -295,8 +318,7 @@ export default function ProfilePage() {
                 icon={MapPin}
                 editing={editing}
                 multiline
-                onChange={v => setForm({...form, address: v})}
-                formValue={form.address}
+                registerProps={register('address')}
               />
             </div>
 
@@ -306,22 +328,20 @@ export default function ProfilePage() {
                 value={emp.emergency_contact_name} 
                 icon={AlertCircle}
                 editing={editing}
-                onChange={v => setForm({...form, emergency_contact_name: v})}
-                formValue={form.emergency_contact_name}
+                registerProps={register('emergency_contact_name')}
               />
               <InfoField 
                 label="Emergency Phone" 
                 value={emp.emergency_contact} 
                 icon={Phone}
                 editing={editing}
-                onChange={v => setForm({...form, emergency_contact: v})}
-                formValue={form.emergency_contact}
+                registerProps={register('emergency_contact')}
               />
             </div>
-          </div>
+          </form>
 
           {editing && (
-            <button onClick={() => setEditing(false)} className="w-full py-3 glass-card rounded-2xl text-sm font-bold text-slate-500 hover:bg-white/80 transition-all flex items-center justify-center gap-2">
+            <button onClick={() => { reset(); setEditing(false); }} className="w-full py-3 glass-card rounded-2xl text-sm font-bold text-slate-500 hover:bg-white/80 transition-all flex items-center justify-center gap-2">
               <X className="w-4 h-4"/> Cancel
             </button>
           )}
@@ -354,7 +374,7 @@ export default function ProfilePage() {
   );
 }
 
-function InfoField({ label, value, icon: Icon, readonly, editing, onChange, formValue, multiline, inputType }) {
+function InfoField({ label, value, icon: Icon, readonly, editing, multiline, inputType, registerProps }) {
   const displayVal = value || '—';
   return (
     <div className="flex flex-col gap-1.5">
@@ -364,16 +384,14 @@ function InfoField({ label, value, icon: Icon, readonly, editing, onChange, form
       {editing && !readonly ? (
         multiline ? (
           <textarea
-            value={formValue || ''}
-            onChange={e => onChange(e.target.value)}
+            {...registerProps}
             rows={3}
             className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
           />
         ) : (
           <input
             type={inputType || 'text'}
-            value={formValue || ''}
-            onChange={e => onChange(e.target.value)}
+            {...registerProps}
             className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
           />
         )

@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
@@ -20,13 +24,6 @@ export default function LeavePage() {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Application form
-  const [leaveType, setLeaveType] = useState('Casual');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [permissionDate, setPermissionDate] = useState(''); // For Permission type
-  const [permissionHours, setPermissionHours] = useState('1');  // Duration in hours
-  const [reason, setReason] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -34,8 +31,24 @@ export default function LeavePage() {
   const [rejectionId, setRejectionId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const supabase = createClient();
-  const isPermission = leaveType === 'Permission';
+  const { register, handleSubmit, watch, reset } = useForm({
+    resolver: zodResolver(z.object({
+      leaveType: z.enum(['Casual', 'Sick', 'Earned', 'Permission']),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      permissionDate: z.string().optional(),
+      permissionHours: z.string().optional().default('1'),
+      reason: z.string().min(1, 'Reason required')
+    })),
+    defaultValues: { leaveType: 'Casual', startDate: '', endDate: '', permissionDate: '', permissionHours: '1', reason: '' }
+  });
+
+  const watchLeaveType = watch('leaveType');
+  const watchStartDate = watch('startDate');
+  const watchEndDate = watch('endDate');
+  const isPermission = watchLeaveType === 'Permission';
+
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (employeeProfile) fetchLeaves();
@@ -43,25 +56,31 @@ export default function LeavePage() {
 
   const fetchLeaves = async () => {
     setLoading(true);
-    const { data: myLeaves } = await supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false });
-    setLeaves(myLeaves || []);
-
-    if (role === 'admin') {
-      const { data: pLeaves } = await supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending').order('created_at', { ascending: false });
-      setPendingLeaves(pLeaves || []);
-    }
-    setLoading(false);
+    try {
+      if (role === 'admin') {
+        const [myLeavesRes, pLeavesRes] = await Promise.all([
+          supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }),
+          supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
+        ]);
+        setLeaves(myLeavesRes.data || []);
+        setPendingLeaves(pLeavesRes.data || []);
+      } else {
+        const { data: myLeaves } = await supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false });
+        setLeaves(myLeaves || []);
+      }
+    } catch (err) { console.error('Leave fetch error:', err); }
+    finally { setLoading(false); }
   };
+
 
   const calculateDays = () => {
     if (isPermission) return 0;
-    if (!startDate || !endDate) return 0;
-    const days = differenceInBusinessDays(new Date(endDate), new Date(startDate)) + 1;
+    if (!watchStartDate || !watchEndDate) return 0;
+    const days = differenceInBusinessDays(new Date(watchEndDate), new Date(watchStartDate)) + 1;
     return days > 0 ? days : 0;
   };
 
-  const handleApply = async (e) => {
-    e.preventDefault();
+  const handleApplyForm = async (data) => {
     if (submitting) return;
     setSubmitting(true);
     setErrorMsg('');
@@ -70,16 +89,17 @@ export default function LeavePage() {
       const payload = isPermission
         ? {
             leave_type: 'Permission',
-            start_date: permissionDate,
-            end_date: permissionDate,
+            start_date: data.permissionDate,
+            end_date: data.permissionDate,
             total_days: 0,
-            reason: `Permission Request: ${permissionHours} hour(s). ${reason}`
+            reason: `Permission Request: ${data.permissionHours} hour(s). ${data.reason}`
           }
         : {
-            leave_type: leaveType,
-            start_date: startDate,
-            end_date: endDate,
-            reason
+            leave_type: data.leaveType,
+            start_date: data.startDate,
+            end_date: data.endDate,
+            total_days: calculateDays(),
+            reason: data.reason
           };
 
       const res = await fetch('/api/leave/apply', {
@@ -88,8 +108,8 @@ export default function LeavePage() {
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Submission failed');
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Submission failed');
 
       notifyEmployee(
         employeeProfile.id,
@@ -101,8 +121,7 @@ export default function LeavePage() {
       const { data: admins } = await supabase.from('employees').select('id').eq('role', 'admin').eq('is_active', true);
       notifyAll((admins || []).map(a => a.id), '📄 Leave Request Pending', `${employeeProfile.full_name} has submitted a ${payload.leave_type} leave request. Review required.`, '/leave');
 
-      setStartDate(''); setEndDate(''); setReason('');
-      setPermissionDate(''); setPermissionHours('1');
+      reset();
       fetchLeaves();
     } catch (err) {
       setErrorMsg(err.message);
@@ -123,38 +142,38 @@ export default function LeavePage() {
       comment = rejectionReason || 'No reason provided.';
     }
 
-    const { data: updatedLeave, error } = await supabase.from('leave_applications').update({
-      status,
-      admin_comment: comment,
-      reviewed_by: employeeProfile.id,
-      reviewed_at: new Date().toISOString()
-    }).eq('id', id).select('*, employees(full_name)').single();
-
-    if (error) {
-      alert('Action failed: ' + error.message);
-      setActionLoadingId(null);
-      return;
-    }
-
-    const employeeId = updatedLeave?.employee_id;
-    if (employeeId) {
-      const notifTitle = status === 'approved' ? `✅ Leave Approved` : `❌ Leave Rejected`;
-      const notifBody = status === 'approved'
-        ? `Your ${updatedLeave.leave_type} leave request has been approved by HR.`
-        : `Your ${updatedLeave.leave_type} leave request was rejected. Reason: ${comment}`;
-
-      fetch('/api/push/send', {
+    try {
+      const res = await fetch('/api/leave/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigned_to: employeeId, title: notifTitle, body: notifBody, url: '/leave' })
-      }).catch(() => {});
-    }
+        body: JSON.stringify({ id, status, comment })
+      });
+      const resData = await res.json();
+      if (!res.ok) { alert('Action failed: ' + resData.error); return; }
 
-    setRejectionId(null);
-    setRejectionReason('');
-    fetchLeaves();
-    setActionLoadingId(null);
+      const updatedLeave = resData.data;
+
+      const employeeId = updatedLeave?.employee_id;
+      if (employeeId) {
+        const notifTitle = status === 'approved' ? `✅ Leave Approved` : `❌ Leave Rejected`;
+        const notifBody = status === 'approved'
+          ? `Your ${updatedLeave.leave_type} leave request has been approved by HR.`
+          : `Your ${updatedLeave.leave_type} leave request was rejected. Reason: ${comment}`;
+
+        fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assigned_to: employeeId, title: notifTitle, body: notifBody, url: '/leave' })
+        }).catch(() => {});
+      }
+
+      setRejectionId(null);
+      setRejectionReason('');
+      fetchLeaves();
+    } catch (err) { alert('Error: ' + err.message); }
+    finally { setActionLoadingId(null); }
   };
+
 
   if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading leave ledger data...</div>;
 
@@ -220,10 +239,10 @@ export default function LeavePage() {
           <div className="surface p-6">
             <h2 className="text-base font-bold text-gray-900 mb-6 tracking-tight">Apply for Leave</h2>
             {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-100 flex items-start"><AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />{errorMsg}</div>}
-            <form onSubmit={handleApply} className="space-y-4">
+            <form onSubmit={handleSubmit(handleApplyForm)} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Leave Category</label>
-                <select value={leaveType} onChange={e => setLeaveType(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
+                <select {...register('leaveType')} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
                   <option value="Casual">Casual Leave (CL)</option>
                   <option value="Sick">Sick Leave (SL)</option>
                   <option value="Earned">Earned Leave (EL)</option>
@@ -236,11 +255,11 @@ export default function LeavePage() {
                   <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Short Leave — Hours Based</p>
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Date</label>
-                    <input type="date" required value={permissionDate} onChange={e => setPermissionDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none" />
+                    <input type="date" {...register('permissionDate', { required: isPermission })} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Duration</label>
-                    <select value={permissionHours} onChange={e => setPermissionHours(e.target.value)} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none">
+                    <select {...register('permissionHours')} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none">
                       <option value="1">1 Hour</option>
                       <option value="2">2 Hours</option>
                       <option value="3">3 Hours</option>
@@ -252,11 +271,11 @@ export default function LeavePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Start Date</label>
-                    <input type="date" required value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
+                    <input type="date" {...register('startDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">End Date</label>
-                    <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
+                    <input type="date" {...register('endDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                 </div>
               )}
@@ -271,7 +290,7 @@ export default function LeavePage() {
                 <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">
                   {isPermission ? 'Reason for Permission' : 'Justification'}
                 </label>
-                <textarea required value={reason} onChange={e => setReason(e.target.value)} rows="3" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold resize-none outline-none focus:ring-2 focus:ring-accent-light" placeholder={isPermission ? 'Brief reason...' : 'Brief explanation...'}></textarea>
+                <textarea {...register('reason')} rows="3" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold resize-none outline-none focus:ring-2 focus:ring-accent-light" placeholder={isPermission ? 'Brief reason...' : 'Brief explanation...'}></textarea>
               </div>
 
               <button type="submit" disabled={submitting} className="w-full py-3 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center uppercase tracking-wider text-xs">

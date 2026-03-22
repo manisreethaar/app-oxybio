@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
@@ -46,21 +47,24 @@ export default function BatchDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
   const [checkingTraining, setCheckingTraining] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
-    let mounted = true; const controller = new AbortController();
+    const controller = new AbortController();
     if (batchId) {
       Promise.all([fetchBatchDetail(controller.signal), fetchStock(controller.signal)]).catch(() => {});
     }
-    return () => { mounted = false; controller.abort(); };
+    return () => { controller.abort(); };
   }, [batchId]);
 
+
   useEffect(() => {
-    let mounted = true; const controller = new AbortController();
+    const controller = new AbortController();
     if (employeeProfile && batch?.current_stage) checkTraining(controller.signal);
-    return () => { mounted = false; controller.abort(); };
+    return () => { controller.abort(); };
   }, [employeeProfile, batch?.current_stage]);
+
 
   const checkTraining = async (signal) => {
     if (role === 'admin') { setTrainingStatus({ isTrained: true }); return; }
@@ -74,22 +78,29 @@ export default function BatchDetailPage() {
   };
 
   const fetchBatchDetail = async (signal) => {
-    const { data: b } = await supabase.from('batches').select('*, ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))').eq('id', batchId).single();
-    if (b) {
-      const unifiedLogs = [
-        ...Array.isArray(b.ph_readings) ? b.ph_readings.map(l => ({ ...l, type: 'ph', parameter_name: 'pH', parameter_value: l.ph_value })) : [],
-        ...Array.isArray(b.lab_logs) ? b.lab_logs : []
-      ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-      setBatch(b); setLogs(unifiedLogs);
-      const currentParams = PARAMETERS[b.current_stage || 'media_prep'] || [];
-      if (!selectedParam && currentParams.length > 0) setSelectedParam(currentParams[0]);
-    }
+    try {
+      const { data: b, error } = await supabase.from('batches').select('*, ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))').eq('id', batchId).single();
+      if (error) throw error;
+      if (b) {
+        const unifiedLogs = [
+          ...Array.isArray(b.ph_readings) ? b.ph_readings.map(l => ({ ...l, type: 'ph', parameter_name: 'pH', parameter_value: l.ph_value })) : [],
+          ...Array.isArray(b.lab_logs) ? b.lab_logs : []
+        ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        setBatch(b); setLogs(unifiedLogs);
+        const currentParams = PARAMETERS[b.current_stage || 'media_prep'] || [];
+        if (!selectedParam && currentParams.length > 0) setSelectedParam(currentParams[0]);
+      }
+    } catch (err) { console.error('Batch detail fetch error:', err); }
   };
 
+
   const fetchStock = async (signal) => {
-    const { data } = await supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available');
-    if (data) setAvailableStock(data);
+    try {
+      const { data } = await supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available');
+      if (data) setAvailableStock(data);
+    } catch (err) { console.error('Fetch stock error:', err); }
   };
+
 
   const handleLogData = async (e) => {
     e.preventDefault(); if (!selectedParam || !paramValue || isSubmitting) return;

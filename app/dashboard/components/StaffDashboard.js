@@ -1,13 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import { createClient } from '@/utils/supabase/client';
 import { CheckSquare, Activity } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StaffDashboard({ employeeId, role }) {
   const [tasks, setTasks] = useState([]);
+  const [leaveStats, setLeaveStats] = useState({ casual: 0, medical: 0, earned: 0 });
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     fetchStaffData();
@@ -16,14 +19,22 @@ export default function StaffDashboard({ employeeId, role }) {
   const fetchStaffData = async () => {
     setLoading(true);
     try {
-      const { data: myTasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('assigned_to', employeeId)
-        .in('status', ['open', 'in-progress'])
-        .order('due_date', { ascending: true })
-        .limit(5);
-      setTasks(myTasks || []);
+      const [tasksRes, leavesRes] = await Promise.all([
+        supabase.from('tasks').select('*').eq('assigned_to', employeeId).in('status', ['open', 'in-progress']).order('due_date', { ascending: true }).limit(5),
+        supabase.from('leave_applications').select('leave_type, start_date, end_date').eq('employee_id', employeeId).eq('status', 'approved')
+      ]);
+
+      setTasks(tasksRes.data || []);
+      
+      let c = 0, m = 0, e = 0;
+      (leavesRes.data || []).forEach(l => {
+        if (!l.start_date || !l.end_date) return;
+        const days = Math.ceil((new Date(l.end_date).getTime() - new Date(l.start_date).getTime()) / (1000 * 3600 * 24)) + 1;
+        if (l.leave_type === 'Casual') c += days;
+        if (l.leave_type === 'Sick') m += days;
+        if (l.leave_type === 'Earned') e += days;
+      });
+      setLeaveStats({ casual: c, medical: m, earned: e });
     } catch (error) {
       console.error('Error fetching staff dashboard:', error);
     } finally {
@@ -100,15 +111,15 @@ export default function StaffDashboard({ employeeId, role }) {
           <div className="p-6 space-y-4">
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Casual Leave</span>
-              <span className="text-xl font-black text-gray-900">10 <span className="text-xs text-gray-400 font-semibold">/ 12</span></span>
+              <span className="text-xl font-black text-gray-900">{12 - leaveStats.casual} <span className="text-xs text-gray-400 font-semibold">/ 12</span></span>
             </div>
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Medical Leave</span>
-              <span className="text-xl font-black text-gray-900">5 <span className="text-xs text-gray-400 font-semibold">/ 6</span></span>
+              <span className="text-xl font-black text-gray-900">{6 - leaveStats.medical} <span className="text-xs text-gray-400 font-semibold">/ 6</span></span>
             </div>
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Earned Leave</span>
-              <span className="text-xl font-black text-gray-900">10 <span className="text-xs text-gray-400 font-semibold">/ 15</span></span>
+              <span className="text-xl font-black text-gray-900">{15 - leaveStats.earned} <span className="text-xs text-gray-400 font-semibold">/ 15</span></span>
             </div>
             <Link href="/leave" className="mt-6 block w-full py-2.5 text-center text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
               Submit Requisition

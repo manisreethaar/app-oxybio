@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { FileText, Download, AlertTriangle, Plus, Search, Archive } from 'lucide-react';
@@ -12,10 +16,21 @@ export default function DocumentsPage() {
   const [category, setCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadForm, setUploadForm] = useState({ title: '', category: 'Legal', version: '1.0', file: null, access_level: 'all-staff' });
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState(''); // SEARCH STATE
-  const supabase = createClient();
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(z.object({
+      title: z.string().min(1, 'Title required'),
+      category: z.string().min(1, 'Category required'),
+      version: z.string().min(1, 'Version required'),
+      access_level: z.enum(['all-staff', 'management-only', 'admin-only']),
+      file: z.any()
+    })),
+    defaultValues: { title: '', category: 'Legal', version: '1.0', access_level: 'all-staff', file: null }
+  });
+  const supabase = useMemo(() => createClient(), []);
+
 
   const categories = ['All', 'Legal', 'HR', 'Regulatory', 'Finance', 'IP', 'QC', 'SOP'];
 
@@ -35,53 +50,50 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     setLoading(true);
-    let query = supabase.from('documents').select('*, employees(full_name)');
-    
-    // Server-side category filtering
-    if (category !== 'All') {
-      query = query.eq('category', category);
+    try {
+      let query = supabase.from('documents').select('*, employees(full_name)');
+      if (category !== 'All') { query = query.eq('category', category); }
+      if (role !== 'admin') { query = query.eq('access_level', 'all-staff'); }
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      setDocuments(data || []);
+      setFilteredDocs(data || []);
+    } catch (err) {
+      console.error('Fetch documents error:', err);
+    } finally {
+      setLoading(false);
     }
-
-    // Role-based access control
-    if (role !== 'admin') {
-      query = query.eq('access_level', 'all-staff');
-    }
-
-    const { data } = await query.order('created_at', { ascending: false });
-    setDocuments(data || []);
-    setFilteredDocs(data || []); // No need for secondary client-side filter
-    setLoading(false);
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!uploadForm.file) return alert("Please select a file.");
+
+  const handleUploadSubmit = async (data) => {
+    if (!data.file || data.file.length === 0) return alert("Please select a file.");
     setUploading(true);
     
     try {
       const formData = new FormData();
-      formData.append('file', uploadForm.file);
+      formData.append('file', data.file[0]);
       formData.append('folder', 'document_vault');
       
       const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
       if (!uploadRes.ok) throw new Error("File upload failed.");
       const uploadData = await uploadRes.json();
 
-      const { error: dbError } = await supabase.from('documents').insert({
-        doc_id: `DOC-${Date.now().toString(36).toUpperCase().slice(-4)}${Math.floor(10 + Math.random() * 90)}`,
-        title: uploadForm.title,
-        category: uploadForm.category,
-        version: uploadForm.version,
-        file_url: uploadData.url || uploadData.download_url,
-        access_level: uploadForm.access_level,
-        effective_date: new Date().toISOString(),
-        created_by: employeeProfile.id // AUDIT TRAIL
+      const res = await fetch('/api/documents', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.title,
+          category: data.category,
+          version: data.version,
+          access_level: data.access_level,
+          file_url: uploadData.url || uploadData.download_url
+        })
       });
-
-      if (dbError) throw dbError;
+      
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to sync document metadata');
       
       setShowUploadModal(false);
-      setUploadForm({ title: '', category: 'Legal', version: '1.0', file: null, access_level: 'all-staff' });
+      reset();
       fetchDocuments();
     } catch (err) {
       alert("Error: " + err.message);
@@ -171,9 +183,15 @@ export default function DocumentsPage() {
                 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>
-                  <a href={doc.file_url || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="View Document">
-                    <Download className="w-5 h-5" />
-                  </a>
+                  {doc.file_url ? (
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="View Document">
+                      <Download className="w-5 h-5" />
+                    </a>
+                  ) : (
+                    <button disabled className="flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-full cursor-not-allowed" title="No Document Attached">
+                      <Download className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -187,16 +205,17 @@ export default function DocumentsPage() {
             <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600">×</button>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Document to Vault</h2>
             
-            <form onSubmit={handleUpload} className="space-y-4">
+            <form onSubmit={handleSubmit(handleUploadSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
-                <input required type="text" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Q3 Financial Report" />
+                <input type="text" {...register('title')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Q3 Financial Report" />
+                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select value={uploadForm.category} onChange={e => setUploadForm({...uploadForm, category: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                  <select {...register('category')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
                     {categories.filter(c => c !== 'All').map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -204,13 +223,13 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
-                  <input required type="text" value={uploadForm.version} onChange={e => setUploadForm({...uploadForm, version: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="1.0" />
+                  <input type="text" {...register('version')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="1.0" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
-                <select value={uploadForm.access_level} onChange={e => setUploadForm({...uploadForm, access_level: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                <select {...register('access_level')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
                   <option value="all-staff">Public (All Staff)</option>
                   <option value="admin-only">Confidential (Admin Only)</option>
                 </select>
@@ -218,7 +237,7 @@ export default function DocumentsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Document File</label>
-                <input required type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" onChange={e => setUploadForm({...uploadForm, file: e.target.files[0]})} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none bg-gray-50 text-sm" />
+                <input type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" {...register('file')} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none bg-gray-50 text-sm" />
               </div>
 
               <button disabled={uploading} type="submit" className="w-full bg-teal-800 text-white font-bold py-3 mt-4 rounded-xl hover:bg-teal-900 transition-colors disabled:opacity-50">

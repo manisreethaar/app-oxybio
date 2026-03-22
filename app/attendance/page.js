@@ -39,7 +39,8 @@ export default function AttendancePage() {
   const webcamRef = useRef(null);
   const [now, setNow] = useState(Date.now());
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     const itv = setInterval(() => setNow(Date.now()), 60000);
@@ -60,22 +61,36 @@ export default function AttendancePage() {
     setLoading(true);
     const todayStr = new Date().toISOString().split('T')[0];
     try {
-      if (role !== 'admin') {
-        const { data: today } = await supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr).maybeSingle();
-        setTodayLog(today || null);
+      const fetchPromises = [
+        supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr).maybeSingle(),
+        supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).range(0, 30)
+      ];
 
-        const { data: history } = await supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).range(0, 30);
-        setMyHistory(history || []);
-      } else {
-        const { data: teamLogs } = await supabase.from('attendance_log').select('*, employees(full_name, role)').eq('date', todayStr);
-        const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
-        const combined = (allEmps || []).map(emp => ({ ...emp, attendance: (teamLogs || []).find(l => l.employee_id === emp.id) }));
+      if (role === 'admin') {
+        fetchPromises.push(
+          supabase.from('attendance_log').select('*, employees(full_name, role)').eq('date', todayStr),
+          supabase.from('employees').select('id, full_name, role').eq('is_active', true)
+        );
+      }
+
+      const results = await Promise.all(fetchPromises);
+      
+      setTodayLog(results[0].data || null);
+      setMyHistory(results[1].data || []);
+
+      if (role === 'admin') {
+        const teamLogs = results[2].data || [];
+        const allEmps = results[3].data || [];
+        const combined = allEmps.map(emp => ({ ...emp, attendance: teamLogs.find(l => l.employee_id === emp.id) }));
         setTeamToday(combined);
       }
+    } catch (err) {
+      console.error('Attendance fetch error:', err);
     } finally {
       setLoading(false);
     }
   };
+
 
   const weeklyChartData = useMemo(() => {
     if (!myHistory.length) return [];
@@ -156,14 +171,24 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     if (actionLoading) return;
     setActionLoading(true);
-    const { error } = await supabase.from('attendance_log').update({ check_out_time: new Date().toISOString() }).eq('id', todayLog.id);
-    if (error) alert('Check-out failed: ' + error.message);
-    else {
+    try {
+      const res = await fetch('/api/attendance/check-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: todayLog.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Check-out failed');
+
       notifyEmployee(employeeProfile.id, '🔴 Checked Out', `Shift completed at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST.`, '/attendance');
       fetchAttendanceData();
+    } catch (err) {
+      alert('Check-out failed: ' + err.message);
+    } finally {
+      setActionLoading(false);
     }
-    setActionLoading(false);
   };
+
 
   const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
@@ -177,11 +202,9 @@ export default function AttendancePage() {
           <p className="text-sm text-gray-500 mt-1">Nodal verification and logged cycles.</p>
         </div>
         <div className="flex items-center gap-3">
-          {role !== 'admin' && (
-            <button onClick={handleExportCSV} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 font-semibold text-xs rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
-              <Download className="w-3.5 h-3.5" /> Export
-            </button>
-          )}
+          <button onClick={handleExportCSV} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 font-semibold text-xs rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+            <Download className="w-3.5 h-3.5" /> Export
+          </button>
           {!todayLog && role === 'admin' && (
             <div className="bg-amber-50 rounded-lg p-2 border border-amber-200 flex items-center justify-between text-xs">
               <span className="text-amber-800 font-semibold mr-2 flex items-center"><ShieldCheck className="w-3.5 h-3.5 mr-1"/> Override</span>
@@ -194,18 +217,16 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {role !== 'admin' && (
-        <div className="flex border-b border-gray-200">
-          <button onClick={() => setActiveTab('today')} className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'today' ? 'border-navy text-navy' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-            <Clock className="w-3.5 h-3.5" /> Today
-          </button>
-          <button onClick={() => setActiveTab('analytics')} className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'analytics' ? 'border-navy text-navy' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-            <BarChart2 className="w-3.5 h-3.5" /> Analytics
-          </button>
-        </div>
-      )}
+      <div className="flex border-b border-gray-200">
+        <button onClick={() => setActiveTab('today')} className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'today' ? 'border-navy text-navy' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+          <Clock className="w-3.5 h-3.5" /> Today
+        </button>
+        <button onClick={() => setActiveTab('analytics')} className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'analytics' ? 'border-navy text-navy' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+          <BarChart2 className="w-3.5 h-3.5" /> Analytics
+        </button>
+      </div>
 
-      {activeTab === 'analytics' && role !== 'admin' && (
+      {activeTab === 'analytics' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -249,13 +270,14 @@ export default function AttendancePage() {
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-500 inline-block"></span> Early</span>
             </div>
           </div>
-        </div>
+      </div>
       )}
 
-      {(activeTab === 'today' || role === 'admin') && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {role !== 'admin' && (
-            <div className="surface p-8 flex flex-col items-center justify-center text-center min-h-[380px] relative">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
+          {/* Main Check-In/Out Interface */}
+          <div className="surface p-8 flex flex-col items-center justify-center text-center min-h-[380px] relative">
+
               <h2 className="text-sm font-bold text-gray-900 mb-8 absolute top-6 left-6 flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-navy" /> Today&apos;s Shift
               </h2>
@@ -266,9 +288,13 @@ export default function AttendancePage() {
                     <MapPin className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-1">Not Checked In</h3>
+                  <div className="flex items-center justify-center gap-1.5 mb-4 p-1.5 bg-gray-50 rounded-full border border-gray-100">
+                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Geofence: 250m</span>
+                  </div>
                   {checkInError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-100 flex items-start text-left"><AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5"/>{checkInError}</div>}
                   <button onClick={initiateCheckIn} disabled={actionLoading} className="w-full py-3 bg-navy hover:bg-navy-hover text-white rounded-lg font-bold text-sm shadow-sm uppercase tracking-wider disabled:opacity-50 active:scale-95 flex items-center justify-center">
-                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5"/> : <Camera className="w-4 h-4 mr-1.5" />} Verify Check In
+                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5"/> : <Camera className="w-4 h-4 mr-1.5" />} Check In
                   </button>
                 </div>
               ) : !todayLog.check_out_time ? (
@@ -303,11 +329,13 @@ export default function AttendancePage() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
+          </div>
+        </div>
 
-          <div className="surface p-6 flex flex-col">
-            <h2 className="text-sm font-bold text-gray-900 mb-4 tracking-tight">
+        <div className="space-y-6">
+          {activeTab === 'today' ? (
+            <div className="surface p-6 flex flex-col h-full">
+              <h2 className="text-sm font-bold text-gray-900 mb-4 tracking-tight">
               {role === 'admin' ? "Team Presence Today" : "Recent Shift History"}
             </h2>
 
@@ -356,9 +384,17 @@ export default function AttendancePage() {
                 })}
               </div>
             )}
+              </div>
+            ) : (
+              <div className="surface p-6 h-full">
+                 {/* Analytics or History moved here when tab changes if needed, but keeping original structure for now */}
+                 <p className="text-sm text-gray-500">History and analytics active in secondary tab views.</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+
 
       {showWebcam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">

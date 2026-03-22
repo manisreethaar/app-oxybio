@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import { createClient } from '@/utils/supabase/client';
 import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -14,7 +15,8 @@ export default function AdminDashboard({ employeeId }) {
   const [showConfig, setShowConfig] = useState(false);
   const [thresholds, setThresholds] = useState({ minPh: 4.0, maxPh: 7.8, tempMax: 35 });
   const [chartData, setChartData] = useState([]);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     fetchDashboardData();
@@ -23,26 +25,34 @@ export default function AdminDashboard({ employeeId }) {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const { data: deviations } = await supabase.from('ph_readings').select('batch_id').eq('is_deviation', true).eq('deviation_acknowledged', false);
-      const { data: overdues } = await supabase.from('compliance_items').select('id').eq('status', 'overdue');
+      const [devReq, overReq, batchesReq, leavesReq, tasksReq, compReq] = await Promise.all([
+        supabase.from('ph_readings').select('batch_id').eq('is_deviation', true).eq('deviation_acknowledged', false),
+        supabase.from('compliance_items').select('id').eq('status', 'overdue'),
+        supabase.from('batches').select(`*, ph_readings(ph_value, is_deviation)`).eq('status', 'fermenting'),
+        supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending'),
+        supabase.from('tasks').select('id', { count: 'exact' }).eq('status', 'open').eq('priority', 'urgent'),
+        supabase.from('compliance_items').select('id', { count: 'exact' }).in('status', ['upcoming', 'in-progress'])
+      ]);
+
+      const deviations = devReq.data;
+      const overdues = overReq.data;
+      const batches = batchesReq.data;
+      const leaves = leavesReq.data;
+      const openTasksCount = tasksReq.count || 0;
+      const compDueCount = compReq.count || 0;
       
       const newAlerts = [];
       if (deviations?.length > 0) newAlerts.push({ message: `Critical: ${deviations.length} unacknowledged pH deviations!`, type: 'danger', link: '/batches' });
       if (overdues?.length > 0) newAlerts.push({ message: `${overdues.length} compliance items are overdue.`, type: 'warning', link: '/compliance' });
       setAlerts(newAlerts);
 
-      const { data: batches } = await supabase.from('batches').select(`*, ph_readings(ph_value, is_deviation)`).eq('status', 'fermenting');
       setActiveBatches(batches || []);
 
-      const { data: leaves } = await supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending');
-      const { data: openTasks } = await supabase.from('tasks').select('id', { count: 'exact' }).eq('status', 'open').eq('priority', 'urgent');
-      const { data: compDue } = await supabase.from('compliance_items').select('id', { count: 'exact' }).in('status', ['upcoming', 'in-progress']); 
-      
       setStats({
         batches: batches?.length || 0,
         leaves: leaves?.length || 0,
-        tasks: openTasks?.length || 0,
-        compliance: compDue?.length || 0
+        tasks: openTasksCount,
+        compliance: compDueCount
       });
 
       setChartData([

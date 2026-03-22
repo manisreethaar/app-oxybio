@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { UserPlus, UserCog, ShieldCheck, Mail, Loader2, UserX, X, Hash, Briefcase, Sparkles } from 'lucide-react';
@@ -45,79 +49,113 @@ export default function UsersPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+  const [fetchError, setFetchError] = useState('');
+  const [deactivating, setDeactivating] = useState(null);
+
 
   // Modal State
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteForm, setInviteForm] = useState({
-    full_name: '', email: '', password: '',
-    role: 'staff', department: 'R&D',
-    designation: '', designation_code: 'RF',
-    custom_code: '',
-    employee_code: '', joined_date: ''
-  });
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
+
+  const { register, handleSubmit, watch, setValue, reset } = useForm({
+    resolver: zodResolver(z.object({
+      full_name: z.string().min(1),
+      email: z.string().email(),
+      password: z.string().min(6),
+      role: z.string(),
+      department: z.string(),
+      designation: z.string().optional(),
+      designation_code: z.string().optional(),
+      custom_code: z.string().max(3).optional(),
+      employee_code: z.string().optional(),
+      joined_date: z.string().optional()
+    })),
+    defaultValues: { full_name: '', email: '', password: '', role: 'staff', department: 'R&D', designation: '', designation_code: 'RF', custom_code: '', employee_code: '', joined_date: '' }
+  });
+
+  const watchDesigCode = watch('designation_code');
+  const watchCustomCode = watch('custom_code');
+  const watchEmployeeCode = watch('employee_code');
+  const watchRole = watch('role');
 
   useEffect(() => {
     if (role === 'admin') fetchUsers();
     else if (!authLoading && role !== 'admin') router.push('/dashboard');
-  }, [role, authLoading]);
+  }, [role, authLoading, router]);
+
 
   // Auto-generate code whenever designation or role changes
   useEffect(() => {
-    if (!inviteForm.designation_code && !inviteForm.custom_code) return;
-    const code = inviteForm.designation_code || inviteForm.custom_code;
-    if (code.length < 1) return;
+    if (!watchDesigCode && !watchCustomCode) return;
+    const code = watchDesigCode || watchCustomCode;
+    if (code?.length < 1) return;
     const existingCodes = employees.map(e => e.employee_code);
     const generated = generateEmployeeCode(existingCodes, code);
-    setInviteForm(f => ({ ...f, employee_code: generated }));
-  }, [inviteForm.designation_code, inviteForm.custom_code, inviteForm.role, employees]);
+    setValue('employee_code', generated);
+  }, [watchDesigCode, watchCustomCode, watchRole, employees, setValue]);
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data } = await supabase.from('employees').select('*').order('created_at', { ascending: true });
-    setEmployees(data || []);
-    setLoading(false);
+    setFetchError('');
+    try {
+      const { data, error } = await supabase.from('employees').select('*').order('created_at', { ascending: true });
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (err) {
+      setFetchError('Failed to load employees: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const deactivateUser = async (id, currentStatus) => {
     if (id === employeeProfile.id) return alert('You cannot deactivate your own account.');
-    const { error } = await supabase.from('employees').update({ is_active: !currentStatus }).eq('id', id);
-    if (error) {
-      alert('Failed to update user status: ' + error.message);
-      return;
-    }
-    fetchUsers();
+    const action = currentStatus ? "deactivate" : "reactivate";
+    if (!window.confirm(`Are you sure you want to ${action} this employee's access?`)) return;
+
+    if (deactivating) return;
+    setDeactivating(id);
+    try {
+      const res = await fetch('/api/admin/deactivate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, target_status: !currentStatus })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update user status');
+      fetchUsers();
+    } catch (err) { alert('Action failed: ' + err.message); }
+    finally { setDeactivating(null); }
   };
 
-  const handleInviteSubmit = async (e) => {
-    e.preventDefault();
+  const handleInviteSubmit = async (data) => {
     setInviting(true);
     setInviteError('');
 
-    const designationLabel = DESIGNATION_PRESETS.find(d => d.code === inviteForm.designation_code)?.label || inviteForm.designation;
+    const designationLabel = DESIGNATION_PRESETS.find(d => d.code === data.designation_code)?.label || data.designation;
 
     try {
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: inviteForm.full_name,
-          email: inviteForm.email,
-          password: inviteForm.password,
-          role: inviteForm.role,
-          department: inviteForm.department,
-          employee_code: inviteForm.employee_code,
-          designation: designationLabel || inviteForm.designation,
-          joined_date: inviteForm.joined_date || new Date().toISOString().split('T')[0],
+          full_name: data.full_name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          department: data.department,
+          employee_code: data.employee_code,
+          designation: designationLabel || data.designation,
+          joined_date: data.joined_date || new Date().toISOString().split('T')[0],
         })
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to invite user');
 
       setShowInviteModal(false);
-      setInviteForm({ full_name: '', email: '', password: '', role: 'staff', department: 'R&D', designation: '', designation_code: 'RF', custom_code: '', employee_code: '', joined_date: '' });
+      reset();
       fetchUsers();
     } catch (err) {
       setInviteError(err.message);
@@ -131,6 +169,13 @@ export default function UsersPage() {
       <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
     </div>
   );
+  if (fetchError) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <p className="text-red-600 font-bold">{fetchError}</p>
+      <button onClick={fetchUsers} className="px-4 py-2 bg-teal-700 text-white rounded-xl font-bold text-sm">Retry</button>
+    </div>
+  );
+
   if (role !== 'admin') return null;
 
   return (
@@ -215,14 +260,23 @@ export default function UsersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center space-x-1">
-                    <button className="p-2 rounded-xl hover:bg-white/60 text-slate-400 hover:text-teal-600 transition-all" title="Edit Profile">
+                    <button
+                      onClick={() => router.push(`/profile?adminView=true&id=${emp.id}`)}
+                      className="p-2 rounded-xl hover:bg-white/60 text-slate-400 hover:text-teal-600 transition-all"
+                      title="View Profile"
+                    >
                       <UserCog className="w-5 h-5"/>
                     </button>
                     {employeeProfile.id !== emp.id && (
-                      <button onClick={() => deactivateUser(emp.id, emp.is_active)} className={`p-2 rounded-xl transition-all ${emp.is_active ? 'hover:bg-red-50/50 text-slate-400 hover:text-red-600' : 'hover:bg-emerald-50/50 text-slate-400 hover:text-emerald-600'}`} title={emp.is_active ? 'Deactivate' : 'Reactivate'}>
-                        <UserX className="w-5 h-5"/>
+                      <button
+                        onClick={() => deactivateUser(emp.id, emp.is_active)}
+                        disabled={deactivating === emp.id}
+                        className={`p-2 rounded-xl transition-all disabled:opacity-50 ${emp.is_active ? 'hover:bg-red-50/50 text-slate-400 hover:text-red-600' : 'hover:bg-emerald-50/50 text-slate-400 hover:text-emerald-600'}`}
+                        title={emp.is_active ? 'Deactivate' : 'Reactivate'}>
+                        {deactivating === emp.id ? <Loader2 className="w-5 h-5 animate-spin"/> : <UserX className="w-5 h-5"/>}
                       </button>
                     )}
+
                   </td>
                 </tr>
               ))}
@@ -243,38 +297,38 @@ export default function UsersPage() {
 
             {inviteError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 font-medium">{inviteError}</div>}
 
-            <form onSubmit={handleInviteSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(handleInviteSubmit)} className="space-y-5 pb-32">
               {/* Name + Email */}
               <div className="grid grid-cols-1 gap-4">
                 <Field label="Full Name">
-                  <input required type="text" value={inviteForm.full_name} onChange={e => setInviteForm({...inviteForm, full_name: e.target.value})} className="input-field" placeholder="Santha Kumari R K"/>
+                  <input {...register('full_name')} className="input-field" placeholder="Santha Kumari R K"/>
                 </Field>
                 <Field label="Email Address">
-                  <input required type="email" value={inviteForm.email} onChange={e => setInviteForm({...inviteForm, email: e.target.value})} className="input-field" placeholder="santha@oxygenbioinnovations.com"/>
+                  <input {...register('email')} className="input-field" placeholder="santha@oxygenbioinnovations.com"/>
                 </Field>
                 <Field label="Temporary Password">
-                  <input required type="text" value={inviteForm.password} onChange={e => setInviteForm({...inviteForm, password: e.target.value})} className="input-field" placeholder="Initial login password"/>
+                  <input {...register('password')} className="input-field" placeholder="Initial login password"/>
                 </Field>
               </div>
 
               {/* Role + Department + DOJ */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Role">
-                  <select value={inviteForm.role} onChange={e => setInviteForm({...inviteForm, role: e.target.value})} className="input-field">
+                  <select {...register('role')} className="input-field">
                     <option value="admin">Administrator</option>
                     <option value="staff">Staff / R&D</option>
                     <option value="intern">Intern</option>
                   </select>
                 </Field>
                 <Field label="Department">
-                  <select value={inviteForm.department} onChange={e => setInviteForm({...inviteForm, department: e.target.value})} className="input-field">
+                  <select {...register('department')} className="input-field">
                     <option value="R&D">R&amp;D</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </Field>
               </div>
               <Field label="Date of Joining">
-                <input type="date" value={inviteForm.joined_date} onChange={e => setInviteForm({...inviteForm, joined_date: e.target.value})} className="input-field"/>
+                <input type="date" {...register('joined_date')} className="input-field"/>
               </Field>
 
               {/* Designation + Auto ID */}
@@ -285,19 +339,23 @@ export default function UsersPage() {
                 </div>
 
                 <Field label="Designation">
-                  <select value={inviteForm.designation_code} onChange={e => {
-                    const preset = DESIGNATION_PRESETS.find(d => d.code === e.target.value);
-                    setInviteForm({...inviteForm, designation_code: e.target.value, designation: preset?.label || ''});
-                  }} className="input-field">
+                  <select {...register('designation_code', {
+                    onChange: (e) => {
+                      const preset = DESIGNATION_PRESETS.find(d => d.code === e.target.value);
+                      setValue('designation', preset?.label || '');
+                    }
+                  })} className="input-field">
                     {DESIGNATION_PRESETS.map(d => (
                       <option key={d.code} value={d.code}>{d.label} {d.code ? `(${d.code})` : ''}</option>
                     ))}
                   </select>
                 </Field>
 
-                {inviteForm.designation_code === '' && (
+                {!watchDesigCode && (
                   <Field label="Custom Designation Code (2-3 letters)">
-                    <input type="text" maxLength={3} value={inviteForm.custom_code} onChange={e => setInviteForm({...inviteForm, custom_code: e.target.value.toUpperCase()})} className="input-field uppercase" placeholder="e.g. QA, BT, HR"/>
+                    <input type="text" maxLength={3} {...register('custom_code', {
+                      onChange: (e) => setValue('custom_code', e.target.value.toUpperCase())
+                    })} className="input-field uppercase" placeholder="e.g. QA, BT, HR"/>
                   </Field>
                 )}
 
@@ -305,10 +363,10 @@ export default function UsersPage() {
                 <div>
                   <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
                   <div className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-200 rounded-xl">
-                    <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{inviteForm.employee_code || '—'}</span>
+                    <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
                     <span className="text-xs text-teal-500 font-medium">Auto-assigned · Cannot be changed by employee</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">Format: O2B · {inviteForm.designation_code || inviteForm.custom_code} · {inviteForm.role.toUpperCase()} · Sequential No.</p>
+                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">Format: O2B · {watchDesigCode || watchCustomCode} · {watchRole?.toUpperCase()} · Sequential No.</p>
                 </div>
               </div>
 
@@ -321,7 +379,8 @@ export default function UsersPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
+
         .input-field {
           width: 100%;
           padding: 0.625rem 1rem;

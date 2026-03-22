@@ -1,5 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Download, Upload, Receipt, Users } from 'lucide-react';
@@ -10,14 +14,31 @@ export default function PayslipsPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
-  // Upload form state
-  const [form, setForm] = useState({
-    employee_id: '', month: '', year: new Date().getFullYear(),
-    gross_salary: '', pf_deduction: '', esi_deduction: '', net_salary: '', payslip_url: ''
+  const { register, handleSubmit, watch, reset, setValue } = useForm({
+    resolver: zodResolver(z.object({
+      employee_id: z.string().uuid().min(1, 'Employee required'),
+      month: z.string().min(1, 'Month required'),
+      year: z.preprocess((val) => Number(val), z.number().min(2000)),
+      gross_salary: z.preprocess((val) => Number(val), z.number().min(0)),
+      pf_deduction: z.preprocess((val) => Number(val) || 0, z.number().min(0).optional()),
+      esi_deduction: z.preprocess((val) => Number(val) || 0, z.number().min(0).optional()),
+      net_salary: z.preprocess((val) => Number(val), z.number()),
+      payslip_url: z.string().min(1, 'File ID required')
+    })),
+    defaultValues: {
+      employee_id: '', month: '', year: new Date().getFullYear(),
+      gross_salary: '', pf_deduction: '', esi_deduction: '', net_salary: '', payslip_url: ''
+    }
   });
 
-  const supabase = createClient();
+  const watchGross = watch('gross_salary');
+  const watchPf = watch('pf_deduction');
+  const watchEsi = watch('esi_deduction');
+
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     if (employeeProfile) fetchPayslips();
@@ -25,61 +46,48 @@ export default function PayslipsPage() {
 
   // Auto-calculate Net Salary
   useEffect(() => {
-    const gross = parseFloat(form.gross_salary) || 0;
-    const pf = parseFloat(form.pf_deduction) || 0;
-    const esi = parseFloat(form.esi_deduction) || 0;
-    
-    if (form.gross_salary !== '') {
-      setForm(prev => ({ ...prev, net_salary: (gross - pf - esi).toString() }));
+    const gross = parseFloat(watchGross) || 0;
+    const pf = parseFloat(watchPf) || 0;
+    const esi = parseFloat(watchEsi) || 0;
+    if (watchGross) {
+      setValue('net_salary', (gross - pf - esi).toString(), { shouldValidate: true });
     }
-  }, [form.gross_salary, form.pf_deduction, form.esi_deduction]);
+  }, [watchGross, watchPf, watchEsi, setValue]);
 
   const fetchPayslips = async () => {
     setLoading(true);
-    let query = supabase.from('payslips').select('*, employees(full_name)').order('created_at', { ascending: false });
-    
-    if (role !== 'admin') {
-      query = query.eq('employee_id', employeeProfile.id);
-    } else {
-      const { data: emps } = await supabase.from('employees').select('id, full_name').eq('is_active', true);
-      setEmployees(emps || []);
-    }
-
-    const { data } = await query;
-    setPayslips(data || []);
-    setLoading(false);
+    try {
+      if (role === 'admin') {
+        const [empRes, slipRes] = await Promise.all([
+          supabase.from('employees').select('id, full_name').eq('is_active', true),
+          supabase.from('payslips').select('*, employees(full_name)').order('created_at', { ascending: false })
+        ]);
+        setEmployees(empRes.data || []);
+        if (slipRes.error) throw slipRes.error;
+        setPayslips(slipRes.data || []);
+      } else {
+        const { data, error } = await supabase.from('payslips').select('*, employees(full_name)').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false });
+        if (error) throw error;
+        setPayslips(data || []);
+      }
+    } catch (err) { console.error('Fetch payslips error:', err); }
+    finally { setLoading(false); }
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!form.employee_id || !form.month || !form.gross_salary || !form.net_salary) {
-      alert('Employee, month, gross salary, and net salary are required.');
-      return;
-    }
-    const { error } = await supabase.from('payslips').insert({
-      employee_id: form.employee_id,
-      month: form.month,
-      year: parseInt(form.year),
-      gross_salary: parseFloat(form.gross_salary),
-      pf_deduction: parseFloat(form.pf_deduction) || 0,
-      esi_deduction: parseFloat(form.esi_deduction) || 0,
-      net_salary: parseFloat(form.net_salary),
-      payslip_url: form.payslip_url,
-      uploaded_by: employeeProfile.id,
-      uploaded_at: new Date().toISOString()
-    });
 
-    if (error) {
-      alert('Failed to upload payslip: ' + error.message);
-      return;
-    }
-    setShowUpload(false);
-    setForm({
-      employee_id: '', month: '', year: new Date().getFullYear(),
-      gross_salary: '', pf_deduction: '', esi_deduction: '', net_salary: '', payslip_url: ''
-    });
-    fetchPayslips();
+  const handleUploadSubmit = async (data) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/payslips', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to upload payslip');
+      setShowUpload(false); reset(); fetchPayslips();
+    } catch (err) { alert(err.message); }
+    finally { setSubmitting(false); }
   };
+
 
   if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading payslips...</div>;
 
@@ -98,12 +106,12 @@ export default function PayslipsPage() {
       </div>
 
       {showUpload && role === 'admin' && (
-        <form onSubmit={handleUpload} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm animate-in fade-in slide-in-from-top-4">
+        <form onSubmit={handleSubmit(handleUploadSubmit)} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm animate-in fade-in slide-in-from-top-4">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Upload New Payslip</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
             <div className="lg:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Employee *</label>
-              <select required value={form.employee_id} onChange={e => setForm({...form, employee_id: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500 outline-none">
+              <select {...register('employee_id')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500 outline-none">
                 <option value="">Select teammate...</option>
                 {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
               </select>
@@ -111,9 +119,7 @@ export default function PayslipsPage() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Month *</label>
               <select 
-                required 
-                value={form.month} 
-                onChange={e => setForm({...form, month: e.target.value})} 
+                {...register('month')}
                 className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500 font-bold"
               >
                 <option value="">Month...</option>
@@ -124,36 +130,36 @@ export default function PayslipsPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Year *</label>
-              <input type="number" min="2020" max="2100" required value={form.year} onChange={e => setForm({...form, year: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="2020" max="2100" {...register('year')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Gross Salary (₹) *</label>
-              <input type="number" min="0" required value={form.gross_salary} onChange={e => setForm({...form, gross_salary: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="0" step="any" {...register('gross_salary')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">PF Deduction (₹)</label>
-              <input type="number" min="0" required value={form.pf_deduction} onChange={e => setForm({...form, pf_deduction: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="0" step="any" {...register('pf_deduction')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">ESI Deduction (₹)</label>
-              <input type="number" min="0" required value={form.esi_deduction} onChange={e => setForm({...form, esi_deduction: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
+              <input type="number" min="0" step="any" {...register('esi_deduction')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Net Salary (₹) *</label>
-              <input type="number" readOnly required value={form.net_salary} className="w-full px-4 py-2 bg-teal-50 font-bold text-teal-900 border border-teal-200 rounded-lg text-sm outline-none cursor-not-allowed" title="Auto-calculated from Gross - Deductions" />
+              <input type="number" step="any" readOnly {...register('net_salary')} className="w-full px-4 py-2 bg-teal-50 font-bold text-teal-900 border border-teal-200 rounded-lg text-sm outline-none cursor-not-allowed" title="Auto-calculated from Gross - Deductions" />
             </div>
             
             <div className="lg:col-span-4">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Secure Google Drive File ID *</label>
-              <input type="text" required value={form.payslip_url} onChange={e => setForm({...form, payslip_url: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" placeholder="paste_the_file_id_here" />
+              <input type="text" {...register('payslip_url')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-teal-500" placeholder="paste_the_file_id_here" />
               <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">Files are served via secure auth-mediated proxy. Never use public URLs.</p>
             </div>
           </div>
           
           <div className="flex justify-end space-x-3 border-t border-gray-100 pt-6">
             <button type="button" onClick={() => setShowUpload(false)} className="px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
-            <button type="submit" className="px-5 py-2 text-sm font-medium text-white bg-teal-800 hover:bg-teal-900 shadow-sm rounded-lg">Upload Payslip</button>
+            <button disabled={submitting} type="submit" className="px-5 py-2 text-sm font-medium text-white bg-teal-800 hover:bg-teal-900 shadow-sm rounded-lg">{submitting ? 'Uploading...' : 'Upload Payslip'}</button>
           </div>
         </form>
       )}

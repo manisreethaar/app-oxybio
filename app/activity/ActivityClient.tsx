@@ -1,37 +1,52 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { 
   Activity, AlertTriangle, MessageSquare, CheckCircle, Loader2,
   Users, Clock, CheckSquare, FlaskConical, TrendingUp, 
-  CalendarCheck, Timer, Zap
+  CalendarCheck, Zap
+
 } from 'lucide-react';
 
-export default function ActivityLogPage() {
+export default function ActivityClient({ initialBatches, initialLogs }: { initialBatches: any[], initialLogs: any[] }) {
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth();
-  const [activities, setActivities] = useState([]);
-  const [issues, setIssues] = useState([]);
-  const [activeBatches, setActiveBatches] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState(initialLogs || []);
+  const [issues, setIssues] = useState(initialLogs ? initialLogs.filter(a => a.issue_observed) : []);
+  const [activeBatches, setActiveBatches] = useState(initialBatches || []);
+  const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('feed'); 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
+  const [error, setError] = useState(null);
   const isMounted = useRef(true);
+
 
   useEffect(() => {
     return () => { isMounted.current = false; };
   }, []);
 
   // Form State (Log Activity tab)
-  const [desc, setDesc] = useState('');
-  const [batchId, setBatchId] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [hasIssue, setHasIssue] = useState(false);
-  const [issueDesc, setIssueDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [activeCommentId, setActiveCommentId] = useState(null);
+
+  const { register: regLog, handleSubmit: handLog, watch: watchLog, reset: resetLog, setValue: setLogValue } = useForm({
+    resolver: zodResolver(z.object({
+      activity_description: z.string().min(1),
+      start_time: z.string().min(1),
+      end_time: z.string().min(1),
+      issue_observed: z.boolean(),
+      issue_description: z.string().optional(),
+      batch_id: z.string().optional()
+    })),
+    defaultValues: { activity_description: '', start_time: '', end_time: '', issue_observed: false, issue_description: '', batch_id: '' }
+  });
+
+  const hasIssue = watchLog('issue_observed');
 
   // Founder Brief State
   const [brief, setBrief] = useState({
@@ -50,16 +65,20 @@ export default function ActivityLogPage() {
 
   useEffect(() => {
     if (employeeProfile) {
-      fetchData();
+      if (!initialLogs || initialLogs.length === 0) {
+        fetchData();
+      }
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      setStartTime(oneHourAgo.toTimeString().slice(0, 5));
-      setEndTime(now.toTimeString().slice(0, 5));
+      setLogValue('start_time', oneHourAgo.toTimeString().slice(0, 5));
+      setLogValue('end_time', now.toTimeString().slice(0, 5));
     }
   }, [employeeProfile]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
+
     try {
       // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches').select('batch_id').eq('status', 'fermenting');
@@ -121,49 +140,39 @@ export default function ActivityLogPage() {
       }
     } catch (err) {
       console.error("Activity page fetch error:", err);
+      if (isMounted.current) setError("Failed to load activity data. Please try again.");
     } finally {
+
       if (isMounted.current) setLoading(false);
     }
   }, [supabase, role, employeeProfile]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogSubmit = async (data) => {
     setIsSubmitting(true);
-    const payload = {
-      employee_id: employeeProfile.id,
-      log_date: new Date().toISOString().split('T')[0],
-      activity_description: desc,
-      start_time: startTime,
-      end_time: endTime,
-      issue_observed: hasIssue,
-      issue_description: hasIssue ? issueDesc : null,
-      batch_id: batchId || null
-    };
-    const { error } = await supabase.from('activity_log').insert(payload);
-    setIsSubmitting(false);
-    if (error) {
-      alert('Failed to save log.');
-    } else {
-      setDesc(''); setBatchId(''); setHasIssue(false); setIssueDesc('');
+    try {
+      const res = await fetch('/api/activity', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'log_activity', payload: data })
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to save log.');
+      resetLog(); setLogValue('start_time', data.end_time); setLogValue('end_time', new Date().toTimeString().slice(0, 5));
       setTab(role === 'admin' ? 'brief' : 'feed');
       fetchData();
-    }
+    } catch (err) { alert(err.message); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleAddComment = async (id) => {
     if (!commentText.trim()) return;
     try {
-      const { error } = await supabase.from('activity_log').update({ 
-        founder_comment: commentText,
-        reviewed_by: employeeProfile.id 
-      }).eq('id', id);
-      if (error) throw error;
-      setCommentText('');
-      setActiveCommentId(null);
+      const res = await fetch('/api/activity', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_comment', payload: { log_id: id, comment: commentText } })
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to add review note.');
+      setCommentText(''); setActiveCommentId(null);
       fetchData();
-    } catch (err) {
-      alert("Failed to save review note: " + err.message);
-    }
+    } catch (err) { alert("Failed to save review note: " + err.message); }
   };
 
   if (authLoading || loading) {
@@ -186,6 +195,15 @@ export default function ActivityLogPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl flex items-center gap-2 text-sm animate-in fade-in">
+          <AlertTriangle className="w-4 h-4 text-red-600"/>
+          <span className="flex-1">{error}</span>
+          <button onClick={fetchData} className="px-3 py-1 bg-red-100 hover:bg-red-200 rounded-lg font-bold text-xs">Retry</button>
+        </div>
+      )}
+
 
       {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-200">
@@ -395,10 +413,12 @@ export default function ActivityLogPage() {
                       <div className="flex gap-2">
                         <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a review note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"/>
                         <button onClick={() => handleAddComment(act.id)} className="bg-teal-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">Save</button>
-                        <button onClick={() => setActiveCommentId(null)} className="text-slate-500 px-2 text-sm">Cancel</button>
+                        <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-2 text-sm">Cancel</button>
+
                       </div>
                     ) : (
-                      <button onClick={() => setActiveCommentId(act.id)} className="text-sm text-teal-600 font-bold hover:text-teal-800 flex items-center">
+                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm text-teal-600 font-bold hover:text-teal-800 flex items-center">
+
                         <MessageSquare className="w-3.5 h-3.5 mr-1"/> Add Review
                       </button>
                     )}
@@ -414,17 +434,17 @@ export default function ActivityLogPage() {
       {tab === 'log' && (
         <div className="glass-card rounded-2xl p-6 max-w-2xl">
           <h2 className="text-lg font-black text-slate-800 mb-5">Record New Activity</h2>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handLog(handleLogSubmit)} className="space-y-5">
             <div>
               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">What did you do? *</label>
-              <textarea required value={desc} onChange={e => setDesc(e.target.value)} rows="4" 
+              <textarea {...regLog('activity_description')} rows="4" 
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm" 
                 placeholder="Protocol steps, prep work, general tasks, results..."/>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Linked Batch</label>
-                <select value={batchId} onChange={e => setBatchId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
+                <select {...regLog('batch_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
                   <option value="">— None —</option>
                   {activeBatches.map(b => <option key={b.batch_id} value={b.batch_id}>{b.batch_id}</option>)}
                 </select>
@@ -432,18 +452,18 @@ export default function ActivityLogPage() {
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start</label>
-                  <input type="time" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                  <input type="time" {...regLog('start_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
                 </div>
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">End</label>
-                  <input type="time" required value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                  <input type="time" {...regLog('end_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
                 </div>
               </div>
             </div>
             <div className="pt-4 border-t border-slate-100">
               <label className="flex items-center gap-3 mb-4 cursor-pointer">
                 <div className="relative flex items-center">
-                  <input type="checkbox" checked={hasIssue} onChange={e => setHasIssue(e.target.checked)} className="peer sr-only"/>
+                  <input type="checkbox" {...regLog('issue_observed')} className="peer sr-only"/>
                   <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </div>
                 <span className="text-sm font-bold text-slate-700">Report an Issue / Deviation</span>
@@ -451,7 +471,7 @@ export default function ActivityLogPage() {
               {hasIssue && (
                 <div className="animate-in fade-in slide-in-from-top-2">
                   <label className="block text-xs font-black text-red-600 uppercase tracking-widest mb-1.5">Issue Description *</label>
-                  <textarea required value={issueDesc} onChange={e => setIssueDesc(e.target.value)} rows="3"
+                  <textarea {...regLog('issue_description')} rows="3"
                     className="w-full px-4 py-3 rounded-xl border border-red-200 focus:ring-2 focus:ring-red-500 bg-red-50 text-red-900 text-sm"
                     placeholder="Equipment failure, contamination suspected, deviation from SOP..."/>
                 </div>
@@ -501,10 +521,12 @@ export default function ActivityLogPage() {
                       <div className="flex gap-2">
                         <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"/>
                         <button onClick={() => handleAddComment(act.id)} className="bg-teal-700 text-white px-4 py-1.5 rounded-lg text-sm font-black">Resolve</button>
-                        <button onClick={() => setActiveCommentId(null)} className="text-slate-500 px-3 text-sm font-medium">Cancel</button>
+                        <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-3 text-sm font-medium">Cancel</button>
+
                       </div>
                     ) : (
-                      <button onClick={() => setActiveCommentId(act.id)} className="text-sm py-2 px-4 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 flex items-center">
+                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm py-2 px-4 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 flex items-center">
+
                         <CheckCircle className="w-4 h-4 mr-2"/> Mark as Reviewed
                       </button>
                     )}

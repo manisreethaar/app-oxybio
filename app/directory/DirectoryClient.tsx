@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
@@ -16,7 +17,7 @@ function EmployeeIDCard({ emp, onClose }) {
         
         {/* Modern ID Card Engine */}
         <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-teal-800 to-cyan-900"/>
+          <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-navy to-slate-800"/>
           
           {/* Header */}
           <div className="w-full relative z-10 flex justify-between items-start mb-8">
@@ -43,7 +44,7 @@ function EmployeeIDCard({ emp, onClose }) {
           </div>
 
           <h2 className="text-xl font-black text-slate-800 tracking-tight text-center leading-none mt-2">{emp.full_name}</h2>
-          <p className="text-xs font-bold text-teal-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
+          <p className="text-xs font-bold text-navy tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
           
           <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
@@ -59,7 +60,7 @@ function EmployeeIDCard({ emp, onClose }) {
           {/* QR Code Section */}
           <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
             <div className="text-left pr-4">
-              <p className="text-[9px] font-black text-teal-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
+              <p className="text-[9px] font-black text-navy uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
               <p className="text-[10px] font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
             </div>
             <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
@@ -72,10 +73,10 @@ function EmployeeIDCard({ emp, onClose }) {
   );
 }
 
-export default function DirectoryPage() {
-  const { canDo, loading: authLoading } = useAuth();
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function DirectoryClient({ initialEmployees }: { initialEmployees: any[] }) {
+  const { canDo, loading: authLoading } = useAuth() as any;
+  const [employees, setEmployees] = useState(initialEmployees || []);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [page, setPage] = useState(0);
@@ -83,16 +84,17 @@ export default function DirectoryPage() {
   const PAGE_SIZE = 24;
   
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     if (authLoading) return;
-    if (!canDo('view_directory')) {
+    if (!canDo('directory', 'view')) {
       router.push('/dashboard');
       return;
     }
-    fetchEmployees(0, false);
-  }, [canDo, authLoading]);
+    // Skipped fetching on mount since it relies on debounced search effect pulling the initial prop optimally.
+  }, [canDo, authLoading, router]);
 
   const fetchEmployees = async (pageNum = 0, append = false) => {
     if (!append) setLoading(true);
@@ -138,9 +140,18 @@ export default function DirectoryPage() {
     if (authLoading) return;
     setPage(0);
     setHasMore(true);
-    const handler = setTimeout(() => fetchEmployees(0, false), 300);
+    const handler = setTimeout(() => {
+        // Optimisation: skip fetching if search is empty and we have our initial payload covering the page 0
+        if (!search && initialEmployees && initialEmployees.length > 0) {
+           setEmployees(initialEmployees);
+           setHasMore(initialEmployees.length === PAGE_SIZE);
+           setLoading(false);
+        } else {
+           fetchEmployees(0, false);
+        }
+    }, 300);
     return () => clearTimeout(handler);
-  }, [search]);
+  }, [search, authLoading, initialEmployees]);
 
   const filtered = employees;
 
@@ -160,7 +171,7 @@ export default function DirectoryPage() {
           placeholder="Search by name..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 glass-card rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 placeholder:text-slate-400"
+          className="w-full pl-12 pr-4 py-4 glass-card rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy placeholder:text-slate-400"
         />
       </div>
 
@@ -180,7 +191,7 @@ export default function DirectoryPage() {
             {filtered.map(emp => (
               <div key={emp.id} className="glass-card rounded-[1.75rem] p-6 flex flex-col gap-4 cursor-pointer" onClick={() => setSelected(emp)}>
                 <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0">
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-slate-100 border border-white shadow-sm shrink-0">
                     {emp.photo_url ? (
                       <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                     ) : (
@@ -208,7 +219,7 @@ export default function DirectoryPage() {
                   {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
                 </div>
 
-                <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-teal-700 border border-white transition-all">
+                <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all">
                   <CreditCard className="w-3.5 h-3.5"/> View ID Card
                 </button>
               </div>

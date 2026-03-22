@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { BellRing, CheckSquare, AlertTriangle, FileWarning, Clock, ChevronRight } from 'lucide-react';
@@ -10,7 +11,8 @@ export default function NotificationsPage() {
   const { employeeProfile, role } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
 
   useEffect(() => {
     if (employeeProfile) fetchAlerts();
@@ -19,43 +21,39 @@ export default function NotificationsPage() {
   const fetchAlerts = async () => {
     setLoading(true);
     const notifications = [];
-
-    // 1. Fetch Open/Assigned Tasks (Limit added for Stage 3 scalability)
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('id, title, priority, due_date')
-      .eq('assigned_to', employeeProfile.id)
-      .eq('status', 'open')
-      .order('due_date', { ascending: true })
-      .limit(50); // 🛡️ STAGE 3 REMEDIATION: Prevent OOM on 10k+ records
-      
-    if (tasks) {
-      tasks.forEach(t => {
-        const isOverdue = t.due_date && differenceInDays(new Date(t.due_date), new Date()) < 0;
-        notifications.push({
-          id: `task-${t.id}`,
-          type: 'task',
-          title: t.title,
-          priority: t.priority,
-          isOverdue,
-          url: '/tasks',
-          icon: isOverdue ? AlertTriangle : CheckSquare,
-          color: isOverdue ? 'text-red-600 bg-red-50 border-red-200' : 'text-blue-600 bg-blue-50 border-blue-200'
-        });
-      });
-    }
-
-    // 2. Admin: Fetch Overdue Compliance (Limit added for Stage 3 scalability)
-    if (role === 'admin') {
-      const { data: compliance } = await supabase
-        .from('compliance_items')
-        .select('id, title, due_date')
-        .neq('status', 'done')
+    try {
+      const tasksPromise = supabase
+        .from('tasks')
+        .select('id, title, priority, due_date')
+        .eq('assigned_to', employeeProfile.id)
+        .eq('status', 'open')
         .order('due_date', { ascending: true })
-        .limit(50); // 🛡️ STAGE 3 REMEDIATION: Prevent OOM on 10k+ records
+        .limit(50);
 
-      if (compliance) {
-        compliance.forEach(c => {
+      const compliancePromise = role === 'admin' 
+        ? supabase.from('compliance_items').select('id, title, due_date').neq('status', 'done').order('due_date', { ascending: true }).limit(50)
+        : Promise.resolve({ data: null });
+
+      const [tasksRes, complianceRes] = await Promise.all([tasksPromise, compliancePromise]);
+
+      if (tasksRes.data) {
+        tasksRes.data.forEach(t => {
+          const isOverdue = t.due_date && differenceInDays(new Date(t.due_date), new Date()) < 0;
+          notifications.push({
+            id: `task-${t.id}`,
+            type: 'task',
+            title: t.title,
+            priority: t.priority,
+            isOverdue,
+            url: '/tasks',
+            icon: isOverdue ? AlertTriangle : CheckSquare,
+            color: isOverdue ? 'text-red-600 bg-red-50 border-red-200' : 'text-blue-600 bg-blue-50 border-blue-200'
+          });
+        });
+      }
+
+      if (role === 'admin' && complianceRes.data) {
+        complianceRes.data.forEach(c => {
           const isOverdue = c.due_date && differenceInDays(new Date(c.due_date), new Date()) < 0;
           if (isOverdue) {
             notifications.push({
@@ -71,20 +69,20 @@ export default function NotificationsPage() {
           }
         });
       }
-    }
 
-    // Sort: Overdue first, then urgent priority
-    notifications.sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
-      if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
-      if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
-      return 0;
-    });
+      notifications.sort((a, b) => {
+        if (a.isOverdue && !b.isOverdue) return -1;
+        if (!a.isOverdue && b.isOverdue) return 1;
+        if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+        if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
+        return 0;
+      });
 
-    setAlerts(notifications);
-    setLoading(false);
+      setAlerts(notifications);
+    } catch (err) { console.error('Fetch alerts error:', err); }
+    finally { setLoading(false); }
   };
+
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-24">

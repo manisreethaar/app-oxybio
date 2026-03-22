@@ -25,13 +25,15 @@ export async function POST(request) {
         .select('total_days')
         .eq('employee_id', emp.id)
         .in('status', ['approved', 'pending']);
-    
+
     const spentDays = (activeLeaves || []).reduce((acc, curr) => acc + (curr.total_days || 0), 0);
-    const LIMIT = 20; // Enterprise default
-    
+    // FIX #4: Read from env var so HR can configure without code changes.
+    // Set ANNUAL_LEAVE_LIMIT in .env.local to override (default: 20)
+    const LIMIT = parseInt(process.env.ANNUAL_LEAVE_LIMIT, 10) || 20;
+
     if (spentDays + days > LIMIT) {
-        return NextResponse.json({ 
-            error: `Insufficient Balance: You have ${LIMIT - spentDays} days remaining. This request is for ${days} days.` 
+        return NextResponse.json({
+            error: `Insufficient Balance: You have ${LIMIT - spentDays} days remaining. This request is for ${days} days.`
         }, { status: 400 });
     }
 
