@@ -94,6 +94,18 @@ export async function POST(request, { params }) {
 
     if (transError) throw transError;
 
+    // Innovation 2: Task Auto-Completion
+    try {
+      await supabase
+        .from('tasks')
+        .update({ status: 'done', approval_status: 'approved' })
+        .eq('assigned_to', emp.id)
+        .in('status', ['open', 'in-progress'])
+        .contains('metadata', { type: 'batch_stage', batch_id: batchId, stage: to_stage });
+    } catch (taskErr) {
+      console.error('Task auto-complete error (non-fatal):', taskErr);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Stage Transition API Error:', error);

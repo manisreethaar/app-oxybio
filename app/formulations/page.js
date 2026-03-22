@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical } from 'lucide-react';
+import { Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, GitCompare } from 'lucide-react';
+import FormulaDiff from '@/components/science/FormulaDiff';
 
 export default function FormulationsPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
@@ -12,6 +13,7 @@ export default function FormulationsPage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: '', notes: '' });
+  const [compareIds, setCompareIds] = useState([]);
   
   const supabase = useMemo(() => createClient(), []);
 
@@ -64,6 +66,17 @@ export default function FormulationsPage() {
         </button>
       </div>
 
+      {/* Innovation 4: Formula Diff Display */}
+      {compareIds.length === 2 && (
+        <div className="max-w-xl mx-auto mb-8 relative">
+           <button onClick={() => setCompareIds([])} className="absolute -top-3 -right-3 bg-white border border-gray-200 rounded-full p-1 shadow-md z-10 hover:text-red-500"><X className="w-4 h-4"/></button>
+           <FormulaDiff 
+             v1={formulations.find(f => f.id === compareIds[0])} 
+             v2={formulations.find(f => f.id === compareIds[1])} 
+           />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-full flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
@@ -83,6 +96,15 @@ export default function FormulationsPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Key Components</p>
                 <p className="text-xs font-semibold text-gray-700 line-clamp-2">{f.ingredients || 'No ingredients listed'}</p>
               </div>
+              <button 
+                onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
+                className={`w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                  compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-400 border-gray-200 hover:border-navy hover:text-navy'
+                }`}
+              >
+                <GitCompare className="w-3.5 h-3.5"/>
+                {compareIds.includes(f.id) ? 'SELECTED' : 'SELECT FOR COMPARISON'}
+              </button>
             </div>
           </div>
         ))}

@@ -38,9 +38,17 @@ export async function POST(request) {
     const { action, payload } = parsed.data;
 
     if (action === 'log_activity') {
+      // Innovation 1: Severity Scoring
+      let severity = 'normal';
+      if (payload.issue_observed) severity = 'high';
+      const desc = payload.activity_description.toLowerCase();
+      if (desc.includes('delete') || desc.includes('remove') || desc.includes('fail')) severity = 'high';
+      if (desc.includes('viewed') || desc.includes('read')) severity = 'info';
+
       const { data, error } = await supabase.from('activity_log').insert({
         ...payload,
         employee_id: emp.id,
+        severity: severity,
         log_date: new Date().toISOString().split('T')[0],
       }).select().single();
 

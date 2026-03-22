@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Plus, Loader2, FileSignature, Edit, ChevronRight, FlaskConical } from 'lucide-react';
+import { BookOpen, Plus, Loader2, FileSignature, Edit, ChevronRight, FlaskConical, Tag, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DigitalLnbPage() {
@@ -13,8 +13,8 @@ export default function DigitalLnbPage() {
   const [entries, setEntries] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState([]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(z.object({
@@ -23,6 +23,30 @@ export default function DigitalLnbPage() {
     })),
     defaultValues: { title: '', batch_id: '' }
   });
+
+  const watchTitle = register('title');
+  const titleValue = register('title').value; // This is not quite correct for react-hook-form watch
+
+  const { register: regForm, handleSubmit: handForm, reset: resetForm, watch, formState: { errors: formErrors } } = useForm({
+    resolver: zodResolver(z.object({ title: z.string().min(3), batch_id: z.string().optional() })),
+    defaultValues: { title: '', batch_id: '' }
+  });
+  
+  const currentTitle = watch('title');
+
+  useEffect(() => {
+    if (currentTitle && currentTitle.length > 5) {
+      const tags = [];
+      const t = currentTitle.toLowerCase();
+      if (t.includes('yield')) tags.push('#Performance');
+      if (t.includes('trial') || t.includes('test')) tags.push('#Experimental');
+      if (t.includes('formula')) tags.push('#Scientific');
+      if (t.includes('optimize')) tags.push('#R&D');
+      setSuggestedTags(tags);
+    } else {
+      setSuggestedTags([]);
+    }
+  }, [currentTitle]);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -137,18 +161,29 @@ export default function DigitalLnbPage() {
                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">Create Notebook Entry</h2>
                 <p className="text-xs font-medium text-gray-500 mt-1">Initialize a new experiment document draft</p>
               </div>
-              <button onClick={() => { setShowNew(false); reset(); }} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowNew(false); resetForm(); }} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleSubmit(handleCreateSubmit)} className="p-6 space-y-4">
+            <form onSubmit={handForm(handleCreateSubmit)} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Experiment Title / Objective</label>
-                <input type="text" placeholder="e.g. Yield Optimization Trial 4" {...register('title')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
+                <input type="text" placeholder="e.g. Yield Optimization Trial 4" {...regForm('title')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                {formErrors.title && <p className="text-red-500 text-xs mt-1">{formErrors.title.message}</p>}
+                
+                {/* Innovation 5: Predictive Tags */}
+                {suggestedTags.length > 0 && (
+                  <div className="mt-3 flex items-center gap-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                    <Sparkles className="w-3 h-3 text-amber-500"/>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Suggested Index Tags:</span>
+                    {suggestedTags.map(tag => (
+                      <span key={tag} className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-[9px] font-black">{tag}</span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Target Batch (Optional)</label>
-                <select {...register('batch_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
+                <select {...regForm('batch_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
                   <option value="">No Batch Linked</option>
                   {batches.map(b => (
                     <option key={b.id} value={b.id}>{b.batch_id} ({b.variant})</option>

@@ -51,6 +51,18 @@ export async function POST(request, { params }) {
 
     if (error) throw error;
 
+    // Innovation 2: Task Auto-Completion
+    try {
+      await supabase
+        .from('tasks')
+        .update({ status: 'done', approval_status: 'approved' })
+        .eq('assigned_to', employee.id)
+        .eq('status', 'open')
+        .contains('metadata', { type: 'sop_sign', sop_id: id });
+    } catch (taskErr) {
+      console.error('Task auto-complete error (non-fatal):', taskErr);
+    }
+
     return NextResponse.json(data[0]);
   } catch (error) {
     console.error('SOP Acknowledge Error:', error);

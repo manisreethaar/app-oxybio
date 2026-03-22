@@ -13,12 +13,13 @@ import {
 } from 'lucide-react';
 
 export default function ActivityClient({ initialBatches, initialLogs }: { initialBatches: any[], initialLogs: any[] }) {
-  const { employeeProfile, role, canDo, loading: authLoading } = useAuth();
-  const [activities, setActivities] = useState(initialLogs || []);
-  const [issues, setIssues] = useState(initialLogs ? initialLogs.filter(a => a.issue_observed) : []);
+  const { employeeProfile, role, canDo, loading: authLoading } = useAuth() as any;
+  const [activities, setActivities] = useState<any[]>(initialLogs || []);
+  const [issues, setIssues] = useState<any[]>(initialLogs ? initialLogs.filter((a: any) => a.issue_observed) : []);
   const [activeBatches, setActiveBatches] = useState(initialBatches || []);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('feed'); 
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   const [error, setError] = useState(null);
@@ -99,7 +100,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       if (!isMounted.current) return;
       setActivities(logData || []);
       if (role === 'admin') {
-        setIssues((logData || []).filter(a => a.issue_observed));
+        setIssues((logData || []).filter((a: any) => a.issue_observed));
       }
 
       // ── Founder Brief data (admin only) ────────────────────────────────────────
@@ -123,11 +124,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const pendingApprovals = approvalRes.data || [];
         const activeExps = expRes.data || [];
 
-        const checkedInIds = new Set(todayLogs.map(l => l.employee_id));
-        const present = allStaff.filter(s => checkedInIds.has(s.id));
-        const absent = allStaff.filter(s => !checkedInIds.has(s.id));
+        const checkedInIds = new Set(todayLogs.map((l: any) => l.employee_id));
+        const present = allStaff.filter((s: any) => checkedInIds.has(s.id));
+        const absent = allStaff.filter((s: any) => !checkedInIds.has(s.id));
 
-        const openIssues = (logData || []).filter(a => a.issue_observed && !a.founder_comment);
+        const openIssues = (logData || []).filter((a: any) => a.issue_observed && !a.founder_comment);
 
         setBrief({
           presentToday: present,
@@ -235,6 +236,23 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           )}
         </nav>
       </div>
+
+      {/* Innovation 1: Priority Toggle */}
+      {tab === 'feed' && isAdmin && (
+        <div className="flex justify-end">
+          <button 
+            onClick={() => setPriorityOnly(!priorityOnly)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+              priorityOnly 
+              ? 'bg-navy text-white border-navy shadow-lg' 
+              : 'bg-white text-slate-500 border-slate-200 hover:border-navy hover:text-navy text-gray-800'
+            }`}
+          >
+            <Zap className={`w-3.5 h-3.5 ${priorityOnly ? 'animate-pulse' : ''}`}/>
+            {priorityOnly ? 'PRIORITY MODE ON' : 'VIEW ALL LOGS'}
+          </button>
+        </div>
+      )}
 
       {/* ── FOUNDER MORNING BRIEF ─────────────────────────────────────── */}
       {tab === 'brief' && isAdmin && (
@@ -384,19 +402,30 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       {/* ── TEAM ACTIVITY FEED ─────────────────────────────────────────── */}
       {tab === 'feed' && (
         <div className="space-y-4">
-          {activities.length === 0 ? (
+          {activities.filter(act => !priorityOnly || act.severity === 'high' || (act.issue_observed && !act.founder_comment)).length === 0 ? (
             <div className="glass-card p-8 rounded-2xl text-center text-slate-400">
               <Activity className="w-8 h-8 mx-auto text-slate-300 mb-3"/>
-              <p className="font-medium">No activities recorded yet.</p>
+              <p className="font-medium">{priorityOnly ? 'No high-priority events found.' : 'No activities recorded yet.'}</p>
             </div>
           ) : (
-            activities.map(act => (
-              <div key={act.id} className={`glass-card rounded-2xl border p-5 transition-all ${act.issue_observed ? 'border-red-200 bg-red-50/20' : 'border-white/60 hover:border-teal-200'}`}>
+            activities
+              .filter(act => !priorityOnly || act.severity === 'high' || (act.issue_observed && !act.founder_comment))
+              .map(act => (
+              <div key={act.id} className={`glass-card rounded-2xl border p-5 transition-all ${act.severity === 'high' || act.issue_observed ? 'border-red-200 bg-red-50/20' : 'border-white/60 hover:border-teal-200'}`}>
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{isAdmin ? act.employees?.full_name : 'You'}</span>
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
                     {act.batch_id && <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-mono font-bold rounded border border-blue-100">{act.batch_id}</span>}
+                    {act.severity && (
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${
+                        act.severity === 'high' ? 'bg-red-50 text-red-700 border-red-100' : 
+                        act.severity === 'normal' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                        'bg-slate-50 text-slate-500 border-slate-200'
+                      }`}>
+                        {act.severity}
+                      </span>
+                    )}
                   </div>
                   {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
                 </div>
@@ -437,7 +466,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           <form onSubmit={handLog(handleLogSubmit)} className="space-y-5">
             <div>
               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">What did you do? *</label>
-              <textarea {...regLog('activity_description')} rows="4" 
+              <textarea {...regLog('activity_description')} rows={4} 
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm" 
                 placeholder="Protocol steps, prep work, general tasks, results..."/>
             </div>
@@ -471,7 +500,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {hasIssue && (
                 <div className="animate-in fade-in slide-in-from-top-2">
                   <label className="block text-xs font-black text-red-600 uppercase tracking-widest mb-1.5">Issue Description *</label>
-                  <textarea {...regLog('issue_description')} rows="3"
+                  <textarea {...regLog('issue_description')} rows={3}
                     className="w-full px-4 py-3 rounded-xl border border-red-200 focus:ring-2 focus:ring-red-500 bg-red-50 text-red-900 text-sm"
                     placeholder="Equipment failure, contamination suspected, deviation from SOP..."/>
                 </div>

@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 export default function StaffDashboard({ employeeId, role }) {
   const [tasks, setTasks] = useState([]);
+  const [activeBatches, setActiveBatches] = useState([]);
   const [leaveStats, setLeaveStats] = useState({ casual: 0, medical: 0, earned: 0 });
   const [loading, setLoading] = useState(true);
   const supabase = useMemo(() => createClient(), []);
@@ -19,12 +20,14 @@ export default function StaffDashboard({ employeeId, role }) {
   const fetchStaffData = async () => {
     setLoading(true);
     try {
-      const [tasksRes, leavesRes] = await Promise.all([
+      const [tasksRes, leavesRes, batchesRes] = await Promise.all([
         supabase.from('tasks').select('*').eq('assigned_to', employeeId).in('status', ['open', 'in-progress']).order('due_date', { ascending: true }).limit(5),
-        supabase.from('leave_applications').select('leave_type, start_date, end_date').eq('employee_id', employeeId).eq('status', 'approved')
+        supabase.from('leave_applications').select('leave_type, start_date, end_date').eq('employee_id', employeeId).eq('status', 'approved'),
+        supabase.from('batches').select('id, batch_id, current_stage, product_name').neq('status', 'completed').limit(3)
       ]);
 
       setTasks(tasksRes.data || []);
+      setActiveBatches(batchesRes.data || []);
       
       let c = 0, m = 0, e = 0;
       (leavesRes.data || []).forEach(l => {
@@ -57,6 +60,35 @@ export default function StaffDashboard({ employeeId, role }) {
             <Activity className="w-4 h-4 mr-2" /> Initiate Activity
           </Link>
         </div>
+
+        {/* Innovation 3: Contextual Batch Prompting */}
+        {activeBatches.length > 0 && (
+          <div className="bg-white border-l-4 border-navy p-6 rounded-xl shadow-sm space-y-4">
+             <div className="flex items-center justify-between">
+                <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Contextual Operational Prompt</h2>
+                <span className="bg-navy text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse">ACTION REQUIRED</span>
+             </div>
+             {activeBatches.map(batch => {
+                const nextStepMap = {
+                  'media_prep': 'Initialize Fermentation Cycle',
+                  'fermentation': 'Conduct Sampling & QA Analysis',
+                  'testing': 'Finalize QC & Package Approval',
+                  'formulation': 'Validate Ingredient Ratios'
+                };
+                return (
+                  <div key={batch.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group hover:border-navy transition-all">
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Batch {batch.batch_id} · {batch.product_name || 'Generic'}</p>
+                      <p className="text-sm font-black text-gray-900">Next Action: {nextStepMap[batch.current_stage] || 'Monitor Process Status'}</p>
+                    </div>
+                    <Link href={`/batches`} className="text-[10px] font-black text-navy bg-white border border-gray-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
+                      GO TO BATCH
+                    </Link>
+                  </div>
+                )
+             })}
+          </div>
+        )}
 
         {/* My Tasks */}
         <div className="surface overflow-hidden flex flex-col">
