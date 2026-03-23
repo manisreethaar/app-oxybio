@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { name, category, unit, min_stock_level } = await request.json();
+    const { name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code } = await request.json();
 
     if (!name || !category || !unit) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
@@ -27,7 +27,21 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from('inventory_items')
-      .insert({ name, category, unit, min_stock_level: parseFloat(min_stock_level) || 0 })
+      .insert({ 
+        name, 
+        category, 
+        sub_category,
+        unit, 
+        min_stock_level: parseFloat(min_stock_level) || 0,
+        storage_condition,
+        preferred_supplier: preferred_supplier || null,
+        hazardous: !!hazardous,
+        cold_chain_required: !!cold_chain_required,
+        coa_required: !!coa_required,
+        allergen: !!allergen,
+        organic_certified,
+        item_code
+      })
       .select()
       .single();
 

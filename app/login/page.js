@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function LoginPage() {
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -74,15 +75,24 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label className="block text-[10px] font-black text-teal-300/60 uppercase tracking-widest ml-1">Access Key (Password)</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-teal-700/50 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all font-bold text-sm"
-              required
-              disabled={loading}
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-teal-700/50 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all font-bold text-sm pr-12"
+                required
+                disabled={loading}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-all"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           <button
@@ -91,8 +101,12 @@ export default function LoginPage() {
             className="w-full group relative flex justify-center items-center py-5 px-4 overflow-hidden rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-teal-900/40 transition-all active:scale-95 disabled:opacity-50"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Logon Secure'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Login Secure'}
           </button>
+
+          <div className="text-center">
+            <a href="#" className="text-[10px] font-black text-teal-300/80 hover:text-teal-300 underline underline-offset-4 transition-all uppercase tracking-widest">Forgot Password?</a>
+          </div>
         </form>
       </motion.div>
       

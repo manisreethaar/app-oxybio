@@ -19,6 +19,33 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Force immediate session check on client mount to eliminate race conditions
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (session?.user) {
+        setUser(session.user);
+        if (!employeeProfile) {
+          try {
+            const { data: profile } = await supabase
+              .from('employees')
+              .select('*')
+              .eq('email', session.user.email)
+              .single();
+            if (mounted && profile) setEmployeeProfile(profile);
+          } catch (err) {
+            console.error("Mount profile sync error:", err);
+          }
+        }
+      }
+      if (mounted) {
+        setLoading(false);
+        initialized.current = true;
+      }
+    };
+
+    checkSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -39,7 +66,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
         if (session?.user) {
           setUser(session.user);
           // Only fetch if we don't already have a valid profile from SSR/init
-          if (!employeeProfile && !initialized.current) {
+          if (!employeeProfile) {
             try {
               const { data: profile } = await supabase
                 .from('employees')

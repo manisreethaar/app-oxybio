@@ -1,15 +1,34 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AdminDashboard from './components/AdminDashboard';
 import StaffDashboard from './components/StaffDashboard';
 
 export default function DashboardPage() {
   const { employeeProfile, loading } = useAuth();
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (loading || !employeeProfile) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!employeeProfile) setTimedOut(true);
+    }, 5000); // 5s fallback
+    return () => clearTimeout(timer);
+  }, [employeeProfile]);
+
+  if (loading || (!employeeProfile && !timedOut)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-gray-400 font-medium text-sm animate-pulse">
         Synchronizing dashboard workspace...
+      </div>
+    );
+  }
+
+  if (!employeeProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4">
+        <div className="p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100 font-bold text-sm max-w-md">
+          Profile synchronization suspended: Employee record not found in database. Please contact your system administrator.
+        </div>
       </div>
     );
   }

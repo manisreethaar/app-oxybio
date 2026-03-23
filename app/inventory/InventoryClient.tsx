@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,19 +20,30 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [newStock, setNewStock] = useState({
-    item_id: '',
-    vendor_id: '',
-    supplier_batch_number: '',
-    received_quantity: '',
-    expiry_date: '',
-    location: ''
+    item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
+    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
   });
-  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', unit: '', min_stock_level: '' });
-  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '' });
+  const [newIssue, setNewIssue] = useState({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
+  
+  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '' });
+  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
   
   const [modalType, setModalType] = useState('stock'); // 'stock' | 'items' | 'vendors'
   const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
   const [checkingTraining, setCheckingTraining] = useState(false);
+
+  const subCats = {
+    'Raw Material': ['Active Ingredients', 'Excipients & Carriers', 'Packaging Materials'],
+    'Lab Consumables': ['Reagents', 'Chemicals', 'Culture Media & Buffers', 'Indicators & Stains', 'Lab Disposables'],
+    'Equipment & Maintenance': ['Spare Parts', 'Maintenance Supplies'],
+    'Reference Standard': ['Certified Reference Materials', 'Calibration Standards']
+  };
+
+  const [selectedStock, setSelectedStock] = useState<any>(null);
+  const [movements, setMovements] = useState<any[]>([]);
+  const [loadingMovements, setLoadingMovements] = useState(false);
+  const [uploadingCoA, setUploadingCoA] = useState(false);
+  const [uploadingSDS, setUploadingSDS] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -76,6 +87,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     }, 400); // 400ms debounce
     return () => clearTimeout(delay);
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (selectedStock) {
+      setLoadingMovements(true);
+      fetch(`/api/inventory/movements?stock_id=${selectedStock.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setMovements(data.data);
+          setLoadingMovements(false);
+        })
+        .catch(() => setLoadingMovements(false));
+    } else {
+      setMovements([]);
+    }
+  }, [selectedStock]);
 
   const checkTraining = async (signal) => {
     if (role === 'admin') {
@@ -143,9 +169,43 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     fetchData(nextPage, true);
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'coa' | 'sds') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (type === 'coa') setUploadingCoA(true);
+    else setUploadingSDS(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setNewStock(prev => ({ ...prev, [type === 'coa' ? 'coa_url' : 'sds_url']: data.url }));
+      } else {
+        alert(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      alert('Upload Error');
+    } finally {
+      if (type === 'coa') setUploadingCoA(false);
+      else setUploadingSDS(false);
+    }
+  };
+
   const handleAddStock = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+    if (uploadingCoA || uploadingSDS) {
+      alert("Please wait for files to finish uploading.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/stock', {
@@ -155,7 +215,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setNewStock({ item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '' });
+        setNewStock({ 
+          item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+        });
         setPage(0); await fetchData(0, false);
       } else { alert((await res.json()).error || 'Failed.'); }
     } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
@@ -173,7 +236,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setNewItem({ name: '', category: 'Raw Material', unit: '', min_stock_level: '' });
+        setNewItem({ 
+          name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
+          storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
+          coa_required: false, allergen: false, organic_certified: '', item_code: '' 
+        });
         fetchData(0, false);
       } else { alert((await res.json()).error || 'Failed.'); }
     } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
@@ -184,16 +251,59 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.from('vendors').insert([newVendor]).select().single();
+      const { data, error } = await (supabase.from('vendors').insert([newVendor] as any) as any).select().single();
       if (!error) {
         setIsModalOpen(false);
-        setNewVendor({ name: '', contact_person: '', email: '' });
+        setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
         fetchData(0, false);
       } else { alert(error.message); }
     } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
   };
 
-  const filteredStock = stock; // Filtering is handled server-side via ilike in fetchData
+  const handleIssueStock = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/inventory/issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newIssue)
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewIssue({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
+        fetchData(0, false);
+      } else { alert((await res.json()).error || 'Failed.'); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
+  const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'expiring', 'expired'
+
+  const stats = useMemo(() => {
+    const totals = { total: stock.length, low: 0, expiring: 0, expired: 0 };
+    stock.forEach(s => {
+      const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
+      if (daysLeft < 0) totals.expired += 1;
+      else if (daysLeft >= 0 && daysLeft < 30) totals.expiring += 1;
+      
+      const minLevel = parseFloat(s.inventory_items?.min_stock_level) || 0;
+      if (s.current_quantity <= minLevel) totals.low += 1;
+    });
+    return totals;
+  }, [stock]);
+
+  const filteredStock = useMemo(() => {
+    return stock.filter(s => {
+      const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
+      const minLevel = parseFloat(s.inventory_items?.min_stock_level) || 0;
+      
+      if (stockFilter === 'low') return s.current_quantity <= minLevel;
+      if (stockFilter === 'expiring') return daysLeft >= 0 && daysLeft < 30;
+      if (stockFilter === 'expired') return daysLeft < 0;
+      return true;
+    });
+  }, [stock, stockFilter]);
 
   if (authLoading) {
     return (
@@ -209,6 +319,33 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      {/* Summary Strip (Section 1) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+        {[
+          { label: 'Total Items in Stock', count: stats.total, type: 'all', color: 'teal' },
+          { label: 'Low Stock', count: stats.low, type: 'low', color: 'orange' },
+          { label: 'Expiring (<30d)', count: stats.expiring, type: 'expiring', color: 'amber' },
+          { label: 'Expired', count: stats.expired, type: 'expired', color: 'red' }
+        ].map(tile => (
+          <button 
+            key={tile.type} 
+            onClick={() => setStockFilter(tile.type)} 
+            className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
+              stockFilter === tile.type 
+                ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-100' 
+                : 'bg-white border-gray-100 hover:border-gray-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
+            <span className={`text-2xl font-black font-mono mt-1 ${
+              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-teal-800'
+            }`}>
+              {tile.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Inventory & Supply Chain</h1>
@@ -248,50 +385,29 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {activeTab === 'stock' && (
         <div className="grid grid-cols-1 gap-4">
 
-          {/* Reorder Intelligence Panel */}
-          {(() => {
-            const flagged = stock.filter(s => {
-              const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
-              return daysLeft < 30 || (s.current_quantity !== undefined && s.current_quantity <= 0);
-            });
-            if (flagged.length === 0) return null;
-            return (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  <h3 className="text-sm font-black text-amber-800 uppercase tracking-widest">Reorder Intelligence — {flagged.length} Item{flagged.length > 1 ? 's' : ''} Need Attention</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {flagged.map(s => {
-                    const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
-                    const isExpired = daysLeft !== null && daysLeft < 0;
-                    const isZero = s.current_quantity <= 0;
-                    return (
-                      <div key={s.id} className={`flex items-center gap-3 p-3 rounded-xl border text-sm font-bold ${
-                        isExpired ? 'bg-red-50 border-red-200 text-red-800' : isZero ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-orange-50 border-orange-200 text-orange-800'
-                      }`}>
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="truncate">{s.inventory_items?.name || 'Unknown Item'}</p>
-                          <p className="text-[10px] font-black uppercase tracking-wider mt-0.5 opacity-70">
-                            {isExpired ? `Expired ${Math.abs(daysLeft)}d ago` : isZero ? 'Out of Stock' : `Expires in ${daysLeft}d`}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+          {filteredStock.length === 0 ? (
+            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
+              <Package className="w-12 h-12 text-gray-400" />
+              <div>
+                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No stock entries yet</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Receive New Stock&apos; to log your first shipment</p>
               </div>
-            );
-          })()}
-
-
-          {filteredStock.map((s) => {
+              {canDo('inventory', 'edit') && (
+                <button onClick={() => { setModalType('stock'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
+                  Receive Stock
+                </button>
+              )}
+            </div>
+          ) : filteredStock.map((s) => {
             const isNearExpiry = s.expiry_date && (new Date(s.expiry_date).getTime() - new Date().getTime() < 30 * 24 * 60 * 60 * 1000);
             const isExpired = s.expiry_date && (new Date(s.expiry_date) < new Date());
             
             return (
-              <div key={s.id} className={`bg-white rounded-3xl border ${isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} p-6 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center gap-6 group`}>
+              <div 
+                key={s.id} 
+                onClick={() => setSelectedStock(s)}
+                className={`bg-white rounded-3xl border ${isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} p-6 shadow-sm hover:shadow-md hover:border-teal-100 transition-all flex flex-col lg:flex-row lg:items-center gap-6 group cursor-pointer`}
+              >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${s.inventory_items?.category === 'Raw Material' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -355,7 +471,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {/* Item Registry Tab */}
       {activeTab === 'items' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map(item => (
+          {items.length === 0 ? (
+            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
+              <Package className="w-12 h-12 text-gray-400" />
+              <div>
+                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No items registered</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Register Item&apos; to add your catalog</p>
+              </div>
+              {canDo('inventory', 'edit') && (
+                <button onClick={() => { setModalType('items'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
+                  Register Item
+                </button>
+              )}
+            </div>
+          ) : items.map(item => (
             <div key={item.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
               <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600 mb-2 inline-block">{item.category}</span>
               <h3 className="text-lg font-black text-teal-950">{item.name}</h3>
@@ -372,7 +501,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {/* Vendors Tab */}
       {activeTab === 'vendors' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {vendors.map(vendor => (
+          {vendors.length === 0 ? (
+            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
+              <Truck className="w-12 h-12 text-gray-400" />
+              <div>
+                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No suppliers added</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
+              </div>
+              {canDo('inventory', 'edit') && (
+                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
+                  Add Supplier
+                </button>
+              )}
+            </div>
+          ) : vendors.map(vendor => (
             <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
               <h3 className="text-lg font-black text-teal-950">{vendor.name}</h3>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
@@ -456,6 +598,46 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         value={newStock.location} onChange={(e) => setNewStock({...newStock, location: e.target.value})} />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PO Number (Optional)</label>
+                      <input type="text" placeholder="PO-123" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.purchase_order_number} onChange={e => setNewStock({...newStock, purchase_order_number: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Invoice / Delivery Ref</label>
+                      <input type="text" placeholder="INV-456" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.invoice_ref} onChange={e => setNewStock({...newStock, invoice_ref: e.target.value})} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Condition on Arrival</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.condition_on_arrival} onChange={e => setNewStock({...newStock, condition_on_arrival: e.target.value})}>
+                      <option value="Good Condition">Good Condition</option>
+                      <option value="Minor Damage">Minor Damage</option>
+                      <option value="Temperature Deviation">Temperature Deviation</option>
+                      <option value="Incorrect Labelling">Incorrect Labelling</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 flex items-center gap-2">
+                        CoA Document {uploadingCoA && <Loader2 className="w-3 h-3 animate-spin text-teal-600"/>}
+                      </label>
+                      <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleFileChange(e, 'coa')} className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer" />
+                      {newStock.coa_url && <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1"><FileText className="w-3 h-3"/> Uploaded</span>}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 flex items-center gap-2">
+                        SDS Document {uploadingSDS && <Loader2 className="w-3 h-3 animate-spin text-amber-600"/>}
+                      </label>
+                      <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleFileChange(e, 'sds')} className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer" />
+                      {newStock.sds_url && <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1"><FileText className="w-3 h-3"/> Uploaded</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes</label>
+                    <textarea rows={2} placeholder="General receipt notes..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold resize-none" value={newStock.notes} onChange={e => setNewStock({...newStock, notes: e.target.value})} />
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
@@ -464,31 +646,118 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </button>
                 </div>
               </form>
-            ) : modalType === 'items' ? (
-              <form onSubmit={handleAddItem} className="p-8 space-y-5">
+            ) : modalType === 'issue' ? (
+              <form onSubmit={handleIssueStock} className="p-8 space-y-5">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Name</label>
-                  <input type="text" required placeholder="e.g. Sodium Hydroxide" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Select Stock Item</label>
+                  <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newIssue.stock_id} onChange={e => setNewIssue({...newIssue, stock_id: e.target.value})}>
+                    <option value="">Select Item...</option>
+                    {stock.filter(s => s.status === 'Available').map(s => (
+                      <option key={s.id} value={s.id}>{s.inventory_items?.name} (Lot: {s.supplier_batch_number || 'N/A'}) - Avail: {s.current_quantity}{s.inventory_items?.unit}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Category</label>
-                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})}>
-                      <option value="Raw Material">Raw Material</option>
-                      <option value="Packaging">Packaging</option>
-                      <option value="Consumable">Consumable</option>
-                    </select>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Quantity Issued</label>
+                    <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newIssue.quantity_issued} onChange={e => setNewIssue({...newIssue, quantity_issued: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Unit</label>
-                    <input type="text" required placeholder="e.g. kg, L, pcs" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} />
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Purpose</label>
+                    <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newIssue.purpose} onChange={e => setNewIssue({...newIssue, purpose: e.target.value})}>
+                      <option value="Production Use">Production Use</option>
+                      <option value="Quality Control Testing">Quality Control Testing</option>
+                      <option value="R&D">R&D</option>
+                      <option value="Internal Use">Internal Use</option>
+                      <option value="Sample">Sample</option>
+                      <option value="Disposal">Disposal</option>
+                    </select>
                   </div>
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Min Alert Level (Optional)</label>
-                    <input type="number" step="0.1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.min_stock_level} onChange={e => setNewItem({...newItem, min_stock_level: e.target.value})} />
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Batch Reference (Optional)</label>
+                  <input type="text" placeholder="e.g. B-101" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold font-mono" value={newIssue.batch_reference} onChange={e => setNewIssue({...newIssue, batch_reference: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes</label>
+                  <textarea rows={2} placeholder="Issue notes..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold resize-none" value={newIssue.notes} onChange={e => setNewIssue({...newIssue, notes: e.target.value})} />
                 </div>
                 <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl text-[10px] hover:bg-teal-900 shadow-xl transition-all">
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Issue Stock'}
+                  </button>
+                </div>
+              </form>
+            ) : modalType === 'items' ? (
+              <form onSubmit={handleAddItem} className="p-8 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Code / SKU</label>
+                    <input type="text" placeholder="AUTO-GEN" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold font-mono" value={newItem.item_code} onChange={e => setNewItem({...newItem, item_code: e.target.value})} />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Name</label>
+                    <input type="text" required placeholder="e.g. Citric Acid" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Category</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value, sub_category: ''})}>
+                      {Object.keys(subCats).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Sub-Category</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.sub_category} onChange={e => setNewItem({...newItem, sub_category: e.target.value})}>
+                      <option value="">Select sub-cat...</option>
+                      {(subCats[newItem.category as keyof typeof subCats] || []).map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Unit of Measure</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})}>
+                      <option value="kg">kg</option><option value="g">g</option><option value="mg">mg</option>
+                      <option value="L">L</option><option value="ml">ml</option><option value="units">units</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Storage Condition</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.storage_condition} onChange={e => setNewItem({...newItem, storage_condition: e.target.value})}>
+                      <option value="Room Temperature">Room Temperature</option>
+                      <option value="Refrigerated 2-8°C">Refrigerated</option>
+                      <option value="Frozen -20°C">Frozen -20°C</option>
+                      <option value="Chemical Cabinet">Chemical Cabinet</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Min Reorder Level</label>
+                    <input type="number" step="0.1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.min_stock_level} onChange={e => setNewItem({...newItem, min_stock_level: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Preferred Supplier</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.preferred_supplier} onChange={e => setNewItem({...newItem, preferred_supplier: e.target.value})}>
+                      <option value="">Select Supplier...</option>
+                      {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-50 mt-4">
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-600"><input type="checkbox" checked={newItem.hazardous} onChange={e => setNewItem({...newItem, hazardous: e.target.checked})} /> Hazardous</label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-600"><input type="checkbox" checked={newItem.cold_chain_required} onChange={e => setNewItem({...newItem, cold_chain_required: e.target.checked})} /> Cold Chain</label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-600"><input type="checkbox" checked={newItem.coa_required} onChange={e => setNewItem({...newItem, coa_required: e.target.checked})} /> CoA Required</label>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl text-[10px] hover:bg-teal-900 shadow-xl transition-all">
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Register Item'}
@@ -511,7 +780,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <input type="email" placeholder="sales@vendor.com" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.email} onChange={e => setNewVendor({...newVendor, email: e.target.value})} />
                   </div>
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Phone</label>
+                    <input type="text" placeholder="+12345678" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.phone} onChange={e => setNewVendor({...newVendor, phone: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Payment Terms</label>
+                    <input type="text" placeholder="Net 30" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.payment_terms} onChange={e => setNewVendor({...newVendor, payment_terms: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Address</label>
+                  <input type="text" placeholder="123 Lab Street" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.address} onChange={e => setNewVendor({...newVendor, address: e.target.value})} />
+                </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl text-[10px] hover:bg-teal-900 shadow-xl transition-all">
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Add Supplier'}
@@ -519,6 +802,112 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Stock Item Detail Modal (Section 2.4) */}
+      {selectedStock && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-end">
+          <div className="w-full max-w-xl bg-white h-screen shadow-2xl flex flex-col animate-slide-left">
+            {/* Header */}
+            <div className="p-8 bg-teal-900 text-white relative">
+              <button onClick={() => setSelectedStock(null)} className="absolute top-6 right-6 text-white/70 hover:text-white"><X className="w-6 h-6"/></button>
+              <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-black uppercase tracking-widest text-white">{selectedStock.inventory_items?.category}</span>
+              <h2 className="text-2xl font-black font-mono tracking-tighter mt-1">{selectedStock.inventory_items?.name}</h2>
+              <p className="text-xs font-bold text-teal-200 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
+            </div>
+
+            {/* Content Scrollable */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+              {/* Summary Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Available Balance</p>
+                  <p className="text-2xl font-black font-mono text-teal-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Expiry Date</p>
+                  <p className={`text-lg font-black mt-1 ${selectedStock.expiry_date && new Date(selectedStock.expiry_date) < new Date() ? 'text-red-600' : 'text-slate-800'}`}>
+                    {selectedStock.expiry_date ? new Date(selectedStock.expiry_date).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Advanced Specs */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase text-slate-800 tracking-widest">Storage & Location</h4>
+                <div className="bg-white border border-slate-100 rounded-xl p-4 divide-y divide-slate-50">
+                  <div className="flex justify-between py-2 text-sm">
+                    <span className="font-bold text-slate-400">Warehouse Location</span>
+                    <span className="font-black text-slate-800">{selectedStock.location || 'Central Store'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 text-sm">
+                    <span className="font-bold text-slate-400">Preferred Supplier</span>
+                    <span className="font-black text-slate-800">{selectedStock.vendors?.name || 'Approved Supplier'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 text-sm">
+                    <span className="font-bold text-slate-400">Storage Condition</span>
+                    <span className="font-black text-slate-800">{selectedStock.inventory_items?.storage_condition || 'Room Temp'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Movement History */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase text-slate-800 tracking-widest flex items-center justify-between">
+                  <span>Movement Ledger</span>
+                  {loadingMovements && <Loader2 className="w-3 h-3 animate-spin"/>}
+                </h4>
+                {movements.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-medium italic">No recorded movements.</p>
+                ) : (
+                  <div className="bg-white border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-50">
+                    {movements.map(m => (
+                      <div key={m.id} className="p-3 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-black text-slate-800">{m.movement_type === 'Receive' ? 'Stock Input' : 'Stock Issue'}</p>
+                          <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-black ${m.movement_type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
+                            {m.movement_type === 'Receive' ? '+' : '-'}{m.quantity}
+                          </p>
+                          <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-col gap-3">
+              <div className="flex gap-2">
+                {selectedStock.coa_url && (
+                  <a href={selectedStock.coa_url} target="_blank" rel="noreferrer" className="flex-1 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    <FileText className="w-4 h-4 text-teal-600"/> View CoA
+                  </a>
+                )}
+                {selectedStock.sds_url && (
+                  <a href={selectedStock.sds_url} target="_blank" rel="noreferrer" className="flex-1 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    <FileText className="w-4 h-4 text-amber-600"/> View SDS
+                  </a>
+                )}
+              </div>
+              <button 
+                onClick={() => {
+                  setNewIssue({ stock_id: selectedStock.id, quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
+                  setModalType('issue');
+                  setIsModalOpen(true);
+                  setSelectedStock(null);
+                }} 
+                className="flex-1 py-4 bg-teal-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-teal-900 transition-all text-center"
+              >
+                Issue Stock Out
+              </button>
+            </div>
           </div>
         </div>
       )}

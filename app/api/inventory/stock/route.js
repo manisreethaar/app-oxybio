@@ -20,11 +20,26 @@ export async function POST(request) {
   try {
     const supabase = createClient();
     const body = await request.json();
-    const { item_id, vendor_id, supplier_batch_number, received_quantity, expiry_date, location } = body;
+    const { item_id, vendor_id, supplier_batch_number, received_quantity, expiry_date, location, purchase_order_number, invoice_ref, condition_on_arrival, sds_url, coa_url } = body;
 
     const qtyValue = parseFloat(received_quantity);
     if (!item_id || isNaN(qtyValue) || qtyValue <= 0) {
       return NextResponse.json({ success: false, error: 'Valid Quantity greater than 0 is required' }, { status: 400 });
+    }
+
+    // Fetch item category to determine auto-quarantine status
+    const { data: itemData, error: itemError } = await supabase
+      .from('inventory_items')
+      .select('category')
+      .eq('id', item_id)
+      .single();
+
+    if (itemError) throw new Error("Verification failed: Item category not found.");
+
+    let status = 'Available';
+    const quarantineCats = ['Raw Material', 'Active Ingredient', 'Reference Standard'];
+    if (quarantineCats.includes(itemData.category)) {
+      status = 'Quarantine';
     }
 
     const { data, error } = await supabase
@@ -33,11 +48,16 @@ export async function POST(request) {
         item_id,
         vendor_id,
         supplier_batch_number,
-        received_quantity: parseFloat(received_quantity),
-        current_quantity: parseFloat(received_quantity),
+        received_quantity: qtyValue,
+        current_quantity: qtyValue,
         expiry_date,
         location,
-        status: 'Available'
+        status,
+        purchase_order_number,
+        invoice_ref,
+        condition_on_arrival,
+        sds_url,
+        coa_url
       })
       .select()
       .single();
