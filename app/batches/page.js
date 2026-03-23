@@ -13,7 +13,7 @@ import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BatchesPage() {
-  const { employeeProfile, role, loading: authLoading } = useAuth();
+  const { employeeProfile, role, canDo, loading: authLoading } = useAuth();
   const [activeBatches, setActiveBatches] = useState([]);
   const [history, setHistory] = useState([]);
   const [isAlert, setIsAlert] = useState(false);
