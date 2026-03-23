@@ -7,6 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, Plus, Loader2, FileSignature, Edit, ChevronRight, FlaskConical, Tag, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DigitalLnbPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
@@ -15,20 +17,13 @@ export default function DigitalLnbPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState([]);
+  const [showNew, setShowNew] = useState(false); // Fix: Missing state
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(z.object({
-      title: z.string().min(3, 'Experiment title is required'),
-      batch_id: z.string().optional()
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
+    resolver: zodResolver(z.object({ 
+      title: z.string().min(3, 'Experiment title is required'), 
+      batch_id: z.string().optional() 
     })),
-    defaultValues: { title: '', batch_id: '' }
-  });
-
-  const watchTitle = register('title');
-  const titleValue = register('title').value; // This is not quite correct for react-hook-form watch
-
-  const { register: regForm, handleSubmit: handForm, reset: resetForm, watch, formState: { errors: formErrors } } = useForm({
-    resolver: zodResolver(z.object({ title: z.string().min(3), batch_id: z.string().optional() })),
     defaultValues: { title: '', batch_id: '' }
   });
   
@@ -91,7 +86,16 @@ export default function DigitalLnbPage() {
     }
   };
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>;
+  if (authLoading || loading) {
+    return (
+      <div className="page-container space-y-6">
+        <div className="flex justify-between items-center"><Skeleton width={200} height={32}/> <Skeleton width={150} height={40}/></div>
+        <div className="space-y-4 pt-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-2xl"/>)}
+        </div>
+      </div>
+    );
+  }
   if (!employeeProfile) return null;
 
   return (
@@ -108,7 +112,9 @@ export default function DigitalLnbPage() {
 
       <div className="grid gap-4 mt-8">
         {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
+          <div className="space-y-4">
+             {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full rounded-2xl"/>)}
+          </div>
         ) : entries.length === 0 ? (
           <div className="surface p-12 text-center">
              <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -161,13 +167,13 @@ export default function DigitalLnbPage() {
                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">Create Notebook Entry</h2>
                 <p className="text-xs font-medium text-gray-500 mt-1">Initialize a new experiment document draft</p>
               </div>
-              <button onClick={() => { setShowNew(false); resetForm(); }} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowNew(false); reset(); }} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handForm(handleCreateSubmit)} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit(handleCreateSubmit)} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Experiment Title / Objective</label>
-                <input type="text" placeholder="e.g. Yield Optimization Trial 4" {...regForm('title')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                {formErrors.title && <p className="text-red-500 text-xs mt-1">{formErrors.title.message}</p>}
+                <input type="text" placeholder="e.g. Yield Optimization Trial 4" {...register('title')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
                 
                 {/* Innovation 5: Predictive Tags */}
                 {suggestedTags.length > 0 && (
@@ -183,7 +189,7 @@ export default function DigitalLnbPage() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Target Batch (Optional)</label>
-                <select {...regForm('batch_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
+                <select {...register('batch_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
                   <option value="">No Batch Linked</option>
                   {batches.map(b => (
                     <option key={b.id} value={b.id}>{b.batch_id} ({b.variant})</option>
