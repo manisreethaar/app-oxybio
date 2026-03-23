@@ -40,7 +40,7 @@ export default function Sidebar() {
     {
       title: 'LABORATORY',
       items: [
-        { name: 'Scientific SVCS',   href: '/formulations', icon: Beaker,          show: canDo('batches', 'view') },
+        { name: 'Recipe Management', href: '/formulations', icon: Beaker,          show: canDo('batches', 'view') },
         { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: canDo('batches', 'view') },
         { name: 'Digital LNB',       href: '/lab-notebook', icon: BookOpen,        show: canDo('lab_notebook', 'view') },
         { name: 'Equipment Maint.',  href: '/equipment',    icon: Wrench,          show: canDo('equipment', 'view') },

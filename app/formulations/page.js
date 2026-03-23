@@ -96,8 +96,8 @@ export default function FormulationsPage() {
     <div className="page-container text-gray-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Formulation Registry</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1">Scientific Version Control System (SVCS)</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Recipe Management</h1>
+          <p className="text-sm font-medium text-gray-500 mt-1">Scientific Formula Registry & Version Control</p>
         </div>
         <button onClick={() => setShowNew(true)} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
           <Plus className="w-4 h-4 mr-1.5" /> New Recipe Version

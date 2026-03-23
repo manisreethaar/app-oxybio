@@ -75,9 +75,17 @@ export async function POST(req) {
     bufferStream.push(Buffer.from(arrayBuffer));
     bufferStream.push(null);
 
-    // 5. Environmental Key Guard Check
-    if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
-      return NextResponse.json({ error: 'Config missing: GOOGLE_CLIENT_EMAIL, PRIVATE_KEY, or FOLDER_ID.' }, { status: 500 });
+    // 5. Environmental Key Guard Check (Diagnostic)
+    const missing = [];
+    if (!process.env.GOOGLE_CLIENT_EMAIL) missing.push('GOOGLE_CLIENT_EMAIL');
+    if (!process.env.GOOGLE_PRIVATE_KEY) missing.push('GOOGLE_PRIVATE_KEY');
+    if (!process.env.GOOGLE_DRIVE_FOLDER_ID) missing.push('GOOGLE_DRIVE_FOLDER_ID');
+
+    if (missing.length > 0) {
+      console.error(`UPLOAD CONFIG FAILURE: Missing ${missing.join(', ')}`);
+      return NextResponse.json({ 
+        error: `Deployment Configuration Error: The following Environment Variables are missing: ${missing.join(', ')}. Please add them to your Vercel/Host settings.` 
+      }, { status: 500 });
     }
 
     // 6. Direct Google Drive API Integration Handshake
