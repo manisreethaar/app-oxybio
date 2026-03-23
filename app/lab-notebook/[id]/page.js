@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LnbEntryPage() {
   const params = useParams();
@@ -94,7 +96,21 @@ export default function LnbEntryPage() {
     finally { setSigning(false); }
   };
 
-  if (authLoading || loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>;
+  if (authLoading || loading) {
+    return (
+      <div className="page-container max-w-5xl mx-auto space-y-8">
+        <Skeleton width={150} height={20} className="mb-4"/>
+        <div className="flex justify-between items-center"><Skeleton width={300} height={40}/> <Skeleton width={200} height={48}/></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <Skeleton className="h-40 w-full rounded-2xl"/>
+            <Skeleton className="h-64 w-full rounded-2xl"/>
+          </div>
+          <Skeleton className="h-80 w-full rounded-2xl"/>
+        </div>
+      </div>
+    );
+  }
   if (!entry || !employeeProfile) return null;
 
   const isDraft = entry.status === 'Draft';
