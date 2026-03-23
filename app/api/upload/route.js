@@ -89,10 +89,18 @@ export async function POST(req) {
     }
 
     // 6. Direct Google Drive API Integration Handshake
+    // 🛡️ SECURITY HARDENING: Handle common formatting issues in pasted Private Keys
+    let privateKey = process.env.GOOGLE_PRIVATE_KEY || '';
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.substring(1, privateKey.length - 1);
+    }
+    // Ensure literal \n are transformed to real newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        private_key: privateKey,
       },
       scopes: ['https://www.googleapis.com/auth/drive.file'],
     });
