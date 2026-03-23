@@ -7,6 +7,7 @@ import { Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, Gi
 import FormulaDiff from '@/components/science/FormulaDiff';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 export default function FormulationsPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
@@ -21,6 +22,7 @@ export default function FormulationsPage() {
   const [selectedQty, setSelectedQty] = useState('');
   const [compareIds, setCompareIds] = useState([]);
   const [fetchError, setFetchError] = useState(null);
+  const [scaleFactors, setScaleFactors] = useState({});
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -84,9 +86,24 @@ export default function FormulationsPage() {
     setShowNew(true);
   };
 
+  const handleArchive = async (id) => {
+    if (!confirm("Are you sure you want to archive this formulation version? It will be hidden from view.")) return;
+    try {
+      const res = await fetch('/api/formulations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'archived' })
+      });
+      if (res.ok) { fetchFormulations(); } else { alert('Failed to archive.'); }
+    } catch (err) { alert('Network Error'); }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newForm.ingredients.length === 0) return alert("Add at least one ingredient.");
+    if (newForm.base_version_id && !newForm.notes?.trim()) {
+      return alert("Notes explaining the reason for this iteration are mandatory for Revisions.");
+    }
     setSubmitting(true);
     try {
       // Stringify ingredients for storage if the column is TEXT, or pass as array if it's JSONB
@@ -168,18 +185,27 @@ export default function FormulationsPage() {
                   <div className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><FlaskConical className="w-20 h-20 text-navy"/></div>
                     <div className="flex justify-between items-start mb-4">
-                      <span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">V{f.version}</span>
+                      <div className="flex gap-2 items-center">
+                        <span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">V{f.version}</span>
+                        <button onClick={() => handleArchive(f.id)} className="text-gray-400 hover:text-red-500 transition-colors" title="Archive Formulation"><X className="w-3.5 h-3.5"/></button>
+                      </div>
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(f.created_at).toLocaleDateString()}</span>
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{f.name}</h3>
                     <p className="text-xs font-bold text-navy mb-4 font-mono">{f.code}</p>
                     <div className="space-y-4">
                       <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Key Components</p>
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Key Components</p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-bold text-gray-400">Scale:</span>
+                            <input type="number" value={scaleFactors[f.id] || 1} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || 1})} step="0.5" min="0.5" className="w-10 px-1 py-0.5 text-center border border-gray-200 rounded bg-white text-[10px] font-black"/>
+                          </div>
+                        </div>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {parsedIng.length > 0 ? parsedIng.map((ing, idx) => (
                             <span key={idx} className="bg-white px-2 py-0.5 border border-slate-200 rounded text-[10px] font-bold text-slate-700">
-                              {ing.name}: {ing.quantity}{ing.unit}
+                              {ing.name}: {((parseFloat(ing.quantity) || 0) * (scaleFactors[f.id] || 1)).toFixed(1)}{ing.unit}
                             </span>
                           )) : <p className="text-xs font-semibold text-gray-400 italic">No components linked.</p>}
                         </div>
@@ -201,6 +227,12 @@ export default function FormulationsPage() {
                           <Plus className="w-3.5 h-3.5"/> Revision
                         </button>
                       </div>
+                      <Link 
+                        href={`/batches?formula_code=${f.code}`} 
+                        className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 w-full font-sans mt-2"
+                      >
+                        Launch Batch
+                      </Link>
                     </div>
                   </div>
                 </motion.div>

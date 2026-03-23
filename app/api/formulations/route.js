@@ -7,6 +7,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('formulations')
       .select('*')
+      .eq('status', 'active') // Only show active recipes defaults
       .order('version', { ascending: false });
 
     if (error) throw error;
@@ -30,7 +31,6 @@ export async function POST(request) {
       const { data: base } = await supabase.from('formulations').select('version').eq('id', base_version_id).single();
       if (base) nextVersion = base.version + 1;
     } else {
-      // Auto-increment version for same code if base_version_id is missing
       const { data: latest } = await supabase.from('formulations')
         .select('version')
         .eq('code', code)
@@ -44,13 +44,34 @@ export async function POST(request) {
       code, name, ingredients, notes,
       version: nextVersion,
       created_by: user.id,
-      base_version_id: base_version_id || null
+      base_version_id: base_version_id || null,
+      status: 'active'
     }).select().single();
 
-    if (error) {
-      console.error('Submission error:', error);
-      throw error;
-    }
+    if (error) throw error;
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { id, status } = await request.json();
+    if (!id || !status) return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
+
+    const { data, error } = await supabase
+      .from('formulations')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
