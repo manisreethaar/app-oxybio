@@ -188,9 +188,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <button className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95">
             <Filter className="w-4 h-4 mr-2" /> Options
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
-            <Plus className="w-4 h-4 mr-2" /> Receive New Stock
-          </button>
+          {canDo('inventory', 'edit') && (
+            <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
+              <Plus className="w-4 h-4 mr-2" /> Receive New Stock
+            </button>
+          )}
         </div>
       </div>
 

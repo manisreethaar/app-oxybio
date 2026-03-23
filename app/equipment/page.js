@@ -25,7 +25,7 @@ const maintSchema = z.object({
 });
 
 export default function EquipmentPage() {
-  const { role, employeeProfile, loading: authLoading } = useAuth();
+  const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,9 +113,11 @@ export default function EquipmentPage() {
           <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Equipment Master Registry</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
-          <Plus className="w-4 h-4 mr-2" /> Add New Equipment
-        </button>
+        {canDo('equipment', 'edit') && (
+          <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
+            <Plus className="w-4 h-4 mr-2" /> Add New Equipment
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -151,8 +153,18 @@ export default function EquipmentPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <button onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} className="flex-1 py-3 bg-white border border-gray-200 text-teal-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Log Maintenance</button>
-                  <button onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} className="flex-1 py-3 bg-teal-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-900 shadow-md transition-all active:scale-95">Calibrate Now</button>
+                  <button 
+                    disabled={!canDo('equipment', 'edit')}
+                    onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
+                    className="flex-1 py-3 bg-white border border-gray-200 text-teal-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                      Log Maintenance
+                  </button>
+                  <button 
+                    disabled={!canDo('equipment', 'edit')}
+                    onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
+                    className="flex-1 py-3 bg-teal-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                      Calibrate Now
+                  </button>
                 </div>
               </div>
             </div>
