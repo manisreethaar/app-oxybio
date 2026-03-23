@@ -19,7 +19,7 @@ export default async function ActivityPage() {
     .eq('id', user.id)
     .single();
 
-  const role = profile?.role || 'staff';
+  const role = (profile as any)?.role || 'staff';
 
   const [batchesRes, logRes] = await Promise.all([
     supabase.from('batches').select('batch_id').eq('status', 'fermenting'),

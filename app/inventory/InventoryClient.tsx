@@ -7,7 +7,7 @@ import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, External
 import Link from 'next/link';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
-  const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
+  const { role, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState(initialStock || []);
   const [items, setItems] = useState(initialItems || []);
