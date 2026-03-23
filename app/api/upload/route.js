@@ -1,11 +1,6 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { Readable } from 'stream';
 
 export async function POST(request) {
   try {
@@ -18,22 +13,43 @@ export async function POST(request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const stream = Readable.from(buffer);
 
-    // Upload to Cloudinary using a Promise wrapper
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: 'inventory_documents', resource_type: 'auto' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(buffer);
+    // 1. Google Auth with Write/Upload Scopes
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        // Ensure double escaped newlines are parsed correctly if set in Vercel envs
+        private_key: process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : '',
+      },
+      scopes: ['https://www.googleapis.com/auth/drive.file'], 
     });
 
-    return NextResponse.json({ success: true, url: result.secure_url });
+    const drive = google.drive({ version: 'v3', auth });
+
+    // 2. Create file on Google Drive
+    const driveResponse = await drive.files.create({
+      requestBody: {
+        name: file.name,
+        // You could add parents: ['FOLDER_ID'] if you have a specific destination index
+      },
+      media: {
+        mimeType: file.type || 'application/octet-stream',
+        body: stream,
+      },
+      fields: 'id',
+    });
+
+    const fileId = driveResponse.data.id;
+
+    // Return proxy URL to load it via the central secure files reader endpoint
+    return NextResponse.json({ 
+      success: true, 
+      url: `/api/files/${fileId}` 
+    });
 
   } catch (error) {
+    console.error("Google Drive Upload Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
