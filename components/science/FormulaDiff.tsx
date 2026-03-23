@@ -4,21 +4,26 @@ import { Minus, Plus, Equal } from 'lucide-react';
 export default function FormulaDiff({ v1, v2 }) {
   if (!v1 || !v2) return null;
 
-  const getIngredientsMap = (text) => {
+  const getIngredientsMap = (ingredientsString) => {
     const map = {};
-    const lines = text.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
-    lines.forEach(line => {
-      // Basic regex to find numbers and names (e.g., "Manganese 5g" or "5.2kg Sugar")
-      const matches = line.match(/([\d.]+)\s*(\w+)?\s*(.+)/) || line.match(/(.+)\s*([\d.]+)\s*(\w+)?/);
-      if (matches) {
-        const name = (matches[3] || matches[1]).trim().toLowerCase();
-        const value = parseFloat(matches[1] || matches[2]);
-        const unit = (matches[2] || matches[3] || '').trim();
-        map[name] = { value, unit, original: line };
-      } else {
-        map[line.toLowerCase()] = { value: null, unit: '', original: line };
+    if (!ingredientsString) return map;
+    try {
+      const parsed = JSON.parse(ingredientsString);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(ing => {
+          if (ing.name) {
+            const nameKey = ing.name.toLowerCase().trim();
+            map[nameKey] = { 
+              value: parseFloat(ing.quantity) || 0, 
+              unit: ing.unit || '', 
+              original: `${ing.name}: ${ing.quantity}${ing.unit}` 
+            };
+          }
+        });
       }
-    });
+    } catch (e) {
+      console.error("Ingredients parse error:", e);
+    }
     return map;
   };
 

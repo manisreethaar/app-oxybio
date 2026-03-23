@@ -15,11 +15,12 @@ export default function FormulationsPage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [items, setItems] = useState([]);
-  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '' });
+  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null });
   
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
   const [compareIds, setCompareIds] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -31,17 +32,31 @@ export default function FormulationsPage() {
   const fetchInventoryItems = async () => {
     try {
       const { data, error } = await supabase.from('inventory_items').select('id, name, unit').order('name');
-      if (!error) setItems(data || []);
-    } catch (err) { console.error('Fetch items error:', err); }
+      if (error) throw error;
+      setItems(data || []);
+    } catch (err) { 
+      setFetchError("Failed to load ingredients dropdown list.");
+      console.error('Fetch items error:', err); 
+    }
   };
 
   const addIngredient = () => {
     if (!selectedItem || !selectedQty) return;
+    const qtyValue = parseFloat(selectedQty);
+    if (isNaN(qtyValue) || qtyValue <= 0) {
+      return alert("Quantity must be a number greater than 0");
+    }
     const item = items.find(i => i.id === selectedItem);
     if (!item) return;
+
+    // Deduplication Guard
+    if (newForm.ingredients.some(ing => ing.item_id === item.id)) {
+      return alert(`"${item.name}" is already in the recipe. Remove it from the list to modify quantity.`);
+    }
+
     setNewForm(prev => ({
       ...prev,
-      ingredients: [...prev.ingredients, { item_id: item.id, name: item.name, quantity: parseFloat(selectedQty), unit: item.unit }]
+      ingredients: [...prev.ingredients, { item_id: item.id, name: item.name, quantity: qtyValue, unit: item.unit }]
     }));
     setSelectedItem(''); setSelectedQty('');
   };
@@ -55,6 +70,19 @@ export default function FormulationsPage() {
     finally { setLoading(false); }
   };
 
+
+  const handleForwardRevision = (f) => {
+    let parsedIng = [];
+    try { parsedIng = JSON.parse(f.ingredients); } catch(e) { parsedIng = []; }
+    setNewForm({
+      code: f.code,
+      name: f.name,
+      ingredients: parsedIng,
+      notes: '',
+      base_version_id: f.id
+    });
+    setShowNew(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,7 +98,7 @@ export default function FormulationsPage() {
       });
       if (res.ok) {
         setShowNew(false);
-        setNewForm({ code: '', name: '', ingredients: [], notes: '' });
+        setNewForm({ code: '', name: '', ingredients: [], notes: '', base_version_id: null });
         fetchFormulations();
       } else { 
         const errData = await res.json();
@@ -156,15 +184,23 @@ export default function FormulationsPage() {
                           )) : <p className="text-xs font-semibold text-gray-400 italic">No components linked.</p>}
                         </div>
                       </div>
-                      <button 
-                        onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
-                        className={`w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
-                          compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-400 border-gray-200 hover:border-navy hover:text-navy'
-                        }`}
-                      >
-                        <GitCompare className="w-3.5 h-3.5"/>
-                        {compareIds.includes(f.id) ? 'SELECTED' : 'SELECT FOR COMPARISON'}
-                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
+                          className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
+                            compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-400 border-gray-200 hover:border-navy hover:text-navy'
+                          }`}
+                        >
+                          <GitCompare className="w-3.5 h-3.5"/>
+                          {compareIds.includes(f.id) ? 'Selected' : 'Compare'}
+                        </button>
+                        <button 
+                          onClick={() => handleForwardRevision(f)}
+                          className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-white text-navy border-navy/20 hover:bg-navy/5 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5"/> Revision
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -180,7 +216,11 @@ export default function FormulationsPage() {
             <button onClick={() => setShowNew(false)} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"><X className="w-5 h-5 text-gray-400"/></button>
             <div className="p-6">
               <h2 className="text-lg font-bold text-gray-900 tracking-tight">New Formulation Version</h2>
-              <p className="text-xs font-medium text-gray-500 mt-1">Immutable Recipe Entry</p>
+              <p className="text-xs font-medium text-gray-500 mt-1">
+                {newForm.base_version_id ? (
+                  <span className="text-emerald-600 font-bold">Iterating from base version selection</span>
+                ) : 'Immutable Recipe Entry'}
+              </p>
             </div>
             <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -193,6 +233,8 @@ export default function FormulationsPage() {
                   <input required type="text" placeholder="e.g. Agri-Boost" value={newForm.name} onChange={e => setNewForm({...newForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
                 </div>
               </div>
+
+              {fetchError && <div className="p-2 bg-red-50 text-red-600 font-bold text-[10px] rounded-lg border border-red-100 mb-2">{fetchError}</div>}
 
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Structured Bill of Materials (BOM)</label>
