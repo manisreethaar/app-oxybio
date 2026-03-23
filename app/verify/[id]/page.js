@@ -15,12 +15,21 @@ export default async function VerifyEmployeePage({ params }) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  // 🛡️ SECURITY HARDENING: Use a random verification token instead of the internal DB ID
-  const { data: emp, error } = await supabaseAdmin
+  // 🛡️ SECURITY HARDENING: Check both verification_token and id
+  // We use a try/catch style or conditional to avoid UUID type errors if id is a short token
+  const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+  
+  let query = supabaseAdmin
     .from('employees')
-    .select('id, full_name, designation, role, is_active, photo_url, joined_date, verification_token')
-    .or(`verification_token.eq.${id},id.eq.${id}`)
-    .single();
+    .select('id, full_name, designation, role, is_active, photo_url, joined_date, verification_token');
+
+  if (isUUID) {
+    query = query.or(`verification_token.eq.${id},id.eq.${id}`);
+  } else {
+    query = query.eq('verification_token', id);
+  }
+
+  const { data: emp, error } = await query.maybeSingle();
 
   if (error || !emp) {
     return (
