@@ -22,8 +22,9 @@ export async function POST(request) {
     const body = await request.json();
     const { item_id, vendor_id, supplier_batch_number, received_quantity, expiry_date, location } = body;
 
-    if (!item_id || !received_quantity) {
-      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    const qtyValue = parseFloat(received_quantity);
+    if (!item_id || isNaN(qtyValue) || qtyValue <= 0) {
+      return NextResponse.json({ success: false, error: 'Valid Quantity greater than 0 is required' }, { status: 400 });
     }
 
     const { data, error } = await supabase

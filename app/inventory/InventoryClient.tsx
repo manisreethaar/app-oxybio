@@ -27,6 +27,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     expiry_date: '',
     location: ''
   });
+  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', unit: '', min_stock_level: '' });
+  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '' });
+  
+  const [modalType, setModalType] = useState('stock'); // 'stock' | 'items' | 'vendors'
   const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
   const [checkingTraining, setCheckingTraining] = useState(false);
 
@@ -63,11 +67,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     };
   }, [employeeProfile, initialStock]);
 
-  // Reset pagination when searching
+  // Debounced Search Effect
   useEffect(() => {
-    setPage(0);
-    setHasMore(true);
-    fetchData(0, false);
+    const delay = setTimeout(() => {
+      setPage(0);
+      setHasMore(true);
+      fetchData(0, false);
+    }, 400); // 400ms debounce
+    return () => clearTimeout(delay);
   }, [searchTerm]);
 
   const checkTraining = async (signal) => {
@@ -138,7 +145,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   const handleAddStock = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return; // Concurrency Lock
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/stock', {
@@ -146,21 +153,44 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newStock)
       });
-      
       if (res.ok) {
         setIsModalOpen(false);
         setNewStock({ item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '' });
-        setPage(0);
-        await fetchData(0, false);
-      } else {
-        const errData = await res.json();
-        alert(errData.error || 'Failed to log stock entry.');
-      }
-    } catch (err) {
-      alert("Network Error: Could not connect to the operations server. Please check connection.");
-    } finally {
-      setIsSubmitting(false);
-    }
+        setPage(0); await fetchData(0, false);
+      } else { alert((await res.json()).error || 'Failed.'); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/inventory/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem)
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewItem({ name: '', category: 'Raw Material', unit: '', min_stock_level: '' });
+        fetchData(0, false);
+      } else { alert((await res.json()).error || 'Failed.'); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleAddVendor = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.from('vendors').insert([newVendor]).select().single();
+      if (!error) {
+        setIsModalOpen(false);
+        setNewVendor({ name: '', contact_person: '', email: '' });
+        fetchData(0, false);
+      } else { alert(error.message); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const filteredStock = stock; // Filtering is handled server-side via ilike in fetchData
@@ -189,8 +219,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <Filter className="w-4 h-4 mr-2" /> Options
           </button>
           {canDo('inventory', 'edit') && (
-            <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
-              <Plus className="w-4 h-4 mr-2" /> Receive New Stock
+            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
+              <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
           )}
         </div>
@@ -361,13 +391,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-black tracking-tight">Receive Warehouse Shipment</h2>
-                <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">Digital Material Input (DMI)</p>
+                <h2 className="text-xl font-black tracking-tight">
+                  {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'items' ? 'Register Raw Material' : 'Register Approved Supplier'}
+                </h2>
+                <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">
+                  {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
+                </p>
               </div>
-              {!trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-6 h-6 text-amber-400 animate-pulse" />}
+              {modalType === 'stock' && !trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-6 h-6 text-amber-400 font-black animate-pulse" />}
             </div>
             
-            {!trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) ? (
+            {modalType === 'stock' && !trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) ? (
               <div className="p-12 bg-white flex flex-col items-center text-center gap-6">
                 <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center"><Package className="w-10 h-10 text-amber-500" /></div>
                 <div>
@@ -379,7 +413,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <button onClick={() => setIsModalOpen(false)} className="text-xs font-bold text-slate-400 hover:text-slate-600">Close Window</button>
                 </div>
               </div>
-            ) : (
+            ) : modalType === 'stock' ? (
               <form onSubmit={handleAddStock} className="p-8 space-y-5">
                 <div className="grid grid-cols-1 gap-5">
                   <div>
@@ -427,6 +461,60 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log Entry'}
+                  </button>
+                </div>
+              </form>
+            ) : modalType === 'items' ? (
+              <form onSubmit={handleAddItem} className="p-8 space-y-5">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Name</label>
+                  <input type="text" required placeholder="e.g. Sodium Hydroxide" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Category</label>
+                    <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})}>
+                      <option value="Raw Material">Raw Material</option>
+                      <option value="Packaging">Packaging</option>
+                      <option value="Consumable">Consumable</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Unit</label>
+                    <input type="text" required placeholder="e.g. kg, L, pcs" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Min Alert Level (Optional)</label>
+                    <input type="number" step="0.1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.min_stock_level} onChange={e => setNewItem({...newItem, min_stock_level: e.target.value})} />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl text-[10px] hover:bg-teal-900 shadow-xl transition-all">
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Register Item'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleAddVendor} className="p-8 space-y-5">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Vendor Name</label>
+                  <input type="text" required placeholder="e.g. Sigma Aldrich" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.name} onChange={e => setNewVendor({...newVendor, name: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Contact Person</label>
+                    <input type="text" placeholder="Full Name" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.contact_person} onChange={e => setNewVendor({...newVendor, contact_person: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Email</label>
+                    <input type="email" placeholder="sales@vendor.com" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.email} onChange={e => setNewVendor({...newVendor, email: e.target.value})} />
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl text-[10px] hover:bg-teal-900 shadow-xl transition-all">
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Add Supplier'}
                   </button>
                 </div>
               </form>
