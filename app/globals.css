@@ -15,18 +15,13 @@
 }
 
 @layer utilities {
-  /* Deprecating old glass-panel/glass-card for clean flats */
-  .glass-panel {
-    @apply bg-white border border-gray-200 shadow-sm;
+  /* Standard premium containers */
+  .surface {
+    @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-lg shadow-navy/5 rounded-2xl;
   }
   
   .glass-card {
-    @apply bg-white border border-gray-200 shadow-sm hover:shadow hover:-translate-y-0.5 transition-all duration-200;
-  }
-  
-  /* Standard premium containers */
-  .surface {
-    @apply bg-white border border-gray-200 shadow-sm rounded-xl;
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl;
   }
   
   .page-container {
@@ -34,7 +29,11 @@
   }
   
   .mesh-bg {
-    @apply bg-gray-50; /* Flattening old noisy mesh bg */
+    background: radial-gradient(at 0% 0%, hsla(215,67%,15%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(177,70%,20%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(215,60%,25%,1) 0, transparent 50%), 
+                radial-gradient(at 0% 100%, hsla(177,65%,15%,1) 0, transparent 50%);
+    background-color: #0f172a;
   }
 }
 

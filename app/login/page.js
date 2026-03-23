@@ -1,8 +1,4 @@
-'use client';
-import { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,61 +12,68 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      if (error) { setError(error.message); } 
+      else { router.push('/dashboard'); }
+    } catch (err) { setError('An unexpected error occurred. Please try again.'); } 
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-teal-800 text-white font-bold text-2xl mb-4 shadow-lg">
+    <div className="w-full max-w-md mx-auto z-50">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-10"
+      >
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-gradient-to-br from-teal-400 to-teal-800 text-white font-black text-3xl mb-6 shadow-2xl shadow-teal-500/20 ring-4 ring-white/20 animate-pulse">
           O₂
         </div>
-        <h1 className="text-2xl font-bold text-teal-950 tracking-tight">OxyOS</h1>
-        <p className="text-sm font-medium text-teal-800/70 mt-1">Internal Operations Platform</p>
-      </div>
+        <h1 className="text-4xl font-black text-white tracking-tighter mb-2">OxyOS</h1>
+        <p className="text-sm font-bold text-teal-300 uppercase tracking-[0.3em] opacity-80">Enterprise Neural Cloud</p>
+      </motion.div>
 
-      <div className="bg-white rounded-2xl p-8 shadow-xl shadow-teal-900/5 ring-1 ring-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">Sign in to your account</h2>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="bg-white/10 backdrop-blur-2xl rounded-[2.5rem] p-10 shadow-2xl shadow-black/40 border border-white/20 ring-1 ring-white/10"
+      >
+        <h2 className="text-xl font-black text-white mb-8 text-center uppercase tracking-widest">Authentication</h2>
         
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-600 text-sm font-medium border border-red-100">
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mb-8 p-4 rounded-2xl bg-red-500/20 text-red-100 text-xs font-bold border border-red-500/30 backdrop-blur-md text-center"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-teal-300/60 uppercase tracking-widest ml-1">Terminal ID (Email)</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-600 focus:border-teal-600 outline-none transition-all"
+              className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-teal-700/50 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all font-bold text-sm"
               required
               disabled={loading}
-              placeholder="name@oxygenbioinnovations.com"
+              placeholder="operator@oxy.bio"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-teal-300/60 uppercase tracking-widest ml-1">Access Key (Password)</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-600 focus:border-teal-600 outline-none transition-all"
+              className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-teal-700/50 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all font-bold text-sm"
               required
               disabled={loading}
               placeholder="••••••••"
@@ -80,16 +83,23 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-800 hover:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-70 transition-all mt-4"
+            className="w-full group relative flex justify-center items-center py-5 px-4 overflow-hidden rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-teal-900/40 transition-all active:scale-95 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Logon Secure'}
           </button>
         </form>
-      </div>
+      </motion.div>
       
-      <p className="text-center text-xs text-gray-500 mt-8">
-        &copy; {new Date().getFullYear()} Oxygen Bioinnovations Pvt Ltd
-      </p>
+      <motion.p 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.4 }}
+        transition={{ delay: 1 }}
+        className="text-center text-[10px] font-black text-teal-100 uppercase tracking-[0.2em] mt-10"
+      >
+        Oxygen Bioinnovations Operational Stack v2.4
+      </motion.p>
     </div>
   );
 }
+
