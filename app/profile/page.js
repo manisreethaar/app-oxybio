@@ -84,6 +84,8 @@ export default function ProfilePage() {
 
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(z.object({
+      full_name: z.string().min(1, "Name is required"),
+      employee_code: z.string().optional().nullable(),
       phone: z.string().optional().nullable(),
       designation: z.string().optional().nullable(),
       date_of_birth: z.string().optional().nullable(),
@@ -104,6 +106,8 @@ export default function ProfilePage() {
     if (employeeProfile) {
       setEmp(employeeProfile);
       reset({
+        full_name: employeeProfile.full_name || '',
+        employee_code: employeeProfile.employee_code || '',
         phone: employeeProfile.phone || '',
         designation: employeeProfile.designation || '',
         date_of_birth: employeeProfile.date_of_birth ? new Date(employeeProfile.date_of_birth).toISOString().split('T')[0] : '',
@@ -294,9 +298,21 @@ export default function ProfilePage() {
           <form id="profile-form" onSubmit={handleSubmit(handleSaveSubmit)} className="glass-card rounded-[2rem] p-8">
             <h3 className="text-lg font-black text-slate-700 mb-6 uppercase tracking-wider text-sm">Personal Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <InfoField label="Full Name" value={emp.full_name} icon={User} readonly />
+              <InfoField 
+                label="Full Name" 
+                value={emp.full_name} 
+                icon={User} 
+                editing={editing}
+                registerProps={register('full_name')}
+              />
               <InfoField label="Email Address" value={emp.email} icon={Mail} readonly />
-              <InfoField label="Employee Code" value={emp.employee_code} icon={Hash} readonly />
+              <InfoField 
+                label="Employee Code" 
+                value={emp.employee_code} 
+                icon={Hash} 
+                editing={editing}
+                registerProps={register('employee_code')}
+              />
               <InfoField label="Date of Joining" value={emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-GB') : '—'} icon={Calendar} readonly />
 
               <InfoField 

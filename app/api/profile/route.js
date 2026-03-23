@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const patchSchema = z.object({
+  full_name: z.string().optional().nullable(),
+  employee_code: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   designation: z.string().optional().nullable(),
   date_of_birth: z.string().optional().nullable(),
