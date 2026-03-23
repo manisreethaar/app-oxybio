@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { CheckCircle, XCircle, ShieldCheck, Mail, Phone, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, ShieldCheck, Calendar } from 'lucide-react';
 
 // Force dynamic rendering if needed, but since [id] changes, Next.js handles it
 export const dynamic = 'force-dynamic';
