@@ -39,7 +39,7 @@ export async function POST(request) {
     }
 
     // Fix: Verify creator exists in employees table before inserting
-    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id').eq('id', user.id).single();
+    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id').eq('email', user.email).single();
     if (creatorErr || !creator) {
       return NextResponse.json({ 
         error: "CRITICAL PROFILE SYNC ERROR: Your user account is authenticated but not registered in the 'employees' table. Please contact an admin to add your ID." 

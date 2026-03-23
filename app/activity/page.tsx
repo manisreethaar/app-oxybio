@@ -25,7 +25,7 @@ export default async function ActivityPage() {
     supabase.from('batches').select('batch_id').eq('status', 'fermenting'),
     role === 'admin' 
       ? supabase.from('activity_log').select('*, employees(full_name)').order('created_at', { ascending: false }).limit(50)
-      : supabase.from('activity_log').select('*, employees(full_name)').eq('actor_id', user.id).order('created_at', { ascending: false }).limit(50)
+      : supabase.from('activity_log').select('*, employees(full_name)').eq('employee_id', user.id).order('created_at', { ascending: false }).limit(50)
   ]);
 
   return (

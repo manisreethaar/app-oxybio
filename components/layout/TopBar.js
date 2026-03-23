@@ -1,13 +1,24 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
-import { Bell, Download } from 'lucide-react';
+import { Bell, Download, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function TopBar() {
   const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const { employeeProfile, signOut } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const getInitials = (name) => {
+    if (!name) return 'OB';
+    const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+    const parts = name.split(' ');
+    const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
+    return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
+  };
   
   useEffect(() => {
     // Listen for the native PWA install prompt event
@@ -113,6 +124,34 @@ export default function TopBar() {
           <span className="sr-only">View notifications</span>
           <Bell className="w-5 h-5" />
         </Link>
+
+        {employeeProfile && (
+          <div className="relative">
+            <button 
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center space-x-2 focus:outline-none hover:bg-gray-50 p-1 rounded-full transition-all border border-gray-100"
+            >
+              <div className="w-8 h-8 rounded-full bg-navy/10 text-navy font-bold flex items-center justify-center text-xs">
+                {getInitials(employeeProfile.full_name)}
+              </div>
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-xs font-bold text-gray-800 truncate">{employeeProfile.full_name}</p>
+                  <p className="text-[10px] font-bold text-navy uppercase tracking-wider mt-0.5">{employeeProfile.designation || employeeProfile.role}</p>
+                </div>
+                <button 
+                  onClick={signOut}
+                  className="w-full flex items-center px-4 py-2 text-xs font-bold text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

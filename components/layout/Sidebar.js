@@ -132,24 +132,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="p-5 border-t border-gray-100 bg-gray-50/50">
-          <div className="flex items-center mb-4 p-3 bg-white rounded-2xl border border-gray-200 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-navy/10 text-navy font-bold flex items-center justify-center shrink-0 border border-gray-100">
-              {getInitials(employeeProfile.full_name)}
-            </div>
-            <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-bold text-gray-800 truncate">{employeeProfile.full_name}</p>
-              <p className="text-[11px] font-bold text-navy uppercase tracking-wider">{employeeProfile.designation || employeeProfile.role || 'Staff'}</p>
-            </div>
-          </div>
-          <button 
-            onClick={signOut}
-            className="w-full flex items-center justify-center py-2.5 text-sm font-bold text-slate-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl transition-colors duration-300"
-          >
-            <LogOut className="w-4 h-4 mr-2 stroke-[2.5px]" />
-            Sign Out
-          </button>
-        </div>
+
       </aside>
 
       {/* Mobile Slide-Up Full Menu Overlay */}

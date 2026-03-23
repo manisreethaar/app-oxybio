@@ -6,7 +6,13 @@ import StaffDashboard from './components/StaffDashboard';
 export default function DashboardPage() {
   const { employeeProfile, loading } = useAuth();
 
-  if (loading || !employeeProfile) return null;
+  if (loading || !employeeProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] text-gray-400 font-medium text-sm animate-pulse">
+        Synchronizing dashboard workspace...
+      </div>
+    );
+  }
 
   const getNameForGreeting = (fullName) => {
     if (!fullName) return 'there';

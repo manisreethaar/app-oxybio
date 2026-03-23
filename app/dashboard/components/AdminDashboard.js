@@ -199,6 +199,43 @@ export default function AdminDashboard({ employeeId }) {
           )}
         </div>
       </div>
+
+      {/* Safeguards Config Modal */}
+      <AnimatePresence>
+        {showConfig && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-xl max-w-sm w-full p-6 relative shadow-xl border border-gray-100"
+            >
+              <button onClick={() => setShowConfig(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+              <h2 className="text-base font-bold text-gray-900 mb-1 tracking-tight">Safeguard Thresholds</h2>
+              <p className="text-xs text-gray-500 mb-4">Set operational boundaries for automated alerts.</p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Minimum pH Warning</label>
+                  <input type="number" step="0.1" value={thresholds.minPh} onChange={e => setThresholds({...thresholds, minPh: parseFloat(e.target.value)})} className="w-full border border-gray-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Maximum pH Warning</label>
+                  <input type="number" step="0.1" value={thresholds.maxPh} onChange={e => setThresholds({...thresholds, maxPh: parseFloat(e.target.value)})} className="w-full border border-gray-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Max Temperature Limit (°C)</label>
+                  <input type="number" value={thresholds.tempMax} onChange={e => setThresholds({...thresholds, tempMax: parseInt(e.target.value)})} className="w-full border border-gray-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
+                </div>
+                
+                <button onClick={() => setShowConfig(false)} className="w-full py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm mt-2">
+                  Apply Thresholds
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

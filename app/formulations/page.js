@@ -19,6 +19,7 @@ export default function FormulationsPage() {
   
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
+  const [compareIds, setCompareIds] = useState([]);
 
   const supabase = useMemo(() => createClient(), []);
 
