@@ -362,10 +362,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <h2 className="text-xl font-black tracking-tight">Receive Warehouse Shipment</h2>
                 <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">Digital Material Input (DMI)</p>
               </div>
-              {!trainingStatus.isTrained && <AlertTriangle className="w-6 h-6 text-amber-400 animate-pulse" />}
+              {!trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-6 h-6 text-amber-400 animate-pulse" />}
             </div>
             
-            {!trainingStatus.isTrained ? (
+            {!trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) ? (
               <div className="p-12 bg-white flex flex-col items-center text-center gap-6">
                 <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center"><Package className="w-10 h-10 text-amber-500" /></div>
                 <div>
