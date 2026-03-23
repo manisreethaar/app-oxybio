@@ -8,6 +8,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
 import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X } from 'lucide-react';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   category: z.enum(['Fermentation', 'QC', 'Sanitation', 'Safety']),
@@ -137,7 +139,16 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
     }
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing Document Library...</div>;
+  if (authLoading || loading) {
+    return (
+      <div className="page-container space-y-6">
+        <div className="flex justify-between items-center"><Skeleton width={200} height={30}/> <Skeleton width={100} height={40}/></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-48 w-full rounded-2xl"/>)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

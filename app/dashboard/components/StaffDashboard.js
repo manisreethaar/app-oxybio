@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { CheckSquare, Activity } from 'lucide-react';
 import Link from 'next/link';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StaffDashboard({ employeeId, role }) {
   const [tasks, setTasks] = useState([]);
@@ -45,7 +47,16 @@ export default function StaffDashboard({ employeeId, role }) {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading workspace metrics...</div>;
+  if (loading) return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="md:col-span-2 space-y-8">
+        <Skeleton className="h-40 w-full rounded-2xl"/>
+        <Skeleton className="h-40 w-full rounded-2xl"/>
+        <Skeleton className="h-64 w-full rounded-2xl"/>
+      </div>
+      <Skeleton className="h-80 w-full rounded-2xl"/>
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-300">

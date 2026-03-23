@@ -7,6 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import Link from 'next/link';
+import Skeleton from '@/components/Skeleton';
+import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function ShelfLifePage() {
@@ -78,7 +80,7 @@ export default function ShelfLifePage() {
 
   const TIMEPOINTS = [0, 7, 14, 30, 60, 90];
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-navy" /></div>;
+  if (authLoading) return <div className="page-container space-y-6"><Skeleton width={300} height={40}/><Skeleton className="h-64 w-full rounded-2xl"/></div>;
   if (!employeeProfile) return null;
 
   return (
@@ -95,7 +97,10 @@ export default function ShelfLifePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         {loading ? (
-          <div className="col-span-full flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
+          <div className="col-span-full space-y-4">
+            <Skeleton className="h-64 w-full rounded-2xl"/>
+            <Skeleton className="h-64 w-full rounded-2xl"/>
+          </div>
         ) : studies.length === 0 ? (
           <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No active stability studies. Select a released batch to begin longevity testing.</div>
         ) : (

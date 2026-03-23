@@ -9,8 +9,9 @@ import {
   Activity, AlertTriangle, MessageSquare, CheckCircle, Loader2,
   Users, Clock, CheckSquare, FlaskConical, TrendingUp, 
   CalendarCheck, Zap
-
 } from 'lucide-react';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ActivityClient({ initialBatches, initialLogs }: { initialBatches: any[], initialLogs: any[] }) {
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth() as any;
@@ -157,6 +158,21 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   }, [supabase, role, employeeProfile]);
 
   const handleLogSubmit = async (data) => {
+    // Innovation: Optimistic UI
+    const optimisticLog = {
+      id: `temp-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      start_time: data.start_time,
+      end_time: data.end_time,
+      activity_description: data.activity_description,
+      issue_observed: data.issue_observed,
+      issue_description: data.issue_description,
+      batch_id: data.batch_id,
+      employees: { full_name: employeeProfile?.full_name },
+      is_optimistic: true // for UI styling
+    };
+    
+    setActivities(prev => [optimisticLog, ...prev]);
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/activity', {
@@ -167,7 +183,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       resetLog(); setLogValue('start_time', data.end_time); setLogValue('end_time', new Date().toTimeString().slice(0, 5));
       setTab(role === 'admin' ? 'brief' : 'feed');
       fetchData();
-    } catch (err) { alert(err.message); }
+    } catch (err) { 
+      // Rollback optimism
+      setActivities(prev => prev.filter(a => a.id !== optimisticLog.id));
+      alert(err.message); 
+    }
     finally { setIsSubmitting(false); }
   };
 
@@ -184,9 +204,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     } catch (err) { alert("Failed to save review note: " + err.message); }
   };
 
-  if (authLoading || loading) {
-    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-teal-700" /></div>;
-  }
+  if (authLoading) return <div className="p-12"><Skeleton className="h-40 w-full mb-4"/><Skeleton className="h-60 w-full"/></div>;
 
   const isAdmin = role === 'admin';
   const nowHour = new Date().getHours();
@@ -410,7 +428,16 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       {/* ── TEAM ACTIVITY FEED ─────────────────────────────────────────── */}
       {tab === 'feed' && (
         <div className="space-y-4">
-          {activities.filter(act => !priorityOnly || act.severity === 'high' || (act.issue_observed && !act.founder_comment)).length === 0 ? (
+          {loading ? (
+             <div className="space-y-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="glass-card p-5 rounded-2xl border border-white/60 space-y-3">
+                    <div className="flex justify-between"><Skeleton variant="text" width="60%"/> <Skeleton variant="text" width="20%"/></div>
+                    <Skeleton className="h-10 w-full"/>
+                  </div>
+                ))}
+             </div>
+          ) : activities.filter(act => !priorityOnly || act.severity === 'high' || (act.issue_observed && !act.founder_comment)).length === 0 ? (
             <div className="glass-card p-8 rounded-2xl text-center text-slate-400">
               <Activity className="w-8 h-8 mx-auto text-slate-300 mb-3"/>
               <p className="font-medium">{priorityOnly ? 'No high-priority events found.' : 'No activities recorded yet.'}</p>

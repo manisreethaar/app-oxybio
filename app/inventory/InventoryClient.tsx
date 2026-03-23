@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter } from 'lucide-react';
 import Link from 'next/link';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
   const { role, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
@@ -164,7 +166,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const filteredStock = stock; // Filtering is handled server-side via ilike in fetchData
 
   if (authLoading) {
-    return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center"><Skeleton width={300} height={40}/> <Skeleton width={150} height={40}/></div>
+        <Skeleton className="h-12 w-full rounded-2xl"/>
+        <div className="grid grid-cols-1 gap-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-32 w-full rounded-3xl"/>)}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -292,14 +302,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             );
           })}
           
-          {hasMore && (
+          {loading ? (
+            <div className="space-y-4">
+              {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 w-full rounded-3xl"/>)}
+            </div>
+          ) : hasMore && (
             <div className="pt-4 flex justify-center">
               <button 
                 onClick={loadMore}
                 disabled={loading}
                 className="px-8 py-3 bg-white border border-teal-100 text-teal-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-teal-50 transition-all flex items-center gap-2"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Load More Records'}
+                Load More Records
               </button>
             </div>
           )}

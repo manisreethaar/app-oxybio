@@ -6,6 +6,8 @@ import TopBar from './TopBar';
 import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Skeleton from '../Skeleton';
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -112,13 +114,33 @@ export default function ClientLayout({ children }) {
         )}
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          {loading ? (
-            <div className="flex justify-center items-center h-full min-h-[50vh]">
-              <Loader2 className="w-10 h-10 animate-spin text-navy" />
-            </div>
-          ) : (
-            children
-          )}
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div 
+                key="loading-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-6"
+              >
+                <div className="flex justify-between items-center"><Skeleton width={250} height={32}/> <Skeleton width={120} height={40}/></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Skeleton className="h-64 w-full rounded-2xl"/>
+                  <Skeleton className="h-64 w-full rounded-2xl"/>
+                  <Skeleton className="h-64 w-full rounded-2xl uppercase"/>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                {children}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>

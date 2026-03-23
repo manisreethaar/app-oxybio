@@ -6,6 +6,8 @@ import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Se
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
 import { differenceInHours } from 'date-fns';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminDashboard({ employeeId }) {
   const [stats, setStats] = useState({ batches: 0, leaves: 0, tasks: 0, compliance: 0 });
@@ -84,7 +86,15 @@ export default function AdminDashboard({ employeeId }) {
     </Link>
   );
 
-  if (loading) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing node metrics...</div>;
+  if (loading) return (
+    <div className="space-y-8">
+      <div className="surface p-6 flex justify-between items-center"><Skeleton width={200} height={28}/> <Skeleton width={100} height={36}/></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 w-full rounded-2xl"/>)}
+      </div>
+      <Skeleton className="h-72 w-full rounded-2xl"/>
+    </div>
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">

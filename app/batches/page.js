@@ -9,6 +9,8 @@ import { useAuth } from '@/context/AuthContext';
 import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X } from 'lucide-react';
 import { format, differenceInHours } from 'date-fns';
 import Link from 'next/link';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BatchesPage() {
   const { employeeProfile, role, loading: authLoading } = useAuth();
@@ -80,7 +82,16 @@ export default function BatchesPage() {
     finally { setCreatingBatch(false); }
   };
 
-  if (authLoading || loadingBatches) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing Batch Registry...</div>;
+  if (authLoading || loadingBatches) {
+    return (
+      <div className="page-container space-y-8">
+        <div className="flex justify-between items-center"><Skeleton width={200} height={32}/> <Skeleton width={120} height={40}/></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-48 w-full rounded-2xl"/>)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

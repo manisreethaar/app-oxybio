@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap, TrendingUp, X } from 'lucide-react';
+import Skeleton from '@/components/Skeleton';
+import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 
 export default function ConsumerResearchPage() {
@@ -55,7 +57,7 @@ export default function ConsumerResearchPage() {
   };
 
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-navy" /></div>;
+  if (authLoading) return <div className="page-container space-y-6"><div className="flex justify-between items-center"><Skeleton width={200} height={32}/> <Skeleton width={150} height={40}/></div><Skeleton className="h-64 w-full rounded-2xl"/></div>;
   if (!employeeProfile) return null;
 
   return (
@@ -84,7 +86,13 @@ export default function ConsumerResearchPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? <div className="col-span-full flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div> : sessions.length === 0 ? <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No panel data recorded.</div> : sessions.map(s => (
+        {loading ? (
+          <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-48 w-full rounded-xl"/>
+            <Skeleton className="h-48 w-full rounded-xl"/>
+            <Skeleton className="h-48 w-full rounded-xl"/>
+          </div>
+        ) : sessions.length === 0 ? <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No panel data recorded.</div> : sessions.map(s => (
           <div key={s.id} className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden">
              <div className="flex items-center justify-between mb-6"><span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100 flex items-center gap-1"><Users className="w-3 h-3"/> {s.panelist_count} Panelists</span><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(s.created_at).toLocaleDateString()}</p></div>
               <h3 className="text-lg font-bold text-gray-900 mb-1">{s.session_title}</h3><p className="text-xs font-bold text-navy font-mono mb-6">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
