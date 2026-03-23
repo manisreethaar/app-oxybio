@@ -29,6 +29,15 @@ export async function POST(request) {
     if (base_version_id) {
       const { data: base } = await supabase.from('formulations').select('version').eq('id', base_version_id).single();
       if (base) nextVersion = base.version + 1;
+    } else {
+      // Auto-increment version for same code if base_version_id is missing
+      const { data: latest } = await supabase.from('formulations')
+        .select('version')
+        .eq('code', code)
+        .order('version', { ascending: false })
+        .limit(1)
+        .single();
+      if (latest) nextVersion = latest.version + 1;
     }
 
     const { data, error } = await supabase.from('formulations').insert({
@@ -38,7 +47,10 @@ export async function POST(request) {
       base_version_id: base_version_id || null
     }).select().single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Submission error:', error);
+      throw error;
+    }
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

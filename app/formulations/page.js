@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, GitCompare } from 'lucide-react';
 import FormulaDiff from '@/components/science/FormulaDiff';
+import Skeleton from '@/components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FormulationsPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
@@ -45,13 +47,25 @@ export default function FormulationsPage() {
         setShowNew(false);
         setNewForm({ code: '', name: '', ingredients: '', notes: '' });
         fetchFormulations();
-      } else { alert('Failed to submit formulation.'); }
-    } catch (err) { alert('Error: ' + err.message); }
+      } else { 
+        const errData = await res.json();
+        alert(`Failed to submit formulation: ${errData.error || 'Unknown error'}`); 
+      }
+    } catch (err) { alert('Network Error: ' + err.message); }
     finally { setSubmitting(false); }
   };
 
 
-  if (authLoading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-navy" /></div>;
+  if (authLoading || (loading && formulations.length === 0)) {
+    return (
+      <div className="page-container space-y-8">
+        <div className="flex justify-between items-center"><Skeleton width={250} height={32}/> <Skeleton width={180} height={40}/></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
+        </div>
+      </div>
+    );
+  }
   if (!employeeProfile) return null;
 
   return (
@@ -79,35 +93,50 @@ export default function FormulationsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-          <div className="col-span-full flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
-        ) : formulations.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No scientific recipes registered. Add a formulation to begin batch linkage.</div>
-        ) : formulations.map(f => (
-          <div key={f.id} className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><FlaskConical className="w-20 h-20 text-navy"/></div>
-            <div className="flex justify-between items-start mb-4">
-              <span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">V{f.version}</span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(f.created_at).toLocaleDateString()}</span>
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">{f.name}</h3>
-            <p className="text-xs font-bold text-navy mb-4 font-mono">{f.code}</p>
-            <div className="space-y-4">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Key Components</p>
-                <p className="text-xs font-semibold text-gray-700 line-clamp-2">{f.ingredients || 'No ingredients listed'}</p>
-              </div>
-              <button 
-                onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
-                className={`w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
-                  compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-400 border-gray-200 hover:border-navy hover:text-navy'
-                }`}
-              >
-                <GitCompare className="w-3.5 h-3.5"/>
-                {compareIds.includes(f.id) ? 'SELECTED' : 'SELECT FOR COMPARISON'}
-              </button>
-            </div>
+          <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
+             {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
           </div>
-        ))}
+        ) : formulations.length === 0 ? (
+          <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No scientific recipes registered. Add a formulation to begin batch linkage.</div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {formulations.map((f, i) => (
+              <motion.div 
+                key={f.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <div className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><FlaskConical className="w-20 h-20 text-navy"/></div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">V{f.version}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(f.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{f.name}</h3>
+                  <p className="text-xs font-bold text-navy mb-4 font-mono">{f.code}</p>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Key Components</p>
+                      <p className="text-xs font-semibold text-gray-700 line-clamp-2">{f.ingredients || 'No ingredients listed'}</p>
+                    </div>
+                    <button 
+                      onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
+                      className={`w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                        compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-400 border-gray-200 hover:border-navy hover:text-navy'
+                      }`}
+                    >
+                      <GitCompare className="w-3.5 h-3.5"/>
+                      {compareIds.includes(f.id) ? 'SELECTED' : 'SELECT FOR COMPARISON'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
 
       {showNew && (
