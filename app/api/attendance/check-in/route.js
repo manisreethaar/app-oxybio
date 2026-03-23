@@ -22,10 +22,15 @@ const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
+    const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms));
+    
+    const { data: { user }, error: authError } = await Promise.race([
+        supabase.auth.getUser(),
+        timeout(5000)
+    ]).catch(err => ({ data: { user: null }, error: err }));
+    
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized or Auth Timeout' }, { status: 401 });
     }
 
     const { lat, lng, photo_url, override } = await request.json();
@@ -41,9 +46,9 @@ export async function POST(request) {
 
     // Protocol: If not in geofence but nearby, require a photo (Liveness Fallback)
     if (!inGeofence && !override) {
-        if (isNearby && photo_url) {
-            // Allow with a 'Degraded Accuracy' flag
-            console.log(`Geofence Fallback triggered for distance: ${Math.round(distance)}m`);
+        if (photo_url) {
+            // Allow with a 'Photo Audit' flag regardless of extreme IP Geolocation distances
+            console.log(`Geofence Fallback triggered for distance: ${Math.round(distance)}m with Photo Audit`);
         } else {
             return NextResponse.json({ 
                 error: `Location Verification Failed: You are ${Math.round(distance)}m away. Move closer or ensure a verification photo is attached for manual audit.` 

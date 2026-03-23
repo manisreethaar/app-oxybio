@@ -10,7 +10,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   const initialized = useRef(false);
   const [user, setUser] = useState(initialSession?.user || null);
   const [employeeProfile, setEmployeeProfile] = useState(initialProfile || null);
-  const [loading, setLoading] = useState(!initialSession);
+  const [loading, setLoading] = useState(!initialSession || !initialProfile);
   // FIX #10: Track session expiry separately so UI can show a toast
   const [sessionExpired, setSessionExpired] = useState(false);
   const supabase = useMemo(() => createClient(), []);
@@ -38,7 +38,8 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
 
         if (session?.user) {
           setUser(session.user);
-          if (!employeeProfile || !initialized.current) {
+          // Only fetch if we don't already have a valid profile from SSR/init
+          if (!employeeProfile && !initialized.current) {
             try {
               const { data: profile } = await supabase
                 .from('employees')
@@ -46,9 +47,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
                 .eq('email', session.user.email)
                 .single();
                 
-              // Permanent Fix: Verify the session hasn't shifted while query was pending
-              const current = await supabase.auth.getSession();
-              if (mounted && current.data.session?.user?.email === session.user.email) {
+              if (mounted) {
                 setEmployeeProfile(profile || null);
               }
             } catch (err) {

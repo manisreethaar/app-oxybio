@@ -57,21 +57,21 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const [quizScore, setQuizScore] = useState(0);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
 
-  const defaultQuestions = [
-    { q: "What is the primary objective of this procedure?", options: ["Compliance only", "Safety and Quality", "Speed of execution", "Documentation only"], a: 1 },
-    { q: "Which department is responsible for oversight?", options: ["Marketing", "Sales", "Quality Assurance", "Logistics"], a: 2 },
-    { q: "When should deviations be reported?", options: ["End of week", "Immediately", "Never", "Only if noticed by admin"], a: 1 }
-  ];
-
   const handleQuizSubmit = () => {
+    const questions = showAckModal.quiz_questions || [
+      { q: "What is the primary objective of this procedure?", options: ["Compliance only", "Safety and Quality", "Speed of execution", "Documentation only"], a: 1 },
+      { q: "Which department is responsible for oversight?", options: ["Marketing", "Sales", "Quality Assurance", "Logistics"], a: 2 },
+      { q: "When should deviations be reported?", options: ["End of week", "Immediately", "Never", "Only if noticed by admin"], a: 1 }
+    ];
+
     let score = 0;
-    userAnswers.forEach((ans, idx) => { if (ans === defaultQuestions[idx].a) score += 1; });
-    const finalPercent = (score / defaultQuestions.length) * 100;
+    userAnswers.forEach((ans, idx) => { if (ans === questions[idx]?.a) score += 1; });
+    const finalPercent = (score / questions.length) * 100;
     setQuizScore(finalPercent);
     if (finalPercent === 100) {
-      // Allow signature
+      // Success state handled in UI
     } else {
-      alert(`Quiz Score: ${finalPercent}%. You need 100% to sign this SOP. Please review the document.`);
+      alert(`Validation Failure: ${finalPercent}%. A 100% score is required to proceed with digital acknowledgment.`);
     }
   };
 
@@ -218,7 +218,11 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
 
             {quizStarted && quizScore < 100 && (
               <div className="space-y-6">
-                {defaultQuestions.map((q, qIdx) => (
+                {(showAckModal.quiz_questions || [
+                  { q: "What is the primary objective of this procedure?", options: ["Compliance only", "Safety and Quality", "Speed of execution", "Documentation only"], a: 1 },
+                  { q: "Which department is responsible for oversight?", options: ["Marketing", "Sales", "Quality Assurance", "Logistics"], a: 2 },
+                  { q: "When should deviations be reported?", options: ["End of week", "Immediately", "Never", "Only if noticed by admin"], a: 1 }
+                ]).map((q: any, qIdx: number) => (
                   <div key={qIdx} className="space-y-2">
                     <p className="text-xs font-bold text-gray-700">{qIdx + 1}. {q.q}</p>
                     <div className="grid gap-2">

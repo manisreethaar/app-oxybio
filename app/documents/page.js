@@ -70,16 +70,23 @@ export default function DocumentsPage() {
     if (!data.file || data.file.length === 0) return alert("Please select a file.");
     setUploading(true);
     
+    const fetchWithTimeout = (url, options, timeout = 30000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
+      ]);
+    };
+
     try {
       const formData = new FormData();
       formData.append('file', data.file[0]);
       formData.append('folder', 'document_vault');
       
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      const uploadRes = await fetchWithTimeout('/api/upload', { method: 'POST', body: formData });
       if (!uploadRes.ok) throw new Error("File upload failed.");
       const uploadData = await uploadRes.json();
 
-      const res = await fetch('/api/documents', {
+      const res = await fetchWithTimeout('/api/documents', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: data.title,

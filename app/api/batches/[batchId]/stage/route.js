@@ -29,7 +29,6 @@ export async function POST(request, { params }) {
     }
 
     // ─── 🛡️ STAGE 3 REMEDIATION: Mandatory Training Verification ─────────────
-    // Category mapping for SOP training requirements
     const stageToCategory = {
       media_prep: 'Fermentation',
       formulation: 'Fermentation',
@@ -39,8 +38,11 @@ export async function POST(request, { params }) {
     };
     
     const categoryNeeded = stageToCategory[to_stage];
-    if (categoryNeeded) {
-      // 🛡️ PRINCIPAL HARDENING: Require acknowledgment of the LATEST version
+    // 🛡️ ADMIN BYPASS: Ensure administrative accounts can always perform overrides
+    const { data: userData } = await supabase.from('employees').select('role').eq('id', user.id).single();
+
+    if (categoryNeeded && userData?.role !== 'admin') {
+      // 🛡️ PRINCIPAL HARDENING: Require acknowledgment of the LATEST version for non-admins
       const { data: latestSop, error: sopErr } = await supabase
         .from('sop_library')
         .select('id, version')
@@ -48,24 +50,22 @@ export async function POST(request, { params }) {
         .eq('is_active', true)
         .order('version', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (sopErr || !latestSop) {
-        return NextResponse.json({ error: `System Error: No active SOP found for category ${categoryNeeded}` }, { status: 500 });
-      }
+      if (latestSop) {
+        const { data: training, error: trainingErr } = await supabase
+          .from('sop_acknowledgements')
+          .select('*')
+          .eq('employee_id', emp.id)
+          .eq('sop_id', latestSop.id)
+          .limit(1);
 
-      const { data: training, error: trainingErr } = await supabase
-        .from('sop_acknowledgements')
-        .select('*')
-        .eq('employee_id', emp.id)
-        .eq('sop_id', latestSop.id)
-        .limit(1);
-
-      if (trainingErr || !training || training.length === 0) {
-         return NextResponse.json({ 
-           success: false, 
-           error: `GMP AUDIT FAILURE: Operator has not signed the LATEST version (v${latestSop.version}) of the ${categoryNeeded} SOP.` 
-         }, { status: 403 });
+        if (trainingErr || !training || training.length === 0) {
+           return NextResponse.json({ 
+             success: false, 
+             error: `Training Required: You must sign the latest ${categoryNeeded} SOP (v${latestSop.version}) in the SOP Library before performing this transition.` 
+           }, { status: 403 });
+        }
       }
     }
     // ─────────────────────────────────────────────────────────────────────────

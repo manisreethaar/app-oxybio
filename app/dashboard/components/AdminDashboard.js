@@ -21,11 +21,11 @@ export default function AdminDashboard({ employeeId }) {
 
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(true); // Initial load with skeletons
   }, []);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  const fetchDashboardData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const [devReq, overReq, batchesReq, leavesReq, tasksReq, compReq] = await Promise.all([
         supabase.from('ph_readings').select('batch_id').eq('is_deviation', true).eq('deviation_acknowledged', false),

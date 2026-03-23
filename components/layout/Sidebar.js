@@ -40,8 +40,8 @@ export default function Sidebar() {
     {
       title: 'LABORATORY',
       items: [
-        { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: canDo('batches', 'view') },
         { name: 'Scientific SVCS',   href: '/formulations', icon: Beaker,          show: canDo('batches', 'view') },
+        { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: canDo('batches', 'view') },
         { name: 'Digital LNB',       href: '/lab-notebook', icon: BookOpen,        show: canDo('lab_notebook', 'view') },
         { name: 'Equipment Maint.',  href: '/equipment',    icon: Wrench,          show: canDo('equipment', 'view') },
         { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: canDo('inventory', 'view') },

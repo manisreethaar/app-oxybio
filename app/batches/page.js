@@ -21,22 +21,41 @@ export default function BatchesPage() {
   
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
   const [formulations, setFormulations] = useState([]);
+  const [equipment, setEquipment] = useState([]);
   const [creatingBatch, setCreatingBatch] = useState(false);
+  const [selectedEquipId, setSelectedEquipId] = useState('');
 
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, watch } = useForm({
     resolver: zodResolver(z.object({
       variant: z.string().min(1),
-      formulation_id: z.string().uuid('Select a formulation')
+      formulation_id: z.string().uuid('Select a formulation'),
+      equipment_id: z.string().uuid('Select critical equipment')
     })),
-    defaultValues: { variant: 'O2B-Agri', formulation_id: '' }
+    defaultValues: { variant: 'O2B-Agri', formulation_id: '', equipment_id: '' }
   });
   
+  const selectedEquip = watch('equipment_id');
+  const activeEquipObj = useMemo(() => equipment.find(e => e.id === selectedEquip), [equipment, selectedEquip]);
+  const isEquipInvalid = useMemo(() => {
+    if (!activeEquipObj) return false;
+    const isOutOfService = activeEquipObj.status !== 'Operational';
+    const isExpired = activeEquipObj.calibration_due_date && (new Date(activeEquipObj.calibration_due_date) < new Date());
+    return isOutOfService || isExpired;
+  }, [activeEquipObj]);
+
   const supabase = useMemo(() => createClient(), []);
 
 
   useEffect(() => {
-    fetchBatches(); fetchFormulations();
+    fetchBatches(); fetchFormulations(); fetchEquipment();
   }, []);
+
+  const fetchEquipment = async () => {
+    try {
+      const { data, error } = await supabase.from('equipment').select('id, name, status, calibration_due_date').order('name');
+      if (!error) setEquipment(data || []);
+    } catch (err) { console.error('Fetch equipment error:', err); }
+  };
 
   const fetchFormulations = async () => {
     try {
@@ -70,6 +89,7 @@ export default function BatchesPage() {
 
 
   const handleBatchSubmit = async (data) => {
+    if (isEquipInvalid) return alert("CRITICAL LOCK: Selected equipment is non-compliant. Calibration required.");
     setCreatingBatch(true);
     try {
       const res = await fetch('/api/batches', {
@@ -108,14 +128,14 @@ export default function BatchesPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Production Batches</h1>
           <p className="text-sm text-gray-500 mt-1">Track fermentations and record CCP logs.</p>
         </div>
-        {role === 'admin' && (
-          <button onClick={() => setShowNewBatchModal(true)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
+        {canDo('batches', 'create') && (
+          <button onClick={() => { reset(); setShowNewBatchModal(true); }} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
             <Plus className="w-4 h-4 mr-1" /> New Batch
           </button>
         )}
       </div>
 
-      <section>
+      <section className="mt-8">
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
           <FlaskConical className="w-4 h-4 mr-1.5 text-navy" /> Active Fermentations
         </h2>
@@ -156,7 +176,7 @@ export default function BatchesPage() {
         )}
       </section>
 
-      <section>
+      <section className="mt-12">
         <h2 className="text-sm font-bold text-gray-900 mb-4">Batch History & QC</h2>
         <div className="surface overflow-hidden">
           <div className="overflow-x-auto">
@@ -194,14 +214,31 @@ export default function BatchesPage() {
             <h2 className="text-base font-bold text-gray-900 mb-4 tracking-tight">Initialize Production</h2>
             <form onSubmit={handleSubmit(handleBatchSubmit)} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Recipe Variant</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Recipe Version</label>
                 <select {...register('formulation_id')} className="w-full border border-gray-200 rounded-lg p-2.5 outline-none bg-white font-semibold text-gray-800 text-sm">
                   <option value="">Select Version...</option>
                   {formulations.map(f => <option key={f.id} value={f.id}>{f.code} - {f.name} (v{f.version})</option>)}
                 </select>
-                <p className="text-[10px] text-gray-400 font-medium mt-1">Traceability matrix requires valid binding version.</p>
               </div>
-              <button disabled={creatingBatch} type="submit" className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Critical Equipment</label>
+                <select {...register('equipment_id')} className={`w-full border rounded-lg p-2.5 outline-none bg-white font-semibold text-sm ${isEquipInvalid ? 'border-red-500 text-red-600' : 'border-gray-200 text-gray-800'}`}>
+                  <option value="">Select Primary Unit...</option>
+                  {equipment.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.name} ({e.status}) {e.calibration_due_date && new Date(e.calibration_due_date) < new Date() ? '— EXPIRED' : ''}
+                    </option>
+                  ))}
+                </select>
+                {isEquipInvalid && (
+                  <p className="text-[10px] text-red-600 font-black uppercase mt-1.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Auto-Inhibitor Active: Recalibration Required
+                  </p>
+                )}
+              </div>
+
+              <button disabled={creatingBatch || isEquipInvalid} type="submit" className={`w-full text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider shadow-sm ${isEquipInvalid ? 'bg-gray-300 cursor-not-allowed' : 'bg-navy hover:bg-navy-hover'}`}>
                 {creatingBatch ? 'Initializing...' : 'Commence Production'}
               </button>
             </form>

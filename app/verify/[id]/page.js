@@ -16,12 +16,10 @@ export default async function VerifyEmployeePage({ params }) {
   );
 
   // 🛡️ SECURITY HARDENING: Use a random verification token instead of the internal DB ID
-  // This prevents 'ID Scanning' attacks and PII extraction.
   const { data: emp, error } = await supabaseAdmin
     .from('employees')
     .select('id, full_name, designation, role, is_active, photo_url, joined_date, verification_token')
-    .or(`verification_token.eq.${id},id.eq.${id}`) // Fallback for legacy IDs during migration
-    .eq('is_active', true)
+    .or(`verification_token.eq.${id},id.eq.${id}`)
     .single();
 
   if (error || !emp) {
@@ -32,7 +30,27 @@ export default async function VerifyEmployeePage({ params }) {
             <XCircle className="w-10 h-10 text-red-600" />
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Verification Failed</h1>
-          <p className="text-slate-500 font-medium">This ID does not match any active record in the Oxygen Bioinnovations registry.</p>
+          <p className="text-slate-500 font-medium">This identifier does not match any record in the Oxygen Bioinnovations registry.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle Inactive status separately
+  if (!emp.is_active) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-xl border border-rose-100">
+          <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-10 h-10 text-rose-500 opacity-40" />
+          </div>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Access Revoked</h1>
+          <p className="text-rose-500 font-bold mb-4 uppercase tracking-widest text-xs">Credential Suspended</p>
+          <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 text-left mb-6">
+             <p className="text-sm font-bold text-rose-900">{emp.full_name}</p>
+             <p className="text-xs font-medium text-rose-700">{emp.designation || 'STAFF'}</p>
+          </div>
+          <p className="text-slate-500 text-sm">This identity is acknowledged by Oxygen Bioinnovations but is currently marked as <strong>Inactive</strong>. Access to facility nodes is restricted.</p>
         </div>
       </div>
     );

@@ -16,9 +16,16 @@ const patchSchema = z.object({
 export async function PATCH(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms));
+    
+    const { data: { user }, error: authError } = await Promise.race([
+        supabase.auth.getUser(),
+        timeout(5000)
+    ]).catch(err => ({ data: { user: null }, error: err }));
 
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized or Auth Timeout' }, { status: 401 });
+    } 
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });

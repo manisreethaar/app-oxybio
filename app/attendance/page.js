@@ -38,6 +38,7 @@ export default function AttendancePage() {
   const [overrideLocation, setOverrideLocation] = useState(false);
   const webcamRef = useRef(null);
   const [now, setNow] = useState(Date.now());
+  const [captureStatus, setCaptureStatus] = useState("Capture");
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -127,35 +128,76 @@ export default function AttendancePage() {
     a.click(); URL.revokeObjectURL(url);
   };
 
+  const fallbackToIPLocation = async () => {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      if (!res.ok) throw new Error("Fallback provider failed.");
+      const data = await res.json();
+      if (data.latitude && data.longitude) {
+        setGeoData({ lat: data.latitude, lng: data.longitude });
+        setShowWebcam(true);
+      } else {
+        throw new Error("Invalid fallback coordinates.");
+      }
+    } catch (err) {
+      setCheckInError("Total location failure: Hardware GPS blocked AND Network mapping failed. Please enable location services.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const initiateCheckIn = () => {
     if (actionLoading) return;
     setCheckInError('');
     setActionLoading(true);
     if (!navigator.geolocation) {
-      setCheckInError("Geolocation is not supported by your browser");
-      setActionLoading(false); return;
+      fallbackToIPLocation();
+      return;
     }
     navigator.geolocation.getCurrentPosition(
       (position) => { setGeoData({ lat: position.coords.latitude, lng: position.coords.longitude }); setShowWebcam(true); setActionLoading(false); },
-      (err) => { setCheckInError("Location retrieval failed. Enable GPS."); setActionLoading(false); },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      (err) => { 
+        console.warn(`Hardware GPS failed (Code ${err.code}). Triggering permanent fallback...`);
+        fallbackToIPLocation();
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 } 
     );
   };
 
+
   const captureSelfieAndCheckIn = async () => {
-    setActionLoading(true); setCheckInError('');
-    if (!webcamRef.current) { setCheckInError('Camera not ready.'); setActionLoading(false); return; }
+    setActionLoading(true); setCheckInError(''); setCaptureStatus("Processing...");
+    if (!webcamRef.current) { setCheckInError('Camera not ready.'); setActionLoading(false); setCaptureStatus("Capture"); return; }
+    
+    setCaptureStatus("Grabbing Feed...");
     const imageSrc = webcamRef.current.getScreenshot();
-    if (!imageSrc) { setCheckInError("Capture failed."); setActionLoading(false); return; }
+    if (!imageSrc) { setCheckInError("Camera feed unreadable. Check permissions."); setActionLoading(false); setCaptureStatus("Capture"); return; }
     
     try {
-      const resBlob = await fetch(imageSrc); const blob = await resBlob.blob();
-      const formData = new FormData(); formData.append('file', blob, 'selfie.webp');
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error("Photo upload failed");
+      setCaptureStatus("Encoding...");
+      const fetchWithTimeout = (url, options, timeout = 20000) => {
+        return Promise.race([
+          fetch(url, options),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
+        ]);
+      };
 
-      const checkInRes = await fetch('/api/attendance/check-in', {
+      const byteString = atob(imageSrc.split(',')[1]);
+      const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
+      const blob = new Blob([ab], {type: mimeString});
+      
+      const formData = new FormData(); formData.append('file', blob, 'selfie.jpeg');
+      
+      setCaptureStatus("Uploading...");
+      const uploadRes = await fetchWithTimeout('/api/upload', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.error || `Upload failed: ${uploadRes.status}`);
+
+      setCaptureStatus("Verifying...");
+      const checkInRes = await fetchWithTimeout('/api/attendance/check-in', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: geoData.lat, lng: geoData.lng, photo_url: uploadData.url, override: overrideLocation })
       });
@@ -165,7 +207,13 @@ export default function AttendancePage() {
       setShowWebcam(false);
       notifyEmployee(employeeProfile.id, '🟢 Checked In', `Successful check-in at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST.`, '/attendance');
       fetchAttendanceData();
-    } catch (err) { setCheckInError(err.message); } finally { setActionLoading(false); }
+    } catch (err) { 
+      setCheckInError(err.message); 
+      console.error(err);
+    } finally { 
+      setActionLoading(false); 
+      setCaptureStatus("Capture");
+    }
   };
 
   const handleCheckOut = async () => {
@@ -404,14 +452,20 @@ export default function AttendancePage() {
               <p className="text-xs text-gray-500 mt-0.5">Secure GMP Compliance protocols active.</p>
             </div>
             <div className="relative bg-black aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
-              <Webcam audio={false} ref={webcamRef} screenshotFormat="image/webp" videoConstraints={{ facingMode: "user" }} className="w-full h-full object-cover" mirrored={true}/>
+              <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: "user" }} className="w-full h-full object-cover" mirrored={true}/>
               <div className="absolute inset-0 border-[32px] border-black/40 pointer-events-none"></div>
               <div className="absolute inset-0 m-8 border border-white/40 border-dashed rounded-[100%] pointer-events-none"></div>
             </div>
+            {checkInError && (
+              <div className="px-5 py-3 bg-red-50 text-red-700 text-xs font-bold border-b border-red-100 flex items-start text-left">
+                <AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />
+                {checkInError}
+              </div>
+            )}
             <div className="p-4 bg-gray-50 flex gap-3">
               <button onClick={() => setShowWebcam(false)} className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm">Cancel</button>
               <button onClick={captureSelfieAndCheckIn} disabled={actionLoading} className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
-                Capture
+                {captureStatus}
               </button>
             </div>
           </div>

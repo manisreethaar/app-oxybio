@@ -13,8 +13,14 @@ const postSchema = z.object({
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms));
+    
+    const { data: { user }, error: authError } = await Promise.race([
+        supabase.auth.getUser(),
+        timeout(5000)
+    ]).catch(err => ({ data: { user: null }, error: err }));
+    
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized or Auth Timeout' }, { status: 401 });
 
     const { data: emp, error: empError } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
     if (empError || !emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });

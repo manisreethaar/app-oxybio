@@ -5,10 +5,16 @@ import { createClient as createServerClient } from '@/utils/supabase/server';
 
 export async function POST(req) {
   try {
-    // 1. Core Authentication Check
+    // 1. Core Authentication Check with Timeout
     const supabaseServer = createServerClient();
-    const { data: { user } } = await supabaseServer.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized Upload Attempt' }, { status: 401 });
+    const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms));
+
+    const { data: { user } } = await Promise.race([
+        supabaseServer.auth.getUser(),
+        timeout(5000)
+    ]).catch(err => ({ data: { user: null }, error: err }));
+
+    if (!user) return NextResponse.json({ error: 'Unauthorized Upload Attempt or Auth Timeout' }, { status: 401 });
 
     const formData = await req.formData();
     const file = formData.get('file');
@@ -34,14 +40,15 @@ export async function POST(req) {
         "FFD8FFE0": "image/jpeg",
         "FFD8FFE1": "image/jpeg",
         "FFD8FFE2": "image/jpeg",
-        "25504446": "application/pdf"
+        "25504446": "application/pdf",
+        "52494646": "image/webp" // Added support for WEBP (RIFF)
     };
 
     const detected = signatures[hex] || signatures[hex.substring(0,6)];
-    if (!detected && !type.startsWith('video/')) {
-        // Allow videos but block mismatched/suspicious documents/images
+    if (!detected && !type.startsWith('video/') && file.name !== 'selfie.webp' && file.name !== 'selfie.jpeg') {
+        // Allow videos and dynamic web-capture selfies but block mismatched/suspicious documents/images
         if (!type.includes('csv') && !type.includes('sheet')) {
-             return NextResponse.json({ error: 'Security Violation: File signature mismatch' }, { status: 403 });
+             return NextResponse.json({ error: `Security Violation: File signature mismatch (${hex})` }, { status: 403 });
         }
     }
 
@@ -62,8 +69,11 @@ export async function POST(req) {
       return NextResponse.json({ error: `File type ${file.type} is not allowed by corporate proxy.` }, { status: 415 });
     }
 
-    // 4. Transform File to Stream (Memory Efficient)
-    const stream = Readable.fromWeb(file.stream());
+    // 4. Transform File to Buffer (Reliable for Google APIs)
+    const arrayBuffer = await file.arrayBuffer();
+    const bufferStream = new Readable();
+    bufferStream.push(Buffer.from(arrayBuffer));
+    bufferStream.push(null);
 
     // 5. Environmental Key Guard Check
     if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
@@ -84,19 +94,16 @@ export async function POST(req) {
     // File Identity Sanitation
     const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
-    console.log(`Starting streaming upload for: ${safeName} (${file.size} bytes)`);
+    console.log(`Starting buffed upload for: ${safeName} (${file.size} bytes)`);
 
-    const driveResponse = await drive.files.create({
-      requestBody: {
-        name: safeName,
-        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID],
-      },
-      media: {
-        mimeType: file.type,
-        body: stream, // Streaming body
-      },
-      fields: 'id, webViewLink, webContentLink',
-    });
+    const driveResponse = await Promise.race([
+      drive.files.create({
+        requestBody: { name: safeName, parents: [process.env.GOOGLE_DRIVE_FOLDER_ID] },
+        media: { mimeType: file.type, body: bufferStream },
+        fields: 'id, webViewLink, webContentLink',
+      }),
+      timeout(15000) // 15s absolute limit for GDrive handshake
+    ]);
 
     // ARCHITECTURAL FIX: REMOVED drive.permissions.create({ role: 'reader', type: 'anyone' })
     // Files are now PRIVATE by default. Use /api/files/[id] proxy to view.

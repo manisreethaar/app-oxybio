@@ -40,7 +40,7 @@ export default function ShelfLifePage() {
     setLoading(true);
     try {
       const [{ data: studyData }, { data: batchData }] = await Promise.all([
-        supabase.from('shelf_life_studies').select('*, batches(batch_id, variant)').order('created_at', { ascending: false }),
+        supabase.from('shelf_life_studies').select('*, batches(batch_id, variant), shelf_life_logs(*)').order('created_at', { ascending: false }),
         supabase.from('batches').select('id, batch_id, variant').eq('status', 'released').limit(50)
       ]);
       setStudies(studyData || []);
@@ -104,46 +104,62 @@ export default function ShelfLifePage() {
         ) : studies.length === 0 ? (
           <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No active stability studies. Select a released batch to begin longevity testing.</div>
         ) : (
-          studies.map((study) => (
-            <div key={study.id} className="surface p-6 hover:shadow-md transition-all">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-blue-50 px-2 py-0.5 rounded border border-blue-100 mb-2 inline-block">Active Study</span>
-                  <h3 className="text-lg font-bold text-gray-900">{study.batches?.batch_id}</h3>
-                  <p className="text-xs font-semibold text-gray-500 mt-1">{study.batches?.variant} | {study.storage_condition}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Started</p>
-                  <p className="text-sm font-bold text-gray-700">{new Date(study.start_date).toLocaleDateString()}</p>
-                </div>
-              </div>
+          studies.map((study) => {
+            const chartData = (study.shelf_life_logs || []).map(log => ({
+              day: `D${log.day_number}`,
+              ph: (log.test_data || {}).pH || 0,
+              brix: (log.test_data || {}).Brix || 0
+            })).sort((a,b) => parseInt(a.day.slice(1)) - parseInt(b.day.slice(1)));
 
-              {/* Innovation 4: Dynamic Degradation Curves */}
-              <div className="h-40 w-full mb-6 bg-gray-50 rounded-xl p-2 border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase mb-2 px-2">Stability Trend (pH / Brix)</p>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={[
-                    { day: 'D0', val: 4.2 }, { day: 'D7', val: 4.15 }, { day: 'D14', val: 4.1 }, { day: 'D30', val: 4.05 }, { day: 'D60', val: 3.98 }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
-                    <YAxis hide domain={['auto', 'auto']} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }} />
-                    <Line type="monotone" dataKey="val" stroke="#0f172a" strokeWidth={2} dot={{ r: 3, fill: '#0f172a' }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+            // Fallback if no logs exist yet
+            const displayData = chartData.length > 0 ? chartData : [{ day: 'D0', ph: 4.2, brix: 10 }];
 
-              <div className="grid grid-cols-6 gap-2 mb-8">
-                {TIMEPOINTS.map((tp) => (
-                  <div key={tp} className="text-center group">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 group-hover:text-navy">D{tp}</p>
-                    <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${tp === 0 ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
-                      {tp === 0 ? <CheckCircle2 className="w-4 h-4"/> : <Clock className="w-4 h-4"/>}
-                    </div>
+            return (
+              <div key={study.id} className="surface p-6 hover:shadow-md transition-all">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-blue-50 px-2 py-0.5 rounded border border-blue-100 mb-2 inline-block">Study ID: {study.id.slice(0,8).toUpperCase()}</span>
+                    <h3 className="text-lg font-bold text-gray-900">{study.batches?.batch_id}</h3>
+                    <p className="text-xs font-semibold text-gray-500 mt-1">{study.batches?.variant} | {study.storage_condition}</p>
                   </div>
-                ))}
-              </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Status</p>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${study.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                      {study.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="h-44 w-full mb-6 bg-slate-50/50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[9px] font-black text-gray-400 uppercase mb-3 flex justify-between">
+                    Stability Analytics <span>{study.status}</span>
+                  </p>
+                  <ResponsiveContainer width="100%" height="80%">
+                    <LineChart data={displayData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
+                      <YAxis hide domain={['auto', 'auto']} />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }} />
+                      <Line type="monotone" dataKey="ph" name="pH" stroke="#0f172a" strokeWidth={2.5} dot={{ r: 4, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="brix" name="Brix" stroke="#3b82f6" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="grid grid-cols-6 gap-2 mb-8">
+                  {TIMEPOINTS.map((tp) => {
+                    const logExists = (study.shelf_life_logs || []).some(l => l.day_number === tp);
+                    return (
+                      <div key={tp} className="text-center group">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 group-hover:text-navy">D{tp}</p>
+                        <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${logExists ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                          {logExists ? <CheckCircle2 className="w-4 h-4"/> : <Clock className="w-4 h-4"/>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
 
               <div className="flex gap-2">
                 {study.status !== 'Completed' && (
@@ -156,7 +172,8 @@ export default function ShelfLifePage() {
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

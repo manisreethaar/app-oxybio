@@ -100,15 +100,24 @@ export default function ConsumerResearchPage() {
               {/* Innovation 5: Sensory Spider Charts */}
               <div className="h-48 w-full mb-6 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                    { subject: 'Taste', A: 8.5 }, { subject: 'Aroma', A: 7.0 }, { subject: 'Texture', A: 9.0 }, { subject: 'Aftertaste', A: 6.5 }, { subject: 'Visual', A: 8.0 }
-                  ]}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={
+                    (s.test_criteria || ['Taste', 'Aroma', 'Texture', 'Aftertaste', 'Visual']).map(crit => {
+                      // Calculate average score for this specific criteria from the panel
+                      const rawScores = (s.scores || []);
+                      const avgForCrit = rawScores.length > 0 
+                        ? (rawScores.reduce((acc, curr) => acc + (curr[crit] || 0), 0) / rawScores.length)
+                        : (s.avg_score || 0); // fallback to composite if no per-criteria logs
+
+                      return { subject: crit, A: parseFloat(avgForCrit.toFixed(1)) };
+                    })
+                  }>
                     <PolarGrid stroke="#e2e8f0" />
                     <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} />
                     <Radar name="Score" dataKey="A" stroke="#1F3A5F" fill="#1F3A5F" fillOpacity={0.5} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+
 
               <div className="flex items-end justify-between">
                 <div><p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Score</p><div className="flex items-baseline gap-2"><span className={`text-3xl font-black tracking-tight ${s.avg_score >= 7.0 ? 'text-navy' : 'text-red-600'}`}>{s.avg_score || '—'}</span><span className="text-xs font-semibold text-gray-400">/ 10</span></div></div>

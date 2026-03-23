@@ -63,7 +63,11 @@ function DigitalIDCard({ emp }) {
           </p>
         </div>
         <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 hover:scale-105 transition-transform origin-bottom-right">
-          <QRCodeSVG value={`https://app-oxybio.vercel.app/verify/${emp.id}`} size={64} level="M" />
+          <QRCodeSVG 
+            value={`${typeof window !== 'undefined' ? window.location.origin : 'https://app-oxybio.vercel.app'}/verify/${emp.verification_token || emp.id}`} 
+            size={64} 
+            level="M" 
+          />
         </div>
       </div>
     </div>
@@ -113,8 +117,15 @@ export default function ProfilePage() {
 
   const handleSaveSubmit = async (data) => {
     setSaving(true);
+    const fetchWithTimeout = (url, options, timeout = 20000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
+      ]);
+    };
+
     try {
-      const res = await fetch('/api/profile', {
+      const res = await fetchWithTimeout('/api/profile', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
@@ -129,16 +140,23 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if (!file) return;
     setUploadingPhoto(true);
+    const fetchWithTimeout = (url, options, timeout = 30000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
+      ]);
+    };
+
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('folder', 'employee_photos');
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await fetchWithTimeout('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error("Network response was not OK");
       
       const data = await res.json();
       if (data.url) {
-        const patchRes = await fetch('/api/profile', {
+        const patchRes = await fetchWithTimeout('/api/profile', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ photo_url: data.url })
@@ -255,15 +273,16 @@ export default function ProfilePage() {
                   type="submit"
                   form="profile-form"
                   disabled={saving}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md hover:from-teal-400 hover:to-cyan-500"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-navy text-white shadow-md hover:bg-navy-hover"
                 >
                   {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Save className="w-4 h-4"/>}
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               ) : (
                 <button
-                  onClick={() => setEditing(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md hover:from-teal-400 hover:to-cyan-500"
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditing(true); }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 bg-navy text-white shadow-md hover:bg-navy-hover"
                 >
                   <Edit3 className="w-4 h-4"/> Edit Profile
                 </button>

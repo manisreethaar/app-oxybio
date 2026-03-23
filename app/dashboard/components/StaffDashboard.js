@@ -16,11 +16,11 @@ export default function StaffDashboard({ employeeId, role }) {
 
 
   useEffect(() => {
-    fetchStaffData();
+    fetchStaffData(true);
   }, []);
 
-  const fetchStaffData = async () => {
-    setLoading(true);
+  const fetchStaffData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const [tasksRes, leavesRes, batchesRes] = await Promise.all([
         supabase.from('tasks').select('*').eq('assigned_to', employeeId).in('status', ['open', 'in-progress']).order('due_date', { ascending: true }).limit(5),
