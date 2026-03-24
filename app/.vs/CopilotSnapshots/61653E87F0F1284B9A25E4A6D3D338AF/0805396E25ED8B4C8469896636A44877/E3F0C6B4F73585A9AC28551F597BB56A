@@ -1,5 +1,5 @@
-'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+﻿'use client';
+import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -53,7 +53,57 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const supabase = useMemo(() => createClient(), []);
 
 
-  const checkTraining = useCallback(async (signal) => {
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
+    const loadAll = async () => {
+      try {
+        await fetchData(0, false, controller.signal);
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error("Inventory fetch failed:", err);
+      }
+    };
+
+    if (employeeProfile) {
+      if (!initialStock || initialStock.length === 0) {
+        loadAll();
+      }
+      checkTraining(controller.signal);
+    }
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, [employeeProfile, initialStock]);
+
+  // Debounced Search Effect
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      setPage(0);
+      setHasMore(true);
+      fetchData(0, false);
+    }, 400); // 400ms debounce
+    return () => clearTimeout(delay);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (selectedStock) {
+      setLoadingMovements(true);
+      fetch(`/api/inventory/movements?stock_id=${selectedStock.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setMovements(data.data);
+          setLoadingMovements(false);
+        })
+        .catch(() => setLoadingMovements(false));
+    } else {
+      setMovements([]);
+    }
+  }, [selectedStock]);
+
+  const checkTraining = async (signal) => {
     if (role === 'admin') {
       setTrainingStatus({ isTrained: true });
       return;
@@ -68,9 +118,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } finally {
       setCheckingTraining(false);
     }
-  }, [role, employeeProfile]);
+  };
 
-  const fetchData = useCallback(async (pageNum = 0, append = false, signal = null) => {
+  const fetchData = async (pageNum = 0, append = false, signal = null) => {
     if (!append) setLoading(true);
     try {
       const start = pageNum * PAGE_SIZE;
@@ -111,58 +161,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } finally {
       setLoading(false);
     }
-  }, [supabase, PAGE_SIZE, searchTerm, items, vendors]);
+  };
 
-
-  useEffect(() => {
-    let mounted = true;
-    const controller = new AbortController();
-
-    const loadAll = async () => {
-      try {
-        await fetchData(0, false, controller.signal);
-      } catch (err) {
-        if (err.name !== 'AbortError') console.error("Inventory fetch failed:", err);
-      }
-    };
-
-    if (employeeProfile) {
-      if (!initialStock || initialStock.length === 0) {
-        loadAll();
-      }
-      checkTraining(controller.signal);
-    }
-
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
-  }, [employeeProfile, initialStock, fetchData, checkTraining]);
-
-  // Debounced Search Effect
-  useEffect(() => {
-    const delay = setTimeout(() => {
-      setPage(0);
-      setHasMore(true);
-      fetchData(0, false);
-    }, 400); // 400ms debounce
-    return () => clearTimeout(delay);
-  }, [searchTerm, fetchData]);
-
-  useEffect(() => {
-    if (selectedStock) {
-      setLoadingMovements(true);
-      fetch(`/api/inventory/movements?stock_id=${selectedStock.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) setMovements(data.data);
-          setLoadingMovements(false);
-        })
-        .catch(() => setLoadingMovements(false));
-    } else {
-      setMovements([]);
-    }
-  }, [selectedStock]);
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchData(nextPage, true);
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'coa' | 'sds') => {
     const file = e.target.files?.[0];

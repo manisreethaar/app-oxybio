@@ -48,7 +48,7 @@ export async function POST(request) {
 
     const insertPayload = tasks.map(t => ({
       ...t,
-      assigned_by: user.id,
+      assigned_by: creator.id,
       logged_minutes: 0
     }));
 
