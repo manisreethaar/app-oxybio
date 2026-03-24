@@ -36,7 +36,7 @@ export async function POST(request) {
     const driveResponse = await drive.files.create({
       requestBody: {
         name: file.name,
-        // You could add parents: ['FOLDER_ID'] if you have a specific destination index
+        parents: ['1yFID5vJ56zTWsBN8OCRWLIVfP6hpLjAB'], // Target folder ID provided by user
       },
       media: {
         mimeType: file.type || 'application/octet-stream',
