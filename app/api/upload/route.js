@@ -15,12 +15,17 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
     const stream = Readable.from(buffer);
 
+    // Normalise Google private key — Vercel can store with literal \n or real newlines
+    const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
+    const privateKey = rawKey.includes('\\n') 
+      ? rawKey.replace(/\\n/g, '\n')   // stored as literal \n → convert to real newlines
+      : rawKey;                          // already has real newlines → use as-is
+
     // 1. Google Auth with Write/Upload Scopes
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        // Ensure double escaped newlines are parsed correctly if set in Vercel envs
-        private_key: process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : '',
+        private_key: privateKey,
       },
       scopes: ['https://www.googleapis.com/auth/drive.file'], 
     });
