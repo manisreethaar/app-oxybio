@@ -137,55 +137,46 @@ export default function BatchDetailPage() {
 const handleStageTransition = async (toStage) => {
   if (actionLoading) return;
 
-  // 🔥 NEW: If starting batch (first stage)
+  // Hard LNB gate — cannot release without notebook entries
+  if (toStage === 'released' && batch._lnbCount === 0) {
+    alert('⛔ Cannot release batch. Lab Notebook is empty. Document your experiment in the LNB before releasing.');
+    return;
+  }
+
+  // First stage start — single confirm, inventory check
   if (batch.status === 'planned' && toStage === 'media_prep') {
-    const confirmStart = confirm("Start batch? System will check inventory.");
-    if (!confirmStart) return;
-
+    if (!confirm('Start batch? This will validate inventory.')) return;
     setActionLoading(true);
-
     try {
-      // 🔥 Inventory check before starting
       const resCheck = await fetch(`/api/inventory/check?batch_id=${batchId}`);
       const checkData = await resCheck.json();
-
       if (!checkData.ok) {
-        alert("Insufficient inventory. Cannot start batch.");
+        alert('Insufficient inventory. Cannot start batch.');
         setActionLoading(false);
         return;
       }
-
-      // 🔥 Update batch status to running
-      await fetch(`/api/batches/${batchId}/start`, {
-        method: 'POST'
-      });
-
+      await fetch(`/api/batches/${batchId}/start`, { method: 'POST' });
     } catch (err) {
-      alert("Error starting batch");
+      alert('Error starting batch');
       setActionLoading(false);
       return;
     }
+    // fall through to stage transition below
   }
 
-  // 🔥 Existing stage transition
-  if (!confirm(`Move batch to ${toStage.toUpperCase()}?`)) return;
-
+  if (!confirm(`Move batch to ${toStage.toUpperCase().replace('_', ' ')}?`)) {
+    setActionLoading(false);
+    return;
+  }
   setActionLoading(true);
 
   try {
     const res = await fetch(`/api/batches/${batchId}/stage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from_stage: batch.current_stage,
-        to_stage: toStage
-      })
+      body: JSON.stringify({ from_stage: batch.current_stage, to_stage: toStage })
     });
-
-    if (res.ok) {
-      await fetchBatchDetail();
-    }
-
+    if (res.ok) await fetchBatchDetail();
   } finally {
     setActionLoading(false);
   }
@@ -222,9 +213,22 @@ const handleStageTransition = async (toStage) => {
                     {isCompleted ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </div>
                   <span className={`text-[9px] font-bold uppercase tracking-wider mt-1.5 ${isCurrent ? 'text-gray-900 font-black' : 'text-gray-400'}`}>{stage.label}</span>
-                  {isCurrent && idx < STAGES.length - 1 && (
-                    <button onClick={() => { if (!trainingStatus.isTrained) { alert(`Training Required.`); return; } handleStageTransition(STAGES[idx + 1].id); }} disabled={actionLoading} className={`absolute -right-10 top-2.5 p-1 text-white rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 ${!trainingStatus.isTrained ? 'bg-gray-300' : 'bg-navy hover:bg-navy-hover'}`}><ChevronRight className="w-3.5 h-3.5" /></button>
-                  )}
+                  {isCurrent && idx < STAGES.length - 1 && (() => {
+                    const nextStage = STAGES[idx + 1].id;
+                    const lnbBlocked = nextStage === 'released' && batch._lnbCount === 0;
+                    const trainingBlocked = !trainingStatus.isTrained;
+                    const isBlocked = lnbBlocked || trainingBlocked;
+                    return (
+                      <button 
+                        onClick={() => { if (trainingBlocked) { alert('Training Required.'); return; } handleStageTransition(nextStage); }} 
+                        disabled={actionLoading}
+                        title={lnbBlocked ? 'LNB required before release' : trainingBlocked ? 'Training required' : `Move to ${nextStage}`}
+                        className={`absolute -right-10 top-2.5 p-1 text-white rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 ${lnbBlocked ? 'bg-red-500 animate-pulse' : trainingBlocked ? 'bg-gray-300' : 'bg-navy hover:bg-navy-hover'}`}
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })()}
                 </div>
                 {idx < STAGES.length - 1 && <div className={`h-0.5 flex-1 mx-2 rounded-full ${isCompleted ? 'bg-navy' : 'bg-gray-100'}`}></div>}
               </div>
