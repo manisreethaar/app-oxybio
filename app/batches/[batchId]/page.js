@@ -79,9 +79,20 @@ export default function BatchDetailPage() {
 
   const fetchBatchDetail = async (signal) => {
     try {
-      const { data: b, error } = await supabase.from('batches').select('*, ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))').eq('id', batchId).single();
+      const { data: b, error } = await supabase
+        .from('batches')
+        .select('*, formulations(name, code, version), ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))')
+        .eq('id', batchId)
+        .single();
       if (error) throw error;
       if (b) {
+        // Also fetch linked LNB entry count
+        const { count: lnbCount } = await supabase
+          .from('lab_notebook_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('batch_id', batchId);
+        b._lnbCount = lnbCount || 0;
+
         const unifiedLogs = [
           ...Array.isArray(b.ph_readings) ? b.ph_readings.map(l => ({ ...l, type: 'ph', parameter_name: 'pH', parameter_value: l.ph_value })) : [],
           ...Array.isArray(b.lab_logs) ? b.lab_logs : []
@@ -123,18 +134,62 @@ export default function BatchDetailPage() {
     } finally { setIsSubmitting(false); }
   };
 
-  const handleStageTransition = async (toStage) => {
-    if (actionLoading) return; if (!confirm(`Move batch to ${toStage.toUpperCase()}?`)) return;
+const handleStageTransition = async (toStage) => {
+  if (actionLoading) return;
+
+  // 🔥 NEW: If starting batch (first stage)
+  if (batch.status === 'planned' && toStage === 'media_prep') {
+    const confirmStart = confirm("Start batch? System will check inventory.");
+    if (!confirmStart) return;
+
     setActionLoading(true);
+
     try {
-      const res = await fetch(`/api/batches/${batchId}/stage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_stage: batch.current_stage, to_stage: toStage, notes: `Transitioned during production run.` }) });
-      if (res.ok) {
-        await fetchBatchDetail();
-        const nextParams = PARAMETERS[toStage] || []; if (nextParams.length > 0) setSelectedParam(nextParams[0]);
-        notifyEmployee(employeeProfile.id, toStage === 'released' ? '🎉 Released' : '➡️ Stage Transition', `Batch ${batch?.batch_id} moved to ${STAGES.find(s => s.id === toStage)?.label}.`, `/batches/${batchId}`);
+      // 🔥 Inventory check before starting
+      const resCheck = await fetch(`/api/inventory/check?batch_id=${batchId}`);
+      const checkData = await resCheck.json();
+
+      if (!checkData.ok) {
+        alert("Insufficient inventory. Cannot start batch.");
+        setActionLoading(false);
+        return;
       }
-    } finally { setActionLoading(false); }
-  };
+
+      // 🔥 Update batch status to running
+      await fetch(`/api/batches/${batchId}/start`, {
+        method: 'POST'
+      });
+
+    } catch (err) {
+      alert("Error starting batch");
+      setActionLoading(false);
+      return;
+    }
+  }
+
+  // 🔥 Existing stage transition
+  if (!confirm(`Move batch to ${toStage.toUpperCase()}?`)) return;
+
+  setActionLoading(true);
+
+  try {
+    const res = await fetch(`/api/batches/${batchId}/stage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from_stage: batch.current_stage,
+        to_stage: toStage
+      })
+    });
+
+    if (res.ok) {
+      await fetchBatchDetail();
+    }
+
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   if (authLoading || !batch) return <div className="p-8 text-center text-gray-400 font-medium">Synchronizing node detail...</div>;
 
@@ -145,7 +200,17 @@ export default function BatchDetailPage() {
     <div className="page-container">
       <Link href="/batches" className="inline-flex items-center text-xs font-semibold text-gray-500 hover:text-navy transition-colors"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Registry</Link>
 
-      {/* Stage Tracker */}
+      {/* LNB Warning Banner — shown when approaching completion with no LNB entries */}
+      {batch._lnbCount === 0 && ['harvest', 'downstream', 'qc_hold'].includes(batch.current_stage) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-800">Lab Notebook is empty</p>
+            <p className="text-xs text-amber-700 mt-0.5">This batch cannot be completed without LNB entries. Document observations before proceeding.</p>
+          </div>
+          <Link href="/lab-notebook" className="shrink-0 px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700">Open LNB →</Link>
+        </div>
+      )}
       <div className="surface p-4 overflow-x-auto">
         <div className="flex items-center justify-between min-w-[700px] px-2">
           {STAGES.map((stage, idx) => {

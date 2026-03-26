@@ -1,3 +1,4 @@
+
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -27,10 +28,10 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    
+
     // Support batch inserts for multiple assignees
     const tasks = Array.isArray(body) ? body : [body];
-    
+
     for (const t of tasks) {
       const parsed = createTaskSchema.safeParse(t);
       if (!parsed.success) {
@@ -41,8 +42,8 @@ export async function POST(request) {
     // Fix: Verify creator exists in employees table before inserting
     const { data: creator, error: creatorErr } = await supabase.from('employees').select('id').eq('email', user.email).single();
     if (creatorErr || !creator) {
-      return NextResponse.json({ 
-        error: "CRITICAL PROFILE SYNC ERROR: Your user account is authenticated but not registered in the 'employees' table. Please contact an admin to add your ID." 
+      return NextResponse.json({
+        error: "CRITICAL PROFILE SYNC ERROR: Your user account is authenticated but not registered in the 'employees' table. Please contact an admin to add your ID."
       }, { status: 403 });
     }
 
@@ -54,7 +55,7 @@ export async function POST(request) {
 
     const { data, error } = await supabase.from('tasks').insert(insertPayload).select();
     if (error) throw error;
-    
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -85,8 +86,8 @@ export async function PATCH(request) {
         updateData = { checklist: payload.checklist };
         break;
       case 'submit_review':
-        updateData = { 
-          status: 'done', 
+        updateData = {
+          status: 'done',
           approval_status: payload.is_personal_reminder ? 'approved' : 'pending_review',
           completion_note: payload.completion_note,
           completed_at: new Date().toISOString(),
@@ -105,7 +106,7 @@ export async function PATCH(request) {
 
     const { error } = await supabase.from('tasks').update(updateData).eq('id', task_id);
     if (error) throw error;
-    
+
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -124,7 +125,7 @@ export async function DELETE(request) {
 
     const { error } = await supabase.from('tasks').delete().eq('id', id);
     if (error) throw error;
-    
+
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

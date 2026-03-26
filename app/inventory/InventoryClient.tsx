@@ -78,12 +78,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       let stockQuery = supabase
         .from('inventory_stock')
-        .select('*, inventory_items(name, unit, category), vendors(name)')
+        .select('*, inventory_items(name, unit, category, min_stock_level, storage_condition), vendors(name)')
         .order('expiry_date', { ascending: true })
         .range(start, end);
 
+      // Search by lot number OR item name (via the joined relation)
       if (searchTerm) {
-        stockQuery = stockQuery.ilike('supplier_batch_number', `%${searchTerm}%`);
+        stockQuery = stockQuery.or(`supplier_batch_number.ilike.%${searchTerm}%,inventory_items.name.ilike.%${searchTerm}%`);
       }
 
       const [stockRes, itemsRes, vendorsRes] = await Promise.all([
@@ -112,6 +113,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       setLoading(false);
     }
   }, [supabase, PAGE_SIZE, searchTerm, items, vendors]);
+
+  // Load more pages (pagination - was missing, caused production crash)
+  const loadMore = useCallback(() => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchData(nextPage, true);
+  }, [page, fetchData]);
 
 
   useEffect(() => {
@@ -370,7 +378,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
         <input
           type="text"
-          placeholder="Search by lot number..."
+          placeholder="Search by item name or lot number..."
           className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
