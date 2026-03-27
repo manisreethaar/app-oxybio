@@ -19,9 +19,9 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp, error: empError } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
-    if (empError || !emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
-    if (emp.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Look up admin by user_id (auth UUID), not employee id
+    const { data: adminEmp } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
+    if (!adminEmp || adminEmp.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
     const parsed = postSchema.safeParse(body);
@@ -29,12 +29,35 @@ export async function POST(request) {
 
     const { error } = await supabase.from('payslips').insert({
       ...parsed.data,
-      uploaded_by: emp.id,
+      uploaded_by: adminEmp.id,
       uploaded_at: new Date().toISOString()
     });
-
     if (error) throw error;
-    
+
+    // 🔔 Notify the employee their payslip is ready
+    const { month, year, net_salary, employee_id } = parsed.data;
+
+    // In-app notification
+    await supabase.from('notifications').insert({
+      employee_id,
+      title: `💰 Payslip Ready: ${month} ${year}`,
+      message: `Your salary slip for ${month} ${year} is now available. Net pay: ₹${Number(net_salary).toLocaleString()}.`,
+      url: '/payslips',
+      is_read: false
+    });
+
+    // Push notification (fire and forget)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/push/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assigned_to: employee_id,
+        title: `💰 Payslip Ready: ${month} ${year}`,
+        body: `Net pay: ₹${Number(net_salary).toLocaleString()}. Tap to view.`,
+        url: '/payslips'
+      })
+    }).catch(() => {});
+
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

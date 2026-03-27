@@ -175,9 +175,41 @@ export async function POST(request, { params }) {
       console.error('Task auto-complete error (non-fatal):', taskErr);
     }
 
+    // ── Auto-create shelf life record when batch is released ──────────────
+    if (to_stage === 'released') {
+      try {
+        const { data: releasedBatch } = await supabase
+          .from('batches')
+          .select('batch_id, variant, volume_litres')
+          .eq('id', batchId)
+          .single();
+
+        if (releasedBatch) {
+          const manufactureDate = new Date().toISOString().split('T')[0];
+          const expiryDate = new Date();
+          expiryDate.setMonth(expiryDate.getMonth() + 12); // Default 12-month shelf life
+
+          await supabase.from('shelf_life_products').insert({
+            product_name: `${releasedBatch.variant || releasedBatch.batch_id}`,
+            batch_id: batchId,
+            batch_code: releasedBatch.batch_id,
+            manufacture_date: manufactureDate,
+            expiry_date: expiryDate.toISOString().split('T')[0],
+            status: 'Active',
+            quantity: releasedBatch.volume_litres || null,
+            notes: `Auto-created on batch release`
+          });
+        }
+      } catch (slErr) {
+        console.error('Shelf life auto-create error (non-fatal):', slErr);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Stage Transition API Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

@@ -181,29 +181,15 @@ export default function AttendancePage() {
           new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
         ]);
       };
-      // Validate base64 before decoding — prevents 'decoder routines unsupported' crash
-      const base64Parts = imageSrc.split(',');
-      if (base64Parts.length < 2 || !base64Parts[1]) {
+      // Cross-browser safe: convert data URL to blob via fetch — avoids atob() OpenSSL crash on Android
+      if (!imageSrc || !imageSrc.startsWith('data:')) {
         setCheckInError("Camera screenshot format invalid. Please try again.");
         setActionLoading(false);
         setCaptureStatus("Capture");
         return;
       }
-      let byteString;
-      try {
-        byteString = atob(base64Parts[1]);
-      } catch (decodeErr) {
-        setCheckInError("Image encoding failed. Ensure camera permissions are granted and try again.");
-        setActionLoading(false);
-        setCaptureStatus("Capture");
-        return;
-      }
-      const mimeString = base64Parts[0].split(':')[1].split(';')[0];
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
-      const blob = new Blob([ab], {type: mimeString});
-      
+      const blob = await fetch(imageSrc).then(r => r.blob());
+
       const formData = new FormData(); formData.append('file', blob, 'selfie.jpeg');
       
       setCaptureStatus("Uploading...");

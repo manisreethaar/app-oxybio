@@ -35,7 +35,8 @@ export default function RegulatoryCalendarPage() {
     setLoading(true);
     try {
       const { data, error } = await supabase.from('regulatory_milestones').select('*').order('deadline', { ascending: true });
-      if (!error) setMilestones(data || []);
+      if (error) throw error;
+      setMilestones(data || []);
     } catch (err) { console.error('Fetch milestones error:', err); }
     finally { setLoading(false); }
   };

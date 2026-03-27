@@ -21,25 +21,19 @@ import { createClient } from "@/utils/supabase/server";
 
 export default async function RootLayout({ children }) {
   const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  let profile = null;
-  if (session?.user) {
-    const { data } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('email', session.user.email)
-      .single();
-    profile = data;
-  }
+
+  // FIXED: Only fetch session here — NOT the employee profile.
+  // Profile is fetched ONCE inside AuthContext and cached there.
+  // This prevents two DB calls on every single page navigation.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider initialSession={session} initialProfile={profile}>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+        <AuthProvider initialSession={session}>
+          <ClientLayout>{children}</ClientLayout>
         </AuthProvider>
       </body>
     </html>
