@@ -80,10 +80,16 @@ export default function UsersPage() {
   const watchEmployeeCode = watch('employee_code');
   const watchRole = watch('role');
 
-  useEffect(() => {
-    if (role === 'admin') fetchUsers();
-    else if (!authLoading && role !== 'admin') router.push('/dashboard');
-  }, [role, authLoading, router]);
+useEffect(() => {
+  // Wait for auth to finish loading before making any role decision
+  if (authLoading) return;
+  if (role === 'admin' || role === 'ceo' || role === 'cto') {
+    fetchUsers();
+  } else if (role) {
+    // Only redirect if role is actually loaded and confirmed not admin
+    router.push('/dashboard');
+  }
+}, [role, authLoading, router]);
 
 
   // Auto-generate code whenever designation or role changes
