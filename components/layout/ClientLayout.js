@@ -1,11 +1,10 @@
 'use client';
-import { usePathname, useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Skeleton from '../Skeleton';
 
@@ -14,41 +13,114 @@ export default function ClientLayout({ children }) {
   const { loading, sessionExpired, clearSessionExpired } = useAuth();
   const [isOffline, setIsOffline] = useState(false);
   const [navLoading, setNavLoading] = useState(false);
-  const navTimerRef = useRef(null);
-  const lastPathRef = useRef(pathname);
+  const [progress, setProgress] = useState(0);
 
-  // FIX #8: Navigation loading bar — detect route changes via pathname
+  const lastPathRef = useRef(pathname);
+  const progressTimerRef = useRef(null);
+  const completeTimerRef = useRef(null);
+
+  // FIXED: Start progress bar immediately when any link is clicked
+  // This gives instant visual feedback BEFORE the page freeze happens
+  const startNav = useCallback(() => {
+    // Clear any existing timers
+    clearTimeout(progressTimerRef.current);
+    clearTimeout(completeTimerRef.current);
+
+    setNavLoading(true);
+    setProgress(10);
+
+    // Animate progress forward while waiting for page to load
+    let current = 10;
+    progressTimerRef.current = setInterval(() => {
+      current += Math.random() * 15;
+      if (current >= 85) {
+        current = 85; // Hold at 85% until page actually loads
+        clearInterval(progressTimerRef.current);
+      }
+      setProgress(current);
+    }, 200);
+  }, []);
+
+  // FIXED: Complete progress bar when pathname actually changes
+  const completeNav = useCallback(() => {
+    clearInterval(progressTimerRef.current);
+    setProgress(100);
+    completeTimerRef.current = setTimeout(() => {
+      setNavLoading(false);
+      setProgress(0);
+    }, 300);
+  }, []);
+
+  // Detect clicks on any anchor tag or Next.js Link
+  useEffect(() => {
+    const handleClick = (e) => {
+      const anchor = e.target.closest('a');
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+
+      // Only trigger for internal navigation links
+      if (
+        href.startsWith('/') &&
+        !href.startsWith('/api') &&
+        href !== pathname
+      ) {
+        startNav();
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [pathname, startNav]);
+
+  // Complete the bar when the route actually changes
   useEffect(() => {
     if (pathname !== lastPathRef.current) {
-      setNavLoading(true);
       lastPathRef.current = pathname;
-      navTimerRef.current = setTimeout(() => setNavLoading(false), 600);
+      completeNav();
     }
-    return () => {
-      if (navTimerRef.current) clearTimeout(navTimerRef.current);
-    };
-  }, [pathname]);
+  }, [pathname, completeNav]);
 
+  // Cleanup on unmount
   useEffect(() => {
-    // FIX #9: Global unhandled promise rejection logger
+    return () => {
+      clearInterval(progressTimerRef.current);
+      clearTimeout(completeTimerRef.current);
+    };
+  }, []);
+
+  // Offline detection
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      const handleOnline = () => setIsOffline(false);
+      const handleOffline = () => setIsOffline(true);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
+  // Service worker + unhandled rejection handler
+  useEffect(() => {
     const handleUnhandledRejection = (event) => {
       console.error('[OxyOS] Unhandled Promise Rejection:', event.reason);
-      // Prevent the default browser console error doubling
       event.preventDefault();
     };
 
-    // FORCE CACHE BUSTING: Nuke any old Service Workers and Caches that are trapping the app
     if (typeof window !== 'undefined') {
       window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (let registration of registrations) {
-            registration.update();
-          }
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let r of registrations) r.update();
         });
-        // Register our safe passthrough SW for push notifications
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error("SW registration failed:", err));
+        navigator.serviceWorker
+          .register('/sw.js')
+          .catch((err) => console.error('SW registration failed:', err));
       }
     }
 
@@ -59,24 +131,12 @@ export default function ClientLayout({ children }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsOffline(!navigator.onLine);
-      const handleOnline = () => setIsOffline(false);
-      const handleOffline = () => setIsOffline(true);
-
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
-
-      return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-      };
-    }
-  }, []);
-
   if (pathname === '/login') {
-    return <main className="min-h-screen mesh-bg flex items-center justify-center p-4">{children}</main>;
+    return (
+      <main className="min-h-screen mesh-bg flex items-center justify-center p-4">
+        {children}
+      </main>
+    );
   }
 
   return (
@@ -86,19 +146,25 @@ export default function ClientLayout({ children }) {
         <TopBar />
         <PushManager />
 
-        {/* FIX #8: Navigation loading bar */}
+        {/* FIXED: Progress bar starts on click, not after page loads */}
         {navLoading && (
-          <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-teal-100 overflow-hidden">
-            <div className="h-full bg-teal-600 animate-pulse w-3/4 transition-all duration-500" />
+          <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-teal-100">
+            <div
+              className="h-full bg-teal-600 transition-all duration-200 ease-out"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         )}
 
-        {/* FIX #10: Session expiry toast — auto-redirects to login */}
+        {/* Session expiry toast */}
         {sessionExpired && (
           <div className="bg-amber-500 text-white text-xs font-bold px-4 py-2 text-center flex items-center justify-center gap-3 animate-in slide-in-from-top duration-300">
             <span>⚠️ Your session has expired. Redirecting to login…</span>
             <button
-              onClick={() => { clearSessionExpired(); window.location.href = '/login'; }}
+              onClick={() => {
+                clearSessionExpired();
+                window.location.href = '/login';
+              }}
               className="underline font-black hover:text-amber-100 transition-colors"
             >
               Sign In Now
@@ -106,6 +172,7 @@ export default function ClientLayout({ children }) {
           </div>
         )}
 
+        {/* Offline banner */}
         {isOffline && (
           <div className="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest py-1.5 px-4 text-center animate-in slide-in-from-top duration-300 flex items-center justify-center gap-2">
             <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
@@ -116,26 +183,29 @@ export default function ClientLayout({ children }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           <AnimatePresence mode="wait">
             {loading ? (
-              <motion.div 
+              <motion.div
                 key="loading-skeleton"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="space-y-6"
               >
-                <div className="flex justify-between items-center"><Skeleton width={250} height={32}/> <Skeleton width={120} height={40}/></div>
+                <div className="flex justify-between items-center">
+                  <Skeleton width={250} height={32} />
+                  <Skeleton width={120} height={40} />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Skeleton className="h-64 w-full rounded-2xl"/>
-                  <Skeleton className="h-64 w-full rounded-2xl"/>
-                  <Skeleton className="h-64 w-full rounded-2xl uppercase"/>
+                  <Skeleton className="h-64 w-full rounded-2xl" />
+                  <Skeleton className="h-64 w-full rounded-2xl" />
+                  <Skeleton className="h-64 w-full rounded-2xl" />
                 </div>
               </motion.div>
             ) : (
               <motion.div
                 key={pathname}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
               >
                 {children}
               </motion.div>
@@ -146,4 +216,3 @@ export default function ClientLayout({ children }) {
     </div>
   );
 }
-
