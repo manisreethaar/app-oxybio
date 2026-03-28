@@ -113,7 +113,7 @@ export default function EquipmentPage() {
           <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Equipment Master Registry</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
         </div>
-        {canDo('equipment', 'edit') && (
+        {canDo('equipment', 'create') && (
           <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
             <Plus className="w-4 h-4 mr-2" /> Add New Equipment
           </button>
