@@ -50,6 +50,7 @@ export const AuthProvider = ({ children, initialSession }) => {
           console.error('Profile fetch error:', error.message);
           return null;
         }
+        if (data && data.role) data.role = data.role.toLowerCase();
         return data;
       } finally {
         profileFetching.current = false;
