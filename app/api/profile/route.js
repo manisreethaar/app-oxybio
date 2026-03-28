@@ -38,7 +38,7 @@ export async function PATCH(request) {
     if (updateData.date_of_birth === '') updateData.date_of_birth = null;
     if (updateData.joined_date === '') updateData.joined_date = null;
 
-    const { error } = await supabase.from('employees').update(updateData).eq('id', user.id);
+    const { error } = await supabase.from('employees').update(updateData).eq('email', user.email);
 
     if (error) throw error;
     

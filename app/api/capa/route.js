@@ -18,7 +18,7 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp } = await supabase.from('employees').select('id, full_name').eq('id', user.id).single();
+    const { data: emp } = await supabase.from('employees').select('id, full_name').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
 
     const body = await request.json();
@@ -104,7 +104,7 @@ export async function PATCH(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp } = await supabase.from('employees').select('id').eq('id', user.id).single();
+    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
 
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);

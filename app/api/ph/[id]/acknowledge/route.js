@@ -10,8 +10,8 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Lookup by UUID (from JWT) — not email, which could be spoofed in a misconfigured RLS setup
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
+    // Lookup by email to support manually inserted CEO/admin accounts
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp || emp.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Forbidden. Admin only.' }, { status: 403 });
     }

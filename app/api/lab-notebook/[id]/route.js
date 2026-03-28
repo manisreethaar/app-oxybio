@@ -101,7 +101,7 @@ export async function PATCH(request, { params }) {
     const { data: emp, error: empErr } = await supabase
       .from('employees')
       .select('id, role')
-      .eq('id', user.id)
+      .eq('email', user.email)
       .single();
 
     if (empErr || !emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });

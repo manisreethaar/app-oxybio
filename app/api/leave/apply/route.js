@@ -15,7 +15,7 @@ export async function POST(request) {
     if (days <= 0) return NextResponse.json({ error: 'Invalid date range selected' }, { status: 400 });
 
     // 2. Fetch User Role/ID
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
     // 3. Balance Check (Simulated for Now - ideally using a balances table)

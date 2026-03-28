@@ -18,7 +18,7 @@ export async function POST(req) {
     const { error } = await supabase
       .from('employees')
       .update({ push_subscription: subscription })
-      .eq('id', user.id);
+      .eq('email', user.email);
       
     if (error) throw error;
 

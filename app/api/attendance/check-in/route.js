@@ -36,7 +36,7 @@ export async function POST(request) {
     const { lat, lng, photo_url, override } = await request.json();
 
     // 1. Authorization check
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
 
     // 2. Geofence Verification (Server-side with Fallback)

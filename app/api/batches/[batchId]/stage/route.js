@@ -21,7 +21,7 @@ export async function POST(request, { params }) {
     const { data: emp, error: empErr } = await supabase
       .from('employees')
       .select('id')
-      .eq('id', user.id)
+      .eq('email', user.email)
       .single();
 
     if (empErr || !emp) {
@@ -39,9 +39,9 @@ export async function POST(request, { params }) {
     
     const categoryNeeded = stageToCategory[to_stage];
     // 🛡️ ADMIN BYPASS: Ensure administrative accounts can always perform overrides
-    const { data: userData } = await supabase.from('employees').select('role').eq('id', user.id).single();
+    const { data: userData } = await supabase.from('employees').select('role').eq('email', user.email).single();
 
-    if (categoryNeeded && userData?.role !== 'admin') {
+    if (categoryNeeded && !['admin','ceo','cto'].includes(userData?.role)) {
       // 🛡️ PRINCIPAL HARDENING: Require acknowledgment of the LATEST version for non-admins
       const { data: latestSop, error: sopErr } = await supabase
         .from('sop_library')

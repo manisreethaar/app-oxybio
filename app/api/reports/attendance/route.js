@@ -8,7 +8,7 @@ export async function GET(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Only admins may export
-    const { data: emp } = await supabase.from('employees').select('role').eq('id', user.id).single();
+    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
     if (!['admin','ceo','cto'].includes(emp?.role)) return NextResponse.json({ error: 'Leadership role required' }, { status: 403 });
 
     const { searchParams } = new URL(request.url);

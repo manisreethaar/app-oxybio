@@ -18,7 +18,7 @@ export async function POST(request) {
     const { data: emp } = await supabase
       .from('employees')
       .select('id, full_name')
-      .eq('user_id', user.id)
+      .eq('email', user.email)
       .single();
 
     // Insert the purchase request

@@ -10,9 +10,9 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get employee id — lookup by UUID, not email, for security
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('id', user.id).single();
-    const ALLOWED_ROLES = ['admin', 'staff', 'research_fellow', 'scientist', 'intern'];
+    // Get employee id — lookup by email (CEO/CTO may have been manually inserted)
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    const ALLOWED_ROLES = ['admin', 'ceo', 'cto', 'staff', 'research_fellow', 'scientist', 'intern'];
     if (!emp || !ALLOWED_ROLES.includes(emp.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }

@@ -19,8 +19,8 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Look up admin by user_id (auth UUID), not employee id
-    const { data: adminEmp } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
+    // Look up admin by email (manual inserts may not have matching auth UID)
+    const { data: adminEmp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!adminEmp || !['admin','ceo','cto'].includes(adminEmp.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
