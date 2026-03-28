@@ -9,7 +9,7 @@ export async function GET(request) {
 
     // Only admins may export
     const { data: emp } = await supabase.from('employees').select('role').eq('id', user.id).single();
-    if (emp?.role !== 'admin') return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+    if (!['admin','ceo','cto'].includes(emp?.role)) return NextResponse.json({ error: 'Leadership role required' }, { status: 403 });
 
     const { searchParams } = new URL(request.url);
     const from = searchParams.get('from');

@@ -21,7 +21,7 @@ export async function POST(request) {
 
     // Look up admin by user_id (auth UUID), not employee id
     const { data: adminEmp } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
-    if (!adminEmp || adminEmp.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!adminEmp || !['admin','ceo','cto'].includes(adminEmp.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
     const parsed = postSchema.safeParse(body);

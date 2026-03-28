@@ -57,8 +57,8 @@ export async function POST(request) {
     }
 
     // Admin override check
-    if (override && emp.role !== 'admin') {
-         return NextResponse.json({ error: 'Location override restricted to Administrators' }, { status: 403 });
+    if (override && !['admin','ceo','cto'].includes(emp.role)) {
+         return NextResponse.json({ error: 'Location override restricted to Leadership roles' }, { status: 403 });
     }
 
     // 3. Prevent Duplicate Log (Same Day IST)

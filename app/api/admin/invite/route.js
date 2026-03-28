@@ -31,7 +31,7 @@ export async function POST(req) {
       requesterProfile = profileByEmail;
     }
 
-    if (!requesterProfile || requesterProfile.role !== 'admin') {
+    if (!requesterProfile || !['admin','ceo','cto'].includes(requesterProfile.role)) {
       return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });
     }
 
