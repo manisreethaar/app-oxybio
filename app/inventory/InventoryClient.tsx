@@ -89,8 +89,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       const [stockRes, itemsRes, vendorsRes] = await Promise.all([
         stockQuery,
-        pageNum === 0 ? supabase.from('inventory_items').select('*').order('name').limit(1000) : Promise.resolve({ data: items }),
-        pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: vendors })
+        pageNum === 0 ? supabase.from('inventory_items').select('*').order('name').limit(1000) : Promise.resolve({ data: null }),
+        pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: null })
       ]);
 
       if (stockRes.error) throw stockRes.error;
@@ -112,7 +112,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } finally {
       setLoading(false);
     }
-  }, [supabase, PAGE_SIZE, searchTerm, items, vendors]);
+  }, [supabase, PAGE_SIZE, searchTerm]);
 
   // Load more pages (pagination - was missing, caused production crash)
   const loadMore = useCallback(() => {
@@ -321,7 +321,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+    <div className="max-w-7xl mx-auto space-y-6 pb-40">
       {/* Summary Strip (Section 1) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
         {[
