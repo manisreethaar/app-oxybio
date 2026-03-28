@@ -533,7 +533,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {/* Modal for adding stock */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] md:max-h-[95vh] animate-in fade-in zoom-in duration-200">
             <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black tracking-tight">
@@ -559,7 +559,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </div>
             ) : modalType === 'stock' ? (
-              <form onSubmit={handleAddStock} className="p-8 space-y-5">
+              <form onSubmit={handleAddStock} className="p-8 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div className="grid grid-cols-1 gap-5">
                   <div>
                     <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
@@ -650,7 +650,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </form>
             ) : modalType === 'issue' ? (
-              <form onSubmit={handleIssueStock} className="p-8 space-y-5">
+              <form onSubmit={handleIssueStock} className="p-8 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Select Stock Item</label>
                   <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newIssue.stock_id} onChange={e => setNewIssue({...newIssue, stock_id: e.target.value})}>
@@ -693,7 +693,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </form>
             ) : modalType === 'items' ? (
-              <form onSubmit={handleAddItem} className="p-8 space-y-5">
+              <form onSubmit={handleAddItem} className="p-8 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-1">
                     <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Code / SKU</label>
@@ -768,7 +768,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleAddVendor} className="p-8 space-y-5">
+              <form onSubmit={handleAddVendor} className="p-8 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Vendor Name</label>
                   <input type="text" required placeholder="e.g. Sigma Aldrich" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.name} onChange={e => setNewVendor({...newVendor, name: e.target.value})} />

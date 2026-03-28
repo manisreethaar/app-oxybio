@@ -3,14 +3,62 @@ import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
 import { Bell, Download, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { createClient } from '@/utils/supabase/client';
+import { User, CreditCard } from 'lucide-react';
 
 export default function TopBar() {
   const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const { employeeProfile, signOut } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  
+  // Notification State
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const supabase = useMemo(() => createClient(), []);
+  
+  // Custom click away listener to close dropdowns
+  const topbarRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (topbarRef.current && !topbarRef.current.contains(event.target)) {
+        setProfileOpen(false);
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch Notifications
+  useEffect(() => {
+    if (employeeProfile) {
+      const fetchNotifs = async () => {
+        const { data } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('employee_id', employeeProfile.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        if (data) {
+          setNotifications(data);
+          setUnreadCount(data.filter(n => !n.is_read).length);
+        }
+      };
+      fetchNotifs();
+    }
+  }, [employeeProfile, supabase]);
+
+  const markAsRead = async (id, link) => {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setUnreadCount(prev => Math.max(0, prev - 1));
+    setNotifOpen(false);
+    if (link) window.location.href = link;
+  };
 
   const getInitials = (name) => {
     if (!name) return 'OB';
@@ -82,7 +130,7 @@ export default function TopBar() {
   const todayStr = format(new Date(), 'MMM d, yyyy');
 
   return (
-    <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 shrink-0 sticky top-0 z-40">
+    <header ref={topbarRef} className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 shrink-0 sticky top-0 z-40">
       <h1 className="text-xl font-bold text-gray-900 hidden md:block tracking-tight">{getPageTitle()}</h1>
       
       {/* Mobile brand header */}
@@ -120,15 +168,54 @@ export default function TopBar() {
           {todayStr}
         </div>
         
-        <Link href="/notifications" className="relative p-2.5 text-gray-400 hover:text-navy rounded-full hover:bg-gray-100 transition-all duration-200">
-          <span className="sr-only">View notifications</span>
-          <Bell className="w-5 h-5" />
-        </Link>
+        <div className="relative">
+          <button 
+            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
+            className="relative p-2.5 text-gray-400 hover:text-navy rounded-full hover:bg-gray-100 transition-all duration-200 focus:outline-none"
+          >
+            <span className="sr-only">View notifications</span>
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white pointer-events-none" />
+            )}
+          </button>
+
+          {notifOpen && (
+            <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-100 max-h-96 flex flex-col">
+              <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                <span className="text-xs font-black text-gray-800 uppercase tracking-widest">Recent Activity</span>
+                <Link href="/notifications" onClick={() => setNotifOpen(false)} className="text-[10px] font-bold text-navy hover:text-teal-600">View All</Link>
+              </div>
+              <div className="overflow-y-auto w-full custom-scrollbar">
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <Bell className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-gray-400">All caught up!</p>
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <div 
+                      key={n.id} 
+                      onClick={() => markAsRead(n.id, n.link_url || '/notifications')}
+                      className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${!n.is_read ? 'bg-teal-50/30' : ''}`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <p className={`text-xs ${!n.is_read ? 'font-black text-slate-800' : 'font-bold text-slate-600'}`}>{n.title}</p>
+                        {!n.is_read && <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-navy mt-1.5" />}
+                      </div>
+                      <p className="text-[10px] font-medium text-gray-500 mt-1 line-clamp-2">{n.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {employeeProfile && (
           <div className="relative">
             <button 
-              onClick={() => setProfileOpen(!profileOpen)}
+              onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
               className="flex items-center space-x-2 focus:outline-none hover:bg-gray-50 p-1 rounded-full transition-all border border-gray-100"
             >
               <div className="w-8 h-8 rounded-full bg-navy/10 text-navy font-bold flex items-center justify-center text-xs">
@@ -141,6 +228,14 @@ export default function TopBar() {
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-xs font-bold text-gray-800 truncate">{employeeProfile.full_name}</p>
                   <p className="text-[10px] font-bold text-navy uppercase tracking-wider mt-0.5">{employeeProfile.designation || employeeProfile.role}</p>
+                </div>
+                <div className="py-1 border-b border-gray-100">
+                  <Link href="/profile" onClick={() => setProfileOpen(false)} className="w-full flex items-center px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-navy transition-colors">
+                    <User className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> View Profile
+                  </Link>
+                  <Link href="/profile" onClick={() => setProfileOpen(false)} className="w-full flex items-center px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-navy transition-colors">
+                    <CreditCard className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> ID Card & Safety
+                  </Link>
                 </div>
                 <button 
                   onClick={signOut}
