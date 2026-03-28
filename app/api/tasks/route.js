@@ -75,9 +75,21 @@ export async function PATCH(request) {
     const { action, task_id, payload } = parsed.data;
     let updateData = {};
 
+    const { data: task } = await supabase.from('tasks')
+      .select('title, assigned_by, assigned_to, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+      .eq('id', task_id).single();
+
     switch (action) {
       case 'start_timer':
         updateData = { time_started_at: new Date().toISOString(), status: 'in-progress' };
+        if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
+          await supabase.from('notifications').insert({
+            employee_id: task.assigned_by,
+            title: 'Task Acknowledged',
+            message: `${task.assigned_user?.full_name || 'An employee'} acknowledged and started: "${task.title}"`,
+            link_url: '/tasks'
+          });
+        }
         break;
       case 'pause_timer':
         updateData = { time_started_at: null, logged_minutes: payload.logged_minutes };
@@ -95,6 +107,14 @@ export async function PATCH(request) {
           logged_minutes: payload.logged_minutes,
           time_started_at: null
         };
+        if (!payload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
+          await supabase.from('notifications').insert({
+            employee_id: task.assigned_by,
+            title: 'Task Ready for Review',
+            message: `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}". Pending your approval.`,
+            link_url: '/tasks'
+          });
+        }
         break;
       case 'approve':
         updateData = { approval_status: 'approved' };

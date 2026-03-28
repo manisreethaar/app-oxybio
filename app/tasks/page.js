@@ -407,7 +407,7 @@ export default function TasksPage() {
               {selectedTask.assigned_to === employeeProfile?.id && selectedTask.status !== 'done' && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex items-center justify-between">
                   <span className="text-2xl font-black tabular-nums text-gray-900 tracking-tight">{String(Math.floor(elapsedSeconds / 3600)).padStart(2,'0')}:{String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2,'0')}:{String(elapsedSeconds % 60).padStart(2,'0')}</span>
-                  {!timerRunning ? <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm"><PlayCircle className="w-3.5 h-3.5 inline mr-1"/> Start</button> : <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause</button>}
+                  {!timerRunning ? <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm"><CheckSquare className="w-3.5 h-3.5 inline mr-1"/> Acknowledge</button> : <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause</button>}
                 </div>
               )}
 
