@@ -36,7 +36,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     'Raw Material': ['Active Ingredients', 'Excipients & Carriers', 'Packaging Materials'],
     'Lab Consumables': ['Reagents', 'Chemicals', 'Culture Media & Buffers', 'Indicators & Stains', 'Lab Disposables'],
     'Equipment & Maintenance': ['Spare Parts', 'Maintenance Supplies'],
-    'Reference Standard': ['Certified Reference Materials', 'Calibration Standards']
+    'Reference Standard': ['Certified Reference Materials', 'Calibration Standards'],
+    'RAW MATERIALS LIST': ['Bulk Chemicals', 'Compounds'],
+    'ANALYTICAL INSTRUMENTS': ['Meters', 'Optical', 'Processing'],
+    'GLASSWARES': ['Bottles', 'Flasks', 'Measuring', 'Miscellaneous'],
+    'PLASTICS AND CONSUMMABLES': ['Disposables', 'Safety Gear', 'Storage'],
+    'PHOTOGRAPHY / DIAGNOSTIC MEDIA': ['Agars', 'Broths'],
+    'MICROBIOLOGY CHEMICALS': ['Stains', 'Reagents', 'Solutions']
   };
 
   const [selectedStock, setSelectedStock] = useState<any>(null);
