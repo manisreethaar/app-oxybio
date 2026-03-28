@@ -77,16 +77,22 @@ export const AuthProvider = ({ children, initialSession }) => {
 
       if (currentUser) {
         setUser(currentUser);
-        // Fetch profile in background — page renders immediately
+        // Fetch profile — loading stays true until profile resolves
         const profile = await fetchProfile(currentUser.email);
         if (mounted && profile) setEmployeeProfile(profile);
       }
 
+      // Only set loading=false AFTER profile fetch attempt — prevents blank page flicker
       if (mounted) {
         setLoading(false);
         initialized.current = true;
       }
     };
+
+    // Safety timeout — if auth somehow hangs, unblock the UI after 8s
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 8000);
 
     init();
 
@@ -126,6 +132,7 @@ export const AuthProvider = ({ children, initialSession }) => {
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

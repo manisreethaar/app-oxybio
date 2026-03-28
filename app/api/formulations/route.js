@@ -72,7 +72,15 @@ export async function PATCH(request) {
 
     // Approval requires elevated role
     if (status === 'Approved') {
-      const { data: emp } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
+      // Look up employee — try user_id column first, fall back to email match
+      let emp = null;
+      const { data: empById } = await supabase.from('employees').select('id, role').eq('id', user.id).maybeSingle();
+      if (empById) {
+        emp = empById;
+      } else {
+        const { data: empByEmail } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
+        emp = empByEmail;
+      }
       if (!emp || !APPROVER_ROLES.includes(emp.role?.toLowerCase())) {
         return NextResponse.json({ error: 'Only CEO, CTO, or Admin can approve formulations.' }, { status: 403 });
       }
