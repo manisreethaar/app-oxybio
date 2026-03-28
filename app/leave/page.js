@@ -57,7 +57,7 @@ export default function LeavePage() {
   const fetchLeaves = async () => {
     setLoading(true);
     try {
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         const [myLeavesRes, pLeavesRes] = await Promise.all([
           supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }),
           supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
@@ -118,7 +118,7 @@ export default function LeavePage() {
         '/leave'
       );
       
-      const { data: admins } = await supabase.from('employees').select('id').eq('role', 'admin').eq('is_active', true);
+      const { data: admins } = await supabase.from('employees').select('id').in('role', ['admin','ceo','cto']).eq('is_active', true);
       notifyAll((admins || []).map(a => a.id), '📄 Leave Request Pending', `${employeeProfile.full_name} has submitted a ${payload.leave_type} leave request. Review required.`, '/leave');
 
       reset();
@@ -184,7 +184,7 @@ export default function LeavePage() {
         <p className="text-sm text-gray-500 mt-1">Submit submittals and review platform attendance queries.</p>
       </div>
 
-      {role === 'admin' && pendingLeaves.length > 0 && (
+      {['admin', 'ceo', 'cto'].includes(role) && pendingLeaves.length > 0 && (
         <section className="surface p-6 bg-amber-50/30 border-amber-200">
           <h2 className="text-base font-bold text-amber-900 mb-6 flex items-center tracking-tight">
             <CalendarOff className="w-5 h-5 mr-2 text-amber-700" /> Approval Queue ({pendingLeaves.length})

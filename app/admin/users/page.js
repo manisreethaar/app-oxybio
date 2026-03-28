@@ -182,7 +182,7 @@ useEffect(() => {
     </div>
   );
 
-  if (role !== 'admin') return null;
+  if (!['admin', 'ceo', 'cto'].includes(role)) return null;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -251,8 +251,8 @@ useEffect(() => {
                   <td className="px-6 py-4">
                     <div className="text-sm font-bold text-slate-700">{emp.designation || emp.role}</div>
                     <div className="text-xs text-slate-400 font-medium flex items-center mt-0.5">
-                      {emp.role === 'admin' && <ShieldCheck className="w-3.5 h-3.5 mr-1 text-purple-500"/>}
-                      <span className={`uppercase tracking-wider font-bold ${emp.role === 'admin' ? 'text-purple-600' : 'text-teal-600'}`}>{emp.role}</span>
+                      {['admin','ceo','cto'].includes(emp.role) && <ShieldCheck className="w-3.5 h-3.5 mr-1 text-purple-500"/>}
+                      <span className={`uppercase tracking-wider font-bold ${['admin','ceo','cto'].includes(emp.role) ? 'text-purple-600' : 'text-teal-600'}`}>{emp.role}</span>
                       <span className="mx-1 text-slate-300">·</span>
                       <span>{emp.department}</span>
                     </div>

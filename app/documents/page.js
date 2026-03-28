@@ -53,7 +53,7 @@ export default function DocumentsPage() {
     try {
       let query = supabase.from('documents').select('*, employees(full_name)');
       if (category !== 'All') { query = query.eq('category', category); }
-      if (role !== 'admin') { query = query.eq('access_level', 'all-staff'); }
+      if (!['admin', 'ceo', 'cto'].includes(role)) { query = query.eq('access_level', 'all-staff'); }
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
       setDocuments(data || []);
@@ -126,7 +126,7 @@ export default function DocumentsPage() {
           <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Document Vault</h1>
           <p className="text-gray-500 mt-1">Secure repository for GMP guidelines, regulatory filings, and company policies.</p>
         </div>
-        {role === 'admin' && (
+        {['admin', 'ceo', 'cto'].includes(role) && (
           <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
             <Plus className="w-5 h-5 mr-1" /> Upload Document
           </button>

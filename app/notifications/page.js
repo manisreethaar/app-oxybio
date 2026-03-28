@@ -30,7 +30,7 @@ export default function NotificationsPage() {
         .order('due_date', { ascending: true })
         .limit(50);
 
-      const compliancePromise = role === 'admin' 
+      const compliancePromise = ['admin', 'ceo', 'cto'].includes(role)
         ? supabase.from('compliance_items').select('id, title, due_date').neq('status', 'done').order('due_date', { ascending: true }).limit(50)
         : Promise.resolve({ data: null });
 
@@ -52,7 +52,7 @@ export default function NotificationsPage() {
         });
       }
 
-      if (role === 'admin' && complianceRes.data) {
+      if (['admin', 'ceo', 'cto'].includes(role) && complianceRes.data) {
         complianceRes.data.forEach(c => {
           const isOverdue = c.due_date && differenceInDays(new Date(c.due_date), new Date()) < 0;
           if (isOverdue) {

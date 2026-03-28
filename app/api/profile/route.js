@@ -12,7 +12,8 @@ const patchSchema = z.object({
   blood_group: z.string().optional().nullable(),
   emergency_contact_name: z.string().optional().nullable(),
   emergency_contact: z.string().optional().nullable(),
-  photo_url: z.string().optional().nullable()
+  photo_url: z.string().optional().nullable(),
+  joined_date: z.string().optional().nullable()
 });
 
 export async function PATCH(request) {
@@ -35,6 +36,7 @@ export async function PATCH(request) {
     const updateData = { ...parsed.data };
     // Clean up empty strings or undefined for date fields
     if (updateData.date_of_birth === '') updateData.date_of_birth = null;
+    if (updateData.joined_date === '') updateData.joined_date = null;
 
     const { error } = await supabase.from('employees').update(updateData).eq('id', user.id);
 

@@ -157,7 +157,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">SOP Library</h1>
           <p className="text-sm text-gray-500 mt-1">Official lab protocols and signatures.</p>
         </div>
-        {role === 'admin' && <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">Upload Doc</button>}
+        {['admin','ceo','cto'].includes(role) && <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">Upload Doc</button>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

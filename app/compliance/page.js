@@ -43,7 +43,7 @@ export default function CompliancePage() {
       const fetchPromises = [
         supabase.from('compliance_items').select('*, employees(full_name)').order('due_date', { ascending: true })
       ];
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         fetchPromises.push(supabase.from('employees').select('id, full_name').eq('is_active', true));
       }
 
@@ -58,7 +58,7 @@ export default function CompliancePage() {
       
       setItems(processedItems);
 
-      if (role === 'admin' && results[1]) {
+      if (['admin', 'ceo', 'cto'].includes(role) && results[1]) {
         setEmployees(results[1].data || []);
       }
     } catch (err) {
@@ -107,7 +107,7 @@ export default function CompliancePage() {
           <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Compliance Calendar</h1>
           <p className="text-gray-500 mt-1">Regulatory deadlines, renewals, and recurring tasks.</p>
         </div>
-        {role === 'admin' && (
+        {['admin', 'ceo', 'cto'].includes(role) && (
           <button onClick={() => setShowAdd(!showAdd)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 shadow-sm transition-colors">
             <Plus className="w-5 h-5 mr-1" /> Add Compliance Item
           </button>
@@ -133,7 +133,7 @@ export default function CompliancePage() {
         </div>
       </div>
 
-      {showAdd && role === 'admin' && (
+      {showAdd && ['admin', 'ceo', 'cto'].includes(role) && (
         <form onSubmit={handleSubmit(handleCreate)} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm lg:w-2/3">
           <h2 className="text-xl font-bold text-gray-900 mb-6">New Compliance Requirement</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -213,7 +213,7 @@ export default function CompliancePage() {
                   </div>
                 </div>
                 
-                {role === 'admin' && item.calculated_status !== 'done' && (
+                {['admin', 'ceo', 'cto'].includes(role) && item.calculated_status !== 'done' && (
                   <button onClick={() => markDone(item)} className="px-4 py-2 mt-2 md:mt-0 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-green-700 font-semibold text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" /> Mark Done
                   </button>

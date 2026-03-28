@@ -69,7 +69,7 @@ export default function Sidebar() {
       items: [
         { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: canDo('documents', 'view') },
         { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: canDo('compliance', 'view') },
-        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: role === 'admin' },
+        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: ['admin','ceo','cto'].includes(role) },
         { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: canDo('admin', 'manage_users') },
       ]
     },
@@ -187,7 +187,7 @@ export default function Sidebar() {
       )}
 
       {/* Mobile Bottom Dock (Fixed, No Scrolling) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/60 flex justify-around items-center z-40 pb-safe shadow-[0_-8px_32px_0_rgba(31,38,135,0.05)] px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-40 pb-safe shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] px-2">
         {/* Render only 4 explicit quick actions in the dock */}
         {[
           { name: 'Dash', href: '/dashboard', icon: LayoutDashboard, show: canDo('dashboard', 'view') },

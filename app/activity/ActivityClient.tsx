@@ -102,18 +102,18 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         .order('created_at', { ascending: false })
         .limit(50);
       
-      if (role !== 'admin') {
+      if (!['admin', 'ceo', 'cto'].includes(role)) {
         query = query.eq('employee_id', employeeProfile?.id);
       }
       const { data: logData } = await query;
       if (!isMounted.current) return;
       setActivities(logData || []);
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         setIssues((logData || []).filter((a: any) => a.issue_observed));
       }
 
       // ── Founder Brief data (admin only) ────────────────────────────────────────
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         const today = new Date().toISOString().split('T')[0];
 
         // Parallelize fetching to avoid consecutive await locks
@@ -181,7 +181,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to save log.');
       resetLog(); setLogValue('start_time', data.end_time); setLogValue('end_time', new Date().toTimeString().slice(0, 5));
-      setTab(role === 'admin' ? 'brief' : 'feed');
+      setTab(['admin', 'ceo', 'cto'].includes(role) ? 'brief' : 'feed');
       fetchData();
     } catch (err) { 
       // Rollback optimism
@@ -206,7 +206,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
   if (authLoading) return <div className="p-12"><Skeleton className="h-40 w-full mb-4"/><Skeleton className="h-60 w-full"/></div>;
 
-  const isAdmin = role === 'admin';
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
   const nowHour = new Date().getHours();
   const greeting = nowHour < 12 ? 'Good morning' : nowHour < 17 ? 'Good afternoon' : 'Good evening';
 

@@ -190,7 +190,7 @@ export const AuthProvider = ({ children, initialSession }) => {
     user,
     employeeProfile,
     role,
-    isAdmin: role === 'admin',
+    isAdmin: ['admin', 'ceo', 'cto'].includes(role),
     isResearchFellow: role === 'research_fellow',
     isScientist: role === 'scientist',
     isIntern: role === 'intern',

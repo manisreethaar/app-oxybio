@@ -57,7 +57,7 @@ export default function PayslipsPage() {
   const fetchPayslips = async () => {
     setLoading(true);
     try {
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         const [empRes, slipRes] = await Promise.all([
           supabase.from('employees').select('id, full_name').eq('is_active', true),
           supabase.from('payslips').select('*, employees(full_name)').order('created_at', { ascending: false })
@@ -98,14 +98,14 @@ export default function PayslipsPage() {
           <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Payroll & Salary Slips</h1>
           <p className="text-gray-500 mt-1">Access your monthly compensation records.</p>
         </div>
-        {role === 'admin' && (
+        {['admin', 'ceo', 'cto'].includes(role) && (
           <button onClick={() => setShowUpload(!showUpload)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
             <Upload className="w-5 h-5 mr-2" /> Upload Payslip
           </button>
         )}
       </div>
 
-      {showUpload && role === 'admin' && (
+      {showUpload && ['admin', 'ceo', 'cto'].includes(role) && (
         <form onSubmit={handleSubmit(handleUploadSubmit)} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm animate-in fade-in slide-in-from-top-4">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Upload New Payslip</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
@@ -164,7 +164,7 @@ export default function PayslipsPage() {
         </form>
       )}
 
-      {role === 'admin' && payslips.length > 0 && (
+      {['admin', 'ceo', 'cto'].includes(role) && payslips.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex items-center">
              <div className="p-3 bg-teal-100 text-teal-700 rounded-xl mr-4"><Users className="w-6 h-6" /></div>
@@ -189,12 +189,12 @@ export default function PayslipsPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th colSpan="5" className="px-6 py-4 text-left border-b border-gray-200">
-                  <h2 className="text-lg font-bold text-gray-900">{role === 'admin' ? 'Payroll History' : 'My Payslip History'}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{['admin','ceo','cto'].includes(role) ? 'Payroll History' : 'My Payslip History'}</h2>
                 </th>
               </tr>
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Month/Year</th>
-                {role === 'admin' && <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Employee</th>}
+                {['admin','ceo','cto'].includes(role) && <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Employee</th>}
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Gross Salary</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Net Salary</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Action</th>
@@ -206,7 +206,7 @@ export default function PayslipsPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-teal-900 font-mono tracking-widest bg-gray-50/50">
                     {slip.month}
                   </td>
-                  {role === 'admin' && (
+                  {['admin','ceo','cto'].includes(role) && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">
                       {slip.employees?.full_name}
                     </td>
@@ -226,7 +226,7 @@ export default function PayslipsPage() {
               ))}
               {payslips.length === 0 && (
                 <tr>
-                  <td colSpan={role === 'admin' ? 5 : 4} className="px-6 py-12 text-center text-sm text-gray-500">No payslips available on record.</td>
+                  <td colSpan={['admin','ceo','cto'].includes(role) ? 5 : 4} className="px-6 py-12 text-center text-sm text-gray-500">No payslips available on record.</td>
                 </tr>
               )}
             </tbody>

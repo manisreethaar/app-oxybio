@@ -67,7 +67,7 @@ export default function AttendancePage() {
         supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).range(0, 30)
       ];
 
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         fetchPromises.push(
           supabase.from('attendance_log').select('*, employees(full_name, role)').eq('date', todayStr),
           supabase.from('employees').select('id, full_name, role').eq('is_active', true)
@@ -79,7 +79,7 @@ export default function AttendancePage() {
       setTodayLog(results[0].data || null);
       setMyHistory(results[1].data || []);
 
-      if (role === 'admin') {
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         const teamLogs = results[2].data || [];
         const allEmps = results[3].data || [];
         const combined = allEmps.map(emp => ({ ...emp, attendance: teamLogs.find(l => l.employee_id === emp.id) }));

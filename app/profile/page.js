@@ -92,7 +92,8 @@ export default function ProfilePage() {
       address: z.string().optional().nullable(),
       blood_group: z.string().optional().nullable(),
       emergency_contact_name: z.string().optional().nullable(),
-      emergency_contact: z.string().optional().nullable()
+      emergency_contact: z.string().optional().nullable(),
+      joined_date: z.string().optional().nullable()
     }))
   });
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -114,7 +115,8 @@ export default function ProfilePage() {
         address: employeeProfile.address || '',
         blood_group: employeeProfile.blood_group || '',
         emergency_contact_name: employeeProfile.emergency_contact_name || '',
-        emergency_contact: employeeProfile.emergency_contact || ''
+        emergency_contact: employeeProfile.emergency_contact || '',
+        joined_date: employeeProfile.joined_date ? new Date(employeeProfile.joined_date).toISOString().split('T')[0] : ''
       });
     }
   }, [employeeProfile, reset]);
@@ -313,7 +315,14 @@ export default function ProfilePage() {
                 editing={editing}
                 registerProps={register('employee_code')}
               />
-              <InfoField label="Date of Joining" value={emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-GB') : '—'} icon={Calendar} readonly />
+              <InfoField
+                label="Date of Joining"
+                value={emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-GB') : '—'}
+                icon={Calendar}
+                editing={editing}
+                inputType="date"
+                registerProps={register('joined_date')}
+              />
 
               <InfoField 
                 label="Phone Number" 
