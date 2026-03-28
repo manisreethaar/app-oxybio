@@ -1,6 +1,5 @@
-import { google } from 'googleapis';
+import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { Readable } from 'stream';
 
 export async function POST(request) {
   try {
@@ -11,49 +10,42 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
     }
 
+    const supabase = createClient();
+    
+    // Convert to buffer for Upload
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const stream = Readable.from(buffer);
+    
+    // Generate secure unique filename
+    const timestamp = Date.now();
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+    const safeName = `${timestamp}-${cleanFileName}`;
+    
+    // Upload straight to Supabase 'inventory-docs' bucket
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('inventory-docs')
+      .upload(`uploads/${safeName}`, buffer, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true
+      });
 
-    // Normalise Google private key — Vercel can store with literal \n or real newlines
-    let rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
-    rawKey = rawKey.replace(/^"|"$/g, ''); // Fix for env vars wrapped in extra quotes
-    const privateKey = rawKey.replace(/\\n/g, '\n');
+    if (uploadError) {
+      console.error("Supabase Storage Upload Error:", uploadError);
+      return NextResponse.json({ success: false, error: uploadError.message }, { status: 500 });
+    }
 
-    // 1. Google Auth with Write/Upload Scopes
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: privateKey,
-      },
-      scopes: ['https://www.googleapis.com/auth/drive.file'], 
-    });
+    // Capture the Public CDN URL 
+    const { data: publicUrlData } = supabase.storage
+      .from('inventory-docs')
+      .getPublicUrl(`uploads/${safeName}`);
 
-    const drive = google.drive({ version: 'v3', auth });
-
-    // 2. Create file on Google Drive
-    const driveResponse = await drive.files.create({
-      requestBody: {
-        name: file.name,
-        parents: ['1yFID5vJ56zTWsBN8OCRWLIVfP6hpLjAB'], // Target folder ID provided by user
-      },
-      media: {
-        mimeType: file.type || 'application/octet-stream',
-        body: stream,
-      },
-      fields: 'id',
-    });
-
-    const fileId = driveResponse.data.id;
-
-    // Return proxy URL to load it via the central secure files reader endpoint
     return NextResponse.json({ 
       success: true, 
-      url: `/api/files/${fileId}` 
+      url: publicUrlData.publicUrl 
     });
 
   } catch (error) {
-    console.error("Google Drive Upload Error:", error);
+    console.error("General Upload Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
