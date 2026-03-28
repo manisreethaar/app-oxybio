@@ -16,7 +16,7 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    if (!['admin','ceo','cto'].includes(emp?.role)) {
+    if (!['admin','ceo','cto','research_fellow'].includes(emp?.role)) {
       return NextResponse.json({ error: 'Permission Denied: Leadership role required' }, { status: 403 });
     }
 

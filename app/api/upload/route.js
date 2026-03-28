@@ -16,10 +16,9 @@ export async function POST(request) {
     const stream = Readable.from(buffer);
 
     // Normalise Google private key — Vercel can store with literal \n or real newlines
-    const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
-    const privateKey = rawKey.includes('\\n') 
-      ? rawKey.replace(/\\n/g, '\n')   // stored as literal \n → convert to real newlines
-      : rawKey;                          // already has real newlines → use as-is
+    let rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
+    rawKey = rawKey.replace(/^"|"$/g, ''); // Fix for env vars wrapped in extra quotes
+    const privateKey = rawKey.replace(/\\n/g, '\n');
 
     // 1. Google Auth with Write/Upload Scopes
     const auth = new google.auth.GoogleAuth({

@@ -10,7 +10,7 @@ import { FileText, Download, AlertTriangle, Plus, Search, Archive } from 'lucide
 import { differenceInDays } from 'date-fns';
 
 export default function DocumentsPage() {
-  const { role, employeeProfile, loading: authLoading } = useAuth();
+  const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [filteredDocs, setFilteredDocs] = useState([]);
   const [category, setCategory] = useState('All');
@@ -126,7 +126,7 @@ export default function DocumentsPage() {
           <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Document Vault</h1>
           <p className="text-gray-500 mt-1">Secure repository for GMP guidelines, regulatory filings, and company policies.</p>
         </div>
-        {['admin', 'ceo', 'cto'].includes(role) && (
+        {canDo('documents', 'upload') && (
           <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
             <Plus className="w-5 h-5 mr-1" /> Upload Document
           </button>

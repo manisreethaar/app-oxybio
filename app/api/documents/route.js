@@ -24,7 +24,7 @@ export async function POST(request) {
 
     const { data: emp, error: empError } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (empError || !emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
-    if (!['admin','ceo','cto'].includes(emp.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!['admin','ceo','cto','research_fellow'].includes(emp.role)) return NextResponse.json({ error: 'Forbidden. Leadership or Research Fellow required.' }, { status: 403 });
 
     const body = await request.json();
     const parsed = postSchema.safeParse(body);
