@@ -16,9 +16,12 @@ export async function POST(request) {
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
+    const { data: emp, error: empErr } = await supabase.from('employees').select('id').eq('email', user.email).single();
+    if (empErr || !emp) throw new Error('Employee record not found for auth user');
+
     const { data, error } = await supabase.from('attendance_log').update({ 
       check_out_time: new Date().toISOString() 
-    }).eq('id', parsed.data.id).eq('employee_id', user.id).select().single();
+    }).eq('id', parsed.data.id).eq('employee_id', emp.id).select().single();
 
     if (error) throw error;
     

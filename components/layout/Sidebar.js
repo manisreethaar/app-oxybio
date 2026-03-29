@@ -70,7 +70,7 @@ export default function Sidebar() {
         { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: canDo('documents', 'view') },
         { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: canDo('compliance', 'view') },
         { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: ['admin','ceo','cto'].includes(role) },
-        { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: canDo('admin', 'manage_users') },
+        { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: ['admin', 'ceo', 'cto'].includes(role) },
       ]
     },
     {
