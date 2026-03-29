@@ -144,7 +144,12 @@ export default function LeavePage() {
         setActionLoadingId(null);
         return;
       }
-      comment = rejectionReason || 'No reason provided.';
+      if (!rejectionReason || rejectionReason.trim().length < 5) {
+        alert("A mandatory rejection reason (min 5 characters) is required.");
+        setActionLoadingId(null);
+        return;
+      }
+      comment = rejectionReason;
     }
 
     try {
@@ -217,7 +222,8 @@ export default function LeavePage() {
                 
                 {rejectionId === leave.id ? (
                   <div className="space-y-3">
-                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="State rejection reason..." className="w-full p-3 text-sm border border-red-200 rounded-lg bg-red-50 focus:ring-1 focus:ring-red-500 outline-none h-20 font-medium resize-none" />
+                    <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Mandatory Rejection Reason</label>
+                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="State the scientific or operational reason for rejection..." className="w-full p-3 text-sm border border-red-200 rounded-lg bg-red-50 focus:ring-1 focus:ring-red-500 outline-none h-24 font-medium resize-none shadow-inner" />
                     <div className="flex gap-2">
                       <button onClick={() => processLeave(leave.id, 'rejected')} disabled={actionLoadingId === leave.id} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-xs font-bold">Confirm Reject</button>
                       <button onClick={() => setRejectionId(null)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-lg text-xs font-bold">Cancel</button>

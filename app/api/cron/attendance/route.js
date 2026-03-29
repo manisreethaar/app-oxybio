@@ -37,17 +37,14 @@ export async function GET(request) {
       return NextResponse.json({ success: true, message: 'No open shifts found. All loops closed.' });
     }
 
-    // 2. Process Auto-Checkout
+    // 2. Process Auto-Checkout (Zeroing out for Mispunch Review)
     const updates = openLogs.map(log => {
-      // Calculate total hours from check_in to NOW (which is approx 11:59 PM)
-      const checkInDate = new Date(log.check_in_time);
-      const diffMs = now.getTime() - checkInDate.getTime();
-      const totalHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
-
       return {
         id: log.id,
         check_out_time: now.toISOString(),
-        total_hours: parseFloat(totalHours)
+        total_hours: 0, // 0 Hours until executive approval
+        mispunch_status: 'required',
+        notes: '[SYSTEM: AUTO-CLOSED - MISPUNCH REVIEW REQUIRED]'
       };
     });
 
@@ -60,7 +57,7 @@ export async function GET(request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: `Successfully force-closed ${updates.length} abandoned shifts.` 
+      message: `Successfully zeroed out ${updates.length} abandoned shifts for Mispunch Review.` 
     });
 
   } catch (error) {

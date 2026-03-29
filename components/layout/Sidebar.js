@@ -60,6 +60,7 @@ export default function Sidebar() {
       title: 'MY WORKSPACE',
       items: [
         { name: 'Check-In & Attendance', href: '/attendance', icon: Clock, show: canDo('attendance', 'view') },
+        { name: 'Mispunch Requests',  href: '/mispunch',     icon: ShieldAlert,     show: canDo('attendance', 'view') },
         { name: 'Leave Requests',    href: '/leave',        icon: CalendarOff,     show: canDo('leave', 'view') },
         { name: 'My Payslips',       href: '/payslips',     icon: Receipt,         show: canDo('payslips', 'view_own') },
       ]

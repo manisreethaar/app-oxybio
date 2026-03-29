@@ -223,22 +223,47 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     if (actionLoading) return;
     setActionLoading(true);
-    try {
-      const res = await fetch('/api/attendance/check-out', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: todayLog.id })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Check-out failed');
 
-      notifyEmployee(employeeProfile.id, '🔴 Checked Out', `Shift completed at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST.`, '/attendance');
-      fetchAttendanceData();
-    } catch (err) {
-      alert('Check-out failed: ' + err.message);
-    } finally {
-      setActionLoading(false);
+    const performCheckout = async (lat, lng) => {
+      try {
+        const res = await fetch('/api/attendance/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: todayLog.id, lat, lng })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Check-out failed');
+
+        notifyEmployee(employeeProfile.id, '🔴 Checked Out', `Shift completed at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST.`, '/attendance');
+        fetchAttendanceData();
+      } catch (err) {
+        alert('Check-out failed: ' + err.message);
+      } finally {
+        setActionLoading(false);
+      }
+    };
+
+    // If already has geoData from a previous check-in session in the same lifecycle
+    if (geoData.lat && geoData.lng) {
+        await performCheckout(geoData.lat, geoData.lng);
+        return;
     }
+
+    if (!navigator.geolocation) {
+       await performCheckout(); // Fallback for execs
+       return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await performCheckout(position.coords.latitude, position.coords.longitude);
+      },
+      async (err) => {
+        console.warn("Check-out location acquisition failed, attempting bypass...");
+        await performCheckout();
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
   };
 
 

@@ -29,16 +29,24 @@ export async function GET(request) {
     if (error) throw error;
 
     // Build CSV
-    const header = 'Employee,Date,Check In,Check Out,Total Hours,GPS Verified,In Geofence';
-    const rows = (logs || []).map(log => [
-      log.employees?.full_name || 'Unknown',
-      log.date || '',
-      log.check_in_time ? new Date(log.check_in_time).toLocaleTimeString('en-IN') : '--',
-      log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString('en-IN') : '--',
-      log.total_hours || '0',
-      log.in_geofence ? 'Yes' : 'No',
-      log.in_geofence ? 'Yes' : 'No'
-    ].join(','));
+    const header = 'Employee Name,Employee Email,Date,Check In,Check Out,Total Hours,GPS Verified,Shift Status,Mispunch Status,Notes';
+    const rows = (logs || []).map(log => {
+      const checkInLocal = log.check_in_time ? new Date(log.check_in_time).toLocaleTimeString('en-IN') : '--';
+      const checkOutLocal = log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString('en-IN') : '--';
+      
+      return [
+        `"${log.employees?.full_name || 'Unknown'}"`,
+        `"${log.employees?.email || 'N/A'}"`,
+        log.date || '',
+        checkInLocal,
+        checkOutLocal,
+        log.total_hours || '0',
+        log.in_geofence ? 'Yes' : 'No',
+        log.shift_status || 'Regular',
+        log.mispunch_status || 'none',
+        `"${log.notes || ''}"`
+      ].join(',');
+    });
 
     const csv = [header, ...rows].join('\n');
 

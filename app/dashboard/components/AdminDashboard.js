@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
-import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Package, Users } from 'lucide-react';
+import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Package, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import Link from 'next/link';
 import { differenceInHours } from 'date-fns';
@@ -19,6 +19,10 @@ export default function AdminDashboard({ employeeId }) {
   const [thresholds, setThresholds] = useState({ minPh: 4.0, maxPh: 7.8, tempMax: 35 });
   const [chartData, setChartData] = useState([]);
   const [attendanceStats, setAttendanceStats] = useState({ checkedIn: 0, total: 0 });
+  const [pendingMispunches, setPendingMispunches] = useState([]);
+  const [reviewingMispunch, setReviewingMispunch] = useState(null);
+  const [rejectRemark, setRejectRemark] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -30,28 +34,29 @@ export default function AdminDashboard({ employeeId }) {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
 
-      const [devReq, overReq, batchesReq, leavesReq, tasksReq, compReq, batchHistoryReq, invStockReq, attendanceReq, totalEmpsReq] = await Promise.all([
+      const results = await Promise.all([
         supabase.from('ph_readings').select('batch_id').eq('is_deviation', true).eq('deviation_acknowledged', false),
         supabase.from('compliance_items').select('id').eq('status', 'overdue'),
         supabase.from('batches').select('*, ph_readings(ph_value, is_deviation)').not('status', 'in', '("released","rejected")'),
         supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending'),
         supabase.from('tasks').select('id', { count: 'exact' }).eq('status', 'open').eq('priority', 'urgent'),
         supabase.from('compliance_items').select('id', { count: 'exact' }).in('status', ['upcoming', 'in-progress']),
-        // Real batch history for chart — last 6 months by month
         supabase.from('batches').select('status, created_at').in('status', ['released', 'rejected']).order('created_at', { ascending: true }),
-        // Inventory low stock alerts
         supabase.from('inventory_stock').select('*, inventory_items(name, unit, min_stock_level)').eq('status', 'Available').gt('current_quantity', 0),
-        // Today's attendance
         supabase.from('attendance_log').select('id').eq('date', todayStr),
-        supabase.from('employees').select('id', { count: 'exact' }).eq('is_active', true)
+        supabase.from('employees').select('id', { count: 'exact' }).eq('is_active', true),
+        supabase.from('attendance_log').select('*, employees(full_name)').eq('mispunch_status', 'pending')
       ]);
 
+      const [devReq, overReq, batchesReq, leavesReq, tasksReq, compReq, batchHistoryReq, invStockReq, attendanceReq, totalEmpsReq, mispunchesReq] = results;
+      
       const deviations = devReq.data;
       const overdues = overReq.data;
       const batches = batchesReq.data;
       const leaves = leavesReq.data;
       const openTasksCount = tasksReq.count || 0;
       const compDueCount = compReq.count || 0;
+      const mispunches = mispunchesReq.data || [];
 
       // Build real chart data — group by month
       const batchHistory = batchHistoryReq.data || [];
@@ -102,8 +107,10 @@ export default function AdminDashboard({ employeeId }) {
         batches: batches?.length || 0,
         leaves: leaves?.length || 0,
         tasks: openTasksCount,
-        compliance: compDueCount
+        compliance: compDueCount,
+        mispunches: mispunches.length
       });
+      setPendingMispunches(mispunches);
 
     } catch (error) {
       console.error('Error fetching dashboard:', error);
@@ -111,6 +118,37 @@ export default function AdminDashboard({ employeeId }) {
       setLoading(false);
     }
   };
+
+  const handleMispunchReview = async (action) => {
+    if (!reviewingMispunch) return;
+    if (action === 'reject' && (!rejectRemark || rejectRemark.trim().length < 5)) {
+        alert("Please provide a valid rejection remark (min 5 characters).");
+        return;
+    }
+    setActionLoading(true);
+    try {
+        const res = await fetch('/api/mispunch/review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                logId: reviewingMispunch.id,
+                action,
+                remark: action === 'reject' ? rejectRemark : undefined
+            })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "Review failed");
+        
+        setReviewingMispunch(null);
+        setRejectRemark('');
+        fetchDashboardData();
+        alert(`Mispunch successfully ${action === 'approve' ? 'approved' : 'rejected'}.`);
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        setActionLoading(false);
+    }
+  };
+
 
   const StatCard = ({ title, value, icon: Icon, color, link, subtitle }) => (
     <Link href={link} className="surface p-6 flex flex-col justify-between hover:border-gray-300 transition-all duration-150 group">
@@ -145,9 +183,29 @@ export default function AdminDashboard({ employeeId }) {
           <h2 className="text-lg font-bold text-gray-900 tracking-tight">Admin Controller</h2>
           <p className="text-xs text-gray-500">Live Operational Overview — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
-        <button onClick={() => setShowConfig(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm">
-          <Settings className="w-4 h-4"/> Safeguards
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+             onClick={async () => {
+                const res = await fetch('/api/reports/attendance');
+                if (res.ok) {
+                   const blob = await res.blob();
+                   const url = window.URL.createObjectURL(blob);
+                   const a = document.createElement('a');
+                   a.href = url;
+                   a.download = `Global_Attendance_${new Date().toISOString().split('T')[0]}.csv`;
+                   document.body.appendChild(a);
+                   a.click();
+                   a.remove();
+                } else { alert("Export failed."); }
+             }}
+             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all"
+          >
+            <Download className="w-4 h-4"/> Export Logs
+          </button>
+          <button onClick={() => setShowConfig(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all">
+            <Settings className="w-4 h-4"/> Safeguards
+          </button>
+        </div>
       </div>
 
       {/* Alert Banner */}
@@ -167,7 +225,8 @@ export default function AdminDashboard({ employeeId }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Active Batches" value={stats.batches} icon={FlaskConical} color="bg-blue-50 border-blue-100 text-blue-600" link="/batches" />
         <StatCard title="Leave Queue" value={stats.leaves} icon={CalendarOff} color="bg-amber-50 border-amber-100 text-amber-600" link="/leave" />
-        <StatCard title="Urgent Tasks" value={stats.tasks} icon={CheckSquare} color="bg-red-50 border-red-100 text-red-600" link="/tasks" />
+        <StatCard title="Mispunch Queue" value={stats.mispunches} icon={ShieldAlert} color="bg-red-50 border-red-100 text-red-600" link="/dashboard" subtitle={stats.mispunches > 0 ? "Action Required" : null} />
+        <StatCard title="Urgent Tasks" value={stats.tasks} icon={CheckSquare} color="bg-orange-50 border-orange-100 text-orange-600" link="/tasks" />
         <StatCard
           title="Present Today"
           value={`${attendanceStats.checkedIn}/${attendanceStats.total}`}
@@ -268,6 +327,118 @@ export default function AdminDashboard({ employeeId }) {
           )}
         </div>
       </div>
+
+      {/* Mispunch Review Section */}
+      {pendingMispunches.length > 0 && (
+        <div className="surface overflow-hidden flex flex-col border-red-100">
+           <div className="px-6 py-4 border-b border-red-100 flex justify-between items-center bg-red-50/30">
+            <h2 className="text-base font-bold text-red-900 tracking-tight flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4" /> Pending Mispunch Reconciliations
+            </h2>
+          </div>
+          <div className="p-6">
+            <div className="grid gap-4">
+              {pendingMispunches.map(log => (
+                <div key={log.id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-gray-50 rounded-lg">
+                       <Calendar className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm">{log.employees?.full_name}</p>
+                      <p className="text-[10px] text-gray-500 font-medium">Log Date: {new Date(log.date).toLocaleDateString()} | Requested: <strong className="text-navy">{log.mispunch_requested_hours}h</strong></p>
+                      <p className="text-xs text-slate-600 mt-1 italic">&quot;{log.mispunch_reason}&quot;</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => { setReviewingMispunch(log); setRejectRemark(''); }}
+                      className="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50"
+                    >
+                      Process
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        if (confirm(`Approve ${log.mispunch_requested_hours}h for ${log.employees?.full_name}?`)) {
+                          setReviewingMispunch(log);
+                          // We need to pass the log ID to the function, but our state is more complex.
+                          // Actually, let's just use the modal for everything to be safe.
+                          setReviewingMispunch(log);
+                        }
+                      }}
+                      className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+                    >
+                      Quick Approve
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mispunch Modal */}
+      <AnimatePresence>
+        {reviewingMispunch && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100 bg-slate-50/50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Review Mispunch Request</h3>
+                    <p className="text-xs text-gray-500 mt-1">Requested by {reviewingMispunch.employees?.full_name}</p>
+                  </div>
+                  <button onClick={() => setReviewingMispunch(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                 <div className="bg-navy/5 p-4 rounded-xl border border-navy/10">
+                    <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-1.5">User Statement</p>
+                    <p className="text-sm text-gray-700 italic">&quot;{reviewingMispunch.mispunch_reason}&quot;</p>
+                    <div className="mt-4 flex items-center justify-between">
+                       <span className="text-xs font-bold text-gray-500">Requested Hours:</span>
+                       <span className="text-base font-black text-navy px-3 py-1 bg-white rounded-lg border border-navy/10">{reviewingMispunch.mispunch_requested_hours}H</span>
+                    </div>
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Rejection Remark (Required only for rejection)</label>
+                    <textarea 
+                      placeholder="e.g. Employee actually left early per CCTV evidence..."
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none text-sm min-h-[100px] resize-none"
+                      value={rejectRemark}
+                      onChange={e => setRejectRemark(e.target.value)}
+                    />
+                 </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 flex gap-3">
+                <button 
+                  onClick={() => handleMispunchReview('reject')}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 bg-white text-red-600 font-bold rounded-lg border border-red-200 text-sm flex items-center justify-center hover:bg-red-50 transition-colors"
+                >
+                  {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reject Request'}
+                </button>
+                <button 
+                  onClick={() => handleMispunchReview('approve')}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm transition-colors"
+                >
+                   {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Approve Reconciliation'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Safeguards Modal */}
       <AnimatePresence>

@@ -67,32 +67,46 @@ export async function PATCH(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id, status } = await request.json();
+    const { id, status, rejection_reason } = await request.json();
     if (!id || !status) return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
 
-    // Approval requires elevated role
+    // Look up employee for role checks
+    let emp = null;
+    const { data: empByEmail } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
+    emp = empByEmail;
+
+    const isApprover = emp && APPROVER_ROLES.includes(emp.role?.toLowerCase());
+
+    // 1. APPROVAL logic
     if (status === 'Approved') {
-      // Look up employee — try user_id column first, fall back to email match
-      let emp = null;
-      const { data: empById } = await supabase.from('employees').select('id, role').eq('id', user.id).maybeSingle();
-      if (empById) {
-        emp = empById;
-      } else {
-        const { data: empByEmail } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
-        emp = empByEmail;
-      }
-      if (!emp || !APPROVER_ROLES.includes(emp.role?.toLowerCase())) {
+      if (!isApprover) {
         return NextResponse.json({ error: 'Only CEO, CTO, or Admin can approve formulations.' }, { status: 403 });
       }
-      // Log who approved and when
+      // Log who approved and when, and clear any old rejection reason
       const { data, error } = await supabase
         .from('formulations')
-        .update({ status: 'Approved', approved_by: emp.id, approved_at: new Date().toISOString() })
+        .update({ 
+            status: 'Approved', 
+            approved_by: emp.id, 
+            approved_at: new Date().toISOString(),
+            rejection_reason: null 
+        })
         .eq('id', id)
         .select()
         .single();
       if (error) throw error;
       return NextResponse.json(data);
+    }
+
+    // 2. REJECTION logic (Moving back to Draft with a reason)
+    if (status === 'Draft' && isApprover) {
+        if (!rejection_reason || rejection_reason.trim().length < 5) {
+            // Only enforce mandatory reason if it's currently "In Review" (i.e., a real rejection)
+            const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();
+            if (current?.status === 'In Review') {
+                return NextResponse.json({ error: 'A mandatory rejection reason (min 5 characters) is required to return a recipe to Draft.' }, { status: 400 });
+            }
+        }
     }
 
     // For other status transitions (Draft → In Review, Approved → Archived)
@@ -103,7 +117,10 @@ export async function PATCH(request) {
 
     const { data, error } = await supabase
       .from('formulations')
-      .update({ status })
+      .update({ 
+          status,
+          rejection_reason: (status === 'Draft' && isApprover) ? rejection_reason : undefined
+      })
       .eq('id', id)
       .select()
       .single();

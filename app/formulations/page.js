@@ -41,6 +41,8 @@ export default function FormulationsPage() {
   const [fetchError, setFetchError] = useState(null);
   const [scaleFactors, setScaleFactors] = useState({});
   const [statusFilter, setStatusFilter] = useState('All');
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const supabase = useMemo(() => createClient(), []);
   const isApprover = APPROVER_ROLES.includes(role?.toLowerCase());
@@ -95,17 +97,32 @@ export default function FormulationsPage() {
     setShowNew(true);
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus, reason) => {
+    if (newStatus === 'Draft' && isApprover && !rejectingId) {
+        // This is a "Recall" or a "Reject" trigger from an approver
+        setRejectingId(id);
+        return;
+    }
+    
+    if (newStatus === 'Draft' && isApprover && rejectingId) {
+        if (!reason || reason.trim().length < 5) {
+            alert("Please provide a mandatory rejection reason (min 5 chars).");
+            return;
+        }
+    }
+
     setActionLoading(id);
     try {
       const res = await fetch('/api/formulations', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus })
+        body: JSON.stringify({ id, status: newStatus, rejection_reason: reason })
       });
       const data = await res.json();
       if (!res.ok) { alert(data.error || 'Action failed'); return; }
-      // Update state locally for instant feedback
+      
+      setRejectingId(null);
+      setRejectionReason('');
       setFormulations(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
     } catch (err) { alert('Network Error'); }
     finally { setActionLoading(null); }
@@ -299,6 +316,15 @@ export default function FormulationsPage() {
                       <p className="text-[10px] text-gray-400 italic mb-3 line-clamp-2">&quot;{f.notes}&quot;</p>
                     )}
 
+                    {f.rejection_reason && f.status === 'Draft' && (
+                      <div className="mb-3 p-3 bg-red-50 border border-red-100 rounded-lg">
+                        <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                          <XCircle className="w-3 h-3" /> Rejection Remark
+                        </p>
+                        <p className="text-[11px] text-red-700 font-medium italic">&quot;{f.rejection_reason}&quot;</p>
+                      </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="mt-auto space-y-2">
                       
@@ -335,26 +361,36 @@ export default function FormulationsPage() {
                         </button>
                       )}
 
-                      {/* In Review: Approve (approvers only) + Recall (anyone) */}
+                      {/* In Review: Approve (approvers only) + Recall/Reject (anyone/approvers) */}
                       {f.status === 'In Review' && (
                         <div className="grid grid-cols-2 gap-2">
-                          {isApprover && (
+                          {isApprover ? (
+                            <>
+                              <button
+                                disabled={isLoading}
+                                onClick={() => handleStatusChange(f.id, 'Approved')}
+                                className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              >
+                                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <CheckCircle2 className="w-3.5 h-3.5"/>}
+                                Approve
+                              </button>
+                              <button
+                                disabled={isLoading}
+                                onClick={() => handleStatusChange(f.id, 'Draft')}
+                                className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-red-200 bg-white text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              >
+                                <XCircle className="w-3.5 h-3.5"/> Reject
+                              </button>
+                            </>
+                          ) : (
                             <button
-                              disabled={isLoading}
-                              onClick={() => handleStatusChange(f.id, 'Approved')}
-                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                disabled={isLoading}
+                                onClick={() => handleStatusChange(f.id, 'Draft')}
+                                className="col-span-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
-                              {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <CheckCircle2 className="w-3.5 h-3.5"/>}
-                              Approve
+                                <ArrowRight className="w-3.5 h-3.5 rotate-180"/> Recall to Draft
                             </button>
                           )}
-                          <button
-                            disabled={isLoading}
-                            onClick={() => handleStatusChange(f.id, 'Draft')}
-                            className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 ${!isApprover ? 'col-span-2' : ''}`}
-                          >
-                            <XCircle className="w-3.5 h-3.5"/> Recall
-                          </button>
                         </div>
                       )}
 
@@ -455,6 +491,39 @@ export default function FormulationsPage() {
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Save className="w-4 h-4"/> Save as Draft</>}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Modal */}
+      {rejectingId && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Reject Formulation</h3>
+            <p className="text-xs text-gray-500 mb-4">You must provide a reason for sending this recipe back to Draft.</p>
+            
+            <textarea 
+              autoFocus
+              value={rejectionReason} 
+              onChange={e => setRejectionReason(e.target.value)}
+              placeholder="e.g. Yield calculation in Phase 2 seems incorrect..."
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium h-32 outline-none focus:ring-1 focus:ring-red-500 resize-none mb-4"
+            />
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setRejectingId(null); setRejectionReason(''); }}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleStatusChange(rejectingId, 'Draft', rejectionReason)}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700"
+              >
+                Confirm Reject
+              </button>
+            </div>
           </div>
         </div>
       )}

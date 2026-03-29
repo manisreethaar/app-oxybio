@@ -120,7 +120,14 @@ export async function PATCH(request) {
         updateData = { approval_status: 'approved' };
         break;
       case 'reject':
-        updateData = { approval_status: 'rejected', status: 'in-progress', completion_note: payload.reject_note || 'Revision required.' };
+        if (!payload.reject_note || payload.reject_note.trim().length < 5) {
+            return NextResponse.json({ error: 'A mandatory rejection remark (min 5 chars) is required.' }, { status: 400 });
+        }
+        updateData = { 
+            approval_status: 'rejected', 
+            status: 'in-progress', 
+            completion_note: payload.reject_note 
+        };
         break;
     }
 

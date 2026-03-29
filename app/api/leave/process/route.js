@@ -22,12 +22,24 @@ export async function POST(request) {
     const parsed = processSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
-    const { data, error } = await supabase.from('leave_applications').update({
-      status: parsed.data.status,
-      admin_comment: parsed.data.comment || '',
+    const { id, status, comment } = parsed.data;
+
+    if (status === 'rejected' && (!comment || comment.trim().length < 5)) {
+      return NextResponse.json({ error: 'A mandatory rejection reason (min 5 characters) is required.' }, { status: 400 });
+    }
+
+    const updateData = {
+      status,
+      admin_comment: comment || '',
       reviewed_by: emp.id,
       reviewed_at: new Date().toISOString()
-    }).eq('id', parsed.data.id).select('*, employees(full_name)').single();
+    };
+
+    if (status === 'rejected') {
+        updateData.rejection_reason = comment;
+    }
+
+    const { data, error } = await supabase.from('leave_applications').update(updateData).eq('id', id).select('*, employees(full_name)').single();
 
     if (error) throw error;
     
