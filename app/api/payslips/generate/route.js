@@ -40,10 +40,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields: employee_id, month, year' }, { status: 400 });
     }
 
-    // Fetch employee details including base salary and date of joining
+    // Fetch employee details including base salary, date of joining and role
     const { data: emp, error: empErr } = await supabase
       .from('employees')
-      .select('id, full_name, base_salary, joined_date, designation, employee_code')
+      .select('id, full_name, base_salary, joined_date, designation, employee_code, role')
       .eq('id', employee_id)
       .single();
 
@@ -90,16 +90,28 @@ export async function POST(request) {
     // Unique present days (in case of multiple logs per day)
     const presentDays = new Set((attendanceLogs || []).map(a => a.date)).size;
 
-    // Count approved paid leaves in the period
-    const { data: approvedLeaves } = await supabase
+    // ── Leave Policy by Role ──────────────────────────────────────────────────
+    // Research Fellows: 12 Casual Leaves/year ONLY. No SL/EL entitlement.
+    // All other roles: All approved leave types (CL/SL/EL) count as paid.
+    // ─────────────────────────────────────────────────────────────────────────
+    let leaveQuery = supabase
       .from('leave_applications')
-      .select('total_days')
+      .select('total_days, leave_type')
       .eq('employee_id', employee_id)
       .eq('status', 'approved')
       .gte('start_date', startStr)
       .lte('end_date', endStr);
 
+    if (emp.role === 'research_fellow') {
+      leaveQuery = leaveQuery.eq('leave_type', 'Casual');
+    }
+
+    const { data: approvedLeaves } = await leaveQuery;
     const approvedLeaveDays = (approvedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
+
+    const leavePolicyNote = emp.role === 'research_fellow'
+      ? '12 CL/year only. SL & EL not applicable — treated as LOP.'
+      : 'All approved leave types (CL/SL/EL) credited as paid.';
 
     // Calculate LOP
     // Credited working days = present + approved paid leave
@@ -133,6 +145,7 @@ export async function POST(request) {
         pf_deduction: parseFloat(pf_deduction || 0),
         esi_deduction: parseFloat(esi_deduction || 0),
         net_salary: Math.round(netSalary * 100) / 100,
+        leave_policy_note: leavePolicyNote,
       }
     });
 

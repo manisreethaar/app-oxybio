@@ -433,6 +433,13 @@ export default function PayslipsPage() {
                     <span className="font-black text-teal-800 text-sm">Calculation Complete — Review Before Approving</span>
                   </div>
 
+                  {calcResult.leave_policy_note && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs font-bold text-amber-700 flex items-center gap-2">
+                      <span>📋 Leave Policy:</span>
+                      <span className="font-medium">{calcResult.leave_policy_note}</span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {[
                       ['Total Working Days', calcResult.total_working_days],
