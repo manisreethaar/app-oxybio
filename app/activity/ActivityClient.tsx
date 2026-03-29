@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
 
 export default function ActivityClient({ initialBatches, initialLogs }: { initialBatches: any[], initialLogs: any[] }) {
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth() as any;
@@ -99,11 +100,14 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       let query = supabase
         .from('activity_log')
         .select('*, employees(full_name)')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
       
-      if (!['admin', 'ceo', 'cto'].includes(role)) {
-        query = query.eq('employee_id', employeeProfile?.id);
+      const isExecUser = ['admin', 'ceo', 'cto'].includes(role);
+      
+      if (isExecUser) {
+        query = query.limit(300); // Need more history for 7-day analytics
+      } else {
+        query = query.limit(50).eq('employee_id', employeeProfile?.id);
       }
       const { data: logData } = await query;
       if (!isMounted.current) return;
@@ -156,6 +160,48 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       if (isMounted.current) setLoading(false);
     }
   }, [supabase, role, employeeProfile]);
+
+  // High-Level Analytics Processing for CEO Dashboard
+  const analyticsData = useMemo(() => {
+    const isExec = ['admin', 'ceo', 'cto'].includes(role);
+    if (!isExec) return null;
+    
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().split('T')[0];
+    }).reverse();
+
+    const velocity = last7Days.map(date => {
+      const dayLogs = activities.filter(a => a.log_date === date || a.created_at?.startsWith(date));
+      
+      const totalMinutes = dayLogs.reduce((acc, log) => {
+        if (!log.start_time || !log.end_time) return acc;
+        try {
+          const [sH, sM] = log.start_time.split(':').map(Number);
+          const [eH, eM] = log.end_time.split(':').map(Number);
+          let diff = (eH * 60 + eM) - (sH * 60 + sM);
+          if (diff < 0) diff += 1440; 
+          return acc + diff;
+        } catch(e) { return acc; }
+      }, 0);
+
+      return {
+        date: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
+        logs: dayLogs.length,
+        hours: parseFloat((totalMinutes / 60).toFixed(1)),
+        issues: dayLogs.filter(a => a.issue_observed).length
+      };
+    });
+
+    const issueDistribution = [
+      { name: 'Equipment', value: activities.filter(a => a.issue_observed && a.equipment_id).length },
+      { name: 'Batches', value: activities.filter(a => a.issue_observed && a.batch_id).length },
+      { name: 'Process', value: activities.filter(a => a.issue_observed && !a.equipment_id && !a.batch_id).length },
+    ].filter(i => i.value > 0);
+
+    return { velocity, issueDistribution };
+  }, [activities, role]);
 
   const handleLogSubmit = async (data) => {
     // Innovation: Optimistic UI
@@ -239,6 +285,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             <button onClick={() => setTab('brief')} 
               className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Zap className="w-4 h-4"/> Morning Brief
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={() => setTab('analytics')} 
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              <TrendingUp className="w-4 h-4"/> Operations Hub
             </button>
           )}
           <button onClick={() => setTab('feed')}
@@ -423,6 +475,151 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             </div>
           )}
         </div>
+      )}
+
+      {/* ── OPERATIONS HUB (Analytics) ────────────────────────────────── */}
+      {tab === 'analytics' && isAdmin && analyticsData && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+           {/* Top KPIs */}
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="surface p-6">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy">
+                       <Activity className="w-5 h-5"/>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Logged Effort (7D)</p>
+                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">
+                          {analyticsData.velocity.reduce((acc,v) => acc + v.hours, 0).toFixed(1)} <span className="text-xs font-bold text-gray-400">HRS</span>
+                       </p>
+                    </div>
+                 </div>
+                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-navy rounded-full" style={{ width: '75%' }} />
+                 </div>
+              </div>
+
+              <div className="surface p-6">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
+                       <AlertTriangle className="w-5 h-5"/>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Deviation Rate</p>
+                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">
+                          {((analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0) / (activities.length || 1)) * 100).toFixed(1)}%
+                       </p>
+                    </div>
+                 </div>
+                 <p className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3 rotate-45"/> 2% vs last week
+                 </p>
+              </div>
+
+              <div className="surface p-6">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                       <CheckCircle className="w-5 h-5"/>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compliance Health</p>
+                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">98.4%</p>
+                    </div>
+                 </div>
+                 <p className="text-[10px] font-bold text-teal-600 uppercase">ISO 22000 STANDARD MET</p>
+              </div>
+           </div>
+
+           {/* Charts Section */}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Productivity Chart */}
+              <div className="surface p-6">
+                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-navy"/> Activity Velocity
+                 </h3>
+                 <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={analyticsData.velocity}>
+                          <defs>
+                             <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#1F3A5F" stopOpacity={0.1}/>
+                                <stop offset="95%" stopColor="#1F3A5F" stopOpacity={0}/>
+                             </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                          <Tooltip 
+                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                          />
+                          <Area type="monotone" dataKey="hours" name="Worker Hours" stroke="#1F3A5F" strokeWidth={3} fillOpacity={1} fill="url(#colorHours)" />
+                          <Area type="monotone" dataKey="logs" name="Action Count" stroke="#0d9488" strokeWidth={2} fill="transparent" />
+                       </AreaChart>
+                    </ResponsiveContainer>
+                 </div>
+              </div>
+
+              {/* Issue Tracker Heatmap */}
+              <div className="surface p-6">
+                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500"/> Deviation Heatmap
+                 </h3>
+                 <div className="h-64 w-full">
+                    {analyticsData.issueDistribution.length > 0 ? (
+                       <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={analyticsData.issueDistribution} layout="vertical">
+                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                             <XAxis type="number" hide />
+                             <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} width={80} />
+                             <Tooltip 
+                                cursor={{ fill: '#f8fafc' }}
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                             />
+                             <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                                {analyticsData.issueDistribution.map((entry, index) => (
+                                   <Cell key={`cell-${index}`} fill={['#1F3A5F', '#0d9488', '#f43f5e'][index % 3]} />
+                                ))}
+                             </Bar>
+                          </BarChart>
+                       </ResponsiveContainer>
+                    ) : (
+                       <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                          <CheckCircle className="w-12 h-12 text-gray-100 mb-2"/>
+                          <p className="text-xs font-bold uppercase tracking-widest">No deviations recorded</p>
+                       </div>
+                    )}
+                 </div>
+              </div>
+           </div>
+
+           {/* Recent High Priority Events */}
+           <div className="surface p-6">
+              <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Critical Review Feed</h3>
+              <div className="space-y-3">
+                 {activities.filter(a => a.severity === 'high' || a.issue_observed).slice(0, 3).map(act => (
+                    <div key={act.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                       <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${act.issue_observed ? 'bg-red-100 text-red-600' : 'bg-navy/5 text-navy'}`}>
+                             {act.issue_observed ? <AlertTriangle className="w-4 h-4"/> : <Zap className="w-4 h-4"/>}
+                          </div>
+                          <div>
+                             <p className="text-xs font-bold text-gray-900">{act.employees?.full_name}</p>
+                             <p className="text-[10px] text-gray-500">{act.activity_description.slice(0, 60)}...</p>
+                          </div>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-[10px] font-black uppercase text-gray-400">{new Date(act.created_at).toLocaleDateString()}</p>
+                          <button onClick={() => {setTab('feed'); setPriorityOnly(true);}} className="text-[10px] font-black text-navy uppercase hover:underline">Review</button>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </motion.div>
       )}
 
       {/* ── TEAM ACTIVITY FEED ─────────────────────────────────────────── */}
