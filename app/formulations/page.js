@@ -296,7 +296,7 @@ export default function FormulationsPage() {
                     )}
 
                     {f.notes && (
-                      <p className="text-[10px] text-gray-400 italic mb-3 line-clamp-2">"{f.notes}"</p>
+                      <p className="text-[10px] text-gray-400 italic mb-3 line-clamp-2">&quot;{f.notes}&quot;</p>
                     )}
 
                     {/* Action Buttons */}
