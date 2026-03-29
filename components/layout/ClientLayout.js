@@ -133,7 +133,7 @@ export default function ClientLayout({ children }) {
 
   if (pathname === '/login') {
     return (
-      <main className="min-h-screen mesh-bg flex items-center justify-center p-4">
+      <main className="min-h-screen professional-bg flex items-center justify-center p-4">
         {children}
       </main>
     );
