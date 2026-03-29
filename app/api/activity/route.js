@@ -10,7 +10,8 @@ const postSchema = z.object({
     end_time: z.string().min(1, 'End time required'),
     issue_observed: z.boolean(),
     issue_description: z.string().nullable().optional(),
-    batch_id: z.string().nullable().optional()
+    batch_id: z.string().nullable().optional(),
+    equipment_id: z.string().nullable().optional()
   })
 });
 
@@ -38,6 +39,10 @@ export async function POST(request) {
     const { action, payload } = parsed.data;
 
     if (action === 'log_activity') {
+      if (!payload.issue_observed) {
+        payload.issue_description = null;
+      }
+
       // Innovation 1: Severity Scoring
       let severity = 'normal';
       if (payload.issue_observed) severity = 'high';
@@ -47,6 +52,9 @@ export async function POST(request) {
 
       const { data, error } = await supabase.from('activity_log').insert({
         ...payload,
+        batch_id: payload.batch_id || null,
+        equipment_id: payload.equipment_id || null,
+        issue_description: payload.issue_description || null,
         employee_id: emp.id,
         severity: severity,
         log_date: new Date().toISOString().split('T')[0],
