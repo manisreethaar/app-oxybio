@@ -33,7 +33,7 @@ export default function DashboardPage() {
     if (!employeeProfile && !loading) {
       const timer = setTimeout(() => {
         setTimedOut(true);
-      }, 1500);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [employeeProfile, loading]);
