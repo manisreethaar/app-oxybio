@@ -10,7 +10,15 @@ const postSchema = z.object({
   pf_deduction: z.preprocess((val) => Number(val) || 0, z.number().min(0)),
   esi_deduction: z.preprocess((val) => Number(val) || 0, z.number().min(0)),
   net_salary: z.preprocess((val) => Number(val), z.number().min(0)),
-  payslip_url: z.string().optional()
+  payslip_url: z.string().optional().nullable(),
+  // Auto-generated payroll fields
+  base_salary: z.preprocess((val) => Number(val) || 0, z.number().optional()),
+  lop_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
+  lop_deduction: z.preprocess((val) => Number(val) || 0, z.number().optional()),
+  total_working_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
+  present_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
+  approved_leave_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
+  is_auto_generated: z.boolean().optional(),
 });
 
 export async function POST(request) {

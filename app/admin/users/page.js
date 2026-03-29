@@ -136,6 +136,26 @@ useEffect(() => {
     finally { setDeactivating(null); }
   };
 
+  const [editingSalary, setEditingSalary] = useState(null);
+  const [updateLoading, setUpdateLoading] = useState(null);
+
+  const updateSalary = async (id, newSalary) => {
+    setUpdateLoading(id);
+    try {
+      const res = await fetch('/api/admin/update-salary', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_id: id, base_salary: newSalary })
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      setEmployees(prev => prev.map(e => e.id === id ? { ...e, base_salary: parseFloat(newSalary) } : e));
+    } catch (err) {
+      alert('Failed to update salary: ' + err.message);
+    } finally {
+      setUpdateLoading(null);
+      setEditingSalary(null);
+    }
+  };
+
   const handleInviteSubmit = async (data) => {
     setInviting(true);
     setInviteError('');
@@ -155,6 +175,7 @@ useEffect(() => {
           employee_code: data.employee_code,
           designation: designationLabel || data.designation,
           joined_date: data.joined_date || new Date().toISOString().split('T')[0],
+          base_salary: parseFloat(data.base_salary || 0)
         })
       });
       const result = await res.json();
@@ -210,6 +231,7 @@ useEffect(() => {
                 <th className="px-6 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">ID Code</th>
                 <th className="px-6 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Designation</th>
                 <th className="px-6 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Joined</th>
+                <th className="px-6 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Base Salary</th>
                 <th className="px-6 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                 <th className="px-6 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
@@ -259,6 +281,29 @@ useEffect(() => {
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium">
                     {emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-GB') : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {editingSalary === emp.id ? (
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          autoFocus
+                          defaultValue={emp.base_salary || 0}
+                          onBlur={(e) => updateSalary(emp.id, e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') updateSalary(emp.id, e.target.value); if (e.key === 'Escape') setEditingSalary(null); }}
+                          className="w-24 px-2 py-1 text-sm border border-teal-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                        {updateLoading === emp.id && <Loader2 className="w-4 h-4 animate-spin text-teal-600" />}
+                      </div>
+                    ) : (
+                      <div 
+                        className="font-mono font-bold text-slate-700 cursor-pointer hover:text-teal-600 flex items-center group"
+                        onClick={() => setEditingSalary(emp.id)}
+                      >
+                        ₹{(emp.base_salary || 0).toLocaleString()}
+                        <span className="ml-2 opacity-0 group-hover:opacity-100 text-[10px] text-teal-500">Edit</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className={`px-3 py-1.5 inline-flex text-[11px] font-black uppercase tracking-wider rounded-xl border ${emp.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
@@ -335,6 +380,10 @@ useEffect(() => {
               </div>
               <Field label="Date of Joining">
                 <input type="date" {...register('joined_date')} className="input-field"/>
+              </Field>
+
+              <Field label="Base Salary (₹)">
+                <input type="number" step="1000" {...register('base_salary')} className="input-field" placeholder="e.g. 50000"/>
               </Field>
 
               {/* Designation + Auto ID */}
