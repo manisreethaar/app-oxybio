@@ -10,7 +10,9 @@ import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } from 'lucide-react';
 import { differenceInBusinessDays } from 'date-fns';
 
-const LEAVE_TYPES = ['Casual', 'Sick', 'Earned', 'Permission'];
+const ALL_LEAVE_TYPES = ['Casual', 'Sick', 'Earned', 'Permission'];
+// Research Fellows are entitled to 12 CL/year only
+const RESEARCH_FELLOW_LEAVE_TYPES = ['Casual'];
 
 const STATUS_STYLE = {
   approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -30,6 +32,9 @@ export default function LeavePage() {
 
   const [rejectionId, setRejectionId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  const isResearchFellow = role === 'research_fellow';
+  const availableLeaveTypes = isResearchFellow ? RESEARCH_FELLOW_LEAVE_TYPES : ALL_LEAVE_TYPES;
 
   const { register, handleSubmit, watch, reset } = useForm({
     resolver: zodResolver(z.object({
@@ -242,11 +247,17 @@ export default function LeavePage() {
             <form onSubmit={handleSubmit(handleApplyForm)} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Leave Category</label>
+                {isResearchFellow && (
+                  <div className="mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700">
+                    📋 Research Fellow Policy: 12 Casual Leaves/year only. Sick &amp; Earned Leave not applicable.
+                  </div>
+                )}
                 <select {...register('leaveType')} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
-                  <option value="Casual">Casual Leave (CL)</option>
-                  <option value="Sick">Sick Leave (SL)</option>
-                  <option value="Earned">Earned Leave (EL)</option>
-                  <option value="Permission">⏱ Permission / Short Leave</option>
+                  {!isResearchFellow && <option value="Casual">Casual Leave (CL)</option>}
+                  {isResearchFellow && <option value="Casual">Casual Leave (CL) — 12/year</option>}
+                  {!isResearchFellow && <option value="Sick">Sick Leave (SL)</option>}
+                  {!isResearchFellow && <option value="Earned">Earned Leave (EL)</option>}
+                  {!isResearchFellow && <option value="Permission">⏱ Permission / Short Leave</option>}
                 </select>
               </div>
 
