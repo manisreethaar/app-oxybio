@@ -280,6 +280,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     };
 
     let insertedCount = 0;
+    let equipmentCount = 0;
+    
+    // 1. Seed Inventory
     try {
       for (const [category, itemsList] of Object.entries(catalogData)) {
         for (const itemName of itemsList) {
@@ -294,7 +297,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           if (!error) insertedCount++;
         }
       }
-      alert(`Success! Auto-Loaded ${insertedCount} items into the database.`);
+
+      // 2. Seed Analytical Instruments into the Equipment Tracker automatically
+      const instrumentsList = [
+        "Bench top pH meter", "STEREO MICROSCOPE WITH LED LIGHT", "Hand held refractometer", 
+        "Centrifuge (Micro centrifuge)", "Ultrasonic bath (sonicator)", "LABORATORY WEIGHING SCALE"
+      ];
+      for (const equipName of instrumentsList) {
+        const { error: equipErr } = await (supabase.from('equipment').insert([
+           { name: equipName, status: 'Operational', model: 'Auto-Imported' }
+        ] as any) as any);
+        if (!equipErr) equipmentCount++;
+      }
+
+      alert(`Success! Auto-Loaded ${insertedCount} inventory items & ${equipmentCount} instruments into your Equipment module.`);
       fetchData(0, false);
     } catch(err) {
       alert("Error during seed process.");
