@@ -34,7 +34,7 @@ export async function POST(request) {
     // 2. Update stock table balances
     const { error: updateError } = await supabase
       .from('inventory_stock')
-      .update({ current_quantity: newQty, status: newQty <= 0 ? 'Expired' : undefined }) // Update status to reflect out of stock on Aggregate setups or keep as Available
+      .update({ current_quantity: newQty, status: newQty <= 0 ? 'Out of Stock' : undefined })
       .eq('id', stock_id);
 
     if (updateError) throw updateError;

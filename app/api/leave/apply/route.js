@@ -28,8 +28,10 @@ export async function POST(request) {
 
     const spentDays = (activeLeaves || []).reduce((acc, curr) => acc + (curr.total_days || 0), 0);
     // FIX #4: Read from env var so HR can configure without code changes.
-    // Set ANNUAL_LEAVE_LIMIT in .env.local to override (default: 20)
-    const LIMIT = parseInt(process.env.ANNUAL_LEAVE_LIMIT, 10) || 20;
+    if (!process.env.ANNUAL_LEAVE_LIMIT) {
+      return NextResponse.json({ error: 'System Configuration Error: ANNUAL_LEAVE_LIMIT is not set in environment variables.' }, { status: 500 });
+    }
+    const LIMIT = parseInt(process.env.ANNUAL_LEAVE_LIMIT, 10);
 
     if (spentDays + days > LIMIT) {
         return NextResponse.json({

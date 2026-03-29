@@ -40,7 +40,7 @@ export async function POST(req) {
     }
 
     webpush.setVapidDetails(
-      'mailto:founder@oxybio.in',
+      process.env.VAPID_CONTACT_EMAIL || 'mailto:admin@oxybio.in',
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
       process.env.VAPID_PRIVATE_KEY
     );
@@ -57,9 +57,10 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error.statusCode === 410) {
-      // Subscription expired — silently ignore, do not error
-      return NextResponse.json({ success: false, reason: 'Push subscription expired — user must re-subscribe' });
+    if (error.statusCode === 410 || error.statusCode === 404) {
+      // Subscription expired or gone. Delete it from the DB so they are prompted to resubscribe.
+      await supabaseAdmin.from('employees').update({ push_subscription: null }).eq('id', assigned_to);
+      return NextResponse.json({ success: false, reason: 'Push subscription expired and removed — user must re-subscribe' });
     }
     console.error("Push Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
