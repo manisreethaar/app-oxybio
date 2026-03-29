@@ -39,6 +39,7 @@ export default function AttendancePage() {
   const webcamRef = useRef(null);
   const [now, setNow] = useState(Date.now());
   const [captureStatus, setCaptureStatus] = useState("Capture");
+  const [previewImage, setPreviewImage] = useState(null); // TWO-STEP PREVIEW
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -135,6 +136,7 @@ export default function AttendancePage() {
       const data = await res.json();
       if (data.latitude && data.longitude) {
         setGeoData({ lat: data.latitude, lng: data.longitude });
+        setPreviewImage(null);
         setShowWebcam(true);
       } else {
         throw new Error("Invalid fallback coordinates.");
@@ -155,7 +157,7 @@ export default function AttendancePage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (position) => { setGeoData({ lat: position.coords.latitude, lng: position.coords.longitude }); setShowWebcam(true); setActionLoading(false); },
+      (position) => { setGeoData({ lat: position.coords.latitude, lng: position.coords.longitude }); setPreviewImage(null); setShowWebcam(true); setActionLoading(false); },
       (err) => { 
         console.warn(`Hardware GPS failed (Code ${err.code}). Triggering permanent fallback...`);
         fallbackToIPLocation();
@@ -165,30 +167,31 @@ export default function AttendancePage() {
   };
 
 
-  const captureSelfieAndCheckIn = async () => {
-    setActionLoading(true); setCheckInError(''); setCaptureStatus("Processing...");
-    if (!webcamRef.current) { setCheckInError('Camera not ready.'); setActionLoading(false); setCaptureStatus("Capture"); return; }
-    
-    setCaptureStatus("Grabbing Feed...");
+  const handleCapturePreview = () => {
+    if (!webcamRef.current) return;
     const imageSrc = webcamRef.current.getScreenshot();
-    if (!imageSrc) { setCheckInError("Camera feed unreadable. Check permissions."); setActionLoading(false); setCaptureStatus("Capture"); return; }
+    if (imageSrc) setPreviewImage(imageSrc);
+  };
+
+  const submitCheckIn = async () => {
+    if (!previewImage) return;
+    setActionLoading(true); setCheckInError(''); setCaptureStatus("Encoding...");
     
     try {
-      setCaptureStatus("Encoding...");
       const fetchWithTimeout = (url, options, timeout = 20000) => {
         return Promise.race([
           fetch(url, options),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
         ]);
       };
-      // Cross-browser safe: convert data URL to blob via fetch — avoids atob() OpenSSL crash on Android
-      if (!imageSrc || !imageSrc.startsWith('data:')) {
+      // Cross-browser safe: convert data URL to blob via fetch
+      if (!previewImage || !previewImage.startsWith('data:')) {
         setCheckInError("Camera screenshot format invalid. Please try again.");
         setActionLoading(false);
-        setCaptureStatus("Capture");
+        setCaptureStatus("Submit Verification");
         return;
       }
-      const blob = await fetch(imageSrc).then(r => r.blob());
+      const blob = await fetch(previewImage).then(r => r.blob());
 
       const formData = new FormData(); formData.append('file', blob, 'selfie.jpeg');
       
@@ -213,7 +216,7 @@ export default function AttendancePage() {
       console.error(err);
     } finally { 
       setActionLoading(false); 
-      setCaptureStatus("Capture");
+      setCaptureStatus("Submit Verification");
     }
   };
 
@@ -453,7 +456,11 @@ export default function AttendancePage() {
               <p className="text-xs text-gray-500 mt-0.5">Secure GMP Compliance protocols active.</p>
             </div>
             <div className="relative bg-black aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
-              <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: "user" }} className="w-full h-full object-cover" mirrored={true}/>
+              {previewImage ? (
+                <img src={previewImage} alt="Preview" className="w-full h-full object-cover mirrored-img" style={{ transform: 'scaleX(-1)' }} />
+              ) : (
+                <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: "user" }} className="w-full h-full object-cover" mirrored={true}/>
+              )}
               <div className="absolute inset-0 border-[32px] border-black/40 pointer-events-none"></div>
               <div className="absolute inset-0 m-8 border border-white/40 border-dashed rounded-[100%] pointer-events-none"></div>
             </div>
@@ -464,10 +471,21 @@ export default function AttendancePage() {
               </div>
             )}
             <div className="p-4 bg-gray-50 flex gap-3">
-              <button onClick={() => setShowWebcam(false)} className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm">Cancel</button>
-              <button onClick={captureSelfieAndCheckIn} disabled={actionLoading} className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
-                {captureStatus}
-              </button>
+              {previewImage ? (
+                <>
+                  <button onClick={() => setPreviewImage(null)} disabled={actionLoading} className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm disabled:opacity-50">Retake</button>
+                  <button onClick={submitCheckIn} disabled={actionLoading} className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
+                    {captureStatus === 'Capture' ? 'Submit' : captureStatus}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setShowWebcam(false)} className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm">Cancel</button>
+                  <button onClick={handleCapturePreview} className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center text-sm">
+                    Capture
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

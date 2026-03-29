@@ -44,14 +44,15 @@ export async function POST(request) {
     const inGeofence = distance <= MAX_RADIUS_METERS;
     const isNearby = distance <= 350; // Buffer for indoor accuracy degradation
 
-    // Protocol: If not in geofence but nearby, require a photo (Liveness Fallback)
+    // Protocol: Strict Geofence Enforcement (Prevent remote check-ins)
     if (!inGeofence && !override) {
-        if (photo_url) {
-            // Allow with a 'Photo Audit' flag regardless of extreme IP Geolocation distances
-            console.log(`Geofence Fallback triggered for distance: ${Math.round(distance)}m with Photo Audit`);
-        } else {
+        if (!isNearby) {
             return NextResponse.json({ 
-                error: `Location Verification Failed: You are ${Math.round(distance)}m away. Move closer or ensure a verification photo is attached for manual audit.` 
+                error: `Location Verification Failed: You are ${Math.round(distance)}m away from the campus. You must be within the geofence to check in.` 
+            }, { status: 403 });
+        } else if (!photo_url) {
+            return NextResponse.json({ 
+                error: `Buffer Zone: You are ${Math.round(distance)}m away. A photo is required for indoor GPS drift auditing.` 
             }, { status: 403 });
         }
     }
