@@ -62,6 +62,7 @@ export default function TasksPage() {
   const fileRef = useRef(null);
   const [rejectNote, setRejectNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
 
   useEffect(() => {
     if (selectedTask) {
@@ -130,30 +131,73 @@ export default function TasksPage() {
 
   const handleCreateTask = async (data) => {
     if (actionLoading) return;
-    const isAdmin = canDo('tasks', 'assign');
+    const isEdit = !!editingTaskId;
+    const isAdmin = canDo('tasks', 'assign') || isMaster;
     let assignees = isAdmin ? data.assigned_user_ids : [employeeProfile.id];
-    if (isAdmin && assignees.length === 0) return alert('Select at least one assignee.');
+    
+    if (isAdmin && assignees.length === 0 && !isEdit) return alert('Select at least one assignee.');
 
     setActionLoading(true);
-    const insertPayload = assignees.map(uid => ({
-      title: data.title, description: data.description, assigned_to: uid,
-      due_date: data.due_date, priority: data.priority, checklist: checklistBuffer,
-      is_personal_reminder: !isAdmin
-    }));
 
     try {
-      const res = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(insertPayload) });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create tasks');
-      
-      if (isAdmin) {
-        // Find which employees were assigned and send notifications
-        assignees.forEach(uid => { 
-          fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: uid, title: "New Task: " + data.priority.toUpperCase(), body: data.title, url: "/tasks" }) }).catch(() => {}); 
+      if (isEdit) {
+        // Handle Single Task Edit
+        const res = await fetch('/api/tasks', { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ 
+            id: editingTaskId,
+            title: data.title, 
+            description: data.description, 
+            assigned_to: assignees[0], // Edit currently supports 1-to-1
+            due_date: data.due_date, 
+            priority: data.priority, 
+            checklist: checklistBuffer
+          }) 
         });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to update task');
+      } else {
+        // Handle New Task Creation (Batch Support)
+        const insertPayload = assignees.map(uid => ({
+          title: data.title, description: data.description, assigned_to: uid,
+          due_date: data.due_date, priority: data.priority, checklist: checklistBuffer,
+          is_personal_reminder: !isAdmin
+        }));
+        const res = await fetch('/api/tasks', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(insertPayload) 
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to create tasks');
+        
+        if (isAdmin) {
+          assignees.forEach(uid => { 
+            fetch('/api/push/send', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ assigned_to: uid, title: "New Task: " + data.priority.toUpperCase(), body: data.title, url: "/tasks" }) 
+            }).catch(() => {}); 
+          });
+        }
       }
-      setShowCreate(false); resetTask(); setChecklistBuffer([]); fetchTasks();
+      
+      setShowCreate(false); setEditingTaskId(null); resetTask(); setChecklistBuffer([]); fetchTasks();
     } catch(err) { alert(err.message); }
     finally { setActionLoading(false); }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTaskId(task.id);
+    resetTask({
+      title: task.title,
+      description: task.description || '',
+      assigned_user_ids: [task.assigned_to],
+      due_date: task.due_date ? task.due_date.split('T')[0] : '',
+      priority: task.priority || 'medium'
+    });
+    setChecklistBuffer(task.checklist || []);
+    setShowCreate(true);
+    setSelectedTask(null);
   };
 
   const handleDeleteTask = async (taskId) => {
@@ -234,8 +278,6 @@ export default function TasksPage() {
     if (success) { if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks'); setRejectNote(''); setSelectedTask(null); fetchTasks(); }
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading task queue...</div>;
-
   const filteredTasks = tasks.filter(t => (statusFilter === 'All' || t.status === statusFilter) && (assigneeFilter === 'All' || t.assigned_to === assigneeFilter));
   
   const groupedTasks = useMemo(() => {
@@ -270,6 +312,8 @@ export default function TasksPage() {
 
   const overdueCount = tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled' && t.due_date && differenceInDays(new Date(t.due_date), new Date()) < 0).length;
   const pendingApprovals = tasks.filter(t => t.approval_status === 'pending_review').length;
+
+  if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading task queue...</div>;
 
   return (
     <div className="page-container">
@@ -312,7 +356,7 @@ export default function TasksPage() {
       {showCreate && (
         <form onSubmit={handTask(handleCreateTask)} className="surface p-6 animate-in fade-in duration-200">
           <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-1.5">
-            <ListChecks className="w-5 h-5 text-navy"/> {isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder'}
+            <ListChecks className="w-5 h-5 text-navy"/> {editingTaskId ? 'Edit Task Details' : (isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <div className="md:col-span-2">
@@ -374,8 +418,8 @@ export default function TasksPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <button type="button" onClick={() => { setShowCreate(false); setChecklistBuffer([]); resetTask(); }} className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={isTaskSubmitting || actionLoading} className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60">{isTaskSubmitting || actionLoading ? 'Saving...' : 'Create'}</button>
+            <button type="button" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }} className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={isTaskSubmitting || actionLoading} className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60">{isTaskSubmitting || actionLoading ? 'Saving...' : (editingTaskId ? 'Save Changes' : 'Create')}</button>
           </div>
         </form>
       )}
@@ -478,7 +522,12 @@ export default function TasksPage() {
                 <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
               </div>
               <div className="flex gap-1">
-                {(isMaster || (selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>}
+                {(isMaster || (selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400 hover:text-navy" title="Edit Task"><Timer className="w-4 h-4 rotate-45"/></button>
+                    <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
+                  </div>
+                )}
                 <button onClick={handleCloseModal} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400"><X className="w-4 h-4"/></button>
               </div>
             </div>

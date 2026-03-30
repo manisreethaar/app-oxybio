@@ -187,3 +187,46 @@ export async function DELETE(request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function PUT(request) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await request.json();
+    const { id, title, description, assigned_to, due_date, priority, checklist, is_personal_reminder } = body;
+
+    if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
+
+    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const { data: task } = await supabase.from('tasks').select('assigned_by').eq('id', id).single();
+    const { data: currentUser } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+
+    if (!isMaster && task?.assigned_by !== currentUser?.id) {
+       return NextResponse.json({ error: 'Permission Denied: Only the creator can edit this task.' }, { status: 403 });
+    }
+
+    // Role-based assignment check (if assigned_to changed)
+    if (assigned_to) {
+      const { data: assignee } = await supabase.from('employees').select('role').eq('id', assigned_to).single();
+      if (!isMaster && !canAssignTo(currentUser?.role || 'Staff', assignee?.role || 'Staff', user.email)) {
+        return NextResponse.json({ error: `Permission Denied: Cannot assign task to a ${assignee?.role || 'Staff'}.` }, { status: 403 });
+      }
+    }
+
+    const { data: updated, error } = await supabase.from('tasks')
+      .update({ 
+        title, description, assigned_to, due_date, priority, checklist, is_personal_reminder 
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json({ success: true, data: updated });
+
+  } catch (err) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

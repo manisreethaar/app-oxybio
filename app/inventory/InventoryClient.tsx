@@ -54,6 +54,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [registrySearch, setRegistrySearch] = useState('');
   const [registrySort, setRegistrySort] = useState('name'); // 'name' | 'stock' | 'newest'
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteType, setDeleteType] = useState<'item' | 'vendor'>('item');
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination state
@@ -327,6 +328,35 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         fetchData(0, false);
       } else { alert((await res.json()).error || 'Failed.'); }
     } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleUpdateVendor = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('vendors').update(newVendor as any).eq('id', (newVendor as any).id);
+      if (!error) {
+        setIsModalOpen(false);
+        setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
+        fetchData(0, false);
+      } else { alert(error.message || 'Failed.'); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleDeleteVendor = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('vendors').delete().eq('id', deletingId);
+      if (error) throw error;
+      setVendors(vendors.filter(v => v.id !== deletingId));
+      setDeletingId(null);
+    } catch (err) {
+      alert("Failed to delete vendor: " + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleAddVendor = async (e) => {
@@ -666,12 +696,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                             <>
                               <button 
                                 onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200">
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
                                 <FileText className="w-3.5 h-3.5" />
                               </button>
                               <button 
-                                onClick={() => setDeletingId(item.id)}
-                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200">
+                                onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </>
@@ -710,7 +740,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2">Delete Record?</h2>
             <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
-              This will permanently remove the item and all its associated stock records. This action cannot be undone.
+              {deleteType === 'item' 
+                ? "This will permanently remove the item and all its associated stock records. This action cannot be undone."
+                : "This will remove the supplier from your Approved Vendor List (AVL)."}
             </p>
             <div className="flex gap-3">
               <button 
@@ -720,7 +752,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 Cancel
               </button>
               <button 
-                onClick={handleDeleteItem}
+                onClick={() => deleteType === 'item' ? handleDeleteItem() : handleDeleteVendor()}
                 disabled={isDeleting}
                 className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
@@ -748,7 +780,23 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               )}
             </div>
           ) : vendors.map(vendor => (
-            <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2">
+                 {(['admin','ceo','cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+                    <>
+                      <button 
+                        onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
+                        className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => { setDeleteType('vendor'); setDeletingId(vendor.id); }}
+                        className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                 )}
+              </div>
               <h3 className="text-lg font-black text-teal-950">{vendor.name}</h3>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
               <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
@@ -767,7 +815,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black tracking-tight">
-                  {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'items' ? 'Register Raw Material' : 'Register Approved Supplier'}
+                  {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
                 </h2>
                 <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">
                   {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
@@ -923,7 +971,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </form>
             ) : (modalType === 'items' || modalType === 'edit_item') ? (
-              <form onSubmit={modalType === 'items' ? handleAddItem : handleUpdateItem} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+              <form onSubmit={modalType === 'items' ? handleAddItem : modalType === 'edit_item' ? handleUpdateItem : modalType === 'edit_vendor' ? handleUpdateVendor : handleAddVendor} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-1">
                     <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Code / SKU</label>

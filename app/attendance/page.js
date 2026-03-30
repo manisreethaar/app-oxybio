@@ -244,26 +244,32 @@ export default function AttendancePage() {
     };
 
     // If already has geoData from a previous check-in session in the same lifecycle
-    if (geoData.lat && geoData.lng) {
+    // If already has geoData from a previous check-in session in the same lifecycle
+    if (geoData?.lat && geoData?.lng) {
         await performCheckout(geoData.lat, geoData.lng);
         return;
     }
 
-    if (!navigator.geolocation) {
-       await performCheckout(); // Fallback for execs
-       return;
-    }
+    try {
+      if (!navigator.geolocation) {
+         await performCheckout(); // Fallback for execs
+         return;
+      }
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        await performCheckout(position.coords.latitude, position.coords.longitude);
-      },
-      async (err) => {
-        console.warn("Check-out location acquisition failed, attempting bypass...");
-        await performCheckout();
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-    );
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          await performCheckout(position.coords.latitude, position.coords.longitude);
+        },
+        async (err) => {
+          console.warn("Check-out location acquisition failed, attempting bypass...");
+          await performCheckout();
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    } catch (err) {
+      console.error(err);
+      setActionLoading(false);
+    }
   };
 
 

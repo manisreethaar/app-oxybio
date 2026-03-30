@@ -128,6 +128,28 @@ export default function FormulationsPage() {
     finally { setActionLoading(null); }
   };
 
+  const handleDeleteRecipe = async (id) => {
+    if (!confirm("Permanently delete this draft recipe?")) return;
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/formulations?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setFormulations(prev => prev.filter(f => f.id !== id));
+      } else {
+        const errData = await res.json();
+        alert(`Delete failed: ${errData.error || 'Unknown error'}`);
+      }
+    } catch (err) { alert('Network Error'); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleEditRecipe = (f) => {
+    let parsedIng = [];
+    try { parsedIng = typeof f.ingredients === 'string' ? JSON.parse(f.ingredients) : (f.ingredients || []); } catch(e) { parsedIng = []; }
+    setNewForm({ id: f.id, code: f.code, name: f.name, ingredients: parsedIng, notes: f.notes || '', base_version_id: f.base_version_id });
+    setShowNew(true);
+  };
+
   const handleArchive = (id) => {
     if (!confirm("Archive this formulation? It will be hidden.")) return;
     handleStatusChange(id, 'Archived');
@@ -141,8 +163,9 @@ export default function FormulationsPage() {
     }
     setSubmitting(true);
     try {
+      const isEdit = !!newForm.id;
       const res = await fetch('/api/formulations', {
-        method: 'POST',
+        method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           ...newForm, 
@@ -153,7 +176,7 @@ export default function FormulationsPage() {
       });
       if (res.ok) {
         setShowNew(false);
-        setNewForm({ code: '', name: '', ingredients: [], notes: '', base_version_id: null });
+        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null });
         fetchFormulations();
       } else { 
         const errData = await res.json();
@@ -275,10 +298,18 @@ export default function FormulationsPage() {
                     {/* Top row: version + status badge */}
                     <div className="flex justify-between items-start mb-3">
                       <span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">V{f.version}</span>
-                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
-                        {statusCfg.label}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
+                          {statusCfg.label}
+                        </span>
+                        {f.status === 'Draft' && (
+                           <div className="flex gap-1 ml-1">
+                              <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-navy hover:bg-gray-200 transition-all"><Plus className="w-3 h-3 rotate-45" title="Edit Draft"/></button>
+                              <button onClick={() => handleDeleteRecipe(f.id)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"><Trash2 className="w-3 h-3" title="Delete Draft"/></button>
+                           </div>
+                        )}
+                      </div>
                     </div>
 
                     <h3 className="text-lg font-bold text-gray-900 mb-0.5">{f.name}</h3>
@@ -435,7 +466,7 @@ export default function FormulationsPage() {
           <div className="bg-white rounded-xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden max-h-[90vh] overflow-y-auto">
             <button onClick={() => setShowNew(false)} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"><X className="w-5 h-5 text-gray-400"/></button>
             <div className="p-6">
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight">New Formulation Version</h2>
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">{newForm.id ? 'Edit Formulation Details' : 'New Formulation Version'}</h2>
               <p className="text-xs font-medium text-gray-500 mt-1">
                 {newForm.base_version_id ? (
                   <span className="text-emerald-600 font-bold">Iterating from base version — changes saved as new Draft</span>

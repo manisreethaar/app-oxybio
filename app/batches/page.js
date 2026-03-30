@@ -143,6 +143,19 @@ export default function BatchesPage() {
     }
   };
 
+  const handleCancelBatch = async (id) => {
+    if (!confirm('Cancel this batch? All reserved materials will be returned to inventory and tasks will be removed. This action is permanent.')) return;
+    try {
+      const res = await fetch(`/api/batches?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setActiveBatches(prev => prev.filter(b => b.id !== id));
+      alert("Batch cancelled. Materials restored to stock.");
+    } catch (err) {
+      alert("Failed to cancel batch: " + err.message);
+    }
+  };
+
   if (authLoading || loadingBatches) {
     return (
       <div className="page-container space-y-8">
@@ -200,8 +213,19 @@ export default function BatchesPage() {
                         {isDev ? 'DEVIATION' : batch.status}
                       </span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Elapsed</p>
+                    <div className="text-right flex flex-col items-end">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Elapsed</p>
+                        {(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') && (
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleCancelBatch(batch.id); }} 
+                            className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
+                            title="Cancel Batch"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-xl font-black text-gray-800">{hours} <span className="text-xs">HRS</span></p>
                     </div>
                   </div>

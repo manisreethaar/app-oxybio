@@ -254,3 +254,57 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing batch ID' }, { status: 400 });
+
+    // 1. Fetch batch details + associated movements
+    const { data: batch, error: fetchErr } = await supabase
+      .from('batches')
+      .select('*, inventory_movements(*)')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
+
+    // 2. Security: Don't allow deleting finalized batches
+    if (['released', 'rejected'].includes(batch.status)) {
+      return NextResponse.json({ error: 'Cannot delete a batch that has already been released or rejected.' }, { status: 403 });
+    }
+
+    // 3. Reverse Inventory Deductions
+    const movements = batch.inventory_movements || [];
+    for (const mov of movements) {
+      if (mov.stock_id && mov.quantity) {
+        // Fetch current stock
+        const { data: stock } = await supabase.from('inventory_stock').select('current_quantity').eq('id', mov.stock_id).single();
+        if (stock) {
+           await supabase.from('inventory_stock')
+             .update({ current_quantity: parseFloat(stock.current_quantity) + parseFloat(mov.quantity) })
+             .eq('id', mov.stock_id);
+        }
+        // Delete the movement log
+        await supabase.from('inventory_movements').delete().eq('id', mov.id);
+      }
+    }
+
+    // 4. Delete associated tasks
+    await supabase.from('tasks').delete().eq('batch_id', id);
+
+    // 5. Delete the batch itself
+    const { error: deleteErr } = await supabase.from('batches').delete().eq('id', id);
+    if (deleteErr) throw deleteErr;
+
+    return NextResponse.json({ success: true, message: 'Batch cancelled. Materials returned to inventory.' });
+
+  } catch (err) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
