@@ -132,8 +132,17 @@ export default function Sidebar() {
             );
           })}
         </nav>
-
-
+        
+        {/* Fixed Sign Out at the Bottom */}
+        <div className="p-4 border-t border-gray-100">
+           <button
+             onClick={signOut}
+             className="w-full flex items-center px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-150 group"
+           >
+             <LogOut className="w-5 h-5 mr-3 text-red-400 group-hover:text-red-600 transition-colors" />
+             Sign Out
+           </button>
+        </div>
       </aside>
 
       {/* Mobile Slide-Up Full Menu Overlay */}

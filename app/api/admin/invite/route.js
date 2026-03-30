@@ -18,6 +18,9 @@ export async function POST(req) {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
+    // Master Admin Override
+    const isMaster = user.email === 'manisreethaar@gmail.com';
+
     // Check if requester is admin using Admin client to bypass RLS quirks matching
     let { data: requesterProfile } = await supabaseAdmin
       .from('employees')
@@ -31,7 +34,9 @@ export async function POST(req) {
       requesterProfile = profileByEmail;
     }
 
-    if (!requesterProfile || !['admin','ceo','cto'].includes(requesterProfile.role)) {
+    const isAuthorized = isMaster || (requesterProfile && ['admin','ceo','cto'].includes(requesterProfile.role));
+
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });
     }
 
