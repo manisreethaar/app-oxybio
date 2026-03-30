@@ -254,6 +254,28 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
   };
 
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/inventory/items', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem)
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewItem({ 
+          name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
+          storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
+          coa_required: false, allergen: false, organic_certified: '', item_code: '' 
+        });
+        fetchData(0, false);
+      } else { alert((await res.json()).error || 'Failed.'); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
   const handleAddVendor = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -549,13 +571,26 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               )}
             </div>
           ) : items.map(item => (
-            <div key={item.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <div key={item.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group">
               <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600 mb-2 inline-block">{item.category}</span>
-              <h3 className="text-lg font-black text-teal-950">{item.name}</h3>
+              {canDo('inventory', 'edit') && (
+                <button 
+                  onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
+                  className="absolute top-6 right-6 p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-all font-bold text-xs border border-gray-200 hover:border-teal-200">
+                  Edit
+                </button>
+              )}
+              <h3 className="text-lg font-black text-teal-950 pr-12">{item.name}</h3>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Unit: {item.unit}</p>
-              <div className="mt-4 pt-4 border-t border-gray-50">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reorder Point</p>
-                <p className="text-sm font-black text-teal-800">{item.reorder_level || 'Not set'} {item.unit}</p>
+              <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reorder Point</p>
+                  <p className="text-sm font-black text-teal-800">{item.min_stock_level || 'Not set'} {item.unit}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Item Code</p>
+                  <p className="text-xs font-mono font-bold text-gray-500">{item.item_code || '---'}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -753,8 +788,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </button>
                 </div>
               </form>
-            ) : modalType === 'items' ? (
-              <form onSubmit={handleAddItem} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+            ) : (modalType === 'items' || modalType === 'edit_item') ? (
+              <form onSubmit={modalType === 'items' ? handleAddItem : handleUpdateItem} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-1">
                     <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Code / SKU</label>
@@ -777,7 +812,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Sub-Category</label>
                     <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.sub_category} onChange={e => setNewItem({...newItem, sub_category: e.target.value})}>
                       <option value="">Select sub-cat...</option>
-                      {(subCats[newItem.category as keyof typeof subCats] || []).map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                      {(subCats[newItem.category] || []).map(sub => <option key={sub} value={sub}>{sub}</option>)}
                     </select>
                   </div>
                 </div>
@@ -824,7 +859,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl text-[10px] hover:bg-teal-900 shadow-xl transition-all">
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Register Item'}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_item' ? 'Save Changes' : 'Register Item'}
                   </button>
                 </div>
               </form>

@@ -259,27 +259,27 @@ useEffect(() => {
                       </div>
                       <div>
                         <div className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          {emp.full_name}
-                          {employeeProfile.id === emp.id && <span className="text-[10px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded font-bold">YOU</span>}
+                          {String(emp.full_name || 'Unknown')}
+                          {employeeProfile?.id === emp.id && <span className="text-[10px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded font-bold">YOU</span>}
                         </div>
                         <div className="text-xs text-slate-400 font-medium flex items-center mt-0.5">
-                          <Mail className="w-3 h-3 mr-1"/> {emp.email}
+                          <Mail className="w-3 h-3 mr-1"/> {String(emp.email || '')}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="font-mono text-xs font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded-lg border border-teal-100">
-                      {emp.employee_code || '—'}
+                      {emp.employee_code ? String(emp.employee_code) : '—'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-slate-700">{emp.designation || emp.role}</div>
+                    <div className="text-sm font-bold text-slate-700">{String(emp.designation || emp.role || '')}</div>
                     <div className="text-xs text-slate-400 font-medium flex items-center mt-0.5">
                       {['admin','ceo','cto'].includes(emp.role) && <ShieldCheck className="w-3.5 h-3.5 mr-1 text-purple-500"/>}
-                      <span className={`uppercase tracking-wider font-bold ${['admin','ceo','cto'].includes(emp.role) ? 'text-purple-600' : 'text-teal-600'}`}>{emp.role}</span>
+                      <span className={`uppercase tracking-wider font-bold ${['admin','ceo','cto'].includes(emp.role) ? 'text-purple-600' : 'text-teal-600'}`}>{String(emp.role || '')}</span>
                       <span className="mx-1 text-slate-300">·</span>
-                      <span>{emp.department}</span>
+                      <span>{String(emp.department || '')}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium">
@@ -303,7 +303,7 @@ useEffect(() => {
                         className="font-mono font-bold text-slate-700 cursor-pointer hover:text-teal-600 flex items-center group"
                         onClick={() => setEditingSalary(emp.id)}
                       >
-                        ₹{(emp.base_salary || 0).toLocaleString()}
+                        ₹{Number(emp.base_salary || 0).toLocaleString()}
                         <span className="ml-2 opacity-0 group-hover:opacity-100 text-[10px] text-teal-500">Edit</span>
                       </div>
                     )}

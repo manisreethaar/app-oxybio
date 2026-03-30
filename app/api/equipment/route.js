@@ -57,3 +57,35 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(request) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
+    if (!['admin','ceo','cto','research_fellow','scientist'].includes(emp?.role)) {
+      return NextResponse.json({ error: 'Permission Denied: Access restricted' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id, name, model, serial_number, calibration_due_date, status } = body;
+
+    if (!id || !name) {
+      return NextResponse.json({ error: 'Validation failed: ID and Name required' }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from('equipment')
+      .update({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

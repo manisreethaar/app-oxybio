@@ -29,6 +29,8 @@ export default function EquipmentPage() {
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+
   
   // Maintenance Modal State
   const [activeDevice, setActiveDevice] = useState(null);
@@ -65,18 +67,24 @@ export default function EquipmentPage() {
 
   const onSubmitEquipment = async (data) => {
     try {
-      const res = await fetch('/api/equipment', {
-        method: 'POST',
+      const isEdit = modalMode === 'edit';
+      const endpoint = isEdit ? '/api/equipment' : '/api/equipment';
+      const method = isEdit ? 'PUT' : 'POST';
+      const payload = isEdit ? { ...data, id: activeDevice.id } : data;
+
+      const res = await fetch(endpoint, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
       const resData = await res.json();
       if (res.ok) {
         setIsModalOpen(false);
         resetEquip();
+        setActiveDevice(null);
         await fetchEquipment();
       } else {
-        alert("Failed to register: " + resData.error);
+        alert("Action failed: " + resData.error);
       }
     } catch (err) {
       alert("Network error: " + err.message);
@@ -132,11 +140,21 @@ export default function EquipmentPage() {
                   <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-teal-800 border border-gray-100">
                     <Database className="w-6 h-6" />
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${device.status === 'Operational' ? 'bg-teal-700 text-white' : 'bg-red-600 text-white'}`}>
-                    {device.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${device.status === 'Operational' ? 'bg-teal-700 text-white' : 'bg-red-600 text-white'}`}>
+                      {device.status}
+                    </span>
+                    {canDo('equipment', 'edit') && (
+                      <button 
+                        onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}
+                        className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest bg-white px-2 py-1 rounded-lg border border-teal-100 shadow-sm transition-all"
+                      >
+                        Edit Details
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <h3 className="text-xl font-black text-teal-950 mb-1">{device.name}</h3>
+                <h3 className="text-xl font-black text-teal-950 mb-1 leading-tight">{device.name}</h3>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
               </div>
 
@@ -176,8 +194,8 @@ export default function EquipmentPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-teal-800 text-white">
-              <h2 className="text-xl font-black tracking-tight">Register Laboratory Asset</h2>
-              <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">Asset Control - IDMS v2</p>
+              <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
+              <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">{modalMode === 'edit' ? 'Update Compliance Details' : 'Asset Control - IDMS v2'}</p>
             </div>
             <form onSubmit={handEquip(onSubmitEquipment)} className="p-8 space-y-5">
               <div>
@@ -213,9 +231,9 @@ export default function EquipmentPage() {
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="button" onClick={() => { setIsModalOpen(false); resetEquip(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isEqSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
-                  {isEqSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register Asset'}
+                  {isEqSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : modalMode === 'edit' ? 'Save Asset Changes' : 'Register Asset'}
                 </button>
               </div>
             </form>
