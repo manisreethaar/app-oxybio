@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,6 +49,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [uploadingCoA, setUploadingCoA] = useState(false);
   const [uploadingSDS, setUploadingSDS] = useState(false);
+  
+  // Registry specific state
+  const [registrySearch, setRegistrySearch] = useState('');
+  const [registrySort, setRegistrySort] = useState('name'); // 'name' | 'stock' | 'newest'
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -151,6 +157,53 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       controller.abort();
     };
   }, [employeeProfile, initialStock, fetchData, checkTraining]);
+
+  // Registry Grouping & Filtering
+  const filteredRegistry = useMemo(() => {
+    let result = [...items];
+    if (registrySearch) {
+      result = result.filter(i => 
+        (i.name || '').toLowerCase().includes(registrySearch.toLowerCase()) || 
+        (i.item_code || '').toLowerCase().includes(registrySearch.toLowerCase()) ||
+        (i.category || '').toLowerCase().includes(registrySearch.toLowerCase())
+      );
+    }
+    
+    // Sorting
+    result.sort((a, b) => {
+      if (registrySort === 'name') return (a.name || '').localeCompare(b.name || '');
+      if (registrySort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (registrySort === 'stock') return (a.min_stock_level || 0) - (b.min_stock_level || 0);
+      return 0;
+    });
+
+    // Grouping
+    const groups: { [key: string]: any[] } = {};
+    result.forEach(item => {
+      const cat = item.category || 'Uncategorized';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+    return groups;
+  }, [items, registrySearch, registrySort]);
+
+  const handleDeleteItem = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/inventory/items?id=${deletingId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      
+      setItems(items.filter(i => i.id !== deletingId));
+      setStock(stock.filter(s => s.item_id !== deletingId));
+      setDeletingId(null);
+    } catch (err: any) {
+      alert("Failed to delete: " + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Debounced Search Effect
   useEffect(() => {
@@ -441,7 +494,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               Auto-Load Catalog
             </button>
           )}
-          {canDo('inventory', 'edit') && (
+          {(['admin', 'ceo', 'cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
             <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
               <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
@@ -556,44 +609,125 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Item Registry Tab */}
       {activeTab === 'items' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.length === 0 ? (
-            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
+        <div className="space-y-8">
+          {/* Registry Controls */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search by name, code, or category..." 
+                value={registrySearch}
+                onChange={(e) => setRegistrySearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-teal-600 text-sm font-bold"
+              />
+            </div>
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <span className="text-[10px] font-black uppercase text-gray-400 whitespace-nowrap">Sort By</span>
+              <select 
+                value={registrySort}
+                onChange={(e) => setRegistrySort(e.target.value)}
+                className="px-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 text-xs font-bold focus:ring-2 focus:ring-teal-600"
+              >
+                <option value="name">Alphabetical (A-Z)</option>
+                <option value="newest">Newest Added</option>
+                <option value="stock">Min Stock Level</option>
+              </select>
+            </div>
+          </div>
+
+          {Object.keys(filteredRegistry).length === 0 ? (
+            <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
               <Package className="w-12 h-12 text-gray-400" />
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No items registered</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Register Item&apos; to add your catalog</p>
-              </div>
-              {canDo('inventory', 'edit') && (
-                <button onClick={() => { setModalType('items'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
-                  Register Item
-                </button>
-              )}
-            </div>
-          ) : items.map(item => (
-            <div key={item.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group">
-              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600 mb-2 inline-block">{item.category}</span>
-              {canDo('inventory', 'edit') && (
-                <button 
-                  onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                  className="absolute top-6 right-6 p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-all font-bold text-xs border border-gray-200 hover:border-teal-200">
-                  Edit
-                </button>
-              )}
-              <h3 className="text-lg font-black text-teal-950 pr-12">{item.name}</h3>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Unit: {item.unit}</p>
-              <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Min. Stock Level</p>
-                  <p className="text-sm font-black text-teal-800">{item.min_stock_level || 'Not set'} {item.unit}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Item Code</p>
-                  <p className="text-xs font-mono font-bold text-gray-500">{item.item_code || '---'}</p>
-                </div>
+                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No matching items found</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">Adjust your search or register new items</p>
               </div>
             </div>
-          ))}
+          ) : (
+            Object.entries(filteredRegistry).sort(([a],[b]) => a.localeCompare(b)).map(([category, catItems]) => (
+              <div key={category} className="space-y-4">
+                <div className="flex items-center gap-3 px-2">
+                  <div className="h-px flex-1 bg-gray-100"></div>
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-100">
+                    {category} ({catItems.length})
+                  </h2>
+                  <div className="h-px flex-1 bg-gray-100"></div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {catItems.map(item => (
+                    <div key={item.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          {(['admin','ceo','cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+                            <>
+                              <button 
+                                onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200">
+                                <FileText className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => setDeletingId(item.id)}
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-lg font-black text-teal-950 mb-1">{item.name}</h3>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Unit: {item.unit} {item.hazardous && <span className="ml-2 text-orange-600">⚠ HAZARDOUS</span>}</p>
+                      
+                      <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Stock Level</p>
+                          <p className="text-sm font-black text-teal-800 truncate">{item.min_stock_level || '0'} {item.unit}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Item Code</p>
+                          <p className="text-xs font-mono font-bold text-gray-500 truncate">{item.item_code || '---'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {deletingId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl text-center">
+            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Delete Record?</h2>
+            <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
+              This will permanently remove the item and all its associated stock records. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeletingId(null)}
+                className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteItem}
+                disabled={isDeleting}
+                className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Deletion"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

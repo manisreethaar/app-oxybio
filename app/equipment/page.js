@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database } from 'lucide-react';
+import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X } from 'lucide-react';
 
 const equipSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -35,6 +35,9 @@ export default function EquipmentPage() {
   // Maintenance Modal State
   const [activeDevice, setActiveDevice] = useState(null);
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
+  
+  const [deletingId, setDeletingId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // REACT HOOK FORM SETUPS
   const { register: regEquip, handleSubmit: handEquip, formState: { errors: eqErrors, isSubmitting: isEqSubmitting }, reset: resetEquip } = useForm({
@@ -112,6 +115,24 @@ export default function EquipmentPage() {
     }
   };
 
+  const handleDeleteEquipment = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/equipment?id=${deletingId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      
+      setEquipment(equipment.filter((d) => d.id !== deletingId));
+      setDeletingId(null);
+    } catch (err) {
+      alert("Failed to delete: " + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+
   if (authLoading || loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
 
   return (
@@ -121,7 +142,7 @@ export default function EquipmentPage() {
           <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Equipment Master Registry</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
         </div>
-        {canDo('equipment', 'create') && (
+        {(['admin', 'ceo', 'cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
           <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
             <Plus className="w-4 h-4 mr-2" /> Add New Equipment
           </button>
@@ -144,13 +165,21 @@ export default function EquipmentPage() {
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${device.status === 'Operational' ? 'bg-teal-700 text-white' : 'bg-red-600 text-white'}`}>
                       {device.status}
                     </span>
-                    {canDo('equipment', 'edit') && (
-                      <button 
-                        onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}
-                        className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest bg-white px-2 py-1 rounded-lg border border-teal-100 shadow-sm transition-all"
-                      >
-                        Edit Details
-                      </button>
+                    {(['admin', 'ceo', 'cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}
+                          className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest bg-white px-2 py-1 rounded-lg border border-teal-100 shadow-sm transition-all"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => setDeletingId(device.id)}
+                          className="p-1 rounded-lg bg-red-50 text-red-400 hover:text-red-600 transition-all border border-red-100"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -172,13 +201,13 @@ export default function EquipmentPage() {
 
                 <div className="flex gap-2">
                   <button 
-                    disabled={!canDo('equipment', 'edit')}
+                    disabled={!['admin', 'ceo', 'cto'].includes(role)}
                     onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
                     className="flex-1 py-3 bg-white border border-gray-200 text-teal-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                       Log Maintenance
                   </button>
                   <button 
-                    disabled={!canDo('equipment', 'edit')}
+                    disabled={!['admin', 'ceo', 'cto'].includes(role)}
                     onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
                     className="flex-1 py-3 bg-teal-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                       Calibrate Now
@@ -285,6 +314,36 @@ export default function EquipmentPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {deletingId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl text-center">
+            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Decommission Asset?</h2>
+            <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
+              This will permanently remove the equipment and all its calibration/maintenance history from the registry.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeletingId(null)}
+                className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteEquipment}
+                disabled={isDeleting}
+                className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Removal"}
+              </button>
+            </div>
           </div>
         </div>
       )}

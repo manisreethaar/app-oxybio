@@ -238,7 +238,7 @@ export default function TopBar() {
                   </Link>
                 </div>
                 <button 
-                  onClick={signOut}
+                  onClick={(e) => { e.stopPropagation(); signOut(); }}
                   className="w-full flex items-center px-4 py-2 text-xs font-bold text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> Sign Out

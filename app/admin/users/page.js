@@ -83,16 +83,25 @@ export default function UsersPage() {
   const watchEmployeeCode = watch('employee_code');
   const watchRole = watch('role');
 
-useEffect(() => {
-  // Wait for auth to finish loading before making any role decision
-  if (authLoading) return;
-  if (role === 'admin' || role === 'ceo' || role === 'cto') {
-    fetchUsers();
-  } else if (role) {
-    // Only redirect if role is actually loaded and confirmed not admin
-    router.push('/dashboard');
-  }
-}, [role, authLoading, router]);
+  useEffect(() => {
+    // Wait for auth to finish loading before making any role decision
+    if (authLoading) return;
+    
+    // Master Admin Override
+    const isMaster = (employeeProfile?.email === 'manisreethaar@gmail.com');
+    const isAdmin = ['admin', 'ceo', 'cto'].includes(role) || isMaster;
+
+    if (isAdmin) {
+      fetchUsers();
+    } else if (role) {
+      // Authorized but not admin -> redirect
+      router.push('/dashboard');
+    } else if (isMounted) {
+      // No role / No profile -> help user refresh or redirect to profile
+      setLoading(false);
+      setFetchError('Administrative profile not detected. Please Sign Out and Sign In again to refresh your session.');
+    }
+  }, [role, authLoading, router, isMounted, employeeProfile?.email]);
 
 
   // Auto-generate code whenever designation or role changes
@@ -194,36 +203,38 @@ useEffect(() => {
     }
   };
 
-  if (!isMounted) return null;
-  if (authLoading || loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
-    </div>
-  );
-  if (fetchError) return (
-    <div className="flex flex-col items-center justify-center py-20 gap-4">
-      <p className="text-red-600 font-bold">{fetchError}</p>
-      <button onClick={fetchUsers} className="px-4 py-2 bg-teal-700 text-white rounded-xl font-bold text-sm">Retry</button>
-    </div>
-  );
-
-  if (!['admin', 'ceo', 'cto'].includes(role)) return null;
-
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Team Management</h1>
-          <p className="text-slate-500 mt-1 font-medium">{employees.filter(e => e.is_active).length} active team members</p>
+      {!isMounted || authLoading || loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
         </div>
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center justify-center px-6 py-3 bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-black rounded-2xl hover:from-teal-400 hover:to-cyan-500 transition-all shadow-lg shadow-teal-500/20 active:scale-95"
-        >
-          <UserPlus className="w-5 h-5 mr-2"/> Add Employee
-        </button>
-      </div>
+      ) : fetchError ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <p className="text-red-600 font-bold">{fetchError}</p>
+          <button onClick={fetchUsers} className="px-4 py-2 bg-teal-700 text-white rounded-xl font-bold text-sm">Retry</button>
+        </div>
+      ) : !(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+           <ShieldCheck className="w-16 h-16 text-slate-200" />
+           <p className="text-slate-500 font-bold">Access Denied: Administrative Clearance Required</p>
+           <button onClick={() => router.push('/dashboard')} className="px-6 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm">Return to Dashboard</button>
+        </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-black text-slate-800 tracking-tight">Team Management</h1>
+              <p className="text-slate-500 mt-1 font-medium">{employees.filter(e => e.is_active).length} active team members</p>
+            </div>
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center justify-center px-6 py-3 bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-black rounded-2xl hover:from-teal-400 hover:to-cyan-500 transition-all shadow-lg shadow-teal-500/20 active:scale-95"
+            >
+              <UserPlus className="w-5 h-5 mr-2"/> Add Employee
+            </button>
+          </div>
 
       {/* Table */}
       <div className="glass-card rounded-[2rem] overflow-hidden">
@@ -436,6 +447,8 @@ useEffect(() => {
             </form>
           </div>
         </div>
+          )}
+        </>
       )}
 
       <style>{`

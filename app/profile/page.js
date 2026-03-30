@@ -9,8 +9,9 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   User, Phone, MapPin, Calendar, Droplets, AlertCircle, 
   Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X, 
-  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock, Loader2
+  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock, Loader2, ArrowLeftCircle
 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -75,12 +76,21 @@ function DigitalIDCard({ emp }) {
 }
 
 export default function ProfilePage() {
-  const { employeeProfile, signOut } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const adminViewId = searchParams.get('id');
+  const isAdminView = searchParams.get('adminView') === 'true';
+
+  const { employeeProfile, loading: authLoading, role, signOut } = useAuth();
   const [emp, setEmp] = useState(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fetching, setFetching] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [view, setView] = useState('info'); // 'info' | 'card'
+
+  const supabase = useMemo(() => createClient(), []);
+
 
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(z.object({
@@ -93,33 +103,63 @@ export default function ProfilePage() {
       blood_group: z.string().optional().nullable(),
       emergency_contact_name: z.string().optional().nullable(),
       emergency_contact: z.string().optional().nullable(),
-      joined_date: z.string().optional().nullable()
+      joined_date: z.string().optional().nullable(),
+      base_salary: z.coerce.number().optional().nullable()
     }))
   });
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const fileRef = useRef();
-  const supabase = useMemo(() => createClient(), []);
-
 
   useEffect(() => {
-    if (employeeProfile) {
-      setEmp(employeeProfile);
+    const fetchProfile = async () => {
+      // 1. If not admin view, just use the logged in user
+      if (!isAdminView || !adminViewId) {
+        if (employeeProfile) {
+          populateForm(employeeProfile);
+        }
+        return;
+      }
+
+      // 2. Admin View: Fetch specific user
+      setFetching(true);
+      try {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('id', adminViewId)
+          .single();
+        
+        if (error) throw error;
+        populateForm(data);
+      } catch (err) {
+        console.error('Fetch error:', err);
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    const populateForm = (profileData) => {
+      setEmp(profileData);
       reset({
-        full_name: employeeProfile.full_name || '',
-        employee_code: employeeProfile.employee_code || '',
-        phone: employeeProfile.phone || '',
-        designation: employeeProfile.designation || '',
-        date_of_birth: employeeProfile.date_of_birth ? new Date(employeeProfile.date_of_birth).toISOString().split('T')[0] : '',
-        address: employeeProfile.address || '',
-        blood_group: employeeProfile.blood_group || '',
-        emergency_contact_name: employeeProfile.emergency_contact_name || '',
-        emergency_contact: employeeProfile.emergency_contact || '',
-        joined_date: employeeProfile.joined_date ? new Date(employeeProfile.joined_date).toISOString().split('T')[0] : ''
+        full_name: profileData.full_name || '',
+        employee_code: profileData.employee_code || '',
+        phone: profileData.phone || '',
+        designation: profileData.designation || '',
+        date_of_birth: profileData.date_of_birth ? new Date(profileData.date_of_birth).toISOString().split('T')[0] : '',
+        address: profileData.address || '',
+        blood_group: profileData.blood_group || '',
+        emergency_contact_name: profileData.emergency_contact_name || '',
+        emergency_contact: profileData.emergency_contact || '',
+        joined_date: profileData.joined_date ? new Date(profileData.joined_date).toISOString().split('T')[0] : '',
+        base_salary: profileData.base_salary || 0
       });
-    }
-  }, [employeeProfile, reset]);
+    };
+
+    fetchProfile();
+  }, [employeeProfile, adminViewId, isAdminView, reset, supabase]);
 
   const handleSaveSubmit = async (data) => {
     setSaving(true);
@@ -131,9 +171,10 @@ export default function ProfilePage() {
     };
 
     try {
+      const payload = { ...data, id: emp.id }; // Explicitly use the displayed user's ID
       const res = await fetchWithTimeout('/api/profile', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
       
@@ -203,28 +244,54 @@ export default function ProfilePage() {
   };
 
 
-  if (!emp) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
-    </div>
-  );
+  if (!emp) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-xl border border-slate-100 flex flex-col items-center">
+           <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-6">
+             <AlertCircle className="w-8 h-8 text-amber-500" />
+           </div>
+           <h1 className="text-xl font-black text-slate-800 tracking-tight mb-2">Profile Not Found</h1>
+           <p className="text-sm font-medium text-slate-500 mb-8 px-4">
+             Your account ({(employeeProfile?.email || 'authenticated user')}) is not registered in the employee directory yet.
+           </p>
+           <button onClick={() => window.location.reload()} className="w-full py-3.5 bg-teal-800 text-white font-bold rounded-xl shadow-md">
+             Refresh Session
+           </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">My Profile</h1>
-          <p className="text-slate-500 font-medium mt-1">Your personal information & digital ID</p>
+        <div className="flex items-center gap-4">
+          {isAdminView && (
+            <button onClick={() => router.push('/admin/users')} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-all">
+              <ArrowLeftCircle className="w-8 h-8" />
+            </button>
+          )}
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+              {isAdminView ? 'Employee File' : 'My Profile'}
+            </h1>
+            <p className="text-slate-500 font-medium mt-1">
+              {isAdminView ? `Viewing administrative record for ${emp?.full_name}` : 'Your personal information & digital ID'}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
-          >
-            <Lock className="w-4 h-4"/>
-            Password
-          </button>
+          {!isAdminView && (
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
+            >
+              <Lock className="w-4 h-4"/>
+              Password
+            </button>
+          )}
           <button
             onClick={() => setView(view === 'info' ? 'card' : 'info')}
             className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm font-bold text-teal-700 hover:bg-white transition-all"
@@ -232,13 +299,15 @@ export default function ProfilePage() {
             <CreditCard className="w-4 h-4"/>
             {view === 'info' ? 'View ID Card' : 'View Info'}
           </button>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 rounded-xl text-sm font-bold text-red-600 hover:bg-red-100 transition-all border border-red-100"
-          >
-            <LogOut className="w-4 h-4"/>
-            Logout
-          </button>
+          {!isAdminView && (
+            <button
+              onClick={(e) => { e.stopPropagation(); signOut(); }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-red-50 rounded-xl text-sm font-bold text-red-600 hover:bg-red-100 transition-all border border-red-100"
+            >
+              <LogOut className="w-4 h-4"/>
+              Logout
+            </button>
+          )}
         </div>
       </div>
 
@@ -365,6 +434,16 @@ export default function ProfilePage() {
                 editing={editing}
                 registerProps={register('blood_group')}
               />
+              {(isAdminView || role === 'admin' || role === 'ceo' || role === 'cto') && (
+                <InfoField 
+                  label="Base Salary (₹)" 
+                  value={emp.base_salary ? Number(emp.base_salary).toLocaleString() : '0'} 
+                  icon={ShieldCheck}
+                  editing={editing}
+                  inputType="number"
+                  registerProps={register('base_salary')}
+                />
+              )}
             </div>
 
             <div className="mt-6">
