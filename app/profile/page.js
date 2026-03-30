@@ -136,10 +136,19 @@ export default function ProfilePage() {
         body: JSON.stringify(data)
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
-      const newData = { ...emp, ...data };
-      setEmp(newData); 
-      reset(newData); // <--- Reset react-hook-form to match so data doesn't vanish on toggle
+      
+      // Ensure local state matches form formatting (especially for dates)
+      const formattedData = {
+        ...emp,
+        ...data,
+        date_of_birth: data.date_of_birth ? data.date_of_birth : emp.date_of_birth,
+        joined_date: data.joined_date ? data.joined_date : emp.joined_date
+      };
+      
+      setEmp(formattedData); 
+      reset(data); // reset to the form data (strings)
       setEditing(false);
+      alert('Profile updated successfully!');
     } catch (err) { alert('Error: ' + err.message); }
     finally { setSaving(false); }
   };

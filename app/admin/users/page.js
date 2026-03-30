@@ -194,7 +194,8 @@ useEffect(() => {
     }
   };
 
-  if (!isMounted || authLoading || loading) return (
+  if (!isMounted) return null;
+  if (authLoading || loading) return (
     <div className="flex items-center justify-center py-20">
       <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
     </div>
@@ -274,12 +275,12 @@ useEffect(() => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-slate-700">{String(emp.designation || emp.role || '')}</div>
+                    <div className="text-sm font-bold text-slate-700">{String(emp.designation || emp.role || 'No Designation')}</div>
                     <div className="text-xs text-slate-400 font-medium flex items-center mt-0.5">
                       {['admin','ceo','cto'].includes(emp.role) && <ShieldCheck className="w-3.5 h-3.5 mr-1 text-purple-500"/>}
-                      <span className={`uppercase tracking-wider font-bold ${['admin','ceo','cto'].includes(emp.role) ? 'text-purple-600' : 'text-teal-600'}`}>{String(emp.role || '')}</span>
+                      <span className={`uppercase tracking-wider font-bold ${['admin','ceo','cto'].includes(emp.role) ? 'text-purple-600' : 'text-teal-600'}`}>{String(emp.role || 'staff')}</span>
                       <span className="mx-1 text-slate-300">·</span>
-                      <span>{String(emp.department || '')}</span>
+                      <span>{String(emp.department || 'Lab')}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500 font-medium">

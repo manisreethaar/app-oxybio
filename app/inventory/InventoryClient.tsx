@@ -584,7 +584,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Unit: {item.unit}</p>
               <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Reorder Point</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Min. Stock Level</p>
                   <p className="text-sm font-black text-teal-800">{item.min_stock_level || 'Not set'} {item.unit}</p>
                 </div>
                 <div className="text-right">
