@@ -379,7 +379,7 @@ export default function TasksPage() {
                 <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
               </div>
               <div className="flex gap-1">
-                {selectedTask.assigned_by === employeeProfile?.id && <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>}
+                {selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id) && <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>}
                 <button onClick={handleCloseModal} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400"><X className="w-4 h-4"/></button>
               </div>
             </div>
@@ -395,7 +395,7 @@ export default function TasksPage() {
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Checklist</p>
                   <ul className="space-y-1.5">
                     {selectedTask.checklist.map((item, i) => (
-                      <li key={i} onClick={() => selectedTask.assigned_to === employeeProfile?.id && toggleChecklistItem(selectedTask, i)} className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${item.done ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 cursor-pointer'}`}>
+                      <li key={i} onClick={() => selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && toggleChecklistItem(selectedTask, i)} className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${item.done ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 cursor-pointer'}`}>
                         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${item.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>{item.done && <CheckCircle2 className="w-3 h-3 text-white"/>}</div>
                         <span className={`text-xs font-semibold ${item.done ? 'line-through opacity-70' : ''}`}>{item.text}</span>
                       </li>
@@ -404,14 +404,14 @@ export default function TasksPage() {
                  </div>
               )}
 
-              {selectedTask.assigned_to === employeeProfile?.id && selectedTask.status !== 'done' && (
+              {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex items-center justify-between">
                   <span className="text-2xl font-black tabular-nums text-gray-900 tracking-tight">{String(Math.floor(elapsedSeconds / 3600)).padStart(2,'0')}:{String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2,'0')}:{String(elapsedSeconds % 60).padStart(2,'0')}</span>
                   {!timerRunning ? <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm"><CheckSquare className="w-3.5 h-3.5 inline mr-1"/> Acknowledge</button> : <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause</button>}
                 </div>
               )}
 
-              {selectedTask.assigned_to === employeeProfile?.id && selectedTask.status === 'in-progress' && selectedTask.approval_status !== 'pending_review' && (
+              {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status === 'in-progress' && selectedTask.approval_status !== 'pending_review' && (
                 <form onSubmit={handleSubmitForReview} className="space-y-3 border-t border-gray-100 pt-4">
                   <textarea required value={completionNote} onChange={e => setCompletionNote(e.target.value)} rows="2" placeholder="Describe work done..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-accent outline-none bg-white resize-none"/>
                   <div className="flex gap-2">
