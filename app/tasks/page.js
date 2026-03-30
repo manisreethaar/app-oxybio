@@ -10,8 +10,10 @@ import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import { 
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2, 
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp, 
-  ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2
+  ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
+  LayoutGrid, List
 } from 'lucide-react';
+import { canAssignTo } from '@/lib/permissions';
 import { differenceInDays } from 'date-fns';
 
 const formatMinutes = (mins) => {
@@ -28,6 +30,11 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
   const [assigneeFilter, setAssigneeFilter] = useState('All');
+  const [viewMode, setViewMode] = useState('grouped'); // 'grouped' or 'individual'
+
+  const isMaster = employeeProfile?.email === 'manisreethaar@gmail.com';
+  const isAdmin = canDo('tasks', 'assign') || isMaster;
+  const canApprove = canDo('tasks', 'approve') || isMaster;
 
   const [showCreate, setShowCreate] = useState(false);
   const [checklistBuffer, setChecklistBuffer] = useState([]);
@@ -87,10 +94,10 @@ export default function TasksPage() {
       let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
       let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
 
-      if (!canDo('tasks', 'assign')) {
+      if (!isAdmin) {
         query = query.eq('assigned_to', employeeProfile.id);
       } else {
-        empsPromise = supabase.from('employees').select('id, full_name').eq('is_active', true);
+        empsPromise = supabase.from('employees').select('id, full_name, role').eq('is_active', true);
       }
 
       const [empsRes, tasksRes] = await Promise.all([empsPromise, query]);
@@ -139,7 +146,10 @@ export default function TasksPage() {
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create tasks');
       
       if (isAdmin) {
-        assignees.forEach(uid => { fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: uid, title: "New Task: " + data.priority.toUpperCase(), body: data.title, url: "/tasks" }) }).catch(() => {}); });
+        // Find which employees were assigned and send notifications
+        assignees.forEach(uid => { 
+          fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: uid, title: "New Task: " + data.priority.toUpperCase(), body: data.title, url: "/tasks" }) }).catch(() => {}); 
+        });
       }
       setShowCreate(false); resetTask(); setChecklistBuffer([]); fetchTasks();
     } catch(err) { alert(err.message); }
@@ -150,7 +160,10 @@ export default function TasksPage() {
     if (!confirm('Permanently delete this task?')) return;
     try {
       const res = await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
-      if (res.ok) { setSelectedTask(null); fetchTasks(); }
+      if (res.ok) { 
+        if (selectedTask?.id === taskId) setSelectedTask(null); 
+        fetchTasks(); 
+      }
       else alert('Delete failed');
     } catch (err) { alert('Error: ' + err.message); }
   };
@@ -224,6 +237,37 @@ export default function TasksPage() {
   if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading task queue...</div>;
 
   const filteredTasks = tasks.filter(t => (statusFilter === 'All' || t.status === statusFilter) && (assigneeFilter === 'All' || t.assigned_to === assigneeFilter));
+  
+  const groupedTasks = useMemo(() => {
+    const groups = {};
+    filteredTasks.forEach(task => {
+      const key = `${task.title.trim().toLowerCase()}|${(task.description || '').trim().toLowerCase()}`;
+      if (!groups[key]) {
+        groups[key] = {
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          due_date: task.due_date,
+          assignees: [],
+          completedCount: 0,
+          pendingReviewCount: 0,
+          totalCount: 0,
+          checklist: task.checklist,
+          status: 'open'
+        };
+      }
+      groups[key].assignees.push(task);
+      groups[key].totalCount++;
+      if (task.status === 'done') groups[key].completedCount++;
+      if (task.approval_status === 'pending_review') groups[key].pendingReviewCount++;
+      
+      // Inherit urgent priority if any subtask is urgent
+      if (task.priority === 'urgent') groups[key].priority = 'urgent';
+    });
+    return Object.values(groups).sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+  }, [filteredTasks]);
+
   const overdueCount = tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled' && t.due_date && differenceInDays(new Date(t.due_date), new Date()) < 0).length;
   const pendingApprovals = tasks.filter(t => t.approval_status === 'pending_review').length;
 
@@ -237,7 +281,7 @@ export default function TasksPage() {
             <span className="font-bold">{overdueCount} overdue task{overdueCount > 1 ? 's' : ''} need attention.</span>
           </div>
         )}
-        {canDo('tasks', 'approve') && pendingApprovals > 0 && (
+        {canApprove && pendingApprovals > 0 && (
           <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-center text-amber-800 shadow-sm text-sm">
             <FileCheck className="w-5 h-5 mr-3 shrink-0 text-amber-600" />
             <span className="font-bold">{pendingApprovals} task{pendingApprovals > 1 ? 's' : ''} pending your review.</span>
@@ -250,15 +294,25 @@ export default function TasksPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Task Operations</h1>
           <p className="text-sm text-gray-500 mt-1">Assign, track, and complete Node operations.</p>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
-          <Plus className="w-4 h-4 mr-1.5" /> {canDo('tasks', 'assign') ? 'Assign Task' : 'Add Reminder'}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-gray-100 p-1 rounded-xl shadow-inner mr-2">
+            <button onClick={() => setViewMode('grouped')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grouped' ? 'bg-white text-navy shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Grouped View">
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button onClick={() => setViewMode('individual')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'individual' ? 'bg-white text-navy shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Individual View">
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+          <button onClick={() => setShowCreate(!showCreate)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
+            <Plus className="w-4 h-4 mr-1.5" /> {isAdmin ? 'Assign Task' : 'Add Reminder'}
+          </button>
+        </div>
       </div>
 
       {showCreate && (
         <form onSubmit={handTask(handleCreateTask)} className="surface p-6 animate-in fade-in duration-200">
           <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-1.5">
-            <ListChecks className="w-5 h-5 text-navy"/> {canDo('tasks', 'assign') ? 'Create & Assign Task' : 'Set Personal Reminder'}
+            <ListChecks className="w-5 h-5 text-navy"/> {isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <div className="md:col-span-2">
@@ -272,14 +326,17 @@ export default function TasksPage() {
             </div>
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Assign To *</label>
-              {canDo('tasks', 'assign') ? (
+              {isAdmin ? (
                 <div className="max-h-28 overflow-y-auto bg-gray-50 border border-gray-100 rounded-lg p-2 space-y-1">
-                  {employees.map(e => (
+                  {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).map(e => (
                     <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-gray-700">
                       <input type="checkbox" checked={watchedAssignees.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...watchedAssignees, e.id] : watchedAssignees.filter(id => id !== e.id); setValue('assigned_user_ids', ids); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
-                      {e.full_name}
+                      {e.full_name} <span className="text-[9px] text-gray-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
                     </label>
                   ))}
+                  {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).length === 0 && (
+                    <p className="text-[10px] text-gray-400 p-2 italic text-center">No authorized colleagues below your role.</p>
+                  )}
                 </div>
               ) : <div className="bg-gray-100 px-3 py-2 rounded-lg text-xs font-bold text-gray-600">Self</div>}
               {taskErrors.assigned_user_ids && <p className="text-red-500 text-xs mt-1">{taskErrors.assigned_user_ids.message}</p>}
@@ -323,7 +380,7 @@ export default function TasksPage() {
         </form>
       )}
 
-      {canDo('tasks', 'assign') && (
+      {isAdmin && (
         <div className="flex flex-wrap gap-2">
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
@@ -334,7 +391,49 @@ export default function TasksPage() {
         </div>
       )}
 
-      {filteredTasks.length === 0 ? (
+      {viewMode === 'grouped' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {groupedTasks.map(group => {
+            const isOverdue = group.status !== 'done' && group.due_date && differenceInDays(new Date(group.due_date), new Date()) < 0;
+            const progress = Math.round((group.completedCount / group.totalCount) * 100);
+            
+            return (
+              <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`surface p-5 flex flex-col cursor-pointer hover:border-gray-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+                <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${progress === 100 ? 'bg-emerald-500' : group.priority === 'urgent' ? 'bg-red-500' : group.priority === 'high' ? 'bg-amber-500' : 'bg-blue-400'}`}></div>
+                <div className="flex justify-between items-start mb-2 pl-1">
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${group.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700'}`}>{group.priority}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-gray-100 text-gray-600">{group.completedCount}/{group.totalCount} Done</span>
+                </div>
+                <h3 className="text-sm font-bold mb-1 pl-1 text-gray-900">{group.title}</h3>
+                <p className="text-[10px] text-gray-500 mb-3 pl-1 line-clamp-1">{group.description}</p>
+                
+                <div className="pl-1 mb-4">
+                  <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase mb-1">
+                    <span>Overall Progress</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div className={`h-full transition-all duration-500 ${progress === 100 ? 'bg-emerald-500' : 'bg-navy'}`} style={{ width: `${progress}%` }}></div>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] font-bold text-gray-400">
+                  <div className="flex -space-x-1.5">
+                    {group.assignees.slice(0, 3).map((a, i) => (
+                      <div key={i} className="w-5 h-5 rounded-full border border-white bg-teal-100 flex items-center justify-center text-[8px] text-teal-800 font-black shadow-sm" title={a.assigned_user?.full_name}>
+                        {a.assigned_user?.full_name?.[0]}
+                      </div>
+                    ))}
+                    {group.totalCount > 3 && <div className="w-5 h-5 rounded-full border border-white bg-gray-100 flex items-center justify-center text-[8px] text-gray-400 font-black">+ {group.totalCount - 3}</div>}
+                  </div>
+                  <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{group.due_date ? new Date(group.due_date).toLocaleDateString() : '—'}</span>
+                </div>
+                {group.pendingReviewCount > 0 && <div className="mt-3 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border border-amber-100 bg-amber-50 text-amber-700 text-center animate-pulse">{group.pendingReviewCount} Pending Review</div>}
+              </div>
+            );
+          })}
+        </div>
+      ) : filteredTasks.length === 0 ? (
         <div className="text-center py-16 text-gray-400 font-medium text-sm">No tasks assigned.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -379,7 +478,7 @@ export default function TasksPage() {
                 <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
               </div>
               <div className="flex gap-1">
-                {selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id) && <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>}
+                {(isMaster || (selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>}
                 <button onClick={handleCloseModal} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400"><X className="w-4 h-4"/></button>
               </div>
             </div>
@@ -407,7 +506,7 @@ export default function TasksPage() {
               {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex items-center justify-between">
                   <span className="text-2xl font-black tabular-nums text-gray-900 tracking-tight">{String(Math.floor(elapsedSeconds / 3600)).padStart(2,'0')}:{String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2,'0')}:{String(elapsedSeconds % 60).padStart(2,'0')}</span>
-                  {!timerRunning ? <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm"><CheckSquare className="w-3.5 h-3.5 inline mr-1"/> Acknowledge</button> : <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause</button>}
+                  {!timerRunning ? <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm"><CheckSquare className="w-3.5 h-3.5 inline mr-1"/> Start & Acknowledge</button> : <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause Timer</button>}
                 </div>
               )}
 
@@ -419,14 +518,14 @@ export default function TasksPage() {
                     <button type="button" onClick={() => fileRef.current.click()} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 bg-white"><Paperclip className="w-3.5 h-3.5"/> {proofFile ? 'File Attached' : 'Attach Proof'}</button>
                     {proofFile && <button type="button" onClick={() => setProofFile(null)} className="text-red-500"><X className="w-4 h-4"/></button>}
                   </div>
-                  <button type="submit" disabled={actionLoading || uploading} className="w-full py-2 bg-navy text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5">{uploading ? 'Uploading...' : 'Submit Submittal'}</button>
+                  <button type="submit" disabled={actionLoading || uploading} className="w-full py-2 bg-navy text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5">{uploading ? 'Uploading...' : 'Submit Work for Review'}</button>
                 </form>
               )}
 
               {selectedTask.proof_url && <div className="pt-2"><a href={selectedTask.proof_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 font-bold text-xs"><Paperclip className="w-3.5 h-3.5"/> View Proof</a></div>}
               {selectedTask.completion_note && <div className="bg-gray-50 p-3 rounded-lg border border-gray-100"><p className="text-[9px] font-bold text-gray-400 uppercase">Completion Notes</p><p className="text-xs text-gray-700 font-medium">{selectedTask.completion_note}</p></div>}
 
-              {canDo('tasks', 'approve') && selectedTask.approval_status === 'pending_review' && (
+              {canApprove && selectedTask.approval_status === 'pending_review' && (
                 <div className="border-t border-gray-100 pt-4 space-y-2">
                   <textarea value={rejectNote} onChange={e => setRejectNote(e.target.value)} rows="2" placeholder="Rejection notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-accent bg-white resize-none"/>
                   <div className="flex gap-2">

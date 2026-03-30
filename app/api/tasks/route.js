@@ -2,6 +2,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { canAssignTo } from '@/lib/permissions';
 
 const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -28,7 +29,9 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-
+    // Master Admin Override
+    const isMaster = user.email === 'manisreethaar@gmail.com';
+    
     // Support batch inserts for multiple assignees
     const tasks = Array.isArray(body) ? body : [body];
 
@@ -40,16 +43,34 @@ export async function POST(request) {
     }
 
     // Fix: Verify creator exists in employees table before inserting
-    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id').eq('email', user.email).single();
+    let creatorInfo;
+    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    
     if (creatorErr || !creator) {
-      return NextResponse.json({
-        error: "CRITICAL PROFILE SYNC ERROR: Your user account is authenticated but not registered in the 'employees' table. Please contact an admin to add your ID."
-      }, { status: 403 });
+      if (isMaster) {
+        // Fallback for Master Admin if not in employees table yet
+        const { data: adminUser } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+        creatorInfo = { id: adminUser?.id || user.id, role: 'admin' };
+      } else {
+        return NextResponse.json({
+          error: "CRITICAL PROFILE SYNC ERROR: Your user account is authenticated but not registered in the 'employees' table. Please contact an admin to add your ID."
+        }, { status: 403 });
+      }
+    } else {
+      creatorInfo = creator;
+    }
+
+    // Hierarchical Validation
+    for (const t of tasks) {
+      const { data: assignee } = await supabase.from('employees').select('role').eq('id', t.assigned_to).single();
+      if (!canAssignTo(creatorInfo.role, assignee?.role, user.email)) {
+        return NextResponse.json({ error: `Permission Denied: Your role (${creatorInfo.role}) cannot assign tasks to a ${assignee?.role || 'Staff'}.` }, { status: 403 });
+      }
     }
 
     const insertPayload = tasks.map(t => ({
       ...t,
-      assigned_by: creator.id,
+      assigned_by: creatorInfo.id,
       logged_minutes: 0
     }));
 
@@ -149,6 +170,14 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
+
+    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const { data: task } = await supabase.from('tasks').select('assigned_by').eq('id', id).single();
+    const { data: currentUser } = await supabase.from('employees').select('id').eq('email', user.email).single();
+
+    if (!isMaster && task?.assigned_by !== currentUser?.id) {
+       return NextResponse.json({ error: 'Permission Denied: Only the creator can delete this task.' }, { status: 403 });
+    }
 
     const { error } = await supabase.from('tasks').delete().eq('id', id);
     if (error) throw error;
