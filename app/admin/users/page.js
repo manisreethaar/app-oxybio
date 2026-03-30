@@ -52,6 +52,9 @@ export default function UsersPage() {
   const supabase = useMemo(() => createClient(), []);
   const [fetchError, setFetchError] = useState('');
   const [deactivating, setDeactivating] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => setIsMounted(true), []);
 
 
   // Modal State
@@ -191,7 +194,7 @@ useEffect(() => {
     }
   };
 
-  if (authLoading || loading) return (
+  if (!isMounted || authLoading || loading) return (
     <div className="flex items-center justify-center py-20">
       <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
     </div>

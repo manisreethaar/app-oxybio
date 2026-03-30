@@ -136,7 +136,10 @@ export default function ProfilePage() {
         body: JSON.stringify(data)
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
-      setEmp({ ...emp, ...data }); setEditing(false);
+      const newData = { ...emp, ...data };
+      setEmp(newData); 
+      reset(newData); // <--- Reset react-hook-form to match so data doesn't vanish on toggle
+      setEditing(false);
     } catch (err) { alert('Error: ' + err.message); }
     finally { setSaving(false); }
   };

@@ -7,8 +7,8 @@ import { Clock, Download, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCi
 import Webcam from 'react-webcam';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const TARGET_LAT = 12.7409; 
-const TARGET_LNG = 77.8253; 
+const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT || '12.7409'); 
+const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG || '77.8253'); 
 const MAX_RADIUS_METERS = 200;
 
 // Shift window: 9:00 AM – 11:00 AM is on-time. After 11:00 AM = late. Before 7:00 AM = early.
@@ -282,7 +282,7 @@ export default function AttendancePage() {
           <button onClick={handleExportCSV} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 font-semibold text-xs rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
-          {!todayLog && role === 'admin' && (
+          {!todayLog && ['admin', 'ceo', 'cto'].includes(role) && (
             <div className="bg-amber-50 rounded-lg p-2 border border-amber-200 flex items-center justify-between text-xs">
               <span className="text-amber-800 font-semibold mr-2 flex items-center"><ShieldCheck className="w-3.5 h-3.5 mr-1"/> Override</span>
               <label className="flex items-center cursor-pointer">

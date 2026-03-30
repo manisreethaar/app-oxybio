@@ -17,7 +17,7 @@ const AuthContext = createContext({});
 // FIXED: Only select columns actually needed for auth and role checks.
 // Avoids pulling large fields (face data, etc.) on every session load.
 const PROFILE_SELECT =
-  'id, full_name, email, role, department, designation, is_active, photo_url, employee_code, verification_token';
+  'id, full_name, email, role, department, designation, is_active, photo_url, employee_code, verification_token, phone, address, blood_group, emergency_contact, emergency_contact_name, joined_date, date_of_birth';
 
 export const AuthProvider = ({ children, initialSession }) => {
   const initialized = useRef(false);
