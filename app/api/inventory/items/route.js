@@ -89,3 +89,29 @@ export async function PUT(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const supabase = createClient();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
+    const isMaster = user.email === 'manisreethaar@gmail.com';
+    if (!['admin','ceo','cto'].includes(emp?.role) && !isMaster) {
+      return NextResponse.json({ error: 'Permission Denied' }, { status: 403 });
+    }
+
+    const { error } = await supabase.from('inventory_items').delete().eq('id', id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
