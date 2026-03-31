@@ -25,7 +25,7 @@ export async function GET(request) {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    // 1. Find attendance logs that do not have a check_out_time, only for today (or yesterday — overnight grace)
+    // 1. Find attendance logs that do not have a check_out_time, only for today (or yesterday)
     const { data: openLogs, error: fetchError } = await supabaseAdmin
       .from('attendance_log')
       .select('id, check_in_time')
@@ -33,17 +33,12 @@ export async function GET(request) {
       .in('date', [todayStr, yesterdayStr]);
 
     if (fetchError) throw fetchError;
-
-    // 2. Filter for abandoned shifts (started more than 12 hours ago)
-    const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-    const shiftsToClose = openLogs?.filter(log => new Date(log.check_in_time) < twelveHoursAgo) || [];
-
-    if (shiftsToClose.length === 0) {
-      return NextResponse.json({ success: true, message: 'No abandoned shifts (older than 12h) found.' });
+    if (!openLogs || openLogs.length === 0) {
+      return NextResponse.json({ success: true, message: 'No abandoned shifts found. All active loops closed.' });
     }
 
-    // 3. Process Auto-Checkout (Zeroing out for Mispunch Review)
-    const updates = shiftsToClose.map(log => {
+    // 2. Process Auto-Checkout for all open shifts (General Shift policy)
+    const updates = openLogs.map(log => {
       return {
         id: log.id,
         check_out_time: now.toISOString(),
