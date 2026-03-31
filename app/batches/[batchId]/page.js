@@ -81,7 +81,7 @@ export default function BatchDetailPage() {
     try {
       const { data: b, error } = await supabase
         .from('batches')
-        .select('*, formulations(name, code, version), ph_readings(*, employees(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))')
+        .select('*, formulations(name, code, version), ph_readings(*, employees!ph_readings_logged_by_fkey(full_name)), lab_logs(*, employees(full_name)), stage_transitions(*, employees!stage_transitions_changed_by_fkey(full_name)), inventory_usage(*, inventory_stock(*, inventory_items(name, unit)))')
         .eq('id', batchId)
         .single();
       if (error) throw error;
