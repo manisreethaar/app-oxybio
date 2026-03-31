@@ -303,10 +303,19 @@ export default function FormulationsPage() {
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
                           {statusCfg.label}
                         </span>
-                        {f.status === 'Draft' && (
+                        {/* Edit + Delete icons: Draft always, In Review for admins only */}
+                        {(f.status === 'Draft' || f.status === 'active' || (f.status === 'In Review' && isApprover)) && (
                            <div className="flex gap-1 ml-1">
-                              <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-navy hover:bg-gray-200 transition-all"><Plus className="w-3 h-3 rotate-45" title="Edit Draft"/></button>
-                              <button onClick={() => handleDeleteRecipe(f.id)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"><Trash2 className="w-3 h-3" title="Delete Draft"/></button>
+                              {/* Edit: author can edit their own Draft; admin can edit any Draft or In Review */}
+                              {(f.status === 'Draft' || f.status === 'active' || isApprover) && (
+                                <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-navy hover:bg-gray-200 transition-all" title="Edit Recipe">
+                                  <Plus className="w-3 h-3 rotate-45"/>
+                                </button>
+                              )}
+                              {/* Delete: only for Draft/In Review - not Approved */}
+                              <button onClick={() => handleDeleteRecipe(f.id)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all" title="Delete Recipe">
+                                <Trash2 className="w-3 h-3"/>
+                              </button>
                            </div>
                         )}
                       </div>

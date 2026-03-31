@@ -168,13 +168,27 @@ export async function DELETE(request) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing recipe ID' }, { status: 400 });
 
-    // Security: Only allow deleting if Status is Draft
-    const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();
-    if (current && !['Draft', 'active'].includes(current.status)) {
-       return NextResponse.json({ error: 'Cannot delete an approved recipe. Use Archive instead.' }, { status: 403 });
+    // Check requester role
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
+    const isApprover = emp && APPROVER_ROLES.includes(emp.role?.toLowerCase());
+
+    // Fetch the recipe to check its status and owner
+    const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
+    if (!current) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+
+    // APPROVED recipes cannot be deleted by anyone — Archive instead
+    if (current.status === 'Approved') {
+      return NextResponse.json({ error: 'Cannot delete an approved recipe. Use Archive instead.' }, { status: 403 });
     }
 
+    // IN REVIEW — only admins/CEO/CTO can delete
+    if (current.status === 'In Review' && !isApprover) {
+      return NextResponse.json({ error: 'Only an admin can delete a recipe that is In Review. Recall it to Draft first, or ask an admin to delete it.' }, { status: 403 });
+    }
+
+    // DRAFT — anyone can delete their own; admins can delete any
     const { error } = await supabase.from('formulations').delete().eq('id', id);
     if (error) throw error;
 
