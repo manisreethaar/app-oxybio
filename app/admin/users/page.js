@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { UserPlus, UserCog, ShieldCheck, Mail, Loader2, UserX, X, Hash, Briefcase, Sparkles } from 'lucide-react';
+import { UserPlus, UserCog, ShieldCheck, Mail, Loader2, UserX, X, Hash, Briefcase, Sparkles, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // ─── Employee ID Auto-Generation Logic ──────────────────────────────────────
@@ -53,6 +53,10 @@ export default function UsersPage() {
   const [fetchError, setFetchError] = useState('');
   const [deactivating, setDeactivating] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [correctingRole, setCorrectingRole] = useState(null); // emp object
+  const [roleForm, setRoleForm] = useState({ role: '', designation: '', designation_code: '' });
+  const [roleCorrectLoading, setRoleCorrectLoading] = useState(false);
+  const [roleCorrectError, setRoleCorrectError] = useState('');
 
   useEffect(() => setIsMounted(true), []);
 
@@ -165,6 +169,34 @@ export default function UsersPage() {
     } finally {
       setUpdateLoading(null);
       setEditingSalary(null);
+    }
+  };
+
+  const handleRoleCorrection = async () => {
+    if (!correctingRole || !roleForm.role) return;
+    setRoleCorrectLoading(true);
+    setRoleCorrectError('');
+    try {
+      const code = roleForm.designation_code || roleForm.role.slice(0, 2).toUpperCase();
+      const res = await fetch('/api/admin/update-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: correctingRole.id,
+          new_role: roleForm.role,
+          new_designation: roleForm.designation,
+          designation_code: code
+        })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to update role');
+      setCorrectingRole(null);
+      fetchUsers();
+      alert(`Role updated successfully. New Employee ID: ${result.new_employee_code}`);
+    } catch (err) {
+      setRoleCorrectError(err.message);
+    } finally {
+      setRoleCorrectLoading(false);
     }
   };
 
@@ -333,6 +365,13 @@ export default function UsersPage() {
                     >
                       <UserCog className="w-5 h-5"/>
                     </button>
+                    <button
+                      onClick={() => { setCorrectingRole(emp); setRoleForm({ role: emp.role || '', designation: emp.designation || '', designation_code: '' }); setRoleCorrectError(''); }}
+                      className="p-2 rounded-xl hover:bg-amber-50/60 text-slate-400 hover:text-amber-600 transition-all"
+                      title="Correct Role & ID"
+                    >
+                      <RefreshCw className="w-5 h-5"/>
+                    </button>
                     {employeeProfile.id !== emp.id && (
                       <button
                         onClick={() => deactivateUser(emp.id, emp.is_active)}
@@ -342,7 +381,6 @@ export default function UsersPage() {
                         {deactivating === emp.id ? <Loader2 className="w-5 h-5 animate-spin"/> : <UserX className="w-5 h-5"/>}
                       </button>
                     )}
-
                   </td>
                 </tr>
               ))}
@@ -350,6 +388,46 @@ export default function UsersPage() {
           </table>
         </div>
       </div>
+
+      {/* Correct Role Modal */}
+      {correctingRole && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative shadow-2xl">
+            <button onClick={() => setCorrectingRole(null)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X className="w-5 h-5"/></button>
+            <h2 className="text-xl font-black text-slate-800 mb-1">Correct Role & Employee ID</h2>
+            <p className="text-sm text-slate-500 mb-1">Changing: <strong>{correctingRole.full_name}</strong></p>
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-5 font-medium">⚠️ This will regenerate the Employee ID Code. The new code will be shown after saving.</p>
+            {roleCorrectError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4 border border-red-100 font-medium">{roleCorrectError}</p>}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">New System Role (Controls Access)</label>
+                <select value={roleForm.role} onChange={e => setRoleForm(p => ({...p, role: e.target.value}))} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700 outline-none focus:border-teal-400">
+                  <option value="intern">Intern</option>
+                  <option value="research_intern">Research Intern</option>
+                  <option value="scientist">Scientist</option>
+                  <option value="research_fellow">Research Fellow</option>
+                  <option value="cto">CTO</option>
+                  <option value="ceo">CEO</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Display Designation (Label on ID Card)</label>
+                <input value={roleForm.designation} onChange={e => setRoleForm(p => ({...p, designation: e.target.value}))} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700 outline-none focus:border-teal-400" placeholder="e.g. Research Fellow, Lab Intern"/>
+              </div>
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">ID Code Abbreviation (2-3 letters)</label>
+                <input maxLength={3} value={roleForm.designation_code} onChange={e => setRoleForm(p => ({...p, designation_code: e.target.value.toUpperCase()}))} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-mono font-bold text-slate-700 outline-none focus:border-teal-400 uppercase" placeholder="e.g. RF, IN, SC"/>
+                <p className="text-[10px] text-slate-400 mt-1">Leave blank to auto-derive from role.</p>
+              </div>
+              <button onClick={handleRoleCorrection} disabled={roleCorrectLoading || !roleForm.role} className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
+                {roleCorrectLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <RefreshCw className="w-4 h-4"/>}
+                {roleCorrectLoading ? 'Updating...' : 'Apply Role Correction'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Employee Modal */}
       {showInviteModal && (

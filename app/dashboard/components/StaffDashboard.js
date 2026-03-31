@@ -7,12 +7,25 @@ import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { differenceInCalendarMonths } from 'date-fns';
+
+const CL_ONLY_ROLES = ['intern', 'research_intern'];
+
 export default function StaffDashboard({ employeeProfile }) {
   const employeeId = employeeProfile?.id;
+  const empRole = employeeProfile?.role?.toLowerCase() || '';
+  const isClOnly = CL_ONLY_ROLES.includes(empRole);
+
+  // For interns: calculate earned CL = months since DOJ
+  const earnedCL = isClOnly && employeeProfile?.joined_date
+    ? Math.max(0, differenceInCalendarMonths(new Date(), new Date(employeeProfile.joined_date)))
+    : 0;
+
+  // For permanent staff: use stored balances
   const limits = {
-    casual: employeeProfile?.casual_leave_balance || 12,
-    medical: employeeProfile?.medical_leave_balance || 6,
-    earned: employeeProfile?.earned_leave_balance || 15
+    casual: isClOnly ? earnedCL : (employeeProfile?.casual_leave_balance || 12),
+    medical: isClOnly ? 0 : (employeeProfile?.medical_leave_balance || 6),
+    earned: isClOnly ? 0 : (employeeProfile?.earned_leave_balance || 15)
   };
 
   const [tasks, setTasks] = useState([]);
@@ -161,16 +174,24 @@ export default function StaffDashboard({ employeeProfile }) {
           <div className="p-6 space-y-4">
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Casual Leave</span>
-              <span className="text-xl font-black text-gray-900">{limits.casual - leaveStats.casual} <span className="text-xs text-gray-400 font-semibold">/ {limits.casual}</span></span>
+              <span className="text-xl font-black text-gray-900">{Math.max(0, limits.casual - leaveStats.casual)} <span className="text-xs text-gray-400 font-semibold">/ {limits.casual}</span></span>
             </div>
-            <div className="flex justify-between items-end pb-3 border-b border-gray-100">
-              <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Medical Leave</span>
-              <span className="text-xl font-black text-gray-900">{limits.medical - leaveStats.medical} <span className="text-xs text-gray-400 font-semibold">/ {limits.medical}</span></span>
-            </div>
-            <div className="flex justify-between items-end pb-3 border-b border-gray-100">
-              <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Earned Leave</span>
-              <span className="text-xl font-black text-gray-900">{limits.earned - leaveStats.earned} <span className="text-xs text-gray-400 font-semibold">/ {limits.earned}</span></span>
-            </div>
+            {isClOnly ? (
+              <div className="text-xs text-gray-400 font-medium bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                <span className="font-bold text-blue-600">CL Policy:</span> 1 day earned per month since your joining date.
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-end pb-3 border-b border-gray-100">
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Medical Leave</span>
+                  <span className="text-xl font-black text-gray-900">{Math.max(0, limits.medical - leaveStats.medical)} <span className="text-xs text-gray-400 font-semibold">/ {limits.medical}</span></span>
+                </div>
+                <div className="flex justify-between items-end pb-3 border-b border-gray-100">
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Earned Leave</span>
+                  <span className="text-xl font-black text-gray-900">{Math.max(0, limits.earned - leaveStats.earned)} <span className="text-xs text-gray-400 font-semibold">/ {limits.earned}</span></span>
+                </div>
+              </>
+            )}
             <Link href="/leave" className="mt-6 block w-full py-2.5 text-center text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
               Submit Requisition
             </Link>

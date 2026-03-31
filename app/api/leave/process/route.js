@@ -39,11 +39,35 @@ export async function POST(request) {
         updateData.rejection_reason = comment;
     }
 
-    const { data, error } = await supabase.from('leave_applications').update(updateData).eq('id', id).select('*, employees(full_name)').single();
+    const { data, error } = await supabase.from('leave_applications').update(updateData).eq('id', id).select('*, employees(id, role, casual_leave_balance, medical_leave_balance, earned_leave_balance)').single();
 
     if (error) throw error;
-    
+
+    // Decrement the stored leave balance for permanent staff when approved
+    if (status === 'approved' && data?.employees) {
+      const empRole = data.employees.role?.toLowerCase();
+      const leaveType = data.leave_type;
+      const totalDays = data.total_days || 0;
+      const clOnlyRoles = ['intern', 'research_intern'];
+
+      // Only decrement stored balances for permanent staff (interns use dynamic DOJ calc)
+      if (!clOnlyRoles.includes(empRole) && totalDays > 0) {
+        let balanceField = null;
+        if (leaveType === 'Casual') balanceField = 'casual_leave_balance';
+        else if (leaveType === 'Sick' || leaveType === 'Medical') balanceField = 'medical_leave_balance';
+        else if (leaveType === 'Earned') balanceField = 'earned_leave_balance';
+
+        if (balanceField) {
+          const currentBalance = data.employees[balanceField] || 0;
+          await supabase.from('employees').update({
+            [balanceField]: Math.max(0, currentBalance - totalDays)
+          }).eq('id', data.employees.id);
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, data });
+
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
