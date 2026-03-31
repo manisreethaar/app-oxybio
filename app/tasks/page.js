@@ -579,7 +579,7 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <div className="p-5 space-y-5">
+            <div className="p-5 pb-20 space-y-5">
               {!selectedTask.is_acknowledged && selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && (
                 <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center justify-between animate-pulse">
                   <div className="flex items-center gap-3 text-emerald-800">
