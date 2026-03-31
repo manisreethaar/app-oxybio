@@ -154,15 +154,15 @@ export default function StaffDashboard({ employeeId, role }) {
           <div className="p-6 space-y-4">
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Casual Leave</span>
-              <span className="text-xl font-black text-gray-900">{12 - leaveStats.casual} <span className="text-xs text-gray-400 font-semibold">/ 12</span></span>
+              <span className="text-xl font-black text-gray-900">{limits.casual - leaveStats.casual} <span className="text-xs text-gray-400 font-semibold">/ {limits.casual}</span></span>
             </div>
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Medical Leave</span>
-              <span className="text-xl font-black text-gray-900">{6 - leaveStats.medical} <span className="text-xs text-gray-400 font-semibold">/ 6</span></span>
+              <span className="text-xl font-black text-gray-900">{limits.medical - leaveStats.medical} <span className="text-xs text-gray-400 font-semibold">/ {limits.medical}</span></span>
             </div>
             <div className="flex justify-between items-end pb-3 border-b border-gray-100">
               <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Earned Leave</span>
-              <span className="text-xl font-black text-gray-900">{15 - leaveStats.earned} <span className="text-xs text-gray-400 font-semibold">/ 15</span></span>
+              <span className="text-xl font-black text-gray-900">{limits.earned - leaveStats.earned} <span className="text-xs text-gray-400 font-semibold">/ {limits.earned}</span></span>
             </div>
             <Link href="/leave" className="mt-6 block w-full py-2.5 text-center text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
               Submit Requisition

@@ -33,12 +33,18 @@ export async function GET(request) {
       .in('date', [todayStr, yesterdayStr]);
 
     if (fetchError) throw fetchError;
-    if (!openLogs || openLogs.length === 0) {
-      return NextResponse.json({ success: true, message: 'No abandoned shifts found. All active loops closed.' });
+
+    // 2. Filter for abandoned shifts (started more than 12 hours ago)
+    // Per latest request: Only shifts older than 12 hours should be zeroed out.
+    const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+    const shiftsToClose = openLogs?.filter(log => new Date(log.check_in_time) < twelveHoursAgo) || [];
+
+    if (shiftsToClose.length === 0) {
+      return NextResponse.json({ success: true, message: 'No abandoned shifts (older than 12h) found.' });
     }
 
-    // 2. Process Auto-Checkout for all open shifts (General Shift policy)
-    const updates = openLogs.map(log => {
+    // 3. Process Auto-Checkout for abandoned shifts
+    const updates = shiftsToClose.map(log => {
       return {
         id: log.id,
         check_out_time: now.toISOString(),

@@ -77,12 +77,11 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {employeeProfile.role === 'admin' ? (
+      {['admin', 'ceo', 'cto'].includes(employeeProfile.role?.toLowerCase()) ? (
         <AdminDashboard employeeId={employeeProfile.id} />
       ) : (
         <StaffDashboard
-          employeeId={employeeProfile.id}
-          role={employeeProfile.role}
+          employeeProfile={employeeProfile}
         />
       )}
     </div>

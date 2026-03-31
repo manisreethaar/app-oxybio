@@ -25,7 +25,7 @@ const maintSchema = z.object({
 });
 
 export default function EquipmentPage() {
-  const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
+  const { user, role, canDo, employeeProfile, loading: authLoading } = useAuth();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);

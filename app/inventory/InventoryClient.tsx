@@ -9,7 +9,7 @@ import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
-  const { role, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
+  const { user, role, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState(initialStock || []);
   const [items, setItems] = useState(initialItems || []);

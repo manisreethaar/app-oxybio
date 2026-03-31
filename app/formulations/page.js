@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { 
   Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, 
-  GitCompare, CheckCircle2, Clock, Send, ShieldCheck, XCircle, AlertTriangle
+  GitCompare, CheckCircle2, Clock, Send, ShieldCheck, XCircle, AlertTriangle, Trash2
 } from 'lucide-react';
 import FormulaDiff from '@/components/science/FormulaDiff';
 import Skeleton from '@/components/Skeleton';
