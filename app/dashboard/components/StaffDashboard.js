@@ -9,23 +9,57 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { differenceInCalendarMonths } from 'date-fns';
 
-const CL_ONLY_ROLES = ['intern', 'research_intern'];
+const CL_ONLY_ROLES = ['intern', 'research_intern', 'research_fellow'];
+
+/**
+ * Calculates earned CL based on the finalized DOJ policy:
+ * - On DOJ: 6 CL upfront (covers first 6 months probation)
+ * - Months 1–6: No additional CL
+ * - After 6-month mark: 1 CL on 1st of each subsequent month
+ * - Calendar year: resets Jan 1, no carry-forward
+ * - Subsequent years: 1 CL per month from Jan 1
+ */
+function calculateEarnedCL(joinedDate, today = new Date()) {
+  const doj = new Date(joinedDate);
+  const currentYear = today.getFullYear();
+  const dojYear = doj.getFullYear();
+
+  if (dojYear === currentYear) {
+    let earned = 6;
+    const sixMonthMark = new Date(doj.getFullYear(), doj.getMonth() + 6, doj.getDate());
+    if (today >= sixMonthMark) {
+      let firstMonthly = new Date(sixMonthMark.getFullYear(), sixMonthMark.getMonth() + 1, 1);
+      while (firstMonthly <= today && firstMonthly.getFullYear() === currentYear) {
+        earned += 1;
+        firstMonthly = new Date(firstMonthly.getFullYear(), firstMonthly.getMonth() + 1, 1);
+      }
+    }
+    return earned;
+  } else {
+    let earned = 0;
+    let firstOfMonth = new Date(currentYear, 0, 1);
+    while (firstOfMonth <= today) {
+      earned += 1;
+      firstOfMonth = new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth() + 1, 1);
+    }
+    return earned;
+  }
+}
 
 export default function StaffDashboard({ employeeProfile }) {
   const employeeId = employeeProfile?.id;
   const empRole = employeeProfile?.role?.toLowerCase() || '';
   const isClOnly = CL_ONLY_ROLES.includes(empRole);
 
-  // For interns: calculate earned CL = months since DOJ
+  // For CL-only roles: calculate using finalized DOJ policy
   const earnedCL = isClOnly && employeeProfile?.joined_date
-    ? Math.max(0, differenceInCalendarMonths(new Date(), new Date(employeeProfile.joined_date)))
+    ? calculateEarnedCL(employeeProfile.joined_date)
     : 0;
 
-  // For permanent staff: use stored balances
   const limits = {
-    casual: isClOnly ? earnedCL : (employeeProfile?.casual_leave_balance || 12),
-    medical: isClOnly ? 0 : (employeeProfile?.medical_leave_balance || 6),
-    earned: isClOnly ? 0 : (employeeProfile?.earned_leave_balance || 15)
+    casual: isClOnly ? earnedCL : (employeeProfile?.casual_leave_balance ?? 12),
+    medical: isClOnly ? 0 : (employeeProfile?.medical_leave_balance ?? 6),
+    earned: isClOnly ? 0 : (employeeProfile?.earned_leave_balance ?? 15)
   };
 
   const [tasks, setTasks] = useState([]);

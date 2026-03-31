@@ -1,9 +1,52 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { differenceInCalendarMonths } from 'date-fns';
 
-// Roles that only get Casual Leave, earned at 1 day per month from DOJ
-const CL_ONLY_ROLES = ['intern', 'research_intern'];
+// Roles that get only Casual Leave on the DOJ-based accrual system
+const CL_ONLY_ROLES = ['intern', 'research_intern', 'research_fellow'];
+
+/**
+ * Calculates how many CL days an employee has EARNED so far in the current calendar year.
+ *
+ * Policy:
+ * - On DOJ:         6 CL credited upfront (covers the first 6 months)
+ * - Months 1-6:     No additional CL
+ * - After 6 months: 1 CL on the 1st of each subsequent month
+ * - Calendar year:  Balances reset on Jan 1. No carry-forward.
+ * - Subsequent yrs: 1 CL on Jan 1st + 1 on 1st of each month thereafter
+ */
+function calculateEarnedCL(joinedDate, today = new Date()) {
+  const doj = new Date(joinedDate);
+  const currentYear = today.getFullYear();
+  const dojYear = doj.getFullYear();
+
+  if (dojYear === currentYear) {
+    // First year of employment — start with 6 CL on DOJ
+    let earned = 6;
+
+    // 6-month anniversary date
+    const sixMonthMark = new Date(doj.getFullYear(), doj.getMonth() + 6, doj.getDate());
+
+    if (today >= sixMonthMark) {
+      // Monthly CL starts on the 1st of the month AFTER the 6-month mark
+      let firstMonthly = new Date(sixMonthMark.getFullYear(), sixMonthMark.getMonth() + 1, 1);
+      while (firstMonthly <= today && firstMonthly.getFullYear() === currentYear) {
+        earned += 1;
+        firstMonthly = new Date(firstMonthly.getFullYear(), firstMonthly.getMonth() + 1, 1);
+      }
+    }
+
+    return earned;
+  } else {
+    // Subsequent years: 1 CL per month from Jan 1 of current year
+    let earned = 0;
+    let firstOfMonth = new Date(currentYear, 0, 1); // Jan 1
+    while (firstOfMonth <= today) {
+      earned += 1;
+      firstOfMonth = new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth() + 1, 1);
+    }
+    return earned;
+  }
+}
 
 export async function POST(request) {
   try {
@@ -19,7 +62,7 @@ export async function POST(request) {
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     if (days <= 0) return NextResponse.json({ error: 'Invalid date range selected' }, { status: 400 });
 
-    // 2. Fetch Employee Profile (role + joined_date + leave balances)
+    // 2. Fetch Employee Profile
     const { data: emp } = await supabase
       .from('employees')
       .select('id, role, joined_date, casual_leave_balance, medical_leave_balance, earned_leave_balance')
@@ -29,43 +72,45 @@ export async function POST(request) {
 
     const isClOnly = CL_ONLY_ROLES.includes(emp.role?.toLowerCase());
 
-    // 3. Enforce leave type for interns/research interns
+    // 3. Enforce leave type restriction for CL-only roles
     if (isClOnly && leave_type !== 'Casual') {
+      const roleLabel = emp.role === 'research_fellow' ? 'Research Fellow' : emp.role === 'research_intern' ? 'Research Intern' : 'Intern';
       return NextResponse.json({
-        error: `Leave Policy: As ${emp.role === 'intern' ? 'an Intern' : 'a Research Intern'}, you are only entitled to Casual Leave.`
+        error: `Leave Policy: As a ${roleLabel}, you are entitled to Casual Leave only.`
       }, { status: 400 });
     }
 
-    // 4. Calculate leave balance
+    // 4. Calculate available balance
     let remainingBalance = 0;
 
     if (isClOnly) {
-      // DOJ-based: 1 CL per completed month since joining
       if (!emp.joined_date) {
-        return NextResponse.json({ error: 'Your joining date is not set. Please contact your administrator.' }, { status: 400 });
+        return NextResponse.json({ error: 'Your joining date is not configured. Please contact your administrator.' }, { status: 400 });
       }
-      const monthsWorked = differenceInCalendarMonths(new Date(), new Date(emp.joined_date));
-      const earnedCL = Math.max(0, monthsWorked); // 0 if joined this month
 
-      // Fetch already approved/pending CL
+      // Earned CL based on DOJ policy (6 on DOJ, then 1/month after 6-month mark)
+      const earnedCL = calculateEarnedCL(emp.joined_date);
+
+      // Deduct already approved/pending CL applications in the CURRENT calendar year
+      const currentYearStart = `${new Date().getFullYear()}-01-01`;
       const { data: usedLeaves } = await supabase
         .from('leave_applications')
         .select('total_days')
         .eq('employee_id', emp.id)
         .eq('leave_type', 'Casual')
-        .in('status', ['approved', 'pending']);
+        .in('status', ['approved', 'pending'])
+        .gte('start_date', currentYearStart);
 
       const usedDays = (usedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
       remainingBalance = earnedCL - usedDays;
 
     } else {
       // Permanent staff: use stored balances by leave type
-      if (leave_type === 'Casual') remainingBalance = emp.casual_leave_balance || 12;
-      else if (leave_type === 'Sick' || leave_type === 'Medical') remainingBalance = emp.medical_leave_balance || 6;
-      else if (leave_type === 'Earned') remainingBalance = emp.earned_leave_balance || 15;
-      else remainingBalance = 0;
+      if (leave_type === 'Casual') remainingBalance = emp.casual_leave_balance ?? 12;
+      else if (leave_type === 'Sick' || leave_type === 'Medical') remainingBalance = emp.medical_leave_balance ?? 6;
+      else if (leave_type === 'Earned') remainingBalance = emp.earned_leave_balance ?? 15;
 
-      // Deduct already approved/pending for this type
+      // Deduct already approved/pending for the same type
       const { data: activeLeaves } = await supabase
         .from('leave_applications')
         .select('total_days')
@@ -79,11 +124,11 @@ export async function POST(request) {
     // 5. Balance check
     if (days > remainingBalance) {
       return NextResponse.json({
-        error: `Insufficient Balance: You have ${Math.max(0, remainingBalance)} day(s) remaining. This request is for ${days} day(s).`
+        error: `Insufficient Balance: You have ${Math.max(0, remainingBalance)} day(s) available. This request is for ${days} day(s).`
       }, { status: 400 });
     }
 
-    // 6. Check Calendar Overlaps
+    // 6. Check for overlapping leaves
     const { data: overlapping } = await supabase
       .from('leave_applications')
       .select('id')
@@ -92,7 +137,7 @@ export async function POST(request) {
       .or(`and(start_date.lte.${end_date},end_date.gte.${start_date})`);
 
     if (overlapping?.length > 0) {
-      return NextResponse.json({ error: 'Scheduling Conflict: You already have approved/pending leave during this selected range.' }, { status: 400 });
+      return NextResponse.json({ error: 'Scheduling Conflict: You already have a leave during this period.' }, { status: 400 });
     }
 
     // 7. Insert leave application

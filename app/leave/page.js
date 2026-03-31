@@ -11,8 +11,33 @@ import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } 
 import { differenceInBusinessDays } from 'date-fns';
 
 const ALL_LEAVE_TYPES = ['Casual', 'Sick', 'Earned', 'Permission'];
-// Research Fellows are entitled to 12 CL/year only
-const RESEARCH_FELLOW_LEAVE_TYPES = ['Casual'];
+
+// Roles entitled to Casual Leave only via DOJ-based accrual
+const CL_ONLY_ROLES = ['intern', 'research_intern', 'research_fellow'];
+
+/**
+ * Calculates earned CL so far this calendar year.
+ * - Year of joining:   6 on DOJ, then 1/month from 1st after 6-month mark
+ * - Subsequent years:  1 CL per month from Jan 1
+ */
+function calculateEarnedCL(joinedDate, today = new Date()) {
+  const doj = new Date(joinedDate);
+  const currentYear = today.getFullYear();
+  if (doj.getFullYear() === currentYear) {
+    let earned = 6;
+    const sixMonthMark = new Date(doj.getFullYear(), doj.getMonth() + 6, doj.getDate());
+    if (today >= sixMonthMark) {
+      let d = new Date(sixMonthMark.getFullYear(), sixMonthMark.getMonth() + 1, 1);
+      while (d <= today && d.getFullYear() === currentYear) { earned++; d = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+    }
+    return earned;
+  } else {
+    let earned = 0;
+    let d = new Date(currentYear, 0, 1);
+    while (d <= today) { earned++; d = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+    return earned;
+  }
+}
 
 const STATUS_STYLE = {
   approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -33,8 +58,8 @@ export default function LeavePage() {
   const [rejectionId, setRejectionId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const isResearchFellow = role === 'research_fellow';
-  const availableLeaveTypes = isResearchFellow ? RESEARCH_FELLOW_LEAVE_TYPES : ALL_LEAVE_TYPES;
+  const isClOnly = CL_ONLY_ROLES.includes(role?.toLowerCase());
+  const earnedCL = isClOnly && employeeProfile?.joined_date ? calculateEarnedCL(employeeProfile.joined_date) : 0;
 
   const { register, handleSubmit, watch, reset } = useForm({
     resolver: zodResolver(z.object({
@@ -253,17 +278,17 @@ export default function LeavePage() {
             <form onSubmit={handleSubmit(handleApplyForm)} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Leave Category</label>
-                {isResearchFellow && (
+                {isClOnly && (
                   <div className="mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700">
-                    📋 Research Fellow Policy: 12 Casual Leaves/year only. Sick &amp; Earned Leave not applicable.
+                    📋 Leave Policy: Casual Leave only · 6 CL credited on joining · 1 CL/month after 6-month mark · Unused CL expires Dec 31.
+                    {employeeProfile?.joined_date && <span className="ml-1 text-amber-600">Earned this year: <strong>{earnedCL} days</strong>.</span>}
                   </div>
                 )}
                 <select {...register('leaveType')} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
-                  {!isResearchFellow && <option value="Casual">Casual Leave (CL)</option>}
-                  {isResearchFellow && <option value="Casual">Casual Leave (CL) — 12/year</option>}
-                  {!isResearchFellow && <option value="Sick">Sick Leave (SL)</option>}
-                  {!isResearchFellow && <option value="Earned">Earned Leave (EL)</option>}
-                  {!isResearchFellow && <option value="Permission">⏱ Permission / Short Leave</option>}
+                  <option value="Casual">Casual Leave (CL)</option>
+                  {!isClOnly && <option value="Sick">Sick Leave (SL)</option>}
+                  {!isClOnly && <option value="Earned">Earned Leave (EL)</option>}
+                  {!isClOnly && <option value="Permission">⏱ Permission / Short Leave</option>}
                 </select>
               </div>
 
