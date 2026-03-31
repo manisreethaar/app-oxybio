@@ -1,3 +1,4 @@
+'use client';
 /* 
   DIAGNOSTIC SCRIPT: auth_check.js
   This will help us find if your Auth ID matches your Employee ID.

@@ -9,12 +9,15 @@ export const metadata = {
   title: "OxyOS Platform",
   description: "Internal operations for Oxygen Bioinnovations",
   manifest: "/manifest.json",
-  themeColor: "#1F3A5F",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "OxyOS",
   },
+};
+
+export const viewport = {
+  themeColor: "#1F3A5F",
 };
 
 import { createClient } from "@/utils/supabase/server";
