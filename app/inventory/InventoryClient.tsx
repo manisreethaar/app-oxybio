@@ -24,6 +24,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
   });
   const [newIssue, setNewIssue] = useState({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
+  const [showOptions, setShowOptions] = useState(false);
   
   const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '' });
   const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
@@ -348,12 +349,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (!deletingId) return;
     setIsDeleting(true);
     try {
+      // Step 1: Null out any inventory_items that reference this vendor as preferred_supplier
+      // This releases the FK constraint before we delete
+      const { error: unlinkError } = await supabase
+        .from('inventory_items')
+        .update({ preferred_supplier: null })
+        .eq('preferred_supplier', deletingId);
+      if (unlinkError) throw unlinkError;
+
+      // Step 2: Now safely delete the vendor
       const { error } = await supabase.from('vendors').delete().eq('id', deletingId);
       if (error) throw error;
+
       setVendors(vendors.filter(v => v.id !== deletingId));
+      // Update items list to reflect unlinked suppliers
+      setItems(items.map(i => i.preferred_supplier === deletingId ? { ...i, preferred_supplier: null } : i));
       setDeletingId(null);
-    } catch (err) {
-      alert("Failed to delete vendor: " + err.message);
+    } catch (err: any) {
+      alert('Failed to delete vendor: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -515,10 +528,53 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Inventory & Supply Chain</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-            <Filter className="w-4 h-4 mr-2" /> Options
-          </button>
+        <div className="flex gap-3 relative">
+          {/* Context-aware Options dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowOptions(v => !v)}
+              className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95"
+            >
+              <Filter className="w-4 h-4 mr-2" /> Options
+            </button>
+            {showOptions && (
+              <div className="absolute left-0 top-full mt-2 w-52 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 overflow-hidden">
+                {activeTab === 'stock' && (
+                  <>
+                    <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Stock</p>
+                    {[['all','All Stock'],['low','Low Stock Only'],['expiring','Expiring (&lt;30d)'],['expired','Expired']].map(([val, label]) => (
+                      <button key={val} onClick={() => { setStockFilter(val); setShowOptions(false); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ stockFilter === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {activeTab === 'items' && (
+                  <>
+                    <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Sort Registry</p>
+                    {[['name','Name (A–Z)'],['newest','Newest First'],['stock','By Min Stock Level']].map(([val, label]) => (
+                      <button key={val} onClick={() => { setRegistrySort(val); setShowOptions(false); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ registrySort === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {activeTab === 'vendors' && (
+                  <>
+                    <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Supplier Options</p>
+                    <button onClick={() => { setRegistrySearch(''); setShowOptions(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-teal-50 transition-colors">Clear Search</button>
+                    <button onClick={() => { setRegistrySort('name'); setShowOptions(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-teal-50 transition-colors">Sort A–Z</button>
+                  </>
+                )}
+                <div className="border-t border-gray-100 mt-1 mb-1" />
+                <button onClick={() => setShowOptions(false)} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-400 hover:bg-gray-50 transition-colors">Close</button>
+              </div>
+            )}
+          </div>
           {canDo('inventory', 'edit') && activeTab === 'items' && (
             <button onClick={handleSeedCategories} className="flex items-center px-6 py-3 bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-900/20 hover:bg-amber-600 transition-all active:scale-95 mr-2">
               Auto-Load Catalog
