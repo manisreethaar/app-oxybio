@@ -60,7 +60,10 @@ export async function GET(request) {
     await Promise.allSettled(employees.map(emp => 
       fetch(`${appUrl}/api/push/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CRON_SECRET}` 
+        },
         body: JSON.stringify({
           assigned_to: emp.id,
           title: '🔴 Still Checked In?',

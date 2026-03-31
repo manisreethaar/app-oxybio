@@ -5,12 +5,18 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req) {
   try {
-    // SECURITY: Ensure request is from an authenticated session
-    const supabase = createServerClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // SECURITY: Ensure request is from an authenticated session OR has CRON_SECRET
+    const authHeader = req.headers.get('authorization');
+    const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
     
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized push trigger' }, { status: 401 });
+    let user = null;
+    if (!isCron) {
+      const supabase = createServerClient();
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser) {
+        return NextResponse.json({ error: 'Unauthorized push trigger' }, { status: 401 });
+      }
+      user = authUser;
     }
 
     const { assigned_to, title, body, url } = await req.json();
