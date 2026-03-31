@@ -151,7 +151,12 @@ const handleStageTransition = async (toStage) => {
       const resCheck = await fetch(`/api/inventory/check?batch_id=${batchId}`);
       const checkData = await resCheck.json();
       if (!checkData.ok) {
-        alert('Insufficient inventory. Cannot start batch.');
+        if (checkData.missing && checkData.missing.length > 0) {
+          const missingMsg = checkData.missing.map(m => `- ${m.name}: Need ${m.required}${m.unit}, Have ${m.available}${m.unit}`).join('\n');
+          alert(`Insufficient inventory. Cannot start batch.\n\nMissing Materials:\n${missingMsg}`);
+        } else {
+          alert(`Inventory Validation Failed: ${checkData.error || 'Unknown Error'}`);
+        }
         setActionLoading(false);
         return;
       }
@@ -161,7 +166,7 @@ const handleStageTransition = async (toStage) => {
       setActionLoading(false);
       return;
     }
-    // fall through to stage transition below
+    // Continue with regular stage transition to fetch detail
   }
 
   if (!confirm(`Move batch to ${toStage.toUpperCase().replace('_', ' ')}?`)) {
