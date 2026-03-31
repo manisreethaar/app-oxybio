@@ -44,12 +44,20 @@ export const AuthProvider = ({ children, initialSession }) => {
         const { data, error } = await supabase
           .from('employees')
           .select(PROFILE_SELECT)
-          .eq('email', email)
+          .ilike('email', email)
           .single();
+        
         if (error) {
-          console.error('Profile fetch error:', error.message);
+          // DIAGNOSTIC LOGGING FOR "EMPLOYEE NOT FOUND" REDIRECTION
+          if (error.code === 'PGRST116') {
+             console.warn(`[OxyOS Auth] CRITICAL: Authenticated as ${email} but no matching profile found in 'employees' table. 
+             If this is a new intern, please run the supabase/sync_intern_profiles.sql script.`);
+          } else {
+             console.error('Profile fetch error:', error.message);
+          }
           return null;
         }
+        
         if (data && data.role) data.role = data.role.toLowerCase();
         // MASTER ADMIN OVERRIDE
         if (email === 'manisreethaar@gmail.com') {

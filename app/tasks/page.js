@@ -88,9 +88,12 @@ export default function TasksPage() {
         const now = new Date().getTime();
         setElapsedSeconds(Math.floor((now - start) / 1000));
       }, 1000);
-    } else { setElapsedSeconds(0); }
+    } else { 
+      // If timer isn't running, elapsed seconds is 0, but we show logged_minutes
+      setElapsedSeconds(0); 
+    }
     return () => clearInterval(interval);
-  }, [timerRunning, selectedTask?.time_started_at]);
+  }, [timerRunning, selectedTask?.time_started_at, selectedTask?.id]);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -565,16 +568,14 @@ export default function TasksPage() {
                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700'}`}>{selectedTask.priority}</span>
                 <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
               </div>
-              <div className="flex gap-1">
-                {(isMaster || (selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id))) && (
-                  <div className="flex gap-1">
-                    <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
-                  </div>
+              <div className="flex gap-1 text-gray-400">
+                {(isMaster || (selectedTask?.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
+                    <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
                 )}
-                {(isMaster || (selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
-                   <button onClick={() => handleEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400 hover:text-navy" title="Edit Task Settings"><Timer className="w-4 h-4 rotate-45"/></button>
+                {(isMaster || (selectedTask?.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
+                   <button onClick={() => handleEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 hover:text-navy" title="Edit Task Settings"><Timer className="w-4 h-4 rotate-45"/></button>
                 )}
-                <button onClick={handleCloseModal} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400"><X className="w-4 h-4"/></button>
+                <button onClick={handleCloseModal} className="p-1.5 rounded-md hover:bg-gray-50"><X className="w-4 h-4"/></button>
               </div>
             </div>
 
@@ -590,9 +591,15 @@ export default function TasksPage() {
               )}
 
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Assignee</p>
-                    <p className="font-bold text-gray-800">{selectedTask.assigned_user?.full_name || '—'}</p>
+                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex flex-col justify-center">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-1">Assignees</p>
+                    <div className="flex flex-wrap gap-1">
+                      {groupedTasks.find(g => g.title === selectedTask.title && g.description === selectedTask.description)?.assignees.map((a, idx) => (
+                        <span key={idx} className="bg-white px-1.5 py-0.5 rounded border border-gray-200 font-bold text-gray-700 text-[10px]">
+                          {a.assigned_user?.full_name?.split(' ')[0] || 'Staff'}
+                        </span>
+                      ))}
+                    </div>
                 </div>
                 <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Due Date</p>
@@ -653,8 +660,19 @@ export default function TasksPage() {
 
               {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex items-center justify-between">
-                  <span className="text-2xl font-black tabular-nums text-gray-900 tracking-tight">{String(Math.floor(elapsedSeconds / 3600)).padStart(2,'0')}:{String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2,'0')}:{String(elapsedSeconds % 60).padStart(2,'0')}</span>
-                  {!timerRunning ? <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm"><CheckSquare className="w-3.5 h-3.5 inline mr-1"/> Start & Acknowledge</button> : <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause Timer</button>}
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase text-gray-400 mb-1">Cumulative Time Spent</span>
+                    <span className="text-2xl font-black tabular-nums text-gray-900 tracking-tight">
+                      {String(Math.floor(((selectedTask.logged_minutes || 0) * 60 + elapsedSeconds) / 3600)).padStart(2,'0')}:
+                      {String(Math.floor((((selectedTask.logged_minutes || 0) * 60 + elapsedSeconds) % 3600) / 60)).padStart(2,'0')}:
+                      {String(((selectedTask.logged_minutes || 0) * 60 + elapsedSeconds) % 60).padStart(2,'0')}
+                    </span>
+                  </div>
+                  {!timerRunning ? (
+                    <button onClick={() => handleStartTimer(selectedTask)} className="px-3 py-1.5 bg-navy text-white font-bold text-xs rounded-lg shadow-sm hover:scale-105 transition-transform"><CheckSquare className="w-3.5 h-3.5 inline mr-1"/> Start & Acknowledge</button>
+                  ) : (
+                    <button onClick={handlePauseTimer} className="px-3 py-1.5 bg-amber-500 text-white font-bold text-xs rounded-lg hover:bg-amber-600"><Timer className="w-3.5 h-3.5 inline mr-1"/> Pause Timer</button>
+                  )}
                 </div>
               )}
 

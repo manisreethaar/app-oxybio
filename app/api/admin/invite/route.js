@@ -40,7 +40,8 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });
     }
 
-    const { email, password, full_name, role, department, employee_code, designation, joined_date } = await req.json();
+    let { email, password, full_name, role, department, employee_code, designation, joined_date } = await req.json();
+    email = email.toLowerCase().trim();
 
     if (!email || !password || !full_name || !role || !department) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

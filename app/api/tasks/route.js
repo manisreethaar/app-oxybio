@@ -17,7 +17,7 @@ const createTaskSchema = z.object({
 });
 
 const patchSchema = z.object({
-  action: z.enum(['start_timer', 'pause_timer', 'update_checklist', 'submit_review', 'approve', 'reject']),
+  action: z.enum(['start_timer', 'pause_timer', 'update_checklist', 'submit_review', 'approve', 'reject', 'acknowledge_task', 'update_progress']),
   task_id: z.string().uuid(),
   payload: z.any()
 });
@@ -44,7 +44,7 @@ export async function POST(request) {
 
     // Fix: Verify creator exists in employees table before inserting
     let creatorInfo;
-    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id, role').eq('email', user.email.toLowerCase()).single();
     
     if (creatorErr || !creator) {
       if (isMaster) {
@@ -213,11 +213,11 @@ export async function DELETE(request) {
 
     const isMaster = user.email === 'manisreethaar@gmail.com';
     const { data: task } = await supabase.from('tasks').select('assigned_to, assigned_by').eq('id', id).single();
-    const { data: currentUser } = await supabase.from('employees').select('id').eq('email', user.email).single();
+    const { data: currentUser } = await supabase.from('employees').select('id').eq('email', user.email.toLowerCase()).single();
 
-    // POLICY CHANGE: Only the ASSIGNEE (the one doing the work) can delete, or Master Admin
-    if (!isMaster && task?.assigned_to !== currentUser?.id) {
-       return NextResponse.json({ error: 'Permission Denied: Only the assigned worker can delete this task.' }, { status: 403 });
+    // POLICY CHANGE: Only the CREATOR (the one who assigned it) can delete, or Master Admin
+    if (!isMaster && task?.assigned_by !== currentUser?.id) {
+       return NextResponse.json({ error: 'Permission Denied: Only the task creator can delete this task.' }, { status: 403 });
     }
 
     const { error } = await supabase.from('tasks').delete().eq('id', id);
@@ -242,7 +242,7 @@ export async function PUT(request) {
 
     const isMaster = user.email === 'manisreethaar@gmail.com';
     const { data: task } = await supabase.from('tasks').select('assigned_by').eq('id', id).single();
-    const { data: currentUser } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    const { data: currentUser } = await supabase.from('employees').select('id, role').eq('email', user.email.toLowerCase()).single();
 
     if (!isMaster && task?.assigned_by !== currentUser?.id) {
        return NextResponse.json({ error: 'Permission Denied: Only the creator can edit this task.' }, { status: 403 });
