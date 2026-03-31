@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3 } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -275,6 +275,35 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newStock)
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewStock({ 
+          item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+        });
+        setPage(0); await fetchData(0, false);
+      } else { alert((await res.json()).error || 'Failed.'); }
+    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleUpdateStock = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    if (uploadingCoA || uploadingSDS) {
+      alert("Please wait for files to finish uploading.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        ...newStock,
+        current_quantity: newStock.received_quantity // reuse the input field logic
+      };
+      const res = await fetch('/api/inventory/stock', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setIsModalOpen(false);
@@ -663,7 +692,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Receive New Stock&apos; to log your first shipment</p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { setModalType('stock'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
+                <button onClick={() => { 
+                   setNewStock({ 
+                    item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
+                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+                  });
+                   setModalType('stock'); setIsModalOpen(true); 
+                }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
                   Receive Stock
                 </button>
               )}
@@ -916,7 +951,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black tracking-tight">
-                  {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
+                  {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'edit_stock' ? 'Edit Stock Log' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
                 </h2>
                 <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">
                   {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
@@ -937,13 +972,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <button onClick={() => setIsModalOpen(false)} className="text-xs font-bold text-slate-400 hover:text-slate-600">Close Window</button>
                 </div>
               </div>
-            ) : modalType === 'stock' ? (
-              <form onSubmit={handleAddStock} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+            ) : (modalType === 'stock' || modalType === 'edit_stock') ? (
+              <form onSubmit={modalType === 'edit_stock' ? handleUpdateStock : handleAddStock} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
                 <div className="grid grid-cols-1 gap-5">
                   <div>
                     <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
-                    <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
-                      value={newStock.item_id} onChange={(e) => setNewStock({...newStock, item_id: e.target.value})}>
+                    <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold disabled:opacity-50"
+                      value={newStock.item_id} onChange={(e) => setNewStock({...newStock, item_id: e.target.value})} disabled={modalType === 'edit_stock'}>
                       <option value="">Select Item...</option>
                       {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
                     </select>
@@ -958,7 +993,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Quantity Recvd</label>
+                      <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">{modalType === 'edit_stock' ? 'Current Quantity' : 'Quantity Recvd'}</label>
                       <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
                         value={newStock.received_quantity} onChange={(e) => setNewStock({...newStock, received_quantity: e.target.value})} />
                     </div>
@@ -1024,7 +1059,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log Entry'}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : modalType === 'edit_stock' ? 'Save Changes' : 'Log Entry'}
                   </button>
                 </div>
               </form>
@@ -1194,7 +1229,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <div className="w-full max-w-xl bg-white h-screen shadow-2xl flex flex-col animate-slide-left">
             {/* Header */}
             <div className="p-8 bg-teal-900 text-white relative">
-              <button onClick={() => setSelectedStock(null)} className="absolute top-6 right-6 text-white/70 hover:text-white"><X className="w-6 h-6"/></button>
+              <div className="absolute top-6 right-16 flex items-center gap-2">
+                {canDo('inventory', 'edit') && (
+                  <button onClick={() => { 
+                    setNewStock({ 
+                      ...selectedStock, 
+                      vendor_id: selectedStock.vendor_id || selectedStock.vendors?.id || '', 
+                      received_quantity: selectedStock.current_quantity,
+                      expiry_date: selectedStock.expiry_date ? selectedStock.expiry_date.split('T')[0] : '' 
+                    });
+                    setModalType('edit_stock');
+                    setIsModalOpen(true);
+                    setSelectedStock(null);
+                  }} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+                    <Edit3 className="w-4 h-4"/> Edit
+                  </button>
+                )}
+              </div>
+              <button onClick={() => setSelectedStock(null)} className="absolute top-6 right-6 text-white/50 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5"/></button>
               <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-black uppercase tracking-widest text-white">{selectedStock.inventory_items?.category}</span>
               <h2 className="text-2xl font-black font-mono tracking-tighter mt-1">{selectedStock.inventory_items?.name}</h2>
               <p className="text-xs font-bold text-teal-200 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>

@@ -68,3 +68,43 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(request) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await request.json();
+    const { id, vendor_id, supplier_batch_number, current_quantity, expiry_date, location, purchase_order_number, invoice_ref, condition_on_arrival, sds_url, coa_url, notes } = body;
+
+    if (!id) return NextResponse.json({ success: false, error: 'Stock ID required' }, { status: 400 });
+
+    const valQty = parseFloat(current_quantity);
+    if (isNaN(valQty) || valQty < 0) return NextResponse.json({ success: false, error: 'Valid quantity required' }, { status: 400 });
+
+    const { data, error } = await supabase
+      .from('inventory_stock')
+      .update({
+        vendor_id,
+        supplier_batch_number,
+        current_quantity: valQty,
+        expiry_date,
+        location,
+        purchase_order_number,
+        invoice_ref,
+        condition_on_arrival,
+        sds_url,
+        coa_url,
+        notes
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X, CheckCircle2, Package } from 'lucide-react';
+import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X, CheckCircle2, Package, Trash2 } from 'lucide-react';
 import { format, differenceInHours } from 'date-fns';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
