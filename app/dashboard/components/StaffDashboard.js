@@ -7,7 +7,14 @@ import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function StaffDashboard({ employeeId, role }) {
+export default function StaffDashboard({ employeeProfile }) {
+  const employeeId = employeeProfile?.id;
+  const limits = {
+    casual: employeeProfile?.casual_leave_balance || 12,
+    medical: employeeProfile?.medical_leave_balance || 6,
+    earned: employeeProfile?.earned_leave_balance || 15
+  };
+
   const [tasks, setTasks] = useState([]);
   const [activeBatches, setActiveBatches] = useState([]);
   const [leaveStats, setLeaveStats] = useState({ casual: 0, medical: 0, earned: 0 });
