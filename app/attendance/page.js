@@ -30,6 +30,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('today'); // 'today' | 'analytics'
+  const [onLeaveToday, setOnLeaveToday] = useState([]); // employee IDs with approved leave today
   
   // Geofence & Webcam States
   const [showWebcam, setShowWebcam] = useState(false);
@@ -65,7 +66,9 @@ export default function AttendancePage() {
     try {
       const fetchPromises = [
         supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr).maybeSingle(),
-        supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).range(0, 30)
+        supabase.from('attendance_log').select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).range(0, 30),
+        // Always fetch approved leaves covering today (index 2)
+        supabase.from('leave_applications').select('employee_id').eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr)
       ];
 
       if (['admin', 'ceo', 'cto'].includes(role)) {
@@ -76,13 +79,17 @@ export default function AttendancePage() {
       }
 
       const results = await Promise.all(fetchPromises);
-      
+
       setTodayLog(results[0].data || null);
       setMyHistory(results[1].data || []);
 
+      // Set who is on approved leave today
+      const leaveIds = (results[2].data || []).map(l => l.employee_id);
+      setOnLeaveToday(leaveIds);
+
       if (['admin', 'ceo', 'cto'].includes(role)) {
-        const teamLogs = results[2].data || [];
-        const allEmps = results[3].data || [];
+        const teamLogs = results[3].data || [];
+        const allEmps = results[4].data || [];
         const combined = allEmps.map(emp => ({ ...emp, attendance: teamLogs.find(l => l.employee_id === emp.id) }));
         setTeamToday(combined);
       }
@@ -366,6 +373,17 @@ export default function AttendancePage() {
               </h2>
               
               {!todayLog ? (
+                // Check if employee is on approved leave today
+                onLeaveToday.includes(employeeProfile?.id) ? (
+                  <div className="w-full max-w-xs pt-8 flex flex-col items-center">
+                    <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-200 shadow-sm">
+                      <CalendarOff className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">On Approved Leave</h3>
+                    <p className="text-xs text-gray-500 font-medium text-center">You have an approved leave for today. No check-in required.</p>
+                    <span className="mt-4 px-4 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-black rounded-xl uppercase tracking-widest">Leave Day</span>
+                  </div>
+                ) : (
                 <div className="w-full max-w-xs pt-8">
                   <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-inner">
                     <MapPin className="w-8 h-8 text-gray-400" />
@@ -380,6 +398,7 @@ export default function AttendancePage() {
                     {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5"/> : <Camera className="w-4 h-4 mr-1.5" />} Check In
                   </button>
                 </div>
+                ) /* end: not on leave */
               ) : !todayLog.check_out_time ? (
                 <div className="w-full max-w-[260px] pt-8">
                   {getShiftStatus(todayLog.check_in_time) && (
@@ -425,7 +444,13 @@ export default function AttendancePage() {
             {role === 'admin' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {teamToday.map(emp => (
-                  <div key={emp.id} className={`flex items-center gap-3 p-3 rounded-xl border ${emp.attendance ? 'bg-emerald-50/30 border-emerald-200' : 'bg-white border-gray-200'}`}>
+                  <div key={emp.id} className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    emp.attendance
+                      ? 'bg-emerald-50/30 border-emerald-200'
+                      : onLeaveToday.includes(emp.id)
+                        ? 'bg-amber-50/40 border-amber-200'
+                        : 'bg-white border-gray-200'
+                  }`}>
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs bg-navy/10 text-navy shrink-0">{emp.full_name?.charAt(0)}</div>
                     <div className="min-w-0">
                       <p className="font-bold text-gray-800 text-xs truncate">{emp.full_name}</p>
@@ -438,6 +463,10 @@ export default function AttendancePage() {
                             </span>
                           )}
                         </div>
+                      ) : onLeaveToday.includes(emp.id) ? (
+                        <p className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+                          <CalendarOff className="w-3 h-3" /> On Approved Leave
+                        </p>
                       ) : (
                         <p className="text-[10px] text-gray-400 font-medium">Away</p>
                       )}
