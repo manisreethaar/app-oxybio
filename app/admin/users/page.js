@@ -113,7 +113,8 @@ export default function UsersPage() {
     if (!watchDesigCode && !watchCustomCode) return;
     const code = watchDesigCode || watchCustomCode;
     if (code?.length < 1) return;
-    const existingCodes = employees.map(e => e.employee_code);
+    // Only count ACTIVE employees — inactive/deactivated accounts don't consume sequence slots
+    const existingCodes = employees.filter(e => e.is_active).map(e => e.employee_code);
     const generated = generateEmployeeCode(existingCodes, code);
     setValue('employee_code', generated);
   }, [watchDesigCode, watchCustomCode, watchRole, employees, setValue]);

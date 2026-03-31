@@ -54,8 +54,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'You cannot change your own role.' }, { status: 403 });
     }
 
-    // Fetch all existing codes to generate a new one
-    const { data: allEmps } = await supabaseAdmin.from('employees').select('employee_code');
+    // Fetch only ACTIVE employees — inactive/deactivated accounts don't consume sequence slots
+    const { data: allEmps } = await supabaseAdmin
+      .from('employees')
+      .select('employee_code, is_active')
+      .eq('is_active', true);
     const existingCodes = (allEmps || []).map(e => e.employee_code).filter(Boolean);
 
     // Determine the designation code to use
