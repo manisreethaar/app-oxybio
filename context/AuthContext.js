@@ -222,7 +222,7 @@ export const AuthProvider = ({ children, initialSession }) => {
     isAdmin: role === 'admin' || role === 'ceo' || role === 'cto' || user?.email === 'manisreethaar@gmail.com',
     isResearchFellow: role === 'research_fellow',
     isScientist: role === 'scientist',
-    isIntern: role === 'intern',
+    isIntern: role === 'intern' || role === 'research_intern',
     loading,
     sessionExpired,
     clearSessionExpired,

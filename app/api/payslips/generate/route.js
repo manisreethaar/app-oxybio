@@ -91,9 +91,13 @@ export async function POST(request) {
     const presentDays = new Set((attendanceLogs || []).map(a => a.date)).size;
 
     // ── Leave Policy by Role ──────────────────────────────────────────────────
-    // Research Fellows: 12 Casual Leaves/year ONLY. No SL/EL entitlement.
-    // All other roles: All approved leave types (CL/SL/EL) count as paid.
+    // CL-only roles (intern, research_intern, research_fellow): Only Casual Leave
+    // counts as paid leave. Any SL/EL they somehow have would be LOP.
+    // All other permanent roles: All approved leave types (CL/SL/EL) count as paid.
     // ─────────────────────────────────────────────────────────────────────────
+    const CL_ONLY_ROLES = ['intern', 'research_intern', 'research_fellow'];
+    const isClOnly = CL_ONLY_ROLES.includes(emp.role?.toLowerCase());
+
     let leaveQuery = supabase
       .from('leave_applications')
       .select('total_days, leave_type')
@@ -102,15 +106,15 @@ export async function POST(request) {
       .gte('start_date', startStr)
       .lte('end_date', endStr);
 
-    if (emp.role === 'research_fellow') {
+    if (isClOnly) {
       leaveQuery = leaveQuery.eq('leave_type', 'Casual');
     }
 
     const { data: approvedLeaves } = await leaveQuery;
     const approvedLeaveDays = (approvedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
 
-    const leavePolicyNote = emp.role === 'research_fellow'
-      ? '12 CL/year only. SL & EL not applicable — treated as LOP.'
+    const leavePolicyNote = isClOnly
+      ? '6 CL credited on DOJ · 1 CL/month after 6-month mark · CL only (no SL/EL). Unused CL expires Dec 31.'
       : 'All approved leave types (CL/SL/EL) credited as paid.';
 
     // Calculate LOP
