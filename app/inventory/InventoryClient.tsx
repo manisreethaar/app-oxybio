@@ -457,18 +457,35 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'expiring', 'expired'
 
-  const stats = useMemo(() => {
+  // --- Tab-aware stats ---
+  const stockStats = useMemo(() => {
     const totals = { total: stock.length, low: 0, expiring: 0, expired: 0 };
     stock.forEach(s => {
       const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
       if (daysLeft < 0) totals.expired += 1;
       else if (daysLeft >= 0 && daysLeft < 30) totals.expiring += 1;
-      
       const minLevel = parseFloat(s.inventory_items?.min_stock_level) || 0;
       if (s.current_quantity <= minLevel) totals.low += 1;
     });
     return totals;
   }, [stock]);
+
+  const itemStats = useMemo(() => ({
+    total: items.length,
+    hazardous: items.filter(i => i.hazardous).length,
+    coldChain: items.filter(i => i.cold_chain_required).length,
+    coaRequired: items.filter(i => i.coa_required).length,
+  }), [items]);
+
+  const vendorStats = useMemo(() => ({
+    total: vendors.length,
+    withEmail: vendors.filter(v => v.email).length,
+    withPhone: vendors.filter(v => v.phone).length,
+    withLeadTime: vendors.filter(v => v.lead_time).length,
+  }), [vendors]);
+
+  // Legacy alias so filteredStock still compiles
+  const stats = stockStats;
 
   const filteredStock = useMemo(() => {
     return stock.filter(s => {
@@ -496,20 +513,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-40">
-      {/* Summary Strip (Section 1) */}
+      {/* Summary Strip — Tab Aware */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-        {[
-          { label: 'Total Items in Stock', count: stats.total, type: 'all', color: 'teal' },
-          { label: 'Low Stock', count: stats.low, type: 'low', color: 'orange' },
-          { label: 'Expiring (<30d)', count: stats.expiring, type: 'expiring', color: 'amber' },
-          { label: 'Expired', count: stats.expired, type: 'expired', color: 'red' }
+        {activeTab === 'stock' && [
+          { label: 'Total Items in Stock', count: stockStats.total, type: 'all', clickable: true },
+          { label: 'Low Stock', count: stockStats.low, type: 'low', clickable: true },
+          { label: 'Expiring (<30d)', count: stockStats.expiring, type: 'expiring', clickable: true },
+          { label: 'Expired', count: stockStats.expired, type: 'expired', clickable: true },
         ].map(tile => (
-          <button 
-            key={tile.type} 
-            onClick={() => setStockFilter(tile.type)} 
+          <button
+            key={tile.type}
+            onClick={() => setStockFilter(tile.type)}
             className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
-              stockFilter === tile.type 
-                ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-100' 
+              stockFilter === tile.type
+                ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-100'
                 : 'bg-white border-gray-100 hover:border-gray-200'
             }`}
           >
@@ -520,6 +537,34 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               {tile.count}
             </span>
           </button>
+        ))}
+
+        {activeTab === 'items' && [
+          { label: 'Total Registered', count: itemStats.total, highlight: false },
+          { label: 'Hazardous Items', count: itemStats.hazardous, highlight: true },
+          { label: 'Cold Chain Required', count: itemStats.coldChain, highlight: true },
+          { label: 'CoA Required', count: itemStats.coaRequired, highlight: false },
+        ].map(tile => (
+          <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
+            <span className={`text-2xl font-black font-mono mt-1 ${
+              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-teal-800'
+            }`}>
+              {tile.count}
+            </span>
+          </div>
+        ))}
+
+        {activeTab === 'vendors' && [
+          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-teal-800' },
+          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-teal-800' },
+          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-teal-800' },
+          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-teal-800' },
+        ].map(tile => (
+          <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
+            <span className={`text-2xl font-black font-mono mt-1 ${tile.color}`}>{tile.count}</span>
+          </div>
         ))}
       </div>
 
