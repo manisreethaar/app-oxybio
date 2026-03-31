@@ -11,7 +11,7 @@ import {
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2, 
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp, 
   ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
-  LayoutGrid, List
+  LayoutGrid, List, Activity, Eye, BarChart2
 } from 'lucide-react';
 import { canAssignTo } from '@/lib/permissions';
 import { differenceInDays } from 'date-fns';
@@ -63,10 +63,13 @@ export default function TasksPage() {
   const [rejectNote, setRejectNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
+  const [progressNote, setProgressNote] = useState('');
+  const [progressPercentage, setProgressPercentage] = useState(0);
 
   useEffect(() => {
     if (selectedTask) {
       setCompletionNote(''); setProofFile(null); setRejectNote('');
+      setProgressNote(''); setProgressPercentage(selectedTask.progress_percentage || 0);
     }
   }, [selectedTask?.id]);
 
@@ -212,10 +215,42 @@ export default function TasksPage() {
     } catch (err) { alert('Error: ' + err.message); }
   };
 
+  const handleAcknowledge = async (taskId) => {
+    if (actionLoading) return; setActionLoading(true);
+    const success = await executeTaskPatch('acknowledge_task', taskId);
+    if (success) { 
+      if (selectedTask?.id === taskId) setSelectedTask(t => ({ ...t, is_acknowledged: true })); 
+      fetchTasks(); 
+    }
+    setActionLoading(false);
+  };
+
+  const handleUpdateProgress = async (e) => {
+    e.preventDefault(); if (actionLoading || !selectedTask) return;
+    setActionLoading(true);
+    const success = await executeTaskPatch('update_progress', selectedTask.id, { 
+      percentage: progressPercentage, 
+      note: progressNote || 'Progress update' 
+    });
+    if (success) { 
+      // Auto-trigger "Submit for Review" if 100%
+      if (progressPercentage === 100) { 
+        // We just let the user see it's at 100%, and the submit form is already visible if in-progress
+      }
+      setProgressNote('');
+      fetchTasks(); 
+    }
+    setActionLoading(false);
+  };
+
   const handleStartTimer = async (task) => {
     if (actionLoading) return; setActionLoading(true);
     const success = await executeTaskPatch('start_timer', task.id);
-    if (success) { setSelectedTask(t => ({ ...t, time_started_at: new Date().toISOString(), status: 'in-progress' })); setTimerRunning(true); fetchTasks(); }
+    if (success) { 
+      setSelectedTask(t => ({ ...t, time_started_at: new Date().toISOString(), status: 'in-progress', is_acknowledged: true })); 
+      setTimerRunning(true); 
+      fetchTasks(); 
+    }
     setActionLoading(false);
   };
 
@@ -485,23 +520,32 @@ export default function TasksPage() {
             const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && differenceInDays(new Date(task.due_date), new Date()) < 0;
             const checklistTotal = task.checklist?.length || 0;
             const checklistDone = task.checklist?.filter(c => c.done).length || 0;
-            const checklistPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : null;
+            const checklistPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+            const displayPct = task.progress_percentage > 0 ? task.progress_percentage : checklistPct;
             const approvalBadge = { 'pending_review': { label: 'Review', cls: 'bg-amber-50 text-amber-700 border-amber-100' }, 'approved': { label: 'Approved ✓', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' }, 'rejected': { label: 'Returned', cls: 'bg-red-50 text-red-700 border-red-100' } }[task.approval_status];
 
             return (
               <div key={task.id} onClick={() => setSelectedTask(task)} className={`surface p-5 flex flex-col cursor-pointer hover:border-gray-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${task.status === 'done' ? 'bg-emerald-500' : task.priority === 'urgent' ? 'bg-red-500' : task.priority === 'high' ? 'bg-amber-500' : task.priority === 'medium' ? 'bg-blue-400' : 'bg-gray-300'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-blue-50 text-blue-700 border-blue-50'}`}>{task.priority}</span>
+                  <div className="flex gap-1.5 items-center">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-blue-50 text-blue-700 border-blue-50'}`}>{task.priority}</span>
+                    {task.is_acknowledged && <Eye className="w-3 h-3 text-emerald-500" title={`Acknowledged: ${task.acknowledged_at ? new Date(task.acknowledged_at).toLocaleTimeString() : ''}`} />}
+                  </div>
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{task.status}</span>
                 </div>
                 <h3 className={`text-sm font-bold mb-1 pl-1 ${task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</h3>
-                {checklistPct !== null && (
-                  <div className="pl-1 mb-2">
-                    <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase mb-0.5"><span>Checklist</span><span>{checklistDone}/{checklistTotal}</span></div>
-                    <div className="w-full bg-gray-100 rounded-full h-1"><div className="bg-navy h-1 rounded-full" style={{ width: `${checklistPct}%` }}></div></div>
+                
+                <div className="pl-1 mb-2">
+                  <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase mb-0.5">
+                    <span>Progress</span>
+                    <span>{displayPct}%</span>
                   </div>
-                )}
+                  <div className="w-full bg-gray-100 rounded-full h-1">
+                    <div className={`h-1 rounded-full ${displayPct === 100 ? 'bg-emerald-500' : 'bg-navy'}`} style={{ width: `${displayPct}%` }}></div>
+                  </div>
+                </div>
+
                 <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] font-bold text-gray-400">
                   <span>{task.assigned_user?.full_name || 'Staff'}</span>
                   <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{task.due_date ? new Date(task.due_date).toLocaleDateString() : '—'}</span>
@@ -522,21 +566,76 @@ export default function TasksPage() {
                 <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
               </div>
               <div className="flex gap-1">
-                {(isMaster || (selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
+                {(isMaster || (selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id))) && (
                   <div className="flex gap-1">
-                    <button onClick={() => handleEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400 hover:text-navy" title="Edit Task"><Timer className="w-4 h-4 rotate-45"/></button>
                     <button onClick={() => handleDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
                   </div>
+                )}
+                {(isMaster || (selectedTask.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
+                   <button onClick={() => handleEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400 hover:text-navy" title="Edit Task Settings"><Timer className="w-4 h-4 rotate-45"/></button>
                 )}
                 <button onClick={handleCloseModal} className="p-1.5 rounded-md hover:bg-gray-50 text-gray-400"><X className="w-4 h-4"/></button>
               </div>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-5">
+              {!selectedTask.is_acknowledged && selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && (
+                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-3 text-emerald-800">
+                    <Eye className="w-5 h-5 text-emerald-600" />
+                    <span className="text-xs font-bold">New Task assigned. Please acknowledge.</span>
+                  </div>
+                  <button onClick={() => handleAcknowledge(selectedTask.id)} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-sm transition-colors">Acknowledge</button>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-gray-50 p-2 rounded-lg"><p className="text-[9px] font-bold text-gray-400 uppercase">Assignee</p><p className="font-bold text-gray-800">{selectedTask.assigned_user?.full_name || '—'}</p></div>
-                <div className="bg-gray-50 p-2 rounded-lg"><p className="text-[9px] font-bold text-gray-400 uppercase">Due</p><p className="font-bold text-gray-800">{selectedTask.due_date ? new Date(selectedTask.due_date).toLocaleDateString() : '—'}</p></div>
+                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Assignee</p>
+                    <p className="font-bold text-gray-800">{selectedTask.assigned_user?.full_name || '—'}</p>
+                </div>
+                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Due Date</p>
+                    <p className="font-bold text-gray-800">{selectedTask.due_date ? new Date(selectedTask.due_date).toLocaleDateString() : '—'}</p>
+                </div>
               </div>
+
+              {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
+                <div className="space-y-4 border-y border-gray-100 py-5">
+                   <div className="flex items-center justify-between mb-1">
+                      <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5"/> Work Progress</h4>
+                      <span className="text-sm font-black text-navy">{progressPercentage}%</span>
+                   </div>
+                   
+                   <input type="range" min="0" max="100" value={progressPercentage} onChange={(e) => setProgressPercentage(parseInt(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-navy" />
+                   
+                   <form onSubmit={handleUpdateProgress} className="flex gap-2">
+                      <input type="text" value={progressNote} onChange={(e) => setProgressNote(e.target.value)} placeholder="What are you working on?..." className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-navy outline-none" />
+                      <button type="submit" disabled={actionLoading} className="px-4 bg-navy hover:bg-navy-hover text-white text-[10px] font-bold rounded-lg shadow-sm transition-all whitespace-nowrap">Log Note</button>
+                   </form>
+                </div>
+              )}
+
+              {selectedTask.progress_logs?.length > 0 && (
+                <div className="space-y-3">
+                   <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1.5"><Activity className="w-3.5 h-3.5"/> Activity Timeline</h4>
+                   <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+                      {selectedTask.progress_logs.map((log, i) => (
+                        <div key={i} className="flex gap-3 relative pb-2 group">
+                          {i < selectedTask.progress_logs.length - 1 && <div className="absolute left-1.5 top-4 w-px h-full bg-gray-100"></div>}
+                          <div className={`w-3 h-3 rounded-full mt-1 shrink-0 z-10 ${log.percentage === 100 ? 'bg-emerald-500' : 'bg-navy'}`}></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start">
+                              <p className="text-[9px] font-black text-gray-400">{new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
+                              <span className="text-[9px] font-black text-navy px-1 bg-gray-100 rounded">{log.percentage}%</span>
+                            </div>
+                            <p className="text-xs font-semibold text-gray-700 leading-snug">{log.note}</p>
+                          </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              )}
 
               {selectedTask.checklist?.length > 0 && (
                 <div>

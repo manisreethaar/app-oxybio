@@ -101,19 +101,58 @@ export async function PATCH(request) {
       .eq('id', task_id).single();
 
     switch (action) {
-      case 'start_timer':
-        updateData = { time_started_at: new Date().toISOString(), status: 'in-progress' };
+      case 'acknowledge_task':
+        updateData = { 
+          is_acknowledged: true, 
+          acknowledged_at: new Date().toISOString() 
+        };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
           await supabase.from('notifications').insert({
             employee_id: task.assigned_by,
-            title: 'Task Acknowledged',
-            message: `${task.assigned_user?.full_name || 'An employee'} acknowledged and started: "${task.title}"`,
+            title: 'Task Seen',
+            message: `${task.assigned_user?.full_name || 'An employee'} acknowledged: "${task.title}"`,
+            link_url: '/tasks'
+          });
+        }
+        break;
+      case 'start_timer':
+        updateData = { 
+          time_started_at: new Date().toISOString(), 
+          status: 'in-progress',
+          is_acknowledged: true // Implicit acknowledge if started
+        };
+        if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
+          await supabase.from('notifications').insert({
+            employee_id: task.assigned_by,
+            title: 'Task Started',
+            message: `${task.assigned_user?.full_name || 'An employee'} is now working on: "${task.title}"`,
             link_url: '/tasks'
           });
         }
         break;
       case 'pause_timer':
         updateData = { time_started_at: null, logged_minutes: payload.logged_minutes };
+        break;
+      case 'update_progress':
+        updateData = { 
+          progress_percentage: payload.percentage,
+          progress_logs: [
+            ...(task.progress_logs || []),
+            { 
+              timestamp: new Date().toISOString(), 
+              percentage: payload.percentage, 
+              note: payload.note || 'Progress update' 
+            }
+          ]
+        };
+        if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
+          await supabase.from('notifications').insert({
+            employee_id: task.assigned_by,
+            title: 'Progress Update',
+            message: `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${payload.percentage}%: ${payload.note || ''}`,
+            link_url: '/tasks'
+          });
+        }
         break;
       case 'update_checklist':
         updateData = { checklist: payload.checklist };
@@ -126,7 +165,8 @@ export async function PATCH(request) {
           completed_at: new Date().toISOString(),
           proof_url: payload.proof_url || null,
           logged_minutes: payload.logged_minutes,
-          time_started_at: null
+          time_started_at: null,
+          progress_percentage: 100
         };
         if (!payload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
           await supabase.from('notifications').insert({
@@ -172,11 +212,12 @@ export async function DELETE(request) {
     if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
 
     const isMaster = user.email === 'manisreethaar@gmail.com';
-    const { data: task } = await supabase.from('tasks').select('assigned_by').eq('id', id).single();
+    const { data: task } = await supabase.from('tasks').select('assigned_to, assigned_by').eq('id', id).single();
     const { data: currentUser } = await supabase.from('employees').select('id').eq('email', user.email).single();
 
-    if (!isMaster && task?.assigned_by !== currentUser?.id) {
-       return NextResponse.json({ error: 'Permission Denied: Only the creator can delete this task.' }, { status: 403 });
+    // POLICY CHANGE: Only the ASSIGNEE (the one doing the work) can delete, or Master Admin
+    if (!isMaster && task?.assigned_to !== currentUser?.id) {
+       return NextResponse.json({ error: 'Permission Denied: Only the assigned worker can delete this task.' }, { status: 403 });
     }
 
     const { error } = await supabase.from('tasks').delete().eq('id', id);
