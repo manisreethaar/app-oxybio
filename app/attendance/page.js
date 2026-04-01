@@ -166,6 +166,7 @@ export default function AttendancePage() {
       if (dbError) throw dbError;
 
       setShowWebcam(false);
+      setOverrideLocation(false); // auto-reset after use
       setCheckInError('');
       fetchAttendanceData();
     } catch (err) {
