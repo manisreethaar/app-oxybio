@@ -1,27 +1,34 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck } from 'lucide-react';
-import Webcam from 'react-webcam';
+import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
+import dynamic from 'next/dynamic';
+const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 
-// ─── Geo-Fencing Configuration ─────────────────────────────────────────────
-// Admin tunable variables for the target facility coordinates
-const TARGET_LAT = 12.7409; // Hosur TBI placeholder Lat
-const TARGET_LNG = 77.8253; // Hosur TBI placeholder Lng
+const TARGET_LAT = 12.7409;
+const TARGET_LNG = 77.8253;
 const MAX_RADIUS_METERS = 200;
 
-// Haversine formula to calculate distance between two points in meters
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
   const dLat = (lat2 - lat1) * (Math.PI / 180);  
   const dLon = (lon2 - lon1) * (Math.PI / 180); 
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
     Math.sin(dLon / 2) * Math.sin(dLon / 2); 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
   return R * c;
+};
+
+const getShiftStatus = (checkInTime) => {
+  if (!checkInTime) return null;
+  const h = new Date(checkInTime).getHours();
+  const m = new Date(checkInTime).getMinutes();
+  const totalMins = h * 60 + m;
+  if (totalMins < 7 * 60) return { label: 'Early', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+  if (totalMins > 11 * 60) return { label: 'Late', color: 'text-red-700 bg-red-50 border-red-200' };
+  return { label: 'On Time', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
 };
 
 export default function AttendancePage() {
@@ -31,15 +38,45 @@ export default function AttendancePage() {
   const [teamToday, setTeamToday] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('today');
+  const [onLeaveToday, setOnLeaveToday] = useState([]);
   
-  // Geofence & Webcam States
   const [showWebcam, setShowWebcam] = useState(false);
   const [geoData, setGeoData] = useState(null);
   const [checkInError, setCheckInError] = useState('');
-  const [overrideLocation, setOverrideLocation] = useState(false); // Only for local testing
+  const [overrideLocation, setOverrideLocation] = useState(false);
   const webcamRef = useRef(null);
+  const [now, setNow] = useState(Date.now());
 
   const supabase = createClient();
+
+  useEffect(() => {
+    const itv = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(itv);
+  }, []);
+
+  const elapsedHours = useMemo(() => {
+    if (!todayLog?.check_in_time || todayLog.check_out_time) return todayLog?.total_hours || '0.0';
+    const start = new Date(todayLog.check_in_time).getTime();
+    return ((now - start) / (1000 * 60 * 60)).toFixed(1);
+  }, [todayLog, now]);
+
+  const weeklyChartData = useMemo(() => {
+    if (!myHistory.length) return [];
+    return myHistory.slice(0, 7).reverse().map(log => ({
+      date: new Date(log.date).toLocaleDateString([], { weekday: 'short', day: 'numeric' }),
+      hours: parseFloat(log.total_hours || 0),
+      status: getShiftStatus(log.check_in_time)?.label || 'On Time'
+    }));
+  }, [myHistory]);
+
+  const weeklyTotalHours = useMemo(() => {
+    const lastWeek = myHistory.slice(0, 7);
+    return lastWeek.reduce((sum, log) => sum + parseFloat(log.total_hours || 0), 0).toFixed(1);
+  }, [myHistory]);
+
+  const lateCount = useMemo(() => myHistory.slice(0, 30).filter(l => getShiftStatus(l.check_in_time)?.label === 'Late').length, [myHistory]);
+  const onTimeCount = useMemo(() => myHistory.slice(0, 30).filter(l => getShiftStatus(l.check_in_time)?.label === 'On Time').length, [myHistory]);
 
   useEffect(() => {
     if (employeeProfile) fetchAttendanceData();
@@ -85,6 +122,14 @@ export default function AttendancePage() {
       });
       
       setTeamToday(combined);
+
+      const { data: leavesToday } = await supabase.from('leave_applications')
+        .select('employee_id')
+        .eq('status', 'approved')
+        .lte('start_date', todayStr)
+        .gte('end_date', todayStr);
+      
+      setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
     }
     setLoading(false);
   };
@@ -208,7 +253,6 @@ export default function AttendancePage() {
           <p className="text-slate-500 mt-1 font-medium">GPS tracked shift check-ins and history.</p>
         </div>
         
-        {/* Admin Debug Override (Lets User Test Without Being in Hosur) */}
         {!todayLog && role === 'admin' && (
           <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 flex items-center justify-between text-xs max-w-sm">
             <span className="text-amber-800 font-bold mr-3"><ShieldCheck className="inline w-4 h-4 mr-1"/> Admin Test Mode</span>
@@ -220,14 +264,82 @@ export default function AttendancePage() {
         )}
       </div>
 
+      <div className="flex border-b border-slate-200">
+        <button onClick={() => setActiveTab('today')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'today' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          <Clock className="w-4 h-4" /> Today
+        </button>
+        <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'analytics' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          <BarChart2 className="w-4 h-4" /> Analytics
+        </button>
+      </div>
+
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="glass-card rounded-2xl p-5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mb-4">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-3xl font-black text-slate-800">{weeklyTotalHours}h</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">This Week</p>
+            </div>
+            <div className="glass-card rounded-2xl p-5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center mb-4">
+                <Clock className="w-5 h-5 text-slate-600" />
+              </div>
+              <p className="text-3xl font-black text-slate-800">{myHistory.length}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Logged (30d)</p>
+            </div>
+            <div className="glass-card rounded-2xl p-5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
+              <p className="text-3xl font-black text-slate-800">{onTimeCount}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">On Time</p>
+            </div>
+            <div className="glass-card rounded-2xl p-5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center mb-4">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <p className="text-3xl font-black text-slate-800">{lateCount}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Late Arrivals</p>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-[2rem] p-6">
+            <h3 className="text-sm font-bold text-slate-800 mb-6">Daily Hours (Last 7 Shifts)</h3>
+            {weeklyChartData.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-slate-400 font-medium">No history to chart yet.</div>
+            ) : (
+              <AttendanceChart data={weeklyChartData} />
+            )}
+            <div className="flex gap-6 mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-teal-600 inline-block"></span> On Time</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 inline-block"></span> Late</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 inline-block"></span> Early</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'today' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Main Action Card */}
         <div className="glass-card rounded-[2rem] p-8 relative overflow-hidden flex flex-col items-center justify-center text-center min-h-[400px]">
             <h2 className="text-lg font-black text-slate-800 mb-8 absolute top-6 left-6 flex items-center gap-2">
               <Clock className="w-5 h-5 text-teal-600" /> Today&apos;s Shift
             </h2>
             
             {!todayLog ? (
+              onLeaveToday.includes(employeeProfile?.id) ? (
+                <div className="w-full max-w-xs pt-8 flex flex-col items-center">
+                  <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-200">
+                    <CalendarOff className="w-8 h-8 text-amber-500" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 mb-2">On Approved Leave</h3>
+                  <p className="text-xs text-slate-500 font-medium text-center">You have approved leave for today.</p>
+                  <span className="mt-4 px-4 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-black rounded-xl uppercase tracking-widest">Leave Day</span>
+                </div>
+              ) : (
               <div className="w-full max-w-xs relative z-10 pt-8">
                 <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-white">
                   <MapPin className="w-10 h-10 text-slate-400" />
@@ -249,12 +361,18 @@ export default function AttendancePage() {
                   <Camera className="w-5 h-5 mr-2" /> Verify & Check In
                 </button>
               </div>
+              )
             ) : !todayLog.check_out_time ? (
               <div className="w-full max-w-[280px] pt-8">
+                {getShiftStatus(todayLog.check_in_time) && (
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border mb-4 ${getShiftStatus(todayLog.check_in_time).color}`}>
+                    {getShiftStatus(todayLog.check_in_time).label}
+                  </span>
+                )}
                 <div className="w-40 h-40 border-[6px] border-teal-500 rounded-full flex items-center justify-center mx-auto mb-8 relative bg-white shadow-[0_0_40px_rgba(20,184,166,0.2)]">
                   <div className="absolute inset-[-6px] border-[6px] border-teal-200 rounded-full animate-ping opacity-30"></div>
                   <div className="text-center">
-                    <p className="text-4xl font-black text-teal-800 mb-0.5 tabular-nums tracking-tighter" style={{fontVariantNumeric: 'tabular-nums'}}>{calculateHours(todayLog.check_in_time, null)}<span className="text-xl">h</span></p>
+                    <p className="text-4xl font-black text-teal-800 mb-0.5 tabular-nums tracking-tighter">{elapsedHours}<span className="text-xl">h</span></p>
                     <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] mt-1">Elapsed</p>
                   </div>
                 </div>
@@ -283,7 +401,7 @@ export default function AttendancePage() {
                 <div className="grid grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100">
                   <div>
                     <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Total Hours</span>
-                    <span className="text-2xl font-black text-slate-800 tabular-nums">{todayLog.total_hours || calculateHours(todayLog.check_in_time, todayLog.check_out_time)}h</span>
+                    <span className="text-2xl font-black text-slate-800 tabular-nums">{todayLog.total_hours || elapsedHours}h</span>
                   </div>
                   <div>
                     <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Check Out</span>
@@ -316,8 +434,13 @@ export default function AttendancePage() {
                           </p>
                         </div>
                       </div>
-                      <div className="hidden sm:block">
-                        {log.in_geofence && <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded inline-flex items-center uppercase tracking-wider"><MapPin className="w-3 h-3 mr-1"/> Verified</span>}
+                      <div className="flex items-center gap-2">
+                        {getShiftStatus(log.check_in_time) && (
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getShiftStatus(log.check_in_time).color}`}>
+                            {getShiftStatus(log.check_in_time).label}
+                          </span>
+                        )}
+                        {log.in_geofence && <span className="text-[8px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/>GPS</span>}
                       </div>
                     </div>
                   )
@@ -326,6 +449,7 @@ export default function AttendancePage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Admin Roster View */}
       {role === 'admin' && (
