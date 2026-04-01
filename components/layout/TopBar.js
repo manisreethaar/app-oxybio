@@ -116,7 +116,7 @@ export default function TopBar() {
       case 'sops': return 'SOP Library';
       case 'payslips': return 'Payslips';
       case 'compliance': return 'Compliance Calendar';
-      case 'formulations': return 'Scientific SVCS';
+      case 'formulations': return 'Recipe Management';
       case 'shelf-life': return 'Shelf-Life Studies';
       case 'research': return 'Consumer Panels';
       case 'calendar': return 'Regulatory Calendar';

@@ -45,6 +45,7 @@ export default function FormulationsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [pendingDeleteId, setPendingDeleteId] = useState(null); // replaces window.confirm
 
   const supabase = useMemo(() => createClient(), []);
   const isApprover = APPROVER_ROLES.includes(role?.toLowerCase());
@@ -131,12 +132,20 @@ export default function FormulationsPage() {
   };
 
   const handleDeleteRecipe = async (id) => {
-    if (!confirm("Permanently delete this draft recipe?")) return;
+    // Fix: window.confirm() is silently blocked in PWA/standalone mode and some browsers.
+    // Use state-driven inline confirmation instead.
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id); // shows inline confirm strip
+      return;
+    }
+    // User confirmed
+    setPendingDeleteId(null);
     setActionLoading(id);
     try {
       const res = await fetch(`/api/formulations?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         setFormulations(prev => prev.filter(f => f.id !== id));
+        toast.success('Recipe deleted.');
       } else {
         const errData = await res.json();
         toast.error(`Delete failed: ${errData.error || 'Unknown error'}`);
@@ -305,8 +314,9 @@ export default function FormulationsPage() {
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
                           {statusCfg.label}
                         </span>
-                        {/* Edit + Delete icons: Draft always, In Review for admins only */}
-                        {(f.status === 'Draft' || f.status === 'active' || (f.status === 'In Review' && isApprover)) && (
+                        {/* Edit + Delete icons for Draft and In Review (approvers only for In Review) */}
+                        {/* Delete also available for Approved — approvers can delete approved recipes */}
+                        {(f.status === 'Draft' || f.status === 'active' || (f.status === 'In Review' && isApprover) || (f.status === 'Approved' && isApprover)) && (
                            <div className="flex gap-1 ml-1">
                               {/* Edit: author can edit their own Draft; admin can edit any Draft or In Review */}
                               {(f.status === 'Draft' || f.status === 'active' || isApprover) && (
@@ -321,6 +331,20 @@ export default function FormulationsPage() {
                            </div>
                         )}
                       </div>
+                      {/* Inline delete confirm strip — replaces window.confirm() */}
+                      {pendingDeleteId === f.id && (
+                        <div className="flex items-center gap-2 mt-1 p-2 bg-red-50 border border-red-200 rounded-lg animate-in fade-in duration-150">
+                          <span className="text-[10px] font-bold text-red-700 flex-1">Permanently delete this recipe?</span>
+                          <button
+                            onClick={() => handleDeleteRecipe(f.id)}
+                            className="px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded hover:bg-red-700"
+                          >Yes, Delete</button>
+                          <button
+                            onClick={() => setPendingDeleteId(null)}
+                            className="px-2 py-1 bg-white border border-gray-200 text-gray-500 text-[10px] font-black rounded hover:bg-gray-50"
+                          >Cancel</button>
+                        </div>
+                      )}
                     </div>
 
                     <h3 className="text-lg font-bold text-gray-900 mb-0.5">{f.name}</h3>

@@ -178,9 +178,12 @@ export async function DELETE(request) {
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
     if (!current) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
 
-    // APPROVED recipes cannot be deleted by anyone — Archive instead
-    if (current.status === 'Approved') {
-      return NextResponse.json({ error: 'Cannot delete an approved recipe. Use Archive instead.' }, { status: 403 });
+    // APPROVED recipes — only admins/CEO/CTO can delete; others must Archive
+    if (current.status === 'Approved' && !isApprover) {
+      return NextResponse.json(
+        { error: 'Only admin/CEO/CTO can delete an approved recipe. Use Archive to hide it instead.' },
+        { status: 403 }
+      );
     }
 
     // IN REVIEW — only admins/CEO/CTO can delete
