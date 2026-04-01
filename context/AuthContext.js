@@ -1,12 +1,7 @@
 'use client';
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
+  createContext, useContext, useEffect,
+  useState, useCallback, useMemo, useRef,
 } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -14,183 +9,175 @@ import { can, getPermissionsForRole } from '@/lib/permissions';
 
 const AuthContext = createContext({});
 
-// FIXED: Only select columns actually needed for auth and role checks.
-// Avoids pulling large fields (face data, etc.) on every session load.
 const PROFILE_SELECT =
-  'id, full_name, email, role, department, designation, is_active, photo_url, employee_code, verification_token, phone, address, blood_group, emergency_contact, emergency_contact_name, joined_date, date_of_birth, casual_leave_balance, medical_leave_balance, earned_leave_balance';
+  'id,full_name,email,role,department,designation,is_active,photo_url,employee_code,phone,address,blood_group,emergency_contact,emergency_contact_name,joined_date,date_of_birth,casual_leave_balance,medical_leave_balance,earned_leave_balance';
 
+const CACHE_KEY = 'oxyo_profile_v2';
+
+// ── Helpers ──────────────────────────────────────────────────
+function readCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeCache(profile) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(profile)); } catch {}
+}
+function clearCache() {
+  try { sessionStorage.removeItem(CACHE_KEY); } catch {}
+}
+
+// ─────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children, initialSession }) => {
-  const initialized = useRef(false);
-  const profileFetching = useRef(false); // FIXED: prevents duplicate fetches
+  const supabase      = createClient(); // singleton — no useMemo needed
+  const router        = useRouter();
+  const fetchingRef   = useRef(false);
+  const initializedRef= useRef(false);
 
-  const [user, setUser] = useState(initialSession?.user || null);
-  const [employeeProfile, setEmployeeProfile] = useState(null);
+  // Restore profile from cache SYNCHRONOUSLY — no loading spinner on warm sessions
+  const cachedProfile = readCache();
 
-  // FIXED: If we have a session from SSR, don't show loading spinner —
-  // show the page immediately and let profile load in background.
-  const [loading, setLoading] = useState(!initialSession);
-  const [sessionExpired, setSessionExpired] = useState(false);
+  const [user,            setUser]            = useState(initialSession?.user || null);
+  const [employeeProfile, setEmployeeProfile] = useState(cachedProfile);
+  // If we have a cached profile, start as NOT loading → page renders immediately
+  const [loading,         setLoading]         = useState(!cachedProfile);
+  const [sessionExpired,  setSessionExpired]  = useState(false);
 
-  const supabase = useMemo(() => createClient(), []);
-  const router = useRouter();
+  // ── Profile fetcher ──────────────────────────────────────
+  const fetchProfile = useCallback(async (email) => {
+    if (!email || fetchingRef.current) return null;
+    fetchingRef.current = true;
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select(PROFILE_SELECT)
+        .ilike('email', email)
+        .single();
 
-  // FIXED: Single profile fetch function used everywhere — no duplication.
-  // Uses ref guard to ensure it never runs twice simultaneously.
-  const fetchProfile = useCallback(
-    async (email) => {
-      if (!email || profileFetching.current) return null;
-      profileFetching.current = true;
-      try {
-        const { data, error } = await supabase
-          .from('employees')
-          .select(PROFILE_SELECT)
-          .ilike('email', email)
-          .single();
-        
-        if (error) {
-          // DIAGNOSTIC LOGGING FOR "EMPLOYEE NOT FOUND" REDIRECTION
-          if (error.code === 'PGRST116') {
-             console.warn(`[OxyOS Auth] CRITICAL: Authenticated as ${email} but no matching profile found in 'employees' table. 
-             If this is a new intern, please run the supabase/sync_intern_profiles.sql script.`);
-          } else {
-             console.error('Profile fetch error:', error.message);
-          }
-          return null;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.warn(`[OxyOS] No employee profile for ${email}`);
         }
-        
-        if (data && data.role) data.role = data.role.toLowerCase();
-        // MASTER ADMIN OVERRIDE
-        if (email === 'manisreethaar@gmail.com') {
-          if (!data) return { email, role: 'admin', full_name: 'Master Admin', is_active: true };
-          data.role = 'admin';
-        }
-        return data;
-      } finally {
-        profileFetching.current = false;
+        return null;
       }
-    },
-    [supabase]
-  );
 
+      if (data?.role) data.role = data.role.toLowerCase();
+      if (email === 'manisreethaar@gmail.com') {
+        if (!data) return { email, role: 'admin', full_name: 'Master Admin', is_active: true };
+        data.role = 'admin';
+      }
+      return data;
+    } finally {
+      fetchingRef.current = false;
+    }
+  }, [supabase]);
+
+  // ── Init effect ──────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
 
     const init = async () => {
-      // FIXED: If SSR already gave us a session, skip the getSession() call.
-      // Only call getSession() if we have no session from SSR.
+      // Step 1: Get the current user (uses local JWT — no network call)
       let currentUser = initialSession?.user || null;
+      if (!currentUser) {
+        const { data: { user: u } } = await supabase.auth.getUser();
+        currentUser = u;
+      }
+
+      if (!mounted) return;
 
       if (!currentUser) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        currentUser = session?.user || null;
-      }
-
-      if (!mounted) return;
-
-      if (currentUser) {
-        setUser(currentUser);
-        // Fetch profile — loading stays true until profile resolves
-        const profile = await fetchProfile(currentUser.email);
-        if (mounted && profile) setEmployeeProfile(profile);
-      }
-
-      // Only set loading=false AFTER profile fetch attempt — prevents blank page flicker
-      if (mounted) {
-        setLoading(false);
-        initialized.current = true;
-      }
-    };
-
-    // Safety timeout — if auth somehow hangs, unblock the UI after 8s
-    const safetyTimer = setTimeout(() => {
-      setLoading(false);
-    }, 8000);
-
-    init();
-
-    // FIXED: onAuthStateChange only handles actual auth events (login/logout).
-    // It no longer duplicates the profile fetch that init() already handles.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      if (event === 'SIGNED_OUT' || !session) {
-        if (initialized.current && user) setSessionExpired(true);
+        // No session at all → clear everything
+        clearCache();
         setUser(null);
         setEmployeeProfile(null);
         setLoading(false);
-        initialized.current = true;
+        initializedRef.current = true;
         return;
       }
 
-      // FIXED: Only fetch profile on actual sign-in events, not on every
-      // TOKEN_REFRESHED or INITIAL_SESSION event which fire constantly.
+      setUser(currentUser);
+
+      // Step 2: If we already showed cached data, revalidate silently in background
+      const cached = readCache();
+      if (cached && cached.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
+        // Already rendered with cache — just confirm in background
+        setLoading(false);
+        initializedRef.current = true;
+        // Background revalidation
+        fetchProfile(currentUser.email).then(fresh => {
+          if (mounted && fresh) {
+            setEmployeeProfile(fresh);
+            writeCache(fresh);
+          }
+        });
+        return;
+      }
+
+      // Step 3: No cache or different user — fetch and block until resolved
+      const profile = await fetchProfile(currentUser.email);
+      if (mounted) {
+        if (profile) {
+          setEmployeeProfile(profile);
+          writeCache(profile);
+        }
+        setLoading(false);
+        initializedRef.current = true;
+      }
+    };
+
+    // Safety valve — if everything hangs (cold start + cache miss), unblock at 6s
+    const safety = setTimeout(() => { if (mounted) setLoading(false); }, 6000);
+
+    init();
+
+    // Auth state changes (sign in / sign out / token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      if (event === 'SIGNED_OUT' || !session) {
+        clearCache();
+        if (initializedRef.current && user) setSessionExpired(true);
+        setUser(null);
+        setEmployeeProfile(null);
+        setLoading(false);
+        return;
+      }
+
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
         const profile = await fetchProfile(session.user.email);
-        if (mounted && profile) setEmployeeProfile(profile);
-        if (mounted) {
-          setLoading(false);
-          initialized.current = true;
+        if (mounted && profile) {
+          setEmployeeProfile(profile);
+          writeCache(profile);
         }
+        if (mounted) setLoading(false);
       }
 
-      // Handle token refresh silently — just update user, don't re-fetch profile
       if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setUser(session.user);
+        setUser(session.user); // token refreshed — no profile re-fetch needed
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
+      clearTimeout(safety);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
-  // Real-time profile sync — only subscribes after profile is loaded,
-  // not on initial mount. Reduces startup connection overhead.
-  useEffect(() => {
-    if (!user?.id || !employeeProfile) return;
-
-    const channel = supabase
-      .channel(`profile-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'employees',
-          filter: `email=eq.${user.email}`,
-        },
-        (payload) => {
-          setEmployeeProfile(payload.new);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, user?.email, employeeProfile, supabase]);
-
+  // ── Sign out ─────────────────────────────────────────────
   const signOut = async () => {
     try {
+      clearCache();
       await supabase.auth.signOut();
-      // Force clear all storage to prevent stale sessions
       if (typeof window !== 'undefined') {
         localStorage.clear();
-        sessionStorage.clear();
-        // Use hard redirect for most reliable termination
         window.location.href = '/login';
       }
-    } catch (err) {
-      console.error('SignOut error:', err);
-      // Fallback redirect even on error
+    } catch {
       if (typeof window !== 'undefined') window.location.href = '/login';
     } finally {
       setUser(null);
@@ -210,10 +197,7 @@ export const AuthProvider = ({ children, initialSession }) => {
     [role]
   );
 
-  const clearSessionExpired = useCallback(
-    () => setSessionExpired(false),
-    []
-  );
+  const clearSessionExpired = useCallback(() => setSessionExpired(false), []);
 
   const value = {
     user,

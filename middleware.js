@@ -2,23 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
 export async function middleware(request) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -27,20 +21,21 @@ export async function middleware(request) {
     }
   );
 
+  // ── PERF FIX: getUser() validates the JWT cookie locally.
+  // Old code used getSession() which made a NETWORK CALL to Supabase Auth
+  // on every single page navigation → +200–600ms per click, every time.
   let user = null;
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    user = session?.user ?? null;
+    const { data: { user: u } } = await supabase.auth.getUser();
+    user = u ?? null;
   } catch {
-    // Auth service unavailable — fail open so users aren't locked out.
-    // Individual server components still validate the session on their own.
+    // Auth service unreachable — fail open. API routes auth independently.
     return supabaseResponse;
   }
 
-  const pathname = request.nextUrl.pathname;
-  const isAuthRoute = pathname === '/login';
+  const { pathname } = request.nextUrl;
 
-  const protectedRoutes = [
+  const protectedPrefixes = [
     '/dashboard', '/leave', '/attendance', '/tasks', '/activity',
     '/batches', '/compliance', '/documents', '/payslips', '/sops',
     '/admin', '/notifications', '/directory', '/formulations',
@@ -48,9 +43,10 @@ export async function middleware(request) {
     '/capa', '/equipment', '/lab-notebook', '/mispunch',
   ];
 
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
+  const isAuthRoute  = pathname === '/login';
 
-  if (!user && isProtectedRoute) {
+  if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
@@ -73,6 +69,8 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
+    // Skip _next/static, images, and ALL /api/* routes.
+    // API routes authenticate themselves — middleware does not touch them.
     '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

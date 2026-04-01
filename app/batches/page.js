@@ -102,10 +102,9 @@ export default function BatchesPage() {
           .from('batches')
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
-            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team,
+            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
             formulations(name, code, version),
-            batch_flasks(id, flask_label, status),
-            batch_fermentation_readings(ph, is_ph_alarm, is_temp_alarm, logged_at)
+            batch_flasks(id, flask_label, status)
           `)
           .not('status', 'in', '("released","rejected")')
           .order('created_at', { ascending: false }),
@@ -120,9 +119,9 @@ export default function BatchesPage() {
       const active    = activeRes.data    || [];
       const completed = completedRes.data || [];
 
-      const hasAlarm = active.some(b =>
-        b.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm)
-      );
+      // has_alarm is set by DB trigger on reading insert — no need to scan readings
+      const hasAlarm = active.some(b => b.has_alarm === true);
+
       setIsAlert(hasAlarm);
       setActiveBatches(active);
       setHistory(completed);

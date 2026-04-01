@@ -86,34 +86,37 @@ export async function GET() {
       }
     });
 
-    // Low stock alerts (just the count and items, not full inventory)
+    // Low stock alerts — simple threshold check, no broken nested RPC
     const { data: lowStockAlerts } = await supabase
-      .from('inventory_stock').select('id, current_quantity, inventory_items(name, unit, min_stock_level)')
+      .from('inventory_stock')
+      .select('id, current_quantity, inventory_items(name, unit, min_stock_level)')
       .eq('status', 'Available')
-      .gt('current_quantity', 0)
-      .lt('current_quantity', supabase.rpc('get_min_stock_threshold').select('min_stock_level').single()) || 
-      { data: [] };
+      .lt('current_quantity', 10) // simple numeric threshold, not a subquery
+      .limit(5);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         stats: {
           unacknowledgedDeviations: deviationsResult?.count || 0,
-          overdueCompliance: overduesResult?.count || 0,
-          pendingLeaves: leavesResult?.count || 0,
-          urgentTasks: tasksCount?.count || 0,
-          upcomingCompliance: compCount?.count || 0,
-          checkedInToday: attendanceCount?.count || 0,
-          totalEmployees: totalEmps?.count || 0,
-          pendingMispunches: mispunchesResult?.count || 0,
-          activeBatches: activeBatchesResult?.data?.length || 0
+          overdueCompliance:        overduesResult?.count   || 0,
+          pendingLeaves:            leavesResult?.count     || 0,
+          urgentTasks:              tasksCount?.count       || 0,
+          upcomingCompliance:       compCount?.count        || 0,
+          checkedInToday:           attendanceCount?.count  || 0,
+          totalEmployees:           totalEmps?.count        || 0,
+          pendingMispunches:        mispunchesResult?.count || 0,
+          activeBatches:            activeBatchesResult?.data?.length || 0
         },
-        leaves: leavesResult?.data || [],
-        mispunches: mispunchesResult?.data || [],
-        activeBatches: activeBatchesResult?.data || [],
-        chartData: Object.values(monthMap)
+        leaves:         leavesResult?.data         || [],
+        mispunches:     mispunchesResult?.data      || [],
+        activeBatches:  activeBatchesResult?.data   || [],
+        chartData:      Object.values(monthMap)
       }
     });
+    // Cache for 30s on Vercel CDN — dashboard numbers don’t need to be real-time
+    response.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    return response;
 
   } catch (err) {
     console.error('Dashboard API error:', err);

@@ -183,7 +183,7 @@ export default function ClientLayout({ children }) {
         )}
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="sync">
             {loading ? (
               <motion.div
                 key="loading-skeleton"

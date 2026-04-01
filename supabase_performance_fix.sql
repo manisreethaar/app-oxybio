@@ -70,6 +70,8 @@ CREATE INDEX IF NOT EXISTS idx_sop_ack_sop_id         ON sop_acknowledgements(so
 -- ── EMPLOYEES ────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_employees_role         ON employees(role);
 CREATE INDEX IF NOT EXISTS idx_employees_is_active    ON employees(is_active);
+-- CRITICAL: every API route does eq('email', user.email) — needs an index
+CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
 
 -- ── PH READINGS ──────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_ph_batch_id            ON ph_readings(batch_id);
@@ -139,10 +141,43 @@ END $$;
 
 -- ============================================================
 -- VERIFY: Show what was created
--- ============================================================
+-- ── BATCH MONITORING V3 TABLES ──────────────────────────────────
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_flasks') THEN
+    CREATE INDEX IF NOT EXISTS idx_batch_flasks_batch_id ON batch_flasks(batch_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_fermentation_readings') THEN
+    CREATE INDEX IF NOT EXISTS idx_bfr_batch_id ON batch_fermentation_readings(batch_id);
+    CREATE INDEX IF NOT EXISTS idx_bfr_flask_id ON batch_fermentation_readings(flask_id);
+    CREATE INDEX IF NOT EXISTS idx_bfr_alarms   ON batch_fermentation_readings(batch_id, is_ph_alarm, is_temp_alarm);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_stage_transitions') THEN
+    CREATE INDEX IF NOT EXISTS idx_bst_batch_id ON batch_stage_transitions(batch_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_qc_samples') THEN
+    CREATE INDEX IF NOT EXISTS idx_qcs_batch_id ON batch_qc_samples(batch_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_qc_tests') THEN
+    CREATE INDEX IF NOT EXISTS idx_qct_sample_id ON batch_qc_tests(sample_id);
+  END IF;
+END $$;
+
+-- ────────────────────────────────────────────────────────────
 SELECT indexname, tablename
 FROM pg_indexes
 WHERE schemaname = 'public' AND indexname LIKE 'idx_%'
 ORDER BY tablename, indexname;
 
-SELECT 'OxyOS indexes applied — any missing columns were safely skipped.' AS status;
+SELECT 'OxyOS indexes v5 applied.' AS status;

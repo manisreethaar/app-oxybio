@@ -34,24 +34,22 @@ export default function TopBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch Notifications
   useEffect(() => {
-    if (employeeProfile) {
-      const fetchNotifs = async () => {
-        const { data } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('employee_id', employeeProfile.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (data) {
-          setNotifications(data);
-          setUnreadCount(data.filter(n => !n.is_read).length);
-        }
-      };
-      fetchNotifs();
-    }
-  }, [employeeProfile, supabase]);
+    if (!employeeProfile?.id) return;
+    const fetchNotifs = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id,title,message,is_read,link_url,created_at')
+        .eq('employee_id', employeeProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (data) {
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.is_read).length);
+      }
+    };
+    fetchNotifs();
+  }, [employeeProfile?.id, supabase]); // ← stable primitive, not object reference
 
   const markAsRead = async (id, link) => {
     await supabase.from('notifications').update({ is_read: true }).eq('id', id);
