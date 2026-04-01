@@ -151,10 +151,21 @@ END $$;
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_fermentation_readings') THEN
     CREATE INDEX IF NOT EXISTS idx_bfr_batch_id ON batch_fermentation_readings(batch_id);
-    CREATE INDEX IF NOT EXISTS idx_bfr_flask_id ON batch_fermentation_readings(flask_id);
-    CREATE INDEX IF NOT EXISTS idx_bfr_alarms   ON batch_fermentation_readings(batch_id, is_ph_alarm, is_temp_alarm);
+
+    -- flask_id only exists if v3 migration was run — check before indexing
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name='batch_fermentation_readings' AND column_name='flask_id') THEN
+      CREATE INDEX IF NOT EXISTS idx_bfr_flask_id ON batch_fermentation_readings(flask_id);
+    END IF;
+
+    -- is_ph_alarm / is_temp_alarm only exist in v3 schema
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name='batch_fermentation_readings' AND column_name='is_ph_alarm') THEN
+      CREATE INDEX IF NOT EXISTS idx_bfr_alarms ON batch_fermentation_readings(batch_id, is_ph_alarm, is_temp_alarm);
+    END IF;
   END IF;
 END $$;
+
 
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='batch_stage_transitions') THEN
