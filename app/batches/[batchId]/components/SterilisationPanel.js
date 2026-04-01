@@ -10,6 +10,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   const toast = useToast();
   const [equipment, setEquipment] = useState([]);
   const [saving,    setSaving]    = useState(false);
+  const isInternOrRI = ['intern','research_intern'].includes(role);
 
   const [method,    setMethod]    = useState('Pressure Cooker');
   const [equipId,   setEquipId]   = useState('');
@@ -21,6 +22,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   const [tape,      setTape]      = useState('Positive');
   const [passFail,  setPassFail]  = useState('Pending');
   const [notes,     setNotes]     = useState('');
+  const [supervisedBy, setSupervisedBy] = useState('');
 
   const fetch = useCallback(async () => {
     const [dRes, eqRes] = await Promise.all([
@@ -35,7 +37,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setCycleStart(d.cycle_start?d.cycle_start.slice(0,16):'');
       setCycleEnd(d.cycle_end?d.cycle_end.slice(0,16):'');
       setTape(d.autoclave_tape||'Positive'); setPassFail(d.pass_fail||'Pending');
-      setNotes(d.notes||'');
+      setNotes(d.notes||''); setSupervisedBy(d.supervised_by||'');
     }
     if (eqRes.data) setEquipment(eqRes.data);
   }, [batch.id, supabase]);
@@ -43,7 +45,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   useEffect(() => { fetch(); }, [fetch]);
 
   const selectedEquip = equipment.find(e => e.id === equipId);
-  const isCalibExpired = selectedEquip?.calibration_due_date && new Date(selectedEquip.calibration_due_date) < new Date();
+  const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
   const isEquipBad     = selectedEquip && (selectedEquip.status !== 'Operational' || isCalibExpired);
 
   const holdTime = cycleStart && cycleEnd
@@ -55,6 +57,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       toast.error('Cannot advance — sterilisation must Pass before proceeding to Inoculation.');
       return;
     }
+    if (isInternOrRI && !supervisedBy) { toast.warn('Select a supervisor before saving.'); return; }
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_stage_sterilisation').upsert({
@@ -64,7 +67,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         cycle_start: cycleStart ? new Date(cycleStart).toISOString() : null,
         cycle_end: cycleEnd ? new Date(cycleEnd).toISOString() : null,
         autoclave_tape: tape, pass_fail: passFail,
-        operator_id: employeeProfile?.id, notes: notes || null,
+        operator_id: employeeProfile?.id, supervised_by: supervisedBy || null, notes: notes || null,
       });
       if (error) throw error;
       toast.success(advance ? 'Sterilisation complete.' : 'Draft saved.');
@@ -166,6 +169,15 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         </div>
 
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes (cycle observations, deviations)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+
+        {isInternOrRI && (
+          <div><label className="field-label text-red-500">Supervised By * <span className="text-gray-400 normal-case font-normal">(required for interns — GMP)</span></label>
+            <select value={supervisedBy} onChange={e=>setSupervisedBy(e.target.value)} className="field-input border-red-200 bg-white">
+              <option value="">Select supervising scientist/fellow...</option>
+              {supervisors.map(s=><option key={s.id} value={s.id}>{s.full_name}</option>)}
+            </select>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">Save Draft</button>

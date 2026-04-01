@@ -11,6 +11,7 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
   const [saving, setSaving] = useState(false);
   const [pastBatches, setPastBatches] = useState([]);
   const [mediaPrepData, setMediaPrepData] = useState(null);
+  const isInternOrRI = ['intern','research_intern'].includes(role);
 
   const [inType,    setInType]    = useState('Fresh Curd');
   const [sourceNotes, setSourceNotes] = useState('');
@@ -23,6 +24,7 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
   const [contCheck, setContCheck] = useState('Clear');
   const [contNotes, setContNotes] = useState('');
   const [notes,     setNotes]     = useState('');
+  const [supervisedBy, setSupervisedBy] = useState('');
 
   const fetch = useCallback(async () => {
     const [dRes, mpRes, pbRes] = await Promise.all([
@@ -37,7 +39,7 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
       setInTemp(d.inoculation_temp_c||''); setTZero(d.t_zero_time ? d.t_zero_time.slice(0,16) : '');
       setTransfer(d.transfer_method||'Pipette'); setLafUsed(d.laf_used||false);
       setContCheck(d.contamination_check||'Clear'); setContNotes(d.contamination_notes||'');
-      setNotes(d.notes||'');
+      setNotes(d.notes||''); setSupervisedBy(d.supervised_by||'');
     }
     if (!tZero) {
       const now = new Date();
@@ -52,9 +54,11 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
 
   const totalVol = mediaPrepData?.total_volume_ml || batch.planned_volume_ml;
   const inPct    = inVol && totalVol ? ((parseFloat(inVol) / parseFloat(totalVol)) * 100).toFixed(2) : null;
+  const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
 
   const handleSave = async (advance = false) => {
     if (advance && !tZero) { toast.warn('T=0 inoculation time is required to advance.'); return; }
+    if (isInternOrRI && !supervisedBy) { toast.warn('Select a supervisor before saving.'); return; }
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_stage_inoculation').upsert({
@@ -68,7 +72,7 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
         transfer_method: transfer, laf_used: lafUsed,
         contamination_check: contCheck,
         contamination_notes: contCheck === 'Suspected' ? contNotes : null,
-        operator_id: employeeProfile?.id, notes: notes || null,
+        operator_id: employeeProfile?.id, supervised_by: supervisedBy || null, notes: notes || null,
       });
       if (error) throw error;
       toast.success(advance ? 'Inoculation complete. T=0 recorded.' : 'Draft saved.');
@@ -172,9 +176,18 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
 
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <div className="pt-1 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 font-semibold">
+        <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 font-semibold">
           📓 Tip: Add an LNB (Lab Notebook) entry for this inoculation to document observations.
         </div>
+
+        {isInternOrRI && (
+          <div><label className="field-label text-red-500">Supervised By * <span className="text-gray-400 normal-case font-normal">(required for interns — GMP)</span></label>
+            <select value={supervisedBy} onChange={e=>setSupervisedBy(e.target.value)} className="field-input border-red-200 bg-white">
+              <option value="">Select supervising scientist/fellow...</option>
+              {supervisors.map(s=><option key={s.id} value={s.id}>{s.full_name}</option>)}
+            </select>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
