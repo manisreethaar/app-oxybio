@@ -2,10 +2,8 @@
 
 import { useEffect } from 'react';
 import { RefreshCcw, AlertTriangle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 export default function GlobalError({ error, reset }) {
-  const router = useRouter();
 
   useEffect(() => {
     // Log the error to an error reporting service
