@@ -424,6 +424,7 @@ export default function AttendancePage() {
               )}
           </div>
         </div>
+        </div>
 
         <div className="space-y-6">
           {activeTab === 'today' ? (
@@ -485,13 +486,6 @@ export default function AttendancePage() {
                     </div>
                   );
                 })}
-              </div>
-            )}
-              </div>
-            ) : (
-              <div className="surface p-6 h-full">
-                 {/* Analytics or History moved here when tab changes if needed, but keeping original structure for now */}
-                 <p className="text-sm text-gray-500">History and analytics active in secondary tab views.</p>
               </div>
             )}
           </div>

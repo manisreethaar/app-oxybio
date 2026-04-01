@@ -77,7 +77,7 @@ export default function StaffDashboard({ employeeProfile }) {
     if (isInitial) setLoading(true);
     try {
       const [tasksRes, leavesRes, batchesRes] = await Promise.all([
-        supabase.from('tasks').select('*').eq('assigned_to', employeeId).in('status', ['open', 'in-progress']).order('due_date', { ascending: true }).limit(5),
+        supabase.from('tasks').select('id, title, priority, due_date, status, assigned_to').eq('assigned_to', employeeId).in('status', ['open', 'in-progress']).order('due_date', { ascending: true }).limit(5),
         supabase.from('leave_applications').select('leave_type, start_date, end_date').eq('employee_id', employeeId).eq('status', 'approved'),
         supabase.from('batches').select('id, batch_id, current_stage, product_name').neq('status', 'completed').limit(3)
       ]);

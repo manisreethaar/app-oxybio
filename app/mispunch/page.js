@@ -25,7 +25,7 @@ export default function MispunchPage() {
       // Fetch logs marked as 'required' OR already 'pending' for this user
       const { data, error } = await supabase
         .from('attendance_log')
-        .select('*')
+        .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
         .eq('employee_id', employeeProfile.id)
         .not('mispunch_status', 'is', null)
         .order('date', { ascending: false });

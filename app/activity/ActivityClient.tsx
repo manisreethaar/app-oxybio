@@ -98,7 +98,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         .in('status', ['fermenting', 'in-progress', 'testing', 'inoculation', 'media_prep', 'sterilisation', 'harvest', 'downstream', 'qc_hold'])
         .limit(20);
       // Fetch equipment for dropdown
-      const { data: equip } = await supabase.from('equipment').select('*').eq('status', 'Operational');
+      const { data: equip } = await supabase.from('equipment').select('id, name, model, status').eq('status', 'Operational');
       if (!isMounted.current) return;
       setActiveBatches(batches || []);
       setEquipmentList(equip || []);
