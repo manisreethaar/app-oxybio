@@ -2,14 +2,17 @@
 import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/context/ToastContext';
 import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Package, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
+import dynamic from 'next/dynamic';
+const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
 import Link from 'next/link';
 import { differenceInHours } from 'date-fns';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminDashboard({ employeeId }) {
+  const toast = useToast();
   const [stats, setStats] = useState({ batches: 0, leaves: 0, tasks: 0, compliance: 0 });
   const [alerts, setAlerts] = useState([]);
   const [activeBatches, setActiveBatches] = useState([]);
@@ -27,7 +30,42 @@ export default function AdminDashboard({ employeeId }) {
 
   useEffect(() => {
     fetchDashboardData(true);
+    fetchThresholds();
   }, []);
+
+  const fetchThresholds = async () => {
+    try {
+      const res = await fetch('/api/admin/thresholds');
+      const data = await res.json();
+      if (data.success) {
+        setThresholds(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load thresholds:', err);
+    }
+  };
+
+  const saveThresholds = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/thresholds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(thresholds)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Thresholds saved successfully');
+        setShowConfig(false);
+      } else {
+        toast.error(data.error || 'Failed to save thresholds');
+      }
+    } catch (err) {
+      toast.error('Failed to save thresholds');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const fetchDashboardData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
@@ -122,7 +160,7 @@ export default function AdminDashboard({ employeeId }) {
   const handleMispunchReview = async (action) => {
     if (!reviewingMispunch) return;
     if (action === 'reject' && (!rejectRemark || rejectRemark.trim().length < 5)) {
-        alert("Please provide a valid rejection remark (min 5 characters).");
+        toast.warn("Please provide a valid rejection remark (min 5 characters).");
         return;
     }
     setActionLoading(true);
@@ -141,9 +179,9 @@ export default function AdminDashboard({ employeeId }) {
         setReviewingMispunch(null);
         setRejectRemark('');
         fetchDashboardData();
-        alert(`Mispunch successfully ${action === 'approve' ? 'approved' : 'rejected'}.`);
+        toast.success(`Mispunch successfully ${action === 'approve' ? 'approved' : 'rejected'}.`);
     } catch (err) {
-        alert(err.message);
+        toast.error(err.message);
     } finally {
         setActionLoading(false);
     }
@@ -196,7 +234,7 @@ export default function AdminDashboard({ employeeId }) {
                    document.body.appendChild(a);
                    a.click();
                    a.remove();
-                } else { alert("Export failed."); }
+                } else { toast.error("Export failed."); }
              }}
              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all"
           >
@@ -266,17 +304,7 @@ export default function AdminDashboard({ employeeId }) {
           <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-widest">Live Data</span>
         </div>
         <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }} />
-              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }} allowDecimals={false} />
-              <Tooltip contentStyle={{ background: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', fontSize: '12px' }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '10px' }} />
-              <Bar dataKey="Released" fill="#1F3A5F" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Rejected" fill="#DC2626" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <ProductionYieldChart data={chartData} />
         </div>
         {chartData.every(d => d.Released === 0 && d.Rejected === 0) && (
           <p className="text-center text-xs text-gray-400 font-medium mt-2">No completed batches yet — data will populate as batches are released or rejected.</p>
@@ -464,7 +492,8 @@ export default function AdminDashboard({ employeeId }) {
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Max Temperature Limit (°C)</label>
                   <input type="number" value={thresholds.tempMax} onChange={e => setThresholds({...thresholds, tempMax: parseInt(e.target.value)})} className="w-full border border-gray-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
                 </div>
-                <button onClick={() => setShowConfig(false)} className="w-full py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm mt-2">
+                <button onClick={saveThresholds} disabled={actionLoading} className="w-full py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm mt-2 flex items-center justify-center gap-2">
+                  {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   Apply Thresholds
                 </button>
               </div>

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { UserPlus, UserCog, ShieldCheck, Mail, Loader2, UserX, X, Hash, Briefcase, Sparkles, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -46,6 +47,7 @@ function generateEmployeeCode(existingCodes, designationCode) {
 
 export default function UsersPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -135,7 +137,7 @@ export default function UsersPage() {
 
 
   const deactivateUser = async (id, currentStatus) => {
-    if (id === employeeProfile.id) return alert('You cannot deactivate your own account.');
+    if (id === employeeProfile.id) { toast.warn('You cannot deactivate your own account.'); return; }
     const action = currentStatus ? "deactivate" : "reactivate";
     if (!window.confirm(`Are you sure you want to ${action} this employee's access?`)) return;
 
@@ -149,7 +151,7 @@ export default function UsersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update user status');
       fetchUsers();
-    } catch (err) { alert('Action failed: ' + err.message); }
+    } catch (err) { toast.error('Action failed: ' + err.message); }
     finally { setDeactivating(null); }
   };
 
@@ -166,7 +168,7 @@ export default function UsersPage() {
       if (!res.ok) throw new Error((await res.json()).error);
       setEmployees(prev => prev.map(e => e.id === id ? { ...e, base_salary: parseFloat(newSalary) } : e));
     } catch (err) {
-      alert('Failed to update salary: ' + err.message);
+      toast.error('Failed to update salary: ' + err.message);
     } finally {
       setUpdateLoading(null);
       setEditingSalary(null);
@@ -193,7 +195,7 @@ export default function UsersPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to update role');
       setCorrectingRole(null);
       fetchUsers();
-      alert(`Role updated successfully. New Employee ID: ${result.new_employee_code}`);
+      toast.success(`Role updated. New Employee ID: ${result.new_employee_code}`);
     } catch (err) {
       setRoleCorrectError(err.message);
     } finally {

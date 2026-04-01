@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { 
   Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, 
   GitCompare, CheckCircle2, Clock, Send, ShieldCheck, XCircle, AlertTriangle, Trash2
@@ -27,6 +28,7 @@ const APPROVER_ROLES = ['admin', 'ceo', 'cto'];
 
 export default function FormulationsPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [formulations, setFormulations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -64,11 +66,11 @@ export default function FormulationsPage() {
   const addIngredient = () => {
     if (!selectedItem || !selectedQty) return;
     const qtyValue = parseFloat(selectedQty);
-    if (isNaN(qtyValue) || qtyValue <= 0) return alert("Quantity must be a number greater than 0");
+    if (isNaN(qtyValue) || qtyValue <= 0) { toast.warn("Quantity must be a number greater than 0"); return; }
     const item = items.find(i => i.id === selectedItem);
     if (!item) return;
     if (newForm.ingredients.some(ing => ing.item_id === item.id)) {
-      return alert(`"${item.name}" is already in the recipe.`);
+      toast.warn(`"${item.name}" is already in the recipe.`); return;
     }
     setNewForm(prev => ({
       ...prev,
@@ -106,7 +108,7 @@ export default function FormulationsPage() {
     
     if (newStatus === 'Draft' && isApprover && rejectingId) {
         if (!reason || reason.trim().length < 5) {
-            alert("Please provide a mandatory rejection reason (min 5 chars).");
+            toast.warn("Please provide a mandatory rejection reason (min 5 chars).");
             return;
         }
     }
@@ -119,12 +121,12 @@ export default function FormulationsPage() {
         body: JSON.stringify({ id, status: newStatus, rejection_reason: reason })
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.error || 'Action failed'); return; }
-      
+      if (!res.ok) { toast.error(data.error || 'Action failed'); return; }
+
       setRejectingId(null);
       setRejectionReason('');
       setFormulations(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
-    } catch (err) { alert('Network Error'); }
+    } catch (err) { toast.error('Network Error'); }
     finally { setActionLoading(null); }
   };
 
@@ -137,9 +139,9 @@ export default function FormulationsPage() {
         setFormulations(prev => prev.filter(f => f.id !== id));
       } else {
         const errData = await res.json();
-        alert(`Delete failed: ${errData.error || 'Unknown error'}`);
+        toast.error(`Delete failed: ${errData.error || 'Unknown error'}`);
       }
-    } catch (err) { alert('Network Error'); }
+    } catch (err) { toast.error('Network Error'); }
     finally { setActionLoading(null); }
   };
 
@@ -157,9 +159,9 @@ export default function FormulationsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (newForm.ingredients.length === 0) return alert("Add at least one ingredient.");
+    if (newForm.ingredients.length === 0) { toast.warn("Add at least one ingredient."); return; }
     if (newForm.base_version_id && !newForm.notes?.trim()) {
-      return alert("Notes explaining the reason for this revision are mandatory.");
+      toast.warn("Notes explaining the reason for this revision are mandatory."); return;
     }
     setSubmitting(true);
     try {
@@ -180,9 +182,9 @@ export default function FormulationsPage() {
         fetchFormulations();
       } else { 
         const errData = await res.json();
-        alert(`Failed: ${errData.error || 'Unknown error'}`); 
+        toast.error(`Failed: ${errData.error || 'Unknown error'}`);
       }
-    } catch (err) { alert('Network Error: ' + err.message); }
+    } catch (err) { toast.error('Network Error: ' + err.message); }
     finally { setSubmitting(false); }
   };
 

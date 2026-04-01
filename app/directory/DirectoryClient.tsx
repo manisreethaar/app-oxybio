@@ -64,7 +64,7 @@ function EmployeeIDCard({ emp, onClose }) {
               <p className="text-[10px] font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
             </div>
             <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
-              <QRCodeSVG value={`https://app-oxybio.vercel.app/verify/${emp.id}`} size={64} level="M" />
+              <QRCodeSVG value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com'}/verify/${emp.id}`} size={64} level="M" />
             </div>
           </div>
         </div>

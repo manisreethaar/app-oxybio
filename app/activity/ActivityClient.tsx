@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { 
   Activity, AlertTriangle, MessageSquare, CheckCircle, Loader2,
   Users, Clock, CheckSquare, FlaskConical, TrendingUp, 
@@ -12,10 +13,13 @@ import {
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
+import dynamic from 'next/dynamic';
+const ActivityVelocityChart = dynamic(() => import('@/components/charts/ActivityAnalyticsCharts').then(m => ({ default: m.ActivityVelocityChart })), { ssr: false });
+const ActivityDeviationChart = dynamic(() => import('@/components/charts/ActivityAnalyticsCharts').then(m => ({ default: m.ActivityDeviationChart })), { ssr: false });
 
 export default function ActivityClient({ initialBatches, initialLogs }: { initialBatches: any[], initialLogs: any[] }) {
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth() as any;
+  const toast = useToast();
   const [activities, setActivities] = useState<any[]>(initialLogs || []);
   const [issues, setIssues] = useState<any[]>(initialLogs ? initialLogs.filter((a: any) => a.issue_observed) : []);
   const [activeBatches, setActiveBatches] = useState(initialBatches || []);
@@ -88,8 +92,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     setError(null);
 
     try {
-      // Fetch batches for dropdown
-      const { data: batches } = await supabase.from('batches').select('batch_id').eq('status', 'fermenting');
+      // Fetch batches for dropdown — include all active statuses, not just fermenting
+      const { data: batches } = await supabase.from('batches')
+        .select('batch_id, product_name, status')
+        .in('status', ['fermenting', 'in-progress', 'testing', 'inoculation', 'media_prep', 'sterilisation', 'harvest', 'downstream', 'qc_hold'])
+        .limit(20);
       // Fetch equipment for dropdown
       const { data: equip } = await supabase.from('equipment').select('*').eq('status', 'Operational');
       if (!isMounted.current) return;
@@ -232,7 +239,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     } catch (err) { 
       // Rollback optimism
       setActivities(prev => prev.filter(a => a.id !== optimisticLog.id));
-      alert(err.message); 
+      toast.error(err.message);
     }
     finally { setIsSubmitting(false); }
   };
@@ -247,7 +254,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to add review note.');
       setCommentText(''); setActiveCommentId(null);
       fetchData();
-    } catch (err) { alert("Failed to save review note: " + err.message); }
+    } catch (err) { toast.error("Failed to save review note: " + err.message); }
   };
 
   if (authLoading) return <div className="p-12"><Skeleton className="h-40 w-full mb-4"/><Skeleton className="h-60 w-full"/></div>;
@@ -542,24 +549,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <Activity className="w-4 h-4 text-navy"/> Activity Velocity
                  </h3>
                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <AreaChart data={analyticsData.velocity}>
-                          <defs>
-                             <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#1F3A5F" stopOpacity={0.1}/>
-                                <stop offset="95%" stopColor="#1F3A5F" stopOpacity={0}/>
-                             </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
-                          <Tooltip 
-                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                          />
-                          <Area type="monotone" dataKey="hours" name="Worker Hours" stroke="#1F3A5F" strokeWidth={3} fillOpacity={1} fill="url(#colorHours)" />
-                          <Area type="monotone" dataKey="logs" name="Action Count" stroke="#0d9488" strokeWidth={2} fill="transparent" />
-                       </AreaChart>
-                    </ResponsiveContainer>
+                    <ActivityVelocityChart data={analyticsData.velocity} />
                  </div>
               </div>
 
@@ -570,22 +560,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                  </h3>
                  <div className="h-64 w-full">
                     {analyticsData.issueDistribution.length > 0 ? (
-                       <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={analyticsData.issueDistribution} layout="vertical">
-                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                             <XAxis type="number" hide />
-                             <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} width={80} />
-                             <Tooltip 
-                                cursor={{ fill: '#f8fafc' }}
-                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                             />
-                             <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
-                                {analyticsData.issueDistribution.map((entry, index) => (
-                                   <Cell key={`cell-${index}`} fill={['#1F3A5F', '#0d9488', '#f43f5e'][index % 3]} />
-                                ))}
-                             </Bar>
-                          </BarChart>
-                       </ResponsiveContainer>
+                       <ActivityDeviationChart data={analyticsData.issueDistribution} />
                     ) : (
                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
                           <CheckCircle className="w-12 h-12 text-gray-100 mb-2"/>

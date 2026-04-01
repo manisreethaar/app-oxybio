@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import { 
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2, 
@@ -25,6 +26,7 @@ const formatMinutes = (mins) => {
 
 export default function TasksPage() {
   const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +134,7 @@ export default function TasksPage() {
       const res = await fetch('/api/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, task_id: taskId, payload }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to update task');
       return true;
-    } catch(err) { alert(err.message); return false; }
+    } catch(err) { toast.error(err.message); return false; }
   };
 
   const handleCreateTask = async (data) => {
@@ -141,7 +143,7 @@ export default function TasksPage() {
     const isAdmin = canDo('tasks', 'assign') || isMaster;
     let assignees = isAdmin ? data.assigned_user_ids : [employeeProfile.id];
     
-    if (isAdmin && assignees.length === 0 && !isEdit) return alert('Select at least one assignee.');
+    if (isAdmin && assignees.length === 0 && !isEdit) { toast.warn('Select at least one assignee.'); return; }
 
     setActionLoading(true);
 
@@ -188,7 +190,7 @@ export default function TasksPage() {
       }
       
       setShowCreate(false); setEditingTaskId(null); resetTask(); setChecklistBuffer([]); fetchTasks();
-    } catch(err) { alert(err.message); }
+    } catch(err) { toast.error(err.message); }
     finally { setActionLoading(false); }
   };
 
@@ -214,8 +216,8 @@ export default function TasksPage() {
         if (selectedTask?.id === taskId) setSelectedTask(null); 
         fetchTasks(); 
       }
-      else alert('Delete failed');
-    } catch (err) { alert('Error: ' + err.message); }
+      else toast.error('Delete failed');
+    } catch (err) { toast.error('Error: ' + err.message); }
   };
 
   const handleAcknowledge = async (taskId) => {
@@ -288,7 +290,7 @@ export default function TasksPage() {
       if (proofFile) {
         const formData = new FormData(); formData.append('file', proofFile);
         const res = await fetch('/api/upload', { method: 'POST', body: formData }); 
-        if (!res.ok) { alert("Failed to upload proof"); return; }
+        if (!res.ok) { toast.error("Failed to upload proof"); return; }
         proofUrl = (await res.json()).url;
       }
       let finalMins = (selectedTask.logged_minutes || 0);

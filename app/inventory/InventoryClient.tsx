@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3 } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
   const { user, role, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState(initialStock || []);
   const [items, setItems] = useState(initialItems || []);
@@ -201,7 +203,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       setStock(stock.filter(s => s.item_id !== deletingId));
       setDeletingId(null);
     } catch (err: any) {
-      alert("Failed to delete: " + err.message);
+      toast.error("Failed to delete: " + err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -252,10 +254,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       if (data.success) {
         setNewStock(prev => ({ ...prev, [type === 'coa' ? 'coa_url' : 'sds_url']: data.url }));
       } else {
-        alert(data.error || 'Upload failed');
+        toast.error(data.error || 'Upload failed');
       }
     } catch (err) {
-      alert('Upload Error');
+      toast.error('Upload Error');
     } finally {
       if (type === 'coa') setUploadingCoA(false);
       else setUploadingSDS(false);
@@ -266,7 +268,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     e.preventDefault();
     if (isSubmitting) return;
     if (uploadingCoA || uploadingSDS) {
-      alert("Please wait for files to finish uploading.");
+      toast.warn("Please wait for files to finish uploading.");
       return;
     }
     setIsSubmitting(true);
@@ -278,20 +280,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setNewStock({ 
+        setNewStock({
           item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
         });
         setPage(0); await fetchData(0, false);
-      } else { alert((await res.json()).error || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error((await res.json()).error || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const handleUpdateStock = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
     if (uploadingCoA || uploadingSDS) {
-      alert("Please wait for files to finish uploading.");
+      toast.warn("Please wait for files to finish uploading.");
       return;
     }
     setIsSubmitting(true);
@@ -307,13 +309,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setNewStock({ 
+        setNewStock({
           item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
         });
         setPage(0); await fetchData(0, false);
-      } else { alert((await res.json()).error || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error((await res.json()).error || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const handleAddItem = async (e) => {

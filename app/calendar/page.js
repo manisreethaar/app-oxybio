@@ -6,10 +6,12 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Calendar as CalendarIcon, Flag, Clock, CheckCircle2, AlertTriangle, Plus, ChevronRight, Loader2, Info } from 'lucide-react';
 
 export default function RegulatoryCalendarPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -51,7 +53,7 @@ export default function RegulatoryCalendarPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to add milestone');
       setShowNew(false); reset(); fetchMilestones();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); }
   };
 

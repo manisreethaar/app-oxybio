@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X, CheckCircle2, Package, Trash2 } from 'lucide-react';
 import { format, differenceInHours } from 'date-fns';
 import Link from 'next/link';
@@ -36,6 +37,7 @@ const STATUS_COLORS = {
 
 export default function BatchesPage() {
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [activeBatches, setActiveBatches] = useState([]);
   const [history, setHistory] = useState([]);
   const [isAlert, setIsAlert] = useState(false);
@@ -150,9 +152,9 @@ export default function BatchesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setActiveBatches(prev => prev.filter(b => b.id !== id));
-      alert("Batch cancelled. Materials restored to stock.");
+      toast.success("Batch cancelled. Materials restored to stock.");
     } catch (err) {
-      alert("Failed to cancel batch: " + err.message);
+      toast.error("Failed to cancel batch: " + err.message);
     }
   };
 

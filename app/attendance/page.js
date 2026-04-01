@@ -2,10 +2,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
 import { Clock, Download, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, ShieldCheck, Loader2, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import dynamic from 'next/dynamic';
+const AttendanceWeeklyChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 
 const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT || '12.7409'); 
 const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG || '77.8253'); 
@@ -24,6 +26,7 @@ const getShiftStatus = (checkInTime) => {
 
 export default function AttendancePage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [todayLog, setTodayLog] = useState(null);
   const [myHistory, setMyHistory] = useState([]);
   const [teamToday, setTeamToday] = useState([]);
@@ -244,7 +247,7 @@ export default function AttendancePage() {
         notifyEmployee(employeeProfile.id, '🔴 Checked Out', `Shift completed at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST.`, '/attendance');
         fetchAttendanceData();
       } catch (err) {
-        alert('Check-out failed: ' + err.message);
+        toast.error('Check-out failed: ' + err.message);
       } finally {
         setActionLoading(false);
       }
@@ -340,19 +343,7 @@ export default function AttendancePage() {
             {weeklyChartData.length === 0 ? (
               <div className="h-48 flex items-center justify-center text-gray-400 font-medium text-sm">No history to chart yet.</div>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={weeklyChartData} barCategoryGap="30%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fontWeight: 600, fill: '#6B7280' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} unit="h" domain={[0, 10]} />
-                  <Tooltip formatter={(v) => [`${v}h`, 'Hours']} contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12 }} />
-                  <Bar dataKey="hours" radius={[6, 6, 0, 0]}>
-                    {weeklyChartData.map((entry, index) => (
-                      <Cell key={index} fill={entry.status === 'Late' ? '#EF4444' : entry.status === 'Early' ? '#3B82F6' : '#1F3A5F'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <AttendanceWeeklyChart data={weeklyChartData} />
             )}
             <div className="flex gap-4 mt-4 text-[10px] font-bold uppercase tracking-wider text-gray-400">
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-navy inline-block"></span> On Time</span>

@@ -5,11 +5,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock } from 'lucide-react';
 import { differenceInDays, format, addMonths, addYears, addWeeks } from 'date-fns';
 
 export default function CompliancePage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,7 @@ export default function CompliancePage() {
       reset(); 
       fetchCompliance();
     } catch (error) {
-      alert('Failed to save item: ' + error.message);
+      toast.error('Failed to save item: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -89,7 +91,7 @@ export default function CompliancePage() {
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to mark done');
       fetchCompliance();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { 
   User, Phone, MapPin, Calendar, Droplets, AlertCircle, 
   Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X, 
@@ -65,7 +66,7 @@ function DigitalIDCard({ emp }) {
         </div>
         <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 hover:scale-105 transition-transform origin-bottom-right">
           <QRCodeSVG 
-            value={`${typeof window !== 'undefined' ? window.location.origin : 'https://app-oxybio.vercel.app'}/verify/${emp.verification_token || emp.id}`} 
+            value={`${typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com')}/verify/${emp.verification_token || emp.id}`}
             size={64} 
             level="M" 
           />
@@ -82,6 +83,7 @@ export default function ProfilePage() {
   const isAdminView = searchParams.get('adminView') === 'true';
 
   const { employeeProfile, loading: authLoading, role, signOut } = useAuth();
+  const toast = useToast();
   const [emp, setEmp] = useState(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -189,8 +191,8 @@ export default function ProfilePage() {
       setEmp(formattedData); 
       reset(data); // reset to the form data (strings)
       setEditing(false);
-      alert('Profile updated successfully!');
-    } catch (err) { alert('Error: ' + err.message); }
+      toast.success('Profile updated successfully!');
+    } catch (err) { toast.error('Error: ' + err.message); }
     finally { setSaving(false); }
   };
 
@@ -224,7 +226,7 @@ export default function ProfilePage() {
         setEmp({ ...emp, photo_url: data.url });
       }
     } catch (err) {
-      alert("Network Error: Could not connect to the upload server.");
+      toast.error("Network Error: Could not connect to the upload server.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -232,14 +234,14 @@ export default function ProfilePage() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    if (passwordForm.password !== passwordForm.confirm) { alert("Passwords do not match!"); return; }
-    if (passwordForm.password.length < 6) { alert("Password must be at least 6 characters!"); return; }
+    if (passwordForm.password !== passwordForm.confirm) { toast.warn("Passwords do not match!"); return; }
+    if (passwordForm.password.length < 6) { toast.warn("Password must be at least 6 characters!"); return; }
     setPasswordLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
-      if (error) { alert(error.message || "Failed to update password."); }
-      else { alert("Password updated successfully!"); setShowPasswordModal(false); setPasswordForm({ password: '', confirm: '' }); }
-    } catch (err) { alert('Error: ' + err.message); }
+      if (error) { toast.error(error.message || "Failed to update password."); }
+      else { toast.success("Password updated successfully!"); setShowPasswordModal(false); setPasswordForm({ password: '', confirm: '' }); }
+    } catch (err) { toast.error('Error: ' + err.message); }
     finally { setPasswordLoading(false); }
   };
 

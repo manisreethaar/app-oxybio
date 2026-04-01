@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import {
   Download, Receipt, Users, Calculator, CheckCircle, AlertTriangle,
   Loader2, ChevronDown, ChevronUp, FileText, RefreshCw, X
@@ -117,6 +118,7 @@ async function downloadPayslipPDF(slip) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function PayslipsPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const isAdmin = ['admin','ceo','cto'].includes(role);
 
   const [payslips, setPayslips] = useState([]);
@@ -214,9 +216,9 @@ export default function PayslipsPage() {
       setCalcResult(null);
       setShowGenerator(false);
       await fetchPayslips();
-      alert('✅ Payslip approved and saved!');
+      toast.success('Payslip approved and saved!');
     } catch (err) {
-      alert('Save failed: ' + err.message);
+      toast.error('Save failed: ' + err.message);
     } finally {
       setSaving(false);
     }

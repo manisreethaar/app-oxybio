@@ -5,13 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Users, Star, ClipboardList, Plus, ChevronRight, Loader2, Award, Zap, TrendingUp, X } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import dynamic from 'next/dynamic';
+const ResearchTrendChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchTrendChart })), { ssr: false });
+const ResearchRadarChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchRadarChart })), { ssr: false });
 
 export default function ConsumerResearchPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -52,7 +56,7 @@ export default function ConsumerResearchPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to start session.');
       setShowNew(false); reset(); fetchSessions();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); }
   };
 
@@ -76,12 +80,7 @@ export default function ConsumerResearchPage() {
         <div className="surface p-6 mb-6">
           <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-1 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-navy" /> Sensory Score Trend</h2>
           <p className="text-xs text-gray-500 font-medium mb-5">7.0+ threshold = consumer-ready formulation</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={[...sessions].reverse().map((s, i) => ({ name: `S${i + 1}`, score: parseFloat(s.avg_score || 0), label: s.session_title })).filter(d => !isNaN(d.score))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/><XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: '#9ca3af' }}/><YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#9ca3af' }} unit="/10"/><Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}/><ReferenceLine y={7} stroke="#0f766e" strokeDasharray="4 4" />
-              <Line type="monotone" dataKey="score" stroke="#1F3A5F" strokeWidth={2.5} dot={(props) => <circle key={`dot-${props.payload.name}`} cx={props.cx} cy={props.cy} r={5} fill={props.payload.score >= 7 ? '#1F3A5F' : '#f87171'} stroke="white" strokeWidth={2} />} />
-            </LineChart>
-          </ResponsiveContainer>
+          <ResearchTrendChart sessions={sessions} />
         </div>
       )}
 
@@ -99,23 +98,7 @@ export default function ConsumerResearchPage() {
               
               {/* Innovation 5: Sensory Spider Charts */}
               <div className="h-48 w-full mb-6 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={
-                    (s.test_criteria || ['Taste', 'Aroma', 'Texture', 'Aftertaste', 'Visual']).map(crit => {
-                      // Calculate average score for this specific criteria from the panel
-                      const rawScores = (s.scores || []);
-                      const avgForCrit = rawScores.length > 0 
-                        ? (rawScores.reduce((acc, curr) => acc + (curr[crit] || 0), 0) / rawScores.length)
-                        : (s.avg_score || 0); // fallback to composite if no per-criteria logs
-
-                      return { subject: crit, A: parseFloat(avgForCrit.toFixed(1)) };
-                    })
-                  }>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} />
-                    <Radar name="Score" dataKey="A" stroke="#1F3A5F" fill="#1F3A5F" fillOpacity={0.5} />
-                  </RadarChart>
-                </ResponsiveContainer>
+                <ResearchRadarChart session={s} />
               </div>
 
 

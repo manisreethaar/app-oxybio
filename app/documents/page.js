@@ -6,11 +6,13 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { FileText, Download, AlertTriangle, Plus, Search, Archive } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 
 export default function DocumentsPage() {
   const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [documents, setDocuments] = useState([]);
   const [filteredDocs, setFilteredDocs] = useState([]);
   const [category, setCategory] = useState('All');
@@ -67,7 +69,7 @@ export default function DocumentsPage() {
 
 
   const handleUploadSubmit = async (data) => {
-    if (!data.file || data.file.length === 0) return alert("Please select a file.");
+    if (!data.file || data.file.length === 0) { toast.warn("Please select a file."); return; }
     setUploading(true);
     
     const fetchWithTimeout = (url, options, timeout = 30000) => {
@@ -103,7 +105,7 @@ export default function DocumentsPage() {
       reset();
       fetchDocuments();
     } catch (err) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
     } finally {
       setUploading(false);
     }

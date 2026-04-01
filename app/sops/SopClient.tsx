@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
 import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
@@ -19,6 +20,7 @@ const uploadSchema = z.object({
 
 export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const { role, employeeProfile, loading: authLoading } = useAuth() as any;
+  const toast = useToast();
   const [sops, setSops] = useState(initialSops || []);
   const [loading, setLoading] = useState(false);
   const supabase = useMemo(() => createClient(), []);
@@ -71,7 +73,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
     if (finalPercent === 100) {
       // Success state handled in UI
     } else {
-      alert(`Validation Failure: ${finalPercent}%. A 100% score is required to proceed with digital acknowledgment.`);
+      toast.warn(`Validation Failure: ${finalPercent}%. A 100% score is required to proceed with digital acknowledgment.`);
     }
   };
 
@@ -97,10 +99,10 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         fetchSOPs(); 
         notifyEmployee(employeeProfile.id, '📋 SOP Signed', `Acknowledged: "${showAckModal.title}".`, '/sops'); 
       } else {
-        alert("Failed to sign SOP. Please try again.");
+        toast.error("Failed to sign SOP. Please try again.");
       }
     } catch (err) {
-      alert("Error acknowledging SOP: " + err.message);
+      toast.error("Error acknowledging SOP: " + err.message);
     } finally { 
       setSubmittingAck(false); 
     }
@@ -135,7 +137,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
       resetUpload(); 
       fetchSOPs(); 
     } catch (err) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
     }
   };
 

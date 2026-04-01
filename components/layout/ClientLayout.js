@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
+import { ToastProvider } from '@/context/ToastContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Skeleton from '../Skeleton';
@@ -140,6 +141,7 @@ export default function ClientLayout({ children }) {
   }
 
   return (
+    <ToastProvider>
     <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-900 border-t-4 border-navy">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden pb-16 md:pb-0 relative z-10">
@@ -214,5 +216,6 @@ export default function ClientLayout({ children }) {
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

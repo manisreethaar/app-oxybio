@@ -5,14 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+const ShelfLifeLineChart = dynamic(() => import('@/components/charts/ShelfLifeLineChart'), { ssr: false });
 
 export default function ShelfLifePage() {
   const { employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [studies, setStudies] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +65,7 @@ export default function ShelfLifePage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create study');
       setShowNew(false); reset(); fetchData();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); }
   };
 
@@ -75,7 +78,7 @@ export default function ShelfLifePage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to conclude study');
       fetchData();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
   };
 
   const TIMEPOINTS = [0, 7, 14, 30, 60, 90];
@@ -134,16 +137,7 @@ export default function ShelfLifePage() {
                   <p className="text-[9px] font-black text-gray-400 uppercase mb-3 flex justify-between">
                     Stability Analytics <span>{study.status}</span>
                   </p>
-                  <ResponsiveContainer width="100%" height="80%">
-                    <LineChart data={displayData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
-                      <YAxis hide domain={['auto', 'auto']} />
-                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }} />
-                      <Line type="monotone" dataKey="ph" name="pH" stroke="#0f172a" strokeWidth={2.5} dot={{ r: 4, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                      <Line type="monotone" dataKey="brix" name="Brix" stroke="#3b82f6" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <ShelfLifeLineChart data={displayData} />
                 </div>
 
                 <div className="grid grid-cols-6 gap-2 mb-8">

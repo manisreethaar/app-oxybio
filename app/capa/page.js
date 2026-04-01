@@ -6,12 +6,15 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
 import { 
   AlertTriangle, Plus, X, ShieldCheck, Loader2, ChevronRight, 
   Wrench, CheckCircle2, ArrowLeft, FileWarning, Microscope, BadgeAlert, BarChart2 
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import dynamic from 'next/dynamic';
+const CapaSeverityChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaSeverityChart })), { ssr: false });
+const CapaStatusChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaStatusChart })), { ssr: false });
 
 const SOURCES = ['Internal Audit', 'Batch Deviation', 'Equipment Failure', 'Customer Complaint', 'Regulatory Inspection', 'Other'];
 const SEVERITIES = ['Minor', 'Major', 'Critical'];
@@ -22,6 +25,7 @@ const STATUS_STYLE = { Open: 'bg-gray-100 text-gray-600', Investigating: 'bg-ind
 
 export default function CapaPage() {
   const { role, canDo, employeeProfile } = useAuth();
+  const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
 
   const [deviations, setDeviations] = useState([]);
@@ -88,7 +92,7 @@ export default function CapaPage() {
       const res = await fetch('/api/capa', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, payload }) });
       if (!res.ok) throw new Error((await res.json()).error || `Failed: ${action}`);
       return await res.json();
-    } catch (err) { alert(err.message); return null; }
+    } catch (err) { toast.error(err.message); return null; }
   };
 
   const handleRaise = async (data) => {
@@ -122,7 +126,7 @@ export default function CapaPage() {
   };
 
   const handleClose = async () => {
-    if (capaActions.some(a => !a.effectiveness_verified)) return alert("Cannot close. Unverified actions exist.");
+    if (capaActions.some(a => !a.effectiveness_verified)) { toast.warn("Cannot close. Unverified actions exist."); return; }
     const res = await executeApi('PATCH', 'close_deviation', { deviation_id: selected.id });
     if (res?.success) { setSelected(s => ({ ...s, status: 'Closed' })); fetchAll(); }
   };
@@ -242,8 +246,8 @@ export default function CapaPage() {
 
       {isAdmin && deviations.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Severity Breakdown</h3><ResponsiveContainer width="100%" height={150}><BarChart data={[{ name: 'Minor', count: deviations.filter(d => d.severity === 'Minor').length, fill: '#3b82f6' }, { name: 'Major', count: deviations.filter(d => d.severity === 'Major').length, fill: '#f59e0b' }, { name: 'Critical', count: deviations.filter(d => d.severity === 'Critical').length, fill: '#ef4444' }]} barCategoryGap="30%"><CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false}/><XAxis dataKey="name" tick={{ fontSize: 10, fontStyle: 'semibold', fill: '#9ca3af' }}/><YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#9ca3af' }}/><Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }}/><Bar dataKey="count" radius={[4,4,0,0]}>{[{ fill: '#3b82f6' }, { fill: '#f59e0b' }, { fill: '#ef4444' }].map((e, i) => <Cell key={i} fill={e.fill}/>)}</Bar></BarChart></ResponsiveContainer></div>
-          <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Status Breakdown</h3><ResponsiveContainer width="100%" height={150}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} dataKey="value" nameKey="name">{pieData.map((entry, index) => <Cell key={index} fill={entry.fill}/>)}</Pie><Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }}/></PieChart></ResponsiveContainer></div>
+          <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Severity Breakdown</h3><CapaSeverityChart deviations={deviations} /></div>
+          <div className="surface p-4"><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Status Breakdown</h3><CapaStatusChart pieData={pieData} /></div>
         </div>
       )}
 

@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/context/ToastContext';
 import { 
   ShieldAlert, Clock, Calendar, AlertCircle, 
   CheckCircle2, Send, Loader2, ArrowRight, History
@@ -9,6 +10,7 @@ import {
 
 export default function MispunchPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [mispunches, setMispunches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -65,9 +67,9 @@ export default function MispunchPage() {
       setSelectedLog(null);
       setFormData({ hours: '', reason: '' });
       fetchMispunches();
-      alert('Mispunch request submitted for approval!');
+      toast.success('Mispunch request submitted for approval!');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSubmitting(false);
     }

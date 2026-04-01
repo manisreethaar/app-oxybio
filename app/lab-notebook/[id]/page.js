@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/context/ToastContext';
 import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
@@ -13,6 +14,7 @@ export default function LnbEntryPage() {
   const router = useRouter();
   const { id } = params;
   const { employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   
   const [entry, setEntry] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function LnbEntryPage() {
       setConclusions(data.conclusions || '');
     } catch (err) {
       console.error(err);
-      alert('Experiment not found.');
+      toast.error('Experiment not found.');
       router.push('/lab-notebook');
     } finally {
       setLoading(false);
@@ -64,7 +66,7 @@ export default function LnbEntryPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       await fetchEntry();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
 
@@ -78,7 +80,7 @@ export default function LnbEntryPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       await fetchEntry();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
 
@@ -92,7 +94,7 @@ export default function LnbEntryPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       await fetchEntry();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSigning(false); }
   };
 

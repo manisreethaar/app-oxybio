@@ -3,9 +3,9 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { useParams, useRouter } from 'next/navigation';
 import { notifyEmployee } from '@/lib/notifyEmployee';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, AlertTriangle, CheckCircle, Clock, Loader2, ChevronRight, Activity, Beaker, Droplets, Filter, ShieldCheck, XCircle, Archive, ShoppingCart, Tag } from 'lucide-react';
 import Link from 'next/link';
 
@@ -35,6 +35,7 @@ const PARAMETERS = {
 export default function BatchDetailPage() {
   const { batchId } = useParams();
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [batch, setBatch] = useState(null);
   const [logs, setLogs] = useState([]);
   const [availableStock, setAvailableStock] = useState([]);
@@ -121,7 +122,7 @@ export default function BatchDetailPage() {
       const endpoint = isLegacyPh ? '/api/ph/log' : '/api/lab/log';
       const body = isLegacyPh ? { batch_id: batchId, ph_value: parseFloat(paramValue), notes } : { batch_id: batchId, process_type: batch.current_stage, parameter_name: selectedParam.name, parameter_value: parseFloat(paramValue), notes };
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (res.ok) { setParamValue(''); setNotes(''); await fetchBatchDetail(); } else { alert('Failed to log parameter.'); }
+      if (res.ok) { setParamValue(''); setNotes(''); await fetchBatchDetail(); } else { toast.error('Failed to log parameter.'); }
     } finally { setIsSubmitting(false); }
   };
 
@@ -130,7 +131,7 @@ export default function BatchDetailPage() {
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/usage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stock_id: ingredientStockId, batch_id: batchId, quantity_used: parseFloat(ingredientQty) }) });
-      if (res.ok) { setIngredientStockId(''); setIngredientQty(''); await Promise.all([fetchBatchDetail(), fetchStock()]); } else { alert('Failed to link ingredient'); }
+      if (res.ok) { setIngredientStockId(''); setIngredientQty(''); await Promise.all([fetchBatchDetail(), fetchStock()]); } else { toast.error('Failed to link ingredient'); }
     } finally { setIsSubmitting(false); }
   };
 
@@ -139,7 +140,7 @@ const handleStageTransition = async (toStage) => {
 
   // Hard LNB gate — cannot release without notebook entries
   if (toStage === 'released' && batch._lnbCount === 0) {
-    alert('⛔ Cannot release batch. Lab Notebook is empty. Document your experiment in the LNB before releasing.');
+    toast.warn('Cannot release batch — Lab Notebook is empty. Document your experiment in the LNB before releasing.');
     return;
   }
 
@@ -153,16 +154,16 @@ const handleStageTransition = async (toStage) => {
       if (!checkData.ok) {
         if (checkData.missing && checkData.missing.length > 0) {
           const missingMsg = checkData.missing.map(m => `- ${m.name}: Need ${m.required}${m.unit}, Have ${m.available}${m.unit}`).join('\n');
-          alert(`Insufficient inventory. Cannot start batch.\n\nMissing Materials:\n${missingMsg}`);
+          toast.warn(`Insufficient inventory. Missing: ${missingMsg.replace(/\n/g, ', ')}`);
         } else {
-          alert(`Inventory Validation Failed: ${checkData.error || 'Unknown Error'}`);
+          toast.error(`Inventory Validation Failed: ${checkData.error || 'Unknown Error'}`);
         }
         setActionLoading(false);
         return;
       }
       await fetch(`/api/batches/${batchId}/start`, { method: 'POST' });
     } catch (err) {
-      alert('Error starting batch');
+      toast.error('Error starting batch');
       setActionLoading(false);
       return;
     }
@@ -225,7 +226,7 @@ const handleStageTransition = async (toStage) => {
                     const isBlocked = lnbBlocked || trainingBlocked;
                     return (
                       <button 
-                        onClick={() => { if (trainingBlocked) { alert('Training Required.'); return; } handleStageTransition(nextStage); }} 
+                        onClick={() => { if (trainingBlocked) { toast.warn('Training Required.'); return; } handleStageTransition(nextStage); }} 
                         disabled={actionLoading}
                         title={lnbBlocked ? 'LNB required before release' : trainingBlocked ? 'Training required' : `Move to ${nextStage}`}
                         className={`absolute -right-10 top-2.5 p-1 text-white rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 ${lnbBlocked ? 'bg-red-500 animate-pulse' : trainingBlocked ? 'bg-gray-300' : 'bg-navy hover:bg-navy-hover'}`}

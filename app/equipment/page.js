@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X } from 'lucide-react';
 
 const equipSchema = z.object({
@@ -26,6 +27,7 @@ const maintSchema = z.object({
 
 export default function EquipmentPage() {
   const { user, role, canDo, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,10 +89,10 @@ export default function EquipmentPage() {
         setActiveDevice(null);
         await fetchEquipment();
       } else {
-        alert("Action failed: " + resData.error);
+        toast.error("Action failed: " + resData.error);
       }
     } catch (err) {
-      alert("Network error: " + err.message);
+      toast.error("Network error: " + err.message);
     }
   };
 
@@ -108,10 +110,10 @@ export default function EquipmentPage() {
         resetMaint();
         await fetchEquipment();
       } else {
-        alert("Database error saving log: " + resData.error);
+        toast.error("Database error saving log: " + resData.error);
       }
     } catch (err) {
-      alert("Database error saving log: " + err.message);
+      toast.error("Database error saving log: " + err.message);
     }
   };
 
@@ -122,11 +124,11 @@ export default function EquipmentPage() {
       const res = await fetch(`/api/equipment?id=${deletingId}`, { method: 'DELETE' });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
-      
+
       setEquipment(equipment.filter((d) => d.id !== deletingId));
       setDeletingId(null);
     } catch (err) {
-      alert("Failed to delete: " + err.message);
+      toast.error("Failed to delete: " + err.message);
     } finally {
       setIsDeleting(false);
     }

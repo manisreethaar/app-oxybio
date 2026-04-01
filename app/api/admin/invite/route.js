@@ -99,7 +99,7 @@ export async function POST(req) {
               <p style="margin: 4px 0; font-size: 16px; color: #1f2937;"><strong>Employee ID:</strong> ${employee_code || 'TBD'}</p>
             </div>
 
-            <p style="color: #4b5563; font-size: 14px;">Please login at <a href="https://app-oxybio.vercel.app/login" style="color: #1F3A5F; font-weight: 700; text-decoration: none;">OxyOS Login</a> and update your profile details.</p>
+            <p style="color: #4b5563; font-size: 14px;">Please login at <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com'}/login" style="color: #1F3A5F; font-weight: 700; text-decoration: none;">OxyOS Login</a> and update your profile details.</p>
             <p style="color: #9ca3af; font-size: 11px; margin-top: 32px; border-top: 1px solid #f3f4f6; pt: 16px;">This is an automated system email. For support, contact your HR administrator.</p>
           </div>
         `

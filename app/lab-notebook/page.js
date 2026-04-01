@@ -5,12 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 
 export default function DigitalLnbPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [entries, setEntries] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ export default function DigitalLnbPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create entry');
       setShowNew(false); reset(); setAttachedFile(null); fetchData();
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); setUploadProgress(''); }
   };
 

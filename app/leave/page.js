@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } from 'lucide-react';
 import { differenceInBusinessDays } from 'date-fns';
@@ -47,6 +48,7 @@ const STATUS_STYLE = {
 
 export default function LeavePage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [leaves, setLeaves] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -170,7 +172,7 @@ export default function LeavePage() {
         return;
       }
       if (!rejectionReason || rejectionReason.trim().length < 5) {
-        alert("A mandatory rejection reason (min 5 characters) is required.");
+        toast.warn("A mandatory rejection reason (min 5 characters) is required.");
         setActionLoadingId(null);
         return;
       }
@@ -184,7 +186,7 @@ export default function LeavePage() {
         body: JSON.stringify({ id, status, comment })
       });
       const resData = await res.json();
-      if (!res.ok) { alert('Action failed: ' + resData.error); return; }
+      if (!res.ok) { toast.error('Action failed: ' + resData.error); return; }
 
       const updatedLeave = resData.data;
 
@@ -205,7 +207,7 @@ export default function LeavePage() {
       setRejectionId(null);
       setRejectionReason('');
       fetchLeaves();
-    } catch (err) { alert('Error: ' + err.message); }
+    } catch (err) { toast.error('Error: ' + err.message); }
     finally { setActionLoadingId(null); }
   };
 
