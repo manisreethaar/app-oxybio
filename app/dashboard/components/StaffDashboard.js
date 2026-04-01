@@ -146,7 +146,7 @@ export default function StaffDashboard({ employeeProfile }) {
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Batch {batch.batch_id} · {batch.product_name || 'Generic'}</p>
                       <p className="text-sm font-black text-gray-900">Next Action: {nextStepMap[batch.current_stage] || 'Monitor Process Status'}</p>
                     </div>
-                    <Link href={`/batches`} className="text-[10px] font-black text-navy bg-white border border-gray-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
+                    <Link href={`/batches/${batch.id}`} className="text-[10px] font-black text-navy bg-white border border-gray-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
                       GO TO BATCH
                     </Link>
                   </div>

@@ -52,7 +52,7 @@ export default function CapaPage() {
     defaultValues: { action_type: 'Corrective', title: '', description: '', assigned_to: '', due_date: '' }
   });
 
-  const isAdmin = (canDo && canDo('capa', 'manage')) || role === 'admin';
+  const isAdmin = role === 'admin' || role === 'ceo' || role === 'cto';
 
   useEffect(() => { fetchAll(); }, []);
 

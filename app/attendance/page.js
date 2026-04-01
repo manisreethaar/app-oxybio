@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
-import { Clock, Download, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, ShieldCheck, Loader2, BarChart2, TrendingUp } from 'lucide-react';
+import { Clock, Download, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, ShieldCheck, Loader2, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 

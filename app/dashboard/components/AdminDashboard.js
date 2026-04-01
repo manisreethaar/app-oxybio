@@ -361,9 +361,7 @@ export default function AdminDashboard({ employeeId }) {
                       onClick={async () => {
                         if (confirm(`Approve ${log.mispunch_requested_hours}h for ${log.employees?.full_name}?`)) {
                           setReviewingMispunch(log);
-                          // We need to pass the log ID to the function, but our state is more complex.
-                          // Actually, let's just use the modal for everything to be safe.
-                          setReviewingMispunch(log);
+                          await handleMispunchReview('approve');
                         }
                       }}
                       className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
