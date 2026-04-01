@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
-import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Package, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
+import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
 import Link from 'next/link';
@@ -16,7 +16,6 @@ export default function AdminDashboard({ employeeId }) {
   const [stats, setStats] = useState({ batches: 0, leaves: 0, tasks: 0, compliance: 0 });
   const [alerts, setAlerts] = useState([]);
   const [activeBatches, setActiveBatches] = useState([]);
-  const [inventoryAlerts, setInventoryAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [thresholds, setThresholds] = useState({ minPh: 4.0, maxPh: 7.8, tempMax: 35 });
@@ -70,88 +69,30 @@ export default function AdminDashboard({ employeeId }) {
   const fetchDashboardData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-
-      const results = await Promise.all([
-        supabase.from('ph_readings').select('batch_id').eq('is_deviation', true).eq('deviation_acknowledged', false),
-        supabase.from('compliance_items').select('id').eq('status', 'overdue'),
-        supabase.from('batches').select('*, ph_readings(ph_value, is_deviation)').not('status', 'in', '("released","rejected")'),
-        supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending'),
-        supabase.from('tasks').select('id', { count: 'exact' }).eq('status', 'open').eq('priority', 'urgent'),
-        supabase.from('compliance_items').select('id', { count: 'exact' }).in('status', ['upcoming', 'in-progress']),
-        supabase.from('batches').select('status, created_at').in('status', ['released', 'rejected']).order('created_at', { ascending: true }),
-        supabase.from('inventory_stock').select('*, inventory_items(name, unit, min_stock_level)').eq('status', 'Available').gt('current_quantity', 0),
-        supabase.from('attendance_log').select('id').eq('date', todayStr),
-        supabase.from('employees').select('id', { count: 'exact' }).eq('is_active', true),
-        supabase.from('attendance_log').select('*, employees(full_name)').eq('mispunch_status', 'pending')
-      ]);
-
-      const [devReq, overReq, batchesReq, leavesReq, tasksReq, compReq, batchHistoryReq, invStockReq, attendanceReq, totalEmpsReq, mispunchesReq] = results;
+      const res = await fetch('/api/admin/dashboard-stats');
+      const result = await res.json();
       
-      const deviations = devReq.data;
-      const overdues = overReq.data;
-      const batches = batchesReq.data;
-      const leaves = leavesReq.data;
-      const openTasksCount = tasksReq.count || 0;
-      const compDueCount = compReq.count || 0;
-      const mispunches = mispunchesReq.data || [];
-
-      // Build real chart data — group by month
-      const batchHistory = batchHistoryReq.data || [];
-      const monthMap = {};
-      const now = new Date();
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        monthMap[key] = { month: key, Released: 0, Rejected: 0 };
-      }
-      batchHistory.forEach(b => {
-        const key = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        if (monthMap[key]) {
-          if (b.status === 'released') monthMap[key].Released++;
-          else if (b.status === 'rejected') monthMap[key].Rejected++;
+      if (result.success) {
+        const { stats, leaves, mispunches, activeBatches, chartData } = result.data;
+        
+        setStats({
+          batches: stats.activeBatches,
+          leaves: stats.pendingLeaves,
+          tasks: stats.urgentTasks,
+          compliance: stats.upcomingCompliance
+        });
+        setChartData(chartData);
+        setActiveBatches(activeBatches);
+        setAttendanceStats({ checkedIn: stats.checkedInToday, total: stats.totalEmployees });
+        setPendingMispunches(mispunches);
+        
+        // Set alerts for unacknowledged deviations
+        if (stats.unacknowledgedDeviations > 0) {
+          setAlerts([{ type: 'deviation', count: stats.unacknowledgedDeviations, message: 'Unacknowledged pH deviations need attention' }]);
         }
-      });
-      setChartData(Object.values(monthMap));
-
-      // Build inventory alerts for low stock
-      const invStock = invStockReq.data || [];
-      const lowStock = invStock.filter(s => {
-        const minLevel = parseFloat(s.inventory_items?.min_stock_level || 0);
-        return minLevel > 0 && parseFloat(s.current_quantity) <= minLevel;
-      });
-      // Also check expiring within 30 days
-      const soonExpiring = invStock.filter(s => {
-        if (!s.expiry_date) return false;
-        const daysLeft = Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-        return daysLeft >= 0 && daysLeft <= 30;
-      });
-      setInventoryAlerts({ lowStock: lowStock.length, expiring: soonExpiring.length });
-
-      // Attendance
-      setAttendanceStats({
-        checkedIn: (attendanceReq.data || []).length,
-        total: totalEmpsReq.count || 0
-      });
-
-      const newAlerts = [];
-      if (deviations?.length > 0) newAlerts.push({ message: `Critical: ${deviations.length} unacknowledged pH deviation(s)!`, type: 'danger', link: '/batches' });
-      if (overdues?.length > 0) newAlerts.push({ message: `${overdues.length} compliance item(s) are overdue.`, type: 'warning', link: '/compliance' });
-      if (lowStock.length > 0) newAlerts.push({ message: `${lowStock.length} inventory item(s) below minimum threshold.`, type: 'warning', link: '/inventory' });
-      setAlerts(newAlerts);
-
-      setActiveBatches(batches || []);
-      setStats({
-        batches: batches?.length || 0,
-        leaves: leaves?.length || 0,
-        tasks: openTasksCount,
-        compliance: compDueCount,
-        mispunches: mispunches.length
-      });
-      setPendingMispunches(mispunches);
-
-    } catch (error) {
-      console.error('Error fetching dashboard:', error);
+      }
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -273,28 +214,6 @@ export default function AdminDashboard({ employeeId }) {
           link="/attendance"
           subtitle="Live"
         />
-      </div>
-
-      {/* Inventory Summary Row */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link href="/inventory?filter=low" className="surface p-5 flex items-center gap-4 hover:border-gray-300 transition-all">
-          <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
-            <Package className="w-5 h-5 text-orange-600" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Low Stock Items</p>
-            <p className={`text-3xl font-black tracking-tight ${inventoryAlerts.lowStock > 0 ? 'text-orange-600' : 'text-gray-900'}`}>{inventoryAlerts.lowStock || 0}</p>
-          </div>
-        </Link>
-        <Link href="/inventory?filter=expiring" className="surface p-5 flex items-center gap-4 hover:border-gray-300 transition-all">
-          <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-            <CalendarDays className="w-5 h-5 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Expiring &lt;30 Days</p>
-            <p className={`text-3xl font-black tracking-tight ${inventoryAlerts.expiring > 0 ? 'text-amber-600' : 'text-gray-900'}`}>{inventoryAlerts.expiring || 0}</p>
-          </div>
-        </Link>
       </div>
 
       {/* Live Production Chart */}
