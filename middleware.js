@@ -27,18 +27,28 @@ export async function middleware(request) {
     }
   );
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  
-  const user = session?.user;
+  let user = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    user = session?.user ?? null;
+  } catch {
+    // Auth service unavailable — fail open so users aren't locked out.
+    // Individual server components still validate the session on their own.
+    return supabaseResponse;
+  }
 
-  const isAuthRoute = request.nextUrl.pathname === '/login';
-  
-  // Protect specific routes
-  const protectedRoutes = ['/dashboard', '/leave', '/attendance', '/tasks', '/activity', '/batches', '/compliance', '/documents', '/payslips', '/sops', '/admin', '/notifications', '/directory', '/formulations', '/shelf-life', '/research', '/calendar'];
-  
-  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute = pathname === '/login';
+
+  const protectedRoutes = [
+    '/dashboard', '/leave', '/attendance', '/tasks', '/activity',
+    '/batches', '/compliance', '/documents', '/payslips', '/sops',
+    '/admin', '/notifications', '/directory', '/formulations',
+    '/shelf-life', '/research', '/calendar', '/inventory', '/profile',
+    '/capa', '/equipment', '/lab-notebook', '/mispunch',
+  ];
+
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
@@ -51,8 +61,8 @@ export async function middleware(request) {
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
-  
-  if (request.nextUrl.pathname === '/') {
+
+  if (pathname === '/') {
     const url = request.nextUrl.clone();
     url.pathname = user ? '/dashboard' : '/login';
     return NextResponse.redirect(url);
