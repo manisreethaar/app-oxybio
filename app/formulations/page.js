@@ -331,21 +331,22 @@ export default function FormulationsPage() {
                            </div>
                         )}
                       </div>
-                      {/* Inline delete confirm strip — replaces window.confirm() */}
-                      {pendingDeleteId === f.id && (
-                        <div className="flex items-center gap-2 mt-1 p-2 bg-red-50 border border-red-200 rounded-lg animate-in fade-in duration-150">
-                          <span className="text-[10px] font-bold text-red-700 flex-1">Permanently delete this recipe?</span>
-                          <button
-                            onClick={() => handleDeleteRecipe(f.id)}
-                            className="px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded hover:bg-red-700"
-                          >Yes, Delete</button>
-                          <button
-                            onClick={() => setPendingDeleteId(null)}
-                            className="px-2 py-1 bg-white border border-gray-200 text-gray-500 text-[10px] font-black rounded hover:bg-gray-50"
-                          >Cancel</button>
-                        </div>
-                      )}
                     </div>
+
+                    {/* Inline delete confirm strip — OUTSIDE flex row, renders full-width below badges */}
+                    {pendingDeleteId === f.id && (
+                      <div className="flex items-center gap-2 mb-3 p-2 bg-red-50 border border-red-200 rounded-lg animate-in fade-in duration-150">
+                        <span className="text-[10px] font-bold text-red-700 flex-1">Permanently delete this recipe?</span>
+                        <button
+                          onClick={() => handleDeleteRecipe(f.id)}
+                          className="px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded hover:bg-red-700"
+                        >Yes, Delete</button>
+                        <button
+                          onClick={() => setPendingDeleteId(null)}
+                          className="px-2 py-1 bg-white border border-gray-200 text-gray-500 text-[10px] font-black rounded hover:bg-gray-50"
+                        >Cancel</button>
+                      </div>
+                    )}
 
                     <h3 className="text-lg font-bold text-gray-900 mb-0.5">{f.name}</h3>
                     <p className="text-xs font-bold text-navy mb-3 font-mono">{f.code}</p>
