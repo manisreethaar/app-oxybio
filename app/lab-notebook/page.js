@@ -98,7 +98,7 @@ export default function DigitalLnbPage() {
     return badges[status] || null;
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="page-container space-y-6">
         <div className="flex justify-between items-center"><Skeleton width={200} height={32}/> <Skeleton width={150} height={40}/></div>
@@ -106,7 +106,6 @@ export default function DigitalLnbPage() {
       </div>
     );
   }
-  if (!employeeProfile) return null;
 
   return (
     <div className="page-container text-gray-900">

@@ -75,7 +75,7 @@ export default function MispunchPage() {
     }
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-gray-400">Syncing attendance records...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-400">Syncing attendance records...</div>;
 
   const requiredLogs = mispunches.filter(m => m.mispunch_status === 'required');
   const historyLogs = mispunches.filter(m => m.mispunch_status !== 'required');

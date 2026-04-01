@@ -190,7 +190,7 @@ export default function BatchesPage() {
   };
 
   // ─── Loading State ────────────────────────────────────────
-  if (authLoading || loadingBatches) {
+  if (loadingBatches) {
     return (
       <div className="page-container space-y-8">
         <div className="flex justify-between items-center">

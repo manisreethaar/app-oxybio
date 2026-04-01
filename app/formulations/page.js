@@ -207,7 +207,7 @@ export default function FormulationsPage() {
         return s === statusFilter;
       });
 
-  if (authLoading || (loading && formulations.length === 0)) {
+  if (loading && formulations.length === 0) {
     return (
       <div className="page-container space-y-8">
         <div className="flex justify-between items-center"><Skeleton width={250} height={32}/> <Skeleton width={180} height={40}/></div>

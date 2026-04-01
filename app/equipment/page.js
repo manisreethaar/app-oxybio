@@ -135,7 +135,7 @@ export default function EquipmentPage() {
   };
 
 
-  if (authLoading || loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  if (loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">

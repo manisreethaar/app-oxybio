@@ -243,7 +243,7 @@ export default function AttendancePage() {
     return ((end - start) / (1000 * 60 * 60)).toFixed(1);
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-slate-500">Loading attendance data...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500">Loading attendance data...</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">

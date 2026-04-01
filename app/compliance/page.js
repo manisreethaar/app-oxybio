@@ -95,7 +95,7 @@ export default function CompliancePage() {
     }
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading compliance data...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading compliance data...</div>;
 
   const overdue = items.filter(i => i.calculated_status === 'overdue');
   const thisWeek = items.filter(i => i.calculated_status !== 'done' && i.calculated_status !== 'overdue' && differenceInDays(new Date(i.due_date), new Date()) <= 7);

@@ -119,7 +119,7 @@ export default function DocumentsPage() {
     return null;
   };
 
-  if (authLoading || loading) return <div className="p-8 text-center text-gray-500">Loading documents...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading documents...</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">

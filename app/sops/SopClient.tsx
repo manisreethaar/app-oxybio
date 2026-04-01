@@ -141,7 +141,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="page-container space-y-6">
         <div className="flex justify-between items-center"><Skeleton width={200} height={30}/> <Skeleton width={100} height={40}/></div>
