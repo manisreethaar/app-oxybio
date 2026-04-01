@@ -333,20 +333,7 @@ export default function FormulationsPage() {
                       </div>
                     </div>
 
-                    {/* Inline delete confirm strip — OUTSIDE flex row, renders full-width below badges */}
-                    {pendingDeleteId === f.id && (
-                      <div className="flex items-center gap-2 mb-3 p-2 bg-red-50 border border-red-200 rounded-lg animate-in fade-in duration-150">
-                        <span className="text-[10px] font-bold text-red-700 flex-1">Permanently delete this recipe?</span>
-                        <button
-                          onClick={() => handleDeleteRecipe(f.id)}
-                          className="px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded hover:bg-red-700"
-                        >Yes, Delete</button>
-                        <button
-                          onClick={() => setPendingDeleteId(null)}
-                          className="px-2 py-1 bg-white border border-gray-200 text-gray-500 text-[10px] font-black rounded hover:bg-gray-50"
-                        >Cancel</button>
-                      </div>
-                    )}
+
 
                     <h3 className="text-lg font-bold text-gray-900 mb-0.5">{f.name}</h3>
                     <p className="text-xs font-bold text-navy mb-3 font-mono">{f.code}</p>
@@ -589,6 +576,31 @@ export default function FormulationsPage() {
                 className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700"
               >
                 Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {pendingDeleteId && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Delete Recipe</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to permanently delete this recipe? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingDeleteId(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleDeleteRecipe(pendingDeleteId)}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full inline-flex items-center justify-center gap-2"
+                disabled={actionLoading === pendingDeleteId}
+              >
+                {actionLoading === pendingDeleteId ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Trash2 className="w-4 h-4"/> Delete</>}
               </button>
             </div>
           </div>
