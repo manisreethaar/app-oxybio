@@ -29,19 +29,18 @@ function clearCache() {
 }
 
 // ─────────────────────────────────────────────────────────────
-export const AuthProvider = ({ children, initialSession }) => {
-  const supabase      = createClient(); // singleton — no useMemo needed
+export const AuthProvider = ({ children, initialSession, initialProfile }) => {
+  const supabase      = createClient();
   const router        = useRouter();
   const fetchingRef   = useRef(false);
   const initializedRef= useRef(false);
 
-  // Restore profile from cache SYNCHRONOUSLY — no loading spinner on warm sessions
   const cachedProfile = readCache();
+  const serverProfile = initialProfile || null;
 
   const [user,            setUser]            = useState(initialSession?.user || null);
-  const [employeeProfile, setEmployeeProfile] = useState(cachedProfile);
-  // If we have a cached profile, start as NOT loading → page renders immediately
-  const [loading,         setLoading]         = useState(!cachedProfile);
+  const [employeeProfile, setEmployeeProfile] = useState(cachedProfile || serverProfile);
+  const [loading,         setLoading]         = useState(!cachedProfile && !serverProfile);
   const [sessionExpired,  setSessionExpired]  = useState(false);
 
   // ── Profile fetcher ──────────────────────────────────────
@@ -102,10 +101,23 @@ export const AuthProvider = ({ children, initialSession }) => {
       // Step 2: If we already showed cached data, revalidate silently in background
       const cached = readCache();
       if (cached && cached.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
-        // Already rendered with cache — just confirm in background
         setLoading(false);
         initializedRef.current = true;
-        // Background revalidation
+        fetchProfile(currentUser.email).then(fresh => {
+          if (mounted && fresh) {
+            setEmployeeProfile(fresh);
+            writeCache(fresh);
+          }
+        });
+        return;
+      }
+
+      // Step 2b: If we have server profile, use it immediately
+      if (serverProfile && serverProfile.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
+        setEmployeeProfile(serverProfile);
+        writeCache(serverProfile);
+        setLoading(false);
+        initializedRef.current = true;
         fetchProfile(currentUser.email).then(fresh => {
           if (mounted && fresh) {
             setEmployeeProfile(fresh);
@@ -127,8 +139,8 @@ export const AuthProvider = ({ children, initialSession }) => {
       }
     };
 
-    // Safety valve — if everything hangs (cold start + cache miss), unblock at 6s
-    const safety = setTimeout(() => { if (mounted) setLoading(false); }, 6000);
+    // Safety valve — if everything hangs (cold start + cache miss), unblock at 2s
+    const safety = setTimeout(() => { if (mounted) setLoading(false); }, 2000);
 
     init();
 

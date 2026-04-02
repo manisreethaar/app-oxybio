@@ -15,7 +15,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  if (!employeeProfile) return null;
+  const isLoading = !employeeProfile;
+  const effectiveRole = role || 'intern';
+  const effectiveCanDo = isLoading ? () => true : canDo;
 
   const getInitials = (name) => {
     if (!name) return 'OB';
@@ -32,53 +34,53 @@ export default function Sidebar() {
     {
       title: 'OPERATIONS HUB',
       items: [
-        { name: 'Dashboard',         href: '/dashboard',  icon: LayoutDashboard, show: canDo('dashboard', 'view') },
-        { name: 'Operations Center', href: '/activity',   icon: Activity,        show: canDo('activity', 'view') },
-        { name: 'Task Manager',      href: '/tasks',      icon: CheckSquare,     show: canDo('tasks', 'view') },
+        { name: 'Dashboard',         href: '/dashboard',  icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Operations Center', href: '/activity',   icon: Activity,        show: effectiveCanDo('activity', 'view') },
+        { name: 'Task Manager',      href: '/tasks',      icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
       ]
     },
     {
       title: 'LABORATORY',
       items: [
-        { name: 'Recipe Management', href: '/formulations', icon: Beaker,          show: canDo('batches', 'view') },
-        { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: canDo('batches', 'view') },
-        { name: 'Digital LNB',       href: '/lab-notebook', icon: BookOpen,        show: canDo('lab_notebook', 'view') },
-        { name: 'Equipment Maint.',  href: '/equipment',    icon: Wrench,          show: canDo('equipment', 'view') },
-        { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: canDo('inventory', 'view') },
-        { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: canDo('sops', 'view') },
+        { name: 'Recipe Management', href: '/formulations', icon: Beaker,          show: effectiveCanDo('batches', 'view') },
+        { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: effectiveCanDo('batches', 'view') },
+        { name: 'Digital LNB',       href: '/lab-notebook', icon: BookOpen,        show: effectiveCanDo('lab_notebook', 'view') },
+        { name: 'Equipment Maint.',   href: '/equipment',    icon: Wrench,          show: effectiveCanDo('equipment', 'view') },
+        { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: effectiveCanDo('inventory', 'view') },
+        { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: effectiveCanDo('sops', 'view') },
       ]
     },
     {
       title: 'SCIENCE & OPS',
       items: [
-        { name: 'Shelf-Life Info',   href: '/shelf-life',   icon: Clock,           show: canDo('batches', 'view') },
-        { name: 'Consumer Panels',   href: '/research',     icon: Activity,        show: canDo('batches', 'view') },
-        { name: 'Grant Calendar',    href: '/calendar',     icon: CalendarDays,    show: canDo('batches', 'view') },
+        { name: 'Shelf-Life Info',   href: '/shelf-life',   icon: Clock,           show: effectiveCanDo('batches', 'view') },
+        { name: 'Consumer Panels',   href: '/research',     icon: Activity,        show: effectiveCanDo('batches', 'view') },
+        { name: 'Grant Calendar',    href: '/calendar',     icon: CalendarDays,    show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
       title: 'MY WORKSPACE',
       items: [
-        { name: 'Check-In & Attendance', href: '/attendance', icon: Clock, show: canDo('attendance', 'view') },
-        { name: 'Mispunch Requests',  href: '/mispunch',     icon: ShieldAlert,     show: canDo('attendance', 'view') },
-        { name: 'Leave Requests',    href: '/leave',        icon: CalendarOff,     show: canDo('leave', 'view') },
-        { name: 'My Payslips',       href: '/payslips',     icon: Receipt,         show: canDo('payslips', 'view_own') },
+        { name: 'Check-In & Attendance', href: '/attendance', icon: Clock, show: effectiveCanDo('attendance', 'view') },
+        { name: 'Mispunch Requests',  href: '/mispunch',     icon: ShieldAlert,     show: effectiveCanDo('attendance', 'view') },
+        { name: 'Leave Requests',    href: '/leave',        icon: CalendarOff,     show: effectiveCanDo('leave', 'view') },
+        { name: 'My Payslips',       href: '/payslips',     icon: Receipt,         show: effectiveCanDo('payslips', 'view_own') },
       ]
     },
     {
       title: 'ADMIN & COMPLIANCE',
       items: [
-        { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: canDo('documents', 'view') },
-        { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: canDo('compliance', 'view') },
-        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: ['admin','ceo','cto'].includes(role) },
-        { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: ['admin', 'ceo', 'cto'].includes(role) },
+        { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: effectiveCanDo('documents', 'view') },
+        { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: effectiveCanDo('compliance', 'view') },
+        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: ['admin','ceo','cto'].includes(effectiveRole) },
+        { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
       ]
     },
     {
       title: 'ACCOUNT',
       items: [
-        { name: 'My Profile',        href: '/profile',      icon: UserCircle,    show: canDo('dashboard', 'view') },
-        { name: 'Staff Directory',   href: '/directory',    icon: Contact,       show: canDo('directory', 'view') },
+        { name: 'My Profile',        href: '/profile',      icon: UserCircle,    show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Staff Directory',   href: '/directory',    icon: Contact,       show: effectiveCanDo('directory', 'view') },
       ]
     }
   ];
@@ -196,14 +198,14 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Mobile Bottom Dock (Fixed, No Scrolling) */}
+        {/* Mobile Bottom Dock (Fixed, No Scrolling) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-40 pb-safe shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] px-2">
         {/* Render only 4 explicit quick actions in the dock */}
         {[
-          { name: 'Dash', href: '/dashboard', icon: LayoutDashboard, show: canDo('dashboard', 'view') },
-          { name: 'Activity', href: '/activity', icon: Activity, show: canDo('activity', 'view') },
-          { name: 'Check-In', href: '/attendance', icon: Clock, show: canDo('attendance', 'view') },
-          { name: 'Tasks', href: '/tasks', icon: CheckSquare, show: canDo('tasks', 'view') }
+          { name: 'Dash', href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+          { name: 'Activity', href: '/activity', icon: Activity, show: effectiveCanDo('activity', 'view') },
+          { name: 'Check-In', href: '/attendance', icon: Clock, show: effectiveCanDo('attendance', 'view') },
+          { name: 'Tasks', href: '/tasks', icon: CheckSquare, show: effectiveCanDo('tasks', 'view') }
         ].filter(i=>i.show).slice(0, 4).map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           const Icon = item.icon;
