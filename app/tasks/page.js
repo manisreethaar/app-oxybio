@@ -67,6 +67,7 @@ export default function TasksPage() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [progressNote, setProgressNote] = useState('');
   const [progressPercentage, setProgressPercentage] = useState(0);
+  const [pendingDeleteTask, setPendingDeleteTask] = useState(null);
 
   useEffect(() => {
     if (selectedTask) {
@@ -208,8 +209,14 @@ export default function TasksPage() {
     setSelectedTask(null);
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (!confirm('Permanently delete this task?')) return;
+  const handleDeleteTask = (taskId) => {
+    setPendingDeleteTask(taskId);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!pendingDeleteTask) return;
+    const taskId = pendingDeleteTask;
+    setPendingDeleteTask(null);
     try {
       const res = await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
       if (res.ok) { 
@@ -702,6 +709,32 @@ export default function TasksPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Task Modal */}
+      {pendingDeleteTask && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Delete Task</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Are you sure you want to permanently delete this task? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingDeleteTask(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteTask}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full"
+              >
+                ⚠ Delete
+              </button>
             </div>
           </div>
         </div>

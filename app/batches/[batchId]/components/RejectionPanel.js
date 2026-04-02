@@ -9,6 +9,7 @@ export default function RejectionPanel({ batch, employeeProfile, role, supabase,
   const toast    = useToast();
   const [record, setRecord]   = useState(null);
   const [saving, setSaving]   = useState(false);
+  const [pendingReject, setPendingReject] = useState(false);
   const isCeo    = ['ceo','admin'].includes(role);
 
   const [reason,   setReason]   = useState('');
@@ -27,7 +28,11 @@ export default function RejectionPanel({ batch, employeeProfile, role, supabase,
 
   const handleSave = async () => {
     if (!reason.trim()) { toast.warn('Rejection reason is required.'); return; }
-    if (!confirm('Confirm batch rejection? This action is permanent.')) return;
+    setPendingReject(true);
+  };
+
+  const confirmReject = async () => {
+    setPendingReject(false);
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_rejection_record').upsert({
@@ -126,6 +131,30 @@ export default function RejectionPanel({ batch, employeeProfile, role, supabase,
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {/* Rejection Modal */}
+      {pendingReject && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Batch Rejection</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Confirm batch rejection? This act is permanent and will formally log the rejection for QA trailing.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingReject(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmReject}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full"
+              >
+                ✗ Confirm Rejection
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

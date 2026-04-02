@@ -20,6 +20,8 @@ export default function LnbEntryPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [signing, setSigning] = useState(false);
+  const [pendingSubmitReview, setPendingSubmitReview] = useState(false);
+  const [pendingCountersign, setPendingCountersign] = useState(false);
 
   // Form mutable states
   const [title, setTitle] = useState('');
@@ -70,8 +72,12 @@ export default function LnbEntryPage() {
     finally { setSaving(false); }
   };
 
-  const handleSubmitReview = async () => {
-    if (!window.confirm("Are you sure? Once submitted, this notebook entry will be locked for review.")) return;
+  const handleSubmitReview = () => {
+    setPendingSubmitReview(true);
+  };
+
+  const confirmSubmitReview = async () => {
+    setPendingSubmitReview(false);
     setSaving(true);
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, {
@@ -84,8 +90,12 @@ export default function LnbEntryPage() {
     finally { setSaving(false); }
   };
 
-  const handleCountersign = async () => {
-    if (!window.confirm("By countersigning, you legally verify this document's contents. Proceed?")) return;
+  const handleCountersign = () => {
+    setPendingCountersign(true);
+  };
+
+  const confirmCountersign = async () => {
+    setPendingCountersign(false);
     setSigning(true);
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, {
@@ -230,6 +240,58 @@ export default function LnbEntryPage() {
         </div>
 
       </div>
+
+      {/* Submit Review Modal */}
+      {pendingSubmitReview && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Submit for Review</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Are you sure you want to submit? Once submitted, this notebook entry will be locked for review and you can no longer edit it.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingSubmitReview(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmSubmitReview}
+                className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition w-full"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Countersign Modal */}
+      {pendingCountersign && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Countersign Document</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              By countersigning, you legally verify this document&apos;s contents and attest to its accuracy. Proceed?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingCountersign(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmCountersign}
+                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
+              >
+                ✓ Countersign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

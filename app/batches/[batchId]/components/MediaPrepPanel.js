@@ -7,6 +7,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const toast = useToast();
   const [data,   setData]   = useState(null);
   const [saving, setSaving] = useState(false);
+  const [pendingOverride, setPendingOverride] = useState(null);
   const isIntern = ['intern','research_intern'].includes(role);
   const isF2 = batch.experiment_type === 'F2';
 
@@ -68,7 +69,20 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
   const handleSave = async (advance = false) => {
     if (isIntern && !supervisedBy) { toast.warn('Select a supervisor.'); return; }
-    if (ragiMoist === 'Fail' && !confirm('Ragi moisture check failed — log deviation before continuing?')) return;
+    if (ragiMoist === 'Fail') {
+      setPendingOverride(advance);
+      return;
+    }
+    await executeSave(advance);
+  };
+
+  const confirmOverride = async () => {
+    const advance = pendingOverride;
+    setPendingOverride(null);
+    await executeSave(advance);
+  };
+
+  const executeSave = async (advance = false) => {
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_stage_media_prep').upsert({
@@ -200,6 +214,30 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           </button>
         </div>
       </div>
+
+      {/* Override Modal */}
+      {pendingOverride !== null && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Safety Override</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Ragi moisture check failed. Please ensure you log a Process Deviation before continuing. Proceed anyway?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingOverride(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmOverride}
+                className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition w-full"
+              >
+                ⚠ Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

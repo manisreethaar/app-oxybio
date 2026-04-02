@@ -21,6 +21,7 @@ export default function ShelfLifePage() {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingConclude, setPendingConclude] = useState(null);
 
   const { register, handleSubmit, reset, watch, setValue } = useForm({
     resolver: zodResolver(z.object({
@@ -69,8 +70,14 @@ export default function ShelfLifePage() {
     finally { setSubmitting(false); }
   };
 
-  const concludeStudy = async (id) => {
-    if (!window.confirm("Are you sure you want to conclude this stability study? It will be marked as Completed.")) return;
+  const concludeStudy = (id) => {
+    setPendingConclude(id);
+  };
+
+  const confirmConclude = async () => {
+    if (!pendingConclude) return;
+    const id = pendingConclude;
+    setPendingConclude(null);
     try {
       const res = await fetch('/api/shelf-life', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -205,6 +212,32 @@ export default function ShelfLifePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Conclude Study Modal */}
+      {pendingConclude && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Conclude Study</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Are you sure you want to conclude this stability study? It will be marked as Completed.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingConclude(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmConclude}
+                className="flex-1 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition w-full shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+              >
+                ✓ Conclude
+              </button>
+            </div>
           </div>
         </div>
       )}

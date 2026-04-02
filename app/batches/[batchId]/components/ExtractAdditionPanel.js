@@ -11,6 +11,7 @@ export default function ExtractAdditionPanel({ batch, availableStock, employees,
   const toast    = useToast();
   const [saving, setSaving] = useState(false);
   const [strainingVol, setStrainingVol] = useState(null);
+  const [pendingPhOverride, setPendingPhOverride] = useState(false);
 
   const [species,    setSpecies]    = useState("Lion's Mane");
   const [lotId,      setLotId]      = useState('');
@@ -61,8 +62,18 @@ export default function ExtractAdditionPanel({ batch, availableStock, employees,
   const handleSave = async (advance = false) => {
     if (advance && !finalPh) { toast.warn('Final product pH is required before advancing to QC Hold.'); return; }
     if (phTooHigh && advance) {
-      if (!confirm(`Final pH ${finalPh} is > 5.0 (microbial safety concern). CEO confirmation required. Continue?`)) return;
+      setPendingPhOverride(true);
+      return;
     }
+    await executeSave(advance);
+  };
+
+  const confirmPhOverride = async () => {
+    setPendingPhOverride(false);
+    await executeSave(true);
+  };
+
+  const executeSave = async (advance = false) => {
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_stage_extract_addition').upsert({
@@ -218,6 +229,34 @@ export default function ExtractAdditionPanel({ batch, availableStock, employees,
           </button>
         </div>
       </div>
+
+      {/* pH Override Modal */}
+      {pendingPhOverride && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-amber-600 mb-2 text-center flex items-center justify-center gap-2">
+              <AlertTriangle className="w-5 h-5"/> pH Override
+            </h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Final pH <strong className="text-amber-600">{finalPh}</strong> is &gt; 5.0 (microbial safety concern). CEO confirmation is officially required. Proceed and advance to QC Hold?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingPhOverride(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmPhOverride}
+                className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition w-full"
+              >
+                ⚠ Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
