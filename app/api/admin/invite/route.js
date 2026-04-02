@@ -3,6 +3,35 @@ import { createClient as createServerClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
+const COMPANY_PREFIX = 'O2B';
+
+async function claimReleasedCode(supabaseAdmin, prefix) {
+  const { data: released } = await supabaseAdmin
+    .from('released_employee_codes')
+    .select('employee_code')
+    .ilike('employee_code', `${prefix}%`)
+    .order('released_at', { ascending: true })
+    .limit(1);
+  
+  if (released && released.length > 0) {
+    const code = released[0].employee_code;
+    await supabaseAdmin.from('released_employee_codes').delete().eq('employee_code', code);
+    return code;
+  }
+  return null;
+}
+
+function generateEmployeeCode(existingCodes, designationCode) {
+  if (!designationCode || designationCode.trim().length < 1) return '';
+  const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-`;
+  const existing = existingCodes
+    .filter(c => c && c.startsWith(prefix))
+    .map(c => parseInt(c.replace(prefix, ''), 10))
+    .filter(n => !isNaN(n));
+  const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+  return `${prefix}${String(nextNum).padStart(3, '0')}`;
+}
+
 export async function POST(req) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
@@ -40,14 +69,44 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });
     }
 
-    let { email, password, full_name, role, department, employee_code, designation, joined_date } = await req.json();
+    let { email, password, full_name, role, department, employee_code, designation, joined_date, designation_code } = await req.json();
     email = email.toLowerCase().trim();
 
     if (!email || !password || !full_name || !role || !department) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Variables serviceKey and supabaseAdmin are already declared above
+    // Handle employee code: check released codes first, or generate if not provided
+    const ROLE_TO_CODE = {
+      'ceo': 'CE', 'cto': 'CT', 'research_fellow': 'RF', 'scientist': 'SC',
+      'research_intern': 'RI', 'intern': 'IN', 'admin': 'AD', 'staff': 'ST',
+    };
+    const codePrefix = designation_code || ROLE_TO_CODE[role] || 'ST';
+
+    if (employee_code) {
+      // If frontend provided a code, check if it's already released and claim it
+      const { data: releasedCheck } = await supabaseAdmin
+        .from('released_employee_codes')
+        .select('employee_code')
+        .eq('employee_code', employee_code);
+      if (releasedCheck && releasedCheck.length > 0) {
+        await supabaseAdmin.from('released_employee_codes').delete().eq('employee_code', employee_code);
+      }
+    } else {
+      // No code provided - check released codes first
+      const releasedCode = await claimReleasedCode(supabaseAdmin, `${COMPANY_PREFIX}-${codePrefix}-`);
+      if (releasedCode) {
+        employee_code = releasedCode;
+      } else {
+        // Generate new code based on active employees
+        const { data: activeEmps } = await supabaseAdmin
+          .from('employees')
+          .select('employee_code')
+          .eq('is_active', true);
+        const existingCodes = (activeEmps || []).map(e => e.employee_code).filter(Boolean);
+        employee_code = generateEmployeeCode(existingCodes, codePrefix);
+      }
+    }
 
     // Create user in Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({

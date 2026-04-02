@@ -17,11 +17,8 @@ import { useRouter } from 'next/navigation';
 //   DESIG = Designation abbreviation (admin picks), e.g. RF, LA, TL, PM
 //   SEQ   = 3-digit padded sequential number, increments per designation
 //
-// Examples:
-//   O2B-RF-001  → 1st Research Fellow
-//   O2B-RF-002  → 2nd Research Fellow
-//   O2B-LA-001  → 1st Lab Analyst
-//   O2B-IA-001  → 1st Intern Associate
+// Released codes are handled by the backend - frontend shows preview based on
+// active employees only. Backend will use released codes if available.
 //
 const COMPANY_PREFIX = 'O2B';
 
@@ -33,6 +30,11 @@ const DESIGNATION_PRESETS = [
   { label: 'Intern', code: 'IN' },
   { label: 'Custom...', code: '' },
 ];
+
+const ROLE_TO_CODE = {
+  'ceo': 'CE', 'cto': 'CT', 'research_fellow': 'RF', 'scientist': 'SC',
+  'research_intern': 'RI', 'intern': 'IN', 'admin': 'AD', 'staff': 'ST',
+};
 
 function generateEmployeeCode(existingCodes, designationCode) {
   if (!designationCode || designationCode.trim().length < 1) return '';
@@ -59,6 +61,7 @@ export default function UsersPage() {
   const [roleForm, setRoleForm] = useState({ role: '', designation: '', designation_code: '' });
   const [roleCorrectLoading, setRoleCorrectLoading] = useState(false);
   const [roleCorrectError, setRoleCorrectError] = useState('');
+  const [pendingDeactivate, setPendingDeactivate] = useState(null);
 
   useEffect(() => setIsMounted(true), []);
 
@@ -138,9 +141,14 @@ export default function UsersPage() {
 
   const deactivateUser = async (id, currentStatus) => {
     if (id === employeeProfile.id) { toast.warn('You cannot deactivate your own account.'); return; }
-    const action = currentStatus ? "deactivate" : "reactivate";
-    if (!window.confirm(`Are you sure you want to ${action} this employee's access?`)) return;
+    setPendingDeactivate({ id, currentStatus });
+  };
 
+  const confirmDeactivate = async () => {
+    if (!pendingDeactivate) return;
+    const { id, currentStatus } = pendingDeactivate;
+    setPendingDeactivate(null);
+    
     if (deactivating) return;
     setDeactivating(id);
     try {
@@ -180,7 +188,7 @@ export default function UsersPage() {
     setRoleCorrectLoading(true);
     setRoleCorrectError('');
     try {
-      const code = roleForm.designation_code || roleForm.role.slice(0, 2).toUpperCase();
+      const code = roleForm.designation_code || ROLE_TO_CODE[roleForm.role] || roleForm.role.slice(0, 2).toUpperCase();
       const res = await fetch('/api/admin/update-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -517,7 +525,7 @@ export default function UsersPage() {
                     <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
                     <span className="text-xs text-teal-500 font-medium">Auto-assigned · Cannot be changed by employee</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">Format: O2B · {watchDesigCode || watchCustomCode} · {watchRole?.toUpperCase()} · Sequential No.</p>
+                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">Format: O2B · {watchDesigCode || watchCustomCode} · {watchRole?.toUpperCase()} · Sequential No. (Backend reuses any released codes)</p>
                 </div>
               </div>
 
@@ -530,6 +538,32 @@ export default function UsersPage() {
         </div>
           )}
         </>
+      )}
+
+      {/* Deactivate/Reactivate Modal */}
+      {pendingDeactivate && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Confirm Status Change</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Are you sure you want to <strong>{pendingDeactivate.currentStatus ? 'deactivate' : 'reactivate'}</strong> this employee&apos;s access?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingDeactivate(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeactivate}
+                className={`flex-1 py-2 text-white rounded-lg text-sm font-bold transition w-full ${pendingDeactivate.currentStatus ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+              >
+                ⚠ Confirm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <style>{`

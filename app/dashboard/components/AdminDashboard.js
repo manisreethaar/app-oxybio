@@ -24,6 +24,7 @@ export default function AdminDashboard({ employeeId }) {
   const [pendingMispunches, setPendingMispunches] = useState([]);
   const [reviewingMispunch, setReviewingMispunch] = useState(null);
   const [rejectRemark, setRejectRemark] = useState('');
+  const [pendingQuickApprove, setPendingQuickApprove] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
@@ -305,12 +306,7 @@ export default function AdminDashboard({ employeeId }) {
                       Process
                     </button>
                     <button 
-                      onClick={async () => {
-                        if (confirm(`Approve ${log.mispunch_requested_hours}h for ${log.employees?.full_name}?`)) {
-                          setReviewingMispunch(log);
-                          await handleMispunchReview('approve');
-                        }
-                      }}
+                      onClick={() => setPendingQuickApprove(log)}
                       className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
                     >
                       Quick Approve
@@ -420,6 +416,35 @@ export default function AdminDashboard({ employeeId }) {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Quick Approve Modal */}
+      {pendingQuickApprove && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Quick Approve Mispunch</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to approve <strong className="text-emerald-600">{pendingQuickApprove.mispunch_requested_hours}h</strong> for <strong>{pendingQuickApprove.employees?.full_name}</strong>?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingQuickApprove(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  setReviewingMispunch(pendingQuickApprove);
+                  setPendingQuickApprove(null);
+                  await handleMispunchReview('approve');
+                }}
+                disabled={actionLoading}
+                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
+              >
+                {actionLoading ? 'Approving...' : '✓ Approve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

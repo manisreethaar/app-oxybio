@@ -102,6 +102,7 @@ export default function FermentationPanel({ batch, flasks, employees, employeePr
   const [epNotes,    setEpNotes]    = useState('');
   const [flaskDisp,  setFlaskDisp]  = useState({});
   const [savingEp,   setSavingEp]   = useState(false);
+  const [pendingOOROverride, setPendingOOROverride] = useState(false);
 
   const isIntern = ['intern','research_intern'].includes(role);
 
@@ -164,7 +165,21 @@ export default function FermentationPanel({ batch, flasks, employees, employeePr
     if (!epPh || savingEp) return;
     const finalPh = parseFloat(epPh);
     const phOOR = finalPh < 4.2 || finalPh > 4.5;
-    if (phOOR && !confirm(`Final pH ${epPh} is outside target 4.2–4.5. Confirm and proceed?`)) return;
+    if (phOOR) {
+      setPendingOOROverride(true);
+      return;
+    }
+    await executeEndpoint();
+  };
+
+  const confirmOOROverride = async () => {
+    setPendingOOROverride(false);
+    await executeEndpoint();
+  };
+
+  const executeEndpoint = async () => {
+    const finalPh = parseFloat(epPh);
+    const phOOR = finalPh < 4.2 || finalPh > 4.5;
     setSavingEp(true);
     try {
       // Insert endpoint
@@ -423,6 +438,34 @@ export default function FermentationPanel({ batch, flasks, employees, employeePr
           <button disabled={actionLoading} onClick={() => onAdvanceStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
             Advance → Straining
           </button>
+        </div>
+      )}
+
+      {/* Out of Range Override Modal */}
+      {pendingOOROverride && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-amber-600 mb-2 text-center flex items-center justify-center gap-2">
+              <AlertTriangle className="w-5 h-5"/> pH Alert
+            </h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Final pH <strong className="text-amber-600">{epPh}</strong> is outside the target range of 4.2–4.5. Confirm and proceed with endpoint declaration anyway?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingOOROverride(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmOOROverride}
+                className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition w-full"
+              >
+                ⚠ Proceed
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -9,6 +9,7 @@ export default function ReleasePanel({ batch, employeeProfile, role, supabase, o
   const toast    = useToast();
   const [record, setRecord]   = useState(null);
   const [saving, setSaving]   = useState(false);
+  const [pendingRelease, setPendingRelease] = useState(false);
   const isCeo    = ['ceo','admin'].includes(role);
 
   const [finalVol,   setFinalVol]   = useState('');
@@ -25,7 +26,11 @@ export default function ReleasePanel({ batch, employeeProfile, role, supabase, o
 
   const handleSave = async () => {
     if (!isCeo) return;
-    if (!confirm('Confirm batch release? This will create a shelf-life record and cannot be undone.')) return;
+    setPendingRelease(true);
+  };
+
+  const confirmRelease = async () => {
+    setPendingRelease(false);
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_release_record').upsert({
@@ -102,6 +107,30 @@ export default function ReleasePanel({ batch, employeeProfile, role, supabase, o
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {/* Release Modal */}
+      {pendingRelease && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Batch Release</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Confirm batch release? This will officially lock the record, create a shelf-life record, and CANNOT be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingRelease(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmRelease}
+                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
+              >
+                ✓ Confirm Release
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

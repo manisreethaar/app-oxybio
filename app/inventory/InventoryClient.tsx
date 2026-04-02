@@ -59,6 +59,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteType, setDeleteType] = useState<'item' | 'vendor'>('item');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingSeed, setPendingSeed] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -418,7 +419,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   };
 
   const handleSeedCategories = async () => {
-    if (!confirm('This will auto-load 115 standard inventory items. Proceed?')) return;
+    setPendingSeed(true);
+  };
+
+  const executeSeed = async () => {
     setIsSubmitting(true);
     const catalogData = {
       "RAW MATERIALS LIST": ["AMPHOTERIC SURFACTANTS (CAPB)", "AOS Liquid", "Sodium Carbonate Anhydrous", "CDEA Flakes", "Acrylates Copolymer (Aqua SF-1)", "Dimethyldichlorosilane (DMDM Hydantoin)", "NaOH Flakes", "TETRASODIUM EDTA (VERSENE 100)", "Propylene glycol (PG)", "Cocomonoethanolamide", "Disodium Laureth Sulfosuccinate (DLS)", "Diethanolamine", "C - 1045", "Kathon CG (MIT/CMIT preservatives)", "Triethanolamine (TEA)", "Xanthan Gum", "Disodium EDTA", "Potassium Hydroxide", "Guar Hydroxypropyltrimonium Chloride (Guar Gum)", "Sodium Lauryl Ether Sulphate (SLES)", "Carbomer (Ultrez 20 / Aqua SF-1)", "Polyquaternium (PQ-7)", "Polyquaternium (PQ-10)", "Glycerin", "Cetostearyl alcohol (CSA / Cetearyl Alcohol)"],
@@ -1342,6 +1346,36 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 className="flex-1 py-4 bg-teal-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-teal-900 transition-all text-center"
               >
                 Issue Stock Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-Load Modal */}
+      {pendingSeed && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              This will automatically load 115 standard inventory items and common lab equipment into the system. Perfect for initial setup. Proceed?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingSeed(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setPendingSeed(false);
+                  executeSeed();
+                }}
+                disabled={isSubmitting}
+                className="flex-1 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition w-full shadow-lg shadow-amber-500/30"
+              >
+                ✓ Load Catalog
               </button>
             </div>
           </div>

@@ -4,13 +4,37 @@ import { NextResponse } from 'next/server';
 
 const COMPANY_PREFIX = 'O2B';
 
-function generateEmployeeCode(existingCodes, designationCode) {
+async function getReleasedCode(supabaseAdmin, prefix) {
+  const { data: released } = await supabaseAdmin
+    .from('released_employee_codes')
+    .select('employee_code')
+    .ilike('employee_code', `${prefix}%`)
+    .order('released_at', { ascending: true })
+    .limit(1);
+  return released && released.length > 0 ? released[0].employee_code : null;
+}
+
+async function releaseCode(supabaseAdmin, employeeCode, userId) {
+  await supabaseAdmin.from('released_employee_codes').upsert({
+    employee_code: employeeCode,
+    released_by: userId,
+    reason: 'designation_change'
+  }, { onConflict: 'employee_code' });
+}
+
+function generateEmployeeCode(existingCodes, designationCode, releasedCodes = []) {
   if (!designationCode || designationCode.trim().length < 1) return '';
   const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-`;
   const existing = existingCodes
     .filter(c => c && c.startsWith(prefix))
     .map(c => parseInt(c.replace(prefix, ''), 10))
     .filter(n => !isNaN(n));
+  const releasedPrefixCodes = releasedCodes
+    .filter(c => c && c.startsWith(prefix))
+    .map(c => c);
+  if (releasedPrefixCodes.length > 0) {
+    return releasedPrefixCodes.sort()[0];
+  }
   const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
   return `${prefix}${String(nextNum).padStart(3, '0')}`;
 }
@@ -54,6 +78,14 @@ export async function POST(req) {
       return NextResponse.json({ error: 'You cannot change your own role.' }, { status: 403 });
     }
 
+    // Get employee's current employee_code before updating
+    const { data: currentEmployee } = await supabaseAdmin
+      .from('employees')
+      .select('employee_code')
+      .eq('id', employee_id)
+      .single();
+    const oldCode = currentEmployee?.employee_code;
+
     // Fetch only ACTIVE employees — inactive/deactivated accounts don't consume sequence slots
     const { data: allEmps } = await supabaseAdmin
       .from('employees')
@@ -61,9 +93,15 @@ export async function POST(req) {
       .eq('is_active', true);
     const existingCodes = (allEmps || []).map(e => e.employee_code).filter(Boolean);
 
+    // Fetch released codes
+    const { data: releasedData } = await supabaseAdmin
+      .from('released_employee_codes')
+      .select('employee_code');
+    const releasedCodes = (releasedData || []).map(r => r.employee_code).filter(Boolean);
+
     // Determine the designation code to use
     const code = designation_code || ROLE_TO_CODE[new_role] || 'ST';
-    const new_employee_code = generateEmployeeCode(existingCodes, code);
+    const new_employee_code = generateEmployeeCode(existingCodes, code, releasedCodes);
 
     // Atomically update role, designation, and employee_code
     const { error: updateError } = await supabaseAdmin
@@ -75,7 +113,12 @@ export async function POST(req) {
       })
       .eq('id', employee_id);
 
+    // Release old code if it exists and is different from new code
     if (updateError) throw updateError;
+
+    if (oldCode && oldCode !== new_employee_code) {
+      await releaseCode(supabaseAdmin, oldCode, user.id);
+    }
 
     return NextResponse.json({ success: true, new_employee_code });
   } catch (err) {
