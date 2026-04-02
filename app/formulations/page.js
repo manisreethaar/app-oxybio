@@ -304,7 +304,7 @@ export default function FormulationsPage() {
                   transition={{ delay: i * 0.04 }}
                 >
                   <div className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden flex flex-col h-full">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><FlaskConical className="w-20 h-20 text-navy"/></div>
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none"><FlaskConical className="w-20 h-20 text-navy"/></div>
                     
                     {/* Top row: version + status badge */}
                     <div className="flex justify-between items-start mb-3">
