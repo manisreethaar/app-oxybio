@@ -448,21 +448,29 @@ export default function FormulationsPage() {
                         </div>
                       )}
 
-                      {/* Approved: Show Launch Batch + Archive option for approvers */}
+                      {/* Approved: Show Launch Batch + Archive + Delete for approvers */}
                       {f.status === 'Approved' && (
-                        <div className={`grid gap-2 ${isApprover ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                          <Link 
-                            href={`/batches?formula_code=${f.code}`} 
-                            className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5"
+                        <div className={`grid gap-2 ${isApprover ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                          <Link
+                            href={`/batches?formula_code=${f.code}`}
+                            className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 ${isApprover ? '' : 'col-span-1'}`}
                           >
                             Launch Batch
                           </Link>
                           {isApprover && (
                             <button
                               onClick={() => handleArchive(f.id)}
-                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 transition-all flex items-center justify-center"
+                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-400 hover:text-amber-600 hover:border-amber-200 transition-all flex items-center justify-center"
                             >
                               Archive
+                            </button>
+                          )}
+                          {isApprover && (
+                            <button
+                              onClick={() => handleDeleteRecipe(f.id)}
+                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-400 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3"/> Delete
                             </button>
                           )}
                         </div>
