@@ -8,8 +8,9 @@ import Link from 'next/link';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
   Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
-  FileText, Download, Loader
+  FileText, Download, Loader, Trash2
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import MediaPrepPanel      from './components/MediaPrepPanel';
 import SterilisationPanel  from './components/SterilisationPanel';
@@ -43,6 +44,7 @@ const PANEL_MAP = {
 export default function BatchDetailPage() {
   const { batchId }  = useParams();
   const { role, employeeProfile, canDo, loading: authLoading } = useAuth();
+  const router = useRouter();
   const toast        = useToast();
   const supabase     = useMemo(() => createClient(), []);
 
@@ -55,6 +57,8 @@ export default function BatchDetailPage() {
   const [actionLoading,  setActionLoading]  = useState(false);
   const [bmrLoading,     setBmrLoading]     = useState(false);
   const [bmrUrl,         setBmrUrl]         = useState(null);
+  const [pendingTransition, setPendingTransition] = useState(null);
+  const [pendingCancel,     setPendingCancel]     = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -84,7 +88,13 @@ export default function BatchDetailPage() {
       toast.warn('Cannot release — Lab Notebook is empty.');
       return;
     }
-    if (!confirm(`Advance batch to ${toStage.replace(/_/g, ' ').toUpperCase()}?`)) return;
+    setPendingTransition(toStage);
+  }, [actionLoading, lnbCount, toast]);
+
+  const confirmStageTransition = async () => {
+    if (!pendingTransition || actionLoading) return;
+    const toStage = pendingTransition;
+    setPendingTransition(null);
     setActionLoading(true);
     try {
       const res = await fetch(`/api/batches/${batchId}/stage`, {
@@ -97,7 +107,7 @@ export default function BatchDetailPage() {
       fetchAll();
     } catch (err) { toast.error(err.message); }
     finally       { setActionLoading(false); }
-  }, [actionLoading, lnbCount, batchId, batch?.current_stage, toast, fetchAll]);
+  };
 
   const handleExportBMR = useCallback(async () => {
     if (bmrLoading) return;
@@ -113,6 +123,23 @@ export default function BatchDetailPage() {
     finally      { setBmrLoading(false); }
   }, [batchId, bmrLoading]);
 
+
+  const handleCancelBatch = useCallback(async () => {
+    setPendingCancel(true);
+  }, []);
+
+  const confirmCancelBatch = async () => {
+    setPendingCancel(false);
+    try {
+      const res  = await fetch(`/api/batches?id=${batchId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success('Batch cancelled. Materials restored.');
+      router.push('/batches');
+    } catch (err) {
+      toast.error('Failed to cancel batch: ' + err.message);
+    }
+  };
 
   if (authLoading || !batch) return <div className="p-8 text-center text-gray-400 animate-pulse">Loading batch...</div>;
 
@@ -154,9 +181,20 @@ export default function BatchDetailPage() {
                   <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${isTerminal && batch.status==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : isTerminal ? 'bg-red-50 text-red-700 border-red-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>{batch.status}</span>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-[9px] text-gray-400 font-bold uppercase">Age</p>
-                <p className="text-xl font-black text-gray-800 tabular-nums">{((new Date()-new Date(batch.start_time))/3600000).toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
+              <div className="text-right flex flex-col items-end gap-2">
+                <div>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase">Age</p>
+                  <p className="text-xl font-black text-gray-800 tabular-nums">{((new Date()-new Date(batch.start_time))/3600000).toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
+                </div>
+                {!isTerminal && ['admin','ceo','cto'].includes(role) && (
+                  <button
+                    onClick={handleCancelBatch}
+                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                    title="Cancel this batch and restore inventory"
+                  >
+                    <Trash2 className="w-3 h-3"/> Cancel Batch
+                  </button>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
@@ -272,6 +310,55 @@ export default function BatchDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Transition Modal */}
+      {pendingTransition && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Advance Stage</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to advance this batch to <strong className="uppercase">{pendingTransition.replace(/_/g, ' ')}</strong>?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingTransition(null)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmStageTransition}
+                className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition w-full inline-flex items-center justify-center gap-2"
+                disabled={actionLoading}
+              >
+                {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : 'Advance Stage'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {pendingCancel && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Cancel Batch</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to cancel <strong className="font-mono text-navy">{batch?.batch_id}</strong>? All progress will be deleted and inventory automatically restored. This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingCancel(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Nevermind
+              </button>
+              <button 
+                onClick={confirmCancelBatch}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full inline-flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4"/> Delete Batch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
