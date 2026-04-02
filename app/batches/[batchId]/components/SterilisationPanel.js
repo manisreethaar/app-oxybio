@@ -45,6 +45,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   useEffect(() => { fetch(); }, [fetch]);
 
   const selectedEquip = equipment.find(e => e.id === equipId);
+  const isCalibExpired = selectedEquip?.calibration_due_date ? new Date(selectedEquip.calibration_due_date) < new Date() : false;
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
   const isEquipBad     = selectedEquip && (selectedEquip.status !== 'Operational' || isCalibExpired);
 
