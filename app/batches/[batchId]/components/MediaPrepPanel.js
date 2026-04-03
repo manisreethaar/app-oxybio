@@ -109,8 +109,11 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       }
 
       toast.success(advance ? 'Media Prep complete. Inventory updated.' : 'Draft saved.');
-      onDataSaved();
-      if (advance) onAdvanceStage('sterilisation');
+      if (advance) {
+        await onAdvanceStage('sterilisation');
+      } else {
+        onDataSaved();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
