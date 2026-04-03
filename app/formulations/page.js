@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { 
   Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, 
-  GitCompare, CheckCircle2, Clock, Send, ShieldCheck, XCircle, AlertTriangle, Trash2
+  GitCompare, CheckCircle2, Clock, Send, ShieldCheck, XCircle, AlertTriangle, Trash2, ArrowRight
 } from 'lucide-react';
 import FormulaDiff from '@/components/science/FormulaDiff';
 import Skeleton from '@/components/Skeleton';
