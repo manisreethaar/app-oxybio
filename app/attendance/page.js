@@ -243,6 +243,7 @@ export default function AttendancePage() {
 
   const handleCheckOut = async () => {
     setActionLoading(true);
+    setCheckInError('');
     try {
       const { error } = await supabase.from('attendance_log').update({
         check_out_time: new Date().toISOString()
@@ -250,7 +251,7 @@ export default function AttendancePage() {
       if (error) throw error;
       await fetchAttendanceData();
     } catch (err) {
-      alert("Error checking out: " + err.message);
+      setCheckInError("Check-out failed: " + err.message);
     } finally {
       setActionLoading(false);
     }
