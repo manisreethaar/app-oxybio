@@ -57,7 +57,8 @@ export default function AttendancePage() {
   }, []);
 
   const elapsedHours = useMemo(() => {
-    if (!todayLog?.check_in_time || todayLog.check_out_time) return todayLog?.total_hours || '0.0';
+    if (!todayLog?.check_in_time) return '0.0';
+    if (todayLog.check_out_time) return parseFloat(todayLog.total_hours || 0).toFixed(1);
     const start = new Date(todayLog.check_in_time).getTime();
     return ((now - start) / (1000 * 60 * 60)).toFixed(1);
   }, [todayLog, now]);
@@ -430,7 +431,7 @@ export default function AttendancePage() {
                 <div className="grid grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100">
                   <div>
                     <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Total Hours</span>
-                    <span className="text-2xl font-black text-slate-800 tabular-nums">{todayLog.total_hours || elapsedHours}h</span>
+                    <span className="text-2xl font-black text-slate-800 tabular-nums">{elapsedHours}h</span>
                   </div>
                   <div>
                     <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Check Out</span>
