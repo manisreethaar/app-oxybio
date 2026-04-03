@@ -90,48 +90,57 @@ export default function AttendancePage() {
   }, [employeeProfile, todayLog?.id]);
 
   const fetchAttendanceData = async () => {
+    if (!employeeProfile || !employeeProfile.id) return;
     setLoading(true);
-    const todayStr = new Date().toISOString().split('T')[0];
+    
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
 
-    if (role !== 'admin') {
-      const { data: today } = await supabase.from('attendance_log')
-        .select('*')
-        .eq('employee_id', employeeProfile.id)
-        .eq('date', todayStr)
-        .single();
-      
-      setTodayLog(today || null);
+      if (role !== 'admin') {
+        const { data: today } = await supabase.from('attendance_log')
+          .select('*')
+          .eq('employee_id', employeeProfile.id)
+          .eq('date', todayStr)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        setTodayLog(today || null);
 
-      const { data: history } = await supabase.from('attendance_log')
-        .select('*')
-        .eq('employee_id', employeeProfile.id)
-        .order('date', { ascending: false })
-        .limit(30);
-      
-      setMyHistory(history || []);
-    } else {
-      const { data: teamLogs } = await supabase.from('attendance_log')
-        .select('*, employees(full_name, role)')
-        .eq('date', todayStr);
-      
-      const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
-      
-      const combined = allEmps.map(emp => {
-        const log = (teamLogs || []).find(l => l.employee_id === emp.id);
-        return { ...emp, attendance: log };
-      });
-      
-      setTeamToday(combined);
+        const { data: history } = await supabase.from('attendance_log')
+          .select('*')
+          .eq('employee_id', employeeProfile.id)
+          .order('date', { ascending: false })
+          .limit(30);
+        
+        setMyHistory(history || []);
+      } else {
+        const { data: teamLogs } = await supabase.from('attendance_log')
+          .select('*, employees(full_name, role)')
+          .eq('date', todayStr);
+        
+        const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
+        
+        const combined = allEmps.map(emp => {
+          const log = (teamLogs || []).find(l => l.employee_id === emp.id);
+          return { ...emp, attendance: log };
+        });
+        
+        setTeamToday(combined);
 
-      const { data: leavesToday } = await supabase.from('leave_applications')
-        .select('employee_id')
-        .eq('status', 'approved')
-        .lte('start_date', todayStr)
-        .gte('end_date', todayStr);
-      
-      setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+        const { data: leavesToday } = await supabase.from('leave_applications')
+          .select('employee_id')
+          .eq('status', 'approved')
+          .lte('start_date', todayStr)
+          .gte('end_date', todayStr);
+        
+        setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+      }
+    } catch (err) {
+      console.error('Attendance fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const initiateCheckIn = () => {
@@ -160,10 +169,14 @@ export default function AttendancePage() {
         }
       },
       (err) => {
-        setCheckInError("Unable to retrieve location. Please enable GPS permissions for this site.");
+        let msg = "Unable to retrieve location. Please enable GPS permissions for this site.";
+        if (err.code === err.TIMEOUT) msg = "GPS request timed out. Please step outside or try again.";
+        else if (err.code === err.POSITION_UNAVAILABLE) msg = "Location information is unavailable on this device.";
+        else if (err.code === err.PERMISSION_DENIED) msg = "Location access denied. Please enable GPS for OxyOS in your browser settings.";
+        setCheckInError(msg);
         setActionLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
     );
   };
 
@@ -223,12 +236,17 @@ export default function AttendancePage() {
 
   const handleCheckOut = async () => {
     setActionLoading(true);
-    const { error } = await supabase.from('attendance_log').update({
-      check_out_time: new Date().toISOString()
-    }).eq('id', todayLog.id);
-    
-    if (!error) fetchAttendanceData();
-    setActionLoading(false);
+    try {
+      const { error } = await supabase.from('attendance_log').update({
+        check_out_time: new Date().toISOString()
+      }).eq('id', todayLog.id);
+      if (error) throw error;
+      await fetchAttendanceData();
+    } catch (err) {
+      alert("Error checking out: " + err.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const formatTime = (ts) => {
