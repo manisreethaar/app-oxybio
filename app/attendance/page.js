@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
+import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
 const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 
