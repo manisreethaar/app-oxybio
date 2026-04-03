@@ -54,7 +54,7 @@ export default function StrainingPanel({ batch, flasks, employees, employeeProfi
         flask_volumes: flaskVols,
         operator_id: employeeProfile?.id, supervised_by: supervisedBy || null,
         notes: notes || null,
-      });
+      }, { onConflict: 'batch_id' });
       if (error) throw error;
       toast.success(advance ? 'Straining complete.' : 'Draft saved.');
       if (advance) {

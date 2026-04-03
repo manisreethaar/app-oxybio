@@ -40,7 +40,7 @@ export default function RejectionPanel({ batch, employeeProfile, role, supabase,
         rejection_reason: reason, rejection_stage: stage || batch.current_stage,
         disposal_method: disposal, write_off_vol_ml: writeOff ? parseFloat(writeOff) : null,
         capa_required: capaReq, notes: notes || null,
-      });
+      }, { onConflict: 'batch_id' });
       if (error) throw error;
       // Send notification if CAPA required (create a placeholder — full CAPA link in Phase 5)
       if (capaReq) {

@@ -92,7 +92,7 @@ export default function ExtractAdditionPanel({ batch, availableStock, employees,
         colour_before: colourBefore || null, colour_after: colourAfter || null,
         addition_temp: addTemp, addition_method: addMethod,
         laf_used: lafUsed, operator_id: employeeProfile?.id, notes: notes || null,
-      });
+      }, { onConflict: 'batch_id' });
       if (error) throw error;
 
       // ── Deduct mushroom lot from inventory on advance ─────────────

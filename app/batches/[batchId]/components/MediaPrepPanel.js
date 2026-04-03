@@ -97,7 +97,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         initial_ph: initPH ? parseFloat(initPH) : null,
         is_complete: advance, operator_id: employeeProfile?.id,
         supervised_by: supervisedBy || null, notes: notes || null,
-      });
+      }, { onConflict: 'batch_id' });
       if (error) throw error;
 
       // ── Inventory deduction on advance only (not draft saves) ──

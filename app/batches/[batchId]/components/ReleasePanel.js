@@ -38,7 +38,7 @@ export default function ReleasePanel({ batch, employeeProfile, role, supabase, o
         final_volume_ml: finalVol ? parseFloat(finalVol) : null,
         storage_condition: storage, storage_location: location || null,
         release_notes: releaseNotes || null,
-      });
+      }, { onConflict: 'batch_id' });
       if (error) throw error;
       // Auto-create shelf-life record
       await supabase.from('shelf_life_records').insert({
