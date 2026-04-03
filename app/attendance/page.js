@@ -97,25 +97,27 @@ export default function AttendancePage() {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
 
-      if (role !== 'admin') {
-        const { data: today } = await supabase.from('attendance_log')
-          .select('*')
-          .eq('employee_id', employeeProfile.id)
-          .eq('date', todayStr)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        setTodayLog(today || null);
+      // 1. Universally fetch personal attendance for the logged-in user
+      const { data: today } = await supabase.from('attendance_log')
+        .select('*')
+        .eq('employee_id', employeeProfile.id)
+        .eq('date', todayStr)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      setTodayLog(today || null);
 
-        const { data: history } = await supabase.from('attendance_log')
-          .select('*')
-          .eq('employee_id', employeeProfile.id)
-          .order('date', { ascending: false })
-          .limit(30);
-        
-        setMyHistory(history || []);
-      } else {
+      const { data: history } = await supabase.from('attendance_log')
+        .select('*')
+        .eq('employee_id', employeeProfile.id)
+        .order('date', { ascending: false })
+        .limit(30);
+      
+      setMyHistory(history || []);
+
+      // 2. Fetch team roster ONLY if the user is an admin
+      if (role === 'admin') {
         const { data: teamLogs } = await supabase.from('attendance_log')
           .select('*, employees(full_name, role)')
           .eq('date', todayStr);
