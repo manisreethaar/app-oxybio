@@ -184,13 +184,17 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   const signOut = async () => {
     try {
       clearCache();
-      await supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Signout timeout')), 2000));
+      await Promise.race([supabase.auth.signOut(), timeoutPromise]);
       if (typeof window !== 'undefined') {
         localStorage.clear();
         window.location.href = '/login';
       }
     } catch {
-      if (typeof window !== 'undefined') window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        window.location.href = '/login';
+      }
     } finally {
       setUser(null);
       setEmployeeProfile(null);
