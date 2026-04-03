@@ -76,8 +76,11 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
       });
       if (error) throw error;
       toast.success(advance ? 'Inoculation complete. T=0 recorded.' : 'Draft saved.');
-      onDataSaved();
-      if (advance) onAdvanceStage('fermentation');
+      if (advance) {
+        await onAdvanceStage('fermentation');
+      } else {
+        onDataSaved();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
