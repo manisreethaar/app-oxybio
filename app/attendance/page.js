@@ -147,6 +147,13 @@ export default function AttendancePage() {
     setCheckInError('');
     setActionLoading(true);
 
+    if (overrideLocation) {
+      setGeoData({ lat: TARGET_LAT, lng: TARGET_LNG, in_geofence: true, distance: 0 });
+      setShowWebcam(true);
+      setActionLoading(false);
+      return;
+    }
+
     if (!navigator.geolocation) {
       setCheckInError("Geolocation is not supported by your browser");
       setActionLoading(false);
