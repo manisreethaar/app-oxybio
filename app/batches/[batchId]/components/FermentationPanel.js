@@ -190,7 +190,7 @@ export default function FermentationPanel({ batch, flasks, employees, employeePr
         aroma, colour_desc: colourDesc, texture, sensory_overall: sensory,
         sensory_by: employeeProfile?.id, gram_stain: gramStain, notes: epNotes,
       };
-      const { data: epRow, error: epErr } = await supabase.from('batch_fermentation_endpoint').upsert(epData).select().single();
+      const { data: epRow, error: epErr } = await supabase.from('batch_fermentation_endpoint').upsert(epData, { onConflict: 'batch_id' }).select().single();
       if (epErr) throw epErr;
       // Insert flask dispositions
       const dispRows = flasks.map(f => ({
