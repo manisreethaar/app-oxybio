@@ -119,8 +119,11 @@ export default function ExtractAdditionPanel({ batch, availableStock, employees,
       }
 
       toast.success(advance ? 'Extract addition complete. Inventory updated.' : 'Draft saved.');
-      onDataSaved();
-      if (advance) onAdvanceStage('qc_hold');
+      if (advance) {
+        await onAdvanceStage('qc_hold');
+      } else {
+        onDataSaved();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };

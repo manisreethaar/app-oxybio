@@ -72,8 +72,11 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       });
       if (error) throw error;
       toast.success(advance ? 'Sterilisation complete.' : 'Draft saved.');
-      onDataSaved();
-      if (advance) onAdvanceStage('inoculation');
+      if (advance) {
+        await onAdvanceStage('inoculation');
+      } else {
+        onDataSaved();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };

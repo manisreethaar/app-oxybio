@@ -57,8 +57,11 @@ export default function StrainingPanel({ batch, flasks, employees, employeeProfi
       });
       if (error) throw error;
       toast.success(advance ? 'Straining complete.' : 'Draft saved.');
-      onDataSaved();
-      if (advance) onAdvanceStage('extract_addition');
+      if (advance) {
+        await onAdvanceStage('extract_addition');
+      } else {
+        onDataSaved();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };

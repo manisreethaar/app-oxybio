@@ -325,7 +325,7 @@ export default function BatchDetailPage() {
               availableStock={availableStock} role={role} canDo={canDo}
               employeeProfile={employeeProfile} supabase={supabase}
               onDataSaved={fetchAll}
-              onAdvanceStage={batch?.current_stage === 'inoculation' ? handleDirectTransition : handleStageTransition}
+              onAdvanceStage={handleDirectTransition}
               actionLoading={actionLoading}
             />
           ) : (
