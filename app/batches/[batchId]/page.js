@@ -91,6 +91,28 @@ export default function BatchDetailPage() {
     setPendingTransition(toStage);
   }, [actionLoading, lnbCount, toast]);
 
+  // Direct transition — skips confirmation modal.
+  // Used by panels that have their own save+advance button (e.g. InoculationPanel).
+  const handleDirectTransition = useCallback(async (toStage) => {
+    if (actionLoading) return;
+    if (toStage === 'released' && lnbCount === 0) {
+      toast.warn('Cannot release — Lab Notebook is empty.');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/batches/${batchId}/stage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_stage: batch?.current_stage, to_stage: toStage }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Stage transition failed.'); return; }
+      toast.success(`Advanced to ${toStage.replace(/_/g, ' ')}.`);
+      fetchAll();
+    } catch (err) { toast.error(err.message); }
+    finally       { setActionLoading(false); }
+  }, [actionLoading, lnbCount, batchId, batch, toast, fetchAll]);
+
   const confirmStageTransition = async () => {
     if (!pendingTransition || actionLoading) return;
     const toStage = pendingTransition;
@@ -302,7 +324,8 @@ export default function BatchDetailPage() {
               batch={batch} flasks={flasks} employees={employees}
               availableStock={availableStock} role={role} canDo={canDo}
               employeeProfile={employeeProfile} supabase={supabase}
-              onDataSaved={fetchAll} onAdvanceStage={handleStageTransition}
+              onDataSaved={fetchAll}
+              onAdvanceStage={batch?.current_stage === 'inoculation' ? handleDirectTransition : handleStageTransition}
               actionLoading={actionLoading}
             />
           ) : (
