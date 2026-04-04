@@ -209,7 +209,7 @@ export default function AttendancePage() {
       
       // Upload to Supabase Storage Ephemeral Bucket
       const filename = `${employeeProfile.id}_${Date.now()}.webp`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('attendance-proofs')
         .upload(filename, blob, { contentType: 'image/webp' });
 
@@ -220,19 +220,20 @@ export default function AttendancePage() {
         .from('attendance-proofs')
         .getPublicUrl(filename);
 
-      // DB Insert with Geo and Photo data
-      const todayStr = new Date().toISOString().split('T')[0];
-      const { error: dbError } = await supabase.from('attendance_log').insert({
-        employee_id: employeeProfile.id,
-        date: todayStr,
-        check_in_time: new Date().toISOString(),
-        location_lat: geoData.lat,
-        location_lng: geoData.lng,
-        in_geofence: geoData.in_geofence,
-        photo_url: publicUrl
+      // Call proper API route — handles IST date, duplicate check, RLS, geofence gate atomically
+      const apiRes = await fetch('/api/attendance/check-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: geoData.lat,
+          lng: geoData.lng,
+          photo_url: publicUrl,
+          override: overrideLocation,
+        }),
       });
-      
-      if (dbError) throw dbError;
+
+      const apiData = await apiRes.json();
+      if (!apiRes.ok) throw new Error(apiData.error || 'Check-in failed');
 
       setShowWebcam(false);
       setOverrideLocation(false); // auto-reset after use
@@ -243,7 +244,7 @@ export default function AttendancePage() {
     } finally {
       setActionLoading(false);
     }
-  }, [webcamRef, geoData, employeeProfile]);
+  }, [webcamRef, geoData, employeeProfile, overrideLocation]);
 
   const handleCheckOut = async () => {
     setActionLoading(true);
