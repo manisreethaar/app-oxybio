@@ -9,7 +9,7 @@ const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeek
 
 const TARGET_LAT = 12.7409;
 const TARGET_LNG = 77.8253;
-const MAX_RADIUS_METERS = 200;
+const MAX_RADIUS_METERS = 300; // 300m accounts for indoor GPS drift (mobile GPS drifts 50-150m indoors)
 
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
@@ -159,36 +159,67 @@ export default function AttendancePage() {
     }
 
     if (!navigator.geolocation) {
-      setCheckInError("Geolocation is not supported by your browser");
+      setCheckInError("Geolocation is not supported by your browser.");
       setActionLoading(false);
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
-        
-        // If testing override is enabled, bypass the distance check
-        if (distance > MAX_RADIUS_METERS && !overrideLocation) {
-          setCheckInError(`Check-in blocked: You are ${Math.round(distance)}m away from the facility. Must be within ${MAX_RADIUS_METERS}m.`);
+    // GPS accuracy-aware retry — up to 3 attempts, 8s apart
+    // Cell towers give accuracy of 1000–5000m. Satellite gives <50m.
+    // We wait for a reading with accuracy < 300m before trusting the distance.
+    let attempts = 0;
+    const MAX_ATTEMPTS = 3;
+    const ACCURACY_THRESHOLD = 300; // metres — anything worse = cell tower only
+
+    const tryGetPosition = () => {
+      attempts++;
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+
+          // If accuracy is poor (cell tower) and we have retries left, wait and retry
+          if (accuracy > ACCURACY_THRESHOLD && attempts < MAX_ATTEMPTS) {
+            setCheckInError(`📡 GPS signal weak (accuracy ±${Math.round(accuracy)}m — cell tower only). Retrying… (${attempts}/${MAX_ATTEMPTS})`);
+            setTimeout(tryGetPosition, 8000);
+            return;
+          }
+
+          const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
+
+          if (distance > MAX_RADIUS_METERS) {
+            // Distinguish: poor GPS accuracy vs genuinely outside
+            if (accuracy > ACCURACY_THRESHOLD) {
+              setCheckInError(
+                `📡 GPS signal too weak (accuracy ±${Math.round(accuracy)}m). Your phone is using a cell tower instead of satellites. ` +
+                `Please: (1) Step near a window, (2) Enable WiFi, (3) Wait 30 seconds and tap Check In again.`
+              );
+            } else {
+              setCheckInError(
+                `🚫 Location verified: You are ${Math.round(distance)}m from the facility. ` +
+                `You must be within ${MAX_RADIUS_METERS}m to check in.`
+              );
+            }
+            setActionLoading(false);
+          } else {
+            setCheckInError('');
+            setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= MAX_RADIUS_METERS, distance: Math.round(distance) });
+            setShowWebcam(true);
+            setActionLoading(false);
+          }
+        },
+        (err) => {
+          let msg = "Unable to retrieve location. Please enable GPS permissions for this site.";
+          if (err.code === err.TIMEOUT) msg = "⏱ GPS timed out. Please step near a window and try again.";
+          else if (err.code === err.POSITION_UNAVAILABLE) msg = "📡 Location unavailable. Please enable WiFi and GPS on your device.";
+          else if (err.code === err.PERMISSION_DENIED) msg = "🔒 Location access denied. Please enable GPS for OxyOS in your browser settings.";
+          setCheckInError(msg);
           setActionLoading(false);
-        } else {
-          setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= MAX_RADIUS_METERS, distance: Math.round(distance) });
-          setShowWebcam(true);
-          setActionLoading(false);
-        }
-      },
-      (err) => {
-        let msg = "Unable to retrieve location. Please enable GPS permissions for this site.";
-        if (err.code === err.TIMEOUT) msg = "GPS request timed out. Please step outside or try again.";
-        else if (err.code === err.POSITION_UNAVAILABLE) msg = "Location information is unavailable on this device.";
-        else if (err.code === err.PERMISSION_DENIED) msg = "Location access denied. Please enable GPS for OxyOS in your browser settings.";
-        setCheckInError(msg);
-        setActionLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
-    );
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+
+    tryGetPosition();
   };
 
   const captureSelfieAndCheckIn = useCallback(async () => {
