@@ -167,11 +167,11 @@ export async function POST(request, { params }) {
 
     // ── Determine new batch status ───────────────────────────
     let newStatus;
-    if (to_stage === 'released')         newStatus = 'released';
-    else if (to_stage === 'rejected')    newStatus = 'rejected';
+    if (to_stage === 'released')          newStatus = 'released';
+    else if (to_stage === 'rejected')     newStatus = 'rejected';
     else if (to_stage === 'fermentation') newStatus = 'fermenting';
-    else if (to_stage === 'qc_hold')     newStatus = 'qc_hold';
-    else                                  newStatus = 'in_progress';
+    else if (to_stage === 'qc_hold')      newStatus = 'qc-hold';   // DB uses hyphen, not underscore
+    else                                   newStatus = 'planned';   // intermediate stages: sterilisation, inoculation, straining, extract_addition
 
     // ── Update batch ─────────────────────────────────────────
     const { error: updateErr } = await supabase
