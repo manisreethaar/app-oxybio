@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { ShieldCheck, AlertTriangle, ExternalLink } from 'lucide-react';
 
-const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Other'];
+const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Filter','Chemical','Other'];
 const TAPE_RES = ['Positive','Negative'];
 
 export default function SterilisationPanel({ batch, employees, employeeProfile, role, availableStock, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
