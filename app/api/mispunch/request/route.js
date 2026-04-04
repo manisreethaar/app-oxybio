@@ -57,7 +57,7 @@ export async function POST(request) {
             employee_id: admin.id,
             title: '📄 New Mispunch Request',
             message: `${user.email} has applied for ${hours}h reconciliation.`,
-            url: '/dashboard',
+            link: '/attendance',
             is_read: false
         }));
         await supabase.from('notifications').insert(notifications);

@@ -76,7 +76,7 @@ export async function GET(request) {
       employee_id: empId,
       title:       '⚠️ Your Shift Was Auto-Closed',
       message:     'You were still checked in at midnight. Your working hours have been set to 0. Please submit a Mispunch Request with the correct hours.',
-      link_url:    '/mispunch',
+      link:        '/mispunch',
       is_read:     false,
     }));
 

@@ -103,7 +103,7 @@ export async function GET(request) {
       employee_id: emp.id,
       title:       '🔴 You Are Still Checked In',
       message:     'It is 9:00 PM and your shift is still open. Please check out now — at midnight your hours will be set to 0 and a Mispunch will be required.',
-      link_url:    '/attendance',
+      link:        '/attendance',
       is_read:     false,
     }));
 
