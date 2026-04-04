@@ -249,17 +249,55 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     setActionLoading(true);
     setCheckInError('');
-    try {
-      const { error } = await supabase.from('attendance_log').update({
-        check_out_time: new Date().toISOString()
-      }).eq('id', todayLog.id);
-      if (error) throw error;
-      await fetchAttendanceData();
-    } catch (err) {
-      setCheckInError("Check-out failed: " + err.message);
-    } finally {
-      setActionLoading(false);
+
+    const isExecutive = ['admin', 'ceo', 'cto'].includes(role);
+
+    const doCheckout = async (lat, lng) => {
+      try {
+        const body = { id: todayLog.id };
+        if (lat !== null) { body.lat = lat; body.lng = lng; }
+
+        const res = await fetch('/api/attendance/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Check-out failed');
+        await fetchAttendanceData();
+      } catch (err) {
+        setCheckInError('Check-out failed: ' + err.message);
+      } finally {
+        setActionLoading(false);
+      }
+    };
+
+    // Executives skip GPS — API has its own bypass
+    if (isExecutive) {
+      await doCheckout(null, null);
+      return;
     }
+
+    // Non-executives: get GPS and send to API for geofence verification
+    if (!navigator.geolocation) {
+      setCheckInError('Geolocation is not supported by your browser.');
+      setActionLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await doCheckout(pos.coords.latitude, pos.coords.longitude);
+      },
+      (err) => {
+        let msg = 'Unable to retrieve location for checkout. Please enable GPS.';
+        if (err.code === err.PERMISSION_DENIED) msg = 'Location access denied. Please enable GPS for OxyOS in browser settings.';
+        else if (err.code === err.TIMEOUT) msg = 'GPS timed out during checkout. Please try again.';
+        setCheckInError(msg);
+        setActionLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
   };
 
   const formatTime = (ts) => {
