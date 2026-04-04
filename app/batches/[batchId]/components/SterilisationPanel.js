@@ -31,7 +31,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
     if (dRes.data) {
       const d = dRes.data;
       setMethod(d.method||'Pressure Cooker'); setEquipId(d.equipment_id||'');
-      setTemp(d.cycle_temp_c||''); setPressure(d.cycle_pressure||'');
+      setTemp(d.cycle_temp_c||''); setPressure(d.cycle_pressure_bar||'');
       setHoldMin(d.hold_time_min||'');
       setCycleStart(d.cycle_start?d.cycle_start.slice(0,16):'');
       setCycleEnd(d.cycle_end?d.cycle_end.slice(0,16):'');
@@ -61,7 +61,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
     try {
       const { error } = await supabase.from('batch_stage_sterilisation').upsert({
         batch_id: batch.id, method, equipment_id: equipId || null,
-        cycle_temp_c: temp ? parseFloat(temp) : null, cycle_pressure: pressure || null,
+        cycle_temp_c: temp ? parseFloat(temp) : null, cycle_pressure_bar: pressure ? parseFloat(pressure) : null,
         hold_time_min: holdTime ? parseFloat(holdTime) : null,
         cycle_start: cycleStart ? new Date(cycleStart).toISOString() : null,
         cycle_end: cycleEnd ? new Date(cycleEnd).toISOString() : null,
