@@ -48,7 +48,7 @@ function generateEmployeeCode(existingCodes, designationCode) {
 }
 
 export default function UsersPage() {
-  const { role, employeeProfile, loading: authLoading } = useAuth();
+  const { role, employeeProfile, loading: authLoading, refreshProfile } = useAuth();
   const toast = useToast();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -203,7 +203,9 @@ export default function UsersPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to update role');
       setCorrectingRole(null);
       fetchUsers();
-      toast.success(`Role updated. New Employee ID: ${result.new_employee_code}`);
+      // Refresh admin's own cached profile in case it changed
+      await refreshProfile();
+      toast.success(`Role updated. New Employee ID: ${result.new_employee_code}. The affected employee must log out and log back in for their new access level to take effect.`);
     } catch (err) {
       setRoleCorrectError(err.message);
     } finally {

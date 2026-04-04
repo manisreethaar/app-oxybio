@@ -201,6 +201,17 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
     }
   };
 
+  // ── Force-refresh profile (e.g. after role/designation change) ──
+  const refreshProfile = useCallback(async () => {
+    if (!user?.email) return;
+    clearCache();
+    const fresh = await fetchProfile(user.email);
+    if (fresh) {
+      setEmployeeProfile(fresh);
+      writeCache(fresh);
+    }
+  }, [user?.email, fetchProfile]);
+
   const role = employeeProfile?.role;
 
   const canDo = useCallback(
@@ -230,6 +241,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
     signOut,
     canDo,
     permissions,
+    refreshProfile,
   };
 
   return (
