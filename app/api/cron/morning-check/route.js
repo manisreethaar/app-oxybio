@@ -64,7 +64,7 @@ export async function GET(request) {
       employee_id: emp.id,
       title: '⏰ Attendance Reminder',
       message: 'It is past 9:30 AM and you have not checked in yet. Please log your attendance.',
-      url: '/attendance',
+      link: '/attendance',
       is_read: false
     }));
 

@@ -71,7 +71,7 @@ export async function POST(request) {
         message: action === 'approve' 
             ? `Your mispunch for ${new Date(log.date).toLocaleDateString()} was approved for ${log.mispunch_requested_hours}h.` 
             : `Your mispunch for ${new Date(log.date).toLocaleDateString()} was rejected. Reason: ${remark}`,
-        url: '/mispunch',
+        link: '/mispunch',
         is_read: false
     });
 

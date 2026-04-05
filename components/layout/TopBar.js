@@ -39,7 +39,7 @@ export default function TopBar() {
     const fetchNotifs = async () => {
       const { data } = await supabase
         .from('notifications')
-        .select('id,title,message,is_read,link_url,created_at')
+        .select('id,title,message,is_read,link,created_at')
         .eq('employee_id', employeeProfile.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -194,7 +194,7 @@ export default function TopBar() {
                   notifications.map(n => (
                     <div 
                       key={n.id} 
-                      onClick={() => markAsRead(n.id, n.link_url || '/notifications')}
+                      onClick={() => markAsRead(n.id, n.link || '/notifications')}
                       className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${!n.is_read ? 'bg-teal-50/30' : ''}`}
                     >
                       <div className="flex justify-between items-start gap-2">
