@@ -561,16 +561,16 @@ export default function BatchesPage() {
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                          Number of Flasks
+                          Number of Independent Trials / Runs
                         </label>
                         <input
                           type="number"
                           min={1} max={10}
                           {...register('num_flasks')}
                           className="w-full border border-gray-200 rounded-xl p-3 outline-none text-sm font-semibold focus:ring-2 focus:ring-navy/20"
-                          placeholder="3"
+                          placeholder="e.g. 5"
                         />
-                        <p className="text-[9px] text-gray-400 mt-1">Default: 3 (Phase 0 standard)</p>
+                        <p className="text-[9px] text-gray-400 mt-1">Generates independent tracks for testing different parameters</p>
                       </div>
                     </div>
 
