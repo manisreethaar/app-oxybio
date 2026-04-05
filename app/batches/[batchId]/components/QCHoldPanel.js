@@ -52,7 +52,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       const now = new Date();
       const sampleId = `QCS-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getTime().toString().slice(-4)}`;
       const { data: sRow, error: sErr } = await supabase.from('batch_flask_qc_samples').insert({
-        flask_id: activeFlask.id, sample_id: sampleId,
+        flask_id: activeFlask.id, batch_id: batch.id, sample_id: sampleId,
         sampling_date: samplingDate, sampling_operator: employeeProfile?.id,
         volume_ml: volPerFlask ? parseFloat(volPerFlask) : null,
         testing_location: testingLoc,

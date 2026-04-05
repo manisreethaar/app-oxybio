@@ -13,12 +13,16 @@ export async function POST(request, { params }) {
     // Ensure batch exists and is planned
     const { data: batch, error: getErr } = await supabase
       .from('batches')
-      .select('status')
+      .select('status, current_stage')
       .eq('id', batchId)
       .single();
 
     if (getErr || !batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
-    if (batch.status !== 'planned') return NextResponse.json({ error: 'Batch is already started or completed' }, { status: 400 });
+    // Guard: status check alone is insufficient — intermediate stages reset status to 'planned',
+    // so also check current_stage to prevent re-starting a batch that is already in progress.
+    if (batch.status !== 'planned' || batch.current_stage !== null) {
+      return NextResponse.json({ error: 'Batch is already started or completed' }, { status: 400 });
+    }
 
     // Transition the batch from planned to active in the media prep layer
     const now = new Date().toISOString();

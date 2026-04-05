@@ -7,7 +7,7 @@ const METHODS = ['Double-layered muslin cloth', 'Nylon mesh 100μm', 'Stainless 
 const CLARITY_OPTS = ['Very clear, transparent', 'Slightly cloudy', 'Moderately turbid', 'Highly turbid / opaque'];
 const TEMP_OPTS = ['Room Temperature (22-26°C)', 'Cold Room (≤8°C)'];
 
-export default function StrainingPanel({ batch, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
+export default function StrainingPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
   const [record,  setRecord]  = useState(null);
   const [saving,  setSaving]  = useState(false);
@@ -27,7 +27,10 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const fetchRecord = useCallback(async () => {
     if (!activeFlask) return;
     const { data } = await supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single();
-    if (data) setRecord(data);
+    if (data) {
+      setRecord(data);
+      setSupervisedBy(data.supervised_by || '');
+    }
   }, [activeFlask, supabase]);
 
   useEffect(() => { fetchRecord(); }, [fetchRecord]);
@@ -125,7 +128,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           </div>
         </div>
         
-        {isIntern && !record && (
+        {isIntern && (
           <div><label className="field-label text-red-500">Supervised By (Required for Juniors)</label>
             <select value={supervisedBy} onChange={e=>setSupervisedBy(e.target.value)} required className="field-input bg-white border-red-200">
               <option value="">Select supervisor...</option>
