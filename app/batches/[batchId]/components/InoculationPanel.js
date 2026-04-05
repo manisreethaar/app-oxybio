@@ -3,79 +3,68 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Droplets, AlertTriangle } from 'lucide-react';
 
-const INOCU_TYPES = ['Fresh Curd', 'Back-slop', 'Pure Lactobacillus Isolate'];
 const TRANSFER_METHODS = ['Pipette', 'Syringe', 'Sterile spoon'];
 
-export default function InoculationPanel({ batch, flasks, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
+export default function InoculationPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
-  const [pastBatches, setPastBatches] = useState([]);
-  const [mediaPrepData, setMediaPrepData] = useState(null);
   const isInternOrRI = ['intern','research_intern'].includes(role);
 
-  const [inType,    setInType]    = useState('Fresh Curd');
-  const [sourceNotes, setSourceNotes] = useState('');
-  const [sourceBatch, setSourceBatch] = useState('');
+  const [source,    setSource]    = useState('');
   const [inVol,     setInVol]     = useState('');
-  const [inTemp,    setInTemp]    = useState('');
+  const [plannedHr, setPlannedHr] = useState('');
   const [tZero,     setTZero]     = useState('');
   const [transfer,  setTransfer]  = useState('Pipette');
   const [lafUsed,   setLafUsed]   = useState(false);
   const [contCheck, setContCheck] = useState('Clear');
   const [contNotes, setContNotes] = useState('');
-  const [notes,     setNotes]     = useState('');
 
   const fetch = useCallback(async () => {
-    const [dRes, mpRes, pbRes] = await Promise.all([
-      supabase.from('batch_stage_inoculation').select('*').eq('batch_id', batch.id).single(),
-      supabase.from('batch_stage_media_prep').select('total_volume_ml').eq('batch_id', batch.id).single(),
-      supabase.from('batches').select('id, batch_id').in('status', ['released']).order('created_at', { ascending: false }).limit(20),
-    ]);
-    if (dRes.data) {
-      const d = dRes.data;
-      setInType(d.inoculum_type||'Fresh Curd'); setSourceNotes(d.inoculum_source_notes||'');
-      setSourceBatch(d.backslop_source_batch||''); setInVol(d.inoculum_vol_ml||'');
-      setInTemp(d.inoculation_temp_c||''); setTZero(d.t_zero_time ? d.t_zero_time.slice(0,16) : '');
-      setTransfer(d.transfer_method||'Pipette'); setLafUsed(d.laf_used||false);
-      setContCheck(d.contamination_check||'Clear'); setContNotes(d.contamination_notes||'');
-      setNotes(d.notes||'');
-    }
-    if (!tZero) {
+    if (!activeFlask) return;
+    const { data: d } = await supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single();
+    if (d) {
+      setSource(d.inoculum_source||''); 
+      setInVol(d.inoculum_vol_ml||'');
+      setPlannedHr(d.planned_fermentation_hrs||'');
+      setTZero(d.t_zero_time ? d.t_zero_time.slice(0,16) : '');
+      setTransfer(d.transfer_method||'Pipette'); 
+      setLafUsed(d.laf_used||false);
+      setContCheck(d.contamination_check||'Clear'); 
+      setContNotes(d.contamination_notes||'');
+    } else {
+      setSource(''); setInVol(''); setPlannedHr(''); setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
+      // Default T=0 to current time for convenience
       const now = new Date();
       now.setSeconds(0,0);
       setTZero(now.toISOString().slice(0,16));
     }
-    if (mpRes.data) setMediaPrepData(mpRes.data);
-    if (pbRes.data) setPastBatches(pbRes.data);
-  }, [batch.id, supabase]);
+  }, [activeFlask, supabase]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const totalVol = mediaPrepData?.total_volume_ml || batch.planned_volume_ml;
-  const inPct    = inVol && totalVol ? ((parseFloat(inVol) / parseFloat(totalVol)) * 100).toFixed(2) : null;
-  const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
-
   const handleSave = async (advance = false) => {
+    if (!activeFlask) return;
     if (advance && !tZero) { toast.warn('T=0 inoculation time is required to advance.'); return; }
+    if (advance && !plannedHr) { toast.warn('Please define a planned fermentation time.'); return; }
+    
     setSaving(true);
     try {
-      const { error } = await supabase.from('batch_stage_inoculation').upsert({
-        batch_id: batch.id, inoculum_type: inType,
-        backslop_source_batch: inType === 'Back-slop' ? sourceBatch || null : null,
-        inoculum_source_notes: sourceNotes || null,
+      const { error } = await supabase.from('batch_flask_inoculations').upsert({
+        flask_id: activeFlask.id, batch_id: batch.id,
+        inoculum_source: source || null,
         inoculum_vol_ml: inVol ? parseFloat(inVol) : null,
-        inoculation_pct: inPct ? parseFloat(inPct) : null,
-        inoculation_temp_c: inTemp ? parseFloat(inTemp) : null,
+        planned_fermentation_hrs: plannedHr ? parseFloat(plannedHr) : null,
         t_zero_time: tZero ? new Date(tZero).toISOString() : null,
         transfer_method: transfer, laf_used: lafUsed,
         contamination_check: contCheck,
         contamination_notes: contCheck === 'Suspected' ? contNotes : null,
-        operator_id: employeeProfile?.id, notes: notes || null,
-      }, { onConflict: 'batch_id' });
+        operator_id: employeeProfile?.id,
+      }, { onConflict: 'flask_id' });
       if (error) throw error;
-      toast.success(advance ? 'Inoculation complete. T=0 recorded.' : 'Draft saved.');
-      if (advance) {
-        await onAdvanceStage('fermentation');
+      
+      toast.success(advance ? `Trial ${activeFlask.flask_label} Inoculated. T=0 anchored.` : 'Draft saved.');
+      if (advance && onAdvanceFlaskStage) {
+        await onAdvanceFlaskStage('fermentation');
       } else {
         onDataSaved();
       }
@@ -83,63 +72,43 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
     finally { setSaving(false); }
   };
 
+  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Inoculation details.</div>;
+
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3">
+      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-blue-500">
         <Droplets className="w-5 h-5 text-blue-600"/>
-        <div><h2 className="text-base font-bold text-gray-900">Inoculation</h2>
-          <p className="text-xs text-gray-500">Record starter culture addition. T=0 anchors all fermentation readings.</p></div>
+        <div><h2 className="text-base font-bold text-gray-900">Inoculation: <span className="text-blue-600">{activeFlask.flask_label}</span></h2>
+          <p className="text-xs text-gray-500">Define the independent starter source and timeline for this specific trial.</p></div>
       </div>
 
       <div className="surface p-5 space-y-4">
-        {/* Inoculum Type */}
+        {/* Source */}
         <div>
-          <label className="field-label">Inoculum Type</label>
-          <div className="flex flex-wrap gap-2">
-            {INOCU_TYPES.map(t => (
-              <button key={t} type="button" onClick={()=>setInType(t)}
-                className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${inType===t?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
-                {t}
-              </button>
-            ))}
-          </div>
+          <label className="field-label">Inoculum Source</label>
+          <input value={source} onChange={e=>setSource(e.target.value)} className="field-input" placeholder="e.g. Back-slop from Batch 1002, or Isolate ISOL-001"/>
         </div>
-
-        {/* Conditional source fields */}
-        {inType === 'Back-slop' && (
-          <div><label className="field-label">Source Batch ID</label>
-            <select value={sourceBatch} onChange={e=>setSourceBatch(e.target.value)} className="field-input">
-              <option value="">Select source batch...</option>
-              {pastBatches.map(b=><option key={b.id} value={b.id}>{b.batch_id}</option>)}
-            </select>
-          </div>
-        )}
-        {inType !== 'Back-slop' && (
-          <div><label className="field-label">{inType === 'Fresh Curd' ? 'Curd Preparation Date / Notes' : 'Isolate ID'}</label>
-            <input value={sourceNotes} onChange={e=>setSourceNotes(e.target.value)} className="field-input" placeholder={inType==='Fresh Curd'?'e.g. Prepared 31-Mar-2026':'e.g. ISOL-LB-001'}/>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="field-label">Inoculum Volume (ml)</label>
             <input type="number" step="0.1" value={inVol} onChange={e=>setInVol(e.target.value)} className="field-input" placeholder="12.5"/>
-            {inPct && <p className="text-[10px] text-navy font-bold mt-1">= {inPct}% v/v inoculation rate</p>}
           </div>
           <div>
-            <label className="field-label">Substrate Temp at Inoculation (°C)</label>
-            <input type="number" step="0.1" value={inTemp} onChange={e=>setInTemp(e.target.value)} className="field-input" placeholder="37.0"/>
+            <label className="field-label">Planned Fermentation Time (hr)</label>
+            <input type="number" step="0.1" value={plannedHr} onChange={e=>setPlannedHr(e.target.value)} className="field-input" placeholder="e.g. 12"/>
+            <p className="text-[9px] text-gray-400 mt-1">User-defined threshold for alerting</p>
           </div>
         </div>
 
-        {/* T=0 — prominent */}
+        {/* T=0 */}
         <div className="p-4 bg-navy/5 border-2 border-navy/30 rounded-2xl">
           <label className="block text-[11px] font-black uppercase tracking-wider text-navy mb-2">
-            ⏱ T=0 — Inoculation Time (Fermentation Anchor)
+            ⏱ T=0 — Inoculation Time for {activeFlask.flask_label}
           </label>
           <input type="datetime-local" value={tZero} onChange={e=>setTZero(e.target.value)}
             className="w-full px-4 py-3 border-2 border-navy/30 rounded-xl text-sm font-black font-mono text-navy bg-white outline-none focus:border-navy"/>
-          <p className="text-[10px] text-navy/60 font-semibold mt-1.5">All fermentation reading timestamps will be calculated from this moment.</p>
+          <p className="text-[10px] text-navy/60 font-semibold mt-1.5">This sets the clock specifically for this trial.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -169,16 +138,9 @@ export default function InoculationPanel({ batch, flasks, employees, employeePro
           </div>
           {contCheck === 'Suspected' && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-              <div className="flex items-center gap-2 mb-2"><AlertTriangle className="w-4 h-4 text-red-600"/><span className="text-xs font-bold text-red-800">Contamination suspected — describe observation:</span></div>
               <textarea value={contNotes} onChange={e=>setContNotes(e.target.value)} rows={2} placeholder="Describe suspected contamination..." className="w-full px-3 py-2 border border-red-200 rounded-lg text-xs font-semibold outline-none resize-none bg-white"/>
             </div>
           )}
-        </div>
-
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
-
-        <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 font-semibold">
-          📓 Tip: Add an LNB (Lab Notebook) entry for this inoculation to document observations.
         </div>
 
         <div className="grid grid-cols-2 gap-3">

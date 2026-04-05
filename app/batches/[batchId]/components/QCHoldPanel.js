@@ -14,12 +14,11 @@ const DEFAULT_TESTS = [
   { test_name: 'Microbial (Yeast + Mould)',          target_spec: 'Defer to Phase 1',          result_unit: 'CFU/ml', pass_fail: 'N/A' },
 ];
 
-export default function QCHoldPanel({ batch, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
+export default function QCHoldPanel({ batch, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast    = useToast();
   const [sample,     setSample]     = useState(null);
   const [tests,      setTests]      = useState([]);
   const [creating,   setCreating]   = useState(false);
-  const [saving,     setSaving]     = useState(false);
   const isCeo = ['ceo','admin'].includes(role);
 
   // Sample creation form
@@ -32,40 +31,44 @@ export default function QCHoldPanel({ batch, employees, employeeProfile, role, c
   const [expectDate,   setExpectDate]   = useState('');
 
   const fetch = useCallback(async () => {
-    const { data: sData } = await supabase.from('batch_qc_samples').select('*').eq('batch_id', batch.id).single();
+    if (!activeFlask) return;
+    const { data: sData } = await supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).single();
     if (sData) {
       setSample(sData);
-      const { data: tData } = await supabase.from('batch_qc_tests').select('*').eq('sample_id', sData.id).order('created_at');
+      const { data: tData } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('created_at');
       setTests(tData || []);
+    } else {
+      setSample(null);
+      setTests([]);
     }
-  }, [batch.id, supabase]);
+  }, [activeFlask, supabase]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   const handleCreateSample = async () => {
+    if (!activeFlask) return;
     setCreating(true);
     try {
-      // Generate sample ID
       const now = new Date();
       const sampleId = `QCS-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getTime().toString().slice(-4)}`;
-      const { data: sRow, error: sErr } = await supabase.from('batch_qc_samples').insert({
-        batch_id: batch.id, sample_id: sampleId,
+      const { data: sRow, error: sErr } = await supabase.from('batch_flask_qc_samples').insert({
+        flask_id: activeFlask.id, sample_id: sampleId,
         sampling_date: samplingDate, sampling_operator: employeeProfile?.id,
-        vol_per_flask_ml: volPerFlask ? parseFloat(volPerFlask) : null,
+        volume_ml: volPerFlask ? parseFloat(volPerFlask) : null,
         testing_location: testingLoc,
         external_lab: testingLoc === 'NABL external lab' ? extLab : null,
         ext_ref_number: testingLoc === 'NABL external lab' ? extRef : null,
         sample_sent_date: sentDate || null, expected_date: expectDate || null,
       }).select().single();
       if (sErr) throw sErr;
-      // Insert default test rows
+      
       const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sRow.id, batch_id: batch.id,
+        sample_id: sRow.id, flask_id: activeFlask.id,
         test_name: t.test_name, target_spec: t.target_spec,
         result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
       }));
-      await supabase.from('batch_qc_tests').insert(testRows);
-      toast.success(`QC sample ${sampleId} created with ${testRows.length} standard tests.`);
+      await supabase.from('batch_flask_qc_tests').insert(testRows);
+      toast.success(`QC sample ${sampleId} created for ${activeFlask.flask_label}.`);
       fetch();
     } catch (err) { toast.error(err.message); }
     finally { setCreating(false); }
@@ -73,9 +76,8 @@ export default function QCHoldPanel({ batch, employees, employeeProfile, role, c
 
   const handleUpdateTest = async (testId, field, value) => {
     setTests(prev => prev.map(t => t.id === testId ? { ...t, [field]: value } : t));
-    await supabase.from('batch_qc_tests').update({ [field]: value }).eq('id', testId);
+    await supabase.from('batch_flask_qc_tests').update({ [field]: value }).eq('id', testId);
 
-    // Nudge towards CAPA when a test fails
     if (field === 'pass_fail' && value === 'Fail') {
       const failedTest = tests.find(t => t.id === testId);
       toast.warn(
@@ -85,28 +87,28 @@ export default function QCHoldPanel({ batch, employees, employeeProfile, role, c
     }
   };
 
-  // Advance gate
   const allDone     = tests.length > 0 && tests.every(t => t.pass_fail !== 'Pending');
   const anyFail     = tests.some(t => t.pass_fail === 'Fail');
   const passCount   = tests.filter(t => t.pass_fail === 'Pass').length;
   const failCount   = tests.filter(t => t.pass_fail === 'Fail').length;
   const pendingCount= tests.filter(t => t.pass_fail === 'Pending').length;
 
+  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view QC records.</div>;
+
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3">
+      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-rose-500">
         <Clock className="w-5 h-5 text-rose-600"/>
-        <div><h2 className="text-base font-bold text-gray-900">QC Hold</h2>
-          <p className="text-xs text-gray-500">All standard tests must be recorded before batch can be released or rejected.</p></div>
+        <div><h2 className="text-base font-bold text-gray-900">QC Hold: <span className="text-rose-600">{activeFlask.flask_label}</span></h2>
+          <p className="text-xs text-gray-500">All standard tests must be recorded before this trial can be released or rejected.</p></div>
       </div>
 
       {!sample ? (
-        /* ── Create Sample Record ── */
         <div className="surface p-5 space-y-4">
-          <h3 className="text-sm font-bold text-gray-900">Create QC Sample Record</h3>
+          <h3 className="text-sm font-bold text-gray-900">Create QC Sample Record for {activeFlask.flask_label}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="field-label">Sampling Date</label><input type="date" value={samplingDate} onChange={e=>setSamplingDate(e.target.value)} className="field-input"/></div>
-            <div><label className="field-label">Volume per Flask (ml)</label><input type="number" step="0.1" value={volPerFlask} onChange={e=>setVolPerFlask(e.target.value)} className="field-input" placeholder="10"/></div>
+            <div><label className="field-label">Sample Volume (ml)</label><input type="number" step="0.1" value={volPerFlask} onChange={e=>setVolPerFlask(e.target.value)} className="field-input" placeholder="10"/></div>
           </div>
           <div>
             <label className="field-label">Testing Location</label>
@@ -132,9 +134,7 @@ export default function QCHoldPanel({ batch, employees, employeeProfile, role, c
           </button>
         </div>
       ) : (
-        /* ── Test Table ── */
         <div className="space-y-4">
-          {/* Sample header */}
           <div className="surface p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Sample ID</p>
@@ -157,7 +157,6 @@ export default function QCHoldPanel({ batch, employees, employeeProfile, role, c
             </div>
           </div>
 
-          {/* Test rows */}
           <div className="surface overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-100">
@@ -200,35 +199,34 @@ export default function QCHoldPanel({ batch, employees, employeeProfile, role, c
             </div>
           </div>
 
-          {/* Advance buttons — CEO only */}
           {!allDone && (
             <div className="surface p-4 bg-gray-50 flex items-center gap-2 text-xs text-gray-500">
               <Lock className="w-4 h-4 text-gray-400"/>
-              <span className="font-semibold">{pendingCount} test(s) still pending — all tests must be recorded before batch can be released or rejected.</span>
+              <span className="font-semibold">{pendingCount} test(s) still pending — all tests must be recorded before trial can be released or rejected.</span>
             </div>
           )}
           {allDone && (
             <div className="surface p-5 space-y-3">
               {anyFail && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-800">
-                  <XCircle className="w-4 h-4 text-red-600"/>{failCount} test(s) FAILED — batch should be rejected unless deviation approved.
+                  <XCircle className="w-4 h-4 text-red-600"/>{failCount} test(s) FAILED — trial should be rejected unless deviation approved.
                 </div>
               )}
               {!anyFail && (
                 <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600"/>All tests passed — batch eligible for release.
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600"/>All tests passed — trial eligible for release.
                 </div>
               )}
               {!isCeo && <p className="text-xs text-gray-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
               {isCeo && (
                 <div className="grid grid-cols-2 gap-3">
-                  <button onClick={()=>onAdvanceStage('released')} disabled={actionLoading}
+                  <button onClick={()=>onAdvanceFlaskStage('released')} disabled={actionLoading}
                     className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-sm disabled:opacity-50">
-                    ✓ Release Batch
+                    ✓ Release Trial
                   </button>
-                  <button onClick={()=>onAdvanceStage('rejected')} disabled={actionLoading}
+                  <button onClick={()=>onAdvanceFlaskStage('rejected')} disabled={actionLoading}
                     className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm shadow-sm disabled:opacity-50">
-                    ✗ Reject Batch
+                    ✗ Reject Trial
                   </button>
                 </div>
               )}

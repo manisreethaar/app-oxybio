@@ -4,13 +4,6 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { createElement } from 'react';
 import { BMRDocument } from '@/lib/bmr/BMRDocument';
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/batches/[batchId]/bmr
-// Generates the Batch Manufacturing Record PDF, uploads to
-// Supabase Storage, and returns the signed URL.
-// CEO/Admin only.
-// ─────────────────────────────────────────────────────────────
-
 export async function GET(request, { params }) {
   try {
     const supabase  = createClient();
@@ -19,7 +12,6 @@ export async function GET(request, { params }) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Role check — CEO/admin/research_fellow only
     const { data: emp } = await supabase.from('employees').select('id, full_name, role').eq('email', user.email).single();
     if (!emp || !['ceo', 'admin', 'research_fellow', 'scientist'].includes(emp.role)) {
       return NextResponse.json({ error: 'Access denied. BMR export requires Scientist+ role.' }, { status: 403 });
@@ -27,48 +19,49 @@ export async function GET(request, { params }) {
 
     // ── Fetch ALL stage data in parallel ─────────────────────
     const [
-      batchRes, flasksRes, mediaPrepRes, sterilRes, inocuRes,
-      ferReadRes, ferEpRes, strainRes, extractRes,
+      batchRes, flasksRes, mediaPrepRes, sterilRes, 
+      inocuRes, ferReadRes, ferEpRes, strainRes, extractRes,
       qcSampleRes, releaseRes, rejectionRes,
     ] = await Promise.all([
       supabase.from('batches').select('*, formulations(name, code, version)').eq('id', batchId).single(),
       supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
       supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batchId).single(),
       supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_stage_inoculation').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batchId).order('logged_at'),
-      supabase.from('batch_fermentation_endpoint').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_stage_straining').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_stage_extract_addition').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_qc_samples').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_release_record').select('*').eq('batch_id', batchId).single(),
-      supabase.from('batch_rejection_record').select('*').eq('batch_id', batchId).single(),
+      supabase.from('batch_flask_inoculations').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_fermentation_readings').select('*').eq('batch_id', batchId).order('logged_at'),
+      supabase.from('batch_flask_fermentation_endpoints').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_straining').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_extract_addition').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_qc_samples').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_release_record').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_rejection_record').select('*').eq('batch_id', batchId),
     ]);
 
     if (!batchRes.data) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
 
-    // Fetch QC tests if sample exists
+    // Fetch QC tests
+    const sampleIds = qcSampleRes.data?.map(s => s.id) || [];
     let qcTests = [];
-    if (qcSampleRes.data?.id) {
-      const { data } = await supabase.from('batch_qc_tests').select('*').eq('sample_id', qcSampleRes.data.id).order('created_at');
+    if (sampleIds.length > 0) {
+      const { data } = await supabase.from('batch_flask_qc_tests').select('*').in('sample_id', sampleIds).order('created_at');
       qcTests = data || [];
     }
 
     // ── Assemble data object ──────────────────────────────────
     const bmrData = {
       batch:                batchRes.data,
-      flasks:               flasksRes.data || [],
       mediaPrepData:        mediaPrepRes.data || null,
       sterilisationData:    sterilRes.data || null,
-      inoculationData:      inocuRes.data || null,
-      fermentationReadings: ferReadRes.data || [],
-      fermentationEndpoint: ferEpRes.data || null,
-      strainingData:        strainRes.data || null,
-      extractData:          extractRes.data || null,
-      qcSample:             qcSampleRes.data || null,
-      qcTests,
-      releaseRecord:        releaseRes.data || null,
-      rejectionRecord:      rejectionRes.data || null,
+      flasks:               flasksRes.data || [],
+      flaskInoculations:    inocuRes.data || [],
+      flaskReadings:        ferReadRes.data || [],
+      flaskEndpoints:       ferEpRes.data || [],
+      flaskStraining:       strainRes.data || [],
+      flaskExtracts:        extractRes.data || [],
+      flaskQCSamples:       qcSampleRes.data || [],
+      flaskQCTests:         qcTests,
+      flaskReleases:        releaseRes.data || [],
+      flaskRejections:      rejectionRes.data || [],
       generatedBy:          emp.full_name,
       generatedAt:          new Date().toISOString(),
     };
@@ -90,21 +83,18 @@ export async function GET(request, { params }) {
 
     let signedUrl = null;
     if (!uploadError) {
-      // Create a long-lived signed URL (1 year = 31536000 sec)
       const { data: urlData } = await supabase.storage
         .from('documents')
         .createSignedUrl(storagePath, 31536000);
       signedUrl = urlData?.signedUrl || null;
 
-      // Update batch record with the URL
       await supabase.from('batches').update({ bmr_url: signedUrl }).eq('id', batchId);
-
-      // Also update release record if it exists
-      if (releaseRes.data) {
-        await supabase.from('batch_release_record').update({ bmr_url: signedUrl }).eq('batch_id', batchId);
+      
+      // Update BMR URL across all release records
+      if (releaseRes.data?.length > 0) {
+        await supabase.from('batch_flask_release_record').update({ bmr_url: signedUrl }).eq('batch_id', batchId);
       }
 
-      // Log to document vault
       await supabase.from('documents').insert({
         title:       `BMR — ${batchRes.data.batch_id}`,
         category:    'Batch Record',
@@ -119,8 +109,6 @@ export async function GET(request, { params }) {
       console.warn('Storage upload failed (non-fatal):', uploadError.message);
     }
 
-    // ── Respond: stream PDF or return URL ─────────────────────
-    // If the request has ?download=true, stream the PDF directly
     const url = new URL(request.url);
     if (url.searchParams.get('download') === 'true') {
       return new Response(pdfBuffer, {

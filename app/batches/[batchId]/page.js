@@ -59,6 +59,8 @@ export default function BatchDetailPage() {
   const [bmrUrl,         setBmrUrl]         = useState(null);
   const [pendingTransition, setPendingTransition] = useState(null);
   const [pendingCancel,     setPendingCancel]     = useState(false);
+  const [pendingFlaskReject, setPendingFlaskReject] = useState(false);
+  const [selectedFlaskId,   setSelectedFlaskId]   = useState(null);
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -81,6 +83,23 @@ export default function BatchDetailPage() {
   }, [batchId, supabase]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    if (flasks.length > 0 && !selectedFlaskId) {
+      setSelectedFlaskId(flasks[0].id);
+    }
+  }, [flasks, selectedFlaskId]);
+
+  const handleFlaskTransition = useCallback(async (flaskId, toStage) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.from('batch_flasks').update({ current_stage: toStage }).eq('id', flaskId);
+      if (error) throw error;
+      toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
+      fetchAll();
+    } catch (err) { toast.error(err.message); }
+    finally { setActionLoading(false); }
+  }, [supabase, toast, fetchAll]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
@@ -167,7 +186,11 @@ export default function BatchDetailPage() {
 
   const currentIdx  = STAGES.findIndex(s => s.id === batch.current_stage);
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
-  const CurrentPanel = PANEL_MAP[batch.current_stage] || null;
+  const isPostSterilisation = currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting';
+  
+  const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
+  const activeStage = isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage;
+  const CurrentPanel = PANEL_MAP[activeStage] || null;
 
   return (
     <div className="page-container">
@@ -234,11 +257,14 @@ export default function BatchDetailPage() {
                 const Icon = stage.icon;
                 return (
                   <div key={stage.id} className={`flex items-center gap-2.5 py-2 px-3 rounded-lg ${curr ? `${stage.bg} border ${stage.border}` : ''}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done ? 'bg-navy border-navy' : curr ? `${stage.bg} ${stage.border}` : 'bg-gray-50 border-gray-200'}`}>
-                      {done ? <CheckCircle className="w-3 h-3 text-white"/> : <Icon className={`w-2.5 h-2.5 ${curr ? stage.color : 'text-gray-300'}`}/>}
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done && !isPostSterilisation ? 'bg-navy border-navy' : curr && !isPostSterilisation ? `${stage.bg} ${stage.border}` : 'bg-gray-50 border-gray-200'}`}>
+                      {done && !isPostSterilisation ? <CheckCircle className="w-3 h-3 text-white"/> : <Icon className={`w-2.5 h-2.5 ${(curr && !isPostSterilisation) || isPostSterilisation ? stage.color : 'text-gray-300'}`}/>}
                     </div>
-                    <span className={`text-xs font-bold ${curr ? 'text-gray-900' : done ? 'text-gray-400 line-through' : 'text-gray-300'}`}>{stage.label}</span>
-                    {curr && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
+                    <span className={`text-xs font-bold ${curr && !isPostSterilisation ? 'text-gray-900' : done && !isPostSterilisation ? 'text-gray-400 line-through' : 'text-gray-300'}`}>{stage.label}</span>
+                    {curr && !isPostSterilisation && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
+                    {isPostSterilisation && stage.id !== 'media_prep' && stage.id !== 'sterilisation' && (
+                      <span className="ml-auto text-[9px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">Trial Mode</span>
+                    )}
                   </div>
                 );
               })}
@@ -252,16 +278,27 @@ export default function BatchDetailPage() {
           </div>
 
           {/* Flask Cards */}
-          <div className="surface p-4">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Flask Status</p>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="surface p-4 border-2 border-navy/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-navy/5 rounded-bl-[100px] -z-10"/>
+            <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
+            <div className="space-y-2">
               {flasks.map(f => (
-                <div key={f.id} className={`p-2.5 rounded-xl text-center border ${f.status==='active'?'bg-navy/5 border-navy/20':f.status==='rejected'?'bg-red-50 border-red-200':'bg-emerald-50 border-emerald-200'}`}>
-                  <p className={`text-sm font-black ${f.status==='rejected'?'text-red-600 line-through':f.status==='complete'?'text-emerald-700':'text-navy'}`}>{f.flask_label}</p>
-                  <p className={`text-[8px] font-bold uppercase ${f.status==='active'?'text-gray-400':f.status==='rejected'?'text-red-500':'text-emerald-600'}`}>{f.status}</p>
-                </div>
+                <button 
+                  key={f.id} 
+                  onClick={() => setSelectedFlaskId(f.id)}
+                  disabled={!isPostSterilisation}
+                  className={`w-full p-2.5 rounded-xl text-left border transition-all flex flex-col items-start ${selectedFlaskId===f.id?'bg-navy/5 border-navy shadow-sm ring-1 ring-navy':f.status==='rejected'?'bg-red-50 border-red-200 opacity-60':'bg-white hover:bg-gray-50 border-gray-200 hover:border-navy/50'}`}>
+                  <div className="flex justify-between items-center w-full">
+                    <p className={`text-sm font-black ${f.status==='rejected'?'text-red-500 line-through':selectedFlaskId===f.id?'text-navy':'text-gray-700'}`}>{f.flask_label}</p>
+                    {selectedFlaskId===f.id && <div className="w-1.5 h-1.5 bg-navy rounded-full animate-pulse"/>}
+                  </div>
+                  <p className={`text-[9px] font-bold uppercase mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>
+                    {f.status==='rejected' ? 'REJECTED' : (STAGE_LABELS[f.current_stage] || f.current_stage || 'INOCULATION')}
+                  </p>
+                </button>
               ))}
             </div>
+            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-[10px] text-amber-700 font-bold">Complete Sterilisation to unlock individual trial tracking.</span></div>}
           </div>
 
           {/* Linked Records */}
@@ -319,13 +356,21 @@ export default function BatchDetailPage() {
 
         {/* ── RIGHT COLUMN — Stage Panel ── */}
         <div>
+          {isPostSterilisation && selectedFlask && !['released','rejected'].includes(selectedFlask.current_stage) && selectedFlask.status !== 'rejected' && (
+            <div className="flex justify-end mb-4">
+              <button onClick={() => setPendingFlaskReject(true)} className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 font-black rounded-lg text-[10px] uppercase tracking-wider transition-all hover:scale-105">Abort / Reject Trial {selectedFlask.flask_label}</button>
+            </div>
+          )}
           {CurrentPanel ? (
             <CurrentPanel
-              batch={batch} flasks={flasks} employees={employees}
+              batch={batch} flasks={flasks} 
+              activeFlask={selectedFlask}
+              employees={employees}
               availableStock={availableStock} role={role} canDo={canDo}
               employeeProfile={employeeProfile} supabase={supabase}
               onDataSaved={fetchAll}
               onAdvanceStage={handleDirectTransition}
+              onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
               actionLoading={actionLoading}
             />
           ) : (
@@ -363,20 +408,34 @@ export default function BatchDetailPage() {
       {pendingCancel && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Cancel Batch</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to cancel <strong className="font-mono text-navy">{batch?.batch_id}</strong>? All progress will be deleted and inventory automatically restored. This cannot be undone.</p>
+            <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Cancel Entire Batch</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to cancel this ENTIRE batch and delete all its records? Inventory items used will be placed back into circulation.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setPendingCancel(false)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold">Nevermind</button>
+              <button onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm">Yes, Cancel Batch</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Trial Modal */}
+      {pendingFlaskReject && selectedFlask && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Abort & Reject Trial</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to forcibly reject <strong>{selectedFlask.flask_label}</strong> at its current stage? This cannot be undone.</p>
             <div className="flex gap-3">
               <button 
-                onClick={() => setPendingCancel(false)}
+                onClick={() => setPendingFlaskReject(false)}
                 className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
               >
                 Nevermind
               </button>
               <button 
-                onClick={confirmCancelBatch}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full inline-flex items-center justify-center gap-2"
+                onClick={() => { setPendingFlaskReject(false); handleFlaskTransition(selectedFlask.id, 'rejected'); }}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm"
               >
-                <Trash2 className="w-4 h-4"/> Delete Batch
+                Yes, Reject Trial
               </button>
             </div>
           </div>
