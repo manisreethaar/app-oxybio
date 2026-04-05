@@ -175,7 +175,7 @@ export default function MispunchPage() {
                   <input 
                     type="number" 
                     step="0.5"
-                    min="1"
+                    min="0.5"
                     max="16"
                     required
                     className="w-full h-10 px-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm font-bold"
