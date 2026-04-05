@@ -117,28 +117,28 @@ export default function AttendancePage() {
       
       setMyHistory(history || []);
 
-      // 2. Fetch team roster ONLY if the user is an admin
-      if (role === 'admin') {
+      // 2. Fetch leave data for everyone (non-admins need to see their own leave status)
+      const { data: leavesToday } = await supabase.from('leave_applications')
+        .select('employee_id')
+        .eq('status', 'approved')
+        .lte('start_date', todayStr)
+        .gte('end_date', todayStr);
+      setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+
+      // 3. Fetch team roster ONLY if the user is an admin/ceo/cto
+      if (['admin', 'ceo', 'cto'].includes(role)) {
         const { data: teamLogs } = await supabase.from('attendance_log')
           .select('*, employees(full_name, role)')
           .eq('date', todayStr);
-        
+
         const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
-        
-        const combined = allEmps.map(emp => {
+
+        const combined = (allEmps || []).map(emp => {
           const log = (teamLogs || []).find(l => l.employee_id === emp.id);
           return { ...emp, attendance: log };
         });
-        
-        setTeamToday(combined);
 
-        const { data: leavesToday } = await supabase.from('leave_applications')
-          .select('employee_id')
-          .eq('status', 'approved')
-          .lte('start_date', todayStr)
-          .gte('end_date', todayStr);
-        
-        setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+        setTeamToday(combined);
       }
     } catch (err) {
       console.error('Attendance fetch error:', err);
@@ -353,7 +353,7 @@ export default function AttendancePage() {
           <p className="text-slate-500 mt-1 font-medium">GPS tracked shift check-ins and history.</p>
         </div>
         
-        {!todayLog && role === 'admin' && (
+        {!todayLog && ['admin', 'ceo', 'cto'].includes(role) && (
           <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 flex items-center justify-between text-xs max-w-sm">
             <span className="text-amber-800 font-bold mr-3"><ShieldCheck className="inline w-4 h-4 mr-1"/> Admin Test Mode</span>
             <label className="flex items-center cursor-pointer">
@@ -552,7 +552,7 @@ export default function AttendancePage() {
       )}
 
       {/* Admin Roster View */}
-      {role === 'admin' && (
+      {['admin', 'ceo', 'cto'].includes(role) && (
         <div className="glass-card rounded-[2rem] p-8 relative">
           <div className="flex justify-between items-center mb-8 border-b border-white/40 pb-5">
             <div>
@@ -620,7 +620,7 @@ export default function AttendancePage() {
               <p className="text-sm text-slate-500 font-medium mt-1">Please take a clear photo of your face.</p>
               
               <div className="mt-2 text-[10px] font-bold text-teal-700 bg-teal-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
-                <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / 200m)
+                <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {MAX_RADIUS_METERS}m)
               </div>
             </div>
 
