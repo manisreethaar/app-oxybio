@@ -91,6 +91,10 @@ export default function BatchDetailPage() {
   }, [flasks, selectedFlaskId]);
 
   const handleFlaskTransition = useCallback(async (flaskId, toStage) => {
+    if (toStage === 'released' && lnbCount === 0) {
+      toast.warn('Cannot release — Lab Notebook is empty.');
+      return;
+    }
     setActionLoading(true);
     try {
       const { error } = await supabase.from('batch_flasks').update({ current_stage: toStage }).eq('id', flaskId);
@@ -99,7 +103,7 @@ export default function BatchDetailPage() {
       fetchAll();
     } catch (err) { toast.error(err.message); }
     finally { setActionLoading(false); }
-  }, [supabase, toast, fetchAll]);
+  }, [supabase, toast, fetchAll, lnbCount]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;

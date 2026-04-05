@@ -126,7 +126,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     setSaving(true);
     try {
       const phVal = parseFloat(pH);
-      const isAlarm = phVal < 3.5 || phVal > 5.5;
+      const isAlarm = phVal < 3.8 || phVal > 5.5;
       
       const { error } = await supabase.from('batch_fermentation_readings').insert({
         batch_id: batch.id, flask_id: activeFlask.id, flask_label: activeFlask.flask_label,
@@ -353,12 +353,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               ))}
             </div>
             <textarea value={epNotes} onChange={e=>setEpNotes(e.target.value)} rows={2} placeholder="Endpoint notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <button type="submit" disabled={savingEp} className="py-3 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
                 {savingEp ? 'Saving...' : 'Save Endpoint Record'}
-              </button>
-              <button type="button" disabled={savingEp||actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
-                Advance This Trial → Straining
               </button>
             </div>
           </form>
