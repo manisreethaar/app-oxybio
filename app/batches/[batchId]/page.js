@@ -293,7 +293,7 @@ export default function BatchDetailPage() {
                     {selectedFlaskId===f.id && <div className="w-1.5 h-1.5 bg-navy rounded-full animate-pulse"/>}
                   </div>
                   <p className={`text-[9px] font-bold uppercase mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>
-                    {f.status==='rejected' ? 'REJECTED' : (STAGE_LABELS[f.current_stage] || f.current_stage || 'INOCULATION')}
+                    {f.status==='rejected' ? 'REJECTED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
                   </p>
                 </button>
               ))}
