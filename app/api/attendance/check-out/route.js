@@ -55,8 +55,21 @@ export async function POST(request) {
         }
     }
 
-    const { data, error } = await supabase.from('attendance_log').update({ 
-      check_out_time: new Date().toISOString() 
+    // Fetch check_in_time to calculate total_hours
+    const { data: logRow } = await supabase.from('attendance_log')
+      .select('check_in_time')
+      .eq('id', parsed.data.id)
+      .eq('employee_id', emp.id)
+      .single();
+
+    const checkOutTime = new Date();
+    const totalHours = logRow?.check_in_time
+      ? parseFloat(((checkOutTime - new Date(logRow.check_in_time)) / (1000 * 60 * 60)).toFixed(2))
+      : null;
+
+    const { data, error } = await supabase.from('attendance_log').update({
+      check_out_time: checkOutTime.toISOString(),
+      ...(totalHours !== null ? { total_hours: totalHours } : {}),
     }).eq('id', parsed.data.id).eq('employee_id', emp.id).select().single();
 
     if (error) throw error;
