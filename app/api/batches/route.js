@@ -299,7 +299,7 @@ export async function DELETE(request) {
 
     const { data: batch, error: fetchErr } = await supabase
       .from('batches')
-      .select('*, inventory_movements(*)')
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -309,8 +309,12 @@ export async function DELETE(request) {
     }
 
     // Reverse any inventory movements already recorded
-    const movements = batch.inventory_movements || [];
-    for (const mov of movements) {
+    const { data: movements } = await supabase
+      .from('inventory_movements')
+      .select('*')
+      .eq('batch_reference', batch.batch_id);
+
+    for (const mov of (movements || [])) {
       if (mov.stock_id && mov.quantity) {
         const { data: stock } = await supabase
           .from('inventory_stock').select('current_quantity').eq('id', mov.stock_id).single();
