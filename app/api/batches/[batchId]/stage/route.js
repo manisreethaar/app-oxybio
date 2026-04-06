@@ -85,6 +85,30 @@ export async function POST(request, { params }) {
       batch_id: batchId, from_stage, to_stage, changed_by: emp.id, notes: cleanNotes,
     });
 
+    // ── Auto-Generate Flasks on Sterilisation -> Inoculation ──
+    if (to_stage === 'inoculation' && from_stage === 'sterilisation') {
+      try {
+        const { data: b } = await supabase.from('batches').select('num_flasks').eq('id', batchId).single();
+        const numFlasks = b?.num_flasks || 1;
+        const { data: existingFlasks } = await supabase.from('batch_flasks').select('id').eq('batch_id', batchId);
+        
+        if (!existingFlasks || existingFlasks.length === 0) {
+          const newFlasks = [];
+          for (let i = 1; i <= numFlasks; i++) {
+              newFlasks.push({
+                  batch_id: batchId,
+                  flask_label: `F${i}`,
+                  current_stage: 'inoculation',
+                  status: 'planned'
+              });
+          }
+          await supabase.from('batch_flasks').insert(newFlasks);
+        }
+      } catch (err) {
+        console.error('Failed to auto-generate flasks:', err);
+      }
+    }
+
     return NextResponse.json({ success: true, new_stage: to_stage, new_status: newStatus });
 
   } catch (error) {
