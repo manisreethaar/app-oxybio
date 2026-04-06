@@ -327,7 +327,14 @@ export async function DELETE(request) {
       }
     }
 
+    // Explicitly delete child records to satisfy constraints without needing ON DELETE CASCADE
+    await supabase.from('stage_transitions').delete().eq('batch_id', id);
+    await supabase.from('batch_stage_media_prep').delete().eq('batch_id', id);
+    await supabase.from('batch_stage_sterilisation').delete().eq('batch_id', id);
+    await supabase.from('batch_flasks').delete().eq('batch_id', id);
+    await supabase.from('lab_notebook_entries').delete().eq('batch_id', id);
     await supabase.from('tasks').delete().eq('batch_id', id);
+
     const { error: deleteErr } = await supabase.from('batches').delete().eq('id', id);
     if (deleteErr) throw deleteErr;
 
