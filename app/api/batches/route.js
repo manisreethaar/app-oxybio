@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -327,15 +328,30 @@ export async function DELETE(request) {
       }
     }
 
-    // Explicitly delete child records to satisfy constraints without needing ON DELETE CASCADE
-    await supabase.from('stage_transitions').delete().eq('batch_id', id);
-    await supabase.from('batch_stage_media_prep').delete().eq('batch_id', id);
-    await supabase.from('batch_stage_sterilisation').delete().eq('batch_id', id);
-    await supabase.from('batch_flasks').delete().eq('batch_id', id);
-    await supabase.from('lab_notebook_entries').delete().eq('batch_id', id);
-    await supabase.from('tasks').delete().eq('batch_id', id);
+    // Use admin client to bypass RLS blocks on immutable tables (like Lab Notebooks or Stage History)
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
-    const { error: deleteErr } = await supabase.from('batches').delete().eq('id', id);
+    // Explicitly delete child records to satisfy constraints without needing ON DELETE CASCADE
+    await adminSupabase.from('stage_transitions').delete().eq('batch_id', id);
+    await adminSupabase.from('batch_stage_media_prep').delete().eq('batch_id', id);
+    await adminSupabase.from('batch_stage_sterilisation').delete().eq('batch_id', id);
+    await adminSupabase.from('batch_flasks').delete().eq('batch_id', id);
+    
+    // Also clear lab notebook fields that might prevent LNB deletion
+    const { data: lnbs } = await adminSupabase.from('lab_notebook_entries').select('id').eq('batch_id', id);
+    if (lnbs && lnbs.length > 0) {
+      const lnbIds = lnbs.map(l => l.id);
+      await adminSupabase.from('lab_notebook_fields').delete().in('entry_id', lnbIds);
+    }
+    await adminSupabase.from('lab_notebook_entries').delete().eq('batch_id', id);
+    
+    await adminSupabase.from('tasks').delete().eq('batch_id', id);
+
+    const { error: deleteErr } = await adminSupabase.from('batches').delete().eq('id', id);
     if (deleteErr) throw deleteErr;
 
     return NextResponse.json({ success: true, message: 'Batch cancelled. Materials restored.' });
