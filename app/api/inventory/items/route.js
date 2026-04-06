@@ -95,8 +95,9 @@ export async function DELETE(request) {
     const supabase = createClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const ids = searchParams.get('ids'); // comma-separated for bulk delete
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+    if (!id && !ids) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -105,6 +106,14 @@ export async function DELETE(request) {
     const isMaster = user.email === 'manisreethaar@gmail.com';
     if (!['admin','ceo','cto'].includes(emp?.role) && !isMaster) {
       return NextResponse.json({ error: 'Permission Denied' }, { status: 403 });
+    }
+
+    if (ids) {
+      const idList = ids.split(',').map(s => s.trim()).filter(Boolean);
+      if (!idList.length) return NextResponse.json({ error: 'No valid IDs provided' }, { status: 400 });
+      const { error } = await supabase.from('inventory_items').delete().in('id', idList);
+      if (error) throw error;
+      return NextResponse.json({ success: true, deleted: idList.length });
     }
 
     const { error } = await supabase.from('inventory_items').delete().eq('id', id);
