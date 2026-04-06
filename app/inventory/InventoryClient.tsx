@@ -10,7 +10,7 @@ import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
-  const { user, role, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
+  const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState(initialStock || []);
@@ -840,7 +840,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <option value="newest">Newest Added</option>
                 <option value="stock">Min Stock Level</option>
               </select>
-              {(['admin','ceo','cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+              {isAdmin && (
                 isSelectMode ? (
                   <div className="flex items-center gap-2">
                     {selectedItemIds.size > 0 && (
@@ -907,7 +907,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                           </div>
                         ) : (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            {(['admin','ceo','cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+                            {isAdmin && (
                               <>
                                 <button
                                   onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
@@ -1029,7 +1029,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           ) : vendors.map(vendor => (
             <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2">
-                 {(['admin','ceo','cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+                 {isAdmin && (
                     <>
                       <button 
                         onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
