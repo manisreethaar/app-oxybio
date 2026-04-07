@@ -51,7 +51,7 @@ export async function POST(request) {
         employee_id: admin.id,
         title: `📦 Purchase Request: ${item_name}`,
         message: `${emp?.full_name || 'A team member'} has requested ${requested_quantity} ${unit} of "${item_name}". Urgency: ${urgency}.`,
-        url: '/inventory',
+        link: '/inventory',
         is_read: false
       }));
       await supabase.from('notifications').insert(notifications);
