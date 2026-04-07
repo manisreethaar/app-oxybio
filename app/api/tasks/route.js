@@ -1,5 +1,6 @@
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { canAssignTo } from '@/lib/permissions';
@@ -107,7 +108,8 @@ export async function PATCH(request) {
           acknowledged_at: new Date().toISOString() 
         };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          await supabase.from('notifications').insert({
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert({
             employee_id: task.assigned_by,
             title: 'Task Seen',
             message: `${task.assigned_user?.full_name || 'An employee'} acknowledged: "${task.title}"`,
@@ -116,13 +118,14 @@ export async function PATCH(request) {
         }
         break;
       case 'start_timer':
-        updateData = { 
-          time_started_at: new Date().toISOString(), 
+        updateData = {
+          time_started_at: new Date().toISOString(),
           status: 'in-progress',
           is_acknowledged: true // Implicit acknowledge if started
         };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          await supabase.from('notifications').insert({
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert({
             employee_id: task.assigned_by,
             title: 'Task Started',
             message: `${task.assigned_user?.full_name || 'An employee'} is now working on: "${task.title}"`,
@@ -134,19 +137,20 @@ export async function PATCH(request) {
         updateData = { time_started_at: null, logged_minutes: payload.logged_minutes };
         break;
       case 'update_progress':
-        updateData = { 
+        updateData = {
           progress_percentage: payload.percentage,
           progress_logs: [
             ...(task.progress_logs || []),
-            { 
-              timestamp: new Date().toISOString(), 
-              percentage: payload.percentage, 
-              note: payload.note || 'Progress update' 
+            {
+              timestamp: new Date().toISOString(),
+              percentage: payload.percentage,
+              note: payload.note || 'Progress update'
             }
           ]
         };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          await supabase.from('notifications').insert({
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert({
             employee_id: task.assigned_by,
             title: 'Progress Update',
             message: `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${payload.percentage}%: ${payload.note || ''}`,
@@ -169,7 +173,8 @@ export async function PATCH(request) {
           progress_percentage: 100
         };
         if (!payload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          await supabase.from('notifications').insert({
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert({
             employee_id: task.assigned_by,
             title: 'Task Ready for Review',
             message: `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}". Pending your approval.`,

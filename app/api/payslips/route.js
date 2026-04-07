@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -45,8 +46,9 @@ export async function POST(request) {
     // 🔔 Notify the employee their payslip is ready
     const { month, year, net_salary, employee_id } = parsed.data;
 
-    // In-app notification
-    await supabase.from('notifications').insert({
+    // In-app notification (service role — admin inserting for another employee)
+    const supabaseAdmin = createAdminClient();
+    await supabaseAdmin.from('notifications').insert({
       employee_id,
       title: `💰 Payslip Ready: ${month} ${year}`,
       message: `Your salary slip for ${month} ${year} is now available. Net pay: ₹${Number(net_salary).toLocaleString()}.`,

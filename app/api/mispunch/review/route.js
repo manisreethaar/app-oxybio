@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -64,8 +65,9 @@ export async function POST(request) {
 
     if (updateError) throw updateError;
 
-    // 4. Notify employee
-    await supabase.from('notifications').insert({
+    // 4. Notify employee (service role — admin inserting for a different user)
+    const supabaseAdmin = createAdminClient();
+    await supabaseAdmin.from('notifications').insert({
         employee_id: log.employee_id,
         title: action === 'approve' ? '🟢 Mispunch Approved' : '🔴 Mispunch Rejected',
         message: action === 'approve' 

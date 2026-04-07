@@ -229,10 +229,16 @@ export async function POST(request) {
       employee_id: empId,
       title:       `Batch Assigned: ${batchIdStr}`,
       message:     `You've been assigned to batch ${batchIdStr} (${experiment_type} — ${sku_target}). Planned start: ${startDisplay}.`,
-      type:        'info',
       link:        `/batches/${newBatch.id}`,
+      is_read:     false,
     }));
-    await supabase.from('notifications').insert(notifRows).then(() => {}).catch(() => {});
+    // Service role — creator inserting notifications for other team members
+    const notifAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    await notifAdmin.from('notifications').insert(notifRows).then(() => {}).catch(() => {});
 
     return NextResponse.json({
       success:  true,

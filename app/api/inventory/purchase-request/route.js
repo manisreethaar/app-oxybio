@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -54,7 +55,9 @@ export async function POST(request) {
         link: '/inventory',
         is_read: false
       }));
-      await supabase.from('notifications').insert(notifications);
+      // Service role — employee inserting notifications for admins bypasses RLS
+      const supabaseAdmin = createAdminClient();
+      await supabaseAdmin.from('notifications').insert(notifications);
     }
 
     return NextResponse.json({ success: true, data: pr });

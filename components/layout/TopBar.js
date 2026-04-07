@@ -36,6 +36,7 @@ export default function TopBar() {
 
   useEffect(() => {
     if (!employeeProfile?.id) return;
+
     const fetchNotifs = async () => {
       const { data } = await supabase
         .from('notifications')
@@ -48,8 +49,24 @@ export default function TopBar() {
         setUnreadCount(data.filter(n => !n.is_read).length);
       }
     };
+
     fetchNotifs();
-  }, [employeeProfile?.id, supabase]); // ← stable primitive, not object reference
+
+    // Realtime — bell badge updates instantly when a new notification arrives
+    const channel = supabase
+      .channel(`notif-bell-${employeeProfile.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `employee_id=eq.${employeeProfile.id}` },
+        (payload) => {
+          setNotifications(prev => [payload.new, ...prev].slice(0, 5));
+          setUnreadCount(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [employeeProfile?.id, supabase]);
 
   const markAsRead = async (id, link) => {
     await supabase.from('notifications').update({ is_read: true }).eq('id', id);
