@@ -111,7 +111,7 @@ export async function PATCH(request) {
             employee_id: task.assigned_by,
             title: 'Task Seen',
             message: `${task.assigned_user?.full_name || 'An employee'} acknowledged: "${task.title}"`,
-            link_url: '/tasks'
+            link: '/tasks'
           });
         }
         break;
@@ -126,7 +126,7 @@ export async function PATCH(request) {
             employee_id: task.assigned_by,
             title: 'Task Started',
             message: `${task.assigned_user?.full_name || 'An employee'} is now working on: "${task.title}"`,
-            link_url: '/tasks'
+            link: '/tasks'
           });
         }
         break;
@@ -150,7 +150,7 @@ export async function PATCH(request) {
             employee_id: task.assigned_by,
             title: 'Progress Update',
             message: `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${payload.percentage}%: ${payload.note || ''}`,
-            link_url: '/tasks'
+            link: '/tasks'
           });
         }
         break;
@@ -173,7 +173,7 @@ export async function PATCH(request) {
             employee_id: task.assigned_by,
             title: 'Task Ready for Review',
             message: `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}". Pending your approval.`,
-            link_url: '/tasks'
+            link: '/tasks'
           });
         }
         break;
