@@ -55,9 +55,9 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
 
       if (capaReq) {
         await supabase.from('notifications').insert({
+          employee_id: employeeProfile?.id,
           title: `CAPA Required — Trial ${activeFlask.flask_label} rejected`,
           message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${reason}.`,
-          type: 'action',
           link: '/compliance',
         }).then(()=>{}).catch(()=>{});
       }

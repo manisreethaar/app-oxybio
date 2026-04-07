@@ -50,7 +50,7 @@ export async function POST(request) {
       employee_id,
       title: `💰 Payslip Ready: ${month} ${year}`,
       message: `Your salary slip for ${month} ${year} is now available. Net pay: ₹${Number(net_salary).toLocaleString()}.`,
-      url: '/payslips',
+      link: '/payslips',
       is_read: false
     });
 
