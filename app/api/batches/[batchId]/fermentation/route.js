@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(request, { params }) {
@@ -62,11 +63,13 @@ export async function POST(request, { params }) {
               employee_id: c.id,
               title: `⚠ Fermentation Alarm — ${batchLabel}`,
               message: `T+${data.elapsed_hours?.toFixed(1)}hr: ${msgs.join(', ')}`,
-              type: 'alert',
               link: `/batches/${batchId}`,
+              is_read: false,
             };
           });
-          await supabase.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
+          // Service role — inserting for admin/ceo who may be different user
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
         }
       }
 
