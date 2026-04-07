@@ -14,8 +14,23 @@ export default function NotificationsPage() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    if (employeeProfile) fetchAll();
-  }, [employeeProfile]);
+    if (!employeeProfile) return;
+    fetchAll();
+
+    // Realtime — new notifications appear instantly without refresh
+    const channel = supabase
+      .channel(`notif-page-${employeeProfile.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `employee_id=eq.${employeeProfile.id}` },
+        (payload) => {
+          setDirectNotifs(prev => [payload.new, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [employeeProfile?.id]);
 
   const fetchAll = async () => {
     setLoading(true);
