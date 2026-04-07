@@ -78,6 +78,19 @@ export async function POST(request) {
     const { data, error } = await supabase.from('tasks').insert(insertPayload).select();
     if (error) throw error;
 
+    // Notify each assignee (service role — creator inserting for other employees)
+    const adminDb = createAdminClient();
+    const notifRows = tasks
+      .filter(t => t.assigned_to && t.assigned_to !== creatorInfo.id)
+      .map(t => ({
+        employee_id: t.assigned_to,
+        title: `📋 New Task Assigned: ${t.title}`,
+        message: `You have been assigned a new task${t.due_date ? ` due ${new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}.`,
+        link: '/tasks',
+        is_read: false,
+      }));
+    if (notifRows.length > 0) await adminDb.from('notifications').insert(notifRows);
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -184,16 +197,36 @@ export async function PATCH(request) {
         break;
       case 'approve':
         updateData = { approval_status: 'approved' };
+        if (task?.assigned_to && task.assigned_to !== task.assigned_by) {
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert({
+            employee_id: task.assigned_to,
+            title: '✅ Task Approved',
+            message: `Your task "${task.title}" has been approved. Well done!`,
+            link: '/tasks',
+            is_read: false,
+          });
+        }
         break;
       case 'reject':
         if (!payload.reject_note || payload.reject_note.trim().length < 5) {
             return NextResponse.json({ error: 'A mandatory rejection remark (min 5 chars) is required.' }, { status: 400 });
         }
-        updateData = { 
-            approval_status: 'rejected', 
-            status: 'in-progress', 
-            completion_note: payload.reject_note 
+        updateData = {
+            approval_status: 'rejected',
+            status: 'in-progress',
+            completion_note: payload.reject_note
         };
+        if (task?.assigned_to && task.assigned_to !== task.assigned_by) {
+          const adminDb = createAdminClient();
+          await adminDb.from('notifications').insert({
+            employee_id: task.assigned_to,
+            title: '🔄 Task Needs Revision',
+            message: `Your task "${task.title}" was sent back: ${payload.reject_note}`,
+            link: '/tasks',
+            is_read: false,
+          });
+        }
         break;
     }
 
