@@ -8,7 +8,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, BarChart2, Activity, Beaker, Loader2, Save,
   Play, Plus, Trash2, CheckCircle, AlertTriangle, Info,
-  ChevronUp, ChevronDown, FlaskConical, TrendingUp
+  ChevronUp, ChevronDown, FlaskConical, TrendingUp, Settings
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
