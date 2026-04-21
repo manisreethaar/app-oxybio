@@ -1,10 +1,10 @@
 'use client';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, FlaskConical, Activity, CheckSquare, 
-  CalendarOff, Clock, FileText, CalendarDays, Receipt, 
-  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package
+import {
+  LayoutDashboard, FlaskConical, Activity, CheckSquare,
+  CalendarOff, Clock, FileText, CalendarDays, Receipt,
+  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -48,6 +48,7 @@ export default function Sidebar() {
         { name: 'Equipment Maint.',   href: '/equipment',    icon: Wrench,          show: effectiveCanDo('equipment', 'view') },
         { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: effectiveCanDo('inventory', 'view') },
         { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: effectiveCanDo('sops', 'view') },
+        { name: 'Bioprocess Lab',    href: '/bioprocess',   icon: Microscope,      show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
