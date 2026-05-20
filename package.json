@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.75",
+    "@ai-sdk/react": "^3.0.187",
     "@google/genai": "^2.5.0",
     "@hookform/resolvers": "^5.2.2",
     "@react-pdf/renderer": "^4.3.2",
