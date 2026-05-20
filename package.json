@@ -15,10 +15,13 @@
     "test:all": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.75",
+    "@google/genai": "^2.5.0",
     "@hookform/resolvers": "^5.2.2",
     "@react-pdf/renderer": "^4.3.2",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.3",
+    "ai": "^6.0.185",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
