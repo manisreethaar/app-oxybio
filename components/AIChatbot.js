@@ -58,10 +58,44 @@ export default function AIChatbot() {
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 text-gray-900">
               {messages.length === 0 && (
-                <div className="text-center text-gray-500 mt-10 px-4">
+                <div className="text-center text-gray-500 mt-6 px-2">
                   <Bot className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm font-medium">Hi! I can help you manage batches, tasks, leaves, compliance, and inventory.</p>
-                  <p className="text-xs text-gray-400 mt-2">Try: &quot;Create a batch&quot; or &quot;Show pending leaves&quot;</p>
+                  <p className="text-sm font-medium">Hi! I&apos;m your OxyOS Assistant.</p>
+                  <p className="text-xs text-gray-400 mt-1 mb-5">Tap a shortcut or type anything below.</p>
+
+                  <div className="grid grid-cols-2 gap-2 text-left">
+                    {[
+                      { emoji: '🌅', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
+                      { emoji: '📦', label: 'Create Batch', msg: 'I want to create a new batch.' },
+                      { emoji: '📋', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
+                      { emoji: '⚠️', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
+                      { emoji: '✅', label: 'Open Tasks', msg: 'Show me all open high-priority tasks.' },
+                      { emoji: '📊', label: 'Active Batches', msg: 'Show me all active batches.' },
+                    ].map((action) => (
+                      <button
+                        key={action.label}
+                        type="button"
+                        onClick={() => {
+                          // Programmatically set input and submit
+                          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                          const inputEl = document.querySelector('#ai-chat-input');
+                          if (inputEl) {
+                            nativeInputValueSetter.call(inputEl, action.msg);
+                            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                            // Small delay to let React state update, then submit
+                            setTimeout(() => {
+                              const form = document.querySelector('#ai-chat-form');
+                              if (form) form.requestSubmit();
+                            }, 50);
+                          }
+                        }}
+                        className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-all shadow-sm active:scale-95"
+                      >
+                        <span className="text-base">{action.emoji}</span>
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -112,8 +146,9 @@ export default function AIChatbot() {
 
             {/* Input */}
             <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0">
-              <form onSubmit={handleSubmit} className="flex gap-2 relative">
+              <form id="ai-chat-form" onSubmit={handleSubmit} className="flex gap-2 relative">
                 <input
+                  id="ai-chat-input"
                   type="text"
                   value={input || ''}
                   onChange={handleInputChange}

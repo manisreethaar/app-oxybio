@@ -41,11 +41,12 @@ export async function POST(req) {
       system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}).
 
 CAPABILITIES:
+- Morning Briefing: Full operational snapshot across all modules
 - Production: Create batches, update batch status, record pH, log daily activities
-- HR: View pending leaves, approve/reject leaves
-- Tasks: List employees, assign tasks to specific people
-- Compliance: Add regulatory deadlines
-- Inventory: Add or restock inventory items
+- HR: View pending leaves, approve/reject leaves, check attendance
+- Tasks: List employees, assign tasks to specific people, view open tasks
+- Compliance: Add regulatory deadlines, view upcoming/overdue items
+- Inventory: Add/restock items, check low stock
 
 CRITICAL RULES:
 1. ALWAYS look up UUIDs before using them. Call get_employees to find an employee UUID before assigning a task. Call get_active_batches to find a batch UUID before recording pH or updating status.
@@ -54,7 +55,10 @@ CRITICAL RULES:
 4. Be concise. After performing actions, confirm what you did with the key details.
 5. Never fabricate UUIDs or batch IDs. Only use values returned by the database.
 6. For the compliance category field, valid values are: FSSAI, TIIC, PF, ESI, Patent, NABL, Equipment, Lease, Other.
-7. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.`,
+7. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.
+
+MORNING BRIEFING BEHAVIOR:
+When the user says "good morning", "briefing", "what's happening", "status update", "overview", or anything similar, IMMEDIATELY call the morning_briefing tool. Then present the results in a clean, organized format with emoji headers for each section. Highlight anything that needs immediate attention (deviations, overdue items, pending approvals). If everything is clear, say so confidently.`,
       messages,
       maxSteps: 5, // Allow chained tool calls (e.g. get_employees → assign_task)
       tools: {
@@ -359,6 +363,62 @@ CRITICAL RULES:
               .single();
             if (error) throw new Error(error.message);
             return { success: true, message: `Added ${quantity} ${unit} of ${item_name}.`, item: data };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  MORNING BRIEFING
+        // ══════════════════════════════════════════════
+        morning_briefing: tool({
+          description: 'Get a comprehensive operational briefing across all modules. Call this when the user says good morning, asks for a briefing, status update, or overview.',
+          parameters: z.object({}),
+          execute: async () => {
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysOut = new Date();
+            thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+
+            // Run all queries in parallel for speed
+            const [batchRes, leavesRes, tasksRes, complianceRes, attendanceRes, deviationsRes, lowStockRes] = await Promise.all([
+              // Active batches
+              supabase.from('batches').select('id, batch_id, variant, status, start_time').in('status', ['fermenting', 'qc-hold']).order('created_at', { ascending: false }),
+              // Pending leaves
+              supabase.from('leave_applications').select('id, leave_type, start_date, end_date, reason, employees(full_name)').eq('status', 'pending'),
+              // Open high-priority tasks
+              supabase.from('tasks').select('id, title, priority, status, due_date, employees!tasks_assigned_to_fkey(full_name)').in('status', ['open', 'in-progress']).in('priority', ['high', 'urgent']),
+              // Overdue + upcoming compliance
+              supabase.from('compliance_items').select('id, title, category, due_date, status').or(`status.eq.overdue,due_date.lte.${thirtyDaysOut.toISOString().split('T')[0]}`).neq('status', 'done').order('due_date'),
+              // Today's attendance
+              supabase.from('attendance_log').select('id, employee_id, check_in_time, check_out_time, employees(full_name)').eq('date', today),
+              // Recent pH deviations (last 7 days)
+              supabase.from('ph_readings').select('id, ph_value, is_deviation, created_at, batches(batch_id)').eq('is_deviation', true).gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()).order('created_at', { ascending: false }).limit(5),
+              // Low stock inventory
+              supabase.from('inventory').select('id, item_name, quantity, minimum_threshold, unit'),
+            ]);
+
+            const lowStockItems = (lowStockRes.data || []).filter(item => item.quantity <= item.minimum_threshold && item.minimum_threshold > 0);
+
+            // Get total employee count for attendance comparison
+            const { count: totalEmployees } = await supabase.from('employees').select('id', { count: 'exact', head: true }).eq('is_active', true);
+
+            return {
+              timestamp: new Date().toISOString(),
+              active_batches: batchRes.data || [],
+              active_batch_count: (batchRes.data || []).length,
+              pending_leaves: leavesRes.data || [],
+              pending_leave_count: (leavesRes.data || []).length,
+              high_priority_tasks: tasksRes.data || [],
+              high_priority_task_count: (tasksRes.data || []).length,
+              compliance_items: complianceRes.data || [],
+              compliance_count: (complianceRes.data || []).length,
+              overdue_compliance: (complianceRes.data || []).filter(c => c.status === 'overdue'),
+              todays_checkins: (attendanceRes.data || []).length,
+              total_employees: totalEmployees || 0,
+              not_checked_in: (totalEmployees || 0) - (attendanceRes.data || []).length,
+              recent_deviations: deviationsRes.data || [],
+              deviation_count: (deviationsRes.data || []).length,
+              low_stock_items: lowStockItems,
+              low_stock_count: lowStockItems.length,
+            };
           },
         }),
       },
