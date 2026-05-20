@@ -22,6 +22,7 @@ const maintSchema = z.object({
   calibration_date: z.string().min(1, "Calibration date is required"),
   next_due_date: z.string().optional().or(z.literal('')),
   result: z.string().min(1, "Notes are required"),
+  buffer_values_used: z.string().optional(),
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance'])
 });
 
@@ -49,7 +50,7 @@ export default function EquipmentPage() {
 
   const { register: regMaint, handleSubmit: handMaint, formState: { errors: mxErrors, isSubmitting: isMxSubmitting }, reset: resetMaint, setValue: setMaintValue } = useForm({
     resolver: zodResolver(maintSchema),
-    defaultValues: { calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', status: 'Operational' }
+    defaultValues: { calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', buffer_values_used: '', status: 'Operational' }
   });
 
   const supabase = useMemo(() => createClient(), []);
@@ -57,6 +58,7 @@ export default function EquipmentPage() {
 
   useEffect(() => {
     fetchEquipment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchEquipment = async () => {
@@ -302,6 +304,11 @@ export default function EquipmentPage() {
                   <option value="Out of Service">Out of Service</option>
                   <option value="Under Maintenance">Under Maintenance</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Buffer Values Used (pH Meters only)</label>
+                <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                  {...regMaint('buffer_values_used')} placeholder="e.g. 4.01, 7.00, 10.01"/>
               </div>
               <div>
                 <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes & Results</label>

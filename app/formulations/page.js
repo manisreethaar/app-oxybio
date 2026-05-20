@@ -53,6 +53,7 @@ export default function FormulationsPage() {
 
   useEffect(() => {
     fetchFormulations(); fetchInventoryItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchInventoryItems = async () => {

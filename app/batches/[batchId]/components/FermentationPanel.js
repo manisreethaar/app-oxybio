@@ -75,6 +75,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   // Reading form
   const [pH,         setPH]         = useState('');
   const [temp,       setTemp]       = useState('');
+  const [brix,       setBrix]       = useState('');
+  const [od,         setOd]         = useState('');
+  const [platingStatus, setPlatingStatus] = useState('Pending');
+  const [cfuCount,   setCfuCount]   = useState('');
   const [foam,       setFoam]       = useState('None');
   const [appearance, setAppearance] = useState('Normal');
   const [notes,      setNotes]      = useState('');
@@ -131,6 +135,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       const { error } = await supabase.from('batch_fermentation_readings').insert({
         batch_id: batch.id, flask_id: activeFlask.id, flask_label: activeFlask.flask_label,
         ph: phVal, incubator_temp_c: temp ? parseFloat(temp) : null,
+        brix: brix ? parseFloat(brix) : null, optical_density: od ? parseFloat(od) : null,
+        plating_result: `${platingStatus}${cfuCount ? ` — ${cfuCount}` : ''}`,
         foam_level: foam, visual_appearance: appearance,
         elapsed_hours: elapsed ? parseFloat(elapsed.toFixed(2)) : null,
         logged_at: isRetro && loggedAt ? loggedAt : new Date().toISOString(),
@@ -141,7 +147,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       });
       if (error) throw error;
       toast.success('Reading logged.');
-      setPH(''); setTemp(''); setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
+      setPH(''); setTemp(''); setBrix(''); setOd(''); setPlatingStatus('Pending'); setCfuCount(''); setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
@@ -223,16 +229,36 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <input type="number" step="0.01" min="0" max="14" required value={pH} onChange={e=>setPH(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-3xl font-black font-mono tracking-tighter text-gray-800 focus:border-navy outline-none text-center" placeholder="0.00"/>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Incubator Temp (°C)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Temp (°C)</label>
                   <input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} placeholder="37.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Brix (°Bx)</label>
+                  <input type="number" step="0.1" value={brix} onChange={e=>setBrix(e.target.value)} placeholder="10.5" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">OD (600nm)</label>
+                  <input type="number" step="0.001" value={od} onChange={e=>setOd(e.target.value)} placeholder="0.500" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-1">
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Foam</label>
                   <select value={foam} onChange={e=>setFoam(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {FOAM_OPTS.map(o=><option key={o}>{o}</option>)}
                   </select>
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Plating Status</label>
+                  <select value={platingStatus} onChange={e=>setPlatingStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                    {['Pending', 'Clear', 'Contaminated', 'Not Done'].map(o=><option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">CFU Count</label>
+                  <input type="text" value={cfuCount} onChange={e=>setCfuCount(e.target.value)} placeholder="e.g. 1.2 x 10^6" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
               <div>
@@ -283,17 +309,23 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
                 <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">pH</th>
                 <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Temp</th>
+                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix</th>
+                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">OD</th>
+                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Plating</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {[...readings].filter(r => r.flask_id === activeFlask.id).reverse().map(r => (
                   <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-gray-50/30'}>
-                    <td className="px-4 py-2 text-xs font-black text-navy">{r.flask_label}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600">T+{r.elapsed_hours?.toFixed(1)}h</td>
-                    <td className={`px-4 py-2 text-sm font-black tabular-nums ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
-                    <td className={`px-4 py-2 text-xs font-semibold ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
+                    <td className="px-4 py-2 text-xs font-black text-navy whitespace-nowrap">{r.flask_label}</td>
+                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
+                    <td className={`px-4 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
+                    <td className={`px-4 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
+                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.brix ? `${r.brix}` : '—'}</td>
+                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.optical_density ? `${r.optical_density}` : '—'}</td>
+                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 truncate max-w-[120px]" title={r.plating_result || ''}>{r.plating_result || '—'}</td>
                   </tr>
                 ))}
-                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
+                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
               </tbody>
             </table>
           </div>

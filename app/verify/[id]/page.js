@@ -82,6 +82,7 @@ export default async function VerifyEmployeePage({ params }) {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
             
             {emp.photo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img src={emp.photo_url} alt="Profile" className="w-28 h-28 rounded-full border-4 border-white/20 shadow-xl object-cover z-10" />
             ) : (
               <div className="w-28 h-28 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center shadow-xl z-10 backdrop-blur-sm">

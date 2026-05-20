@@ -166,6 +166,7 @@ export default function BatchDetailPage() {
       if (data.signed_url) window.open(data.signed_url, '_blank');
     } catch (err) { toast.error('BMR generation failed: ' + err.message); }
     finally      { setBmrLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchId, bmrLoading]);
 
 

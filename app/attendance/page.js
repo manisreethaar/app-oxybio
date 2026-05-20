@@ -89,6 +89,7 @@ export default function AttendancePage() {
       }
     }, 60000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile, todayLog?.id]);
 
   const fetchAttendanceData = async () => {
@@ -275,6 +276,7 @@ export default function AttendancePage() {
     } finally {
       setActionLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [webcamRef, geoData, employeeProfile, overrideLocation]);
 
   const handleCheckOut = async () => {
@@ -478,6 +480,7 @@ export default function AttendancePage() {
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 flex items-center justify-center gap-3">
                   {todayLog.photo_url && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={todayLog.photo_url} alt="Selfie" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
                   )}
                   <div className="text-left text-sm font-medium text-slate-500">
@@ -575,6 +578,7 @@ export default function AttendancePage() {
                     <div className="relative">
                       {emp.attendance?.photo_url ? (
                         <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white shadow-md">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={emp.attendance.photo_url} className="w-full h-full object-cover" alt=""/>
                         </div>
                       ) : (

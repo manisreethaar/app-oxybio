@@ -84,6 +84,7 @@ export default function LeavePage() {
 
   useEffect(() => {
     if (employeeProfile) fetchLeaves();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
   const fetchLeaves = async () => {

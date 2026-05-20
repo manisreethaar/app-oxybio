@@ -110,6 +110,7 @@ export default function UsersPage() {
       setLoading(false);
       setFetchError('Administrative profile not detected. Please Sign Out and Sign In again to refresh your session.');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, authLoading, router, isMounted, employeeProfile?.email]);
 
 
@@ -137,6 +138,7 @@ export default function UsersPage() {
       setLoading(false);
     }
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
 
   const deactivateUser = async (id, currentStatus) => {
@@ -303,6 +305,7 @@ export default function UsersPage() {
                     <div className="flex items-center">
                       <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0 mr-3 flex items-center justify-center">
                         {emp.photo_url
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           ? <img src={emp.photo_url} className="w-full h-full object-cover" alt=""/>
                           : <span className="text-teal-700 font-black text-sm">
                               {(() => {

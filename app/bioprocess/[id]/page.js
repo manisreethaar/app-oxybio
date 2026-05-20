@@ -573,7 +573,7 @@ export default function BioprocessDetailPage() {
       <div className="text-center py-20">
         <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500 font-semibold">No analysis results yet</p>
-        <p className="text-sm text-gray-400 mt-1">Complete data entry and click "Run Analysis"</p>
+        <p className="text-sm text-gray-400 mt-1">Complete data entry and click &quot;Run Analysis&quot;</p>
         <button onClick={runAnalysis} disabled={analysing} className="mt-4 flex items-center gap-2 mx-auto bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
           {analysing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} Run Analysis
         </button>

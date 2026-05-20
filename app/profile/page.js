@@ -40,6 +40,7 @@ function DigitalIDCard({ emp }) {
       {/* Profile Core */}
       <div className="relative z-10 w-28 h-28 rounded-2xl overflow-hidden bg-white border-[3px] border-white shadow-lg mb-4">
         {emp.photo_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-slate-100">
@@ -327,6 +328,7 @@ export default function ProfilePage() {
               <div className="relative">
                 <div className="w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-lg">
                   {emp.photo_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

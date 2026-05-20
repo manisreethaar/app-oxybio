@@ -38,6 +38,7 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     if (employeeProfile) fetchDocuments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile, category]);
 
   // Client-Side Search Filter

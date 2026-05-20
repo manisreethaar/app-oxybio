@@ -223,7 +223,7 @@ export default function AdminDashboard({ employeeId }) {
           <h3 className="text-base font-bold text-gray-900 tracking-tight">Production Yield — Last 6 Months</h3>
           <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-widest">Live Data</span>
         </div>
-        <div className="h-72">
+        <div className="h-72 w-full min-w-0">
           <ProductionYieldChart data={chartData} />
         </div>
         {chartData.every(d => d.Released === 0 && d.Rejected === 0) && (

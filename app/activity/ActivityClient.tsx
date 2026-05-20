@@ -85,6 +85,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       setLogValue('start_time', oneHourAgo.toTimeString().slice(0, 5));
       setLogValue('end_time', now.toTimeString().slice(0, 5));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
   const fetchData = useCallback(async () => {

@@ -18,6 +18,9 @@ export const metadata = {
 
 export const viewport = {
   themeColor: "#1F3A5F",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 import { createClient } from "@/utils/supabase/server";
