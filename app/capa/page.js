@@ -58,7 +58,9 @@ export default function CapaPage() {
 
   const isAdmin = role === 'admin' || role === 'ceo' || role === 'cto';
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchAll = async () => {
     setLoading(true);

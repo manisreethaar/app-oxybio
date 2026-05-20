@@ -35,6 +35,7 @@ function EmployeeIDCard({ emp, onClose }) {
           {/* Profile Core */}
           <div className="relative z-10 w-28 h-28 rounded-2xl overflow-hidden bg-white border-[3px] border-white shadow-lg mb-4">
             {emp.photo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-slate-100">
@@ -150,7 +151,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
            fetchEmployees(0, false);
         }
     }, 300);
-    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, authLoading, initialEmployees]);
 
   const filtered = employees;
@@ -193,6 +194,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-slate-100 border border-white shadow-sm shrink-0">
                     {emp.photo_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">

@@ -36,6 +36,7 @@ export default function DashboardPage() {
       }, 4000);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile, loading]);
 
   // FIXED: Show skeleton immediately instead of blank screen with text

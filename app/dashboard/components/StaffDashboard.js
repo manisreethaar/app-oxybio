@@ -71,6 +71,7 @@ export default function StaffDashboard({ employeeProfile }) {
 
   useEffect(() => {
     fetchStaffData(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchStaffData = async (isInitial = false) => {

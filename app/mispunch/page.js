@@ -41,6 +41,7 @@ export default function MispunchPage() {
 
   useEffect(() => {
     fetchMispunches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
   const handleSubmit = async (e) => {

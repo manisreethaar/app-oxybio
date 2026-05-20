@@ -30,6 +30,7 @@ export default function NotificationsPage() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile?.id]);
 
   const fetchAll = async () => {

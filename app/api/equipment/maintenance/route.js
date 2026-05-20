@@ -7,6 +7,7 @@ const maintenanceSchema = z.object({
   calibration_date: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   next_due_date: z.string().optional().or(z.literal('')),
   result: z.string().min(1, "Result notes are required"),
+  buffer_values_used: z.string().optional(),
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance'])
 });
 
@@ -27,7 +28,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { equipment_id, calibration_date, next_due_date, result, status } = parsed.data;
+    const { equipment_id, calibration_date, next_due_date, result, buffer_values_used, status } = parsed.data;
 
     // 1. Insert log
     const { error: logErr } = await supabase.from('calibration_logs').insert({
@@ -35,6 +36,7 @@ export async function POST(request) {
       calibration_date,
       next_due_date: next_due_date || null,
       result,
+      buffer_values_used: buffer_values_used || null,
       logged_by: emp.id
     });
     if (logErr) throw logErr;

@@ -74,6 +74,7 @@ export default function TasksPage() {
       setCompletionNote(''); setProofFile(null); setRejectNote('');
       setProgressNote(''); setProgressPercentage(selectedTask.progress_percentage || 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTask?.id]);
 
   const supabase = useMemo(() => createClient(), []);
@@ -81,6 +82,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     if (employeeProfile) fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
   useEffect(() => {

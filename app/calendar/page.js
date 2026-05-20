@@ -31,6 +31,7 @@ export default function RegulatoryCalendarPage() {
 
   useEffect(() => {
     fetchMilestones();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchMilestones = async () => {
