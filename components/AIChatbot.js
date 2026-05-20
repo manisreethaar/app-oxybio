@@ -66,11 +66,11 @@ export default function AIChatbot() {
                   <div className="grid grid-cols-2 gap-2 text-left">
                     {[
                       { emoji: '🌅', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
-                      { emoji: '📦', label: 'Create Batch', msg: 'I want to create a new batch.' },
+                      { emoji: '🧪', label: 'Start Batch', msg: 'I want to start a new batch — walk me through the full protocol.' },
                       { emoji: '📋', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
                       { emoji: '⚠️', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
-                      { emoji: '✅', label: 'Open Tasks', msg: 'Show me all open high-priority tasks.' },
-                      { emoji: '📊', label: 'Active Batches', msg: 'Show me all active batches.' },
+                      { emoji: '📊', label: 'Analytics', msg: 'Give me a monthly summary of batches, tasks, and operations.' },
+                      { emoji: '🏆', label: 'Team Performance', msg: 'Which employee has the highest task completion rate?' },
                     ].map((action) => (
                       <button
                         key={action.label}

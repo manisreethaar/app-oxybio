@@ -38,29 +38,54 @@ export async function POST(req) {
 
     const result = streamText({
       model: google('gemini-2.5-flash'),
-      system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}).
+      system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}.
 
 CAPABILITIES:
 - Morning Briefing: Full operational snapshot across all modules
+- Batch Workflow Orchestration: Walk through the full batch creation SOP
 - Production: Create batches, update batch status, record pH, log daily activities
 - HR: View pending leaves, approve/reject leaves, check attendance
 - Tasks: List employees, assign tasks to specific people, view open tasks
 - Compliance: Add regulatory deadlines, view upcoming/overdue items
 - Inventory: Add/restock items, check low stock
+- Analytics: Cross-module insights, trends, and performance metrics
 
 CRITICAL RULES:
 1. ALWAYS look up UUIDs before using them. Call get_employees to find an employee UUID before assigning a task. Call get_active_batches to find a batch UUID before recording pH or updating status.
-2. If the user asks to create a batch AND assign a monitoring task, FIRST create the batch, THEN ask the user who to assign the monitoring task to. List employees if needed.
-3. If asked to record pH and there are multiple active batches, ALWAYS ask which batch.
-4. Be concise. After performing actions, confirm what you did with the key details.
-5. Never fabricate UUIDs or batch IDs. Only use values returned by the database.
-6. For the compliance category field, valid values are: FSSAI, TIIC, PF, ESI, Patent, NABL, Equipment, Lease, Other.
-7. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.
+2. If asked to record pH and there are multiple active batches, ALWAYS ask which batch.
+3. Be concise. After performing actions, confirm what you did with the key details.
+4. Never fabricate UUIDs or batch IDs. Only use values returned by the database.
+5. For the compliance category field, valid values are: FSSAI, TIIC, PF, ESI, Patent, NABL, Equipment, Lease, Other.
+6. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.
+
+BATCH WORKFLOW ORCHESTRATION:
+When the user says "start a batch", "create a batch", or "new batch", follow this EXACT multi-step protocol:
+  Step 1: Ask for batch details (variant, volume, strain) if not provided.
+  Step 2: Call create_batch to create it. It will auto-log an activity entry and check equipment calibration.
+  Step 3: Ask "Who should handle media preparation?" → Call get_employees to show the team, then assign_task.
+  Step 4: Ask "Who will handle inoculation monitoring?" → assign_task.
+  Step 5: Summarize everything done in a clean checklist format.
+Do NOT skip steps. Walk through each one conversationally.
 
 MORNING BRIEFING BEHAVIOR:
-When the user says "good morning", "briefing", "what's happening", "status update", "overview", or anything similar, IMMEDIATELY call the morning_briefing tool. Then present the results in a clean, organized format with emoji headers for each section. Highlight anything that needs immediate attention (deviations, overdue items, pending approvals). If everything is clear, say so confidently.`,
+When the user says "good morning", "briefing", "what's happening", "status update", "overview", or anything similar, IMMEDIATELY call the morning_briefing tool. Then present the results in a clean, organized format with emoji headers for each section. Highlight anything that needs immediate attention (deviations, overdue items, pending approvals). If everything is clear, say so confidently.
+
+PROACTIVE ALERTS:
+When the user opens a conversation or says hello, ALWAYS call check_alerts to see if there are any urgent issues. If there are alerts, present them BEFORE the greeting. If there are no alerts, proceed normally.
+
+ANALYTICS:
+When the user asks about trends, rates, comparisons, or performance metrics, use the get_analytics tool. Present numbers clearly with context (e.g. "12 batches this month, up from 8 last month").
+
+HISTORICAL QUERIES:
+When the user asks about past data, use the correct historical tool:
+- "How many batches in May?" → search_batches with start_date=2026-05-01, end_date=2026-05-31
+- "pH trend for BATCH-047" → get_ph_history with batch_id=BATCH-047
+- "Deviations from last month" → get_deviations with appropriate dates
+- "What work was done on BATCH-001?" → get_activity_history with batch_id=BATCH-001
+- "Any issues last week?" → get_activity_history with issues_only=true
+Always convert relative dates (last month, this quarter, last week) to YYYY-MM-DD format using today's date.`,
       messages,
-      maxSteps: 5, // Allow chained tool calls (e.g. get_employees → assign_task)
+      maxSteps: 8, // Increased for batch workflow orchestration (create → ask → assign → ask → assign → summary)
       tools: {
         // ══════════════════════════════════════════════
         //  PRODUCTION TOOLS
@@ -79,8 +104,189 @@ When the user says "good morning", "briefing", "what's happening", "status updat
           },
         }),
 
+        // ══════════════════════════════════════════════
+        //  HISTORICAL DATA TOOLS
+        // ══════════════════════════════════════════════
+        search_batches: tool({
+          description: 'Search all batches (including completed/released/rejected) by date range, status, or variant. Use this for historical queries like "how many batches in May" or "show rejected batches from last quarter".',
+          parameters: z.object({
+            start_date: z.string().optional().describe('Start date in YYYY-MM-DD format'),
+            end_date: z.string().optional().describe('End date in YYYY-MM-DD format'),
+            status: z.enum(['fermenting', 'qc-hold', 'released', 'rejected', 'deviation', 'all']).optional().describe('Filter by status, or "all" for all statuses'),
+            variant: z.enum(['Sweetened', 'Unsweetened', 'all']).optional().describe('Filter by variant, or "all"'),
+          }),
+          execute: async ({ start_date, end_date, status, variant }) => {
+            let query = supabase
+              .from('batches')
+              .select('id, batch_id, variant, status, volume_litres, probiotic_strain, start_time, released_at, created_at')
+              .order('created_at', { ascending: false });
+
+            if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
+            if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
+            if (status && status !== 'all') query = query.eq('status', status);
+            if (variant && variant !== 'all') query = query.eq('variant', variant);
+
+            const { data, error } = await query.limit(100);
+            if (error) throw new Error(error.message);
+
+            const batches = data || [];
+            const summary = {
+              total: batches.length,
+              by_status: {},
+              by_variant: { Sweetened: 0, Unsweetened: 0 },
+            };
+            batches.forEach(b => {
+              summary.by_status[b.status] = (summary.by_status[b.status] || 0) + 1;
+              if (b.variant) summary.by_variant[b.variant]++;
+            });
+
+            return { summary, batches };
+          },
+        }),
+
+        get_ph_history: tool({
+          description: 'Get the complete pH reading history for a specific batch. Shows the full trend over time. Use the batch UUID or human-readable batch_id.',
+          parameters: z.object({
+            batch_id: z.string().describe('Either the UUID or the human-readable batch_id (e.g. BATCH-047)'),
+          }),
+          execute: async ({ batch_id }) => {
+            // Try UUID first, then fall back to human-readable batch_id
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(batch_id);
+
+            let batchUUID = batch_id;
+            let batchName = batch_id;
+            if (!isUUID) {
+              // Look up the batch UUID from the human-readable ID
+              const { data: batch } = await supabase
+                .from('batches')
+                .select('id, batch_id')
+                .ilike('batch_id', batch_id)
+                .limit(1)
+                .single();
+              if (!batch) return { error: `No batch found with ID "${batch_id}"` };
+              batchUUID = batch.id;
+              batchName = batch.batch_id;
+            }
+
+            const { data: readings, error } = await supabase
+              .from('ph_readings')
+              .select('id, ph_value, time_elapsed_hours, is_deviation, notes, created_at, employees(full_name)')
+              .eq('batch_id', batchUUID)
+              .order('created_at', { ascending: true });
+
+            if (error) throw new Error(error.message);
+
+            const allReadings = readings || [];
+            const phValues = allReadings.map(r => r.ph_value);
+            const deviations = allReadings.filter(r => r.is_deviation);
+
+            return {
+              batch_id: batchName,
+              total_readings: allReadings.length,
+              deviations_count: deviations.length,
+              ph_min: phValues.length > 0 ? Math.min(...phValues) : null,
+              ph_max: phValues.length > 0 ? Math.max(...phValues) : null,
+              ph_avg: phValues.length > 0 ? (phValues.reduce((a, b) => a + b, 0) / phValues.length).toFixed(2) : null,
+              readings: allReadings.map(r => ({
+                ph: r.ph_value,
+                hours: r.time_elapsed_hours,
+                deviation: r.is_deviation,
+                notes: r.notes,
+                logged_by: r.employees?.full_name || 'Unknown',
+                time: r.created_at,
+              })),
+            };
+          },
+        }),
+
+        get_deviations: tool({
+          description: 'Get all pH deviations across all batches for a given time period. Use for questions like "show me all deviations from last month" or "any pH issues in April".',
+          parameters: z.object({
+            start_date: z.string().optional().describe('Start date in YYYY-MM-DD format (defaults to 30 days ago)'),
+            end_date: z.string().optional().describe('End date in YYYY-MM-DD format (defaults to today)'),
+          }),
+          execute: async ({ start_date, end_date }) => {
+            const since = start_date ? `${start_date}T00:00:00` : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            const until = end_date ? `${end_date}T23:59:59` : new Date().toISOString();
+
+            const { data, error } = await supabase
+              .from('ph_readings')
+              .select('id, ph_value, time_elapsed_hours, notes, created_at, is_deviation, batches(batch_id, variant, status), employees(full_name)')
+              .eq('is_deviation', true)
+              .gte('created_at', since)
+              .lte('created_at', until)
+              .order('created_at', { ascending: false })
+              .limit(50);
+
+            if (error) throw new Error(error.message);
+
+            const deviations = data || [];
+            // Group by batch
+            const byBatch = {};
+            deviations.forEach(d => {
+              const bName = d.batches?.batch_id || 'Unknown';
+              if (!byBatch[bName]) byBatch[bName] = { count: 0, readings: [] };
+              byBatch[bName].count++;
+              byBatch[bName].readings.push({
+                ph: d.ph_value,
+                time: d.created_at,
+                logged_by: d.employees?.full_name,
+                notes: d.notes,
+              });
+            });
+
+            return {
+              period: `${start_date || 'last 30 days'} to ${end_date || 'today'}`,
+              total_deviations: deviations.length,
+              by_batch: byBatch,
+              most_affected_batch: Object.entries(byBatch).sort((a, b) => b[1].count - a[1].count)[0]?.[0] || 'None',
+            };
+          },
+        }),
+
+        get_activity_history: tool({
+          description: 'Search activity log entries by date range or batch. Shows what work was done, by whom, and any issues observed.',
+          parameters: z.object({
+            start_date: z.string().optional().describe('Start date in YYYY-MM-DD (defaults to 7 days ago)'),
+            end_date: z.string().optional().describe('End date in YYYY-MM-DD (defaults to today)'),
+            batch_id: z.string().optional().describe('Human-readable batch ID to filter by (e.g. BATCH-001)'),
+            issues_only: z.boolean().optional().describe('If true, only return entries with issues observed'),
+          }),
+          execute: async ({ start_date, end_date, batch_id, issues_only }) => {
+            const since = start_date || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const until = end_date || new Date().toISOString().split('T')[0];
+
+            let query = supabase
+              .from('activity_log')
+              .select('id, batch_id, activity_description, issue_observed, issue_description, log_date, employees(full_name)')
+              .gte('log_date', since)
+              .lte('log_date', until)
+              .order('log_date', { ascending: false });
+
+            if (batch_id) query = query.ilike('batch_id', batch_id);
+            if (issues_only) query = query.eq('issue_observed', true);
+
+            const { data, error } = await query.limit(50);
+            if (error) throw new Error(error.message);
+
+            const entries = data || [];
+            return {
+              period: `${since} to ${until}`,
+              total_entries: entries.length,
+              issues_found: entries.filter(e => e.issue_observed).length,
+              entries: entries.map(e => ({
+                date: e.log_date,
+                batch: e.batch_id || 'General',
+                description: e.activity_description,
+                issue: e.issue_observed ? (e.issue_description || 'Yes') : null,
+                logged_by: e.employees?.full_name || 'Unknown',
+              })),
+            };
+          },
+        }),
+
         create_batch: tool({
-          description: 'Create a new production batch. Returns the created batch with its UUID.',
+          description: 'Create a new production batch. Auto-logs an activity entry and checks equipment calibration. Returns the created batch with its UUID.',
           parameters: z.object({
             batch_id: z.string().describe('Human-readable batch identifier, e.g. BATCH-001'),
             variant: z.enum(['Sweetened', 'Unsweetened']).describe('Product variant'),
@@ -88,6 +294,7 @@ When the user says "good morning", "briefing", "what's happening", "status updat
             probiotic_strain: z.string().describe('Probiotic strain name'),
           }),
           execute: async ({ batch_id, variant, volume_litres, probiotic_strain }) => {
+            // Step 1: Create the batch
             const { data, error } = await supabase
               .from('batches')
               .insert({
@@ -98,7 +305,32 @@ When the user says "good morning", "briefing", "what's happening", "status updat
               .select()
               .single();
             if (error) throw new Error(error.message);
-            return { success: true, message: `Batch ${batch_id} created successfully.`, batch: data };
+
+            // Step 2: Auto-log activity
+            await supabase.from('activity_log').insert({
+              batch_id: batch_id,
+              activity_description: `Batch ${batch_id} initiated — ${variant} variant, ${volume_litres}L, strain: ${probiotic_strain}`,
+              employee_id: employeeId,
+              log_date: new Date().toISOString().split('T')[0],
+            });
+
+            // Step 3: Check equipment calibration due soon
+            const { data: equipDue } = await supabase
+              .from('equipment')
+              .select('name, next_calibration')
+              .eq('status', 'active')
+              .lte('next_calibration', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+              .order('next_calibration');
+
+            const calibrationWarnings = (equipDue || []).map(e => `${e.name} (due ${e.next_calibration})`);
+
+            return {
+              success: true,
+              message: `Batch ${batch_id} created and activity logged.`,
+              batch: data,
+              calibration_warnings: calibrationWarnings.length > 0 ? calibrationWarnings : null,
+              next_steps: 'Now ask the user: "Who should handle media preparation for this batch?"',
+            };
           },
         }),
 
@@ -419,6 +651,195 @@ When the user says "good morning", "briefing", "what's happening", "status updat
               low_stock_items: lowStockItems,
               low_stock_count: lowStockItems.length,
             };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  PROACTIVE ALERTS CHECK
+        // ══════════════════════════════════════════════
+        check_alerts: tool({
+          description: 'Check for urgent issues that need immediate attention. Call this proactively when the user opens the chat or says hello.',
+          parameters: z.object({}),
+          execute: async () => {
+            const now = new Date();
+            const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+            const threeDaysOut = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const today = now.toISOString().split('T')[0];
+
+            const [deviationsRes, complianceRes, openShiftsRes] = await Promise.all([
+              // pH deviations in last 15 minutes
+              supabase.from('ph_readings')
+                .select('id, ph_value, created_at, batches(batch_id)')
+                .eq('is_deviation', true)
+                .gte('created_at', fifteenMinAgo)
+                .order('created_at', { ascending: false }),
+              // Compliance due in 3 days
+              supabase.from('compliance_items')
+                .select('id, title, category, due_date, status')
+                .or(`status.eq.overdue,due_date.lte.${threeDaysOut}`)
+                .neq('status', 'done')
+                .order('due_date'),
+              // Employees still checked in (no check-out today)
+              supabase.from('attendance_log')
+                .select('id, employee_id, check_in_time, employees(full_name)')
+                .eq('date', today)
+                .is('check_out_time', null),
+            ]);
+
+            const alerts = [];
+
+            // pH deviation alerts
+            (deviationsRes.data || []).forEach(d => {
+              alerts.push({
+                type: 'pH_DEVIATION',
+                severity: 'critical',
+                message: `⚠️ pH deviation: ${d.ph_value} on batch ${d.batches?.batch_id || 'unknown'} at ${new Date(d.created_at).toLocaleTimeString()}`,
+              });
+            });
+
+            // Compliance alerts
+            (complianceRes.data || []).forEach(c => {
+              const isOverdue = c.status === 'overdue';
+              alerts.push({
+                type: 'COMPLIANCE',
+                severity: isOverdue ? 'critical' : 'warning',
+                message: isOverdue
+                  ? `🔴 OVERDUE: ${c.title} (${c.category}) was due ${c.due_date}`
+                  : `🟡 Due soon: ${c.title} (${c.category}) due ${c.due_date}`,
+              });
+            });
+
+            // Late check-out alerts (only after 7 PM IST = 13:30 UTC)
+            const istHour = (now.getUTCHours() + 5) % 24 + (now.getUTCMinutes() + 30 >= 60 ? 1 : 0);
+            if (istHour >= 19 && (openShiftsRes.data || []).length > 0) {
+              (openShiftsRes.data || []).forEach(s => {
+                alerts.push({
+                  type: 'LATE_CHECKOUT',
+                  severity: 'warning',
+                  message: `🔴 ${s.employees?.full_name || 'Employee'} still checked in — hasn't checked out today`,
+                });
+              });
+            }
+
+            return {
+              alert_count: alerts.length,
+              alerts: alerts,
+              has_critical: alerts.some(a => a.severity === 'critical'),
+            };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  CROSS-MODULE ANALYTICS
+        // ══════════════════════════════════════════════
+        get_analytics: tool({
+          description: 'Get cross-module analytics and insights. Use for questions about trends, rates, comparisons, and performance metrics.',
+          parameters: z.object({
+            query_type: z.enum([
+              'batch_stats',
+              'employee_task_performance',
+              'fermentation_comparison',
+              'monthly_summary',
+            ]).describe('Type of analytics query'),
+            time_period_days: z.number().optional().describe('Number of days to look back (default 30)'),
+          }),
+          execute: async ({ query_type, time_period_days }) => {
+            const days = time_period_days || 30;
+            const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+            switch (query_type) {
+              case 'batch_stats': {
+                const { data: batches } = await supabase
+                  .from('batches')
+                  .select('id, batch_id, variant, status, start_time, released_at, created_at')
+                  .gte('created_at', sinceDate);
+                const all = batches || [];
+                const released = all.filter(b => b.status === 'released');
+                const rejected = all.filter(b => b.status === 'rejected');
+                const sweetened = all.filter(b => b.variant === 'Sweetened');
+                const unsweetened = all.filter(b => b.variant === 'Unsweetened');
+                return {
+                  period: `Last ${days} days`,
+                  total_batches: all.length,
+                  released: released.length,
+                  rejected: rejected.length,
+                  rejection_rate: all.length > 0 ? `${((rejected.length / all.length) * 100).toFixed(1)}%` : '0%',
+                  by_variant: { sweetened: sweetened.length, unsweetened: unsweetened.length },
+                  still_active: all.filter(b => ['fermenting', 'qc-hold'].includes(b.status)).length,
+                };
+              }
+
+              case 'employee_task_performance': {
+                const { data: tasks } = await supabase
+                  .from('tasks')
+                  .select('id, title, status, assigned_to, completed_at, created_at, employees!tasks_assigned_to_fkey(full_name)')
+                  .gte('created_at', sinceDate);
+                const all = tasks || [];
+                // Group by employee
+                const byEmployee = {};
+                all.forEach(t => {
+                  const name = t.employees?.full_name || 'Unassigned';
+                  if (!byEmployee[name]) byEmployee[name] = { total: 0, done: 0, open: 0 };
+                  byEmployee[name].total++;
+                  if (t.status === 'done') byEmployee[name].done++;
+                  else byEmployee[name].open++;
+                });
+                // Calculate completion rates and sort
+                const rankings = Object.entries(byEmployee).map(([name, stats]) => ({
+                  name,
+                  total_tasks: stats.total,
+                  completed: stats.done,
+                  open: stats.open,
+                  completion_rate: stats.total > 0 ? `${((stats.done / stats.total) * 100).toFixed(0)}%` : '0%',
+                })).sort((a, b) => (b.completed / Math.max(b.total_tasks, 1)) - (a.completed / Math.max(a.total_tasks, 1)));
+                return { period: `Last ${days} days`, total_tasks: all.length, rankings };
+              }
+
+              case 'fermentation_comparison': {
+                const { data: released } = await supabase
+                  .from('batches')
+                  .select('id, batch_id, variant, start_time, released_at')
+                  .eq('status', 'released')
+                  .gte('created_at', sinceDate);
+                const batches = (released || []).filter(b => b.start_time && b.released_at);
+                const calcAvgHours = (list) => {
+                  if (list.length === 0) return null;
+                  const total = list.reduce((sum, b) => sum + (new Date(b.released_at) - new Date(b.start_time)) / 3600000, 0);
+                  return (total / list.length).toFixed(1);
+                };
+                const sweetened = batches.filter(b => b.variant === 'Sweetened');
+                const unsweetened = batches.filter(b => b.variant === 'Unsweetened');
+                return {
+                  period: `Last ${days} days`,
+                  sweetened: { count: sweetened.length, avg_fermentation_hours: calcAvgHours(sweetened) },
+                  unsweetened: { count: unsweetened.length, avg_fermentation_hours: calcAvgHours(unsweetened) },
+                  overall: { count: batches.length, avg_fermentation_hours: calcAvgHours(batches) },
+                };
+              }
+
+              case 'monthly_summary': {
+                const [batchRes, taskRes, leaveRes, phRes] = await Promise.all([
+                  supabase.from('batches').select('id, status').gte('created_at', sinceDate),
+                  supabase.from('tasks').select('id, status').gte('created_at', sinceDate),
+                  supabase.from('leave_applications').select('id, status').gte('created_at', sinceDate),
+                  supabase.from('ph_readings').select('id, is_deviation').gte('created_at', sinceDate),
+                ]);
+                const bAll = batchRes.data || [];
+                const tAll = taskRes.data || [];
+                const lAll = leaveRes.data || [];
+                const pAll = phRes.data || [];
+                return {
+                  period: `Last ${days} days`,
+                  batches: { total: bAll.length, released: bAll.filter(b => b.status === 'released').length, rejected: bAll.filter(b => b.status === 'rejected').length },
+                  tasks: { total: tAll.length, completed: tAll.filter(t => t.status === 'done').length, open: tAll.filter(t => ['open', 'in-progress'].includes(t.status)).length },
+                  leaves: { total: lAll.length, approved: lAll.filter(l => l.status === 'approved').length, pending: lAll.filter(l => l.status === 'pending').length },
+                  ph_readings: { total: pAll.length, deviations: pAll.filter(p => p.is_deviation).length },
+                };
+              }
+
+              default:
+                return { error: 'Unknown query type' };
+            }
           },
         }),
       },
