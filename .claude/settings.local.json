@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Vercel__list_deployments",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(grep -n \"CREATE TABLE.*batch_flask\" /e/OXYBIO/supabase/*.sql)",
+      "Bash(grep -n \"batch_flask_\" /e/OXYBIO/app/batches/\\\\[batchId\\\\]/components/*.js)",
+      "Bash(grep -r \"batch_flask\" /e/OXYBIO/supabase/*.sql)"
+    ]
+  }
+}

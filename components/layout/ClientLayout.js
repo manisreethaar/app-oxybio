@@ -8,6 +8,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Skeleton from '../Skeleton';
+import AIChatbot from '../AIChatbot';
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -215,6 +216,7 @@ export default function ClientLayout({ children }) {
           </AnimatePresence>
         </main>
       </div>
+      <AIChatbot />
     </div>
     </ToastProvider>
   );
