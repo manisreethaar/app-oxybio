@@ -21,6 +21,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
 };
 
 import { createClient } from "@/utils/supabase/server";
@@ -46,6 +47,9 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+      </head>
       <body className={inter.className}>
         <AuthProvider initialSession={session} initialProfile={initialProfile}>
           <ClientLayout>{children}</ClientLayout>

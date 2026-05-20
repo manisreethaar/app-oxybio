@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply text-gray-900 antialiased bg-gray-50 selection:bg-blue-100 selection:text-blue-900;
+  html, body {
+    @apply text-gray-900 antialiased bg-gray-50 selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden;
     font-family: 'Inter', system-ui, sans-serif;
+    max-width: 100vw;
   }
   
   :root {
