@@ -1,26 +1,40 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 
+// ---------- helpers ----------
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// Parse a UI-message-stream (SSE-style) line into an action.
+// Each line is: `<digit>:<json>\n`
+function parseStreamLine(line) {
+  if (!line || !line.includes(':')) return null;
+  const colonIdx = line.indexOf(':');
+  const type = line.slice(0, colonIdx);
+  const payload = line.slice(colonIdx + 1);
+  try {
+    return { type, data: JSON.parse(payload) };
+  } catch {
+    return { type, data: payload };
+  }
+}
+
 export default function AIChatbot() {
   const { role } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
+  const abortRef = useRef(null);
 
-  // AI SDK v6: useChat defaults to POST /api/chat — route lives at app/api/chat/route.js
-  const { messages, sendMessage, regenerate, stop, status, error, clearError } = useChat({
-    onError: (err) => {
-      console.error('[OxyOS AI] Stream error:', err);
-    },
-  });
-
-  const isLoading = status === 'streaming' || status === 'submitted';
-
+  // ---------- scroll ----------
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -29,20 +43,161 @@ export default function AIChatbot() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Handle form submission
+  // ---------- send ----------
+  const sendUserMessage = useCallback(async (text) => {
+    if (!text?.trim() || isLoading) return;
+
+    const userMsg = {
+      id: uid(),
+      role: 'user',
+      parts: [{ type: 'text', text: text.trim() }],
+    };
+
+    const assistantMsg = {
+      id: uid(),
+      role: 'assistant',
+      parts: [],
+    };
+
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    setIsLoading(true);
+    setError(null);
+
+    // Build the messages array the backend expects
+    const apiMessages = [...messages, userMsg].map(m => ({
+      role: m.role,
+      parts: m.parts,
+    }));
+
+    try {
+      abortRef.current = new AbortController();
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => res.statusText);
+        throw new Error(`Server error ${res.status}: ${errText}`);
+      }
+
+      // Stream the response
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          const parsed = parseStreamLine(trimmed);
+          if (!parsed) continue;
+
+          // Type "0" = text delta in UI message stream protocol
+          if (parsed.type === '0') {
+            const text = typeof parsed.data === 'string' ? parsed.data : parsed.data?.text || '';
+            fullText += text;
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                updated[updated.length - 1] = {
+                  ...last,
+                  parts: [{ type: 'text', text: fullText }],
+                };
+              }
+              return updated;
+            });
+          }
+          // Type "9" = tool call
+          if (parsed.type === '9') {
+            const toolData = parsed.data;
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                const existingParts = [...(last.parts || [])];
+                existingParts.push({
+                  type: 'tool-invocation',
+                  toolInvocation: {
+                    toolCallId: toolData.toolCallId || uid(),
+                    toolName: toolData.toolName || 'tool',
+                    state: toolData.state || 'result',
+                  },
+                });
+                updated[updated.length - 1] = { ...last, parts: existingParts };
+              }
+              return updated;
+            });
+          }
+        }
+      }
+
+      // If we got no text at all, show a fallback
+      if (!fullText.trim()) {
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === 'assistant' && !last.parts.some(p => p.type === 'text' && p.text?.trim())) {
+            updated[updated.length - 1] = {
+              ...last,
+              parts: [{ type: 'text', text: '(No response received. Please try again.)' }],
+            };
+          }
+          return updated;
+        });
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('[OxyOS AI] Error:', err);
+        setError(err);
+        // Remove the empty assistant message
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && (!last.parts || last.parts.length === 0 || !last.parts.some(p => p.text?.trim()))) {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      abortRef.current = null;
+    }
+  }, [isLoading, messages]);
+
+  // ---------- handlers ----------
   const handleFormSubmit = useCallback((e) => {
     if (e) e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
-    sendMessage({ text: trimmed });
+    sendUserMessage(trimmed);
     setInput('');
-  }, [input, isLoading, sendMessage]);
+  }, [input, isLoading, sendUserMessage]);
 
-  // Handle quick action button clicks
   const handleQuickAction = useCallback((msg) => {
     if (isLoading) return;
-    sendMessage({ text: msg });
-  }, [isLoading, sendMessage]);
+    sendUserMessage(msg);
+  }, [isLoading, sendUserMessage]);
+
+  const handleStop = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      setIsLoading(false);
+    }
+  }, []);
 
   // Don't render for non-CEO/admin roles
   if (role !== 'ceo' && role !== 'admin') return null;
@@ -104,9 +259,7 @@ export default function AIChatbot() {
               )}
 
               {messages.map(m => {
-                // AI SDK v6: messages use parts[] array for structured content
                 const parts = m.parts || [];
-
                 return (
                   <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-teal-600 text-white' : 'bg-[#1F3A5F] text-teal-400'}`}>
@@ -135,26 +288,16 @@ export default function AIChatbot() {
                         }
                         return null;
                       })}
+                      {/* Show spinner if this is an empty assistant message while loading */}
+                      {m.role === 'assistant' && parts.length === 0 && isLoading && (
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
-
-              {/* Streaming indicator — show when loading and the last message has no text parts yet */}
-              {isLoading && messages.length > 0 && (() => {
-                const last = messages[messages.length - 1];
-                const hasText = last?.parts?.some(p => p.type === 'text' && p.text?.trim());
-                return last?.role === 'assistant' && !hasText;
-              })() && (
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-[#1F3A5F] text-teal-400">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <div className="p-3 rounded-2xl bg-white border border-gray-200 text-gray-400 text-sm rounded-tl-sm">
-                    <Loader2 className="w-4 h-4 animate-spin inline" /> Thinking...
-                  </div>
-                </div>
-              )}
 
               {/* Error display */}
               {error && (
@@ -164,10 +307,10 @@ export default function AIChatbot() {
                     <p className="font-bold">Something went wrong</p>
                     <p className="mt-1 text-red-600">{error.message || 'The AI encountered an error. Please try again.'}</p>
                     <button
-                      onClick={() => { clearError(); regenerate(); }}
+                      onClick={() => setError(null)}
                       className="mt-2 text-red-800 underline font-bold hover:text-red-900"
                     >
-                      Retry
+                      Dismiss
                     </button>
                   </div>
                 </div>
@@ -188,13 +331,23 @@ export default function AIChatbot() {
                   disabled={isLoading}
                   autoComplete="off"
                 />
-                <button
-                  type="submit"
-                  disabled={isLoading || !input.trim()}
-                  className="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
-                </button>
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={handleStop}
+                    className="bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4 ml-0.5" />
+                  </button>
+                )}
               </form>
             </div>
           </motion.div>
