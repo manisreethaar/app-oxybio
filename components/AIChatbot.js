@@ -1,8 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -13,14 +12,8 @@ export default function AIChatbot() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  // AI SDK v6: useChat no longer accepts `api` directly.
-  // Must provide a transport object with the correct API endpoint.
-  const transport = useMemo(() => new DefaultChatTransport({
-    api: '/api/ai/chat',
-  }), []);
-
+  // AI SDK v6: useChat defaults to POST /api/chat — route lives at app/api/chat/route.js
   const { messages, sendMessage, regenerate, stop, status, error, clearError } = useChat({
-    transport,
     onError: (err) => {
       console.error('[OxyOS AI] Stream error:', err);
     },
