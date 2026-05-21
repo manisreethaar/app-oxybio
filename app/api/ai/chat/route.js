@@ -845,7 +845,7 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('[OxyOS AI] Route Error:', error);
     return new Response(

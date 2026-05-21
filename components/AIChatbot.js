@@ -1,7 +1,8 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { DefaultChatTransport } from 'ai';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -12,10 +13,14 @@ export default function AIChatbot() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  // AI SDK v5/v6 API — useChat no longer manages input state.
-  // It returns: messages, sendMessage, regenerate, stop, status, error, setMessages, clearError
-  const { messages, sendMessage, regenerate, stop, status, error, clearError } = useChat({
+  // AI SDK v6: useChat no longer accepts `api` directly.
+  // Must provide a transport object with the correct API endpoint.
+  const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/ai/chat',
+  }), []);
+
+  const { messages, sendMessage, regenerate, stop, status, error, clearError } = useChat({
+    transport,
     onError: (err) => {
       console.error('[OxyOS AI] Stream error:', err);
     },
@@ -36,14 +41,14 @@ export default function AIChatbot() {
     if (e) e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
-    sendMessage({ role: 'user', content: trimmed });
+    sendMessage({ text: trimmed });
     setInput('');
   }, [input, isLoading, sendMessage]);
 
   // Handle quick action button clicks
   const handleQuickAction = useCallback((msg) => {
     if (isLoading) return;
-    sendMessage({ role: 'user', content: msg });
+    sendMessage({ text: msg });
   }, [isLoading, sendMessage]);
 
   // Don't render for non-CEO/admin roles
@@ -106,12 +111,8 @@ export default function AIChatbot() {
               )}
 
               {messages.map(m => {
-                // AI SDK v5/v6 uses m.parts for structured content (tool calls, text, etc.)
-                // Fall back to m.content for simple text messages
-                const hasContent = m.content && m.content.trim().length > 0;
-                const hasParts = m.parts && m.parts.length > 0;
-                // v5/v6: toolInvocations may still exist on some message shapes
-                const hasToolInvocations = m.toolInvocations && m.toolInvocations.length > 0;
+                // AI SDK v6: messages use parts[] array for structured content
+                const parts = m.parts || [];
 
                 return (
                   <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -119,45 +120,39 @@ export default function AIChatbot() {
                       {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                     </div>
                     <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'}`}>
-                      {/* Render text content */}
-                      {hasContent && <div className="whitespace-pre-wrap">{m.content}</div>}
-
-                      {/* Render tool invocations (v5/v6 compat: check both .parts and .toolInvocations) */}
-                      {hasParts && m.parts.filter(p => p.type === 'tool-invocation').map((p, idx) => (
-                        <div key={p.toolInvocation?.toolCallId || idx} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
-                          {p.toolInvocation?.state === 'result' ? (
-                            <div className="flex items-center gap-1 text-teal-700 font-medium">
-                              ✓ {p.toolInvocation.toolName}
+                      {parts.map((part, idx) => {
+                        if (part.type === 'text' && part.text?.trim()) {
+                          return <div key={idx} className="whitespace-pre-wrap">{part.text}</div>;
+                        }
+                        if (part.type === 'tool-invocation') {
+                          const t = part.toolInvocation;
+                          return (
+                            <div key={t?.toolCallId || idx} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
+                              {t?.state === 'result' ? (
+                                <div className="flex items-center gap-1 text-teal-700 font-medium">
+                                  ✓ {t.toolName}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-amber-600 font-medium">
+                                  <Loader2 className="w-3 h-3 animate-spin" /> {t?.toolName || 'working'}...
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-amber-600 font-medium">
-                              <Loader2 className="w-3 h-3 animate-spin" /> {p.toolInvocation?.toolName || 'working'}...
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      {/* Fallback: legacy toolInvocations shape */}
-                      {!hasParts && hasToolInvocations && m.toolInvocations.map(t => (
-                        <div key={t.toolCallId} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
-                          {t.state === 'result' ? (
-                            <div className="flex items-center gap-1 text-teal-700 font-medium">
-                              ✓ {t.toolName}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-amber-600 font-medium">
-                              <Loader2 className="w-3 h-3 animate-spin" /> {t.toolName}...
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                          );
+                        }
+                        return null;
+                      })}
                     </div>
                   </div>
                 );
               })}
 
-              {/* Streaming indicator */}
-              {isLoading && messages.length > 0 && !messages[messages.length - 1]?.content && (
+              {/* Streaming indicator — show when loading and the last message has no text parts yet */}
+              {isLoading && messages.length > 0 && (() => {
+                const last = messages[messages.length - 1];
+                const hasText = last?.parts?.some(p => p.type === 'text' && p.text?.trim());
+                return last?.role === 'assistant' && !hasText;
+              })() && (
                 <div className="flex gap-3">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-[#1F3A5F] text-teal-400">
                     <Bot className="w-4 h-4" />
