@@ -9,15 +9,19 @@ import { useAuth } from '@/context/AuthContext';
 export default function AIChatbot() {
   const { role } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, reload } = useChat({
+  // AI SDK v5/v6 API — useChat no longer manages input state.
+  // It returns: messages, sendMessage, regenerate, stop, status, error, setMessages, clearError
+  const { messages, sendMessage, regenerate, stop, status, error, clearError } = useChat({
     api: '/api/ai/chat',
-    maxSteps: 5, // Allow multi-step tool calls (e.g. get_employees → assign_task)
     onError: (err) => {
       console.error('[OxyOS AI] Stream error:', err);
     },
   });
+
+  const isLoading = status === 'streaming' || status === 'submitted';
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,6 +30,21 @@ export default function AIChatbot() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  // Handle form submission
+  const handleFormSubmit = useCallback((e) => {
+    if (e) e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    sendMessage({ role: 'user', content: trimmed });
+    setInput('');
+  }, [input, isLoading, sendMessage]);
+
+  // Handle quick action button clicks
+  const handleQuickAction = useCallback((msg) => {
+    if (isLoading) return;
+    sendMessage({ role: 'user', content: msg });
+  }, [isLoading, sendMessage]);
 
   // Don't render for non-CEO/admin roles
   if (role !== 'ceo' && role !== 'admin') return null;
@@ -75,20 +94,7 @@ export default function AIChatbot() {
                       <button
                         key={action.label}
                         type="button"
-                        onClick={() => {
-                          // Programmatically set input and submit
-                          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                          const inputEl = document.querySelector('#ai-chat-input');
-                          if (inputEl) {
-                            nativeInputValueSetter.call(inputEl, action.msg);
-                            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-                            // Small delay to let React state update, then submit
-                            setTimeout(() => {
-                              const form = document.querySelector('#ai-chat-form');
-                              if (form) form.requestSubmit();
-                            }, 50);
-                          }
-                        }}
+                        onClick={() => handleQuickAction(action.msg)}
                         className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-all shadow-sm active:scale-95"
                       >
                         <span className="text-base">{action.emoji}</span>
@@ -100,9 +106,12 @@ export default function AIChatbot() {
               )}
 
               {messages.map(m => {
-                // Skip rendering assistant messages that have no content and only tool calls
+                // AI SDK v5/v6 uses m.parts for structured content (tool calls, text, etc.)
+                // Fall back to m.content for simple text messages
                 const hasContent = m.content && m.content.trim().length > 0;
-                const hasTools = m.toolInvocations && m.toolInvocations.length > 0;
+                const hasParts = m.parts && m.parts.length > 0;
+                // v5/v6: toolInvocations may still exist on some message shapes
+                const hasToolInvocations = m.toolInvocations && m.toolInvocations.length > 0;
 
                 return (
                   <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -110,8 +119,26 @@ export default function AIChatbot() {
                       {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                     </div>
                     <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'}`}>
+                      {/* Render text content */}
                       {hasContent && <div className="whitespace-pre-wrap">{m.content}</div>}
-                      {hasTools && m.toolInvocations.map(t => (
+
+                      {/* Render tool invocations (v5/v6 compat: check both .parts and .toolInvocations) */}
+                      {hasParts && m.parts.filter(p => p.type === 'tool-invocation').map((p, idx) => (
+                        <div key={p.toolInvocation?.toolCallId || idx} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
+                          {p.toolInvocation?.state === 'result' ? (
+                            <div className="flex items-center gap-1 text-teal-700 font-medium">
+                              ✓ {p.toolInvocation.toolName}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-amber-600 font-medium">
+                              <Loader2 className="w-3 h-3 animate-spin" /> {p.toolInvocation?.toolName || 'working'}...
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* Fallback: legacy toolInvocations shape */}
+                      {!hasParts && hasToolInvocations && m.toolInvocations.map(t => (
                         <div key={t.toolCallId} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
                           {t.state === 'result' ? (
                             <div className="flex items-center gap-1 text-teal-700 font-medium">
@@ -129,6 +156,18 @@ export default function AIChatbot() {
                 );
               })}
 
+              {/* Streaming indicator */}
+              {isLoading && messages.length > 0 && !messages[messages.length - 1]?.content && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-[#1F3A5F] text-teal-400">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white border border-gray-200 text-gray-400 text-sm rounded-tl-sm">
+                    <Loader2 className="w-4 h-4 animate-spin inline" /> Thinking...
+                  </div>
+                </div>
+              )}
+
               {/* Error display */}
               {error && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
@@ -136,7 +175,12 @@ export default function AIChatbot() {
                   <div>
                     <p className="font-bold">Something went wrong</p>
                     <p className="mt-1 text-red-600">{error.message || 'The AI encountered an error. Please try again.'}</p>
-                    <button onClick={() => reload()} className="mt-2 text-red-800 underline font-bold hover:text-red-900">Retry</button>
+                    <button
+                      onClick={() => { clearError(); regenerate(); }}
+                      className="mt-2 text-red-800 underline font-bold hover:text-red-900"
+                    >
+                      Retry
+                    </button>
                   </div>
                 </div>
               )}
@@ -146,19 +190,19 @@ export default function AIChatbot() {
 
             {/* Input */}
             <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0">
-              <form id="ai-chat-form" onSubmit={handleSubmit} className="flex gap-2 relative">
+              <form onSubmit={handleFormSubmit} className="flex gap-2 relative">
                 <input
-                  id="ai-chat-input"
                   type="text"
-                  value={input || ''}
-                  onChange={handleInputChange}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask me anything..."
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all text-gray-900"
                   disabled={isLoading}
+                  autoComplete="off"
                 />
                 <button
                   type="submit"
-                  disabled={isLoading || !(input || '').trim()}
+                  disabled={isLoading || !input.trim()}
                   className="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
