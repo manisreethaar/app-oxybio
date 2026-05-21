@@ -16,6 +16,8 @@ export const metadata = {
   },
 };
 
+// Next.js 14 generates the <meta name="viewport"> tag from this export.
+// Do NOT add a manual <meta> tag in <head> — it causes duplicates and hydration mismatches.
 export const viewport = {
   themeColor: "#1F3A5F",
   width: "device-width",
@@ -31,27 +33,38 @@ const PROFILE_SELECT = 'id,full_name,email,role,department,designation,is_active
 export default async function RootLayout({ children }) {
   const supabase = createClient();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
+  // FIX: Use getUser() instead of getSession().
+  // getSession() reads from local storage without validating the JWT,
+  // so it can return stale/expired tokens. getUser() validates against
+  // the Supabase Auth server and is the recommended approach.
+  let initialSession = null;
   let initialProfile = null;
-  if (session?.user?.email) {
-    const { data: profile } = await supabase
-      .from('employees')
-      .select(PROFILE_SELECT)
-      .ilike('email', session.user.email)
-      .single();
-    initialProfile = profile;
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (!error && user) {
+      // Build a minimal session object for AuthContext compatibility
+      initialSession = { user };
+
+      const { data: profile } = await supabase
+        .from('employees')
+        .select(PROFILE_SELECT)
+        .ilike('email', user.email)
+        .single();
+      initialProfile = profile;
+    }
+  } catch (e) {
+    // Auth service unreachable on cold start — fail gracefully.
+    // AuthContext will re-attempt on the client side.
+    console.warn('[RootLayout] Server auth check failed:', e?.message);
   }
 
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-      </head>
+      {/* No manual <head> needed — Next.js generates viewport meta from the export above */}
       <body className={inter.className}>
-        <AuthProvider initialSession={session} initialProfile={initialProfile}>
+        <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>
       </body>

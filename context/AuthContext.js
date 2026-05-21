@@ -139,8 +139,10 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       }
     };
 
-    // Safety valve — if everything hangs (cold start + cache miss), unblock at 2s
-    const safety = setTimeout(() => { if (mounted) setLoading(false); }, 2000);
+    // Safety valve — if everything hangs (cold start + cache miss), unblock at 4s
+    // Vercel cold starts can take 3s+, so 2s was too aggressive and caused pages
+    // to render with loading=false but employeeProfile=null, breaking data fetches.
+    const safety = setTimeout(() => { if (mounted) setLoading(false); }, 4000);
 
     init();
 
