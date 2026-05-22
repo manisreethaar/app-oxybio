@@ -7,26 +7,6 @@
     {
       "path": "/api/cron/attendance",
       "schedule": "30 18 * * *"
-    },
-    {
-      "path": "/api/cron/reminders",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron/backup",
-      "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/cron/morning-check",
-      "schedule": "0 4 * * 1-6"
-    },
-    {
-      "path": "/api/cron/evening-warning",
-      "schedule": "30 15 * * *"
-    },
-    {
-      "path": "/api/cron/proactive-alerts",
-      "schedule": "15 4 * * *"
     }
   ]
 }
