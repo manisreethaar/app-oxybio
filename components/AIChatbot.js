@@ -51,6 +51,7 @@ export default function AIChatbot() {
 
     // Build the messages array the backend expects
     const apiMessages = [...messages, userMsg].map(m => ({
+      id: m.id,
       role: m.role,
       parts: m.parts,
     }));
