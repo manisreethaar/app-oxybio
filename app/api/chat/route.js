@@ -3,9 +3,6 @@ import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 
-export const runtime = 'edge'; // Edge runtime: 30s limit vs 10s for serverless on Hobby plan
-export const maxDuration = 30;
-
 export async function POST(req) {
   try {
     const supabase = createClient();
