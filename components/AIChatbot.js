@@ -10,20 +10,6 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// Parse a UI-message-stream (SSE-style) line into an action.
-// Each line is: `<digit>:<json>\n`
-function parseStreamLine(line) {
-  if (!line || !line.includes(':')) return null;
-  const colonIdx = line.indexOf(':');
-  const type = line.slice(0, colonIdx);
-  const payload = line.slice(colonIdx + 1);
-  try {
-    return { type, data: JSON.parse(payload) };
-  } catch {
-    return { type, data: payload };
-  }
-}
-
 export default function AIChatbot() {
   const { role } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -84,7 +70,7 @@ export default function AIChatbot() {
         throw new Error(`Server error ${res.status}: ${errText}`);
       }
 
-      // Stream the response
+      // Stream the response — backend sends SSE: "data: {json}\n\n"
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -100,15 +86,18 @@ export default function AIChatbot() {
 
         for (const line of lines) {
           const trimmed = line.trim();
-          if (!trimmed) continue;
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (!trimmed.startsWith('data: ')) continue;
 
-          const parsed = parseStreamLine(trimmed);
-          if (!parsed) continue;
+          let event;
+          try {
+            event = JSON.parse(trimmed.slice(6));
+          } catch {
+            continue;
+          }
 
-          // Type "0" = text delta in UI message stream protocol
-          if (parsed.type === '0') {
-            const text = typeof parsed.data === 'string' ? parsed.data : parsed.data?.text || '';
-            fullText += text;
+          if (event.type === 'text-delta') {
+            fullText += event.delta || '';
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -120,10 +109,7 @@ export default function AIChatbot() {
               }
               return updated;
             });
-          }
-          // Type "9" = tool call
-          if (parsed.type === '9') {
-            const toolData = parsed.data;
+          } else if (event.type === 'tool-input-start') {
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -132,12 +118,26 @@ export default function AIChatbot() {
                 existingParts.push({
                   type: 'tool-invocation',
                   toolInvocation: {
-                    toolCallId: toolData.toolCallId || uid(),
-                    toolName: toolData.toolName || 'tool',
-                    state: toolData.state || 'result',
+                    toolCallId: event.toolCallId || uid(),
+                    toolName: event.toolName || 'tool',
+                    state: 'call',
                   },
                 });
                 updated[updated.length - 1] = { ...last, parts: existingParts };
+              }
+              return updated;
+            });
+          } else if (event.type === 'tool-output-available') {
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                const parts = (last.parts || []).map(p =>
+                  p.type === 'tool-invocation' && p.toolInvocation.toolCallId === event.toolCallId
+                    ? { ...p, toolInvocation: { ...p.toolInvocation, state: 'result' } }
+                    : p
+                );
+                updated[updated.length - 1] = { ...last, parts };
               }
               return updated;
             });
