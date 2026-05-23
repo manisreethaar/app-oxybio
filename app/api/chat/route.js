@@ -3,7 +3,7 @@ import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 
-export const maxDuration = 60; // Increased from 30s — multi-tool chains need more time
+export const maxDuration = 10; // Vercel Hobby plan max — upgrade to Pro for longer AI chains
 
 export async function POST(req) {
   try {
