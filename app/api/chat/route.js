@@ -1,4 +1,4 @@
-import { streamText, tool } from 'ai';
+import { streamText, tool, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
@@ -86,7 +86,7 @@ When the user asks about past data, use the correct historical tool:
 - "Any issues last week?" → get_activity_history with issues_only=true
 Always convert relative dates (last month, this quarter, last week) to YYYY-MM-DD format using today's date.`,
       messages,
-      maxSteps: 8, // Increased for batch workflow orchestration (create → ask → assign → ask → assign → summary)
+      stopWhen: stepCountIs(8), // AI SDK v6: replaces maxSteps — allows tool call chains up to 8 steps
       tools: {
         // ══════════════════════════════════════════════
         //  PRODUCTION TOOLS
