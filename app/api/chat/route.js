@@ -36,6 +36,23 @@ export async function POST(req) {
 
     const { messages } = await req.json();
 
+    // Map client messages to strict CoreMessage format (strings only) to avoid ModelMessage schema errors
+    const coreMessages = messages.map(m => {
+      let textContent = '';
+      if (m.parts) {
+        textContent = m.parts
+          .filter(p => p.type === 'text')
+          .map(p => p.text)
+          .join('\\n');
+      } else if (typeof m.content === 'string') {
+        textContent = m.content;
+      }
+      return {
+        role: m.role,
+        content: textContent
+      };
+    });
+
     const result = streamText({
       model: google('gemini-2.5-flash'),
       system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}.
@@ -84,7 +101,7 @@ When the user asks about past data, use the correct historical tool:
 - "What work was done on BATCH-001?" → get_activity_history with batch_id=BATCH-001
 - "Any issues last week?" → get_activity_history with issues_only=true
 Always convert relative dates (last month, this quarter, last week) to YYYY-MM-DD format using today's date.`,
-      messages,
+      messages: coreMessages,
       maxSteps: 8, // Increased for batch workflow orchestration (create → ask → assign → ask → assign → summary)
       tools: {
         // ══════════════════════════════════════════════
