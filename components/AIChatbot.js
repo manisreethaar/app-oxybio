@@ -11,16 +11,14 @@ function uid() {
 }
 
 // Parse a UI-message-stream (SSE-style) line into an action.
-// Each line is: `<digit>:<json>\n`
 function parseStreamLine(line) {
-  if (!line || !line.includes(':')) return null;
-  const colonIdx = line.indexOf(':');
-  const type = line.slice(0, colonIdx);
-  const payload = line.slice(colonIdx + 1);
+  if (!line || !line.startsWith('data: ')) return null;
+  const payload = line.slice(6).trim(); // remove 'data: '
+  if (payload === '[DONE]') return null;
   try {
-    return { type, data: JSON.parse(payload) };
+    return JSON.parse(payload);
   } catch {
-    return { type, data: payload };
+    return null;
   }
 }
 
@@ -105,9 +103,12 @@ export default function AIChatbot() {
           const parsed = parseStreamLine(trimmed);
           if (!parsed) continue;
 
-          // Type "0" = text delta in UI message stream protocol
-          if (parsed.type === '0') {
-            const text = typeof parsed.data === 'string' ? parsed.data : parsed.data?.text || '';
+          if (parsed.type === 'error') {
+            throw new Error(parsed.errorText || 'Unknown stream error');
+          }
+
+          if (parsed.type === 'textDelta') {
+            const text = parsed.textDelta || '';
             fullText += text;
             setMessages(prev => {
               const updated = [...prev];
@@ -121,9 +122,9 @@ export default function AIChatbot() {
               return updated;
             });
           }
-          // Type "9" = tool call
-          if (parsed.type === '9') {
-            const toolData = parsed.data;
+
+          if (parsed.type === 'toolCall') {
+            const toolData = parsed.toolCall || {};
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -134,7 +135,7 @@ export default function AIChatbot() {
                   toolInvocation: {
                     toolCallId: toolData.toolCallId || uid(),
                     toolName: toolData.toolName || 'tool',
-                    state: toolData.state || 'result',
+                    state: 'result', // We mark it as done immediately since the server handles execution
                   },
                 });
                 updated[updated.length - 1] = { ...last, parts: existingParts };
