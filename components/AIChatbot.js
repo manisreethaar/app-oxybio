@@ -1,19 +1,24 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
-import { useChat } from '@ai-sdk/react';
+
+// ---------- helpers ----------
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 
 export default function AIChatbot() {
   const { role } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
-
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, stop, append, setMessages } = useChat({
-    api: '/api/chat',
-  });
+  const abortRef = useRef(null);
 
   // ---------- scroll ----------
   const scrollToBottom = useCallback(() => {
@@ -24,11 +29,183 @@ export default function AIChatbot() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // ---------- send ----------
+  const sendUserMessage = useCallback(async (text) => {
+    if (!text?.trim() || isLoading) return;
+
+    const userMsg = {
+      id: uid(),
+      role: 'user',
+      parts: [{ type: 'text', text: text.trim() }],
+    };
+
+    const assistantMsg = {
+      id: uid(),
+      role: 'assistant',
+      parts: [],
+    };
+
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    setIsLoading(true);
+    setError(null);
+
+    // Build the messages array the backend expects
+    const apiMessages = [...messages, userMsg].map(m => ({
+      id: m.id,
+      role: m.role,
+      parts: m.parts,
+    }));
+
+    try {
+      abortRef.current = new AbortController();
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => res.statusText);
+        throw new Error(`Server error ${res.status}: ${errText}`);
+      }
+
+      // Stream the response ΓÇö backend sends SSE: "data: {json}\n\n"
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (!trimmed.startsWith('data: ')) continue;
+
+          let event;
+          try {
+            event = JSON.parse(trimmed.slice(6));
+          } catch {
+            continue;
+          }
+
+          if (event.type === 'error') {
+            throw new Error(event.errorText || event.error || 'Unknown stream error');
+          }
+
+          if (event.type === 'textDelta' || event.type === 'text-delta') {
+            fullText += event.textDelta || event.delta || '';
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                updated[updated.length - 1] = {
+                  ...last,
+                  parts: [{ type: 'text', text: fullText }],
+                };
+              }
+              return updated;
+            });
+          } else if (event.type === 'toolCall' || event.type === 'tool-input-start') {
+            const toolCallId = event.toolCallId || (event.toolCall && event.toolCall.toolCallId) || uid();
+            const toolName = event.toolName || (event.toolCall && event.toolCall.toolName) || 'tool';
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                const existingParts = [...(last.parts || [])];
+                existingParts.push({
+                  type: 'tool-invocation',
+                  toolInvocation: {
+                    toolCallId,
+                    toolName,
+                    state: 'result', // Server executes tools synchronously before returning the final stream, so mark as done
+                  },
+                });
+                updated[updated.length - 1] = { ...last, parts: existingParts };
+              }
+              return updated;
+            });
+          } else if (event.type === 'toolResult' || event.type === 'tool-output-available') {
+            const toolCallId = event.toolCallId || (event.toolCall && event.toolCall.toolCallId);
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                const parts = (last.parts || []).map(p =>
+                  p.type === 'tool-invocation' && p.toolInvocation.toolCallId === toolCallId
+                    ? { ...p, toolInvocation: { ...p.toolInvocation, state: 'result' } }
+                    : p
+                );
+                updated[updated.length - 1] = { ...last, parts };
+              }
+              return updated;
+            });
+          }
+        }
+      }
+
+      // If we got no text at all, show a fallback
+      if (!fullText.trim()) {
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === 'assistant' && !last.parts.some(p => p.type === 'text' && p.text?.trim())) {
+            updated[updated.length - 1] = {
+              ...last,
+              parts: [{ type: 'text', text: '(No response received. Please try again.)' }],
+            };
+          }
+          return updated;
+        });
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('[OxyOS AI] Error:', err);
+        setError(err);
+        // Remove the empty assistant message
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && (!last.parts || last.parts.length === 0 || !last.parts.some(p => p.text?.trim()))) {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      abortRef.current = null;
+    }
+  }, [isLoading, messages]);
+
   // ---------- handlers ----------
+  const handleFormSubmit = useCallback((e) => {
+    if (e) e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    sendUserMessage(trimmed);
+    setInput('');
+  }, [input, isLoading, sendUserMessage]);
+
   const handleQuickAction = useCallback((msg) => {
     if (isLoading) return;
-    append({ role: 'user', content: msg });
-  }, [isLoading, append]);
+    sendUserMessage(msg);
+  }, [isLoading, sendUserMessage]);
+
+  const handleStop = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      setIsLoading(false);
+    }
+  }, []);
 
   // Don't render for non-CEO/admin roles
   if (role !== 'ceo' && role !== 'admin') return null;
@@ -68,12 +245,12 @@ export default function AIChatbot() {
 
                   <div className="grid grid-cols-2 gap-2 text-left">
                     {[
-                      { emoji: '🌅', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
-                      { emoji: '🧪', label: 'Start Batch', msg: 'I want to start a new batch — walk me through the full protocol.' },
-                      { emoji: '📋', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
-                      { emoji: '⚠️', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
-                      { emoji: '📊', label: 'Analytics', msg: 'Give me a monthly summary of batches, tasks, and operations.' },
-                      { emoji: '🏆', label: 'Team Performance', msg: 'Which employee has the highest task completion rate?' },
+                      { emoji: '≡ƒîà', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
+                      { emoji: '≡ƒº¬', label: 'Start Batch', msg: 'I want to start a new batch ΓÇö walk me through the full protocol.' },
+                      { emoji: '≡ƒôï', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
+                      { emoji: 'ΓÜá∩╕Å', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
+                      { emoji: '≡ƒôè', label: 'Analytics', msg: 'Give me a monthly summary of batches, tasks, and operations.' },
+                      { emoji: '≡ƒÅå', label: 'Team Performance', msg: 'Which employee has the highest task completion rate?' },
                     ].map((action) => (
                       <button
                         key={action.label}
@@ -89,42 +266,46 @@ export default function AIChatbot() {
                 </div>
               )}
 
-              {messages.map(m => (
-                <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-teal-600 text-white' : 'bg-[#1F3A5F] text-teal-400'}`}>
-                    {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              {messages.map(m => {
+                const parts = m.parts || [];
+                return (
+                  <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-teal-600 text-white' : 'bg-[#1F3A5F] text-teal-400'}`}>
+                      {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                    </div>
+                    <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'}`}>
+                      {parts.map((part, idx) => {
+                        if (part.type === 'text' && part.text?.trim()) {
+                          return <div key={idx} className="whitespace-pre-wrap">{part.text}</div>;
+                        }
+                        if (part.type === 'tool-invocation') {
+                          const t = part.toolInvocation;
+                          return (
+                            <div key={t?.toolCallId || idx} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
+                              {t?.state === 'result' ? (
+                                <div className="flex items-center gap-1 text-teal-700 font-medium">
+                                  Γ£ô {t.toolName}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-amber-600 font-medium">
+                                  <Loader2 className="w-3 h-3 animate-spin" /> {t?.toolName || 'working'}...
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                      {/* Show spinner if this is an empty assistant message while loading */}
+                      {m.role === 'assistant' && parts.length === 0 && isLoading && (
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'}`}>
-                    
-                    {/* Render Text Content */}
-                    {m.content && (
-                      <div className="whitespace-pre-wrap">{m.content}</div>
-                    )}
-                    
-                    {/* Render Tool Invocations */}
-                    {m.toolInvocations?.map((t) => (
-                      <div key={t.toolCallId} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
-                        {t.state === 'result' ? (
-                          <div className="flex items-center gap-1 text-teal-700 font-medium">
-                            ✓ {t.toolName}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-amber-600 font-medium">
-                            <Loader2 className="w-3 h-3 animate-spin" /> {t.toolName || 'working'}...
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    
-                    {/* Empty placeholder during loading */}
-                    {m.role === 'assistant' && !m.content && (!m.toolInvocations || m.toolInvocations.length === 0) && isLoading && (
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Error display */}
               {error && (
@@ -134,9 +315,7 @@ export default function AIChatbot() {
                     <p className="font-bold">Something went wrong</p>
                     <p className="mt-1 text-red-600">{error.message || 'The AI encountered an error. Please try again.'}</p>
                     <button
-                      onClick={() => {
-                        setMessages(messages.filter(m => m.id !== error.id));
-                      }}
+                      onClick={() => setError(null)}
                       className="mt-2 text-red-800 underline font-bold hover:text-red-900"
                     >
                       Dismiss
@@ -150,11 +329,11 @@ export default function AIChatbot() {
 
             {/* Input */}
             <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0">
-              <form onSubmit={handleSubmit} className="flex gap-2 relative">
+              <form onSubmit={handleFormSubmit} className="flex gap-2 relative">
                 <input
                   type="text"
-                  value={input || ''}
-                  onChange={handleInputChange}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask me anything..."
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all text-gray-900"
                   disabled={isLoading}
@@ -163,7 +342,7 @@ export default function AIChatbot() {
                 {isLoading ? (
                   <button
                     type="button"
-                    onClick={() => stop()}
+                    onClick={handleStop}
                     className="bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
                   >
                     <X className="w-4 h-4" />
@@ -171,7 +350,7 @@ export default function AIChatbot() {
                 ) : (
                   <button
                     type="submit"
-                    disabled={!(input || '').trim()}
+                    disabled={!input.trim()}
                     className="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
                   >
                     <Send className="w-4 h-4 ml-0.5" />
