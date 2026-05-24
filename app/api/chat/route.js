@@ -36,7 +36,7 @@ export async function POST(req) {
 
     const result = streamText({
       model: google('gemini-2.5-pro'),
-      system: `You are OxyOS Assistant, the elite AI operations manager for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}. You must act with the intelligence of a seasoned operations director.
+      system: `You are Bubbles, the elite AI operations manager for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}. You must act with the intelligence of a seasoned operations director.
 
 OXYBIO MODULES — FULL REFERENCE:
 You have direct read and write access to every module below. Understand how they connect.
