@@ -10,18 +10,6 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// Parse a UI-message-stream (SSE-style) line into an action.
-function parseStreamLine(line) {
-  if (!line || !line.startsWith('data: ')) return null;
-  const payload = line.slice(6).trim(); // remove 'data: '
-  if (payload === '[DONE]') return null;
-  try {
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
-
 export default function AIChatbot() {
   const { role } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -63,6 +51,7 @@ export default function AIChatbot() {
 
     // Build the messages array the backend expects
     const apiMessages = [...messages, userMsg].map(m => ({
+      id: m.id,
       role: m.role,
       parts: m.parts,
     }));
@@ -82,7 +71,7 @@ export default function AIChatbot() {
         throw new Error(`Server error ${res.status}: ${errText}`);
       }
 
-      // Stream the response
+      // Stream the response — backend sends SSE: "data: {json}\n\n"
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -98,18 +87,18 @@ export default function AIChatbot() {
 
         for (const line of lines) {
           const trimmed = line.trim();
-          if (!trimmed) continue;
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (!trimmed.startsWith('data: ')) continue;
 
-          const parsed = parseStreamLine(trimmed);
-          if (!parsed) continue;
-
-          if (parsed.type === 'error') {
-            throw new Error(parsed.errorText || 'Unknown stream error');
+          let event;
+          try {
+            event = JSON.parse(trimmed.slice(6));
+          } catch {
+            continue;
           }
 
-          if (parsed.type === 'textDelta') {
-            const text = parsed.textDelta || '';
-            fullText += text;
+          if (event.type === 'text-delta') {
+            fullText += event.delta || '';
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -121,10 +110,7 @@ export default function AIChatbot() {
               }
               return updated;
             });
-          }
-
-          if (parsed.type === 'toolCall') {
-            const toolData = parsed.toolCall || {};
+          } else if (event.type === 'tool-input-start') {
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -133,12 +119,26 @@ export default function AIChatbot() {
                 existingParts.push({
                   type: 'tool-invocation',
                   toolInvocation: {
-                    toolCallId: toolData.toolCallId || uid(),
-                    toolName: toolData.toolName || 'tool',
-                    state: 'result', // We mark it as done immediately since the server handles execution
+                    toolCallId: event.toolCallId || uid(),
+                    toolName: event.toolName || 'tool',
+                    state: 'call',
                   },
                 });
                 updated[updated.length - 1] = { ...last, parts: existingParts };
+              }
+              return updated;
+            });
+          } else if (event.type === 'tool-output-available') {
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                const parts = (last.parts || []).map(p =>
+                  p.type === 'tool-invocation' && p.toolInvocation.toolCallId === event.toolCallId
+                    ? { ...p, toolInvocation: { ...p.toolInvocation, state: 'result' } }
+                    : p
+                );
+                updated[updated.length - 1] = { ...last, parts };
               }
               return updated;
             });

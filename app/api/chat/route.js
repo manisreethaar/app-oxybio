@@ -1,9 +1,7 @@
-import { streamText, tool } from 'ai';
+import { streamText, tool, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
-
-export const maxDuration = 60; // Increased from 30s — multi-tool chains need more time
 
 export async function POST(req) {
   try {
@@ -36,23 +34,6 @@ export async function POST(req) {
 
     const { messages } = await req.json();
 
-    // Map client messages to strict CoreMessage format (strings only) to avoid ModelMessage schema errors
-    const coreMessages = messages.map(m => {
-      let textContent = '';
-      if (m.parts) {
-        textContent = m.parts
-          .filter(p => p.type === 'text')
-          .map(p => p.text)
-          .join('\\n');
-      } else if (typeof m.content === 'string') {
-        textContent = m.content;
-      }
-      return {
-        role: m.role,
-        content: textContent
-      };
-    });
-
     const result = streamText({
       model: google('gemini-2.5-flash'),
       system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}.
@@ -62,9 +43,9 @@ CAPABILITIES:
 - Batch Workflow Orchestration: Walk through the full batch creation SOP
 - Production: Create batches, update batch status, record pH, log daily activities
 - HR: View pending leaves, approve/reject leaves, check attendance
-- Tasks: List employees, assign tasks to specific people, view open tasks
-- Compliance: Add regulatory deadlines, view upcoming/overdue items
-- Inventory: Add/restock items, check low stock
+- Tasks: View open tasks, assign new tasks, update task status (complete/cancel/in-progress)
+- Compliance: Add deadlines, view upcoming/overdue items, mark items as done or update status
+- Inventory: Add new items, update stock levels of existing items (restock/deduct), check low stock
 - Analytics: Cross-module insights, trends, and performance metrics
 
 CRITICAL RULES:
@@ -101,8 +82,8 @@ When the user asks about past data, use the correct historical tool:
 - "What work was done on BATCH-001?" → get_activity_history with batch_id=BATCH-001
 - "Any issues last week?" → get_activity_history with issues_only=true
 Always convert relative dates (last month, this quarter, last week) to YYYY-MM-DD format using today's date.`,
-      messages: coreMessages,
-      maxSteps: 8, // Increased for batch workflow orchestration (create → ask → assign → ask → assign → summary)
+      messages,
+      stopWhen: stepCountIs(8), // AI SDK v6: replaces maxSteps — allows tool call chains up to 8 steps
       tools: {
         // ══════════════════════════════════════════════
         //  PRODUCTION TOOLS
@@ -532,6 +513,24 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
           },
         }),
 
+        update_task_status: tool({
+          description: 'Update the status of an existing task — mark it as done, in-progress, or cancelled. Use get_open_tasks first to find the task UUID.',
+          parameters: z.object({
+            task_id: z.string().uuid().describe('UUID of the task to update'),
+            status: z.enum(['open', 'in-progress', 'done', 'cancelled']).describe('New status'),
+          }),
+          execute: async ({ task_id, status }) => {
+            const { data, error } = await supabase
+              .from('tasks')
+              .update({ status })
+              .eq('id', task_id)
+              .select('id, title, status')
+              .single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Task "${data.title}" updated to "${status}".`, task: data };
+          },
+        }),
+
         // ══════════════════════════════════════════════
         //  COMPLIANCE TOOLS
         // ══════════════════════════════════════════════
@@ -568,6 +567,27 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
               .single();
             if (error) throw new Error(error.message);
             return { success: true, message: `Compliance item "${title}" added, due ${due_date}.`, item: data };
+          },
+        }),
+
+        update_compliance_status: tool({
+          description: 'Update the status of a compliance item — mark it as done, in-progress, or overdue. Use get_upcoming_compliance first to find the item UUID.',
+          parameters: z.object({
+            item_id: z.string().uuid().describe('UUID of the compliance item'),
+            status: z.enum(['upcoming', 'in-progress', 'done', 'overdue']).describe('New status'),
+            notes: z.string().optional().describe('Optional notes to update on the item'),
+          }),
+          execute: async ({ item_id, status, notes }) => {
+            const updateData = { status };
+            if (notes) updateData.notes = notes;
+            const { data, error } = await supabase
+              .from('compliance_items')
+              .update(updateData)
+              .eq('id', item_id)
+              .select('id, title, status')
+              .single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Compliance item "${data.title}" marked as "${status}".`, item: data };
           },
         }),
 
@@ -612,6 +632,44 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
               .single();
             if (error) throw new Error(error.message);
             return { success: true, message: `Added ${quantity} ${unit} of ${item_name}.`, item: data };
+          },
+        }),
+
+        update_inventory_stock: tool({
+          description: 'Update the stock level of an existing inventory item. Use "restock" to add quantity or "deduct" to subtract. Use get_inventory first to confirm the item name.',
+          parameters: z.object({
+            item_name: z.string().describe('Name (or partial name) of the inventory item'),
+            quantity: z.number().positive().describe('Amount to add or subtract'),
+            operation: z.enum(['restock', 'deduct']).describe('restock = add to stock, deduct = remove from stock'),
+          }),
+          execute: async ({ item_name, quantity, operation }) => {
+            const { data: items, error: findError } = await supabase
+              .from('inventory')
+              .select('id, item_name, quantity, unit')
+              .ilike('item_name', `%${item_name}%`);
+            if (findError) throw new Error(findError.message);
+            if (!items || items.length === 0) throw new Error(`No inventory item found matching "${item_name}". Use get_inventory to check available items.`);
+
+            const item = items[0];
+            const newQuantity = operation === 'restock'
+              ? item.quantity + quantity
+              : Math.max(0, item.quantity - quantity);
+
+            const updateData = { quantity: newQuantity };
+            if (operation === 'restock') updateData.last_restocked = new Date().toISOString().split('T')[0];
+
+            const { data, error } = await supabase
+              .from('inventory')
+              .update(updateData)
+              .eq('id', item.id)
+              .select('id, item_name, quantity, unit')
+              .single();
+            if (error) throw new Error(error.message);
+            return {
+              success: true,
+              message: `${data.item_name}: ${operation === 'restock' ? 'added' : 'deducted'} ${quantity} ${data.unit}. New stock: ${data.quantity} ${data.unit}.`,
+              item: data,
+            };
           },
         }),
 
