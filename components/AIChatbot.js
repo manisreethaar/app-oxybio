@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, AlertTriangle } from 'lucide-react';
@@ -49,12 +49,18 @@ export default function AIChatbot() {
     setIsLoading(true);
     setError(null);
 
-    // Build the messages array the backend expects
-    const apiMessages = [...messages, userMsg].map(m => ({
-      id: m.id,
-      role: m.role,
-      parts: m.parts,
-    }));
+    // Build the messages array the backend expects, stripping UI-only tool states
+    const apiMessages = [...messages, userMsg].map(m => {
+      const textContent = (m.parts || [])
+        .filter(p => p.type === 'text')
+        .map(p => p.text)
+        .join('\n');
+        
+      return {
+        role: m.role,
+        content: textContent || ' ', // ensure content is not empty string if there are no text parts
+      };
+    }).filter(m => m.content.trim() !== '');
 
     try {
       abortRef.current = new AbortController();
