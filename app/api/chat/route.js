@@ -2,7 +2,18 @@ import { streamText, tool, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { matchIntent, executeIntent, formatResult, streamStaticSSE } from './intentRouter';
+
+// Fire-and-forget: log every Bubbles interaction for fine-tuning dataset
+function logInteraction(payload) {
+  try {
+    const adminDb = createAdminClient();
+    adminDb.from('chat_logs').insert(payload)
+      .then(() => {})
+      .catch(e => console.error('[ChatLog]', e.message));
+  } catch (_) {}
+}
 
 export async function POST(req) {
   try {
@@ -41,10 +52,25 @@ export async function POST(req) {
       : Array.isArray(lastMsg) ? lastMsg.filter(p => p.type === 'text').map(p => p.text).join(' ')
       : String(lastMsg);
 
+    const t0 = Date.now();
+
     const intent = matchIntent(lastText);
     if (intent) {
       const data = await executeIntent(intent.toolName, supabase);
       const text = formatResult(intent.toolName, data, profile.full_name);
+      logInteraction({
+        employee_id: employeeId,
+        employee_role: effectiveRole,
+        user_message: lastText,
+        assistant_response: text,
+        tools_called: [{ name: intent.toolName }],
+        tool_results: [data],
+        intent_router_hit: true,
+        intent_name: intent.toolName,
+        model_used: 'intent-router',
+        response_time_ms: Date.now() - t0,
+        conversation_length: messages.length,
+      });
       return streamStaticSSE(text);
     }
 
@@ -97,7 +123,21 @@ When the user asks about past data, use the correct historical tool:
 - "Any issues last week?" → get_activity_history with issues_only=true
 Always convert relative dates (last month, this quarter, last week) to YYYY-MM-DD format using today's date.`,
       messages,
-      stopWhen: stepCountIs(8), // AI SDK v6: replaces maxSteps — allows tool call chains up to 8 steps
+      stopWhen: stepCountIs(8),
+      onFinish: ({ text, toolCalls, toolResults }) => {
+        logInteraction({
+          employee_id: employeeId,
+          employee_role: effectiveRole,
+          user_message: lastText,
+          assistant_response: text || '',
+          tools_called: (toolCalls || []).map(c => ({ name: c.toolName, args: c.args })),
+          tool_results: (toolResults || []).map(r => ({ name: r.toolName, result: r.result })),
+          intent_router_hit: false,
+          model_used: 'claude-haiku-4-5',
+          response_time_ms: Date.now() - t0,
+          conversation_length: messages.length,
+        });
+      },
       tools: {
         // ══════════════════════════════════════════════
         //  PRODUCTION TOOLS
