@@ -153,7 +153,7 @@ export default function AIChatbot() {
               <form onSubmit={handleSubmit} className="flex gap-2 relative">
                 <input
                   type="text"
-                  value={input}
+                  value={input || ''}
                   onChange={handleInputChange}
                   placeholder="Ask me anything..."
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all text-gray-900"
@@ -171,7 +171,7 @@ export default function AIChatbot() {
                 ) : (
                   <button
                     type="submit"
-                    disabled={!input.trim()}
+                    disabled={!(input || '').trim()}
                     className="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
                   >
                     <Send className="w-4 h-4 ml-0.5" />
