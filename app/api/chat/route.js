@@ -85,6 +85,43 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
       messages,
       stopWhen: stepCountIs(8), // AI SDK v6: replaces maxSteps — allows tool call chains up to 8 steps
       tools: {
+        // ══════════════════════════════════════════════════════════════════════════
+        // SAMPLE INCUBATION TOOLS
+        // ══════════════════════════════════════════════════════════════════════════
+        log_sample_incubation: tool({
+          description: 'Log a new sample incubation record (e.g. agar plate, broth).',
+          parameters: z.object({
+            sample_name: z.string().describe('Name or ID of the sample'),
+            incubation_temp: z.string().describe('Incubation temperature, e.g. 37C'),
+            start_time: z.string().describe('Start time, e.g. 2026-05-24T10:00:00Z'),
+            duration_hours: z.number().optional().describe('Expected duration in hours'),
+            colony_morphology: z.string().optional().describe('Details about colony morphology'),
+            staining_method: z.string().optional().describe('Method used for staining'),
+            observation: z.string().optional().describe('General observations'),
+            od_value: z.number().optional().describe('Optical density value'),
+          }),
+          execute: async (params) => {
+            const { error } = await supabase.from('sample_incubation_records').insert([
+              { ...params, recorded_by: employeeId }
+            ]);
+            if (error) return { error: error.message };
+            return { success: true, message: `Logged incubation for ${params.sample_name}` };
+          },
+        }),
+        get_incubation_records: tool({
+          description: 'Get recent sample incubation records.',
+          parameters: z.object({
+            sample_name: z.string().optional().describe('Filter by specific sample name')
+          }),
+          execute: async ({ sample_name }) => {
+            let query = supabase.from('sample_incubation_records').select('*').order('created_at', { ascending: false }).limit(20);
+            if (sample_name) query = query.ilike('sample_name', `%${sample_name}%`);
+            const { data, error } = await query;
+            if (error) return { error: error.message };
+            return data;
+          },
+        }),
+
         // ══════════════════════════════════════════════
         //  PRODUCTION TOOLS
         // ══════════════════════════════════════════════
