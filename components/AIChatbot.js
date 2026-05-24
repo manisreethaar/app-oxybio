@@ -49,12 +49,18 @@ export default function AIChatbot() {
     setIsLoading(true);
     setError(null);
 
-    // Build the messages array the backend expects
-    const apiMessages = [...messages, userMsg].map(m => ({
-      id: m.id,
-      role: m.role,
-      parts: m.parts,
-    }));
+    // Build the messages array the backend expects, stripping UI-only tool states
+    const apiMessages = [...messages, userMsg].map(m => {
+      const textContent = (m.parts || [])
+        .filter(p => p.type === 'text')
+        .map(p => p.text)
+        .join('\n');
+        
+      return {
+        role: m.role,
+        content: textContent || ' ', // ensure content is not empty string if there are no text parts
+      };
+    }).filter(m => m.content.trim() !== '');
 
     try {
       abortRef.current = new AbortController();
@@ -71,7 +77,7 @@ export default function AIChatbot() {
         throw new Error(`Server error ${res.status}: ${errText}`);
       }
 
-      // Stream the response — backend sends SSE: "data: {json}\n\n"
+      // Stream the response ΓÇö backend sends SSE: "data: {json}\n\n"
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -97,8 +103,12 @@ export default function AIChatbot() {
             continue;
           }
 
-          if (event.type === 'text-delta') {
-            fullText += event.delta || '';
+          if (event.type === 'error') {
+            throw new Error(event.errorText || event.error || 'Unknown stream error');
+          }
+
+          if (event.type === 'textDelta' || event.type === 'text-delta') {
+            fullText += event.textDelta || event.delta || '';
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -110,7 +120,9 @@ export default function AIChatbot() {
               }
               return updated;
             });
-          } else if (event.type === 'tool-input-start') {
+          } else if (event.type === 'toolCall' || event.type === 'tool-input-start') {
+            const toolCallId = event.toolCallId || (event.toolCall && event.toolCall.toolCallId) || uid();
+            const toolName = event.toolName || (event.toolCall && event.toolCall.toolName) || 'tool';
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -119,22 +131,23 @@ export default function AIChatbot() {
                 existingParts.push({
                   type: 'tool-invocation',
                   toolInvocation: {
-                    toolCallId: event.toolCallId || uid(),
-                    toolName: event.toolName || 'tool',
-                    state: 'call',
+                    toolCallId,
+                    toolName,
+                    state: 'result', // Server executes tools synchronously before returning the final stream, so mark as done
                   },
                 });
                 updated[updated.length - 1] = { ...last, parts: existingParts };
               }
               return updated;
             });
-          } else if (event.type === 'tool-output-available') {
+          } else if (event.type === 'toolResult' || event.type === 'tool-output-available') {
+            const toolCallId = event.toolCallId || (event.toolCall && event.toolCall.toolCallId);
             setMessages(prev => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
               if (last && last.role === 'assistant') {
                 const parts = (last.parts || []).map(p =>
-                  p.type === 'tool-invocation' && p.toolInvocation.toolCallId === event.toolCallId
+                  p.type === 'tool-invocation' && p.toolInvocation.toolCallId === toolCallId
                     ? { ...p, toolInvocation: { ...p.toolInvocation, state: 'result' } }
                     : p
                 );
@@ -238,9 +251,9 @@ export default function AIChatbot() {
 
                   <div className="grid grid-cols-2 gap-2 text-left">
                     {[
-                      { emoji: '🌅', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
+                      { emoji: '📋', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
                       { emoji: '🧪', label: 'Start Batch', msg: 'I want to start a new batch — walk me through the full protocol.' },
-                      { emoji: '📋', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
+                      { emoji: '🌴', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
                       { emoji: '⚠️', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
                       { emoji: '📊', label: 'Analytics', msg: 'Give me a monthly summary of batches, tasks, and operations.' },
                       { emoji: '🏆', label: 'Team Performance', msg: 'Which employee has the highest task completion rate?' },

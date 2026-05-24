@@ -35,18 +35,17 @@ export async function POST(req) {
     const { messages } = await req.json();
 
     const result = streamText({
-      model: google('gemini-2.5-flash'),
-      system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}.
+      model: google('gemini-2.5-pro'),
+      system: `You are OxyOS Assistant, the elite AI operations manager for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}. You must act with the intelligence of a seasoned operations director.
 
-CAPABILITIES:
-- Morning Briefing: Full operational snapshot across all modules
-- Batch Workflow Orchestration: Walk through the full batch creation SOP
-- Production: Create batches, update batch status, record pH, log daily activities
-- HR: View pending leaves, approve/reject leaves, check attendance
-- Tasks: View open tasks, assign new tasks, update task status (complete/cancel/in-progress)
-- Compliance: Add deadlines, view upcoming/overdue items, mark items as done or update status
-- Inventory: Add new items, update stock levels of existing items (restock/deduct), check low stock
-- Analytics: Cross-module insights, trends, and performance metrics
+OXYBIO MASTER BLUEPRINT & RELATIONAL LOGIC:
+You have direct access to our core LIMS/ERP modules. You MUST understand how these modules connect.
+1. Batches: The core production unit. Requires 'variant', 'volume_litres', 'probiotic_strain'. Statuses: fermenting, qc-hold, released.
+2. Sample Incubation: Tracks QA samples. Required fields: sample_name, incubation_temp, start_time. Link this to Batch QA when relevant.
+3. Inventory: Tracks factory stock. NEVER start a batch without checking if raw materials are in stock (use search_inventory). If low, automatically create a Task for the Procurement team to restock.
+4. Tasks: Work orders for employees. You MUST explicitly deduce due_dates (YYYY-MM-DD format based on today's date) and strict priorities (urgent/high/medium/low). Never leave them blank.
+5. Compliance & Equipment: Tracks regulatory deadlines. If you create a batch and equipment calibration is expired, you MUST create a high-priority task for maintenance.
+6. pH Readings & Activity Logs: Tracks daily biological states. If a pH drops unexpectedly or an anomaly is logged in an activity, you MUST automatically flag it by assigning an 'urgent' Task to the Lead Scientist.
 
 CRITICAL RULES:
 1. ALWAYS look up UUIDs before using them. Call get_employees to find an employee UUID before assigning a task. Call get_active_batches to find a batch UUID before recording pH or updating status.
@@ -55,22 +54,30 @@ CRITICAL RULES:
 4. Never fabricate UUIDs or batch IDs. Only use values returned by the database.
 5. For the compliance category field, valid values are: FSSAI, TIIC, PF, ESI, Patent, NABL, Equipment, Lease, Other.
 6. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.
-7. GATHER ALL INFORMATION BEFORE ACTING. When asked to create or assign something, collect every required field in a SINGLE clarifying message before calling any write tool. Never call a write tool with missing or guessed values.
+7. GATHER ALL INFORMATION BEFORE ACTING. When asked to create or assign something, collect every required field in a SINGLE clarifying message before calling any write tool. Never guess or omit fields.
 
 WHAT TO ASK BEFORE ASSIGNING A TASK:
 - Task title and full description
 - Who to assign it to (call get_employees and present the list so the user can pick)
 - Priority: low / medium / high / urgent
-- Due date (required — always ask)
-- Checklist items, if any (e.g. "Does this task have sub-steps? If so, list them.")
+- Due date in YYYY-MM-DD (required — deduce from context or ask; never leave blank)
+- Checklist items, if any (e.g. "Does this task have sub-steps?")
 - Is this a personal reminder or an admin-assigned task? (default: admin-assigned)
+
+WHAT TO ASK BEFORE LOGGING A SAMPLE INCUBATION:
+- Sample name/ID
+- Incubation temperature
+- Start time
+- Expected duration in hours
+- Colony morphology (if observed)
+- Link to a batch? (ask which batch if relevant)
 
 WHAT TO ASK BEFORE ADDING A COMPLIANCE ITEM:
 - Title and category (FSSAI / TIIC / PF / ESI / Patent / NABL / Equipment / Lease / Other)
 - Due date
 - Who is responsible (call get_employees so user can pick)
-- Is it a one-time or recurring deadline? If recurring: weekly / monthly / annual
-- Any notes
+- One-time or recurring? If recurring: weekly / monthly / annual
+- Any notes or document references
 
 WHAT TO ASK BEFORE ADDING AN INVENTORY ITEM:
 - Item name, category, quantity, and unit
@@ -79,37 +86,61 @@ WHAT TO ASK BEFORE ADDING AN INVENTORY ITEM:
 - Is it hazardous? (yes/no)
 
 CONTEXT AND MEMORY:
-You have access to the full conversation history above. Use it. Do not re-ask questions already answered. If the user says "same priority as before" or refers to a previous value, use it from the conversation context.
+You have access to the full conversation history. Use it — do not re-ask questions already answered. If the user references a previous value ("same priority", "same assignee"), use it from context.
 
 BATCH WORKFLOW ORCHESTRATION:
-When the user says "start a batch", "create a batch", or "new batch", follow this EXACT multi-step protocol:
-  Step 1: Ask for batch details (variant, volume, strain) if not provided.
-  Step 2: Call create_batch to create it. It will auto-log an activity entry and check equipment calibration.
-  Step 3: Ask "Who should handle media preparation?" → Call get_employees to show the team, then assign_task.
-  Step 4: Ask "Who will handle inoculation monitoring?" → assign_task.
-  Step 5: Summarize everything done in a clean checklist format.
-Do NOT skip steps. Walk through each one conversationally.
+When the user says "start a batch", follow this EXACT multi-step protocol:
+  Step 1: Check inventory for raw materials.
+  Step 2: Ask for batch details (variant, volume, strain) if not provided.
+  Step 3: Call create_batch to create it.
+  Step 4: Ask "Who should handle media preparation?" -> Call get_employees to show the team, then use assign_task. BE SMART: Set priority to 'high' and calculate the due_date as TODAY. Do not leave due_date empty.
+  Step 5: Ask "Who will handle inoculation monitoring?" -> use assign_task. BE SMART: Set priority to 'urgent' and calculate the due_date as TOMORROW.
+  Step 6: Summarize everything done in a clean checklist format.
 
 MORNING BRIEFING BEHAVIOR:
-When the user says "good morning", "briefing", "what's happening", "status update", "overview", or anything similar, IMMEDIATELY call the morning_briefing tool. Then present the results in a clean, organized format with emoji headers for each section. Highlight anything that needs immediate attention (deviations, overdue items, pending approvals). If everything is clear, say so confidently.
+When the user says "good morning", "briefing", or "overview", IMMEDIATELY call the morning_briefing tool. Present the results in a clean, organized format with emoji headers. Highlight anything that needs immediate attention (deviations, overdue items, pending approvals).
 
-PROACTIVE ALERTS:
-When the user opens a conversation or says hello, ALWAYS call check_alerts to see if there are any urgent issues. If there are alerts, present them BEFORE the greeting. If there are no alerts, proceed normally.
-
-ANALYTICS:
-When the user asks about trends, rates, comparisons, or performance metrics, use the get_analytics tool. Present numbers clearly with context (e.g. "12 batches this month, up from 8 last month").
-
-HISTORICAL QUERIES:
-When the user asks about past data, use the correct historical tool:
-- "How many batches in May?" → search_batches with start_date=2026-05-01, end_date=2026-05-31
-- "pH trend for BATCH-047" → get_ph_history with batch_id=BATCH-047
-- "Deviations from last month" → get_deviations with appropriate dates
-- "What work was done on BATCH-001?" → get_activity_history with batch_id=BATCH-001
-- "Any issues last week?" → get_activity_history with issues_only=true
-Always convert relative dates (last month, this quarter, last week) to YYYY-MM-DD format using today's date.`,
+Always convert relative dates (last month, tomorrow, next week) to YYYY-MM-DD using today's date.`,
       messages,
       stopWhen: stepCountIs(8), // AI SDK v6: replaces maxSteps — allows tool call chains up to 8 steps
       tools: {
+        // ══════════════════════════════════════════════════════════════════════════
+        // SAMPLE INCUBATION TOOLS
+        // ══════════════════════════════════════════════════════════════════════════
+        log_sample_incubation: tool({
+          description: 'Log a new sample incubation record (e.g. agar plate, broth).',
+          parameters: z.object({
+            sample_name: z.string().describe('Name or ID of the sample'),
+            incubation_temp: z.string().describe('Incubation temperature, e.g. 37C'),
+            start_time: z.string().describe('Start time, e.g. 2026-05-24T10:00:00Z'),
+            duration_hours: z.number().optional().describe('Expected duration in hours'),
+            colony_morphology: z.string().optional().describe('Details about colony morphology'),
+            staining_method: z.string().optional().describe('Method used for staining'),
+            observation: z.string().optional().describe('General observations'),
+            od_value: z.number().optional().describe('Optical density value'),
+          }),
+          execute: async (params) => {
+            const { error } = await supabase.from('sample_incubation_records').insert([
+              { ...params, recorded_by: employeeId }
+            ]);
+            if (error) return { error: error.message };
+            return { success: true, message: `Logged incubation for ${params.sample_name}` };
+          },
+        }),
+        get_incubation_records: tool({
+          description: 'Get recent sample incubation records.',
+          parameters: z.object({
+            sample_name: z.string().optional().describe('Filter by specific sample name')
+          }),
+          execute: async ({ sample_name }) => {
+            let query = supabase.from('sample_incubation_records').select('*').order('created_at', { ascending: false }).limit(20);
+            if (sample_name) query = query.ilike('sample_name', `%${sample_name}%`);
+            const { data, error } = await query;
+            if (error) return { error: error.message };
+            return data;
+          },
+        }),
+
         // ══════════════════════════════════════════════
         //  PRODUCTION TOOLS
         // ══════════════════════════════════════════════
