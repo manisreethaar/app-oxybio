@@ -49,6 +49,7 @@ export default function Sidebar() {
         { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: effectiveCanDo('inventory', 'view') },
         { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: effectiveCanDo('sops', 'view') },
         { name: 'Bioprocess Lab',    href: '/bioprocess',   icon: Microscope,      show: effectiveCanDo('batches', 'view') },
+        { name: 'Sample Incubation', href: '/research/incubation', icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
