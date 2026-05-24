@@ -55,6 +55,31 @@ CRITICAL RULES:
 4. Never fabricate UUIDs or batch IDs. Only use values returned by the database.
 5. For the compliance category field, valid values are: FSSAI, TIIC, PF, ESI, Patent, NABL, Equipment, Lease, Other.
 6. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.
+7. GATHER ALL INFORMATION BEFORE ACTING. When asked to create or assign something, collect every required field in a SINGLE clarifying message before calling any write tool. Never call a write tool with missing or guessed values.
+
+WHAT TO ASK BEFORE ASSIGNING A TASK:
+- Task title and full description
+- Who to assign it to (call get_employees and present the list so the user can pick)
+- Priority: low / medium / high / urgent
+- Due date (required — always ask)
+- Checklist items, if any (e.g. "Does this task have sub-steps? If so, list them.")
+- Is this a personal reminder or an admin-assigned task? (default: admin-assigned)
+
+WHAT TO ASK BEFORE ADDING A COMPLIANCE ITEM:
+- Title and category (FSSAI / TIIC / PF / ESI / Patent / NABL / Equipment / Lease / Other)
+- Due date
+- Who is responsible (call get_employees so user can pick)
+- Is it a one-time or recurring deadline? If recurring: weekly / monthly / annual
+- Any notes
+
+WHAT TO ASK BEFORE ADDING AN INVENTORY ITEM:
+- Item name, category, quantity, and unit
+- Minimum stock threshold for alerts
+- Storage condition (e.g. room temperature, refrigerated, frozen)
+- Is it hazardous? (yes/no)
+
+CONTEXT AND MEMORY:
+You have access to the full conversation history above. Use it. Do not re-ask questions already answered. If the user says "same priority as before" or refers to a previous value, use it from the conversation context.
 
 BATCH WORKFLOW ORCHESTRATION:
 When the user says "start a batch", "create a batch", or "new batch", follow this EXACT multi-step protocol:
@@ -479,37 +504,44 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
         }),
 
         assign_task: tool({
-          description: 'Create and assign a task to an employee. Use the employee UUID from get_employees.',
+          description: 'Create and assign a task to an employee. Requires title, description, assignee UUID, priority, and due date. Optionally include checklist items and personal-reminder flag.',
           parameters: z.object({
             title: z.string().describe('Task title'),
-            description: z.string().describe('Task description'),
-            assigned_to: z.string().uuid().describe('Employee UUID to assign to'),
-            priority: z.enum(['low', 'medium', 'high', 'urgent']).describe('Task priority'),
-            due_date: z.string().optional().describe('Due date in YYYY-MM-DD format'),
+            description: z.string().describe('Detailed task description'),
+            assigned_to: z.string().uuid().describe('Employee UUID to assign to (from get_employees)'),
+            priority: z.enum(['low', 'medium', 'high', 'urgent']).describe('Task priority level'),
+            due_date: z.string().describe('Due date in YYYY-MM-DD format — always required'),
+            checklist: z.array(z.string()).optional().describe('Optional list of sub-steps or checklist items (plain text strings)'),
+            is_personal_reminder: z.boolean().optional().describe('Set true if this is a personal reminder; false (default) for admin-assigned tasks'),
           }),
-          execute: async ({ title, description, assigned_to, priority, due_date }) => {
+          execute: async ({ title, description, assigned_to, priority, due_date, checklist, is_personal_reminder }) => {
+            const checklistJson = checklist && checklist.length > 0
+              ? checklist.map(text => ({ text, done: false }))
+              : null;
+
             const { data, error } = await supabase
               .from('tasks')
               .insert({
                 title, description, assigned_to, priority,
-                due_date: due_date || null,
+                due_date,
                 assigned_by: employeeId,
                 status: 'open',
+                checklist: checklistJson,
+                is_personal_reminder: is_personal_reminder || false,
               })
               .select()
               .single();
             if (error) throw new Error(error.message);
 
-            // Also create a notification for the assignee
             await supabase.from('notifications').insert({
               employee_id: assigned_to,
               title: `New Task: ${title}`,
-              message: `You have been assigned a ${priority} priority task: ${description}`,
+              message: `You have been assigned a ${priority} priority task due ${due_date}: ${description}`,
               type: 'info',
               link: '/tasks',
             });
 
-            return { success: true, message: `Task "${title}" assigned and notification sent.`, task: data };
+            return { success: true, message: `Task "${title}" assigned (${priority}, due ${due_date}) — notification sent.`, task: data };
           },
         }),
 
@@ -552,21 +584,32 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
         }),
 
         add_compliance_item: tool({
-          description: 'Add a new regulatory or compliance deadline.',
+          description: 'Add a new regulatory or compliance deadline. Collect title, category, due date, responsible person, recurrence, and notes before calling.',
           parameters: z.object({
             title: z.string().describe('Title of the compliance item'),
             category: z.enum(['FSSAI', 'TIIC', 'PF', 'ESI', 'Patent', 'NABL', 'Equipment', 'Lease', 'Other']).describe('Category'),
             due_date: z.string().describe('Due date in YYYY-MM-DD format'),
-            notes: z.string().optional().describe('Additional notes'),
+            responsible_person: z.string().uuid().optional().describe('UUID of the responsible employee (from get_employees)'),
+            is_recurring: z.boolean().optional().describe('Whether this is a recurring deadline'),
+            recurrence: z.enum(['weekly', 'monthly', 'annual']).optional().describe('Recurrence frequency — only if is_recurring is true'),
+            notes: z.string().optional().describe('Additional notes or document references'),
           }),
-          execute: async ({ title, category, due_date, notes }) => {
+          execute: async ({ title, category, due_date, responsible_person, is_recurring, recurrence, notes }) => {
             const { data, error } = await supabase
               .from('compliance_items')
-              .insert({ title, category, due_date, notes: notes || null, status: 'upcoming' })
+              .insert({
+                title, category, due_date,
+                notes: notes || null,
+                status: 'upcoming',
+                responsible_person: responsible_person || null,
+                is_recurring: is_recurring || false,
+                recurrence: (is_recurring && recurrence) ? recurrence : null,
+              })
               .select()
               .single();
             if (error) throw new Error(error.message);
-            return { success: true, message: `Compliance item "${title}" added, due ${due_date}.`, item: data };
+            const recurringNote = is_recurring ? ` (${recurrence})` : '';
+            return { success: true, message: `Compliance item "${title}" added${recurringNote}, due ${due_date}.`, item: data };
           },
         }),
 
@@ -612,15 +655,17 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
         }),
 
         add_inventory: tool({
-          description: 'Add a new inventory item or restock.',
+          description: 'Add a new inventory item. Collect name, category, quantity, unit, minimum threshold, storage condition, and hazard status before calling.',
           parameters: z.object({
             item_name: z.string().describe('Name of the item'),
             category: z.enum(['Raw Material', 'Packaging', 'Consumable', 'Reagent', 'Other']).describe('Category'),
-            quantity: z.number().describe('Quantity to add'),
+            quantity: z.number().describe('Initial quantity'),
             unit: z.string().describe('Unit of measurement (e.g. kg, litres, pieces)'),
-            minimum_threshold: z.number().optional().describe('Minimum stock threshold for alerts'),
+            minimum_threshold: z.number().optional().describe('Minimum stock level before an alert is triggered'),
+            storage_condition: z.string().optional().describe('Storage requirement, e.g. "Room temperature", "Refrigerated (2–8°C)", "Frozen (-20°C)"'),
+            hazardous: z.boolean().optional().describe('Whether the item is classified as hazardous'),
           }),
-          execute: async ({ item_name, category, quantity, unit, minimum_threshold }) => {
+          execute: async ({ item_name, category, quantity, unit, minimum_threshold, storage_condition, hazardous }) => {
             const { data, error } = await supabase
               .from('inventory')
               .insert({
@@ -631,7 +676,11 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
               .select()
               .single();
             if (error) throw new Error(error.message);
-            return { success: true, message: `Added ${quantity} ${unit} of ${item_name}.`, item: data };
+            const notes = [];
+            if (storage_condition) notes.push(`Storage: ${storage_condition}`);
+            if (hazardous) notes.push('⚠️ Hazardous');
+            const notesStr = notes.length > 0 ? ` — ${notes.join(', ')}` : '';
+            return { success: true, message: `Added ${quantity} ${unit} of ${item_name}${notesStr}.`, item: data };
           },
         }),
 
