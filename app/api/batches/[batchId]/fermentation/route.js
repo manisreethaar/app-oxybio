@@ -72,7 +72,7 @@ export async function POST(request, { params }) {
           });
           // Service role — inserting for admin/ceo who may be different user
           const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
+          await adminDb.from('notifications').insert(notifRows).catch(e => console.error('[Notification] Insert failed:', e.message));
         }
       }
 
