@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 // Roles that get only Casual Leave on the DOJ-based accrual system
@@ -65,7 +66,7 @@ export async function POST(request) {
     // 2. Fetch Employee Profile
     const { data: emp } = await supabase
       .from('employees')
-      .select('id, role, joined_date, casual_leave_balance, medical_leave_balance, earned_leave_balance')
+      .select('id, role, full_name, joined_date, casual_leave_balance, medical_leave_balance, earned_leave_balance')
       .eq('email', user.email)
       .single();
     if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
@@ -152,6 +153,31 @@ export async function POST(request) {
     }).select().single();
 
     if (dbError) throw dbError;
+
+    // Notify all admins/ceo/cto that a leave request is pending their review
+    try {
+      const adminDb = createAdminClient();
+      const { data: managers } = await adminDb
+        .from('employees')
+        .select('id')
+        .in('role', ['admin', 'ceo', 'cto'])
+        .eq('is_active', true);
+
+      if (managers && managers.length > 0) {
+        await adminDb.from('notifications').insert(
+          managers.map(m => ({
+            employee_id: m.id,
+            title: '📋 New Leave Request',
+            message: `${emp.full_name || 'An employee'} has applied for ${leave_type} leave from ${start_date} to ${end_date} (${days} day${days !== 1 ? 's' : ''}).`,
+            type: 'info',
+            is_read: false,
+            link: '/leave',
+          }))
+        );
+      }
+    } catch (notifErr) {
+      console.error('[Leave Apply] Admin notification failed:', notifErr.message);
+    }
 
     return NextResponse.json({ success: true, data });
 

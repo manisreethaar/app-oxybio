@@ -66,7 +66,7 @@ export async function POST(request) {
         body: `Net pay: ₹${Number(net_salary).toLocaleString()}. Tap to view.`,
         url: '/payslips'
       })
-    }).catch(() => {});
+    }).catch(e => console.error('[Payslip] Push notification failed:', e.message));
 
     return NextResponse.json({ success: true });
   } catch (err) {

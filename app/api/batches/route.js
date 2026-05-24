@@ -238,7 +238,7 @@ export async function POST(request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
-    await notifAdmin.from('notifications').insert(notifRows).then(() => {}).catch(() => {});
+    await notifAdmin.from('notifications').insert(notifRows).catch(e => console.error('[Notification] Insert failed:', e.message));
 
     return NextResponse.json({
       success:  true,

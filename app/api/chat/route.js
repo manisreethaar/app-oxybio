@@ -539,10 +539,27 @@ ADAPTIVE BEHAVIOUR: If asked about a module or action not listed above, ask what
                 reviewed_at: new Date().toISOString(),
               })
               .eq('id', leave_id)
-              .select()
+              .select('*, employees(id, full_name)')
               .single();
             if (error) throw new Error(error.message);
-            return { success: true, message: `Leave ${decision}.`, leave: data };
+
+            // Notify the employee
+            if (data?.employees?.id) {
+              const isApproved = decision === 'approved';
+              const dateRange = `${data.start_date} to ${data.end_date}`;
+              await supabase.from('notifications').insert({
+                employee_id: data.employees.id,
+                title: isApproved ? '✅ Leave Approved' : '❌ Leave Rejected',
+                message: isApproved
+                  ? `Your ${data.leave_type} leave (${dateRange}) has been approved.`
+                  : `Your ${data.leave_type} leave (${dateRange}) was rejected.${admin_comment ? ` Reason: ${admin_comment}` : ''}`,
+                type: isApproved ? 'success' : 'warning',
+                is_read: false,
+                link: '/leave',
+              }).catch(e => console.error('[Bubbles] Leave notification failed:', e.message));
+            }
+
+            return { success: true, message: `Leave ${decision} — ${data.employees?.full_name || 'employee'} notified.`, leave: data };
           },
         }),
 

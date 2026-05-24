@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -64,6 +65,25 @@ export async function POST(request) {
           }).eq('id', data.employees.id);
         }
       }
+    }
+
+    // Notify the employee whose leave was processed
+    try {
+      const adminDb = createAdminClient();
+      const isApproved = status === 'approved';
+      const dateRange = `${data.start_date} to ${data.end_date}`;
+      await adminDb.from('notifications').insert({
+        employee_id: data.employees.id,
+        title: isApproved ? '✅ Leave Approved' : '❌ Leave Rejected',
+        message: isApproved
+          ? `Your ${data.leave_type} leave (${dateRange}) has been approved.`
+          : `Your ${data.leave_type} leave (${dateRange}) was rejected. Reason: ${comment || 'No reason provided.'}`,
+        type: isApproved ? 'success' : 'warning',
+        is_read: false,
+        link: '/leave',
+      });
+    } catch (notifErr) {
+      console.error('[Leave Process] Notification insert failed:', notifErr.message);
     }
 
     return NextResponse.json({ success: true, data });
