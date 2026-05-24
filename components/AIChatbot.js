@@ -251,12 +251,12 @@ export default function AIChatbot() {
 
                   <div className="grid grid-cols-2 gap-2 text-left">
                     {[
-                      { emoji: '≡ƒîà', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
-                      { emoji: '≡ƒº¬', label: 'Start Batch', msg: 'I want to start a new batch ΓÇö walk me through the full protocol.' },
-                      { emoji: '≡ƒôï', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
-                      { emoji: 'ΓÜá∩╕Å', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
-                      { emoji: '≡ƒôè', label: 'Analytics', msg: 'Give me a monthly summary of batches, tasks, and operations.' },
-                      { emoji: '≡ƒÅå', label: 'Team Performance', msg: 'Which employee has the highest task completion rate?' },
+                      { emoji: '📋', label: 'Morning Briefing', msg: 'Good morning, give me a full briefing.' },
+                      { emoji: '🧪', label: 'Start Batch', msg: 'I want to start a new batch — walk me through the full protocol.' },
+                      { emoji: '🌴', label: 'Pending Leaves', msg: 'Show me all pending leave requests.' },
+                      { emoji: '⚠️', label: 'Overdue Items', msg: 'Show me overdue compliance items.' },
+                      { emoji: '📊', label: 'Analytics', msg: 'Give me a monthly summary of batches, tasks, and operations.' },
+                      { emoji: '🏆', label: 'Team Performance', msg: 'Which employee has the highest task completion rate?' },
                     ].map((action) => (
                       <button
                         key={action.label}
@@ -290,7 +290,7 @@ export default function AIChatbot() {
                             <div key={t?.toolCallId || idx} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
                               {t?.state === 'result' ? (
                                 <div className="flex items-center gap-1 text-teal-700 font-medium">
-                                  Γ£ô {t.toolName}
+                                  ✓ {t.toolName}
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1 text-amber-600 font-medium">
