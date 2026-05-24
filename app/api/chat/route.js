@@ -38,55 +38,64 @@ export async function POST(req) {
       model: google('gemini-2.5-pro'),
       system: `You are OxyOS Assistant, the elite AI operations manager for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}. You must act with the intelligence of a seasoned operations director.
 
-OXYBIO MASTER BLUEPRINT & RELATIONAL LOGIC:
-You have direct access to our core LIMS/ERP modules. You MUST understand how these modules connect.
-1. Batches: The core production unit. Requires 'variant', 'volume_litres', 'probiotic_strain'. Statuses: fermenting, qc-hold, released.
-2. Sample Incubation: Tracks QA samples. Required fields: sample_name, incubation_temp, start_time. Link this to Batch QA when relevant.
-3. Inventory: Tracks factory stock. NEVER start a batch without checking if raw materials are in stock (use search_inventory). If low, automatically create a Task for the Procurement team to restock.
-4. Tasks: Work orders for employees. You MUST explicitly deduce due_dates (YYYY-MM-DD format based on today's date) and strict priorities (urgent/high/medium/low). Never leave them blank.
-5. Compliance & Equipment: Tracks regulatory deadlines. If you create a batch and equipment calibration is expired, you MUST create a high-priority task for maintenance.
-6. pH Readings & Activity Logs: Tracks daily biological states. If a pH drops unexpectedly or an anomaly is logged in an activity, you MUST automatically flag it by assigning an 'urgent' Task to the Lead Scientist.
+OXYBIO MODULES — FULL REFERENCE:
+You have direct read and write access to every module below. Understand how they connect.
 
-CRITICAL RULES:
-1. ALWAYS look up UUIDs before using them. Call get_employees to find an employee UUID before assigning a task. Call get_active_batches to find a batch UUID before recording pH or updating status.
-2. If asked to record pH and there are multiple active batches, ALWAYS ask which batch.
-3. Be concise. After performing actions, confirm what you did with the key details.
-4. Never fabricate UUIDs or batch IDs. Only use values returned by the database.
-5. For the compliance category field, valid values are: FSSAI, TIIC, PF, ESI, Patent, NABL, Equipment, Lease, Other.
-6. For inventory category, valid values are: Raw Material, Packaging, Consumable, Reagent, Other.
-7. GATHER ALL INFORMATION BEFORE ACTING. When asked to create or assign something, collect every required field in a SINGLE clarifying message before calling any write tool. Never guess or omit fields.
+PRODUCTION: Batches are the core unit. Fields: variant (Sweetened/Unsweetened), volume_litres, probiotic_strain. Statuses: fermenting → qc-hold → released/rejected. pH deviations must trigger an urgent task to the Lead Scientist.
 
-WHAT TO ASK BEFORE ASSIGNING A TASK:
-- Task title and full description
-- Who to assign it to (call get_employees and present the list so the user can pick)
-- Priority: low / medium / high / urgent
-- Due date in YYYY-MM-DD (required — deduce from context or ask; never leave blank)
-- Checklist items, if any (e.g. "Does this task have sub-steps?")
-- Is this a personal reminder or an admin-assigned task? (default: admin-assigned)
+SAMPLE INCUBATION: Tracks QA/lab samples. Fields: sample_name, sample_category (Fermentation IPC/Cell Bank/Passage/Subculture/Other), sample_type (Agar Plate/Broth), incubation_temp_c, start_time, sterility_status (Pending/Sterile/Contaminated). Colony morphology required for Agar Plate samples.
 
-WHAT TO ASK BEFORE LOGGING A SAMPLE INCUBATION:
-- Sample name/ID
-- Incubation temperature
-- Start time
-- Expected duration in hours
-- Colony morphology (if observed)
-- Link to a batch? (ask which batch if relevant)
+INVENTORY: Tracks factory stock. Check stock before starting a batch. Fields: item_name, category (Raw Material/Packaging/Consumable/Reagent/Other), quantity, unit, minimum_threshold, storage_condition, hazardous. If stock is low → auto-create purchase request.
 
-WHAT TO ASK BEFORE ADDING A COMPLIANCE ITEM:
-- Title and category (FSSAI / TIIC / PF / ESI / Patent / NABL / Equipment / Lease / Other)
-- Due date
-- Who is responsible (call get_employees so user can pick)
-- One-time or recurring? If recurring: weekly / monthly / annual
-- Any notes or document references
+TASKS: Work orders for employees. Fields: title, description, assigned_to (UUID), priority (low/medium/high/urgent), due_date (REQUIRED), checklist (optional sub-steps), is_personal_reminder (default false).
 
-WHAT TO ASK BEFORE ADDING AN INVENTORY ITEM:
-- Item name, category, quantity, and unit
-- Minimum stock threshold for alerts
-- Storage condition (e.g. room temperature, refrigerated, frozen)
-- Is it hazardous? (yes/no)
+COMPLIANCE: Regulatory deadlines. Fields: title, category (FSSAI/TIIC/PF/ESI/Patent/NABL/Equipment/Lease/Other), due_date, responsible_person (UUID), is_recurring, recurrence (weekly/monthly/annual), notes.
 
-CONTEXT AND MEMORY:
-You have access to the full conversation history. Use it — do not re-ask questions already answered. If the user references a previous value ("same priority", "same assignee"), use it from context.
+EQUIPMENT: Calibration and maintenance. Fields for calibration log: equipment_id, calibration_date, result, next_due_date, buffer_values_used, new_status (Operational/Out of Service/Under Maintenance). If calibration is expired → auto-create high-priority task.
+
+CAPA (Deviations): Three-step workflow: (1) raise_deviation → (2) investigate_deviation with 5-Why + root cause → (3) spawn_capa_action assigns corrective/preventive task. Deviation fields: title, severity (Minor/Major/Critical), source (Internal Audit/Batch Deviation/Equipment Failure/Customer Complaint/Regulatory Inspection/Other), description.
+
+SOPs: Standard operating procedures. Fields: title, category (Fermentation/QC/Sanitation/Safety), version, document_url (must be a valid URL), effective_date. Version format: "v1.0", "v2.3".
+
+LAB NOTEBOOK: Digital experiment records. Fields: title, objective, methodology, observations, conclusions. Starts as Draft. Can link to a batch.
+
+SHELF LIFE: Product stability studies. Fields: batch_id (UUID), storage_condition (e.g. "Refrigerated 4°C"), test_parameters (array of strings: pH, Viable Count, Moisture, Colour, etc.).
+
+FORMULATIONS: Product recipes. Workflow: Draft → In Review → Approved/Rejected → Archived. CEO/Admin can approve/reject. Rejection requires a reason (min 5 chars).
+
+PURCHASE REQUESTS: Procurement requests. Fields: item_name, requested_quantity, unit, reason, urgency (Normal/Urgent/Critical). Statuses: Pending → Approved → Ordered → Received/Rejected.
+
+ATTENDANCE: Employee check-in/check-out records. Use get_attendance_summary to view who is present today or on a specific date.
+
+PAYSLIPS: Monthly salary records. CEO/Admin can view payslips by employee, month, or year.
+
+FIELD COLLECTION RULE: For ANY write operation, review the tool parameters and gather ALL required fields in a SINGLE message before calling the tool. Present enum options as a numbered list so the user can pick easily. Never guess or skip fields.
+
+WHAT TO GATHER BEFORE EACH ACTION:
+
+ASSIGN TASK → title, description, who (show employee list), priority (low/medium/high/urgent), due date, checklist sub-steps if any, personal reminder or admin-assigned?
+
+LOG SAMPLE INCUBATION → sample name, category (Fermentation IPC/Cell Bank/Passage/Subculture/Other), type (Agar Plate or Broth), temperature °C, start time. For Agar Plate: ask colony morphology. Optional: end time, OD, pH, staining method, sterility status.
+
+ADD COMPLIANCE ITEM → title, category (FSSAI/TIIC/PF/ESI/Patent/NABL/Equipment/Lease/Other), due date, responsible person (show employee list), recurring? (weekly/monthly/annual if yes), notes.
+
+ADD INVENTORY ITEM → item name, category, quantity, unit, minimum stock threshold, storage condition, hazardous? (yes/no).
+
+LOG EQUIPMENT CALIBRATION → which equipment (call get_equipment), calibration date, result/notes, next due date, buffer values used, new status.
+
+RAISE DEVIATION (CAPA) → title, severity (Minor/Major/Critical), source (Internal Audit/Batch Deviation/Equipment Failure/Customer Complaint/Regulatory Inspection/Other), full description, related batch?
+
+INVESTIGATE DEVIATION → which deviation (call get_open_deviations), 5-Why chain (why_1 through why_5), root cause identified.
+
+SPAWN CAPA ACTION → investigation ID, action type (Corrective/Preventive), task title and description, who to assign, due date.
+
+CREATE SOP → title, category (Fermentation/QC/Sanitation/Safety), version number (e.g. v1.0), document URL.
+
+CREATE LAB NOTEBOOK ENTRY → experiment title, objective, methodology, observations, conclusions, related batch?
+
+START SHELF LIFE STUDY → which batch (call search_batches), storage condition, test parameters (list at least 2-3).
+
+CREATE PURCHASE REQUEST → item name, quantity and unit, reason, urgency (Normal/Urgent/Critical).
 
 BATCH WORKFLOW ORCHESTRATION:
 When the user says "start a batch", follow this EXACT multi-step protocol:
@@ -100,7 +109,11 @@ When the user says "start a batch", follow this EXACT multi-step protocol:
 MORNING BRIEFING BEHAVIOR:
 When the user says "good morning", "briefing", or "overview", IMMEDIATELY call the morning_briefing tool. Present the results in a clean, organized format with emoji headers. Highlight anything that needs immediate attention (deviations, overdue items, pending approvals).
 
-Always convert relative dates (last month, tomorrow, next week) to YYYY-MM-DD using today's date.`,
+Always convert relative dates (last month, tomorrow, next week) to YYYY-MM-DD using today's date.
+
+CONTEXT AND MEMORY: You have the full conversation history. Never re-ask what was already answered. "Same person/priority/batch as before" means use the value from earlier in this conversation.
+
+ADAPTIVE BEHAVIOUR: If asked about a module or action not listed above, ask what the user needs, then use the most relevant tool. If no tool fits, explain what you can and cannot currently do and suggest the closest alternative.`,
       messages,
       stopWhen: stepCountIs(8), // AI SDK v6: replaces maxSteps — allows tool call chains up to 8 steps
       tools: {
@@ -108,23 +121,39 @@ Always convert relative dates (last month, tomorrow, next week) to YYYY-MM-DD us
         // SAMPLE INCUBATION TOOLS
         // ══════════════════════════════════════════════════════════════════════════
         log_sample_incubation: tool({
-          description: 'Log a new sample incubation record (e.g. agar plate, broth).',
+          description: 'Log a new sample incubation record. Gather ALL fields before calling.',
           parameters: z.object({
-            sample_name: z.string().describe('Name or ID of the sample'),
-            incubation_temp: z.string().describe('Incubation temperature, e.g. 37C'),
-            start_time: z.string().describe('Start time, e.g. 2026-05-24T10:00:00Z'),
-            duration_hours: z.number().optional().describe('Expected duration in hours'),
-            colony_morphology: z.string().optional().describe('Details about colony morphology'),
-            staining_method: z.string().optional().describe('Method used for staining'),
-            observation: z.string().optional().describe('General observations'),
-            od_value: z.number().optional().describe('Optical density value'),
+            sample_name: z.string().describe('Sample name/ID, e.g. "F2 Plate A"'),
+            sample_category: z.enum(['Fermentation IPC', 'Cell Bank', 'Passage', 'Subculture', 'Other']).describe('Category of sample'),
+            sample_type: z.enum(['Agar Plate', 'Broth']).describe('Type of sample medium'),
+            incubation_temp_c: z.number().describe('Incubation temperature in Celsius'),
+            start_time: z.string().describe('Start time in ISO format, e.g. 2026-05-24T10:00:00'),
+            end_time: z.string().optional().describe('End time in ISO format (optional)'),
+            batch_id: z.string().uuid().optional().describe('UUID of the associated batch (optional)'),
+            sterility_status: z.enum(['Pending', 'Sterile', 'Contaminated']).optional().describe('Sterility result — default Pending'),
+            od_value: z.number().optional().describe('Optical density value (optional)'),
+            ph_value: z.number().optional().describe('pH value of the sample (optional)'),
+            staining_method: z.string().optional().describe('Staining method used (optional)'),
+            microscopic_morphology: z.string().optional().describe('Microscopic morphology notes (optional)'),
+            colony_morphology: z.string().optional().describe('Colony morphology — required for Agar Plate samples'),
+            observation: z.string().optional().describe('General observations (optional)'),
           }),
-          execute: async (params) => {
-            const { error } = await supabase.from('sample_incubation_records').insert([
-              { ...params, recorded_by: employeeId }
-            ]);
-            if (error) return { error: error.message };
-            return { success: true, message: `Logged incubation for ${params.sample_name}` };
+          execute: async ({ sample_name, sample_category, sample_type, incubation_temp_c, start_time, end_time, batch_id, sterility_status, od_value, ph_value, staining_method, microscopic_morphology, colony_morphology, observation }) => {
+            const { data, error } = await supabase.from('sample_incubation_records').insert({
+              sample_name, sample_category, sample_type, incubation_temp_c, start_time,
+              end_time: end_time || null,
+              batch_id: batch_id || null,
+              sterility_status: sterility_status || 'Pending',
+              od_value: od_value || null,
+              ph_value: ph_value || null,
+              staining_method: staining_method || null,
+              microscopic_morphology: microscopic_morphology || null,
+              colony_morphology: colony_morphology || null,
+              observation: observation || null,
+              logged_by: employeeId,
+            }).select().single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Incubation logged for "${sample_name}" (${sample_type}, ${incubation_temp_c}°C).`, record: data };
           },
         }),
         get_incubation_records: tool({
@@ -995,6 +1024,449 @@ Always convert relative dates (last month, tomorrow, next week) to YYYY-MM-DD us
               default:
                 return { error: 'Unknown query type' };
             }
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  EQUIPMENT TOOLS
+        // ══════════════════════════════════════════════
+        get_equipment: tool({
+          description: 'Get all equipment with their calibration status and next due dates.',
+          parameters: z.object({
+            overdue_only: z.boolean().optional().describe('If true, return only equipment with overdue or missing calibration'),
+          }),
+          execute: async ({ overdue_only }) => {
+            const { data, error } = await supabase
+              .from('equipment')
+              .select('id, name, model, serial_number, calibration_due_date, status')
+              .order('name');
+            if (error) throw new Error(error.message);
+            const today = new Date().toISOString().split('T')[0];
+            const items = data || [];
+            if (overdue_only) return items.filter(e => !e.calibration_due_date || e.calibration_due_date < today);
+            return items.map(e => ({ ...e, calibration_overdue: e.calibration_due_date && e.calibration_due_date < today }));
+          },
+        }),
+
+        log_equipment_calibration: tool({
+          description: 'Log a calibration or maintenance event for a piece of equipment. Get equipment UUID from get_equipment first.',
+          parameters: z.object({
+            equipment_id: z.string().uuid().describe('UUID of the equipment (from get_equipment)'),
+            calibration_date: z.string().describe('Date of calibration in YYYY-MM-DD'),
+            result: z.string().describe('Calibration result/notes — what was done, what was found'),
+            next_due_date: z.string().optional().describe('Next calibration due date in YYYY-MM-DD'),
+            buffer_values_used: z.string().optional().describe('Buffer values or standards used (e.g. pH 4.0, 7.0, 10.0)'),
+            new_status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).optional().describe('Update equipment status after calibration'),
+          }),
+          execute: async ({ equipment_id, calibration_date, result, next_due_date, buffer_values_used, new_status }) => {
+            const { error: logError } = await supabase.from('calibration_logs').insert({
+              equipment_id, calibration_date, result,
+              next_due_date: next_due_date || null,
+              buffer_values_used: buffer_values_used || null,
+              logged_by: employeeId,
+            });
+            if (logError) throw new Error(logError.message);
+            if (new_status || next_due_date) {
+              const update = {};
+              if (new_status) update.status = new_status;
+              if (next_due_date) update.calibration_due_date = next_due_date;
+              await supabase.from('equipment').update(update).eq('id', equipment_id);
+            }
+            return { success: true, message: `Calibration logged. Next due: ${next_due_date || 'not set'}.` };
+          },
+        }),
+
+        update_equipment_status: tool({
+          description: 'Update the operational status of a piece of equipment.',
+          parameters: z.object({
+            equipment_id: z.string().uuid().describe('UUID of the equipment (from get_equipment)'),
+            status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).describe('New status'),
+          }),
+          execute: async ({ equipment_id, status }) => {
+            const { data, error } = await supabase.from('equipment').update({ status }).eq('id', equipment_id).select('name, status').single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `${data.name} status updated to "${status}".` };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  CAPA TOOLS
+        // ══════════════════════════════════════════════
+        get_open_deviations: tool({
+          description: 'Get all open or in-progress CAPA deviations.',
+          parameters: z.object({}),
+          execute: async () => {
+            const { data, error } = await supabase
+              .from('deviations')
+              .select('id, title, severity, source, description, status, created_at, employees!deviations_reported_by_fkey(full_name)')
+              .in('status', ['Open', 'Investigating', 'CAPA Assigned'])
+              .order('created_at', { ascending: false });
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        raise_deviation: tool({
+          description: 'Raise a new CAPA deviation. Gather title, severity, source, and description before calling.',
+          parameters: z.object({
+            title: z.string().describe('Short title for the deviation'),
+            severity: z.enum(['Minor', 'Major', 'Critical']).describe('Severity level'),
+            source: z.enum(['Internal Audit', 'Batch Deviation', 'Equipment Failure', 'Customer Complaint', 'Regulatory Inspection', 'Other']).describe('Where the deviation originated'),
+            description: z.string().describe('Full description of the deviation / what went wrong'),
+            batch_id: z.string().uuid().optional().describe('Related batch UUID if applicable'),
+          }),
+          execute: async ({ title, severity, source, description, batch_id }) => {
+            const { data, error } = await supabase.from('deviations').insert({
+              title, severity, source, description,
+              batch_id: batch_id || null,
+              reported_by: employeeId,
+              status: 'Open',
+            }).select().single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Deviation "${title}" raised (${severity}).`, deviation: data };
+          },
+        }),
+
+        investigate_deviation: tool({
+          description: 'Log a 5-Why investigation and root cause for an open deviation. Get deviation UUID from get_open_deviations.',
+          parameters: z.object({
+            deviation_id: z.string().uuid().describe('UUID of the deviation'),
+            root_cause_identified: z.string().describe('Identified root cause — required'),
+            why_1: z.string().optional().describe('Why 1 — first why in the 5-Why chain'),
+            why_2: z.string().optional().describe('Why 2'),
+            why_3: z.string().optional().describe('Why 3'),
+            why_4: z.string().optional().describe('Why 4'),
+            why_5: z.string().optional().describe('Why 5 — deepest root cause'),
+          }),
+          execute: async ({ deviation_id, root_cause_identified, why_1, why_2, why_3, why_4, why_5 }) => {
+            const { data, error } = await supabase.from('investigations').insert({
+              deviation_id, root_cause_identified,
+              why_1: why_1 || null, why_2: why_2 || null, why_3: why_3 || null,
+              why_4: why_4 || null, why_5: why_5 || null,
+              investigator_id: employeeId,
+            }).select().single();
+            if (error) throw new Error(error.message);
+            await supabase.from('deviations').update({ status: 'Investigating' }).eq('id', deviation_id);
+            return { success: true, message: `Investigation logged. Root cause: "${root_cause_identified}".`, investigation: data };
+          },
+        }),
+
+        spawn_capa_action: tool({
+          description: 'Create a corrective or preventive CAPA action task linked to an investigation. Get investigation UUID after investigate_deviation.',
+          parameters: z.object({
+            investigation_id: z.string().uuid().describe('UUID of the investigation (from investigate_deviation)'),
+            deviation_id: z.string().uuid().describe('UUID of the parent deviation'),
+            action_type: z.enum(['Corrective', 'Preventive']).describe('Type of CAPA action'),
+            title: z.string().describe('Task title for the action'),
+            description: z.string().describe('What needs to be done'),
+            assigned_to: z.string().uuid().describe('Employee UUID to assign (from get_employees)'),
+            due_date: z.string().describe('Due date in YYYY-MM-DD'),
+          }),
+          execute: async ({ investigation_id, deviation_id, action_type, title, description, assigned_to, due_date }) => {
+            const { data: taskData, error: taskError } = await supabase.from('tasks').insert({
+              title, description, assigned_to, due_date, priority: 'high',
+              assigned_by: employeeId, status: 'open',
+            }).select().single();
+            if (taskError) throw new Error(taskError.message);
+            const { error: capaError } = await supabase.from('capa_actions').insert({
+              investigation_id, action_type, task_id: taskData.id,
+            });
+            if (capaError) throw new Error(capaError.message);
+            await supabase.from('deviations').update({ status: 'CAPA Assigned' }).eq('id', deviation_id);
+            await supabase.from('notifications').insert({
+              employee_id: assigned_to,
+              title: `CAPA Action Assigned: ${title}`,
+              message: `A ${action_type} CAPA action has been assigned to you, due ${due_date}.`,
+              type: 'alert', link: '/capa',
+            });
+            return { success: true, message: `CAPA ${action_type} action created and assigned. Due ${due_date}.`, task: taskData };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  SOP TOOLS
+        // ══════════════════════════════════════════════
+        get_sops: tool({
+          description: 'Get all active SOPs, optionally filtered by category.',
+          parameters: z.object({
+            category: z.enum(['Fermentation', 'QC', 'Sanitation', 'Safety', 'all']).optional().describe('Filter by category, or "all"'),
+          }),
+          execute: async ({ category }) => {
+            let query = supabase.from('sop_library').select('id, sop_id, title, category, version, document_url, effective_date').eq('is_active', true).order('title');
+            if (category && category !== 'all') query = query.eq('category', category);
+            const { data, error } = await query;
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        create_sop: tool({
+          description: 'Create a new SOP document entry. Gather title, category, version, and document URL before calling.',
+          parameters: z.object({
+            title: z.string().describe('SOP title'),
+            category: z.enum(['Fermentation', 'QC', 'Sanitation', 'Safety']).describe('SOP category'),
+            version: z.string().describe('Version string, e.g. "v1.0", "v2.3"'),
+            document_url: z.string().url().describe('Valid URL to the SOP document (Google Drive, SharePoint, etc.)'),
+            effective_date: z.string().optional().describe('Effective date in YYYY-MM-DD (optional)'),
+          }),
+          execute: async ({ title, category, version, document_url, effective_date }) => {
+            const sop_id = `SOP-${Date.now()}`;
+            const { data, error } = await supabase.from('sop_library').insert({
+              sop_id, title, category, version, document_url,
+              effective_date: effective_date || null,
+              approved_by: employeeId,
+              is_active: true,
+            }).select().single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `SOP "${title}" (${sop_id}) created, version ${version}.`, sop: data };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  LAB NOTEBOOK TOOLS
+        // ══════════════════════════════════════════════
+        get_lab_notebook_entries: tool({
+          description: 'Get recent digital lab notebook entries.',
+          parameters: z.object({
+            status: z.enum(['Draft', 'Submitted', 'Countersigned', 'all']).optional().describe('Filter by status'),
+          }),
+          execute: async ({ status }) => {
+            let query = supabase
+              .from('lab_notebook_entries')
+              .select('id, title, objective, status, created_at, employees!lab_notebook_entries_created_by_fkey(full_name)')
+              .order('created_at', { ascending: false }).limit(20);
+            if (status && status !== 'all') query = query.eq('status', status);
+            const { data, error } = await query;
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        create_lab_notebook_entry: tool({
+          description: 'Create a new digital lab notebook entry. Gather title and at least one content field before calling.',
+          parameters: z.object({
+            title: z.string().describe('Entry title / experiment name'),
+            objective: z.string().optional().describe('Objective of the experiment'),
+            methodology: z.string().optional().describe('Methods and materials used'),
+            observations: z.string().optional().describe('What was observed'),
+            conclusions: z.string().optional().describe('Conclusions drawn'),
+            batch_id: z.string().uuid().optional().describe('Related batch UUID (optional)'),
+          }),
+          execute: async ({ title, objective, methodology, observations, conclusions, batch_id }) => {
+            const { data, error } = await supabase.from('lab_notebook_entries').insert({
+              title,
+              objective: objective || null,
+              methodology: methodology || null,
+              observations: observations || null,
+              conclusions: conclusions || null,
+              batch_id: batch_id || null,
+              created_by: employeeId,
+              status: 'Draft',
+            }).select().single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Lab notebook entry "${title}" created as Draft.`, entry: data };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  SHELF LIFE TOOLS
+        // ══════════════════════════════════════════════
+        get_shelf_life_studies: tool({
+          description: 'Get all shelf-life studies, optionally filtered by status.',
+          parameters: z.object({
+            status: z.enum(['In Progress', 'Completed', 'Failed', 'all']).optional().describe('Filter by status'),
+          }),
+          execute: async ({ status }) => {
+            let query = supabase
+              .from('shelf_life_studies')
+              .select('id, storage_condition, test_parameters, status, start_date, batches(batch_id, variant)')
+              .order('created_at', { ascending: false });
+            if (status && status !== 'all') query = query.eq('status', status);
+            const { data, error } = await query.limit(30);
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        create_shelf_life_study: tool({
+          description: 'Start a new shelf-life study for a batch. Gather batch, storage condition, and test parameters first.',
+          parameters: z.object({
+            batch_id: z.string().uuid().describe('UUID of the batch to study (from get_active_batches or search_batches)'),
+            storage_condition: z.string().describe('Storage condition, e.g. "Refrigerated 4°C", "Room temperature 25°C"'),
+            test_parameters: z.array(z.string()).min(1).describe('List of parameters to test, e.g. ["pH", "Viable Count", "Moisture", "Colour"]'),
+          }),
+          execute: async ({ batch_id, storage_condition, test_parameters }) => {
+            const { data, error } = await supabase.from('shelf_life_studies').insert({
+              batch_id, storage_condition, test_parameters,
+              status: 'In Progress',
+              created_by: employeeId,
+              start_date: new Date().toISOString().split('T')[0],
+            }).select().single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Shelf-life study started. Condition: ${storage_condition}. Parameters: ${test_parameters.join(', ')}.`, study: data };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  FORMULATION TOOLS
+        // ══════════════════════════════════════════════
+        get_formulations: tool({
+          description: 'Get all active formulations (recipes), optionally filtered by status.',
+          parameters: z.object({
+            status: z.enum(['Draft', 'In Review', 'Approved', 'all']).optional().describe('Filter by workflow status'),
+          }),
+          execute: async ({ status }) => {
+            let query = supabase
+              .from('formulations')
+              .select('id, code, name, version, status, notes, created_at')
+              .neq('status', 'Archived').order('code');
+            if (status && status !== 'all') query = query.eq('status', status);
+            const { data, error } = await query;
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        update_formulation_status: tool({
+          description: 'Approve, reject, or archive a formulation. CEO/Admin only. Use get_formulations to find the UUID.',
+          parameters: z.object({
+            formulation_id: z.string().uuid().describe('UUID of the formulation'),
+            action: z.enum(['approve', 'reject', 'archive']).describe('Action to take'),
+            rejection_reason: z.string().optional().describe('Required if action is reject — reason for rejection (min 5 chars)'),
+          }),
+          execute: async ({ formulation_id, action, rejection_reason }) => {
+            if (action === 'reject' && (!rejection_reason || rejection_reason.trim().length < 5)) {
+              throw new Error('Rejection reason is required (minimum 5 characters).');
+            }
+            const statusMap = { approve: 'Approved', reject: 'Draft', archive: 'Archived' };
+            const updateData = { status: statusMap[action] };
+            if (action === 'approve') { updateData.approved_by = employeeId; updateData.approved_at = new Date().toISOString(); }
+            if (action === 'reject') updateData.rejection_reason = rejection_reason;
+            const { data, error } = await supabase.from('formulations').update(updateData).eq('id', formulation_id).select('code, name, status').single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Formulation "${data.code} - ${data.name}" ${action}d.`, formulation: data };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  PURCHASE REQUEST TOOLS
+        // ══════════════════════════════════════════════
+        get_purchase_requests: tool({
+          description: 'Get purchase requests, optionally filtered by status.',
+          parameters: z.object({
+            status: z.enum(['Pending', 'Approved', 'Ordered', 'Received', 'Rejected', 'all']).optional().describe('Filter by status — default shows Pending'),
+          }),
+          execute: async ({ status }) => {
+            let query = supabase
+              .from('purchase_requests')
+              .select('id, item_name, requested_quantity, unit, reason, urgency, status, created_at, employees!purchase_requests_requested_by_fkey(full_name)')
+              .order('created_at', { ascending: false });
+            const filterStatus = status || 'Pending';
+            if (filterStatus !== 'all') query = query.eq('status', filterStatus);
+            const { data, error } = await query.limit(50);
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        create_purchase_request: tool({
+          description: 'Create a new purchase/procurement request. Gather item name, quantity, and urgency before calling.',
+          parameters: z.object({
+            item_name: z.string().describe('Name of the item to purchase'),
+            requested_quantity: z.number().positive().describe('Quantity needed'),
+            unit: z.string().optional().describe('Unit of measurement, e.g. kg, litres, boxes'),
+            reason: z.string().optional().describe('Why this purchase is needed'),
+            urgency: z.enum(['Normal', 'Urgent', 'Critical']).describe('Urgency level — default Normal'),
+          }),
+          execute: async ({ item_name, requested_quantity, unit, reason, urgency }) => {
+            const { data, error } = await supabase.from('purchase_requests').insert({
+              item_name, requested_quantity,
+              unit: unit || null,
+              reason: reason || null,
+              urgency: urgency || 'Normal',
+              requested_by: employeeId,
+              status: 'Pending',
+            }).select().single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Purchase request for "${item_name}" (${requested_quantity} ${unit || ''}) created — urgency: ${urgency}.`, request: data };
+          },
+        }),
+
+        update_purchase_request_status: tool({
+          description: 'Update the status of a purchase request — approve, mark as ordered, received, or reject it.',
+          parameters: z.object({
+            request_id: z.string().uuid().describe('UUID of the purchase request (from get_purchase_requests)'),
+            status: z.enum(['Approved', 'Ordered', 'Received', 'Rejected']).describe('New status'),
+          }),
+          execute: async ({ request_id, status }) => {
+            const { data, error } = await supabase
+              .from('purchase_requests')
+              .update({ status, resolved_at: ['Received', 'Rejected'].includes(status) ? new Date().toISOString() : null })
+              .eq('id', request_id)
+              .select('item_name, status').single();
+            if (error) throw new Error(error.message);
+            return { success: true, message: `Purchase request for "${data.item_name}" marked as "${status}".` };
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  PAYSLIP TOOLS
+        // ══════════════════════════════════════════════
+        get_payslips: tool({
+          description: 'Get payslip records for an employee or for a specific month/year.',
+          parameters: z.object({
+            employee_id: z.string().uuid().optional().describe('Filter by employee UUID (from get_employees)'),
+            month: z.string().optional().describe('Month name, e.g. "May"'),
+            year: z.number().optional().describe('Year, e.g. 2026'),
+          }),
+          execute: async ({ employee_id, month, year }) => {
+            let query = supabase
+              .from('payslips')
+              .select('id, employee_id, month, year, gross_salary, net_salary, pf_deduction, esi_deduction, lop_days, present_days, total_working_days, employees(full_name)')
+              .order('year', { ascending: false });
+            if (employee_id) query = query.eq('employee_id', employee_id);
+            if (month) query = query.ilike('month', month);
+            if (year) query = query.eq('year', year);
+            const { data, error } = await query.limit(30);
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        // ══════════════════════════════════════════════
+        //  ATTENDANCE TOOLS
+        // ══════════════════════════════════════════════
+        get_attendance_summary: tool({
+          description: 'Get attendance summary for today or a specific date range. Shows who checked in, hours worked, and who is absent.',
+          parameters: z.object({
+            date: z.string().optional().describe('Specific date in YYYY-MM-DD (defaults to today)'),
+            employee_id: z.string().uuid().optional().describe('Filter by specific employee UUID'),
+          }),
+          execute: async ({ date, employee_id }) => {
+            const targetDate = date || new Date().toISOString().split('T')[0];
+            let query = supabase
+              .from('attendance_log')
+              .select('id, employee_id, date, check_in_time, check_out_time, total_hours, mispunch_status, employees(full_name)')
+              .eq('date', targetDate);
+            if (employee_id) query = query.eq('employee_id', employee_id);
+            const { data, error } = await query;
+            if (error) throw new Error(error.message);
+            const records = data || [];
+            const { count: totalActive } = await supabase.from('employees').select('id', { count: 'exact', head: true }).eq('is_active', true);
+            return {
+              date: targetDate,
+              checked_in: records.length,
+              total_employees: totalActive || 0,
+              absent: (totalActive || 0) - records.length,
+              still_in: records.filter(r => r.check_in_time && !r.check_out_time).length,
+              records: records.map(r => ({
+                name: r.employees?.full_name,
+                check_in: r.check_in_time,
+                check_out: r.check_out_time,
+                hours: r.total_hours,
+                mispunch: r.mispunch_status,
+              })),
+            };
           },
         }),
       },
