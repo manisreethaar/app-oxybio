@@ -1,7 +1,8 @@
 import { streamText, tool, stepCountIs } from 'ai';
-import { google } from '@ai-sdk/google';
+import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { matchIntent, executeIntent, formatResult, streamStaticSSE } from './intentRouter';
 
 export async function POST(req) {
   try {
@@ -34,8 +35,21 @@ export async function POST(req) {
 
     const { messages } = await req.json();
 
+    // Fast path: match common read-only queries without calling any AI
+    const lastMsg = messages.filter(m => m.role === 'user').at(-1)?.content ?? '';
+    const lastText = typeof lastMsg === 'string' ? lastMsg
+      : Array.isArray(lastMsg) ? lastMsg.filter(p => p.type === 'text').map(p => p.text).join(' ')
+      : String(lastMsg);
+
+    const intent = matchIntent(lastText);
+    if (intent) {
+      const data = await executeIntent(intent.toolName, supabase);
+      const text = formatResult(intent.toolName, data, profile.full_name);
+      return streamStaticSSE(text);
+    }
+
     const result = streamText({
-      model: google('gemini-2.5-flash'),
+      model: anthropic('claude-haiku-4-5-20251001'),
       system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}.
 
 CAPABILITIES:
