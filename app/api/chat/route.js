@@ -35,7 +35,7 @@ export async function POST(req) {
     const { messages } = await req.json();
 
     const result = streamText({
-      model: google('gemini-2.5-pro'),
+      model: google('gemini-2.5-flash'),
       system: `You are Bubbles, the elite AI operations manager for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}. You must act with the intelligence of a seasoned operations director.
 
 OXYBIO MODULES — FULL REFERENCE:
