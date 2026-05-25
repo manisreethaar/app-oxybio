@@ -64,6 +64,7 @@ export default function BatchDetailPage() {
   const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null); // { flaskId, flaskLabel, toStage }
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
   const [viewingStage,       setViewingStage]       = useState(null);
+  const [editingStage,       setEditingStage]       = useState(null);
   const [lnbByFlask,         setLnbByFlask]         = useState({});
 
   const fetchAll = useCallback(async () => {
@@ -326,7 +327,7 @@ export default function BatchDetailPage() {
                 return (
                   <div
                     key={stage.id}
-                    onClick={done ? () => setViewingStage(isViewing ? null : stage.id) : undefined}
+                    onClick={done ? () => { setViewingStage(isViewing ? null : stage.id); setEditingStage(null); } : undefined}
                     className={`flex items-center gap-2.5 py-2 px-3 rounded-lg transition-all ${
                       isViewing ? `${stage.bg} border-2 ${stage.border} ring-2 ring-offset-1 ring-navy/30` :
                       curr ? `${stage.bg} border ${stage.border}` :
@@ -440,22 +441,49 @@ export default function BatchDetailPage() {
 
         {/* ── RIGHT COLUMN — Stage Panel ── */}
         <div>
-          {/* View Mode Banner */}
+          {/* View / Edit Mode Banner */}
           {viewingStage && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4">
+            <div className={`flex items-center justify-between rounded-xl px-4 py-2.5 mb-4 ${editingStage === viewingStage ? 'bg-amber-50 border border-amber-300' : 'bg-blue-50 border border-blue-200'}`}>
               <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-blue-600 shrink-0"/>
+                <BookOpen className={`w-4 h-4 shrink-0 ${editingStage === viewingStage ? 'text-amber-600' : 'text-blue-600'}`}/>
                 <div>
-                  <p className="text-xs font-black text-blue-800">Viewing Past Stage — Read Only</p>
-                  <p className="text-[10px] text-blue-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
+                  {editingStage === viewingStage ? (
+                    <>
+                      <p className="text-xs font-black text-amber-800">Editing Past Stage — Admin Mode</p>
+                      <p className="text-[10px] text-amber-600">Editing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. Save within the panel to update.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-black text-blue-800">Viewing Past Stage — Read Only</p>
+                      <p className="text-[10px] text-blue-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
+                    </>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={() => setViewingStage(null)}
-                className="px-3 py-1.5 bg-navy text-white text-[10px] font-black rounded-lg hover:bg-navy-hover transition-colors shrink-0"
-              >
-                ← Return to Current Stage
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {['admin','ceo','cto'].includes(role) && editingStage !== viewingStage && (
+                  <button
+                    onClick={() => setEditingStage(viewingStage)}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-colors"
+                  >
+                    Edit Stage
+                  </button>
+                )}
+                {editingStage === viewingStage && (
+                  <button
+                    onClick={() => setEditingStage(null)}
+                    className="px-3 py-1.5 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg hover:bg-blue-200 transition-colors"
+                  >
+                    Stop Editing
+                  </button>
+                )}
+                <button
+                  onClick={() => { setViewingStage(null); setEditingStage(null); }}
+                  className="px-3 py-1.5 bg-navy text-white text-[10px] font-black rounded-lg hover:bg-navy-hover transition-colors"
+                >
+                  ← Return to Current Stage
+                </button>
+              </div>
             </div>
           )}
 
@@ -466,7 +494,7 @@ export default function BatchDetailPage() {
           )}
 
           {CurrentPanel ? (
-            <div className={viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}>
+            <div className={viewingStage && editingStage !== viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}>
               <CurrentPanel
                 batch={batch} flasks={flasks}
                 activeFlask={selectedFlask}
@@ -477,7 +505,7 @@ export default function BatchDetailPage() {
                 onAdvanceStage={handleDirectTransition}
                 onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
                 actionLoading={actionLoading}
-                readOnly={!!viewingStage}
+                readOnly={!!viewingStage && editingStage !== viewingStage}
               />
             </div>
           ) : (
