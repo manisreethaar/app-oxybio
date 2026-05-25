@@ -50,16 +50,22 @@ export async function GET(request) {
     const status = searchParams.get('status');
     const category = searchParams.get('category');
     const search = searchParams.get('q');
+    const batchId = searchParams.get('batch_id');
+    const flaskId = searchParams.get('flask_id');
+    const qcSampleId = searchParams.get('qc_sample_id');
 
     let query = supabase
       .from('sample_incubation_records')
-      .select('*, employees(full_name), batches(batch_id)')
+      .select('*, employees(full_name), batches(batch_id), batch_flasks(flask_label), batch_flask_qc_samples(sample_id)')
       .order('created_at', { ascending: false });
 
     if (status === 'ongoing') query = query.is('end_time', null);
     if (status === 'completed') query = query.not('end_time', 'is', null);
     if (category && category !== 'all') query = query.eq('sample_category', category);
     if (search) query = query.ilike('sample_name', `%${search}%`);
+    if (batchId) query = query.eq('batch_id', batchId);
+    if (flaskId) query = query.eq('flask_id', flaskId);
+    if (qcSampleId) query = query.eq('qc_sample_id', qcSampleId);
 
     const { data, error } = await query.limit(200);
 

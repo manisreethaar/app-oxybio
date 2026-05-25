@@ -67,6 +67,11 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       const payload = {
         ...data,
         batch_id: data.sample_category === 'Fermentation IPC' ? data.batch_id || null : null,
+        flask_id: initialData?.flask_id || null,
+        qc_sample_id: initialData?.qc_sample_id || null,
+        source_stage: initialData?.source_stage || null,
+        source_type: initialData?.source_type || null,
+        sampled_at: initialData?.sampled_at || null,
         start_time: new Date(data.start_time).toISOString(),
         end_time: data.end_time ? new Date(data.end_time).toISOString() : null,
         od_value: data.od_value ?? null,

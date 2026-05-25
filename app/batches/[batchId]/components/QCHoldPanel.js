@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Clock, CheckCircle2, XCircle, Plus, Lock } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical } from 'lucide-react';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                   result_unit: 'pH units' },
@@ -18,7 +18,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const toast    = useToast();
   const [sample,     setSample]     = useState(null);
   const [tests,      setTests]      = useState([]);
+  const [incubations, setIncubations] = useState([]);
   const [creating,   setCreating]   = useState(false);
+  const [creatingIncubation, setCreatingIncubation] = useState(false);
   const isCeo = ['ceo','admin'].includes(role);
 
   // Sample creation form
@@ -30,20 +32,24 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [sentDate,     setSentDate]     = useState('');
   const [expectDate,   setExpectDate]   = useState('');
 
-  const fetch = useCallback(async () => {
+  const fetchQcData = useCallback(async () => {
     if (!activeFlask) return;
     const { data: sData } = await supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).single();
     if (sData) {
       setSample(sData);
       const { data: tData } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('created_at');
       setTests(tData || []);
+      const res = await fetch(`/api/research/incubation?qc_sample_id=${sData.id}`);
+      const json = await res.json();
+      setIncubations(json.success ? json.data || [] : []);
     } else {
       setSample(null);
       setTests([]);
+      setIncubations([]);
     }
   }, [activeFlask, supabase]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchQcData(); }, [fetchQcData]);
 
   const handleCreateSample = async () => {
     if (!activeFlask) return;
@@ -69,7 +75,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }));
       await supabase.from('batch_flask_qc_tests').insert(testRows);
       toast.success(`QC sample ${sampleId} created for ${activeFlask.flask_label}.`);
-      fetch();
+      fetchQcData();
     } catch (err) { toast.error(err.message); }
     finally { setCreating(false); }
   };
@@ -84,6 +90,43 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         `⚠ QC FAIL: "${failedTest?.test_name || 'Test'}". Consider raising a CAPA in the Compliance module before releasing.`,
         { duration: 6000 }
       );
+    }
+  };
+
+  const handleCreateIncubation = async () => {
+    if (!sample || !activeFlask) return;
+    setCreatingIncubation(true);
+    try {
+      const now = new Date();
+      const payload = {
+        sample_name: `${sample.sample_id} - ${activeFlask.flask_label}`,
+        batch_id: batch.id,
+        flask_id: activeFlask.id,
+        qc_sample_id: sample.id,
+        source_stage: 'qc_hold',
+        source_type: 'Batch QC Hold',
+        sampled_at: sample.sampling_date ? new Date(sample.sampling_date).toISOString() : now.toISOString(),
+        sample_category: 'Fermentation IPC',
+        sample_type: 'Agar Plate',
+        incubation_date: now.toISOString().slice(0, 10),
+        incubation_temp_c: 37,
+        start_time: now.toISOString(),
+        sterility_status: 'Pending'
+      };
+
+      const res = await fetch('/api/research/incubation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to create incubation record');
+      toast.success('Linked incubation record created.');
+      fetchQcData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCreatingIncubation(false);
     }
   };
 
@@ -155,6 +198,41 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <p className="text-[9px] font-bold text-gray-500 uppercase">Pending</p>
               </div>
             </div>
+          </div>
+
+          <div className="surface p-4 border border-blue-100 bg-blue-50/30">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5"/> Incubation Evidence
+                </p>
+                <p className="text-xs text-blue-700 mt-1">Create or review incubation records linked to this batch, trial, and QC sample.</p>
+              </div>
+              <button
+                onClick={handleCreateIncubation}
+                disabled={creatingIncubation}
+                className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[10px] font-black uppercase tracking-wider disabled:opacity-60"
+              >
+                {creatingIncubation ? 'Creating...' : 'Create Incubation'}
+              </button>
+            </div>
+            {incubations.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                {incubations.map(record => (
+                  <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-white px-3 py-2">
+                    <div>
+                      <p className="text-xs font-black text-gray-800">{record.sample_name}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {record.end_time ? `Completed ${Number(record.duration_hours || 0).toFixed(1)}h` : 'Ongoing'} · {record.incubation_temp_c} C · {record.sterility_status}
+                      </p>
+                    </div>
+                    <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-blue-700 hover:underline">Open</a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-xs font-semibold text-blue-500">No linked incubation evidence yet.</p>
+            )}
           </div>
 
           <div className="surface overflow-hidden">

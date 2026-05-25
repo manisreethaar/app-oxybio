@@ -147,6 +147,9 @@ export default function SampleIncubationPage() {
                         {sample.sample_type}
                     </div>
                     {sample.batches && <div className="text-[10px] font-mono text-gray-500 mt-1">Batch: {sample.batches.batch_id}</div>}
+                    {sample.batch_flasks && <div className="text-[10px] font-mono text-gray-500 mt-1">Trial: {sample.batch_flasks.flask_label}</div>}
+                    {sample.batch_flask_qc_samples && <div className="text-[10px] font-mono text-gray-500 mt-1">QC: {sample.batch_flask_qc_samples.sample_id}</div>}
+                    {sample.source_stage && <div className="text-[10px] uppercase font-bold text-gray-400 mt-1">Stage: {sample.source_stage.replace(/_/g, ' ')}</div>}
                   </td>
                   <td className="p-4">
                     <div className="font-medium text-gray-800">{sample.start_time ? new Date(sample.start_time).toLocaleString() : 'Not set'}</div>
