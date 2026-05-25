@@ -108,6 +108,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [deletingReading, setDeletingReading] = useState(null);
   const [deleteReason,    setDeleteReason]    = useState('');
   const [savingDelete,    setSavingDelete]    = useState(false);
+  const [editingEndpoint, setEditingEndpoint] = useState(false);
+  const [epEditHours,     setEpEditHours]     = useState('');
+  const [epEditPh,        setEpEditPh]        = useState('');
+  const [savingEpEdit,    setSavingEpEdit]    = useState(false);
 
   const isAdmin  = ['admin','ceo','cto'].includes(role);
   const isIntern = ['intern','research_intern'].includes(role);
@@ -214,6 +218,22 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       fetchData(); onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEp(false); }
+  };
+
+  const handleEndpointEdit = async (e) => {
+    e.preventDefault();
+    if (!epEditHours || !epEditPh) return;
+    setSavingEpEdit(true);
+    try {
+      const { error } = await supabase.from('batch_flask_endpoints')
+        .update({ total_hours: parseFloat(epEditHours), final_ph: parseFloat(epEditPh) })
+        .eq('flask_id', activeFlask.id);
+      if (error) throw error;
+      toast.success('Endpoint updated.');
+      setEditingEndpoint(false);
+      fetchData(); onDataSaved();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingEpEdit(false); }
   };
 
   const openEdit = (r) => {
@@ -525,14 +545,56 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Advance button (after endpoint declared) */}
       {endpoint && (
-        <div className="surface p-5 flex items-center justify-between">
+        <div className="surface p-5 flex items-center justify-between gap-4">
           <div className="text-sm">
             <p className="font-bold text-gray-900">Endpoint declared ✓</p>
             <p className="text-gray-500 text-xs">Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total fermentation</p>
           </div>
-          <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
-            Advance Trial → Straining
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => { setEpEditHours(endpoint.total_hours?.toFixed(2) || ''); setEpEditPh(endpoint.final_ph || ''); setEditingEndpoint(true); }}
+                className="px-3 py-2 border border-amber-300 bg-amber-50 text-amber-700 text-xs font-black rounded-lg hover:bg-amber-100 transition-colors"
+              >
+                Edit Hours
+              </button>
+            )}
+            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+              Advance Trial → Straining
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Endpoint Modal */}
+      {editingEndpoint && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-amber-700 mb-1 flex items-center gap-2">
+              <Pencil className="w-4 h-4"/> Correct Endpoint Record
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">Admin correction — update total fermentation hours and final pH stored for this endpoint.</p>
+            <form onSubmit={handleEndpointEdit} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Total Fermentation Hours</label>
+                <input type="number" step="0.01" min="0" required value={epEditHours} onChange={e => setEpEditHours(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm font-semibold outline-none focus:border-amber-500"/>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Final pH</label>
+                <input type="number" step="0.01" min="0" max="14" required value={epEditPh} onChange={e => setEpEditPh(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm font-semibold outline-none focus:border-amber-500"/>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setEditingEndpoint(false)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={savingEpEdit}
+                  className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 disabled:opacity-50">
+                  {savingEpEdit ? 'Saving...' : 'Save Correction'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
