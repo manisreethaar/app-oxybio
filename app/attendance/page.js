@@ -7,9 +7,9 @@ import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
 const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 
-const TARGET_LAT = 12.7409;
-const TARGET_LNG = 77.8253;
-const MAX_RADIUS_METERS = 300; // 300m accounts for indoor GPS drift (mobile GPS drifts 50-150m indoors)
+const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.71773;   // Adhiyamaan College of Engineering, Hosur
+const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.86961;   // Kumedhapalli, Hosur, Tamil Nadu 635109
+const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300; // 300m for indoor GPS drift tolerance
 
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
