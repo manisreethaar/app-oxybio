@@ -47,26 +47,32 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const stock = availableStock.filter(s => s.inventory_items?.category?.toLowerCase().includes('grain') || s.inventory_items?.name?.toLowerCase().includes('ragi') || s.inventory_items?.name?.toLowerCase().includes('kavuni'));
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
 
-  // ── Deduct a lot's quantity from inventory_stock ────────────
   const deductLot = async (lotId, weightG, label) => {
     if (!lotId || !weightG) return;
     const qty = parseFloat(weightG);
-    const { data: stock } = await supabase
+    const { data: stockRow } = await supabase
       .from('inventory_stock').select('current_quantity').eq('id', lotId).single();
-    if (!stock) { toast.warn(`${label}: lot not found in inventory.`); return; }
-    const shortfall = qty - parseFloat(stock.current_quantity);
-    const newQty = Math.max(0, parseFloat(stock.current_quantity) - qty);
-    if (shortfall > 0) toast.warn(`${label}: used ${qty}g but only ${parseFloat(stock.current_quantity).toFixed(1)}g available — inventory set to 0.`);
+    if (!stockRow) { toast.warn(`${label}: lot not found in inventory.`); return; }
+    const shortfall = qty - parseFloat(stockRow.current_quantity);
+    const newQty = Math.max(0, parseFloat(stockRow.current_quantity) - qty);
+    if (shortfall > 0) toast.warn(`${label}: used ${qty}g but only ${parseFloat(stockRow.current_quantity).toFixed(1)}g available — inventory set to 0.`);
     await supabase.from('inventory_stock')
       .update({ current_quantity: newQty, status: newQty <= 0 ? 'Out of Stock' : undefined })
       .eq('id', lotId);
     await supabase.from('inventory_movements').insert({
-      stock_id:       lotId,
-      movement_type:  'Batch Deduction',
-      quantity:       qty,
+      stock_id:        lotId,
+      movement_type:   'Batch Deduction',
+      quantity:        qty,
       batch_reference: batch.batch_id,
-      issued_by:      employeeProfile?.id,
-      notes:          `Media Prep: ${batch.batch_id} — ${label}`,
+      issued_by:       employeeProfile?.id,
+      notes:           `Media Prep: ${batch.batch_id} — ${label}`,
+    }).then(()=>{}).catch(()=>{});
+    // Record usage in inventory_usage for cross-module traceability
+    await supabase.from('inventory_usage').insert({
+      stock_id:      lotId,
+      batch_id:      batch.id,
+      quantity_used: qty,
+      logged_by:     employeeProfile?.id,
     }).then(()=>{}).catch(()=>{});
   };
 
@@ -103,7 +109,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       }, { onConflict: 'batch_id' });
       if (error) throw error;
 
-      // ── Inventory deduction on advance only (not draft saves) ──
       if (advance) {
         await Promise.all([
           deductLot(ragiLot,   ragiWt,   'Ragi'),

@@ -21,6 +21,7 @@ import ExtractAdditionPanel from './components/ExtractAdditionPanel';
 import QCHoldPanel         from './components/QCHoldPanel';
 import ReleasePanel        from './components/ReleasePanel';
 import RejectionPanel      from './components/RejectionPanel';
+import LinkedRecordsPanel  from './components/LinkedRecordsPanel';
 
 const STAGES = [
   { id: 'media_prep',       label: 'Media Prep',       icon: Beaker,      color: 'text-indigo-600', bg: 'bg-indigo-50',  border: 'border-indigo-200' },
@@ -61,7 +62,7 @@ export default function BatchDetailPage() {
   const [pendingTransition, setPendingTransition] = useState(null);
   const [pendingCancel,     setPendingCancel]     = useState(false);
   const [pendingFlaskReject,  setPendingFlaskReject]  = useState(false);
-  const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null); // { flaskId, flaskLabel, toStage }
+  const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null);
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
   const [viewingStage,       setViewingStage]       = useState(null);
   const [editingStage,       setEditingStage]       = useState(null);
@@ -70,7 +71,7 @@ export default function BatchDetailPage() {
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
     const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await Promise.all([
-      supabase.from('batches').select('*, formulations(name, code, version, ingredients)').eq('id', batchId).single(),
+      supabase.from('batches').select('*, formulations(id, name, code, version, ingredients)').eq('id', batchId).single(),
       supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
       supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
       supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
@@ -89,7 +90,6 @@ export default function BatchDetailPage() {
     lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
     setLnbByFlask(byFlask);
     if (epRes.data) setFlaskEndpoints(epRes.data);
-    // Restore existing BMR URL if already generated
     if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
   }, [batchId, supabase]);
 
@@ -101,7 +101,6 @@ export default function BatchDetailPage() {
     }
   }, [flasks, selectedFlaskId]);
 
-  // Queues a flask advance for confirmation — captures flaskId at call time to avoid stale closures.
   const handleFlaskTransition = useCallback((flaskId, toStage) => {
     if (toStage === 'released' && lnbCount === 0) {
       toast.warn('Cannot release — Lab Notebook is empty.');
@@ -134,8 +133,6 @@ export default function BatchDetailPage() {
     setPendingTransition(toStage);
   }, [actionLoading, lnbCount, toast]);
 
-  // Direct transition — skips confirmation modal.
-  // Used by panels that have their own save+advance button (e.g. InoculationPanel).
   const handleDirectTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
     if (toStage === 'released' && lnbCount === 0) {
@@ -189,7 +186,6 @@ export default function BatchDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchId, bmrLoading]);
 
-
   const handleCancelBatch = useCallback(async () => {
     setPendingCancel(true);
   }, []);
@@ -213,7 +209,6 @@ export default function BatchDetailPage() {
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   const isPostSterilisation = currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting';
 
-  // Derive a live display status from flask stages (batch.status doesn't update on flask-level transitions)
   const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
@@ -300,7 +295,13 @@ export default function BatchDetailPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
-              <div><p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Recipe</p><p className="font-bold text-gray-800">{batch.formulations?.name}</p><p className="text-gray-400">v{batch.formulations?.version}</p></div>
+              <div>
+                <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Recipe</p>
+                <Link href="/formulations" className="font-bold text-gray-800 hover:text-navy hover:underline block">
+                  {batch.formulations?.name}
+                </Link>
+                <p className="text-gray-400">v{batch.formulations?.version}</p>
+              </div>
               <div><p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-gray-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
             </div>
           </div>
@@ -386,16 +387,15 @@ export default function BatchDetailPage() {
             {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-[10px] text-amber-700 font-bold">Complete Sterilisation to unlock individual trial tracking.</span></div>}
           </div>
 
-          {/* Linked Records */}
+          {/* Linked Records (compact — Lab Notebook + BMR only) */}
           <div className="surface p-4">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Linked Records</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Quick Links</p>
             <div className="space-y-2">
               <Link href="/lab-notebook" className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-2"><BookOpen className="w-3.5 h-3.5 text-gray-400"/><span className="text-xs font-semibold text-gray-700">Lab Notebook</span></div>
                 <span className={`text-xs font-black px-1.5 py-0.5 rounded ${lnbCount>0?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>{lnbCount}</span>
               </Link>
 
-              {/* BMR Export — shown once batch is in QC hold or terminal */}
               {['qc_hold','released','rejected'].includes(batch?.current_stage) && (
                 <div className="space-y-2">
                   <button
@@ -516,6 +516,9 @@ export default function BatchDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Linked Records — full-width cross-module panel */}
+      <LinkedRecordsPanel batch={batch} supabase={supabase} />
 
       {/* Transition Modal */}
       {pendingTransition && (
