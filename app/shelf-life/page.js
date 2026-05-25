@@ -44,7 +44,7 @@ export default function ShelfLifePage() {
     setLoading(true);
     try {
       const [{ data: studyData }, { data: batchData }] = await Promise.all([
-        supabase.from('shelf_life_studies').select('*, batches(batch_id, variant), shelf_life_logs(*)').order('created_at', { ascending: false }),
+        supabase.from('shelf_life_studies').select('*, batches(id, batch_id, variant), shelf_life_logs(*)').order('created_at', { ascending: false }),
         supabase.from('batches').select('id, batch_id, variant').eq('status', 'released').limit(50)
       ]);
       setStudies(studyData || []);
@@ -97,7 +97,7 @@ export default function ShelfLifePage() {
     <div className="page-container text-gray-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Stability & Shelf-Life</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Stability &amp; Shelf-Life</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Time-Series Product Validation</p>
         </div>
         <button onClick={() => setShowNew(true)} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
@@ -129,7 +129,13 @@ export default function ShelfLifePage() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-blue-50 px-2 py-0.5 rounded border border-blue-100 mb-2 inline-block">Study ID: {study.id.slice(0,8).toUpperCase()}</span>
-                    <h3 className="text-lg font-bold text-gray-900">{study.batches?.batch_id}</h3>
+                    {study.batches?.id ? (
+                      <Link href={`/batches/${study.batches.id}`} className="text-lg font-bold text-gray-900 hover:text-navy hover:underline transition-colors">
+                        {study.batches.batch_id}
+                      </Link>
+                    ) : (
+                      <h3 className="text-lg font-bold text-gray-900">{study.batches?.batch_id}</h3>
+                    )}
                     <p className="text-xs font-semibold text-gray-500 mt-1">{study.batches?.variant} | {study.storage_condition}</p>
                   </div>
                   <div className="text-right">
@@ -169,7 +175,7 @@ export default function ShelfLifePage() {
                   </button>
                 )}
                 <button disabled title="Document generation module pending" className="flex-[2] py-2.5 bg-gray-50 border border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400 cursor-not-allowed rounded-lg flex items-center justify-center gap-2">
-                  Open Log & Parameters <ChevronRight className="w-4 h-4 opacity-50" />
+                  Open Log &amp; Parameters <ChevronRight className="w-4 h-4 opacity-50" />
                 </button>
               </div>
             </div>
