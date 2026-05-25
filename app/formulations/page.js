@@ -47,6 +47,7 @@ export default function FormulationsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState(null); // replaces window.confirm
   const [pendingArchiveId, setPendingArchiveId] = useState(null);
+  const [batchCounts, setBatchCounts] = useState({});
 
   const supabase = useMemo(() => createClient(), []);
   const isApprover = APPROVER_ROLES.includes(role?.toLowerCase());
@@ -91,6 +92,18 @@ export default function FormulationsPage() {
         .neq('status', 'Archived')
         .order('created_at', { ascending: false });
       if (!error) setFormulations(data || []);
+      if (!error && data?.length > 0) {
+        const ids = data.map(f => f.id);
+        const { data: batchData } = await supabase
+          .from('batches')
+          .select('formulation_id')
+          .in('formulation_id', ids);
+        const counts = {};
+        (batchData || []).forEach(b => {
+          counts[b.formulation_id] = (counts[b.formulation_id] || 0) + 1;
+        });
+        setBatchCounts(counts);
+      }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -340,7 +353,13 @@ export default function FormulationsPage() {
                       </div>
                     </div>
 
-
+                    {batchCounts[f.id] > 0 && (
+                      <div className="mb-2">
+                        <Link href="/batches" className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">
+                          <FlaskConical className="w-2.5 h-2.5"/> Used in {batchCounts[f.id]} batch{batchCounts[f.id] !== 1 ? 'es' : ''}
+                        </Link>
+                      </div>
+                    )}
 
                     <h3 className="text-lg font-bold text-gray-900 mb-0.5">{f.name}</h3>
                     <p className="text-xs font-bold text-navy mb-3 font-mono">{f.code}</p>
