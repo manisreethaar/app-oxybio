@@ -331,6 +331,7 @@ const STAGE_META = [
   { key: 'inoculation',   label: 'Inoculation',             color: 'indigo',  perFlask: true  },
   { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'teal',    perFlask: true  },
   { key: 'qc',            label: 'QC Hold',                 color: 'emerald', perFlask: true  },
+  { key: 'plating',       label: 'Plating Results',         color: 'teal',    perFlask: true  },
 ];
 
 const FIELD_LABELS = {
@@ -347,6 +348,10 @@ const FIELD_LABELS = {
   total_hours: 'Total Fermentation (hrs)', final_ph: 'Final pH', aroma: 'Aroma',
   colour_desc: 'Colour Description', texture: 'Texture', sensory_overall: 'Sensory Overall',
   gram_stain: 'Gram Stain', sample_id: 'QC Sample ID',
+  sterility_status: 'Sterility Status', colony_count: 'Colony Count',
+  cfu_per_ml: 'CFU / ml', colony_morphology: 'Colony Morphology',
+  microscopic_morphology: 'Microscopic Morphology', observation: 'Final Observation',
+  completed_at: 'Incubation Completed At',
 };
 
 function SnapshotRows({ data }) {

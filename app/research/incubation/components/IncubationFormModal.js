@@ -18,6 +18,8 @@ const formSchema = z.object({
   end_time: z.string().optional(),
   od_value: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().min(0).max(10).optional()),
   ph_value: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().min(0).max(14).optional()),
+  colony_count: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().int().min(0).optional()),
+  cfu_per_ml: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().min(0).optional()),
   staining_method: z.string().optional(),
   microscopic_morphology: z.string().optional(),
   colony_morphology: z.string().optional(),
@@ -75,7 +77,9 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         start_time: new Date(data.start_time).toISOString(),
         end_time: data.end_time ? new Date(data.end_time).toISOString() : null,
         od_value: data.od_value ?? null,
-        ph_value: data.ph_value ?? null
+        ph_value: data.ph_value ?? null,
+        colony_count: data.colony_count ?? null,
+        cfu_per_ml: data.cfu_per_ml ?? null,
       };
 
       let url = '/api/research/incubation';
@@ -186,10 +190,20 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 <input {...register('microscopic_morphology')} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none" placeholder="e.g. Gram Positive Rods" />
               </div>
               {type === 'Agar Plate' && (
-                <div className="col-span-full">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Colony Morphology Details</label>
-                  <textarea {...register('colony_morphology')} rows={2} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none resize-none" placeholder="Describe colonies..."></textarea>
-                </div>
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Colony Count (per plate)</label>
+                    <input type="number" min="0" {...register('colony_count')} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none" placeholder="e.g. 245" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">CFU/ml (calculated)</label>
+                    <input type="number" step="any" {...register('cfu_per_ml')} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none" placeholder="e.g. 2.45e8" />
+                  </div>
+                  <div className="col-span-full">
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Colony Morphology Details</label>
+                    <textarea {...register('colony_morphology')} rows={2} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none resize-none" placeholder="Describe colonies..."></textarea>
+                  </div>
+                </>
               )}
             </div>
           </div>

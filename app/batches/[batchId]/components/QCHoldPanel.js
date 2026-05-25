@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2 } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microscope, ArrowDownToLine } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
 const DEFAULT_TESTS = [
@@ -23,7 +23,16 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [creating,   setCreating]   = useState(false);
   const [creatingIncubation, setCreatingIncubation] = useState(false);
   const [deletingIncubationId, setDeletingIncubationId] = useState(null);
+  const [pullingResults,       setPullingResults]       = useState(false);
   const isCeo = ['ceo','admin'].includes(role);
+
+  // Plating config state
+  const [platingEnabled,      setPlatingEnabled]      = useState(false);
+  const [plateMedia,          setPlateMedia]          = useState('');
+  const [plateDilution,       setPlateDilution]       = useState('');
+  const [plateCount,          setPlateCount]          = useState('2');
+  const [plateTemp,           setPlateTemp]           = useState('37');
+  const [plateExpectedHours,  setPlateExpectedHours]  = useState('48');
 
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
@@ -41,6 +50,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!isCurrent) return;
     if (sData) {
       setSample(sData);
+      if (sData.plating_enabled) {
+        setPlatingEnabled(true);
+        const cfg = sData.plating_config || {};
+        if (cfg.media_type)       setPlateMedia(cfg.media_type);
+        if (cfg.dilution)         setPlateDilution(cfg.dilution);
+        if (cfg.plate_count)      setPlateCount(String(cfg.plate_count));
+        if (cfg.incubation_temp_c) setPlateTemp(String(cfg.incubation_temp_c));
+        if (cfg.expected_hours)   setPlateExpectedHours(String(cfg.expected_hours));
+      }
       const [tRes, incRes] = await Promise.all([
         supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('created_at'),
         fetch(`/api/research/incubation?qc_sample_id=${sData.id}`).then(r => r.json()),
@@ -114,40 +132,112 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     }
   };
 
-  const handleCreateIncubation = async () => {
+  const handleTogglePlating = async () => {
+    if (!sample) return;
+    const next = !platingEnabled;
+    setPlatingEnabled(next);
+    await supabase.from('batch_flask_qc_samples').update({ plating_enabled: next }).eq('id', sample.id);
+  };
+
+  const handleStartPlating = async () => {
     if (!sample || !activeFlask) return;
     setCreatingIncubation(true);
     try {
       const now = new Date();
-      const payload = {
-        sample_name: `${sample.sample_id} - ${activeFlask.flask_label}`,
-        batch_id: batch.id,
-        flask_id: activeFlask.id,
-        qc_sample_id: sample.id,
-        source_stage: 'qc_hold',
-        source_type: 'Batch QC Hold',
-        sampled_at: sample.sampling_date ? new Date(sample.sampling_date).toISOString() : now.toISOString(),
-        sample_category: 'Fermentation IPC',
-        sample_type: 'Agar Plate',
-        incubation_date: now.toISOString().slice(0, 10),
-        incubation_temp_c: 37,
-        start_time: now.toISOString(),
-        sterility_status: 'Pending'
+      const config = {
+        media_type: plateMedia || null,
+        dilution: plateDilution || null,
+        plate_count: plateCount ? parseInt(plateCount) : null,
+        incubation_temp_c: plateTemp ? parseFloat(plateTemp) : 37,
+        expected_hours: plateExpectedHours ? parseInt(plateExpectedHours) : null,
       };
+      await supabase.from('batch_flask_qc_samples').update({
+        plating_enabled: true,
+        plating_config: config,
+      }).eq('id', sample.id);
 
       const res = await fetch('/api/research/incubation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          sample_name: `Plate — ${activeFlask.flask_label} (${sample.sample_id})`,
+          batch_id: batch.id,
+          flask_id: activeFlask.id,
+          qc_sample_id: sample.id,
+          source_stage: 'qc_hold',
+          source_type: 'Batch QC Hold',
+          sampled_at: sample.sampling_date ? new Date(sample.sampling_date).toISOString() : now.toISOString(),
+          sample_category: 'Fermentation IPC',
+          sample_type: 'Agar Plate',
+          incubation_date: now.toISOString().slice(0, 10),
+          incubation_temp_c: config.incubation_temp_c,
+          start_time: now.toISOString(),
+          sterility_status: 'Pending',
+        }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to create incubation record');
-      toast.success('Linked incubation record created.');
+      toast.success('Plating started — incubation record created. Enter results in Research → Incubation when ready.');
       fetchQcData();
     } catch (err) {
       toast.error(err.message);
     } finally {
       setCreatingIncubation(false);
+    }
+  };
+
+  const handlePullPlatingResults = async () => {
+    if (!sample || !activeFlask) return;
+    const completed = incubations.filter(r => r.end_time).sort((a, b) => new Date(b.end_time) - new Date(a.end_time));
+    if (!completed.length) { toast.warn('No completed incubation records yet — enter results in Research → Incubation first.'); return; }
+    const rec = completed[0];
+    setPullingResults(true);
+    try {
+      const updates = [];
+
+      if (rec.cfu_per_ml != null || rec.colony_count != null) {
+        const cfuTest = tests.find(t => t.test_name.toLowerCase().includes('cfu'));
+        if (cfuTest) {
+          const val = rec.cfu_per_ml != null ? String(rec.cfu_per_ml) : `${rec.colony_count} colonies`;
+          updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: val }).eq('id', cfuTest.id));
+        }
+      }
+
+      if (rec.microscopic_morphology || rec.colony_morphology) {
+        const gramTest = tests.find(t => t.test_name.toLowerCase().includes('gram'));
+        if (gramTest) {
+          const val = [rec.microscopic_morphology, rec.colony_morphology].filter(Boolean).join(' · ');
+          updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: val }).eq('id', gramTest.id));
+        }
+      }
+
+      if (rec.sterility_status && rec.sterility_status !== 'Pending') {
+        const micTest = tests.find(t => t.test_name.toLowerCase().includes('microbial') || t.test_name.toLowerCase().includes('yeast'));
+        if (micTest) {
+          const pf = rec.sterility_status === 'Sterile' ? 'Pass' : 'Fail';
+          updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: rec.sterility_status, pass_fail: pf }).eq('id', micTest.id));
+        }
+      }
+
+      if (!updates.length) { toast.warn('No mappable results in the incubation record yet (colony count, morphology, or sterility).'); return; }
+      await Promise.all(updates);
+
+      syncStageToLNB(supabase, batch.id, 'plating', {
+        sterility_status: rec.sterility_status,
+        colony_count: rec.colony_count,
+        cfu_per_ml: rec.cfu_per_ml,
+        colony_morphology: rec.colony_morphology,
+        microscopic_morphology: rec.microscopic_morphology,
+        observation: rec.observation,
+        completed_at: rec.end_time,
+      }, activeFlask.flask_label);
+
+      fetchQcData();
+      toast.success(`${updates.length} QC test(s) updated from plating results.`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPullingResults(false);
     }
   };
 
@@ -234,50 +324,117 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             </div>
           </div>
 
-          <div className="surface p-4 border border-blue-100 bg-blue-50/30">
-            <div className="flex items-start justify-between gap-3">
+          {/* Plating & Incubation section */}
+          <div className="surface p-4 border border-teal-100 bg-teal-50/20">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <FlaskConical className="w-3.5 h-3.5"/> Incubation Evidence
+                <p className="text-xs font-black text-teal-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Microscope className="w-3.5 h-3.5"/> Plating & Incubation
                 </p>
-                <p className="text-xs text-blue-700 mt-1">Create or review incubation records linked to this batch, trial, and QC sample.</p>
+                <p className="text-xs text-teal-700 mt-0.5">Enable to log plate details, start incubation, and pull results back into QC tests.</p>
               </div>
               <button
-                onClick={handleCreateIncubation}
-                disabled={creatingIncubation}
-                className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[10px] font-black uppercase tracking-wider disabled:opacity-60"
+                type="button"
+                onClick={handleTogglePlating}
+                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${platingEnabled ? 'bg-teal-600' : 'bg-gray-300'}`}
               >
-                {creatingIncubation ? 'Creating...' : 'Create Incubation'}
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${platingEnabled ? 'translate-x-4' : ''}`}/>
               </button>
             </div>
-            {incubations.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {incubations.map(record => (
-                  <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-white px-3 py-2">
-                    <div>
-                      <p className="text-xs font-black text-gray-800">{record.sample_name}</p>
-                      <p className="text-[10px] text-gray-500">
-                        {record.end_time ? `Completed ${Number(record.duration_hours || 0).toFixed(1)}h` : 'Ongoing'} · {record.incubation_temp_c} C · {record.sterility_status}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-blue-700 hover:underline">Open</a>
-                      {isCeo && (
-                        <button
-                          onClick={() => handleDeleteIncubation(record.id)}
-                          disabled={deletingIncubationId === record.id}
-                          className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40"
-                          title="Delete incubation record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5"/>
-                        </button>
-                      )}
-                    </div>
+
+            {platingEnabled && (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-teal-100">
+                  <div>
+                    <label className="field-label">Media Type</label>
+                    <input value={plateMedia} onChange={e=>setPlateMedia(e.target.value)} className="field-input text-xs" placeholder="MRS Agar, LB..."/>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-xs font-semibold text-blue-500">No linked incubation evidence yet.</p>
+                  <div>
+                    <label className="field-label">Dilution Factor</label>
+                    <input value={plateDilution} onChange={e=>setPlateDilution(e.target.value)} className="field-input text-xs" placeholder="10⁻³"/>
+                  </div>
+                  <div>
+                    <label className="field-label">No. of Plates</label>
+                    <input type="number" min="1" value={plateCount} onChange={e=>setPlateCount(e.target.value)} className="field-input text-xs" placeholder="2"/>
+                  </div>
+                  <div>
+                    <label className="field-label">Incubation Temp (°C)</label>
+                    <input type="number" step="0.1" value={plateTemp} onChange={e=>setPlateTemp(e.target.value)} className="field-input text-xs" placeholder="37"/>
+                  </div>
+                  <div>
+                    <label className="field-label">Expected Duration (hrs)</label>
+                    <input type="number" value={plateExpectedHours} onChange={e=>setPlateExpectedHours(e.target.value)} className="field-input text-xs" placeholder="48"/>
+                  </div>
+                </div>
+
+                {incubations.length === 0 ? (
+                  <button
+                    onClick={handleStartPlating}
+                    disabled={creatingIncubation}
+                    className="w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    <FlaskConical className="w-3.5 h-3.5"/>
+                    {creatingIncubation ? 'Starting...' : 'Start Plating'}
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {incubations.map(record => {
+                      const done = !!record.end_time;
+                      const sterile = record.sterility_status === 'Sterile';
+                      const contaminated = record.sterility_status === 'Contaminated';
+                      return (
+                        <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-teal-100 bg-white px-3 py-2">
+                          <div>
+                            <p className="text-xs font-black text-gray-800">{record.sample_name}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${done ? 'bg-gray-100 text-gray-600' : 'bg-blue-50 text-blue-700'}`}>
+                                {done ? `${Number(record.duration_hours||0).toFixed(1)}h done` : 'Ongoing'}
+                              </span>
+                              {done && (
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${sterile ? 'bg-emerald-50 text-emerald-700' : contaminated ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {record.sterility_status}
+                                </span>
+                              )}
+                              {record.colony_count != null && (
+                                <span className="text-[9px] text-gray-500">{record.colony_count} colonies</span>
+                              )}
+                              {record.cfu_per_ml != null && (
+                                <span className="text-[9px] font-bold text-navy">{record.cfu_per_ml} CFU/ml</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-teal-700 hover:underline">Enter Results</a>
+                            {isCeo && (
+                              <button onClick={()=>handleDeleteIncubation(record.id)} disabled={deletingIncubationId===record.id}
+                                className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40">
+                                <Trash2 className="w-3.5 h-3.5"/>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {incubations.some(r => r.end_time) && (
+                      <button
+                        onClick={handlePullPlatingResults}
+                        disabled={pullingResults}
+                        className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-60 flex items-center justify-center gap-1.5"
+                      >
+                        <ArrowDownToLine className="w-3.5 h-3.5"/>
+                        {pullingResults ? 'Pulling...' : 'Pull Results → QC Tests'}
+                      </button>
+                    )}
+
+                    {!incubations.some(r => r.end_time) && (
+                      <p className="text-xs text-teal-600 font-semibold text-center py-1">
+                        Plate incubating — enter results in Research → Incubation when ready.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

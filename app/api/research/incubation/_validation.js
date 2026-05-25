@@ -17,6 +17,8 @@ export const incubationSchema = z.object({
   end_time: z.string().datetime().nullable().optional(),
   od_value: z.coerce.number().min(0).max(10).nullable().optional(),
   ph_value: z.coerce.number().min(0).max(14).nullable().optional(),
+  colony_count: z.coerce.number().int().min(0).nullable().optional(),
+  cfu_per_ml: z.coerce.number().min(0).nullable().optional(),
   staining_method: z.string().trim().max(120).nullable().optional(),
   microscopic_morphology: z.string().trim().max(500).nullable().optional(),
   colony_morphology: z.string().trim().max(1000).nullable().optional(),
