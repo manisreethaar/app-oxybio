@@ -52,19 +52,27 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         capa_required: capaReq, notes: notes || null,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
-      
-      // Update flask status
+
       await supabase.from('batch_flasks').update({ status: 'rejected' }).eq('id', activeFlask.id);
 
       if (capaReq) {
+        // Auto-create a deviation so it appears immediately in the CAPA module
+        await supabase.from('deviations').insert({
+          batch_id:    batch.id,
+          title:       `Flask ${activeFlask.flask_label} rejected — ${reason.substring(0, 80)}`,
+          severity:    'major',
+          reported_by: employeeProfile?.id,
+          status:      'open',
+        }).then(()=>{}).catch(()=>{});
+
         await supabase.from('notifications').insert({
           employee_id: employeeProfile?.id,
           title: `CAPA Required — Trial ${activeFlask.flask_label} rejected`,
-          message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${reason}.`,
-          link: '/compliance',
+          message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${reason}. A deviation has been raised in the CAPA module.`,
+          link: '/capa',
         }).then(()=>{}).catch(()=>{});
       }
-      toast.success(`Trial ${activeFlask.flask_label} officially rejected.`);
+      toast.success(`Trial ${activeFlask.flask_label} officially rejected.${ capaReq ? ' Deviation raised in CAPA.' : '' }`);
       onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
@@ -94,7 +102,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Disposal Method</p><p className="font-bold text-gray-800">{record.disposal_method}</p></div>
             </div>
             {record.capa_required && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">⚠ CAPA required — raise in Compliance module.</div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">⚠ CAPA raised — check the CAPA module for the open deviation.</div>
             )}
           </div>
         </div>
@@ -136,7 +144,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               </div>
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <input type="checkbox" id="capaReq" checked={capaReq} onChange={e=>setCapaReq(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
-                <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">CAPA Required — raise corrective action in Compliance after this</label>
+                <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">CAPA Required — a deviation will be auto-created in the CAPA module</label>
               </div>
               <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
               <button onClick={handleSave} disabled={saving||!reason.trim()} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
