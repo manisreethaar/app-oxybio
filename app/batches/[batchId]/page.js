@@ -243,13 +243,10 @@ export default function BatchDetailPage() {
                     const hrs = maxEpHrs !== null
                       ? maxEpHrs
                       : (new Date() - new Date(batch.start_time)) / 3600000;
-                    const label = maxEpHrs !== null ? 'Fermentation' : 'Age';
                     return (
                       <>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">{label}</p>
-                        <p className="text-xl font-black text-gray-800 tabular-nums">
-                          {hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span>
-                        </p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase">{maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
+                        <p className="text-xl font-black text-gray-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
                       </>
                     );
                   })()}
@@ -276,18 +273,28 @@ export default function BatchDetailPage() {
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Stage Timeline</p>
             <div className="space-y-0.5">
               {STAGES.filter(s => !['released','rejected'].includes(s.id)).map((stage, idx) => {
-                const done = idx < currentIdx;  const curr = idx === currentIdx;
+                let done, curr;
+                if (isPostSterilisation) {
+                  const flaskStageIdx = selectedFlask
+                    ? STAGES.findIndex(s => s.id === selectedFlask.current_stage)
+                    : 2;
+                  const effectiveIdx = flaskStageIdx < 2 ? 2 : flaskStageIdx;
+                  done = idx < 2 || idx < effectiveIdx;
+                  curr = idx === effectiveIdx;
+                } else {
+                  done = idx < currentIdx;
+                  curr = idx === currentIdx;
+                }
                 const Icon = stage.icon;
                 return (
                   <div key={stage.id} className={`flex items-center gap-2.5 py-2 px-3 rounded-lg ${curr ? `${stage.bg} border ${stage.border}` : ''}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done && !isPostSterilisation ? 'bg-navy border-navy' : curr && !isPostSterilisation ? `${stage.bg} ${stage.border}` : 'bg-gray-50 border-gray-200'}`}>
-                      {done && !isPostSterilisation ? <CheckCircle className="w-3 h-3 text-white"/> : <Icon className={`w-2.5 h-2.5 ${(curr && !isPostSterilisation) || isPostSterilisation ? stage.color : 'text-gray-300'}`}/>}
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done ? 'bg-navy border-navy' : curr ? `${stage.bg} ${stage.border}` : 'bg-gray-50 border-gray-200'}`}>
+                      {done
+                        ? <CheckCircle className="w-3 h-3 text-white"/>
+                        : <Icon className={`w-2.5 h-2.5 ${curr ? stage.color : 'text-gray-300'}`}/>}
                     </div>
-                    <span className={`text-xs font-bold ${curr && !isPostSterilisation ? 'text-gray-900' : done && !isPostSterilisation ? 'text-gray-400 line-through' : 'text-gray-300'}`}>{stage.label}</span>
-                    {curr && !isPostSterilisation && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
-                    {isPostSterilisation && stage.id !== 'media_prep' && stage.id !== 'sterilisation' && (
-                      <span className="ml-auto text-[9px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">Trial Mode</span>
-                    )}
+                    <span className={`text-xs font-bold ${curr ? 'text-gray-900' : done ? 'text-gray-400 line-through' : 'text-gray-300'}`}>{stage.label}</span>
+                    {curr && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
                   </div>
                 );
               })}
