@@ -57,7 +57,7 @@ export async function POST(req) {
 
     const intent = matchIntent(lastText);
     if (intent) {
-      const data = await executeIntent(intent.toolName, supabase);
+      const data = await executeIntent(intent.toolName, supabase, intent.params || {}, employeeId);
       const text = formatResult(intent.toolName, data, profile.full_name);
       logInteraction({
         employee_id: employeeId,
