@@ -108,9 +108,9 @@ export default function AdminDashboard({ employeeId }) {
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
       const [stockRes, calibRes, capaRes] = await Promise.all([
-        supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).limit(50),
+        supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).limit(50),
         supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
-        supabase.from('deviations').select('id, title, severity, status').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5)
+        supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5)
       ]);
       const lowStockItems = (stockRes.data || []).filter(s => (s.current_quantity || 0) < (s.min_stock_level || 0));
       setLowStock(lowStockItems.slice(0, 5));
@@ -307,7 +307,7 @@ export default function AdminDashboard({ employeeId }) {
           ) : (
             <div className="space-y-1.5">
               {lowStock.map(item => (
-                <Link key={item.id} href="/inventory" className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
+                <Link key={item.id} href={`/inventory?search=${encodeURIComponent(item.item?.name || '')}`} className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
                   <span className="text-xs font-bold text-amber-800 truncate">{item.item?.name}</span>
                   <span className="text-[10px] font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? '—'} {item.unit}</span>
                 </Link>
@@ -348,10 +348,17 @@ export default function AdminDashboard({ employeeId }) {
           ) : (
             <div className="space-y-1.5">
               {openCapa.map(dev => (
-                <Link key={dev.id} href="/capa" className="flex justify-between items-center p-2 bg-red-50 rounded-lg border border-red-100 hover:bg-red-100 transition-colors">
-                  <span className="text-xs font-bold text-red-800 truncate">{dev.title}</span>
-                  <span className={`text-[9px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>{dev.severity}</span>
-                </Link>
+                <div key={dev.id} className="p-2 bg-red-50 rounded-lg border border-red-100 space-y-1">
+                  <Link href="/capa" className="flex justify-between items-center hover:opacity-80 transition-opacity">
+                    <span className="text-xs font-bold text-red-800 truncate">{dev.title}</span>
+                    <span className={`text-[9px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>{dev.severity}</span>
+                  </Link>
+                  {dev.batches && (
+                    <Link href={`/batches/${dev.batches.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white text-teal-700 text-[9px] font-black rounded border border-teal-100 hover:bg-teal-50 transition-colors">
+                      Batch {dev.batches.batch_id}
+                    </Link>
+                  )}
+                </div>
               ))}
               <Link href="/capa" className="block text-center text-xs font-bold text-red-600 hover:underline mt-1 pt-1 border-t border-red-100">View CAPA Manager →</Link>
             </div>
