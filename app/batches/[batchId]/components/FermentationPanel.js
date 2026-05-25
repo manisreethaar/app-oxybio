@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Activity, Plus, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X } from 'lucide-react';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -99,6 +99,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [savingEp,   setSavingEp]   = useState(false);
   const [pendingOOROverride, setPendingOOROverride] = useState(false);
 
+  // Admin edit/delete state
+  const [editingReading,  setEditingReading]  = useState(null);
+  const [editFields,      setEditFields]      = useState({});
+  const [editReason,      setEditReason]      = useState('');
+  const [savingEdit,      setSavingEdit]      = useState(false);
+  const [deletingReading, setDeletingReading] = useState(null);
+  const [deleteReason,    setDeleteReason]    = useState('');
+  const [savingDelete,    setSavingDelete]    = useState(false);
+
+  const isAdmin  = ['admin','ceo','cto'].includes(role);
   const isIntern = ['intern','research_intern'].includes(role);
 
   const fetchData = useCallback(async () => {
@@ -188,6 +198,72 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       fetchData(); onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEp(false); }
+  };
+
+  const openEdit = (r) => {
+    setEditingReading(r);
+    setEditFields({
+      ph:              r.ph ?? '',
+      incubator_temp_c: r.incubator_temp_c ?? '',
+      brix:            r.brix ?? '',
+      optical_density: r.optical_density ?? '',
+      foam_level:      r.foam_level ?? 'None',
+      visual_appearance: r.visual_appearance ?? 'Normal',
+      notes:           r.notes ?? '',
+      logged_at:       r.logged_at ? r.logged_at.slice(0,16) : '',
+      is_retrospective: r.is_retrospective ?? false,
+      retro_reason:    r.retro_reason ?? '',
+    });
+    setEditReason('');
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    if (!editReason.trim()) { toast.warn('A reason for the edit is required.'); return; }
+    setSavingEdit(true);
+    try {
+      const updates = {
+        ph:              editFields.ph !== '' ? parseFloat(editFields.ph) : undefined,
+        incubator_temp_c: editFields.incubator_temp_c !== '' ? parseFloat(editFields.incubator_temp_c) : undefined,
+        brix:            editFields.brix !== '' ? parseFloat(editFields.brix) : undefined,
+        optical_density: editFields.optical_density !== '' ? parseFloat(editFields.optical_density) : undefined,
+        foam_level:      editFields.foam_level || undefined,
+        visual_appearance: editFields.visual_appearance || undefined,
+        notes:           editFields.notes || undefined,
+        logged_at:       editFields.logged_at ? new Date(editFields.logged_at).toISOString() : undefined,
+        is_retrospective: editFields.is_retrospective,
+        retro_reason:    editFields.retro_reason || undefined,
+      };
+      // remove undefined keys
+      Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
+      const { error } = await supabase.rpc('update_fermentation_reading', {
+        p_reading_id: editingReading.id,
+        p_updates:    updates,
+        p_reason:     editReason,
+      });
+      if (error) throw error;
+      toast.success('Reading updated.');
+      setEditingReading(null);
+      fetchData();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingEdit(false); }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteReason.trim()) { toast.warn('A reason for deletion is required.'); return; }
+    setSavingDelete(true);
+    try {
+      const { error } = await supabase.rpc('delete_fermentation_reading', {
+        p_reading_id: deletingReading.id,
+        p_reason:     deleteReason,
+      });
+      if (error) throw error;
+      toast.success('Reading deleted.');
+      setDeletingReading(null);
+      setDeleteReason('');
+      fetchData();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingDelete(false); }
   };
 
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
@@ -312,20 +388,39 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix</th>
                 <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">OD</th>
                 <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Plating</th>
+                {isAdmin && <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Actions</th>}
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {[...readings].filter(r => r.flask_id === activeFlask.id).reverse().map(r => (
                   <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-gray-50/30'}>
-                    <td className="px-4 py-2 text-xs font-black text-navy whitespace-nowrap">{r.flask_label}</td>
+                    <td className="px-4 py-2 text-xs font-black text-navy whitespace-nowrap">
+                      {r.flask_label}
+                      {r.is_retrospective && <span className="ml-1 px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-bold">RETRO</span>}
+                      {r.edit_reason && <span className="ml-1 px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
+                    </td>
                     <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
                     <td className={`px-4 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
                     <td className={`px-4 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
                     <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.brix ? `${r.brix}` : '—'}</td>
                     <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.optical_density ? `${r.optical_density}` : '—'}</td>
                     <td className="px-4 py-2 text-xs font-semibold text-gray-600 truncate max-w-[120px]" title={r.plating_result || ''}>{r.plating_result || '—'}</td>
+                    {isAdmin && (
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEdit(r)} title="Edit reading"
+                            className="p-1 rounded hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors">
+                            <Pencil className="w-3 h-3"/>
+                          </button>
+                          <button onClick={() => { setDeletingReading(r); setDeleteReason(''); }} title="Delete reading"
+                            className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 className="w-3 h-3"/>
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
-                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
+                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 8 : 7} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -404,6 +499,116 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
             Advance Trial → Straining
           </button>
+        </div>
+      )}
+
+      {/* ── Admin Edit Reading Modal ── */}
+      {editingReading && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-bold text-gray-900">Edit Reading — {editingReading.flask_label} T+{editingReading.elapsed_hours?.toFixed(1)}h</h3>
+              <button onClick={() => setEditingReading(null)} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-400"/></button>
+            </div>
+            <form onSubmit={handleEditSave} className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">pH <span className="text-red-500">★ CCP</span></label>
+                  <input type="number" step="0.01" min="0" max="14" value={editFields.ph}
+                    onChange={e => setEditFields(f => ({...f, ph: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Temp (°C)</label>
+                  <input type="number" step="0.1" value={editFields.incubator_temp_c}
+                    onChange={e => setEditFields(f => ({...f, incubator_temp_c: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Brix (°Bx)</label>
+                  <input type="number" step="0.1" value={editFields.brix}
+                    onChange={e => setEditFields(f => ({...f, brix: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">OD (600nm)</label>
+                  <input type="number" step="0.001" value={editFields.optical_density}
+                    onChange={e => setEditFields(f => ({...f, optical_density: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Foam</label>
+                  <select value={editFields.foam_level} onChange={e => setEditFields(f => ({...f, foam_level: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                    {FOAM_OPTS.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Visual Appearance</label>
+                  <select value={editFields.visual_appearance} onChange={e => setEditFields(f => ({...f, visual_appearance: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                    {APPEARANCE_OPTS.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Reading Timestamp</label>
+                <input type="datetime-local" value={editFields.logged_at}
+                  onChange={e => setEditFields(f => ({...f, logged_at: e.target.value}))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Notes</label>
+                <input value={editFields.notes} onChange={e => setEditFields(f => ({...f, notes: e.target.value}))}
+                  placeholder="Notes (optional)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+              </div>
+              <div className="pt-1 border-t border-gray-100">
+                <label className="block text-[10px] font-bold uppercase text-red-500 mb-1">Reason for Edit <span>*Required</span></label>
+                <input required value={editReason} onChange={e => setEditReason(e.target.value)}
+                  placeholder="Why is this reading being corrected?"
+                  className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none focus:border-red-400"/>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setEditingReading(null)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={savingEdit}
+                  className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover disabled:opacity-50">
+                  {savingEdit ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin Delete Reading Modal ── */}
+      {deletingReading && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-red-600 mb-2 flex items-center gap-2">
+              <Trash2 className="w-4 h-4"/> Delete Reading
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Delete <strong>{deletingReading.flask_label}</strong> reading at <strong>T+{deletingReading.elapsed_hours?.toFixed(1)}h</strong> (pH {deletingReading.ph})?
+              This cannot be undone but will be logged in the audit trail.
+            </p>
+            <div className="mb-4">
+              <label className="block text-[10px] font-bold uppercase text-red-500 mb-1">Reason <span>*Required</span></label>
+              <input value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
+                placeholder="Why is this reading being deleted?"
+                className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none focus:border-red-400"/>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setDeletingReading(null); setDeleteReason(''); }}
+                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={handleDeleteConfirm} disabled={savingDelete || !deleteReason.trim()}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 disabled:opacity-50">
+                {savingDelete ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
