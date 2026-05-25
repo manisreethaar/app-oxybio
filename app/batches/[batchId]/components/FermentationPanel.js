@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X } from 'lucide-react';
+import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer } from 'lucide-react';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -86,6 +86,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [isRetro,    setIsRetro]    = useState(false);
   const [retroReason, setRetroReason] = useState('');
   const [loggedAt,   setLoggedAt]   = useState('');
+
+  // Fermentation end time — persisted in localStorage per flask
+  const [recordedEndTime, setRecordedEndTime] = useState('');
+  useEffect(() => {
+    if (!activeFlask?.id) return;
+    const stored = localStorage.getItem(`ferm-end-${activeFlask.id}`) || '';
+    setRecordedEndTime(stored);
+  }, [activeFlask?.id]);
+  const handleSaveEndTime = (val) => {
+    setRecordedEndTime(val);
+    if (activeFlask?.id) {
+      if (val) localStorage.setItem(`ferm-end-${activeFlask.id}`, val);
+      else localStorage.removeItem(`ferm-end-${activeFlask.id}`);
+    }
+  };
 
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
@@ -221,6 +236,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
       setEndpointTime('');
+      setRecordedEndTime('');
+      if (activeFlask?.id) localStorage.removeItem(`ferm-end-${activeFlask.id}`);
       fetchData(); onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEp(false); }
@@ -330,8 +347,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           {!endpoint && tZero && (
             <button onClick={() => {
               if (!showEndpoint) {
-                // Auto-suggest endpoint time = T=0 + planned hours when T=0 is historical
-                if (inocu?.planned_fermentation_hrs && tZero) {
+                if (recordedEndTime) {
+                  setEndpointTime(recordedEndTime);
+                } else if (inocu?.planned_fermentation_hrs && tZero) {
                   const suggested = new Date(tZero.getTime() + inocu.planned_fermentation_hrs * 3600000);
                   if (suggested < new Date()) setEndpointTime(suggested.toISOString().slice(0, 16));
                 }
@@ -348,6 +366,37 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         {endpoint && <div className="flex items-center gap-2 mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg"><CheckCircle2 className="w-4 h-4 text-emerald-600"/><span className="text-xs font-bold text-emerald-800">Endpoint declared — Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total</span></div>}
         {latestAlarm && <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg"><AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5"/><span className="text-xs font-bold text-red-800">⚠ Active alarm — a recent reading for this flask is out of bounds.</span></div>}
         {maxExceeded && !endpoint && <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg"><Clock className="w-4 h-4 text-amber-600 shrink-0"/><span className="text-xs font-bold text-amber-800">Planned fermentation duration exceeded. Time to declare endpoint?</span></div>}
+
+        {/* Fermentation End Time — always visible once T=0 is set, before endpoint is declared */}
+        {tZero && !endpoint && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1.5">
+              Fermentation End Time <span className="text-gray-400 font-normal normal-case tracking-normal">(fill this when fermentation stops)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="datetime-local"
+                value={recordedEndTime}
+                max={new Date().toISOString().slice(0, 16)}
+                onChange={e => handleSaveEndTime(e.target.value)}
+                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${recordedEndTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-gray-200'}`}
+              />
+              {recordedEndTime && tZero && (
+                <span className="text-sm font-black text-navy whitespace-nowrap tabular-nums">
+                  {((new Date(recordedEndTime) - tZero) / 3600000).toFixed(1)} hr
+                </span>
+              )}
+              {recordedEndTime && (
+                <button onClick={() => handleSaveEndTime('')} className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
+                  <X className="w-3.5 h-3.5"/>
+                </button>
+              )}
+            </div>
+            {recordedEndTime && (
+              <p className="text-[9px] text-emerald-600 font-bold mt-1">✓ Saved — will auto-fill when you declare endpoint</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
