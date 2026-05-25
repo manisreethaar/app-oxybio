@@ -53,13 +53,25 @@ export async function POST(request, { params }) {
         const msgs = [];
         if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3.8–5.5)`);
         if (saved.is_temp_alarm) msgs.push(`Temp ${data.incubator_temp_c}°C (outside 36–38°C)`);
-        
+
         await notifyAdmins(
           `⚠ Fermentation Alarm — ${batchLabel}`,
           `T+${data.elapsed_hours?.toFixed(1)}hr: ${msgs.join(', ')}`,
           `/batches/${batchId}`,
           'alert'
         ).catch(()=>{});
+
+        // Auto-create task so the alarm has an actionable audit trail
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        await supabase.from('tasks').insert({
+          title: `⚠ Fermentation Alarm: ${msgs.join(', ')}`,
+          description: `Auto-raised at T+${data.elapsed_hours?.toFixed(1)}hr for batch ${batchId}${data.flask_label ? ` (${data.flask_label})` : ''}. Investigate and log corrective action.`,
+          priority: 'high', status: 'todo',
+          batch_id: batchId,
+          assigned_to: data.logged_by || null,
+          assigned_by: data.logged_by || null,
+          due_date: tomorrow.toISOString().slice(0, 10),
+        }).catch(()=>{});
       }
 
       return NextResponse.json({ success: true, data: row, alarms: { ph: saved?.is_ph_alarm, temp: saved?.is_temp_alarm } });
