@@ -8,12 +8,13 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
-import { 
-  CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2, 
-  ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp, 
+import {
+  CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2,
+  ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp,
   ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
-  LayoutGrid, List, Activity, Eye, BarChart2
+  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical
 } from 'lucide-react';
+import Link from 'next/link';
 import { canAssignTo } from '@/lib/permissions';
 import { differenceInDays } from 'date-fns';
 
@@ -68,6 +69,7 @@ export default function TasksPage() {
   const [progressNote, setProgressNote] = useState('');
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [pendingDeleteTask, setPendingDeleteTask] = useState(null);
+  const [capaTaskBatchMap, setCapaTaskBatchMap] = useState({});
 
   useEffect(() => {
     if (selectedTask) {
@@ -120,6 +122,25 @@ export default function TasksPage() {
       if (selectedTask) {
         const updated = tasksRes.data?.find(t => t.id === selectedTask.id);
         if (updated) { setSelectedTask(updated); setTimerRunning(!!updated.time_started_at); }
+      }
+
+      // Resolve CAPA → batch links for tasks created from CAPA actions
+      const allTasks = tasksRes.data || [];
+      const capaTaskIds = allTasks.filter(t => t.title?.startsWith('[CAPA]')).map(t => t.id);
+      if (capaTaskIds.length > 0) {
+        try {
+          const { data: capaLinks } = await supabase.from('capa_actions').select('task_id, investigation_id').in('task_id', capaTaskIds);
+          const invIds = [...new Set((capaLinks || []).map(c => c.investigation_id).filter(Boolean))];
+          if (invIds.length > 0) {
+            const { data: devData } = await supabase.from('deviations').select('id, batches(id, batch_id)').in('id', invIds);
+            const map = {};
+            (capaLinks || []).forEach(ca => {
+              const dev = (devData || []).find(d => d.id === ca.investigation_id);
+              if (dev?.batches) map[ca.task_id] = dev.batches;
+            });
+            setCapaTaskBatchMap(map);
+          }
+        } catch(e) { /* silent - cross-module linking is best-effort */ }
       }
     } catch (err) { console.error('Fetch tasks error:', err); }
     finally { setLoading(false); }
@@ -559,6 +580,11 @@ export default function TasksPage() {
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : task.status === 'in-progress' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{task.status}</span>
                 </div>
                 <h3 className={`text-sm font-bold mb-1 pl-1 ${task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</h3>
+                {capaTaskBatchMap[task.id] && (
+                  <Link href={`/batches/${capaTaskBatchMap[task.id].id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors mb-1">
+                    <FlaskConical className="w-2.5 h-2.5"/> CAPA: {capaTaskBatchMap[task.id].batch_id}
+                  </Link>
+                )}
 
                 <div className="pl-1 mb-2">
                   <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase mb-0.5">

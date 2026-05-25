@@ -26,11 +26,15 @@ export default function AdminDashboard({ employeeId }) {
   const [rejectRemark, setRejectRemark] = useState('');
   const [pendingQuickApprove, setPendingQuickApprove] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [lowStock, setLowStock] = useState([]);
+  const [calibDue, setCalibDue] = useState([]);
+  const [openCapa, setOpenCapa] = useState([]);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchDashboardData(true);
     fetchThresholds();
+    fetchOperationalAlerts();
   }, []);
 
   const fetchThresholds = async () => {
@@ -97,6 +101,22 @@ export default function AdminDashboard({ employeeId }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchOperationalAlerts = async () => {
+    try {
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      const [stockRes, calibRes, capaRes] = await Promise.all([
+        supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).limit(50),
+        supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
+        supabase.from('deviations').select('id, title, severity, status').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5)
+      ]);
+      const lowStockItems = (stockRes.data || []).filter(s => (s.current_quantity || 0) < (s.min_stock_level || 0));
+      setLowStock(lowStockItems.slice(0, 5));
+      setCalibDue(calibRes.data || []);
+      setOpenCapa(capaRes.data || []);
+    } catch (err) { console.error('Operational alerts fetch error:', err); }
   };
 
   const handleMispunchReview = async (action) => {
@@ -271,6 +291,69 @@ export default function AdminDashboard({ employeeId }) {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Operational Alerts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="surface p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500"/> Low Stock Alerts
+          </h3>
+          {lowStock.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2 text-center">All stock levels OK.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {lowStock.map(item => (
+                <Link key={item.id} href="/inventory" className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
+                  <span className="text-xs font-bold text-amber-800 truncate">{item.item?.name}</span>
+                  <span className="text-[10px] font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? '—'} {item.unit}</span>
+                </Link>
+              ))}
+              <Link href="/inventory" className="block text-center text-xs font-bold text-amber-600 hover:underline mt-1 pt-1 border-t border-amber-100">View Inventory →</Link>
+            </div>
+          )}
+        </div>
+
+        <div className="surface p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Settings className="w-4 h-4 text-blue-500"/> Calibration Due
+          </h3>
+          {calibDue.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2 text-center">No overdue calibrations.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {calibDue.map(eq => {
+                const isOverdue = new Date(eq.calibration_due_date) < new Date();
+                return (
+                  <Link key={eq.id} href="/equipment" className={`flex justify-between items-center p-2 rounded-lg border hover:opacity-90 transition-colors ${isOverdue ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
+                    <span className={`text-xs font-bold truncate ${isOverdue ? 'text-red-800' : 'text-amber-800'}`}>{eq.name}</span>
+                    <span className={`text-[10px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{new Date(eq.calibration_due_date).toLocaleDateString()}</span>
+                  </Link>
+                );
+              })}
+              <Link href="/equipment" className="block text-center text-xs font-bold text-blue-600 hover:underline mt-1 pt-1 border-t border-gray-100">View Equipment →</Link>
+            </div>
+          )}
+        </div>
+
+        <div className="surface p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-red-500"/> Open CAPA Items
+          </h3>
+          {openCapa.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2 text-center">No open deviations.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {openCapa.map(dev => (
+                <Link key={dev.id} href="/capa" className="flex justify-between items-center p-2 bg-red-50 rounded-lg border border-red-100 hover:bg-red-100 transition-colors">
+                  <span className="text-xs font-bold text-red-800 truncate">{dev.title}</span>
+                  <span className={`text-[9px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>{dev.severity}</span>
+                </Link>
+              ))}
+              <Link href="/capa" className="block text-center text-xs font-bold text-red-600 hover:underline mt-1 pt-1 border-t border-red-100">View CAPA Manager →</Link>
             </div>
           )}
         </div>
