@@ -426,15 +426,28 @@ export default function BatchDetailPage() {
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Stage History</p>
             <div className="space-y-2.5">
               {transitions.length===0 && <p className="text-xs text-gray-400 text-center py-2">No transitions yet.</p>}
-              {transitions.map(t => (
-                <div key={t.id} className="flex items-start gap-2 text-xs">
-                  <div className="w-1.5 h-1.5 bg-navy rounded-full mt-1.5 shrink-0"/>
-                  <div>
-                    <p className="font-bold text-gray-700">{t.from_stage?.replace(/_/g,' ')} → {t.to_stage?.replace(/_/g,' ')}</p>
-                    <p className="text-gray-400 text-[10px]">{t.employees?.full_name} · {t.created_at ? new Date(t.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                const asc = [...transitions].sort((a,b) => new Date(a.created_at)-new Date(b.created_at));
+                return asc.map((t, i) => {
+                  const next = asc[i+1];
+                  const ms = next ? new Date(next.created_at)-new Date(t.created_at) : null;
+                  const h  = ms ? Math.floor(ms/3600000) : null;
+                  const m  = ms ? Math.floor((ms%3600000)/60000) : null;
+                  const dur = h !== null ? (h > 0 ? `${h}h ${m}m` : `${m}m`) : null;
+                  return (
+                    <div key={t.id} className="flex items-start gap-2 text-xs">
+                      <div className="w-1.5 h-1.5 bg-navy rounded-full mt-1.5 shrink-0"/>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-bold text-gray-700">{t.from_stage?.replace(/_/g,' ')} → {t.to_stage?.replace(/_/g,' ')}</p>
+                          {dur && <span className="text-[9px] font-black text-navy bg-navy/5 px-1.5 py-0.5 rounded">{dur}</span>}
+                        </div>
+                        <p className="text-gray-400 text-[10px]">{t.employees?.full_name} · {t.created_at ? new Date(t.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
