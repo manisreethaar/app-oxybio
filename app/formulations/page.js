@@ -176,6 +176,19 @@ export default function FormulationsPage() {
     setShowNew(true);
   };
 
+  const handleOpenNewRecipe = async () => {
+    // Auto-suggest next R-code based on existing formulations
+    const { data } = await supabase.from('formulations').select('code');
+    let maxNum = 0;
+    (data || []).forEach(f => {
+      const m = (f.code || '').match(/^R(\d+)$/i);
+      if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+    });
+    const nextCode = `R${String(maxNum + 1).padStart(2, '0')}`;
+    setNewForm({ code: nextCode, name: '', ingredients: [], notes: '', base_version_id: null });
+    setShowNew(true);
+  };
+
   const handleArchive = (id) => {
     setPendingArchiveId(id);
   };
@@ -248,7 +261,7 @@ export default function FormulationsPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Recipe Management</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Scientific Formula Registry & Version Control</p>
         </div>
-        <button onClick={() => setShowNew(true)} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
+        <button onClick={handleOpenNewRecipe} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
           <Plus className="w-4 h-4 mr-1.5" /> New Recipe
         </button>
       </div>
@@ -534,7 +547,8 @@ export default function FormulationsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Code</label>
-                  <input required type="text" placeholder="e.g. F011" value={newForm.code} onChange={e => setNewForm({...newForm, code: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                  <input required type="text" placeholder="e.g. R04" value={newForm.code} onChange={e => setNewForm({...newForm, code: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm font-mono outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                  <p className="text-[10px] text-gray-400 mt-1">Auto-suggested. Edit if needed — this code becomes part of every batch ID for this recipe.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Common Name</label>

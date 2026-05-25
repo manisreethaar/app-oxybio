@@ -22,13 +22,20 @@ const postSchema = z.object({
 });
 
 // ─────────────────────────────────────────────────────────────
-// Generate sequential batch ID: OB-YYYY-MM-SEQ
+// Generate sequential batch ID: OB-[RECIPE_CODE]-YYYY-SEQ
+// Sequence is scoped per recipe code + year.
 // ─────────────────────────────────────────────────────────────
-async function generateBatchId(supabase) {
-  const now = new Date();
-  const year  = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const prefix = `OB-${year}-${month}-`;
+async function generateBatchId(supabase, formulationId) {
+  const year = new Date().getFullYear();
+
+  const { data: formulation } = await supabase
+    .from('formulations')
+    .select('code')
+    .eq('id', formulationId)
+    .single();
+
+  const recipeCode = formulation?.code || 'R00';
+  const prefix = `OB-${recipeCode}-${year}-`;
 
   const { data: lastBatch } = await supabase
     .from('batches')
@@ -147,7 +154,7 @@ export async function POST(request) {
     // Actual inventory deduction happens at Media Prep stage when lot is selected
 
     // ── Generate batch ID ───────────────────────────────────────────────
-    const batchIdStr = await generateBatchId(supabase);
+    const batchIdStr = await generateBatchId(supabase, formulation_id);
 
     // ── Create batch record ─────────────────────────────────────────────
     const { data: newBatch, error: batchInsertErr } = await supabase
@@ -357,5 +364,29 @@ export async function DELETE(request) {
 
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/batches?preview=1&formulation_id=<uuid>
+// Returns the next batch ID that would be assigned for this formulation.
+// ─────────────────────────────────────────────────────────────
+export async function GET(request) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const formulationId = searchParams.get('formulation_id');
+
+    if (!formulationId) {
+      return NextResponse.json({ error: 'formulation_id required' }, { status: 400 });
+    }
+
+    const nextId = await generateBatchId(supabase, formulationId);
+    return NextResponse.json({ batch_id: nextId });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
