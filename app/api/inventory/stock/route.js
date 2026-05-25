@@ -1,9 +1,15 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireInventoryPermission } from '../_permissions';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'view');
+    if (permission.error) return permission.error;
+
     const { data, error } = await supabase
       .from('inventory_stock')
       .select('*, inventory_items(name, unit), vendors(name)')
@@ -19,6 +25,9 @@ export async function GET() {
 export async function POST(request) {
   try {
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'edit');
+    if (permission.error) return permission.error;
+
     const body = await request.json();
     const { item_id, vendor_id, supplier_batch_number, received_quantity, expiry_date, location, purchase_order_number, invoice_ref, condition_on_arrival, sds_url, coa_url } = body;
 
@@ -63,6 +72,27 @@ export async function POST(request) {
       .single();
 
     if (error) throw error;
+
+    const { error: movementError } = await supabase
+      .from('inventory_movements')
+      .insert({
+        stock_id: data.id,
+        type: 'Receive',
+        quantity: qtyValue,
+        purpose: 'Stock Receipt',
+        notes: [
+          purchase_order_number ? `PO: ${purchase_order_number}` : null,
+          invoice_ref ? `Invoice/Ref: ${invoice_ref}` : null,
+          condition_on_arrival ? `Condition: ${condition_on_arrival}` : null
+        ].filter(Boolean).join('. '),
+        issued_by: permission.user.id
+      });
+
+    if (movementError) {
+      await supabase.from('inventory_stock').delete().eq('id', data.id);
+      throw movementError;
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -72,8 +102,8 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireInventoryPermission(supabase, 'edit');
+    if (permission.error) return permission.error;
 
     const body = await request.json();
     const { id, vendor_id, supplier_batch_number, current_quantity, expiry_date, location, purchase_order_number, invoice_ref, condition_on_arrival, sds_url, coa_url, notes } = body;

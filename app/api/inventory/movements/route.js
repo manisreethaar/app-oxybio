@@ -1,5 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireInventoryPermission } from '../_permissions';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
@@ -11,6 +14,9 @@ export async function GET(request) {
     }
 
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'view');
+    if (permission.error) return permission.error;
+
     const { data, error } = await supabase
       .from('inventory_movements')
       .select('*, issued_by(email)') // Assuming auth.users email for now, or profiles

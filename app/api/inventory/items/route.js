@@ -1,9 +1,15 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireInventoryPermission } from '../_permissions';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'view');
+    if (permission.error) return permission.error;
+
     const { data, error } = await supabase
       .from('inventory_items')
       .select('*')
@@ -19,6 +25,9 @@ export async function GET() {
 export async function POST(request) {
   try {
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'edit');
+    if (permission.error) return permission.error;
+
     const { name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code } = await request.json();
 
     if (!name || !category || !unit) {
@@ -55,6 +64,9 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'edit');
+    if (permission.error) return permission.error;
+
     const body = await request.json();
     const { id, name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code } = body;
 
@@ -99,14 +111,8 @@ export async function DELETE(request) {
 
     if (!id && !ids) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = user.email === 'manisreethaar@gmail.com';
-    if (!['admin','ceo','cto'].includes(emp?.role) && !isMaster) {
-      return NextResponse.json({ error: 'Permission Denied' }, { status: 403 });
-    }
+    const permission = await requireInventoryPermission(supabase, 'delete');
+    if (permission.error) return permission.error;
 
     if (ids) {
       const idList = ids.split(',').map(s => s.trim()).filter(Boolean);
