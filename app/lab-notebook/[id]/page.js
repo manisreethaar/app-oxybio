@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
-import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, AlertCircle, FlaskConical, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +29,7 @@ export default function LnbEntryPage() {
   const [methodology, setMethodology] = useState('');
   const [observations, setObservations] = useState('');
   const [conclusions, setConclusions] = useState('');
+  const [stageSnapshots, setStageSnapshots] = useState({});
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -46,6 +47,7 @@ export default function LnbEntryPage() {
       setMethodology(data.methodology || '');
       setObservations(data.observations || '');
       setConclusions(data.conclusions || '');
+      setStageSnapshots(data.stage_snapshots || {});
     } catch (err) {
       console.error(err);
       toast.error('Experiment not found.');
@@ -192,6 +194,7 @@ export default function LnbEntryPage() {
         
         {/* Main Notebook Content */}
         <div className="md:col-span-2 space-y-6">
+           <StageLogPanel snapshots={stageSnapshots} />
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
            <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
            <SectionBox title="Detailed Observations" icon={<FileCheck className="w-4 h-4" />} canEdit={canEdit} value={observations} onChange={setObservations} placeholder="Record qualitative and quantitative readings..." isLarge />
@@ -318,6 +321,128 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
            </div>
          )}
        </div>
+    </div>
+  );
+}
+
+const STAGE_META = [
+  { key: 'media_prep',    label: 'Media Preparation',      color: 'amber',   perFlask: false },
+  { key: 'sterilisation', label: 'Sterilisation',           color: 'blue',    perFlask: false },
+  { key: 'inoculation',   label: 'Inoculation',             color: 'indigo',  perFlask: true  },
+  { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'teal',    perFlask: true  },
+  { key: 'qc',            label: 'QC Hold',                 color: 'emerald', perFlask: true  },
+];
+
+const FIELD_LABELS = {
+  ragi_lot_id: 'Ragi Lot ID', ragi_weight_g: 'Ragi Weight (g)', ragi_moisture: 'Ragi Moisture Check',
+  kavuni_lot_id: 'Kavuni Lot ID', kavuni_weight_g: 'Kavuni Weight (g)',
+  kavuni_precook_temp_c: 'Kavuni Precook Temp (°C)', kavuni_precook_min: 'Precook Time (min)',
+  water_volume_ml: 'Water Vol (ml)', total_volume_ml: 'Total Vol (ml)', initial_ph: 'Initial pH',
+  method: 'Sterilisation Method', equipment: 'Equipment Used',
+  cycle_temp_c: 'Cycle Temp (°C)', cycle_pressure_bar: 'Pressure (bar)', hold_time_min: 'Hold Time (min)',
+  autoclave_tape: 'Autoclave Tape Result', pass_fail: 'Pass / Fail',
+  inoculum_source: 'Inoculum Source', inoculum_vol_ml: 'Inoculum Vol (ml)',
+  planned_fermentation_hrs: 'Planned Fermentation (hrs)', t_zero_time: 'T=0 Time',
+  transfer_method: 'Transfer Method', laf_used: 'LAF Used', contamination_check: 'Contamination Check',
+  total_hours: 'Total Fermentation (hrs)', final_ph: 'Final pH', aroma: 'Aroma',
+  colour_desc: 'Colour Description', texture: 'Texture', sensory_overall: 'Sensory Overall',
+  gram_stain: 'Gram Stain', sample_id: 'QC Sample ID',
+};
+
+function SnapshotRows({ data }) {
+  const skip = new Set(['synced_at', 'tests', 'notes']);
+  return (
+    <div className="grid grid-cols-2 gap-x-8 gap-y-1.5">
+      {Object.entries(data)
+        .filter(([k, v]) => !skip.has(k) && v != null && v !== '')
+        .map(([key, value]) => (
+          <div key={key} className="flex items-baseline justify-between gap-2 min-w-0">
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-wide shrink-0">
+              {FIELD_LABELS[key] || key.replace(/_/g, ' ')}
+            </span>
+            <span className="text-xs font-bold text-gray-700 text-right truncate">
+              {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+            </span>
+          </div>
+        ))}
+      {data.tests && (
+        <div className="col-span-2 mt-2 space-y-1">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-wide mb-1">QC Test Results</p>
+          {data.tests.map((t, i) => (
+            <div key={i} className="flex justify-between text-xs py-0.5 border-b border-gray-50 last:border-0">
+              <span className="text-gray-600 truncate">{t.test}</span>
+              <span className={`font-black ml-4 shrink-0 ${t.pass_fail === 'Pass' ? 'text-emerald-600' : t.pass_fail === 'Fail' ? 'text-red-600' : 'text-gray-400'}`}>
+                {t.result ? `${t.result}  ` : ''}{t.pass_fail}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StageBlock({ label, data, perFlask, colorKey }) {
+  const [open, setOpen] = useState(true);
+  const colorMap = {
+    amber:   'bg-amber-50  border-amber-100  text-amber-700',
+    blue:    'bg-blue-50   border-blue-100   text-blue-700',
+    indigo:  'bg-indigo-50 border-indigo-100 text-indigo-700',
+    teal:    'bg-teal-50   border-teal-100   text-teal-700',
+    emerald: 'bg-emerald-50 border-emerald-100 text-emerald-700',
+  };
+  const headerClass = colorMap[colorKey] || colorMap.teal;
+  const syncDate = perFlask
+    ? Object.values(data)[0]?.synced_at
+    : data.synced_at;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`w-full px-4 py-2.5 flex items-center justify-between border-b border-gray-100 ${open ? headerClass : 'bg-gray-50 text-gray-600'} transition-colors`}
+      >
+        <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+        <div className="flex items-center gap-2">
+          {syncDate && <span className="text-[9px] opacity-60">{new Date(syncDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+          {open ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
+        </div>
+      </button>
+      {open && (
+        <div className="px-4 py-3">
+          {perFlask ? (
+            <div className="space-y-4">
+              {Object.entries(data).map(([flask, flaskData]) => (
+                <div key={flask}>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-50 pb-1">Trial {flask}</p>
+                  <SnapshotRows data={flaskData} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <SnapshotRows data={data} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StageLogPanel({ snapshots }) {
+  const present = STAGE_META.filter(s => snapshots[s.key] && Object.keys(snapshots[s.key]).length > 0);
+  if (present.length === 0) return null;
+  return (
+    <div className="surface rounded-2xl border border-indigo-100 bg-indigo-50/20 overflow-hidden">
+      <div className="px-5 py-3 border-b border-indigo-100 flex items-center gap-2">
+        <FlaskConical className="w-4 h-4 text-indigo-500" />
+        <h3 className="text-xs font-black text-indigo-600 uppercase tracking-widest">Auto-Synced Stage Data</h3>
+        <span className="ml-auto text-[9px] font-semibold text-gray-400">Read-only · Updated as stages complete</span>
+      </div>
+      <div className="p-4 space-y-3">
+        {present.map(({ key, label, color, perFlask }) => (
+          <StageBlock key={key} label={label} data={snapshots[key]} perFlask={perFlask} colorKey={color} />
+        ))}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { ShieldCheck, AlertTriangle, ExternalLink } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Filter','Chemical','Other'];
 const TAPE_RES = ['Positive','Negative'];
@@ -73,6 +74,15 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       }, { onConflict: 'batch_id' });
       if (error) throw error;
       toast.success(advance ? 'Sterilisation complete.' : 'Draft saved.');
+      syncStageToLNB(supabase, batch.id, 'sterilisation', {
+        method,
+        equipment: equipment.find(e => e.id === equipId)?.name || null,
+        cycle_temp_c: temp ? parseFloat(temp) : null,
+        cycle_pressure_bar: pressure ? parseFloat(pressure) : null,
+        hold_time_min: holdTime ? parseFloat(holdTime) : null,
+        autoclave_tape: tape,
+        pass_fail: passFail,
+      });
       if (advance) {
         await onAdvanceStage('inoculation');
       } else {

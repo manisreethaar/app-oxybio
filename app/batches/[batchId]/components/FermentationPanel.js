@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -238,6 +239,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (epErr) throw epErr;
       
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
+      syncStageToLNB(supabase, batch.id, 'fermentation', {
+        total_hours: epData.total_hours,
+        final_ph: finalPh,
+        aroma,
+        colour_desc: colourDesc,
+        texture,
+        sensory_overall: sensory,
+        gram_stain: gramStain,
+        notes: epNotes || null,
+      }, activeFlask.flask_label);
       setEndpointTime('');
       setRecordedEndTime('');
       if (activeFlask?.id) localStorage.removeItem(`ferm-end-${activeFlask.id}`);
