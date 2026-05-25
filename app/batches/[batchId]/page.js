@@ -53,6 +53,7 @@ export default function BatchDetailPage() {
   const [transitions,    setTransitions]    = useState([]);
   const [employees,      setEmployees]      = useState([]);
   const [availableStock, setAvailableStock] = useState([]);
+  const [flaskEndpoints, setFlaskEndpoints] = useState([]);
   const [lnbCount,       setLnbCount]       = useState(0);
   const [actionLoading,  setActionLoading]  = useState(false);
   const [bmrLoading,     setBmrLoading]     = useState(false);
@@ -64,13 +65,14 @@ export default function BatchDetailPage() {
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
-    const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes] = await Promise.all([
+    const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await Promise.all([
       supabase.from('batches').select('*, formulations(name, code, version, ingredients)').eq('id', batchId).single(),
       supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
       supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
       supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
       supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
       supabase.from('lab_notebook_entries').select('id', { count: 'exact', head: true }).eq('batch_id', batchId),
+      supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
     ]);
     if (batchRes.data)  setBatch(batchRes.data);
     if (flasksRes.data) setFlasks(flasksRes.data);
@@ -78,6 +80,7 @@ export default function BatchDetailPage() {
     if (empRes.data)    setEmployees(empRes.data);
     if (stockRes.data)  setAvailableStock(stockRes.data);
     setLnbCount(lnbRes.count || 0);
+    if (epRes.data) setFlaskEndpoints(epRes.data);
     // Restore existing BMR URL if already generated
     if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
   }, [batchId, supabase]);
@@ -233,8 +236,23 @@ export default function BatchDetailPage() {
               </div>
               <div className="text-right flex flex-col items-end gap-2">
                 <div>
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">Age</p>
-                  <p className="text-xl font-black text-gray-800 tabular-nums">{((new Date()-new Date(batch.start_time))/3600000).toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
+                  {(() => {
+                    const maxEpHrs = flaskEndpoints.length > 0
+                      ? Math.max(...flaskEndpoints.map(e => e.total_hours || 0))
+                      : null;
+                    const hrs = maxEpHrs !== null
+                      ? maxEpHrs
+                      : (new Date() - new Date(batch.start_time)) / 3600000;
+                    const label = maxEpHrs !== null ? 'Fermentation' : 'Age';
+                    return (
+                      <>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase">{label}</p>
+                        <p className="text-xl font-black text-gray-800 tabular-nums">
+                          {hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span>
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
                 {!isTerminal && ['admin','ceo','cto'].includes(role) && (
                   <button
