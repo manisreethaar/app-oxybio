@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import Link from 'next/link';
 import { Plus, FlaskConical, Beaker, Clock, CheckCircle2, AlertCircle, Edit2, Search, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import IncubationFormModal from './components/IncubationFormModal';
@@ -161,7 +162,11 @@ export default function SampleIncubationPage() {
                         {sample.sample_type === 'Agar Plate' ? <Beaker className="w-3.5 h-3.5 mr-1.5 text-orange-500" /> : <FlaskConical className="w-3.5 h-3.5 mr-1.5 text-blue-500" />}
                         {sample.sample_type}
                     </div>
-                    {sample.batches && <div className="text-[10px] font-mono text-gray-500 mt-1">Batch: {sample.batches.batch_id}</div>}
+                    {sample.batches && (
+                      <Link href={`/batches/${sample.batch_id}`} className="text-[10px] font-mono text-navy hover:underline mt-1 block" onClick={e => e.stopPropagation()}>
+                        Batch: {sample.batches.batch_id}
+                      </Link>
+                    )}
                     {sample.batch_flasks && <div className="text-[10px] font-mono text-gray-500 mt-1">Trial: {sample.batch_flasks.flask_label}</div>}
                     {sample.batch_flask_qc_samples && <div className="text-[10px] font-mono text-gray-500 mt-1">QC: {sample.batch_flask_qc_samples.sample_id}</div>}
                     {sample.source_stage && <div className="text-[10px] uppercase font-bold text-gray-400 mt-1">Stage: {sample.source_stage.replace(/_/g, ' ')}</div>}
