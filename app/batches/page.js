@@ -104,7 +104,8 @@ export default function BatchesPage() {
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
             formulations(name, code, version),
-            batch_flasks(id, flask_label, status)
+            batch_flasks(id, flask_label, status, current_stage),
+            batch_flask_endpoints(total_hours, flask_id)
           `)
           .not('status', 'in', '("released","rejected")')
           .order('created_at', { ascending: false }),
@@ -283,9 +284,28 @@ export default function BatchesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {activeBatches.map(batch => {
               const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
-              const hours    = batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0;
-              const currentIdx = STAGE_ORDER.indexOf(batch.current_stage);
               const flasks   = batch.batch_flasks || [];
+              const endpoints = batch.batch_flask_endpoints || [];
+              const maxEpHrs = endpoints.length > 0 ? Math.max(...endpoints.map(e => e.total_hours || 0)) : null;
+              const hours = maxEpHrs !== null
+                ? maxEpHrs.toFixed(1)
+                : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
+
+              // Derive stage from flask data for post-sterilisation batches
+              const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
+              const isPostSteril = batchStageIdx > 1 || batch.current_stage === 'inoculation';
+              let derivedStage = batch.current_stage;
+              if (isPostSteril && flasks.length > 0) {
+                const activeFlasks = flasks.filter(f => f.status !== 'rejected');
+                if (activeFlasks.length > 0) {
+                  const maxIdx = activeFlasks.reduce((best, f) => {
+                    const idx = STAGE_ORDER.indexOf(f.current_stage);
+                    return idx > best ? idx : best;
+                  }, 0);
+                  derivedStage = STAGE_ORDER[maxIdx] || batch.current_stage;
+                }
+              }
+              const currentIdx = STAGE_ORDER.indexOf(derivedStage);
 
               return (
                 <div
@@ -341,7 +361,7 @@ export default function BatchesPage() {
                       ))}
                     </div>
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                      {STAGE_LABELS[batch.current_stage] || batch.current_stage}
+                      {STAGE_LABELS[derivedStage] || derivedStage}
                     </p>
                   </div>
 
