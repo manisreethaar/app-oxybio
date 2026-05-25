@@ -781,7 +781,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
                 <div className="flex items-center gap-8 lg:text-right">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Available Balanced</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Available Balance</p>
                     <p className={`text-2xl font-black font-mono tracking-tighter ${s.current_quantity <= 0 ? 'text-gray-300' : 'text-teal-800'}`}>
                       {s.current_quantity} <span className="text-xs">{s.inventory_items?.unit}</span>
                     </p>
@@ -1411,12 +1411,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     {movements.map(m => (
                       <div key={m.id} className="p-3 flex items-center justify-between text-xs">
                         <div>
-                          <p className="font-black text-slate-800">{m.movement_type === 'Receive' ? 'Stock Input' : 'Stock Issue'}</p>
+                          <p className="font-black text-slate-800">{m.type === 'Receive' ? 'Stock Input' : 'Stock Issue'}</p>
                           <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
-                          <p className={`font-black ${m.movement_type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
-                            {m.movement_type === 'Receive' ? '+' : '-'}{m.quantity}
+                          <p className={`font-black ${m.type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
+                            {m.type === 'Receive' ? '+' : '-'}{m.quantity}
                           </p>
                           <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
                         </div>

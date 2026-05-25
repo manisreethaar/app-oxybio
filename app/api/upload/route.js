@@ -1,5 +1,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireInventoryPermission } from '../inventory/_permissions';
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
@@ -11,6 +17,16 @@ export async function POST(request) {
     }
 
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'edit');
+    if (permission.error) return permission.error;
+
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      return NextResponse.json({ success: false, error: 'Only PDF, PNG, and JPG files are allowed' }, { status: 400 });
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ success: false, error: 'File size must be 10 MB or less' }, { status: 400 });
+    }
     
     // Convert to buffer for Upload
     const bytes = await file.arrayBuffer();

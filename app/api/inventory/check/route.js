@@ -1,5 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireInventoryPermission } from '../_permissions';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
@@ -11,6 +14,8 @@ export async function GET(request) {
     }
 
     const supabase = createClient();
+    const permission = await requireInventoryPermission(supabase, 'view');
+    if (permission.error) return permission.error;
 
     // 1. Fetch Batch Details (incorporating formulation parsing)
     const { data: batch, error: batchErr } = await supabase

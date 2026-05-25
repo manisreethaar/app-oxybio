@@ -1,34 +1,36 @@
 import { createClient } from '@/utils/supabase/server';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
+import { requireInventoryPermission } from '../_permissions';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireInventoryPermission(supabase, 'request_stock');
+    if (permission.error) return permission.error;
 
     const body = await request.json();
     const { item_id, item_name, requested_quantity, unit, reason, urgency = 'Normal' } = body;
+    const qtyValue = parseFloat(requested_quantity);
 
-    if (!item_name || !requested_quantity) {
-      return NextResponse.json({ error: 'item_name and requested_quantity are required' }, { status: 400 });
+    if (!item_name || isNaN(qtyValue) || qtyValue <= 0) {
+      return NextResponse.json({ error: 'item_name and a valid requested_quantity are required' }, { status: 400 });
     }
 
-    // Get employee record
     const { data: emp } = await supabase
       .from('employees')
       .select('id, full_name')
-      .eq('email', user.email)
+      .eq('email', permission.user.email)
       .single();
 
-    // Insert the purchase request
     const { data: pr, error: prError } = await supabase
       .from('purchase_requests')
       .insert({
         item_id: item_id || null,
         item_name,
-        requested_quantity: parseFloat(requested_quantity),
+        requested_quantity: qtyValue,
         unit: unit || '',
         reason: reason || '',
         urgency,
@@ -40,10 +42,9 @@ export async function POST(request) {
 
     if (prError) throw prError;
 
-    // Notify all admins
     await notifyAdmins(
-      `📦 Purchase Request: ${item_name}`,
-      `${emp?.full_name || 'A team member'} has requested ${requested_quantity} ${unit} of "${item_name}". Urgency: ${urgency}.`,
+      `Purchase Request: ${item_name}`,
+      `${emp?.full_name || 'A team member'} has requested ${qtyValue} ${unit || ''} of "${item_name}". Urgency: ${urgency}.`,
       '/inventory'
     );
 
@@ -56,8 +57,8 @@ export async function POST(request) {
 export async function GET() {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireInventoryPermission(supabase, 'view');
+    if (permission.error) return permission.error;
 
     const { data, error } = await supabase
       .from('purchase_requests')
@@ -74,8 +75,8 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireInventoryPermission(supabase, 'approve_request');
+    if (permission.error) return permission.error;
 
     const { id, status } = await request.json();
     if (!id || !status) return NextResponse.json({ error: 'Missing id or status' }, { status: 400 });
