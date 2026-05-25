@@ -98,6 +98,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [epNotes,    setEpNotes]    = useState('');
   const [savingEp,   setSavingEp]   = useState(false);
   const [pendingOOROverride, setPendingOOROverride] = useState(false);
+  const [endpointTime, setEndpointTime] = useState('');
 
   // Admin edit/delete state
   const [editingReading,  setEditingReading]  = useState(null);
@@ -118,12 +119,26 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
       supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
     ]);
-    if (rRes.data)  setReadings(rRes.data);
-    if (iRes.data)  setInocu(iRes.data);
-    if (epRes.data) setEndpoint(epRes.data);
+    if (rRes.data) setReadings(rRes.data);
+    if (iRes.data) setInocu(iRes.data);
+    setEndpoint(epRes.data ?? null);
   }, [batch.id, activeFlask, supabase]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    // Clear endpoint form whenever the active flask changes
+    setEpPh('');
+    setAroma('Tangy and clean');
+    setTexture('Normal slurry');
+    setSensory('PASS');
+    setGramStain('Not done');
+    setColourDesc('');
+    setEpNotes('');
+    setShowEndpoint(false);
+    setPendingOOROverride(false);
+    setEndpointTime('');
+  }, [activeFlask?.id]);
 
   // Elapsed hours from T=0 specific to THIS flask
   const tZero     = inocu?.t_zero_time ? new Date(inocu.t_zero_time) : null;
@@ -186,7 +201,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     try {
       const epData = {
         flask_id: activeFlask.id, batch_id: batch.id,
-        total_hours: elapsedHr ? parseFloat(elapsedHr.toFixed(2)) : null,
+        total_hours: tZero ? parseFloat(((( endpointTime ? new Date(endpointTime) : new Date()) - tZero) / 3600000).toFixed(2)) : null,
         final_ph: finalPh, aroma, colour_desc: colourDesc,
         texture, sensory_overall: sensory, gram_stain: gramStain, 
         notes: epNotes, declared_by: employeeProfile?.id,
@@ -195,6 +210,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (epErr) throw epErr;
       
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
+      setEndpointTime('');
       fetchData(); onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEp(false); }
@@ -280,7 +296,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             {tZero && <span className="px-2 py-0.5 bg-navy/5 border border-navy/20 rounded text-[10px] font-black text-navy">{elapsedHr?.toFixed(1)}hr Elapsed</span>}
           </div>
           {!endpoint && tZero && (
-            <button onClick={() => setShowEndpoint(s => !s)} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
+            <button onClick={() => { setShowEndpoint(s => !s); if (showEndpoint) setEndpointTime(''); }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
               {showEndpoint ? 'Cancel Endpoint' : 'Declare Endpoint'}
             </button>
           )}
@@ -441,10 +457,23 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   className={`w-full px-4 py-3 border-2 rounded-xl text-2xl font-black font-mono text-center outline-none ${parseFloat(epPh)<4.2||parseFloat(epPh)>4.5?'border-red-400 text-red-600':'border-gray-200 text-gray-800 focus:border-navy'}`} placeholder="4.30"/>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Total Fermentation Time</label>
-                <div className="px-4 py-3 border-2 border-gray-100 rounded-xl bg-gray-50 text-center">
-                  <p className="text-2xl font-black text-gray-800">{elapsedHr?.toFixed(1)}<span className="text-sm text-gray-400"> hr</span></p>
-                </div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Fermentation End Time</label>
+                <input
+                  type="datetime-local"
+                  value={endpointTime}
+                  max={new Date().toISOString().slice(0,16)}
+                  onChange={e => setEndpointTime(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy"
+                />
+                {tZero && (() => {
+                  const t = endpointTime ? new Date(endpointTime) : new Date();
+                  const hrs = (t - tZero) / 3600000;
+                  return (
+                    <p className="text-[10px] mt-1 font-black text-navy text-center">
+                      Total: {hrs.toFixed(1)} hr  {!endpointTime && <span className="text-amber-500">(using now — set end time for retrospective batches)</span>}
+                    </p>
+                  );
+                })()}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
