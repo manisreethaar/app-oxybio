@@ -3,11 +3,12 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Package, Wrench, BookOpen, AlertTriangle, Clock, CheckSquare,
-  ChevronRight, Loader,
+  ChevronRight, Loader, FlaskConical,
 } from 'lucide-react';
 import {
   getLinkedInventory, getLinkedEquipment, getLinkedDeviations,
   getLinkedLabNotebook, getLinkedShelfLife, getLinkedTasks,
+  getLinkedIncubation,
 } from '@/lib/batchLinks';
 
 const SEV = {
@@ -205,6 +206,51 @@ function ShelfLifeTab({ rows }) {
   );
 }
 
+function IncubationTab({ rows }) {
+  if (!rows.length) return <EmptyState label="incubation records" />;
+  return (
+    <div className="space-y-2">
+      {rows.map(r => {
+        const ongoing   = !r.end_time;
+        const sterility = r.sterility_status;
+        return (
+          <Link
+            key={r.id}
+            href="/research/incubation"
+            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-800 truncate">{r.sample_name}</p>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-[10px] text-gray-400">{r.sample_type}</span>
+                {r.batch_flasks?.flask_label && (
+                  <span className="text-[10px] font-bold text-navy">{r.batch_flasks.flask_label}</span>
+                )}
+                {r.source_stage && (
+                  <span className="text-[10px] text-gray-400 capitalize">{r.source_stage.replace(/_/g, ' ')}</span>
+                )}
+                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                  ongoing ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {ongoing ? 'Ongoing' : `${Number(r.duration_hours || 0).toFixed(1)}h`}
+                </span>
+                {sterility && sterility !== 'Pending' && (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                    sterility === 'Sterile' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                  }`}>
+                    {sterility}
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 function TasksTab({ rows }) {
   if (!rows.length) return <EmptyState label="tasks" />;
   return (
@@ -263,9 +309,10 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
       getLinkedDeviations(supabase, batch.id),
       getLinkedShelfLife(supabase, batch.id),
       getLinkedTasks(supabase, batch.id),
-    ]).then(([inventory, equipment, notebook, deviations, shelflife, tasks]) => {
+      getLinkedIncubation(supabase, batch.id),
+    ]).then(([inventory, equipment, notebook, deviations, shelflife, tasks, incubation]) => {
       if (!active) return;
-      setAll({ inventory, equipment, notebook, deviations, shelflife, tasks });
+      setAll({ inventory, equipment, notebook, deviations, shelflife, tasks, incubation });
       setLoading(false);
     });
     return () => { active = false; };
@@ -278,6 +325,7 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
     { id: 'deviations', label: 'Deviations & CAPA', icon: AlertTriangle, count: all?.deviations.length },
     { id: 'shelflife',  label: 'Shelf-Life',        icon: Clock,         count: all?.shelflife.length  },
     { id: 'tasks',      label: 'Tasks',             icon: CheckSquare,   count: all?.tasks.length      },
+    { id: 'incubation', label: 'Incubation',        icon: FlaskConical,  count: all?.incubation.length },
   ], [all]);
 
   return (
@@ -323,6 +371,7 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
         {!loading && activeTab === 'deviations' && <DeviationsTab rows={all.deviations} />}
         {!loading && activeTab === 'shelflife'  && <ShelfLifeTab  rows={all.shelflife}  />}
         {!loading && activeTab === 'tasks'      && <TasksTab      rows={all.tasks}      />}
+        {!loading && activeTab === 'incubation' && <IncubationTab rows={all.incubation} />}
       </div>
     </div>
   );
