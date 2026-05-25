@@ -1,5 +1,6 @@
 import { streamText, tool, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
@@ -75,7 +76,9 @@ export async function POST(req) {
     }
 
     const result = streamText({
-      model: anthropic('claude-haiku-4-5-20251001'),
+      model: process.env.ANTHROPIC_API_KEY
+        ? anthropic('claude-haiku-4-5-20251001')
+        : google('gemini-2.5-flash'),
       system: `You are OxyOS Assistant, the central AI automation hub for Oxygen Bioinnovations. You are speaking to ${profile.full_name} (${effectiveRole}). Today is ${new Date().toISOString().split('T')[0]}.
 
 CAPABILITIES:
@@ -133,7 +136,7 @@ Always convert relative dates (last month, this quarter, last week) to YYYY-MM-D
           tools_called: (toolCalls || []).map(c => ({ name: c.toolName, args: c.args })),
           tool_results: (toolResults || []).map(r => ({ name: r.toolName, result: r.result })),
           intent_router_hit: false,
-          model_used: 'claude-haiku-4-5',
+          model_used: process.env.ANTHROPIC_API_KEY ? 'claude-haiku-4-5' : 'gemini-2.5-flash',
           response_time_ms: Date.now() - t0,
           conversation_length: messages.length,
         });
