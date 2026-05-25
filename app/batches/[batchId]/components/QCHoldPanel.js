@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2 } from 'lucide-react';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                   result_unit: 'pH units' },
@@ -21,6 +21,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [incubations, setIncubations] = useState([]);
   const [creating,   setCreating]   = useState(false);
   const [creatingIncubation, setCreatingIncubation] = useState(false);
+  const [deletingIncubationId, setDeletingIncubationId] = useState(null);
   const isCeo = ['ceo','admin'].includes(role);
 
   // Sample creation form
@@ -130,6 +131,19 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     }
   };
 
+  const handleDeleteIncubation = async (id) => {
+    if (!confirm('Delete this incubation record? This cannot be undone.')) return;
+    setDeletingIncubationId(id);
+    try {
+      const res = await fetch(`/api/research/incubation?id=${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Delete failed');
+      toast.success('Incubation record deleted.');
+      fetchQcData();
+    } catch (err) { toast.error(err.message); }
+    finally { setDeletingIncubationId(null); }
+  };
+
   const allDone     = tests.length > 0 && tests.every(t => t.pass_fail !== 'Pending');
   const anyFail     = tests.some(t => t.pass_fail === 'Fail');
   const passCount   = tests.filter(t => t.pass_fail === 'Pass').length;
@@ -226,7 +240,19 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                         {record.end_time ? `Completed ${Number(record.duration_hours || 0).toFixed(1)}h` : 'Ongoing'} · {record.incubation_temp_c} C · {record.sterility_status}
                       </p>
                     </div>
-                    <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-blue-700 hover:underline">Open</a>
+                    <div className="flex items-center gap-2">
+                      <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-blue-700 hover:underline">Open</a>
+                      {isCeo && (
+                        <button
+                          onClick={() => handleDeleteIncubation(record.id)}
+                          disabled={deletingIncubationId === record.id}
+                          className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40"
+                          title="Delete incubation record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5"/>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
