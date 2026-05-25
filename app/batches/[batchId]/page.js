@@ -62,6 +62,7 @@ export default function BatchDetailPage() {
   const [pendingCancel,     setPendingCancel]     = useState(false);
   const [pendingFlaskReject, setPendingFlaskReject] = useState(false);
   const [selectedFlaskId,   setSelectedFlaskId]   = useState(null);
+  const [viewingStage,      setViewingStage]      = useState(null);
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -198,7 +199,8 @@ export default function BatchDetailPage() {
   
   const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
   const activeStage = isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage;
-  const CurrentPanel = PANEL_MAP[activeStage] || null;
+  const displayStage = viewingStage || activeStage;
+  const CurrentPanel = PANEL_MAP[displayStage] || null;
 
   return (
     <div className="page-container">
@@ -285,16 +287,27 @@ export default function BatchDetailPage() {
                   done = idx < currentIdx;
                   curr = idx === currentIdx;
                 }
+                const isViewing = viewingStage === stage.id;
                 const Icon = stage.icon;
                 return (
-                  <div key={stage.id} className={`flex items-center gap-2.5 py-2 px-3 rounded-lg ${curr ? `${stage.bg} border ${stage.border}` : ''}`}>
+                  <div
+                    key={stage.id}
+                    onClick={done ? () => setViewingStage(isViewing ? null : stage.id) : undefined}
+                    className={`flex items-center gap-2.5 py-2 px-3 rounded-lg transition-all ${
+                      isViewing ? `${stage.bg} border-2 ${stage.border} ring-2 ring-offset-1 ring-navy/30` :
+                      curr ? `${stage.bg} border ${stage.border}` :
+                      done ? 'hover:bg-gray-50 cursor-pointer' : ''
+                    }`}
+                  >
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done ? 'bg-navy border-navy' : curr ? `${stage.bg} ${stage.border}` : 'bg-gray-50 border-gray-200'}`}>
                       {done
                         ? <CheckCircle className="w-3 h-3 text-white"/>
                         : <Icon className={`w-2.5 h-2.5 ${curr ? stage.color : 'text-gray-300'}`}/>}
                     </div>
-                    <span className={`text-xs font-bold ${curr ? 'text-gray-900' : done ? 'text-gray-400 line-through' : 'text-gray-300'}`}>{stage.label}</span>
-                    {curr && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
+                    <span className={`text-xs font-bold ${isViewing ? 'text-navy' : curr ? 'text-gray-900' : done ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{stage.label}</span>
+                    {isViewing && <span className="ml-auto text-[9px] font-black text-blue-600">VIEWING</span>}
+                    {curr && !isViewing && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
+                    {done && !isViewing && <span className="ml-auto text-[9px] text-gray-300 font-bold">↩</span>}
                   </div>
                 );
               })}
@@ -313,9 +326,9 @@ export default function BatchDetailPage() {
             <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
             <div className="space-y-2">
               {flasks.map(f => (
-                <button 
-                  key={f.id} 
-                  onClick={() => setSelectedFlaskId(f.id)}
+                <button
+                  key={f.id}
+                  onClick={() => { setSelectedFlaskId(f.id); setViewingStage(null); }}
                   disabled={!isPostSterilisation}
                   className={`w-full p-2.5 rounded-xl text-left border transition-all flex flex-col items-start ${selectedFlaskId===f.id?'bg-navy/5 border-navy shadow-sm ring-1 ring-navy':f.status==='rejected'?'bg-red-50 border-red-200 opacity-60':'bg-white hover:bg-gray-50 border-gray-200 hover:border-navy/50'}`}>
                   <div className="flex justify-between items-center w-full">
@@ -386,23 +399,46 @@ export default function BatchDetailPage() {
 
         {/* ── RIGHT COLUMN — Stage Panel ── */}
         <div>
-          {isPostSterilisation && selectedFlask && !['released','rejected'].includes(selectedFlask.current_stage) && selectedFlask.status !== 'rejected' && (
+          {/* View Mode Banner */}
+          {viewingStage && (
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-600 shrink-0"/>
+                <div>
+                  <p className="text-xs font-black text-blue-800">Viewing Past Stage — Read Only</p>
+                  <p className="text-[10px] text-blue-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingStage(null)}
+                className="px-3 py-1.5 bg-navy text-white text-[10px] font-black rounded-lg hover:bg-navy-hover transition-colors shrink-0"
+              >
+                ← Return to Current Stage
+              </button>
+            </div>
+          )}
+
+          {!viewingStage && isPostSterilisation && selectedFlask && !['released','rejected'].includes(selectedFlask.current_stage) && selectedFlask.status !== 'rejected' && (
             <div className="flex justify-end mb-4">
               <button onClick={() => setPendingFlaskReject(true)} className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 font-black rounded-lg text-[10px] uppercase tracking-wider transition-all hover:scale-105">Abort / Reject Trial {selectedFlask.flask_label}</button>
             </div>
           )}
+
           {CurrentPanel ? (
-            <CurrentPanel
-              batch={batch} flasks={flasks} 
-              activeFlask={selectedFlask}
-              employees={employees}
-              availableStock={availableStock} role={role} canDo={canDo}
-              employeeProfile={employeeProfile} supabase={supabase}
-              onDataSaved={fetchAll}
-              onAdvanceStage={handleDirectTransition}
-              onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
-              actionLoading={actionLoading}
-            />
+            <div className={viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}>
+              <CurrentPanel
+                batch={batch} flasks={flasks}
+                activeFlask={selectedFlask}
+                employees={employees}
+                availableStock={availableStock} role={role} canDo={canDo}
+                employeeProfile={employeeProfile} supabase={supabase}
+                onDataSaved={fetchAll}
+                onAdvanceStage={handleDirectTransition}
+                onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
+                actionLoading={actionLoading}
+                readOnly={!!viewingStage}
+              />
+            </div>
           ) : (
             <div className="surface p-8 text-center text-gray-400 text-sm">Unknown stage: {batch.current_stage}</div>
           )}
