@@ -204,18 +204,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     setEditingReading(r);
     const platingParts = r.plating_result?.split(' — ') || [];
     setEditFields({
-      ph:              r.ph ?? '',
-      incubator_temp_c: r.incubator_temp_c ?? '',
-      brix:            r.brix ?? '',
-      optical_density: r.optical_density ?? '',
-      foam_level:      r.foam_level ?? 'None',
-      visual_appearance: r.visual_appearance ?? 'Normal',
-      plating_status:  platingParts[0] || 'Pending',
-      cfu_count:       platingParts[1] || '',
-      notes:           r.notes ?? '',
-      logged_at:       r.logged_at ? r.logged_at.slice(0,16) : '',
-      is_retrospective: r.is_retrospective ?? false,
-      retro_reason:    r.retro_reason ?? '',
+      ph: r.ph ?? '', incubator_temp_c: r.incubator_temp_c ?? '',
+      brix: r.brix ?? '', optical_density: r.optical_density ?? '',
+      foam_level: r.foam_level ?? 'None', visual_appearance: r.visual_appearance ?? 'Normal',
+      plating_status: platingParts[0] || 'Pending', cfu_count: platingParts[1] || '',
+      notes: r.notes ?? '', logged_at: r.logged_at ? r.logged_at.slice(0,16) : '',
+      is_retrospective: r.is_retrospective ?? false, retro_reason: r.retro_reason ?? '',
     });
     setEditReason('');
   };
@@ -225,27 +219,28 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     if (!editReason.trim()) { toast.warn('A reason for the edit is required.'); return; }
     setSavingEdit(true);
     try {
+      let newElapsedHours = undefined;
+      if (editFields.logged_at && tZero) {
+        newElapsedHours = parseFloat(((new Date(editFields.logged_at) - tZero) / 3600000).toFixed(2));
+      }
       const updates = {
-        ph:              editFields.ph !== '' ? parseFloat(editFields.ph) : undefined,
+        ph: editFields.ph !== '' ? parseFloat(editFields.ph) : undefined,
         incubator_temp_c: editFields.incubator_temp_c !== '' ? parseFloat(editFields.incubator_temp_c) : undefined,
-        brix:            editFields.brix !== '' ? parseFloat(editFields.brix) : undefined,
+        brix: editFields.brix !== '' ? parseFloat(editFields.brix) : undefined,
         optical_density: editFields.optical_density !== '' ? parseFloat(editFields.optical_density) : undefined,
-        foam_level:      editFields.foam_level || undefined,
+        foam_level: editFields.foam_level || undefined,
         visual_appearance: editFields.visual_appearance || undefined,
-        plating_result:  editFields.plating_status
-                           ? `${editFields.plating_status}${editFields.cfu_count ? ` — ${editFields.cfu_count}` : ''}`
-                           : undefined,
-        notes:           editFields.notes || undefined,
-        logged_at:       editFields.logged_at ? new Date(editFields.logged_at).toISOString() : undefined,
+        plating_result: editFields.plating_status
+          ? `${editFields.plating_status}${editFields.cfu_count ? ` — ${editFields.cfu_count}` : ''}` : undefined,
+        notes: editFields.notes || undefined,
+        logged_at: editFields.logged_at ? new Date(editFields.logged_at).toISOString() : undefined,
+        elapsed_hours: newElapsedHours !== undefined ? newElapsedHours : undefined,
         is_retrospective: editFields.is_retrospective,
-        retro_reason:    editFields.retro_reason || undefined,
+        retro_reason: editFields.retro_reason || undefined,
       };
-      // remove undefined keys
       Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
       const { error } = await supabase.rpc('update_fermentation_reading', {
-        p_reading_id: editingReading.id,
-        p_updates:    updates,
-        p_reason:     editReason,
+        p_reading_id: editingReading.id, p_updates: updates, p_reason: editReason,
       });
       if (error) throw error;
       toast.success('Reading updated.');
@@ -260,13 +255,11 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     setSavingDelete(true);
     try {
       const { error } = await supabase.rpc('delete_fermentation_reading', {
-        p_reading_id: deletingReading.id,
-        p_reason:     deleteReason,
+        p_reading_id: deletingReading.id, p_reason: deleteReason,
       });
       if (error) throw error;
       toast.success('Reading deleted.');
-      setDeletingReading(null);
-      setDeleteReason('');
+      setDeletingReading(null); setDeleteReason('');
       fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSavingDelete(false); }
