@@ -7,19 +7,12 @@ const client = new Client({
 
 async function run() {
   await client.connect();
-  console.log('Connected to DB');
-  
-  // Reload PostgREST schema cache
-  await client.query("NOTIFY pgrst, 'reload schema';");
-  console.log('Schema cache reloaded!');
-  
-  // Verify the table exists
   const res = await client.query(`
-    SELECT column_name, data_type 
-    FROM information_schema.columns 
-    WHERE table_name = 'formulations';
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public';
   `);
-  console.log('Columns in formulations:', res.rows.map(r => r.column_name));
+  console.log('Tables:', res.rows.map(r => r.table_name));
   await client.end();
 }
 run().catch(console.error);
