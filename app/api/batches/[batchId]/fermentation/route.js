@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { createAdminClient } from '@/utils/supabase/admin';
+import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 
 export async function POST(request, { params }) {
@@ -49,31 +49,17 @@ export async function POST(request, { params }) {
         .single();
 
       if (saved?.is_ph_alarm || saved?.is_temp_alarm) {
-        // Fetch CEO employee ID
-        const { data: ceo } = await supabase
-          .from('employees')
-          .select('id')
-          .in('role', ['ceo', 'admin'])
-          .limit(3);
-
-        if (ceo?.length) {
-          const batchLabel = data.flask_label ? `${batchId} (${data.flask_label})` : batchId;
-          const notifRows = ceo.map(c => {
-            const msgs = [];
-            if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3.8–5.5)`);
-            if (saved.is_temp_alarm) msgs.push(`Temp ${data.incubator_temp_c}°C (outside 36–38°C)`);
-            return {
-              employee_id: c.id,
-              title: `⚠ Fermentation Alarm — ${batchLabel}`,
-              message: `T+${data.elapsed_hours?.toFixed(1)}hr: ${msgs.join(', ')}`,
-              link: `/batches/${batchId}`,
-              is_read: false,
-            };
-          });
-          // Service role — inserting for admin/ceo who may be different user
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
-        }
+        const batchLabel = data.flask_label ? `${batchId} (${data.flask_label})` : batchId;
+        const msgs = [];
+        if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3.8–5.5)`);
+        if (saved.is_temp_alarm) msgs.push(`Temp ${data.incubator_temp_c}°C (outside 36–38°C)`);
+        
+        await notifyAdmins(
+          `⚠ Fermentation Alarm — ${batchLabel}`,
+          `T+${data.elapsed_hours?.toFixed(1)}hr: ${msgs.join(', ')}`,
+          `/batches/${batchId}`,
+          'alert'
+        ).catch(()=>{});
       }
 
       return NextResponse.json({ success: true, data: row, alarms: { ph: saved?.is_ph_alarm, temp: saved?.is_temp_alarm } });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendServerNotification } from '@/utils/serverNotify';
 
 // nodejs runtime required — edge runtime can't use Service Role Key (no Node crypto)
 export const runtime = 'nodejs';
@@ -72,15 +73,13 @@ export async function GET(request) {
     // Previously the employee was never told their shift was zeroed.
     const affectedEmployeeIds = [...new Set(shiftsToClose.map(l => l.employee_id))];
 
-    const notifRows = affectedEmployeeIds.map(empId => ({
-      employee_id: empId,
-      title:       '⚠️ Your Shift Was Auto-Closed',
-      message:     'You were still checked in at midnight. Your working hours have been set to 0. Please submit a Mispunch Request with the correct hours.',
-      link:        '/mispunch',
-      is_read:     false,
-    }));
-
-    await supabaseAdmin.from('notifications').insert(notifRows);
+    const notifyPromises = affectedEmployeeIds.map(empId => sendServerNotification(
+      empId,
+      '⚠️ Your Shift Was Auto-Closed',
+      'You were still checked in at midnight. Your working hours have been set to 0. Please submit a Mispunch Request with the correct hours.',
+      '/mispunch'
+    ));
+    await Promise.allSettled(notifyPromises);
 
     return NextResponse.json({
       success: true,

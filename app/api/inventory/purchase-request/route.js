@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { createAdminClient } from '@/utils/supabase/admin';
+import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -41,24 +41,11 @@ export async function POST(request) {
     if (prError) throw prError;
 
     // Notify all admins
-    const { data: admins } = await supabase
-      .from('employees')
-      .select('id')
-      .eq('role', 'admin')
-      .eq('is_active', true);
-
-    if (admins && admins.length > 0) {
-      const notifications = admins.map(admin => ({
-        employee_id: admin.id,
-        title: `📦 Purchase Request: ${item_name}`,
-        message: `${emp?.full_name || 'A team member'} has requested ${requested_quantity} ${unit} of "${item_name}". Urgency: ${urgency}.`,
-        link: '/inventory',
-        is_read: false
-      }));
-      // Service role — employee inserting notifications for admins bypasses RLS
-      const supabaseAdmin = createAdminClient();
-      await supabaseAdmin.from('notifications').insert(notifications);
-    }
+    await notifyAdmins(
+      `📦 Purchase Request: ${item_name}`,
+      `${emp?.full_name || 'A team member'} has requested ${requested_quantity} ${unit} of "${item_name}". Urgency: ${urgency}.`,
+      '/inventory'
+    );
 
     return NextResponse.json({ success: true, data: pr });
   } catch (error) {

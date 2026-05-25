@@ -1,6 +1,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { canAssignTo } from '@/lib/permissions';
@@ -79,17 +80,15 @@ export async function POST(request) {
     if (error) throw error;
 
     // Notify each assignee (service role — creator inserting for other employees)
-    const adminDb = createAdminClient();
-    const notifRows = tasks
+    const notifyPromises = tasks
       .filter(t => t.assigned_to && t.assigned_to !== creatorInfo.id)
-      .map(t => ({
-        employee_id: t.assigned_to,
-        title: `📋 New Task Assigned: ${t.title}`,
-        message: `You have been assigned a new task${t.due_date ? ` due ${new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}.`,
-        link: '/tasks',
-        is_read: false,
-      }));
-    if (notifRows.length > 0) await adminDb.from('notifications').insert(notifRows);
+      .map(t => sendServerNotification(
+        t.assigned_to,
+        `📋 New Task Assigned: ${t.title}`,
+        `You have been assigned a new task${t.due_date ? ` due ${new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}.`,
+        '/tasks'
+      ));
+    await Promise.allSettled(notifyPromises);
 
     return NextResponse.json({ success: true, data });
   } catch (err) {
@@ -121,13 +120,12 @@ export async function PATCH(request) {
           acknowledged_at: new Date().toISOString() 
         };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert({
-            employee_id: task.assigned_by,
-            title: 'Task Seen',
-            message: `${task.assigned_user?.full_name || 'An employee'} acknowledged: "${task.title}"`,
-            link: '/tasks'
-          });
+          await sendServerNotification(
+            task.assigned_by,
+            'Task Seen',
+            `${task.assigned_user?.full_name || 'An employee'} acknowledged: "${task.title}"`,
+            '/tasks'
+          );
         }
         break;
       case 'start_timer':
@@ -137,13 +135,12 @@ export async function PATCH(request) {
           is_acknowledged: true // Implicit acknowledge if started
         };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert({
-            employee_id: task.assigned_by,
-            title: 'Task Started',
-            message: `${task.assigned_user?.full_name || 'An employee'} is now working on: "${task.title}"`,
-            link: '/tasks'
-          });
+          await sendServerNotification(
+            task.assigned_by,
+            'Task Started',
+            `${task.assigned_user?.full_name || 'An employee'} is now working on: "${task.title}"`,
+            '/tasks'
+          );
         }
         break;
       case 'pause_timer':
@@ -162,13 +159,12 @@ export async function PATCH(request) {
           ]
         };
         if (task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert({
-            employee_id: task.assigned_by,
-            title: 'Progress Update',
-            message: `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${payload.percentage}%: ${payload.note || ''}`,
-            link: '/tasks'
-          });
+          await sendServerNotification(
+            task.assigned_by,
+            'Progress Update',
+            `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${payload.percentage}%: ${payload.note || ''}`,
+            '/tasks'
+          );
         }
         break;
       case 'update_checklist':
@@ -186,26 +182,23 @@ export async function PATCH(request) {
           progress_percentage: 100
         };
         if (!payload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert({
-            employee_id: task.assigned_by,
-            title: 'Task Ready for Review',
-            message: `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}". Pending your approval.`,
-            link: '/tasks'
-          });
+          await sendServerNotification(
+            task.assigned_by,
+            'Task Ready for Review',
+            `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}". Pending your approval.`,
+            '/tasks'
+          );
         }
         break;
       case 'approve':
         updateData = { approval_status: 'approved' };
         if (task?.assigned_to && task.assigned_to !== task.assigned_by) {
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert({
-            employee_id: task.assigned_to,
-            title: '✅ Task Approved',
-            message: `Your task "${task.title}" has been approved. Well done!`,
-            link: '/tasks',
-            is_read: false,
-          });
+          await sendServerNotification(
+            task.assigned_to,
+            '✅ Task Approved',
+            `Your task "${task.title}" has been approved. Well done!`,
+            '/tasks'
+          );
         }
         break;
       case 'reject':
@@ -218,14 +211,12 @@ export async function PATCH(request) {
             completion_note: payload.reject_note
         };
         if (task?.assigned_to && task.assigned_to !== task.assigned_by) {
-          const adminDb = createAdminClient();
-          await adminDb.from('notifications').insert({
-            employee_id: task.assigned_to,
-            title: '🔄 Task Needs Revision',
-            message: `Your task "${task.title}" was sent back: ${payload.reject_note}`,
-            link: '/tasks',
-            is_read: false,
-          });
+          await sendServerNotification(
+            task.assigned_to,
+            '🔄 Task Needs Revision',
+            `Your task "${task.title}" was sent back: ${payload.reject_note}`,
+            '/tasks'
+          );
         }
         break;
     }

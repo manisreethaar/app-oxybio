@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -65,6 +66,15 @@ export async function POST(request) {
         }
       }
     }
+
+    await sendServerNotification(
+      data.employee_id,
+      status === 'approved' ? '🟢 Leave Approved' : '🔴 Leave Rejected',
+      status === 'approved'
+        ? `Your leave application from ${new Date(data.start_date).toLocaleDateString()} to ${new Date(data.end_date).toLocaleDateString()} was approved.`
+        : `Your leave application from ${new Date(data.start_date).toLocaleDateString()} was rejected. Reason: ${comment}`,
+      '/leave'
+    );
 
     return NextResponse.json({ success: true, data });
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 const APPROVER_ROLES = ['admin', 'ceo', 'cto'];
@@ -46,7 +47,8 @@ export async function POST(request) {
     // Get the employee record for created_by
     const { data: emp } = await supabase.from('employees').select('id').eq('user_id', user.id).single();
 
-    const { data, error } = await supabase.from('formulations').insert({
+    const adminDb = createAdminClient();
+    const { data, error } = await adminDb.from('formulations').insert({
       code, name, ingredients, notes,
       version: nextVersion,
       created_by: emp?.id || null,
@@ -147,7 +149,8 @@ export async function PUT(request) {
        return NextResponse.json({ error: 'Cannot edit an approved formulation. Please create a new version instead.' }, { status: 403 });
     }
 
-    const { data, error } = await supabase.from('formulations')
+    const adminDb = createAdminClient();
+    const { data, error } = await adminDb.from('formulations')
       .update({ code, name, ingredients, notes })
       .eq('id', id)
       .select()
@@ -192,8 +195,12 @@ export async function DELETE(request) {
     }
 
     // DRAFT — anyone can delete their own; admins can delete any
-    const { error } = await supabase.from('formulations').delete().eq('id', id);
+    const adminDb = createAdminClient();
+    const { data: deleted, error } = await adminDb.from('formulations').delete().eq('id', id).select();
     if (error) throw error;
+    if (!deleted || deleted.length === 0) {
+       return NextResponse.json({ error: 'Recipe could not be deleted (it might be linked to existing batches).' }, { status: 400 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { notifyAdmins } from '@/utils/serverNotify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -84,30 +85,12 @@ export async function GET(request) {
       return NextResponse.json({ success: true, message: 'No alerts to push.' });
     }
 
-    // Find all admin/CEO employees to notify
-    const { data: admins } = await supabase
-      .from('employees')
-      .select('id')
-      .in('role', ['admin', 'ceo'])
-      .eq('is_active', true);
-
-    if (!admins || admins.length === 0) {
-      return NextResponse.json({ success: true, message: 'No admins found to notify.' });
-    }
-
-    // Insert notifications for each admin
-    const rows = [];
-    admins.forEach(admin => {
-      notifications.forEach(n => {
-        rows.push({ employee_id: admin.id, ...n });
-      });
-    });
-
-    await supabase.from('notifications').insert(rows);
+    const promises = notifications.map(n => notifyAdmins(n.title, n.message, n.link, n.type));
+    await Promise.allSettled(promises);
 
     return NextResponse.json({
       success: true,
-      message: `Pushed ${notifications.length} alert(s) to ${admins.length} admin(s).`,
+      message: `Pushed ${notifications.length} alert(s) to admins.`,
     });
 
   } catch (error) {

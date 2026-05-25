@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -53,13 +54,15 @@ export async function POST(request) {
 
     if (moveError) throw moveError;
 
-    // 4. Notification Triggers placeholder
+    // 4. Notification Triggers
     const minLevel = parseFloat(stockEntry.inventory_items?.min_stock_level) || 0;
     let notification = null;
     if (newQty <= 0) {
        notification = `CRITICAL — ${stockEntry.inventory_items?.name} is out of stock.`;
+       await notifyAdmins('🚨 Out of Stock', notification, '/inventory', 'alert');
     } else if (newQty < minLevel) {
        notification = `${stockEntry.inventory_items?.name} running low — ${newQty} remaining.`;
+       await notifyAdmins('⚠️ Low Stock Alert', notification, '/inventory', 'warning');
     }
 
     return NextResponse.json({ 

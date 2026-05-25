@@ -2,6 +2,8 @@ import { streamText, tool, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { sendServerNotification } from '@/utils/serverNotify';
+import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
@@ -523,14 +525,14 @@ CRITICAL RULES:
               .single();
             if (error) throw new Error(error.message);
 
-            // Also create a notification for the assignee
-            await supabase.from('notifications').insert({
-              employee_id: assigned_to,
-              title: `New Task: ${title}`,
-              message: `You have been assigned a ${priority} priority task: ${description}`,
-              type: 'info',
-              link: '/tasks',
-            });
+            // Also create a notification and push for the assignee
+            await sendServerNotification(
+              assigned_to,
+              `New Task: ${title}`,
+              `You have been assigned a ${priority} priority task: ${description}`,
+              '/tasks',
+              'info'
+            );
 
             return { success: true, message: `Task "${title}" assigned and notification sent.`, task: data };
           },

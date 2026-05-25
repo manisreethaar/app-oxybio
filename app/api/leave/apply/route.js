@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 
 // Roles that get only Casual Leave on the DOJ-based accrual system
@@ -152,6 +153,12 @@ export async function POST(request) {
     }).select().single();
 
     if (dbError) throw dbError;
+
+    await notifyAdmins(
+      '📅 New Leave Application',
+      `${user.email} applied for ${days} days of ${leave_type} leave.`,
+      '/leave'
+    );
 
     return NextResponse.json({ success: true, data });
 
