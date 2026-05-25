@@ -81,6 +81,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [cfuCount,   setCfuCount]   = useState('');
   const [foam,       setFoam]       = useState('None');
   const [appearance, setAppearance] = useState('Normal');
+  const [createIncubation, setCreateIncubation] = useState(false);
   const [notes,      setNotes]      = useState('');
   const [supervisedBy, setSupervisedBy] = useState('');
   const [isRetro,    setIsRetro]    = useState(false);
@@ -193,8 +194,27 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         logged_by: employeeProfile?.id
       });
       if (error) throw error;
+
+      // Unified Process Bus: Auto-link to Sample Incubation
+      if (createIncubation) {
+        const { error: incErr } = await supabase.from('research_sample_incubation').insert({
+          sample_name: `${activeFlask.flask_label} - T+${elapsed ? elapsed.toFixed(1) : 0}h`,
+          batch_id: batch.id,
+          flask_id: activeFlask.id,
+          sample_category: 'Fermentation IPC',
+          sample_type: 'Agar Plate',
+          incubation_date: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString().split('T')[0],
+          start_time: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString(),
+          incubation_temp_c: temp ? parseFloat(temp) : 37,
+          sterility_status: platingStatus === 'Contaminated' ? 'Contaminated' : platingStatus === 'Clear' ? 'Sterile' : 'Pending',
+          source_stage: 'fermentation',
+          observation: cfuCount ? `CFU Count: ${cfuCount}` : null
+        });
+        if (incErr) throw incErr;
+      }
+
       toast.success('Reading logged.');
-      setPH(''); setTemp(''); setBrix(''); setOd(''); setPlatingStatus('Pending'); setCfuCount(''); setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
+      setPH(''); setTemp(''); setBrix(''); setOd(''); setPlatingStatus('Pending'); setCfuCount(''); setCreateIncubation(false); setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
@@ -445,6 +465,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <div className="col-span-1">
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">CFU Count</label>
                   <input type="text" value={cfuCount} onChange={e=>setCfuCount(e.target.value)} placeholder="e.g. 1.2 x 10^6" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+              </div>
+              <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-xl flex items-start gap-3">
+                <input type="checkbox" id="linkIncubation" checked={createIncubation} onChange={e=>setCreateIncubation(e.target.checked)} className="mt-1 w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"/>
+                <div>
+                  <label htmlFor="linkIncubation" className="text-xs font-bold text-gray-800 cursor-pointer">Auto-link to Sample Incubation Module</label>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Creates a tracking record for this plate to monitor its growth over the next few days.</p>
                 </div>
               </div>
               <div>

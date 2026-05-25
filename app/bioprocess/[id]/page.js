@@ -397,15 +397,27 @@ export default function BioprocessDetailPage() {
     if (experiment.type === 'kinetics') {
       const modelType = kineticConfig.kinetics_model || 'monod';
       const isTimeCourse = modelType === 'luedeking_piret';
+      const isLinkedToBatch = !!experiment.batch_id;
+      
       return (
         <div className="space-y-5">
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-800">
-            {isTimeCourse
-              ? 'Enter time-course batch fermentation data (t, Biomass, Substrate, Product) at regular intervals.'
-              : modelType === 'monod'
-                ? 'Enter pairs of [S] (substrate concentration, g/L) and observed growth rate μ (h⁻¹) from batch fermentations at different initial substrate levels.'
-                : 'Enter pairs of [S] (substrate concentration, mM) and observed reaction rate v (mM/min) from enzyme assays.'}
-          </div>
+          {isLinkedToBatch ? (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-2">
+              <CheckCircle className="w-5 h-5 mt-0.5 shrink-0" />
+              <div>
+                <strong>Unified Process Bus Active:</strong>
+                <p>Fermentation data is synced dynamically from Batch Monitoring. Manual entry is disabled.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-800">
+              {isTimeCourse
+                ? 'Enter time-course batch fermentation data (t, Biomass, Substrate, Product) at regular intervals.'
+                : modelType === 'monod'
+                  ? 'Enter pairs of [S] (substrate concentration, g/L) and observed growth rate μ (h⁻¹) from batch fermentations at different initial substrate levels.'
+                  : 'Enter pairs of [S] (substrate concentration, mM) and observed reaction rate v (mM/min) from enzyme assays.'}
+            </div>
+          )}
 
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
@@ -438,7 +450,8 @@ export default function BioprocessDetailPage() {
                         {['time_h','biomass','substrate','product'].map(field => (
                           <td key={field} className="px-4 py-2">
                             <input type="number" step="any" value={row[field] ?? ''} onChange={e => updateKineticRow(idx, field, e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                              disabled={isLinkedToBatch}
+                              className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} />
                           </td>
                         ))}
                       </>
@@ -446,16 +459,20 @@ export default function BioprocessDetailPage() {
                       <>
                         <td className="px-4 py-2">
                           <input type="number" step="any" value={row.substrate ?? ''} onChange={e => updateKineticRow(idx, 'substrate', e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                            disabled={isLinkedToBatch}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} />
                         </td>
                         <td className="px-4 py-2">
                           <input type="number" step="any" value={row.rate ?? ''} onChange={e => updateKineticRow(idx, 'rate', e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                            disabled={isLinkedToBatch}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} />
                         </td>
                       </>
                     )}
                     <td className="px-2 py-2">
-                      <button onClick={() => removeKineticRow(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                      {!isLinkedToBatch && (
+                        <button onClick={() => removeKineticRow(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -464,10 +481,12 @@ export default function BioprocessDetailPage() {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={addKineticRow} className="flex items-center gap-1.5 text-sm font-semibold text-navy bg-navy/10 px-4 py-2 rounded-xl hover:bg-navy/20 transition-colors">
-              <Plus className="w-4 h-4" /> Add Row
-            </button>
-            <button onClick={saveAll} disabled={saving} className="flex items-center gap-2 bg-navy text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
+            {!isLinkedToBatch && (
+              <button onClick={addKineticRow} className="flex items-center gap-1.5 text-sm font-semibold text-navy bg-navy/10 px-4 py-2 rounded-xl hover:bg-navy/20 transition-colors">
+                <Plus className="w-4 h-4" /> Add Row
+              </button>
+            )}
+            <button onClick={saveAll} disabled={saving || isLinkedToBatch} className="flex items-center gap-2 bg-navy text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save
             </button>
           </div>
