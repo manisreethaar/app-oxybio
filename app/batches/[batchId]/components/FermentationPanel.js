@@ -419,34 +419,37 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           <div className="p-4">
             <PhChart readings={readings}/>
           </div>
-          <div className="overflow-x-auto border-t border-gray-100">
-            <table className="min-w-full divide-y divide-gray-100">
+          <div className="border-t border-gray-100">
+            <table className="w-full divide-y divide-gray-100">
               <thead><tr className="bg-gray-50/50">
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Flask</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">pH</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Temp</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">OD</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Plating</th>
-                {isAdmin && <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Actions</th>}
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Flask</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">pH</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Temp</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix · OD · Plating</th>
+                {isAdmin && <th className="px-3 py-2 text-[9px] font-bold text-gray-400 uppercase"></th>}
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {[...readings].filter(r => r.flask_id === activeFlask.id).reverse().map(r => (
                   <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-gray-50/30'}>
-                    <td className="px-4 py-2 text-xs font-black text-navy whitespace-nowrap">
-                      {r.flask_label}
-                      {r.is_retrospective && <span className="ml-1 px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-bold">RETRO</span>}
-                      {r.edit_reason && <span className="ml-1 px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <p className="text-xs font-black text-navy">{r.flask_label}</p>
+                      <div className="flex gap-1 mt-0.5 flex-wrap">
+                        {r.is_retrospective && <span className="px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-[7px] font-bold">RETRO</span>}
+                        {r.edit_reason && <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[7px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
+                      </div>
                     </td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
-                    <td className={`px-4 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
-                    <td className={`px-4 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.brix ? `${r.brix}` : '—'}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.optical_density ? `${r.optical_density}` : '—'}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 truncate max-w-[120px]" title={r.plating_result || ''}>{r.plating_result || '—'}</td>
+                    <td className="px-3 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
+                    <td className={`px-3 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
+                    <td className={`px-3 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
+                    <td className="px-3 py-2">
+                      <p className="text-[10px] text-gray-600 font-semibold">
+                        {r.brix ? `${r.brix}°Bx` : '—'} · {r.optical_density ? `OD ${r.optical_density}` : '—'}
+                      </p>
+                      {r.plating_result && <p className="text-[9px] text-gray-400 mt-0.5 truncate max-w-[140px]" title={r.plating_result}>{r.plating_result}</p>}
+                    </td>
                     {isAdmin && (
-                      <td className="px-4 py-2 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <button onClick={() => openEdit(r)} title="Edit reading"
                             className="p-1 rounded hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors">
@@ -461,7 +464,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     )}
                   </tr>
                 ))}
-                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 8 : 7} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
+                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
               </tbody>
             </table>
           </div>
