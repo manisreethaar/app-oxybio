@@ -182,9 +182,15 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     finally { setSaving(false); }
   };
 
+  const isRetroSpective = tZero && new Date(tZero) < new Date(batch.created_at || batch.start_time);
+
   const handleEndpoint = async (e) => {
     e.preventDefault();
     if (!epPh || savingEp) return;
+    if (isRetroSpective && !endpointTime) {
+      toast.warn('This is a retrospective batch — please set the actual Fermentation End Time.');
+      return;
+    }
     const finalPh = parseFloat(epPh);
     const phOOR = finalPh < 4.2 || finalPh > 4.5;
     if (phOOR) {
@@ -322,7 +328,18 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             )}
           </div>
           {!endpoint && tZero && (
-            <button onClick={() => { setShowEndpoint(s => !s); if (showEndpoint) setEndpointTime(''); }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
+            <button onClick={() => {
+              if (!showEndpoint) {
+                // Auto-suggest endpoint time = T=0 + planned hours when T=0 is historical
+                if (inocu?.planned_fermentation_hrs && tZero) {
+                  const suggested = new Date(tZero.getTime() + inocu.planned_fermentation_hrs * 3600000);
+                  if (suggested < new Date()) setEndpointTime(suggested.toISOString().slice(0, 16));
+                }
+              } else {
+                setEndpointTime('');
+              }
+              setShowEndpoint(s => !s);
+            }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
               {showEndpoint ? 'Cancel Endpoint' : 'Declare Endpoint'}
             </button>
           )}
@@ -486,20 +503,23 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   className={`w-full px-4 py-3 border-2 rounded-xl text-2xl font-black font-mono text-center outline-none ${parseFloat(epPh)<4.2||parseFloat(epPh)>4.5?'border-red-400 text-red-600':'border-gray-200 text-gray-800 focus:border-navy'}`} placeholder="4.30"/>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Fermentation End Time</label>
+                <label className={`block text-[10px] font-bold uppercase mb-1 ${isRetroSpective ? 'text-amber-600' : 'text-gray-400'}`}>
+                  Fermentation End Time {isRetroSpective && <span className="text-red-500">* Required</span>}
+                </label>
                 <input
                   type="datetime-local"
                   value={endpointTime}
                   max={new Date().toISOString().slice(0,16)}
                   onChange={e => setEndpointTime(e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy"
+                  className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${isRetroSpective && !endpointTime ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
                 />
                 {tZero && (() => {
                   const t = endpointTime ? new Date(endpointTime) : new Date();
                   const hrs = (t - tZero) / 3600000;
                   return (
                     <p className="text-[10px] mt-1 font-black text-navy text-center">
-                      Total: {hrs.toFixed(1)} hr  {!endpointTime && <span className="text-amber-500">(using now — set end time for retrospective batches)</span>}
+                      Total: {hrs.toFixed(1)} hr
+                      {!endpointTime && isRetroSpective && <span className="text-amber-600"> — enter actual end time above</span>}
                     </p>
                   );
                 })()}
