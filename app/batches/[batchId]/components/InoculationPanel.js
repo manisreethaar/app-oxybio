@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Droplets, AlertTriangle } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 const TRANSFER_METHODS = ['Pipette', 'Syringe', 'Sterile spoon'];
 
@@ -63,6 +64,15 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
       if (error) throw error;
       
       toast.success(advance ? `Trial ${activeFlask.flask_label} Inoculated. T=0 anchored.` : 'Draft saved.');
+      syncStageToLNB(supabase, batch.id, 'inoculation', {
+        inoculum_source: source || null,
+        inoculum_vol_ml: inVol ? parseFloat(inVol) : null,
+        planned_fermentation_hrs: plannedHr ? parseFloat(plannedHr) : null,
+        t_zero_time: tZero || null,
+        transfer_method: transfer,
+        laf_used: lafUsed,
+        contamination_check: contCheck,
+      }, activeFlask.flask_label);
       if (advance && onAdvanceFlaskStage) {
         await onAdvanceFlaskStage('fermentation');
       } else {

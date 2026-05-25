@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Beaker, AlertTriangle } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 export default function MediaPrepPanel({ batch, employees, availableStock, employeeProfile, role, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
   const toast = useToast();
@@ -117,6 +118,18 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       }
 
       toast.success(advance ? 'Media Prep complete. Inventory updated.' : 'Draft saved.');
+      syncStageToLNB(supabase, batch.id, 'media_prep', {
+        ragi_lot_id: ragiLot || null,
+        ragi_weight_g: ragiWt ? parseFloat(ragiWt) : null,
+        ragi_moisture: ragiMoist || null,
+        kavuni_lot_id: kavuniLot || null,
+        kavuni_weight_g: kavuniWt ? parseFloat(kavuniWt) : null,
+        kavuni_precook_temp_c: kavuniTemp ? parseFloat(kavuniTemp) : null,
+        kavuni_precook_min: kavuniMin ? parseFloat(kavuniMin) : null,
+        water_volume_ml: waterVol ? parseFloat(waterVol) : null,
+        total_volume_ml: totalVol ? parseFloat(totalVol) : null,
+        initial_ph: initPH ? parseFloat(initPH) : null,
+      });
       if (advance) {
         await onAdvanceStage('sterilisation');
       } else {

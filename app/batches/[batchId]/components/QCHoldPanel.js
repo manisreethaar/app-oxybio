@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2 } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                   result_unit: 'pH units' },
@@ -88,8 +89,21 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   };
 
   const handleUpdateTest = async (testId, field, value) => {
-    setTests(prev => prev.map(t => t.id === testId ? { ...t, [field]: value } : t));
+    const updatedTests = tests.map(t => t.id === testId ? { ...t, [field]: value } : t);
+    setTests(updatedTests);
     await supabase.from('batch_flask_qc_tests').update({ [field]: value }).eq('id', testId);
+
+    // Sync full QC state to LNB after every test update
+    if (sample && activeFlask) {
+      syncStageToLNB(supabase, batch.id, 'qc', {
+        sample_id: sample.sample_id,
+        tests: updatedTests.map(t => ({
+          test: t.test_name,
+          result: t.result_value || null,
+          pass_fail: t.pass_fail,
+        })),
+      }, activeFlask.flask_label);
+    }
 
     if (field === 'pass_fail' && value === 'Fail') {
       const failedTest = tests.find(t => t.id === testId);
