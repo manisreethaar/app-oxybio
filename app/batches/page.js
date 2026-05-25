@@ -104,8 +104,7 @@ export default function BatchesPage() {
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
             formulations(name, code, version),
-            batch_flasks(id, flask_label, status, current_stage),
-            batch_flask_endpoints(total_hours, flask_id)
+            batch_flasks(id, flask_label, status, current_stage)
           `)
           .not('status', 'in', '("released","rejected")')
           .order('created_at', { ascending: false }),
@@ -120,11 +119,26 @@ export default function BatchesPage() {
       const active    = activeRes.data    || [];
       const completed = completedRes.data || [];
 
+      // Fetch endpoints separately (nested select requires explicit FK in schema)
+      let epMap = {};
+      if (active.length > 0) {
+        const { data: epData } = await supabase
+          .from('batch_flask_endpoints')
+          .select('batch_id, total_hours')
+          .in('batch_id', active.map(b => b.id));
+        (epData || []).forEach(ep => {
+          if (ep.total_hours != null && (epMap[ep.batch_id] == null || ep.total_hours > epMap[ep.batch_id])) {
+            epMap[ep.batch_id] = ep.total_hours;
+          }
+        });
+      }
+      const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id] ?? null }));
+
       // has_alarm is set by DB trigger on reading insert — no need to scan readings
-      const hasAlarm = active.some(b => b.has_alarm === true);
+      const hasAlarm = activeWithEp.some(b => b.has_alarm === true);
 
       setIsAlert(hasAlarm);
-      setActiveBatches(active);
+      setActiveBatches(activeWithEp);
       setHistory(completed);
     } catch (err) {
       console.error('Fetch batches error:', err);
@@ -285,8 +299,7 @@ export default function BatchesPage() {
             {activeBatches.map(batch => {
               const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
               const flasks   = batch.batch_flasks || [];
-              const endpoints = batch.batch_flask_endpoints || [];
-              const maxEpHrs = endpoints.length > 0 ? Math.max(...endpoints.map(e => e.total_hours || 0)) : null;
+              const maxEpHrs = batch._maxEpHrs ?? null;
               const hours = maxEpHrs !== null
                 ? maxEpHrs.toFixed(1)
                 : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
