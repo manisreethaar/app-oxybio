@@ -9,7 +9,7 @@ import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function InventoryClient({ initialStock, initialItems, initialVendors }: { initialStock: any[], initialItems: any[], initialVendors: any[] }) {
+export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
@@ -17,7 +17,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [items, setItems] = useState(initialItems || []);
   const [vendors, setVendors] = useState(initialVendors || []);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -117,17 +117,38 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       if (stockRes.error) throw stockRes.error;
 
+      const stockData = stockRes.data || [];
+
       if (append) {
-        setStock(prev => [...prev, ...(stockRes.data || [])]);
+        setStock(prev => [...prev, ...stockData]);
       } else {
-        setStock(stockRes.data || []);
+        setStock(stockData);
       }
 
-      setHasMore(stockRes.data?.length === PAGE_SIZE);
+      setHasMore(stockData.length === PAGE_SIZE);
 
       if (pageNum === 0) {
         if (itemsRes.data) setItems(itemsRes.data);
         if (vendorsRes.data) setVendors(vendorsRes.data);
+      }
+
+      // Fetch batch usage for loaded stock IDs
+      if (stockData.length > 0) {
+        const stockIds = stockData.map((s: any) => s.id);
+        const { data: usageData } = await supabase
+          .from('inventory_usage')
+          .select('stock_id, batches(id, batch_id)')
+          .in('stock_id', stockIds);
+        if (usageData) {
+          const map: Record<string, Array<{id: string, batch_id: string}>> = {};
+          usageData.forEach((u: any) => {
+            if (!u.batches) return;
+            if (!map[u.stock_id]) map[u.stock_id] = [];
+            const already = map[u.stock_id].find(b => b.id === u.batches.id);
+            if (!already) map[u.stock_id].push({ id: u.batches.id, batch_id: u.batches.batch_id });
+          });
+          setBatchUsageMap(prev => append ? { ...prev, ...map } : map);
+        }
       }
     } catch (err) {
       console.error("Data synchronization failed:", err);
@@ -525,6 +546,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
   };
 
+  const [batchUsageMap, setBatchUsageMap] = useState<Record<string, Array<{id: string, batch_id: string}>>>({});
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'expiring', 'expired'
 
   // --- Tab-aware stats ---
@@ -793,6 +815,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </div>
                 </div>
               </div>
+              {batchUsageMap[s.id]?.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-3 mt-1 border-t border-gray-50">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Used in:</span>
+                  {batchUsageMap[s.id].map(b => (
+                    <Link
+                      key={b.id}
+                      href={`/batches/${b.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-black rounded border border-teal-100 hover:bg-teal-100 transition-colors"
+                    >
+                      {b.batch_id}
+                    </Link>
+                  ))}
+                </div>
+              )}
             );
           })}
           
