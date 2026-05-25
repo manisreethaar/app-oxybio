@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { CheckCircle, Lock } from 'lucide-react';
 
-export default function ReleasePanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved }) {
+export default function ReleasePanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved, batchId }) {
   const toast    = useToast();
   const [record, setRecord]   = useState(null);
   const [saving, setSaving]   = useState(false);
@@ -66,6 +66,12 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
       
       toast.success(`Trial ${activeFlask.flask_label} released.`);
       onDataSaved();
+
+      // Auto-generate BMR in the background — fire and forget
+      fetch(`/api/batches/${batchId || batch.id}/bmr`)
+        .then(r => r.json())
+        .then(d => { if (d.success) toast.success('BMR generated and saved to Document Vault.'); })
+        .catch(() => {});
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };

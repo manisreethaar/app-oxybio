@@ -509,6 +509,7 @@ export default function BatchDetailPage() {
                 onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
                 actionLoading={actionLoading}
                 readOnly={!!viewingStage && editingStage !== viewingStage}
+                batchId={batchId}
               />
             </div>
           ) : (
