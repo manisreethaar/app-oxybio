@@ -37,6 +37,29 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setWaterVol(d.water_volume_ml||''); setTotalVol(d.total_volume_ml||'');
       setInitPH(d.initial_ph||''); setNotes(d.notes||'');
       setSupervisedBy(d.supervised_by||'');
+    } else if (batch?.formulations?.ingredients) {
+      // Unified Process Bus: Auto-fill from formulation ingredients if no saved record exists
+      try {
+        const ingredients = typeof batch.formulations.ingredients === 'string' 
+          ? JSON.parse(batch.formulations.ingredients) 
+          : batch.formulations.ingredients;
+        
+        const ragi = ingredients.find(i => i.name?.toLowerCase().includes('ragi'));
+        if (ragi) setRagiWt(ragi.quantity);
+        
+        const kavuni = ingredients.find(i => i.name?.toLowerCase().includes('kavuni'));
+        if (kavuni) setKavuniWt(kavuni.quantity);
+        
+        const water = ingredients.find(i => i.name?.toLowerCase().includes('water'));
+        if (water) setWaterVol(water.quantity);
+        
+        // Also prefill total volume based on batch planned volume if not set
+        if (batch.planned_volume_ml && batch.num_flasks) {
+           setTotalVol(batch.planned_volume_ml * batch.num_flasks);
+        }
+      } catch (e) {
+        console.error('Failed to parse formulation ingredients for auto-fill:', e);
+      }
     }
     return () => { isCurrent = false; };
   }, [batch.id, supabase]);
