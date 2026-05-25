@@ -66,11 +66,13 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const [supervisedBy,  setSupervisedBy]  = useState('');
 
   const fetchRecord = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
     const [{ data }, { data: eqData }] = await Promise.all([
       supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single(),
       supabase.from('equipment').select('id, name, model, status, calibration_due_date').order('name'),
     ]);
+    if (!isCurrent) return;
     if (eqData) setEquipment(eqData);
     if (data) {
       setRecord(data);
@@ -88,10 +90,11 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       setPh(data.filtrate_ph ?? '');
       setNotes(data.notes || '');
       setSupervisedBy(data.supervised_by || '');
-    }
-  }, [activeFlask, supabase]);
+    } else { setRecord(null); }
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, supabase]);
 
-  useEffect(() => { fetchRecord(); }, [fetchRecord]);
+  useEffect(() => { setRecord(null); fetchRecord(); }, [fetchRecord]);
 
   const recoveryPct = brothBefore && supernAfter
     ? ((parseFloat(supernAfter) / parseFloat(brothBefore)) * 100).toFixed(1)

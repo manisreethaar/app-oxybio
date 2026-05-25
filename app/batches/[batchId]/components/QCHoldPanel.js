@@ -34,23 +34,29 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [expectDate,   setExpectDate]   = useState('');
 
   const fetchQcData = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
     const { data: sData } = await supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).single();
+    if (!isCurrent) return;
     if (sData) {
       setSample(sData);
-      const { data: tData } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('created_at');
-      setTests(tData || []);
-      const res = await fetch(`/api/research/incubation?qc_sample_id=${sData.id}`);
-      const json = await res.json();
-      setIncubations(json.success ? json.data || [] : []);
+      const [tRes, incRes] = await Promise.all([
+        supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('created_at'),
+        fetch(`/api/research/incubation?qc_sample_id=${sData.id}`).then(r => r.json()),
+      ]);
+      if (!isCurrent) return;
+      setTests(tRes.data || []);
+      setIncubations(incRes.success ? incRes.data || [] : []);
     } else {
-      setSample(null);
-      setTests([]);
-      setIncubations([]);
+      setSample(null); setTests([]); setIncubations([]);
     }
-  }, [activeFlask, supabase]);
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, supabase]);
 
-  useEffect(() => { fetchQcData(); }, [fetchQcData]);
+  useEffect(() => {
+    setSample(null); setTests([]); setIncubations([]);
+    fetchQcData();
+  }, [fetchQcData]);
 
   const handleCreateSample = async () => {
     if (!activeFlask) return;

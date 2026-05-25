@@ -25,7 +25,9 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const [supervisedBy, setSupervisedBy] = useState('');
 
   const fetch = useCallback(async () => {
+    let isCurrent = true;
     const { data: d } = await supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batch.id).single();
+    if (!isCurrent) return;
     if (d) {
       setData(d);
       setRagiLot(d.ragi_lot_id||''); setRagiWt(d.ragi_weight_g||'');
@@ -36,6 +38,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setInitPH(d.initial_ph||''); setNotes(d.notes||'');
       setSupervisedBy(d.supervised_by||'');
     }
+    return () => { isCurrent = false; };
   }, [batch.id, supabase]);
 
   useEffect(() => { fetch(); }, [fetch]);

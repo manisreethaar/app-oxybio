@@ -494,7 +494,10 @@ export default function BatchDetailPage() {
           )}
 
           {CurrentPanel ? (
-            <div className={viewingStage && editingStage !== viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}>
+            <div
+              key={`${selectedFlaskId ?? 'batch'}-${displayStage}`}
+              className={viewingStage && editingStage !== viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}
+            >
               <CurrentPanel
                 batch={batch} flasks={flasks}
                 activeFlask={selectedFlask}

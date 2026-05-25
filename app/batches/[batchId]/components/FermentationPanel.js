@@ -132,18 +132,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const isIntern = ['intern','research_intern'].includes(role);
 
   const fetchData = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
     const [rRes, iRes, epRes] = await Promise.all([
-      supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batch.id).order('logged_at'),
+      supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
       supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
       supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
     ]);
     if (rRes.data) setReadings(rRes.data);
-    if (iRes.data) setInocu(iRes.data);
+    if (iRes.data) setInocu(iRes.data); else setInocu(null);
     setEndpoint(epRes.data ?? null);
-  }, [batch.id, activeFlask, supabase]);
+  }, [batch.id, activeFlask?.id, supabase]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    setReadings([]); setInocu(null); setEndpoint(null);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     // Clear endpoint form whenever the active flask changes

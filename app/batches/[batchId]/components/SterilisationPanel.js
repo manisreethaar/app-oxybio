@@ -24,10 +24,12 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   const [notes,     setNotes]     = useState('');
 
   const fetch = useCallback(async () => {
+    let isCurrent = true;
     const [dRes, eqRes] = await Promise.all([
       supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
       supabase.from('equipment').select('id, name, status, calibration_due_date').order('name'),
     ]);
+    if (!isCurrent) return;
     if (dRes.data) {
       const d = dRes.data;
       setMethod(d.method||'Pressure Cooker'); setEquipId(d.equipment_id||'');
@@ -39,6 +41,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setNotes(d.notes||'');
     }
     if (eqRes.data) setEquipment(eqRes.data);
+    return () => { isCurrent = false; };
   }, [batch.id, supabase]);
 
   useEffect(() => { fetch(); }, [fetch]);
