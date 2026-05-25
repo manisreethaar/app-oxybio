@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -51,19 +52,12 @@ export async function POST(request) {
 
     if (updateError) throw updateError;
 
-    // 3. Notify Admins (service role — RLS would block inserting for other users)
-    const supabaseAdmin = createAdminClient();
-    const { data: admins } = await supabaseAdmin.from('employees').select('id').in('role', ['admin', 'ceo', 'cto']);
-    if (admins && admins.length > 0) {
-        const notifications = admins.map(admin => ({
-            employee_id: admin.id,
-            title: '📄 New Mispunch Request',
-            message: `${user.email} has applied for ${hours}h reconciliation.`,
-            link: '/mispunch',
-            is_read: false
-        }));
-        await supabaseAdmin.from('notifications').insert(notifications);
-    }
+    // 3. Notify Admins
+    await notifyAdmins(
+        '📄 New Mispunch Request',
+        `${user.email} has applied for ${hours}h reconciliation.`,
+        '/mispunch'
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {

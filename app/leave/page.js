@@ -144,15 +144,7 @@ export default function LeavePage() {
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || 'Submission failed');
 
-      notifyEmployee(
-        employeeProfile.id,
-        '🗓️ Leave Submitted',
-        `Your ${payload.leave_type} leave request has been submitted and is pending HR approval.`,
-        '/leave'
-      );
-      
-      const { data: admins } = await supabase.from('employees').select('id').in('role', ['admin','ceo','cto']).eq('is_active', true);
-      notifyAll((admins || []).map(a => a.id), '📄 Leave Request Pending', `${employeeProfile.full_name} has submitted a ${payload.leave_type} leave request. Review required.`, '/leave');
+      // Notifications are handled by the backend API route.
 
       reset();
       fetchLeaves();
@@ -191,19 +183,7 @@ export default function LeavePage() {
 
       const updatedLeave = resData.data;
 
-      const employeeId = updatedLeave?.employee_id;
-      if (employeeId) {
-        const notifTitle = status === 'approved' ? `✅ Leave Approved` : `❌ Leave Rejected`;
-        const notifBody = status === 'approved'
-          ? `Your ${updatedLeave.leave_type} leave request has been approved by HR.`
-          : `Your ${updatedLeave.leave_type} leave request was rejected. Reason: ${comment}`;
-
-        fetch('/api/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ assigned_to: employeeId, title: notifTitle, body: notifBody, url: '/leave' })
-        }).catch(() => {});
-      }
+      // Notification is handled by the backend
 
       setRejectionId(null);
       setRejectionReason('');

@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { createAdminClient } from '@/utils/supabase/admin';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -46,27 +46,13 @@ export async function POST(request) {
     // 🔔 Notify the employee their payslip is ready
     const { month, year, net_salary, employee_id } = parsed.data;
 
-    // In-app notification (service role — admin inserting for another employee)
-    const supabaseAdmin = createAdminClient();
-    await supabaseAdmin.from('notifications').insert({
+    await sendServerNotification(
       employee_id,
-      title: `💰 Payslip Ready: ${month} ${year}`,
-      message: `Your salary slip for ${month} ${year} is now available. Net pay: ₹${Number(net_salary).toLocaleString()}.`,
-      link: '/payslips',
-      is_read: false
-    });
-
-    // Push notification (fire and forget)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/push/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        assigned_to: employee_id,
-        title: `💰 Payslip Ready: ${month} ${year}`,
-        body: `Net pay: ₹${Number(net_salary).toLocaleString()}. Tap to view.`,
-        url: '/payslips'
-      })
-    }).catch(() => {});
+      `💰 Payslip Ready: ${month} ${year}`,
+      `Your salary slip for ${month} ${year} is now available. Net pay: ₹${Number(net_salary).toLocaleString()}.`,
+      '/payslips',
+      'info'
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {

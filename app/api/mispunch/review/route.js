@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -65,17 +66,15 @@ export async function POST(request) {
 
     if (updateError) throw updateError;
 
-    // 4. Notify employee (service role — admin inserting for a different user)
-    const supabaseAdmin = createAdminClient();
-    await supabaseAdmin.from('notifications').insert({
-        employee_id: log.employee_id,
-        title: action === 'approve' ? '🟢 Mispunch Approved' : '🔴 Mispunch Rejected',
-        message: action === 'approve' 
+    // 4. Notify employee
+    await sendServerNotification(
+        log.employee_id,
+        action === 'approve' ? '🟢 Mispunch Approved' : '🔴 Mispunch Rejected',
+        action === 'approve' 
             ? `Your mispunch for ${new Date(log.date).toLocaleDateString()} was approved for ${log.mispunch_requested_hours}h.` 
             : `Your mispunch for ${new Date(log.date).toLocaleDateString()} was rejected. Reason: ${remark}`,
-        link: '/mispunch',
-        is_read: false
-    });
+        '/mispunch'
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {

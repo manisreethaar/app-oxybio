@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -160,7 +161,6 @@ export async function POST(request) {
         num_flasks,
         planned_start_date: planned_start_date || null,
         assigned_team:      assigned_team.length > 0 ? assigned_team : [creator.id],
-        linked_sops:        linked_sops.length > 0 ? linked_sops : null,
         current_stage:      'media_prep',
         status:             'scheduled',
         start_time:         new Date().toISOString(),
@@ -225,20 +225,13 @@ export async function POST(request) {
       ? new Date(planned_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
       : 'ASAP';
 
-    const notifRows = teamIds.map(empId => ({
-      employee_id: empId,
-      title:       `Batch Assigned: ${batchIdStr}`,
-      message:     `You've been assigned to batch ${batchIdStr} (${experiment_type} — ${sku_target}). Planned start: ${startDisplay}.`,
-      link:        `/batches/${newBatch.id}`,
-      is_read:     false,
-    }));
-    // Service role — creator inserting notifications for other team members
-    const notifAdmin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    await notifAdmin.from('notifications').insert(notifRows).then(() => {}).catch(() => {});
+    const notifyPromises = teamIds.map(empId => sendServerNotification(
+      empId,
+      `Batch Assigned: ${batchIdStr}`,
+      `You've been assigned to batch ${batchIdStr} (${experiment_type} — ${sku_target}). Planned start: ${startDisplay}.`,
+      `/batches/${newBatch.id}`
+    ));
+    await Promise.allSettled(notifyPromises);
 
     return NextResponse.json({
       success:  true,

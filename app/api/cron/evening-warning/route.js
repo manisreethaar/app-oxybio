@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import webpush from 'web-push';
+import { sendServerNotification } from '@/utils/serverNotify';
 
 // nodejs runtime required — edge runtime can't use Service Role Key (no Node crypto)
 // Also: web-push requires Node.js crypto, not available in edge
@@ -13,43 +13,7 @@ function toISTDateStr(utcDate) {
   return ist.toISOString().split('T')[0];
 }
 
-// ── Direct push sender — avoids self-HTTP fetch ───────────────
-// Previously this cron called /api/push/send via HTTP (self-fetch on Vercel
-// edge = silent failure). Now we send directly from the same process.
-async function sendPushToEmployee(supabaseAdmin, employeeId, title, body, url) {
-  try {
-    const { data: emp } = await supabaseAdmin
-      .from('employees')
-      .select('push_subscription')
-      .eq('id', employeeId)
-      .single();
-
-    if (!emp?.push_subscription) return; // not subscribed — skip
-
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
-
-    webpush.setVapidDetails(
-      process.env.VAPID_CONTACT_EMAIL || 'mailto:ceo@oxygenbioinnovations.com',
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-      process.env.VAPID_PRIVATE_KEY
-    );
-
-    const sub = typeof emp.push_subscription === 'string'
-      ? JSON.parse(emp.push_subscription)
-      : emp.push_subscription;
-
-    await webpush.sendNotification(sub, JSON.stringify({ title, body, url }));
-  } catch (err) {
-    // 410 = subscription expired — clean it up
-    if (err.statusCode === 410 || err.statusCode === 404) {
-      await supabaseAdmin
-        .from('employees')
-        .update({ push_subscription: null })
-        .eq('id', employeeId);
-    }
-    // Don't throw — one employee's push failure shouldn't abort the whole cron
-  }
-}
+// sendServerNotification handles both DB insertions and push notifications
 
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
@@ -98,31 +62,15 @@ export async function GET(request) {
 
     if (empError) throw empError;
 
-    // 3. Insert in-app notifications
-    const notifRows = employees.map(emp => ({
-      employee_id: emp.id,
-      title:       '🔴 You Are Still Checked In',
-      message:     'It is 9:00 PM and your shift is still open. Please check out now — at midnight your hours will be set to 0 and a Mispunch will be required.',
-      link:        '/attendance',
-      is_read:     false,
-    }));
+    // 3. Insert in-app notifications and Send push
+    const notifyPromises = employees.map(emp => sendServerNotification(
+      emp.id,
+      '🔴 You Are Still Checked In',
+      'It is 9:00 PM and your shift is still open. Please check out now — at midnight your hours will be set to 0 and a Mispunch will be required.',
+      '/attendance'
+    ));
 
-    await supabaseAdmin.from('notifications').insert(notifRows);
-
-    // 4. ── FIX 3: Send push directly — no self-HTTP fetch ─────
-    // Previously called /api/push/send via fetch() from edge runtime.
-    // Self-fetch on Vercel = silent failure. Now we call directly.
-    await Promise.allSettled(
-      employees.map(emp =>
-        sendPushToEmployee(
-          supabaseAdmin,
-          emp.id,
-          '🔴 Still Checked In? Check Out Now',
-          'It is 9 PM. At midnight your hours will be zeroed and a Mispunch will be required. Check out now on OxyOS.',
-          '/attendance'
-        )
-      )
-    );
+    await Promise.allSettled(notifyPromises);
 
     return NextResponse.json({
       success: true,
