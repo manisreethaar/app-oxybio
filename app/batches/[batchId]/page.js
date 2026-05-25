@@ -60,10 +60,11 @@ export default function BatchDetailPage() {
   const [bmrUrl,         setBmrUrl]         = useState(null);
   const [pendingTransition, setPendingTransition] = useState(null);
   const [pendingCancel,     setPendingCancel]     = useState(false);
-  const [pendingFlaskReject, setPendingFlaskReject] = useState(false);
-  const [selectedFlaskId,   setSelectedFlaskId]   = useState(null);
-  const [viewingStage,      setViewingStage]      = useState(null);
-  const [lnbByFlask,        setLnbByFlask]        = useState({});
+  const [pendingFlaskReject,  setPendingFlaskReject]  = useState(false);
+  const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null); // { flaskId, flaskLabel, toStage }
+  const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
+  const [viewingStage,       setViewingStage]       = useState(null);
+  const [lnbByFlask,         setLnbByFlask]         = useState({});
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -99,11 +100,20 @@ export default function BatchDetailPage() {
     }
   }, [flasks, selectedFlaskId]);
 
-  const handleFlaskTransition = useCallback(async (flaskId, toStage) => {
+  // Queues a flask advance for confirmation — captures flaskId at call time to avoid stale closures.
+  const handleFlaskTransition = useCallback((flaskId, toStage) => {
     if (toStage === 'released' && lnbCount === 0) {
       toast.warn('Cannot release — Lab Notebook is empty.');
       return;
     }
+    const flask = flasks.find(f => f.id === flaskId);
+    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage });
+  }, [flasks, lnbCount, toast]);
+
+  const confirmFlaskAdvance = useCallback(async () => {
+    if (!pendingFlaskAdvance) return;
+    const { flaskId, toStage } = pendingFlaskAdvance;
+    setPendingFlaskAdvance(null);
     setActionLoading(true);
     try {
       const { error } = await supabase.from('batch_flasks').update({ current_stage: toStage }).eq('id', flaskId);
@@ -112,7 +122,7 @@ export default function BatchDetailPage() {
       fetchAll();
     } catch (err) { toast.error(err.message); }
     finally { setActionLoading(false); }
-  }, [supabase, toast, fetchAll, lnbCount]);
+  }, [pendingFlaskAdvance, supabase, toast, fetchAll]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
@@ -201,7 +211,26 @@ export default function BatchDetailPage() {
   const currentIdx  = STAGES.findIndex(s => s.id === batch.current_stage);
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   const isPostSterilisation = currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting';
-  
+
+  // Derive a live display status from flask stages (batch.status doesn't update on flask-level transitions)
+  const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','qc_hold','released','rejected'];
+  const derivedStatus = (() => {
+    if (isTerminal) return batch.status;
+    if (!isPostSterilisation || flasks.length === 0) return batch.status;
+    const allRejected = flasks.every(f => f.status === 'rejected');
+    if (allRejected) return 'rejected';
+    const activeFlasks = flasks.filter(f => f.status !== 'rejected');
+    const maxStage = activeFlasks.reduce((best, f) => {
+      const r = FLASK_STAGE_RANK.indexOf(f.current_stage);
+      return r > FLASK_STAGE_RANK.indexOf(best) ? f.current_stage : best;
+    }, 'inoculation');
+    if (maxStage === 'fermentation') return 'fermenting';
+    if (maxStage === 'qc_hold') return 'qc-hold';
+    if (maxStage === 'released') return 'released';
+    if (['straining','extract_addition'].includes(maxStage)) return 'processing';
+    return batch.status;
+  })();
+
   const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
   const activeStage = isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage;
   const displayStage = viewingStage || activeStage;
@@ -238,7 +267,7 @@ export default function BatchDetailPage() {
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-blue-50 text-blue-700 border-blue-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
                   )}
                   <span className="px-2 py-0.5 rounded text-[9px] font-black bg-gray-100 text-gray-600 border border-gray-200 uppercase">{batch.experiment_type}</span>
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${isTerminal && batch.status==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : isTerminal ? 'bg-red-50 text-red-700 border-red-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>{batch.status}</span>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-rose-50 text-rose-700 border-rose-100' : derivedStatus==='processing' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>{derivedStatus}</span>
                 </div>
               </div>
               <div className="text-right flex flex-col items-end gap-2">
@@ -491,6 +520,26 @@ export default function BatchDetailPage() {
             <div className="flex gap-3">
               <button onClick={() => setPendingCancel(false)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold">Nevermind</button>
               <button onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm">Yes, Cancel Batch</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flask Advance Confirmation Modal */}
+      {pendingFlaskAdvance && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-gray-900 mb-1 text-center">Advance Trial Stage</h3>
+            <p className="text-sm text-gray-600 mb-1 text-center">
+              Advancing <span className="font-black text-navy">{pendingFlaskAdvance.flaskLabel}</span> to{' '}
+              <span className="font-black uppercase">{pendingFlaskAdvance.toStage.replace(/_/g,' ')}</span>
+            </p>
+            <p className="text-xs text-gray-400 text-center mb-5">This cannot be undone without admin intervention.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setPendingFlaskAdvance(null)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={confirmFlaskAdvance} disabled={actionLoading} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : `Advance ${pendingFlaskAdvance.flaskLabel}`}
+              </button>
             </div>
           </div>
         </div>

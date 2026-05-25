@@ -102,13 +102,19 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         </div>
 
         {/* T=0 */}
-        <div className="p-4 bg-navy/5 border-2 border-navy/30 rounded-2xl">
+        <div className={`p-4 border-2 rounded-2xl ${tZero && new Date(tZero) < new Date(batch.created_at || batch.start_time) ? 'bg-red-50 border-red-300' : 'bg-navy/5 border-navy/30'}`}>
           <label className="block text-[11px] font-black uppercase tracking-wider text-navy mb-2">
             ⏱ T=0 — Inoculation Time for {activeFlask.flask_label}
           </label>
           <input type="datetime-local" value={tZero} onChange={e=>setTZero(e.target.value)}
             className="w-full px-4 py-3 border-2 border-navy/30 rounded-xl text-sm font-black font-mono text-navy bg-white outline-none focus:border-navy"/>
-          <p className="text-[10px] text-navy/60 font-semibold mt-1.5">This sets the clock specifically for this trial.</p>
+          {tZero && new Date(tZero) < new Date(batch.created_at || batch.start_time) ? (
+            <p className="text-[10px] text-red-600 font-bold mt-1.5 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3"/>T=0 is earlier than batch creation — this will inflate fermentation hours. Verify the date.
+            </p>
+          ) : (
+            <p className="text-[10px] text-navy/60 font-semibold mt-1.5">This sets the clock specifically for this trial.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
