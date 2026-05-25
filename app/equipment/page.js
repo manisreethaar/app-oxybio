@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
 
 const equipSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -41,6 +42,7 @@ export default function EquipmentPage() {
   
   const [deletingId, setDeletingId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [batchUsageMap, setBatchUsageMap] = useState({});
   
   // REACT HOOK FORM SETUPS
   const { register: regEquip, handleSubmit: handEquip, formState: { errors: eqErrors, isSubmitting: isEqSubmitting }, reset: resetEquip } = useForm({
@@ -64,9 +66,17 @@ export default function EquipmentPage() {
   const fetchEquipment = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('equipment').select('*, calibration_logs(*)').order('name');
-      if (error) throw error;
-      setEquipment(data || []);
+      const [{ data: eqData, error: eqErr }, { data: sterilData }] = await Promise.all([
+        supabase.from('equipment').select('*, calibration_logs(*)').order('name'),
+        supabase.from('batch_stage_sterilisation').select('equipment_id, batches(id, batch_id, status)').order('created_at', { ascending: false }).limit(300)
+      ]);
+      if (eqErr) throw eqErr;
+      setEquipment(eqData || []);
+      const usageMap = {};
+      (sterilData || []).forEach(row => {
+        if (!usageMap[row.equipment_id] && row.batches) usageMap[row.equipment_id] = row.batches;
+      });
+      setBatchUsageMap(usageMap);
     } catch (err) { console.error('Fetch equipment error:', err); }
     finally { setLoading(false); }
   };
@@ -203,10 +213,24 @@ export default function EquipmentPage() {
                   <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase">ISO Compliance Deadline</p>
                 </div>
 
+                {batchUsageMap[device.id] && (
+                  <div className="px-4 py-3 bg-navy/5 rounded-2xl border border-navy/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Last used in</p>
+                    <div className="flex items-center justify-between">
+                      <Link href={`/batches/${batchUsageMap[device.id].id}`} className="text-xs font-black text-navy hover:underline font-mono tracking-wider">
+                        {batchUsageMap[device.id].batch_id}
+                      </Link>
+                      {batchUsageMap[device.id].status === 'active' && (
+                        <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full uppercase">Active</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                    onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
+                    onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }}
                     className="flex-1 py-3 bg-white border border-gray-200 text-teal-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                       Log Maintenance
                   </button>
@@ -279,7 +303,7 @@ export default function EquipmentPage() {
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
-              <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance & Calibration Log</p>
+              <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance &amp; Calibration Log</p>
             </div>
             <form onSubmit={handMaint(onSubmitMaintenance)} className="p-8 space-y-5">
               <input type="hidden" {...regMaint('equipment_id')} />
@@ -311,7 +335,7 @@ export default function EquipmentPage() {
                   {...regMaint('buffer_values_used')} placeholder="e.g. 4.01, 7.00, 10.01"/>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes & Results</label>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes &amp; Results</label>
                 <textarea rows="3" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold resize-none" 
                   {...regMaint('result')} placeholder="Maintenance performed..."/>
                 {mxErrors.result && <p className="text-red-500 text-xs mt-1">{mxErrors.result.message}</p>}
