@@ -16,21 +16,24 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const [notes,    setNotes]    = useState('');
 
   const fetch = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
     const { data } = await supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).single();
-    if (data) { 
-      setRecord(data); 
-      setYieldVol(data.yield_volume_ml||''); 
-      setBottles(data.bottles_produced||''); 
-      setBotVol(data.bottle_volume_ml||''); 
-      setNotes(data.release_notes||''); 
+    if (!isCurrent) return;
+    if (data) {
+      setRecord(data);
+      setYieldVol(data.yield_volume_ml||'');
+      setBottles(data.bottles_produced||'');
+      setBotVol(data.bottle_volume_ml||'');
+      setNotes(data.release_notes||'');
     } else {
       setRecord(null);
       setYieldVol(''); setBottles(''); setBotVol(''); setNotes('');
     }
-  }, [activeFlask, supabase]);
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, supabase]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { setRecord(null); fetch(); }, [fetch]);
 
   const handleSave = async () => {
     if (!isCeo) return;

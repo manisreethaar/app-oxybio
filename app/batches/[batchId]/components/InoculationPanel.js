@@ -19,28 +19,29 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [contCheck, setContCheck] = useState('Clear');
   const [contNotes, setContNotes] = useState('');
 
-  const fetch = useCallback(async () => {
-    if (!activeFlask) return;
-    const { data: d } = await supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single();
-    if (d) {
-      setSource(d.inoculum_source||''); 
-      setInVol(d.inoculum_vol_ml||'');
-      setPlannedHr(d.planned_fermentation_hrs||'');
-      setTZero(d.t_zero_time ? d.t_zero_time.slice(0,16) : '');
-      setTransfer(d.transfer_method||'Pipette'); 
-      setLafUsed(d.laf_used||false);
-      setContCheck(d.contamination_check||'Clear'); 
-      setContNotes(d.contamination_notes||'');
-    } else {
-      setSource(''); setInVol(''); setPlannedHr(''); setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
-      // Default T=0 to current time for convenience
-      const now = new Date();
-      now.setSeconds(0,0);
-      setTZero(now.toISOString().slice(0,16));
-    }
-  }, [activeFlask, supabase]);
-
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
+    supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single()
+      .then(({ data: d }) => {
+        if (!isCurrent) return;
+        if (d) {
+          setSource(d.inoculum_source||'');
+          setInVol(d.inoculum_vol_ml||'');
+          setPlannedHr(d.planned_fermentation_hrs||'');
+          setTZero(d.t_zero_time ? d.t_zero_time.slice(0,16) : '');
+          setTransfer(d.transfer_method||'Pipette');
+          setLafUsed(d.laf_used||false);
+          setContCheck(d.contamination_check||'Clear');
+          setContNotes(d.contamination_notes||'');
+        } else {
+          setSource(''); setInVol(''); setPlannedHr(''); setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
+          const now = new Date(); now.setSeconds(0,0);
+          setTZero(now.toISOString().slice(0,16));
+        }
+      });
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, supabase]);
 
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
