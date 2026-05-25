@@ -36,8 +36,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setContNotes(d.contamination_notes||'');
         } else {
           setSource(''); setInVol(''); setPlannedHr(''); setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
-          const now = new Date(); now.setSeconds(0,0);
-          setTZero(now.toISOString().slice(0,16));
+          setTZero('');
         }
       });
     return () => { isCurrent = false; };
