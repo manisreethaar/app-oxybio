@@ -12,6 +12,15 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const isIntern = ['intern','research_intern'].includes(role);
   const isF2 = batch.experiment_type === 'F2';
 
+  // Parse formulation ingredient guide
+  const formulationIngredients = (() => {
+    try {
+      const raw = batch.formulations?.ingredients;
+      return Array.isArray(raw) ? raw : (raw ? JSON.parse(raw) : []);
+    } catch { return []; }
+  })();
+  const ingByItemId = Object.fromEntries(formulationIngredients.map(i => [i.item_id, i]));
+
   const [ragiLot,    setRagiLot]    = useState('');
   const [ragiWt,     setRagiWt]     = useState('');
   const [ragiMoist,  setRagiMoist]  = useState('');
@@ -38,21 +47,41 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setWaterVol(d.water_volume_ml||''); setTotalVol(d.total_volume_ml||'');
       setInitPH(d.initial_ph||''); setNotes(d.notes||'');
       setSupervisedBy(d.supervised_by||'');
+    } else {
+      // Pre-populate weights from formulation if no saved data
+      for (const ing of formulationIngredients) {
+        const nameLower = ing.name?.toLowerCase() || '';
+        if (nameLower.includes('ragi'))   setRagiWt(String(ing.quantity || ''));
+        if (nameLower.includes('kavuni')) setKavuniWt(String(ing.quantity || ''));
+        if (nameLower.includes('water'))  setWaterVol(String(ing.quantity || ''));
+      }
     }
     return () => { isCurrent = false; };
-  }, [batch.id, supabase]);
+  }, [batch.id, supabase]); // eslint-disable-line
 
   useEffect(() => { fetch(); }, [fetch]);
 
   const grainToWater = ragiWt && waterVol ? (parseFloat(waterVol)/parseFloat(ragiWt)).toFixed(2) : null;
-  const stock = availableStock.filter(s => s.inventory_items?.category?.toLowerCase().includes('grain') || s.inventory_items?.name?.toLowerCase().includes('ragi') || s.inventory_items?.name?.toLowerCase().includes('kavuni'));
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
+
+  // Sort lots: recipe-matched items first, rest after a divider
+  const sortedStock = (filterFn) => {
+    const matched = availableStock.filter(filterFn);
+    const others  = availableStock.filter(s => !filterFn(s));
+    return { matched, others };
+  };
+  const ragiMatch   = s => formulationIngredients.some(i => i.item_id === s.item_id || i.item_id === s.inventory_items?.id) && s.inventory_items?.name?.toLowerCase().includes('ragi');
+  const kavuniMatch = s => formulationIngredients.some(i => i.item_id === s.item_id || i.item_id === s.inventory_items?.id) && s.inventory_items?.name?.toLowerCase().includes('kavuni');
+  const ragiStock   = sortedStock(ragiMatch);
+  const kavuniStock = sortedStock(kavuniMatch);
 
   const deductLot = async (lotId, weightG, label) => {
     if (!lotId || !weightG) return;
     const qty = parseFloat(weightG);
     const { data: stockRow } = await supabase
-      .from('inventory_stock').select('current_quantity').eq('id', lotId).single();
+      .from('inventory_stock')
+      .select('current_quantity, inventory_items(name, unit, min_stock_level)')
+      .eq('id', lotId).single();
     if (!stockRow) { toast.warn(`${label}: lot not found in inventory.`); return; }
     const shortfall = qty - parseFloat(stockRow.current_quantity);
     const newQty = Math.max(0, parseFloat(stockRow.current_quantity) - qty);
@@ -60,6 +89,21 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     await supabase.from('inventory_stock')
       .update({ current_quantity: newQty, status: newQty <= 0 ? 'Out of Stock' : undefined })
       .eq('id', lotId);
+
+    // Auto-create procurement task if stock drops below minimum
+    const minLevel = parseFloat(stockRow.inventory_items?.min_stock_level || 0);
+    if (minLevel > 0 && newQty < minLevel) {
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      supabase.from('tasks').insert({
+        title: `Restock: ${stockRow.inventory_items?.name || label} — below minimum`,
+        description: `Batch ${batch.batch_id} media prep used ${qty}${stockRow.inventory_items?.unit || 'g'}. Remaining: ${newQty.toFixed(1)} (min: ${minLevel}). Please reorder.`,
+        priority: 'high', status: 'todo',
+        batch_id: batch.id,
+        assigned_by: employeeProfile?.id,
+        due_date: tomorrow.toISOString().slice(0, 10),
+      }).then(() => {}).catch(() => {});
+      toast.warn(`${label} below minimum stock — procurement task created.`);
+    }
     await supabase.from('inventory_movements').insert({
       stock_id:        lotId,
       movement_type:   'Batch Deduction',
@@ -148,6 +192,23 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         {data?.is_complete && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Complete</span>}
       </div>
 
+      {formulationIngredients.length > 0 && (
+        <div className="surface p-4 border border-indigo-100 bg-indigo-50/30">
+          <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">
+            Recipe: {batch.formulations?.name} ({batch.formulations?.code})
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {formulationIngredients.map(ing => (
+              <div key={ing.item_id} className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-indigo-100">
+                <span className="text-xs font-bold text-indigo-800">{ing.name}</span>
+                <span className="text-xs font-black text-indigo-600">{ing.quantity}{ing.unit}</span>
+                <span className="text-[9px] text-indigo-400 uppercase font-bold">target</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="surface p-5 space-y-5">
         {/* Ragi Section */}
         <div>
@@ -157,11 +218,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               <label className="field-label">Lot Number</label>
               <select value={ragiLot} onChange={e=>setRagiLot(e.target.value)} className="field-input">
                 <option value="">Select lot...</option>
-                {availableStock.filter(s=>s.inventory_items?.name?.toLowerCase().includes('ragi')).map(s=>(
-                  <option key={s.id} value={s.id}>{s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'} | {s.current_quantity}{s.inventory_items?.unit}</option>
+                {ragiStock.matched.length > 0 && <option disabled>── Recipe match ──</option>}
+                {ragiStock.matched.map(s=>(
+                  <option key={s.id} value={s.id}>★ {s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'} | {s.current_quantity}{s.inventory_items?.unit}</option>
                 ))}
-                {availableStock.filter(s=>!s.inventory_items?.name?.toLowerCase().includes('ragi')).map(s=>(
-                  <option key={s.id} value={s.id}>{s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'}</option>
+                {ragiStock.others.length > 0 && <option disabled>── Other lots ──</option>}
+                {ragiStock.others.map(s=>(
+                  <option key={s.id} value={s.id}>{s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'} | {s.current_quantity}{s.inventory_items?.unit}</option>
                 ))}
               </select>
             </div>
@@ -193,7 +256,14 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               <div><label className="field-label">Kavuni Lot</label>
                 <select value={kavuniLot} onChange={e=>setKavuniLot(e.target.value)} className="field-input">
                   <option value="">Select lot...</option>
-                  {availableStock.map(s=><option key={s.id} value={s.id}>{s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'}</option>)}
+                  {kavuniStock.matched.length > 0 && <option disabled>── Recipe match ──</option>}
+                  {kavuniStock.matched.map(s=>(
+                    <option key={s.id} value={s.id}>★ {s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'} | {s.current_quantity}{s.inventory_items?.unit}</option>
+                  ))}
+                  {kavuniStock.others.length > 0 && <option disabled>── Other lots ──</option>}
+                  {kavuniStock.others.map(s=>(
+                    <option key={s.id} value={s.id}>{s.inventory_items?.name} | {s.supplier_batch_number||'UN-LOT'} | {s.current_quantity}{s.inventory_items?.unit}</option>
+                  ))}
                 </select>
               </div>
               <div><label className="field-label">Weight Used (g)</label><input type="number" step="0.1" value={kavuniWt} onChange={e=>setKavuniWt(e.target.value)} className="field-input" placeholder="0.0"/></div>

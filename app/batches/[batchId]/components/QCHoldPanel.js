@@ -34,6 +34,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [plateTemp,           setPlateTemp]           = useState('37');
   const [plateExpectedHours,  setPlateExpectedHours]  = useState('48');
 
+  // External lab result fields
+  const [resultReceivedDate, setResultReceivedDate] = useState('');
+  const [coaUrl,             setCoaUrl]             = useState('');
+  const [savingExtResult,    setSavingExtResult]     = useState(false);
+
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
   const [volPerFlask,  setVolPerFlask]  = useState('');
@@ -50,6 +55,8 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!isCurrent) return;
     if (sData) {
       setSample(sData);
+      setResultReceivedDate(sData.result_received_date || '');
+      setCoaUrl(sData.coa_url || '');
       if (sData.plating_enabled) {
         setPlatingEnabled(true);
         const cfg = sData.plating_config || {};
@@ -254,6 +261,20 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     finally { setDeletingIncubationId(null); }
   };
 
+  const handleSaveExtResult = async () => {
+    if (!sample) return;
+    setSavingExtResult(true);
+    try {
+      const { error } = await supabase.from('batch_flask_qc_samples').update({
+        result_received_date: resultReceivedDate || null,
+        coa_url: coaUrl || null,
+      }).eq('id', sample.id);
+      if (error) throw error;
+      toast.success('External lab result details saved.');
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingExtResult(false); }
+  };
+
   const allDone     = tests.length > 0 && tests.every(t => t.pass_fail !== 'Pending');
   const anyFail     = tests.some(t => t.pass_fail === 'Fail');
   const passCount   = tests.filter(t => t.pass_fail === 'Pass').length;
@@ -437,6 +458,43 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               </>
             )}
           </div>
+
+          {/* External lab result entry */}
+          {sample?.testing_location === 'NABL external lab' && (
+            <div className="surface p-4 border border-amber-100 bg-amber-50/20">
+              <p className="text-xs font-black text-amber-900 uppercase tracking-wider mb-3">
+                External Lab Results — {sample.external_lab || 'NABL Lab'}
+              </p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="field-label">Date Results Received</label>
+                  <input type="date" value={resultReceivedDate} onChange={e=>setResultReceivedDate(e.target.value)} className="field-input"/>
+                </div>
+                <div>
+                  <label className="field-label">COA / Report URL</label>
+                  <input value={coaUrl} onChange={e=>setCoaUrl(e.target.value)} className="field-input" placeholder="https://..."/>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={handleSaveExtResult} disabled={savingExtResult}
+                  className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-black uppercase tracking-wider disabled:opacity-60">
+                  {savingExtResult ? 'Saving...' : 'Save'}
+                </button>
+                {coaUrl && (
+                  <a href={coaUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-black text-amber-700 hover:underline">
+                    Open COA ↗
+                  </a>
+                )}
+                {sample.ext_ref_number && (
+                  <span className="text-[10px] text-amber-700 font-bold">Ref: {sample.ext_ref_number}</span>
+                )}
+                {sample.expected_date && !resultReceivedDate && (
+                  <span className="text-[10px] text-amber-600">Expected: {sample.expected_date}</span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="surface overflow-hidden">
             <div className="overflow-x-auto">
