@@ -63,6 +63,7 @@ export default function BatchDetailPage() {
   const [pendingFlaskReject, setPendingFlaskReject] = useState(false);
   const [selectedFlaskId,   setSelectedFlaskId]   = useState(null);
   const [viewingStage,      setViewingStage]      = useState(null);
+  const [lnbByFlask,        setLnbByFlask]        = useState({});
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -72,7 +73,7 @@ export default function BatchDetailPage() {
       supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
       supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
       supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
-      supabase.from('lab_notebook_entries').select('id', { count: 'exact', head: true }).eq('batch_id', batchId),
+      supabase.from('lab_notebook_entries').select('id, flask_id').eq('batch_id', batchId),
       supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
     ]);
     if (batchRes.data)  setBatch(batchRes.data);
@@ -80,7 +81,11 @@ export default function BatchDetailPage() {
     if (transRes.data)  setTransitions(transRes.data);
     if (empRes.data)    setEmployees(empRes.data);
     if (stockRes.data)  setAvailableStock(stockRes.data);
-    setLnbCount(lnbRes.count || 0);
+    const lnbEntries = lnbRes.data || [];
+    setLnbCount(lnbEntries.length);
+    const byFlask = {};
+    lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
+    setLnbByFlask(byFlask);
     if (epRes.data) setFlaskEndpoints(epRes.data);
     // Restore existing BMR URL if already generated
     if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
@@ -335,9 +340,16 @@ export default function BatchDetailPage() {
                     <p className={`text-sm font-black ${f.status==='rejected'?'text-red-500 line-through':selectedFlaskId===f.id?'text-navy':'text-gray-700'}`}>{f.flask_label}</p>
                     {selectedFlaskId===f.id && <div className="w-1.5 h-1.5 bg-navy rounded-full animate-pulse"/>}
                   </div>
-                  <p className={`text-[9px] font-bold uppercase mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>
-                    {f.status==='rejected' ? 'REJECTED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <p className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>
+                      {f.status==='rejected' ? 'REJECTED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
+                    </p>
+                    {lnbByFlask[f.id] > 0 && (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 flex items-center gap-0.5">
+                        <BookOpen className="w-2.5 h-2.5"/>{lnbByFlask[f.id]}
+                      </span>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>

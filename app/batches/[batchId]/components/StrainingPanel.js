@@ -1,20 +1,59 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Beaker, CheckCircle2 } from 'lucide-react';
+import { Beaker, CheckCircle2, AlertTriangle, Wrench } from 'lucide-react';
 
 const CLARITY_OPTS = ['Very clear, transparent', 'Slightly cloudy', 'Moderately turbid', 'Highly turbid / opaque'];
 
+function CalibrationBadge({ equipment }) {
+  if (!equipment) return null;
+  const due = equipment.calibration_due_date ? new Date(equipment.calibration_due_date) : null;
+  const today = new Date();
+  const daysLeft = due ? Math.ceil((due - today) / 86400000) : null;
+  if (!due)          return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-400">No Cal. Data</span>;
+  if (daysLeft < 0)  return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-1"><AlertTriangle className="w-2.5 h-2.5"/>OVERDUE</span>;
+  if (daysLeft <= 30) return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Due in {daysLeft}d</span>;
+  return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Cal. OK</span>;
+}
+
+function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
+  const selected = equipment.find(e => e.id === value);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="field-label mb-0">{label}</label>
+        {selected && <CalibrationBadge equipment={selected}/>}
+      </div>
+      <select value={value} onChange={e => onChange(e.target.value)} className="field-input bg-white text-xs">
+        <option value="">{placeholder}</option>
+        {equipment.map(e => (
+          <option key={e.id} value={e.id}>{e.name}{e.model ? ` (${e.model})` : ''}</option>
+        ))}
+      </select>
+      {selected?.calibration_due_date && new Date(selected.calibration_due_date) < new Date() && (
+        <p className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3"/>Calibration overdue — raise a deviation before use.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function StrainingPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
-  const [record,  setRecord]  = useState(null);
-  const [saving,  setSaving]  = useState(false);
+  const [record,     setRecord]     = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [equipment,  setEquipment]  = useState([]);
   const isIntern = ['intern','research_intern'].includes(role);
 
   // Centrifuge parameters
   const [rpm,           setRpm]           = useState('');
   const [centTemp,      setCentTemp]      = useState('');
   const [duration,      setDuration]      = useState('');
+  // Equipment links
+  const [centEqId,      setCentEqId]      = useState('');
+  const [phEqId,        setPhEqId]        = useState('');
+  const [scaleEqId,     setScaleEqId]     = useState('');
   // Weight measurements
   const [brothBefore,   setBrothBefore]   = useState('');
   const [supernAfter,   setSupernAfter]   = useState('');
@@ -28,12 +67,19 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
   const fetchRecord = useCallback(async () => {
     if (!activeFlask) return;
-    const { data } = await supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single();
+    const [{ data }, { data: eqData }] = await Promise.all([
+      supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single(),
+      supabase.from('equipment').select('id, name, model, status, calibration_due_date').order('name'),
+    ]);
+    if (eqData) setEquipment(eqData);
     if (data) {
       setRecord(data);
       setRpm(data.centrifuge_rpm ?? '');
       setCentTemp(data.centrifuge_temp_c ?? '');
       setDuration(data.centrifuge_duration_min ?? '');
+      setCentEqId(data.centrifuge_equipment_id || '');
+      setPhEqId(data.ph_meter_equipment_id || '');
+      setScaleEqId(data.scale_equipment_id || '');
       setBrothBefore(data.broth_wt_before_g ?? '');
       setSupernAfter(data.supernatant_wt_after_g ?? '');
       setPelletWt(data.pellet_wt_g ?? '');
@@ -47,7 +93,6 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
   useEffect(() => { fetchRecord(); }, [fetchRecord]);
 
-  // Recovery based on weight: supernatant / broth before × 100
   const recoveryPct = brothBefore && supernAfter
     ? ((parseFloat(supernAfter) / parseFloat(brothBefore)) * 100).toFixed(1)
     : null;
@@ -64,19 +109,22 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       const payload = {
         flask_id: activeFlask.id, batch_id: batch.id,
         method: 'Centrifugation',
-        centrifuge_rpm:          rpm      ? parseFloat(rpm)      : null,
-        centrifuge_temp_c:       centTemp ? parseFloat(centTemp) : null,
-        centrifuge_duration_min: duration ? parseFloat(duration) : null,
-        broth_wt_before_g:      brothBefore  ? parseFloat(brothBefore)  : null,
-        supernatant_wt_after_g: supernAfter  ? parseFloat(supernAfter)  : null,
-        pellet_wt_g:            pelletWt     ? parseFloat(pelletWt)     : null,
-        recovery_pct:           recoveryPct  ? parseFloat(recoveryPct)  : null,
+        centrifuge_rpm:            rpm       ? parseFloat(rpm)      : null,
+        centrifuge_temp_c:         centTemp  ? parseFloat(centTemp) : null,
+        centrifuge_duration_min:   duration  ? parseFloat(duration) : null,
+        centrifuge_equipment_id:   centEqId  || null,
+        ph_meter_equipment_id:     phEqId    || null,
+        scale_equipment_id:        scaleEqId || null,
+        broth_wt_before_g:         brothBefore ? parseFloat(brothBefore) : null,
+        supernatant_wt_after_g:    supernAfter ? parseFloat(supernAfter) : null,
+        pellet_wt_g:               pelletWt    ? parseFloat(pelletWt)    : null,
+        recovery_pct:              recoveryPct ? parseFloat(recoveryPct) : null,
         filtrate_colour:  colour,
         filtrate_clarity: clarity,
         filtrate_ph:      ph ? parseFloat(ph) : null,
         notes,
-        operator_id:    employeeProfile?.id,
-        supervised_by:  supervisedBy || null,
+        operator_id:   employeeProfile?.id,
+        supervised_by: supervisedBy || null,
       };
 
       const { error } = await supabase.from('batch_flask_straining').upsert(payload, { onConflict: 'flask_id' });
@@ -114,6 +162,18 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
             </span>
           </div>
         )}
+      </div>
+
+      {/* Equipment Traceability */}
+      <div className="surface p-5 space-y-4">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+          <Wrench className="w-3 h-3"/>Equipment Used
+        </p>
+        <div className="grid grid-cols-3 gap-4">
+          <EquipmentPicker label="Centrifuge" value={centEqId} onChange={setCentEqId} equipment={equipment} placeholder="Select centrifuge…"/>
+          <EquipmentPicker label="pH Meter" value={phEqId} onChange={setPhEqId} equipment={equipment} placeholder="Select pH meter…"/>
+          <EquipmentPicker label="Weighing Scale" value={scaleEqId} onChange={setScaleEqId} equipment={equipment} placeholder="Select scale…"/>
+        </div>
       </div>
 
       {/* Centrifuge Run Parameters */}
