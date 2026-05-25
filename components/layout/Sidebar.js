@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FlaskConical, Activity, CheckSquare,
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
-  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope
+  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -50,6 +50,7 @@ export default function Sidebar() {
         { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: effectiveCanDo('sops', 'view') },
         { name: 'Bioprocess Lab',    href: '/bioprocess',   icon: Microscope,      show: effectiveCanDo('batches', 'view') },
         { name: 'Sample Incubation', href: '/research/incubation', icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
+        { name: 'Cell Bank',         href: '/research/cell-bank',  icon: Dna,          show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
