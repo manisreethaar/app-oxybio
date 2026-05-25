@@ -8,10 +8,11 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
-import { 
-  AlertTriangle, Plus, X, ShieldCheck, Loader2, ChevronRight, 
-  Wrench, CheckCircle2, ArrowLeft, FileWarning, Microscope, BadgeAlert, BarChart2 
+import {
+  AlertTriangle, Plus, X, ShieldCheck, Loader2, ChevronRight,
+  Wrench, CheckCircle2, ArrowLeft, FileWarning, Microscope, BadgeAlert, BarChart2, FlaskConical
 } from 'lucide-react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const CapaSeverityChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaSeverityChart })), { ssr: false });
 const CapaStatusChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaStatusChart })), { ssr: false });
@@ -66,7 +67,7 @@ export default function CapaPage() {
     setLoading(true);
     try {
       const [{ data: devs }, { data: emps }] = await Promise.all([
-        supabase.from('deviations').select('*, reporter:employees!deviations_reported_by_fkey(full_name)').order('created_at', { ascending: false }),
+        supabase.from('deviations').select('*, reporter:employees!deviations_reported_by_fkey(full_name), batches(id, batch_id)').order('created_at', { ascending: false }),
         supabase.from('employees').select('id, full_name').eq('is_active', true)
       ]);
       setDeviations(devs || []); setEmployees(emps || []);
@@ -256,7 +257,7 @@ export default function CapaPage() {
       {deviations.length === 0 ? <div className="text-center py-16 text-gray-400 text-sm">No NCRs recorded.</div> : (
         <div className="space-y-2">
           {deviations.map(dev => (
-            <button key={dev.id} onClick={() => loadDetail(dev)} className="w-full surface p-4 flex items-center justify-between hover:border-gray-300 transition-colors text-left">
+            <div key={dev.id} role="button" tabIndex={0} onClick={() => loadDetail(dev)} onKeyDown={e => e.key === 'Enter' && loadDetail(dev)} className="w-full surface p-4 flex items-center justify-between hover:border-gray-300 transition-colors text-left cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className={`w-1 h-10 rounded-full shrink-0 ${dev.severity === 'Critical' ? 'bg-red-500' : dev.severity === 'Major' ? 'bg-amber-500' : 'bg-blue-400'}`}/>
                 <div>
@@ -267,10 +268,15 @@ export default function CapaPage() {
                   </div>
                   <h3 className="text-sm font-bold text-gray-800">{dev.title}</h3>
                   <p className="text-[10px] text-gray-400 font-semibold">{dev.reporter?.full_name} · {new Date(dev.created_at).toLocaleDateString()}</p>
+                  {dev.batches && (
+                    <Link href={`/batches/${dev.batches.id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 mt-1 text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.5 rounded hover:bg-indigo-100 transition-colors">
+                      <FlaskConical className="w-3 h-3"/> {dev.batches.batch_id}
+                    </Link>
+                  )}
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400 shrink-0"/>
-            </button>
+            </div>
           ))}
         </div>
       )}

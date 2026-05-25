@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
 
 const STAGE_LABELS = {
@@ -19,6 +20,7 @@ const STAGE_LABELS = {
 export default function DigitalLnbPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
   const toast = useToast();
+  const router = useRouter();
   const [entries,     setEntries]     = useState([]);
   const [batches,     setBatches]     = useState([]);
   const [batchFlasks, setBatchFlasks] = useState([]);
@@ -179,10 +181,14 @@ export default function DigitalLnbPage() {
                         <span className="font-semibold">{entry.author?.full_name || 'Unknown Author'}</span>
                       </div>
                       {entry.batches && (
-                        <div className="flex items-center gap-1 text-xs text-gray-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); if (entry.batches?.id) router.push(`/batches/${entry.batches.id}`); }}
+                          className="flex items-center gap-1 text-xs text-gray-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                        >
                           <FlaskConical className="w-3 h-3 text-indigo-400" />
                           <span className="font-bold text-indigo-800">{entry.batches.batch_id}</span>
-                        </div>
+                        </button>
                       )}
                       {entry.flask?.flask_label && (
                         <div className="flex items-center gap-1 text-xs bg-navy/5 text-navy px-2 py-0.5 rounded border border-navy/15">
