@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Save, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
 const formSchema = z.object({
@@ -13,11 +13,11 @@ const formSchema = z.object({
   sample_category: z.enum(['Fermentation IPC', 'Cell Bank', 'Passage', 'Subculture', 'Other']),
   sample_type: z.enum(['Agar Plate', 'Broth']),
   incubation_date: z.string().min(1, 'Date is required'),
-  incubation_temp_c: z.preprocess((val) => Number(val), z.number().min(0)),
+  incubation_temp_c: z.preprocess((val) => Number(val), z.number().min(0).max(100)),
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().optional(),
-  od_value: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().optional()),
-  ph_value: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().optional()),
+  od_value: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().min(0).max(10).optional()),
+  ph_value: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().min(0).max(14).optional()),
   staining_method: z.string().optional(),
   microscopic_morphology: z.string().optional(),
   colony_morphology: z.string().optional(),
@@ -28,9 +28,9 @@ const formSchema = z.object({
 export default function IncubationFormModal({ onClose, onSuccess, initialData = null }) {
   const [batches, setBatches] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
         ...initialData,
@@ -44,6 +44,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         sterility_status: 'Pending',
         batch_id: '',
         incubation_temp_c: 37,
+        start_time: new Date().toISOString().slice(0, 16),
         od_value: '',
         ph_value: ''
     }
@@ -65,9 +66,11 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     try {
       const payload = {
         ...data,
-        batch_id: data.batch_id || null,
+        batch_id: data.sample_category === 'Fermentation IPC' ? data.batch_id || null : null,
         start_time: new Date(data.start_time).toISOString(),
-        end_time: data.end_time ? new Date(data.end_time).toISOString() : null
+        end_time: data.end_time ? new Date(data.end_time).toISOString() : null,
+        od_value: data.od_value ?? null,
+        ph_value: data.ph_value ?? null
       };
 
       let url = '/api/research/incubation';
@@ -149,7 +152,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
               <input type="date" {...register('incubation_date')} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Temp (°C) *</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Temp (C) *</label>
               <input type="number" step="0.1" {...register('incubation_temp_c')} className="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-navy outline-none" />
             </div>
             <div>
