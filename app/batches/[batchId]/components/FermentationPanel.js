@@ -202,6 +202,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   const openEdit = (r) => {
     setEditingReading(r);
+    const platingParts = r.plating_result?.split(' — ') || [];
     setEditFields({
       ph:              r.ph ?? '',
       incubator_temp_c: r.incubator_temp_c ?? '',
@@ -209,6 +210,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       optical_density: r.optical_density ?? '',
       foam_level:      r.foam_level ?? 'None',
       visual_appearance: r.visual_appearance ?? 'Normal',
+      plating_status:  platingParts[0] || 'Pending',
+      cfu_count:       platingParts[1] || '',
       notes:           r.notes ?? '',
       logged_at:       r.logged_at ? r.logged_at.slice(0,16) : '',
       is_retrospective: r.is_retrospective ?? false,
@@ -229,6 +232,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         optical_density: editFields.optical_density !== '' ? parseFloat(editFields.optical_density) : undefined,
         foam_level:      editFields.foam_level || undefined,
         visual_appearance: editFields.visual_appearance || undefined,
+        plating_result:  editFields.plating_status
+                           ? `${editFields.plating_status}${editFields.cfu_count ? ` — ${editFields.cfu_count}` : ''}`
+                           : undefined,
         notes:           editFields.notes || undefined,
         logged_at:       editFields.logged_at ? new Date(editFields.logged_at).toISOString() : undefined,
         is_retrospective: editFields.is_retrospective,
@@ -551,6 +557,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {APPEARANCE_OPTS.map(o => <option key={o}>{o}</option>)}
                   </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Plating Status</label>
+                  <select value={editFields.plating_status} onChange={e => setEditFields(f => ({...f, plating_status: e.target.value}))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                    {['Pending','Clear','Contaminated','Not Done'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">CFU Count</label>
+                  <input value={editFields.cfu_count} onChange={e => setEditFields(f => ({...f, cfu_count: e.target.value}))}
+                    placeholder="e.g. 1.2 x 10^6"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
               <div>
