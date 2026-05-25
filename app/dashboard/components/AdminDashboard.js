@@ -265,32 +265,47 @@ export default function AdminDashboard({ employeeId }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeBatches.map(batch => {
-                const hoursElapsed = differenceInHours(new Date(), new Date(batch.created_at || new Date()));
-                const latestPh = batch.ph_readings?.[batch.ph_readings.length - 1];
-                return (
-                  <div key={batch.id} className="border border-gray-200 rounded-xl p-4 flex flex-col hover:border-gray-300 transition-colors bg-white relative">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="font-mono text-xs font-bold text-gray-400 mb-1">{batch.batch_id}</p>
-                        <p className="font-bold text-gray-900 tracking-tight text-sm leading-tight">{batch.variant}</p>
+              {(() => {
+                const BATCH_STAGES = ['media_prep','sterilisation','inoculation','fermentation','qc_hold','released'];
+                const STAGE_LABEL  = { media_prep:'Media Prep', sterilisation:'Sterilisation', inoculation:'Inoculation', fermentation:'Fermentation', qc_hold:'QC Hold', released:'Released' };
+                const STAGE_COLOR  = { media_prep:'bg-indigo-100 text-indigo-700', sterilisation:'bg-blue-100 text-blue-700', inoculation:'bg-violet-100 text-violet-700', fermentation:'bg-teal-100 text-teal-700', qc_hold:'bg-rose-100 text-rose-700', released:'bg-emerald-100 text-emerald-700' };
+                return activeBatches.map(batch => {
+                  const hoursElapsed = differenceInHours(new Date(), new Date(batch.created_at || new Date()));
+                  const latestPh = batch.ph_readings?.[batch.ph_readings.length - 1];
+                  const stageIdx = BATCH_STAGES.indexOf(batch.current_stage);
+                  const progress = stageIdx >= 0 ? Math.round(((stageIdx + 1) / BATCH_STAGES.length) * 100) : 0;
+                  return (
+                    <div key={batch.id} className="border border-gray-200 rounded-xl p-4 flex flex-col hover:border-gray-300 transition-colors bg-white relative">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-mono text-xs font-bold text-gray-400 mb-1">{batch.batch_id}</p>
+                          <p className="font-bold text-gray-900 tracking-tight text-sm leading-tight">{batch.variant}</p>
+                        </div>
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">{hoursElapsed}H</span>
                       </div>
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">{hoursElapsed}H</span>
-                    </div>
-                    <div className="flex items-center mt-auto pt-4 border-t border-gray-100 justify-between">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">pH</p>
-                        <p className={`font-black text-lg ${latestPh?.is_deviation ? 'text-red-500' : 'text-emerald-600'}`}>
-                          {latestPh?.ph_value || '—'}
-                        </p>
+                      <div className="mb-3">
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${STAGE_COLOR[batch.current_stage] || 'bg-gray-100 text-gray-500'}`}>
+                          {STAGE_LABEL[batch.current_stage] || batch.current_stage || 'Unknown'}
+                        </span>
+                        <div className="mt-2 w-full bg-gray-100 rounded-full h-1">
+                          <div className="bg-navy rounded-full h-1 transition-all" style={{ width: `${progress}%` }}/>
+                        </div>
                       </div>
-                      <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm">
-                        Log Data
-                      </Link>
+                      <div className="flex items-center mt-auto pt-3 border-t border-gray-100 justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">pH</p>
+                          <p className={`font-black text-lg ${latestPh?.is_deviation ? 'text-red-500' : 'text-emerald-600'}`}>
+                            {latestPh?.ph_value || '—'}
+                          </p>
+                        </div>
+                        <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm">
+                          Open Batch
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
