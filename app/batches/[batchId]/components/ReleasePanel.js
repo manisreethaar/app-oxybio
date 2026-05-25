@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { CheckCircle, Lock } from 'lucide-react';
+import { CheckCircle, Lock, AlertTriangle } from 'lucide-react';
 
 export default function ReleasePanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved }) {
   const toast    = useToast();
   const [record, setRecord]   = useState(null);
+  const [sensoryData, setSensoryData] = useState(null);
   const [saving, setSaving]   = useState(false);
   const [pendingRelease, setPendingRelease] = useState(false);
   const isCeo    = ['ceo','admin'].includes(role);
@@ -18,14 +19,29 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const fetch = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    const { data } = await supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).single();
+    const [relRes, epRes] = await Promise.all([
+      supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).single(),
+      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single()
+    ]);
     if (!isCurrent) return;
-    if (data) {
-      setRecord(data);
-      setYieldVol(data.yield_volume_ml||'');
-      setBottles(data.bottles_produced||'');
-      setBotVol(data.bottle_volume_ml||'');
-      setNotes(data.release_notes||'');
+
+    if (epRes.data) {
+      setSensoryData({
+        overall: epRes.data.sensory_overall,
+        aroma: epRes.data.aroma,
+        texture: epRes.data.texture,
+        colour: epRes.data.colour_description
+      });
+    } else {
+      setSensoryData(null);
+    }
+
+    if (relRes.data) {
+      setRecord(relRes.data);
+      setYieldVol(relRes.data.yield_volume_ml||'');
+      setBottles(relRes.data.bottles_produced||'');
+      setBotVol(relRes.data.bottle_volume_ml||'');
+      setNotes(relRes.data.release_notes||'');
     } else {
       setRecord(null);
       setYieldVol(''); setBottles(''); setBotVol(''); setNotes('');
@@ -95,7 +111,13 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
         </div>
       )}
 
-      {!record && (
+      {!record && sensoryData?.overall === 'FAIL' ? (
+        <div className="surface p-8 text-center border border-red-100 bg-red-50/50">
+          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3"/>
+          <p className="text-base font-bold text-red-900">Release Blocked: Failed Sensory</p>
+          <p className="text-sm text-red-700 mt-2 max-w-sm mx-auto">This trial failed sensory evaluation (Aroma: {sensoryData.aroma || 'N/A'}, Texture: {sensoryData.texture || 'N/A'}). It cannot be released.</p>
+        </div>
+      ) : !record && (
         <div className="surface p-5 space-y-4">
           {!isCeo ? (
             <div className="p-6 bg-gray-50 rounded-2xl text-center">
@@ -105,6 +127,12 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
             </div>
           ) : (
             <>
+              {sensoryData?.overall === 'PASS' && (
+                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl mb-4">
+                  <p className="text-xs font-bold text-emerald-800 flex items-center gap-2"><CheckCircle className="w-4 h-4"/> Sensory Evaluation Passed</p>
+                  <p className="text-[10px] text-emerald-600 mt-1">Aroma: {sensoryData.aroma || 'N/A'} • Texture: {sensoryData.texture || 'N/A'} • Colour: {sensoryData.colour || 'N/A'}</p>
+                </div>
+              )}
               <p className="text-sm font-bold text-gray-900">Complete release record for {activeFlask.flask_label}:</p>
               <div className="grid grid-cols-3 gap-3">
                 <div><label className="field-label">Yield Vol (ml)</label><input type="number" step="1" value={yieldVol} onChange={e=>setYieldVol(e.target.value)} className="field-input" placeholder="e.g. 850"/></div>
