@@ -43,10 +43,18 @@ export default function ShelfLifePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: studyData }, { data: batchData }] = await Promise.all([
-        supabase.from('shelf_life_studies').select('*, batches(id, batch_id, variant), shelf_life_logs(*)').order('created_at', { ascending: false }),
-        supabase.from('batches').select('id, batch_id, variant').eq('status', 'released').limit(50)
+      const [{ data: studyData, error: studyErr }, { data: batchData }] = await Promise.all([
+        supabase
+          .from('shelf_life_studies')
+          .select('*, batches(id, batch_id, variant, experiment_type), shelf_life_logs(id, day_number, test_data, logged_by, created_at)')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('batches')
+          .select('id, batch_id, variant, experiment_type')
+          .eq('status', 'released')
+          .limit(100),
       ]);
+      if (studyErr) throw studyErr;
       setStudies(studyData || []);
       setBatches(batchData || []);
     } catch (err) { console.error('Shelf-life fetch error:', err); }
@@ -197,7 +205,9 @@ export default function ShelfLifePage() {
                 <select {...register('batch_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
                   <option value="">Select Released Batch...</option>
                   {batches.map(b => (
-                    <option key={b.id} value={b.id}>{b.batch_id} ({b.variant})</option>
+                    <option key={b.id} value={b.id}>
+                      {b.batch_id}{b.variant ? ` · ${b.variant}` : ''}{b.experiment_type ? ` [${b.experiment_type}]` : ''}
+                    </option>
                   ))}
                 </select>
               </div>
