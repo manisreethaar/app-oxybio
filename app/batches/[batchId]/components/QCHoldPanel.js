@@ -86,6 +86,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         const iRes = await supabase.from('batch_flask_qc_tests').insert(testRows).select();
         if (iRes.error) {
           console.error("Auto-heal QC insert error:", iRes.error);
+          toast.error("QC Tests failed to generate: " + iRes.error.message);
         } else if (iRes.data && iRes.data.length > 0) {
           fetchedTests = iRes.data;
         }
@@ -246,6 +247,31 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         { duration: 6000 }
       );
     }
+  };
+
+  const handleUpdatePlatingConfig = async (field, value) => {
+    if (!sample) return;
+    
+    // Update local state
+    if (field === 'media_type') setPlateMedia(value);
+    if (field === 'dilution') setPlateDilution(value);
+    if (field === 'plate_count') setPlateCount(value);
+    if (field === 'incubation_temp_c') setPlateTemp(value);
+    if (field === 'expected_hours') setPlateExpectedHours(value);
+
+    // Save to DB
+    let parsedVal = value || null;
+    if (field === 'plate_count' && value) parsedVal = parseInt(value, 10);
+    if (field === 'incubation_temp_c' && value) parsedVal = parseFloat(value);
+    if (field === 'expected_hours' && value) parsedVal = parseInt(value, 10);
+
+    const cfg = {
+      ...(sample.plating_config || {}),
+      [field]: parsedVal
+    };
+
+    setSample(prev => ({ ...prev, plating_config: cfg }));
+    await supabase.from('batch_flask_qc_samples').update({ plating_config: cfg }).eq('id', sample.id);
   };
 
   const handleTogglePlating = async () => {
@@ -477,7 +503,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <div className="grid grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-teal-100">
                   <div>
                     <label className="field-label">Media Type (Recipe)</label>
-                    <select value={plateMedia} onChange={e=>setPlateMedia(e.target.value)} className="field-input text-xs bg-white">
+                    <select value={plateMedia} onChange={e=>handleUpdatePlatingConfig('media_type', e.target.value)} className="field-input text-xs bg-white">
                       <option value="">Select Recipe...</option>
                       {mediaFormulations.map(f => (
                         <option key={f.name} value={f.name}>{f.name}</option>
@@ -486,7 +512,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </div>
                   <div>
                     <label className="field-label">Dilution Factor</label>
-                    <select value={plateDilution} onChange={e=>setPlateDilution(e.target.value)} className="field-input text-xs bg-white">
+                    <select value={plateDilution} onChange={e=>handleUpdatePlatingConfig('dilution', e.target.value)} className="field-input text-xs bg-white">
                       <option value="">Select...</option>
                       <option value="Direct (No dilution)">Direct (No dilution)</option>
                       <option value="10⁻¹">10⁻¹</option>
@@ -503,15 +529,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </div>
                   <div>
                     <label className="field-label">No. of Plates</label>
-                    <input type="number" min="1" value={plateCount} onChange={e=>setPlateCount(e.target.value)} className="field-input text-xs" placeholder="2"/>
+                    <input type="number" min="1" value={plateCount} onChange={e=>handleUpdatePlatingConfig('plate_count', e.target.value)} className="field-input text-xs" placeholder="2"/>
                   </div>
                   <div>
                     <label className="field-label">Incubation Temp (°C)</label>
-                    <input type="number" step="0.1" value={plateTemp} onChange={e=>setPlateTemp(e.target.value)} className="field-input text-xs" placeholder="37"/>
+                    <input type="number" step="0.1" value={plateTemp} onChange={e=>handleUpdatePlatingConfig('incubation_temp_c', e.target.value)} className="field-input text-xs" placeholder="37"/>
                   </div>
                   <div>
                     <label className="field-label">Expected Duration (hrs)</label>
-                    <input type="number" value={plateExpectedHours} onChange={e=>setPlateExpectedHours(e.target.value)} className="field-input text-xs" placeholder="48"/>
+                    <input type="number" value={plateExpectedHours} onChange={e=>handleUpdatePlatingConfig('expected_hours', e.target.value)} className="field-input text-xs" placeholder="48"/>
                   </div>
                 </div>
 
