@@ -33,12 +33,20 @@ export async function GET(request, { params }) {
       supabase.from('batch_flask_straining').select('*').eq('batch_id', batchId),
       supabase.from('batch_flask_extract_addition').select('*').eq('batch_id', batchId),
       supabase.from('batch_flask_qc_samples').select('*').eq('batch_id', batchId),
-      supabase.from('batch_flask_release_record').select('*').eq('batch_id', batchId),
+      Promise.resolve({ data: [] }),  // releases fetched below after flask IDs are known
       supabase.from('batch_flask_rejection_record').select('*').eq('batch_id', batchId),
       supabase.from('inventory_usage').select('*, inventory_stock(supplier_batch_number, expiry_date, inventory_items(name, unit))').eq('batch_id', batchId),
     ]);
 
     if (!batchRes.data) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
+
+    // Fetch release records via flask IDs (batch_id column may not exist in live DB)
+    const flaskIds = flasksRes.data?.map(f => f.id) || [];
+    let releaseData = [];
+    if (flaskIds.length > 0) {
+      const { data } = await supabase.from('batch_flask_release_record').select('*').in('flask_id', flaskIds);
+      releaseData = data || [];
+    }
 
     // Fetch QC tests
     const sampleIds = qcSampleRes.data?.map(s => s.id) || [];
@@ -61,7 +69,7 @@ export async function GET(request, { params }) {
       flaskExtracts:        extractRes.data || [],
       flaskQCSamples:       qcSampleRes.data || [],
       flaskQCTests:         qcTests,
-      flaskReleases:        releaseRes.data || [],
+      flaskReleases:        releaseData,
       flaskRejections:      rejectionRes.data || [],
       inventoryUsage:       inventoryUsageRes.data || [],
       generatedBy:          emp.full_name,
@@ -92,9 +100,9 @@ export async function GET(request, { params }) {
 
       await supabase.from('batches').update({ bmr_url: signedUrl }).eq('id', batchId);
       
-      // Update BMR URL across all release records
-      if (releaseRes.data?.length > 0) {
-        await supabase.from('batch_flask_release_record').update({ bmr_url: signedUrl }).eq('batch_id', batchId);
+      // Update BMR URL across all release records for this batch
+      if (flaskIds.length > 0) {
+        await supabase.from('batch_flask_release_record').update({ bmr_url: signedUrl }).in('flask_id', flaskIds);
       }
 
       await supabase.from('documents').insert({

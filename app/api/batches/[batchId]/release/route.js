@@ -42,9 +42,9 @@ export async function POST(request, { params }) {
     }
 
     // 3. Upsert release record (admin client → RLS bypassed)
+    // Note: batch_id column may not exist in older DB instances — omit it; flask_id is the unique key
     const { error: relErr } = await db.from('batch_flask_release_record').upsert({
       flask_id,
-      batch_id:         batchId,
       released_by:      emp.id,
       release_date:     new Date().toISOString(),
       yield_volume_ml:  yield_volume_ml  ?? null,
@@ -59,9 +59,13 @@ export async function POST(request, { params }) {
     }
 
     // 4. Mark flask as released
-    await db.from('batch_flasks')
+    const { error: flaskUpdateErr } = await db.from('batch_flasks')
       .update({ status: 'released', current_stage: 'released' })
       .eq('id', flask_id);
+    if (flaskUpdateErr) {
+      console.error('[release] flask update error:', flaskUpdateErr);
+      return NextResponse.json({ error: flaskUpdateErr.message }, { status: 500 });
+    }
 
     // 5. Check if ALL non-rejected flasks are now released → close out batch
     const { data: allFlasks } = await db
@@ -70,12 +74,18 @@ export async function POST(request, { params }) {
       .eq('batch_id', batchId);
 
     const nonRejected = (allFlasks || []).filter(f => f.status !== 'rejected');
-    const allReleased  = nonRejected.length > 0 && nonRejected.every(f => f.current_stage === 'released');
+    const allReleased  = nonRejected.length > 0 && nonRejected.every(f =>
+      f.status === 'released' || f.current_stage === 'released'
+    );
 
     if (allReleased) {
-      await db.from('batches')
+      const { error: batchUpdateErr } = await db.from('batches')
         .update({ status: 'released', current_stage: 'released' })
         .eq('id', batchId);
+      if (batchUpdateErr) {
+        console.error('[release] batch update error:', batchUpdateErr);
+        return NextResponse.json({ error: batchUpdateErr.message }, { status: 500 });
+      }
 
       db.from('stage_transitions').insert({
         batch_id: batchId, from_stage: 'qc_hold', to_stage: 'released',
