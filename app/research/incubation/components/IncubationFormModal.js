@@ -73,7 +73,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         qc_sample_id: initialData?.qc_sample_id || null,
         source_stage: initialData?.source_stage || null,
         source_type: initialData?.source_type || null,
-        sampled_at: initialData?.sampled_at || null,
+        sampled_at: initialData?.sampled_at ? new Date(initialData.sampled_at).toISOString() : null,
         start_time: new Date(data.start_time).toISOString(),
         end_time: data.end_time ? new Date(data.end_time).toISOString() : null,
         od_value: data.od_value ?? null,
