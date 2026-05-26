@@ -145,7 +145,9 @@ export default function LnbEntryPage() {
 
   const isDraft = entry.status === 'Draft';
   const isAuthor = entry.author?.id === employeeProfile.id;
+  const isAdmin = employeeProfile.role === 'admin';
   const canEdit = isDraft && isAuthor;
+  const canDelete = canEdit || isAdmin;
   const canCountersign = entry.status === 'Submitted' && 
                          (employeeProfile.role === 'admin' || employeeProfile.role === 'research_fellow') && 
                          entry.author?.id !== employeeProfile.id;
@@ -200,10 +202,12 @@ export default function LnbEntryPage() {
               <button disabled={saving || deleting} onClick={handleSubmitReview} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all shadow-sm">
                 <FileCheck className="w-4 h-4 mr-1.5" /> Submit for Review
               </button>
-              <button disabled={saving || deleting} onClick={handleDeleteDraft} className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-100 transition-all shadow-sm border border-red-100">
-                {deleting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : 'Delete Draft'}
-              </button>
             </>
+          )}
+          {canDelete && (
+            <button disabled={saving || deleting} onClick={handleDeleteDraft} className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-100 transition-all shadow-sm border border-red-100">
+              {deleting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : 'Delete LNB'}
+            </button>
           )}
           {canCountersign && (
             <button disabled={signing} onClick={handleCountersign} className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-sm">
@@ -497,8 +501,9 @@ function StageLogPanel({ snapshots }) {
       <div className="p-4 space-y-3">
         {present.map(({ key, label, color, perFlask }) => {
           const data = snapshots[key];
-          // Dynamically detect if we actually have flask-grouped data to prevent string character splitting
-          const isActuallyPerFlask = perFlask && Object.values(data).some(v => v !== null && typeof v === 'object' && !Array.isArray(v));
+          // Determine if data is grouped per-flask by checking if its top-level keys are short labels (like "A", "B", "1")
+          // If keys are long like "dilution", it's a flat object and should not be split up
+          const isActuallyPerFlask = perFlask && Object.keys(data).every(k => k.length <= 2);
           return <StageBlock key={key} label={label} data={data} perFlask={isActuallyPerFlask} colorKey={color} />;
         })}
       </div>
