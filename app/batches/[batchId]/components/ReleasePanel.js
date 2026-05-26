@@ -61,57 +61,24 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
     setPendingRelease(false);
     setSaving(true);
     try {
-      // Save release record
-      const { error } = await supabase.from('batch_flask_release_record').upsert({
-        flask_id: activeFlask.id, batch_id: batch.id,
-        released_by: employeeProfile?.id,
-        yield_volume_ml: yieldVol ? parseFloat(yieldVol) : null,
-        bottles_produced: bottles ? parseInt(bottles) : null,
-        bottle_volume_ml: botVol ? parseFloat(botVol) : null,
-        release_notes: notes || null,
-      }, { onConflict: 'flask_id' });
-      if (error) throw error;
-
-      // Mark this flask as formally released
-      await supabase.from('batch_flasks')
-        .update({ status: 'released', current_stage: 'released' })
-        .eq('id', activeFlask.id);
-
-      // Check if all non-rejected flasks are now released → close out the batch
-      const { data: allFlasks } = await supabase
-        .from('batch_flasks')
-        .select('id, status, current_stage')
-        .eq('batch_id', batch.id);
-
-      const nonRejected = (allFlasks || []).filter(f => f.status !== 'rejected');
-      const allReleased = nonRejected.every(f =>
-        f.id === activeFlask.id ? true : f.current_stage === 'released'
-      );
-
-      if (allReleased) {
-        await supabase.from('batches')
-          .update({ status: 'released', current_stage: 'released' })
-          .eq('id', batch.id);
-      }
-
-      // Auto-create shelf-life study (90-day default for fermented beverage)
-      const manufactureDate = new Date();
-      const expiryDate = new Date(manufactureDate);
-      expiryDate.setDate(expiryDate.getDate() + 90);
-      await supabase.from('shelf_life_studies').insert({
-        batch_id: batch.id,
-        storage_condition: '2-8°C',
-        test_parameters: ['pH', 'CFU count', 'Sensory', 'Appearance'],
-        start_date: manufactureDate.toISOString().slice(0, 10),
-        expiry_date: expiryDate.toISOString().slice(0, 10),
-        status: 'In Progress',
-        created_by: employeeProfile?.id,
-      }).then(()=>{}).catch(() => {});
+      const res = await window.fetch(`/api/batches/${batchId || batch.id}/release`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flask_id: activeFlask.id,
+          yield_volume_ml: yieldVol ? parseFloat(yieldVol) : null,
+          bottles_produced: bottles ? parseInt(bottles) : null,
+          bottle_volume_ml: botVol ? parseFloat(botVol) : null,
+          release_notes: notes || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Release failed');
 
       toast.success(`Trial ${activeFlask.flask_label} released.`);
       onDataSaved();
 
-      // Auto-generate BMR in the background — window.fetch to avoid shadowing loadRecord
+      // Auto-generate BMR in the background
       window.fetch(`/api/batches/${batchId || batch.id}/bmr`)
         .then(r => r.json())
         .then(d => { if (d.success) toast.success('BMR generated and saved to Document Vault.'); })
