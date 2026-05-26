@@ -56,10 +56,49 @@ const STATUS_COLORS = {
 };
 
 // ─── Validation Schema ───────────────────────────────────────
+const TERMINAL_STATUSES = ['released', 'rejected'];
+const SCHEDULED_STATUSES = ['planned', 'scheduled'];
+
+function normaliseStatus(value) {
+  return (value || '').toString().toLowerCase();
+}
+
+function getBatchDisposition(batch) {
+  const status = normaliseStatus(batch.status);
+  const currentStage = normaliseStatus(batch.current_stage);
+  if (TERMINAL_STATUSES.includes(status)) return status;
+  if (TERMINAL_STATUSES.includes(currentStage)) return currentStage;
+
+  const flasks = batch.batch_flasks || [];
+  if (flasks.length === 0) return status;
+
+  const liveFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
+  if (liveFlasks.length === 0) return 'rejected';
+
+  const allLiveReleased = liveFlasks.every(f => {
+    const flaskStatus = normaliseStatus(f.status);
+    const flaskStage = normaliseStatus(f.current_stage);
+    return flaskStatus === 'released' || flaskStage === 'released';
+  });
+
+  return allLiveReleased ? 'released' : status;
+}
+
+function normaliseBatchForList(batch) {
+  const disposition = getBatchDisposition(batch);
+  if (!TERMINAL_STATUSES.includes(disposition)) return batch;
+
+  return {
+    ...batch,
+    status: disposition,
+    current_stage: disposition,
+  };
+}
+
 const batchSchema = z.object({
   formulation_id:    z.string().uuid('Select an approved formulation'),
-  experiment_type:   z.enum(['F1', 'F2', 'PROTO', 'SHELF'], { required_error: 'Select experiment type' }),
-  sku_target:        z.enum(['CLARITY', 'MOMENTUM', 'VITALITY', 'Unassigned']).default('Unassigned'),
+  experiment_type:   z.string().min(1, 'Select experiment type'),
+  sku_target:        z.string().default('Unassigned'),
   planned_volume_ml: z.preprocess(Number, z.number().positive('Enter a valid volume')),
   num_flasks:        z.preprocess(Number, z.number().int().min(1).max(10).default(3)),
   planned_start_date: z.string().optional(),
@@ -77,6 +116,8 @@ export default function BatchesPage() {
   const [loadingBatches,   setLoadingBatches]   = useState(true);
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
   const [formulations,     setFormulations]     = useState([]);
+  const [experimentTypes,  setExperimentTypes]  = useState([]);
+  const [skuTargets,       setSkuTargets]       = useState([]);
   const [creatingBatch,    setCreatingBatch]    = useState(false);
   const [batchError,       setBatchError]       = useState(null); // { message, warnings }
   const [statusFilter,     setStatusFilter]     = useState('active');
@@ -122,14 +163,24 @@ export default function BatchesPage() {
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')
-          .select('id, batch_id, experiment_type, sku_target, status, start_time, formulations(name, code)')
+          .select(`
+            id, batch_id, experiment_type, sku_target, status, current_stage,
+            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
+            formulations(name, code, version),
+            batch_flasks(id, flask_label, status, current_stage)
+          `)
           .in('status', ['released', 'rejected'])
           .order('created_at', { ascending: false })
           .limit(20),
       ]);
 
-      const active    = activeRes.data    || [];
-      const completed = completedRes.data || [];
+      const fetchedActive = (activeRes.data || []).map(normaliseBatchForList);
+      const fetchedCompleted = (completedRes.data || []).map(normaliseBatchForList);
+      const active = fetchedActive.filter(b => !TERMINAL_STATUSES.includes(b.status));
+      const completedById = new Map();
+      [...fetchedCompleted, ...fetchedActive.filter(b => TERMINAL_STATUSES.includes(b.status))]
+        .forEach(b => completedById.set(b.id, b));
+      const completed = Array.from(completedById.values());
 
       // Fetch endpoints separately (nested select requires explicit FK in schema)
       let epMap = {};
@@ -168,7 +219,18 @@ export default function BatchesPage() {
     if (data) setFormulations(data);
   }, [supabase]);
 
-  useEffect(() => { fetchBatches(); fetchFormulations(); }, [fetchBatches, fetchFormulations]);
+  const fetchBatchOptions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/batch-options');
+      const json = await res.json();
+      if (json.success) {
+        setExperimentTypes(json.data.experiment_types || []);
+        setSkuTargets(json.data.sku_targets || []);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => { fetchBatches(); fetchFormulations(); fetchBatchOptions(); }, [fetchBatches, fetchFormulations, fetchBatchOptions]);
 
   // ─── Batch Creation ────────────────────────────────────────
   const handleBatchSubmit = async (data) => {
@@ -219,10 +281,10 @@ export default function BatchesPage() {
   // ─── Filtered batches (hooks must be before any conditional return) ──────
   const displayedBatches = useMemo(() => {
     switch (statusFilter) {
-      case 'scheduled': return activeBatches.filter(b => ['planned','scheduled'].includes(b.status));
+      case 'scheduled': return activeBatches.filter(b => SCHEDULED_STATUSES.includes(b.status));
       case 'released':  return history.filter(b => b.status === 'released');
       case 'rejected':  return history.filter(b => b.status === 'rejected');
-      default:          return activeBatches.filter(b => !['planned','scheduled'].includes(b.status));
+      default:          return activeBatches.filter(b => !SCHEDULED_STATUSES.includes(b.status));
     }
   }, [statusFilter, activeBatches, history]);
 
@@ -236,8 +298,8 @@ export default function BatchesPage() {
   };
 
   const tabCounts = {
-    active:    activeBatches.filter(b => !['planned','scheduled'].includes(b.status)).length,
-    scheduled: activeBatches.filter(b => ['planned','scheduled'].includes(b.status)).length,
+    active:    activeBatches.filter(b => !SCHEDULED_STATUSES.includes(b.status)).length,
+    scheduled: activeBatches.filter(b => SCHEDULED_STATUSES.includes(b.status)).length,
     released:  history.filter(b => b.status === 'released').length,
     rejected:  history.filter(b => b.status === 'rejected').length,
   };
@@ -599,10 +661,9 @@ export default function BatchesPage() {
                           {...register('experiment_type')}
                           className="w-full border border-gray-200 rounded-xl p-3 outline-none bg-white font-semibold text-gray-800 text-sm focus:ring-2 focus:ring-navy/20"
                         >
-                          <option value="F1">F1 — Ragi only</option>
-                          <option value="F2">F2 — Ragi + Kavuni</option>
-                          <option value="PROTO">PROTO — Prototype</option>
-                          <option value="SHELF">SHELF — Shelf-life run</option>
+                          {experimentTypes.map(et => (
+                            <option key={et.value} value={et.value}>{et.label}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
@@ -613,10 +674,9 @@ export default function BatchesPage() {
                           {...register('sku_target')}
                           className="w-full border border-gray-200 rounded-xl p-3 outline-none bg-white font-semibold text-gray-800 text-sm focus:ring-2 focus:ring-navy/20"
                         >
-                          <option value="Unassigned">Unassigned</option>
-                          <option value="CLARITY">CLARITY</option>
-                          <option value="MOMENTUM">MOMENTUM</option>
-                          <option value="VITALITY">VITALITY</option>
+                          {skuTargets.map(st => (
+                            <option key={st.value} value={st.value}>{st.label}</option>
+                          ))}
                         </select>
                       </div>
                     </div>

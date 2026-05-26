@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FlaskConical, Activity, CheckSquare,
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
-  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna
+  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna, Settings
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -76,7 +76,8 @@ export default function Sidebar() {
         { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: effectiveCanDo('documents', 'view') },
         { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: effectiveCanDo('compliance', 'view') },
         { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: ['admin','ceo','cto'].includes(effectiveRole) },
-        { name: 'Access Control',    href: '/admin/users',  icon: Users,           show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'Access Control',    href: '/admin/users',     icon: Users,    show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'Batch Settings',    href: '/admin/settings',  icon: Settings, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
       ]
     },
     {
