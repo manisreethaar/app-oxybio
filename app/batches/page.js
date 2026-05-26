@@ -216,22 +216,7 @@ export default function BatchesPage() {
     }
   };
 
-  // ─── Loading State ────────────────────────────────────────
-  if (loadingBatches) {
-    return (
-      <div className="page-container space-y-8">
-        <div className="flex justify-between items-center">
-          <Skeleton width={200} height={32}/>
-          <Skeleton width={120} height={40}/>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-52 w-full rounded-2xl"/>)}
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Filtered batches ────────────────────────────────────
+  // ─── Filtered batches (hooks must be before any conditional return) ──────
   const displayedBatches = useMemo(() => {
     switch (statusFilter) {
       case 'scheduled': return activeBatches.filter(b => ['planned','scheduled'].includes(b.status));
@@ -256,6 +241,21 @@ export default function BatchesPage() {
     released:  history.filter(b => b.status === 'released').length,
     rejected:  history.filter(b => b.status === 'rejected').length,
   };
+
+  // ─── Loading State ────────────────────────────────────────
+  if (loadingBatches) {
+    return (
+      <div className="page-container space-y-8">
+        <div className="flex justify-between items-center">
+          <Skeleton width={200} height={32}/>
+          <Skeleton width={120} height={40}/>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-52 w-full rounded-2xl"/>)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
