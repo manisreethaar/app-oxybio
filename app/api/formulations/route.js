@@ -1,8 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
-
-const APPROVER_ROLES = ['admin', 'ceo', 'cto'];
+import { can, isMasterAdmin } from '@/lib/permissions';
 
 // Recipe code: R + digits (R01, R12) OR 2–5 uppercase letters optionally followed by digits (RKU, RKU01, KAVNI)
 const CODE_RE = /^[A-Z]{1,5}\d{0,3}$/;
@@ -97,7 +96,7 @@ export async function PATCH(request) {
     const { data: empByEmail } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
     emp = empByEmail;
 
-    const isApprover = emp && APPROVER_ROLES.includes(emp.role?.toLowerCase());
+    const isApprover = emp && (can(emp.role, 'recipes', 'approve') || isMasterAdmin(user.email));
 
     // 1. APPROVAL logic
     if (status === 'Approved') {
@@ -200,7 +199,7 @@ export async function DELETE(request) {
 
     // Check requester role
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
-    const isApprover = emp && APPROVER_ROLES.includes(emp.role?.toLowerCase());
+    const isApprover = emp && (can(emp.role, 'recipes', 'approve') || isMasterAdmin(user.email));
 
     // Fetch the recipe to check its status and owner
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();

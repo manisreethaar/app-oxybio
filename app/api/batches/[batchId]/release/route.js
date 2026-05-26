@@ -1,6 +1,7 @@
 import { createClient as createAnonClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { can, isMasterAdmin } from '@/lib/permissions';
 
 // Service-role client — bypasses RLS entirely (server-side only)
 function adminClient() {
@@ -37,7 +38,7 @@ export async function POST(request, { params }) {
     if (empErr || !emp) {
       return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
     }
-    if (!['ceo', 'admin', 'cto'].includes(emp.role)) {
+    if (!can(emp.role, 'batches', 'release') && !isMasterAdmin(user.email)) {
       return NextResponse.json({ error: 'Release requires CEO / Admin role' }, { status: 403 });
     }
 
