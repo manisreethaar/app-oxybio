@@ -18,7 +18,8 @@ export default function SampleIncubationPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+  const isAdmin   = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
+  const canDelete = ['admin', 'ceo', 'cto'].includes(role);
 
   const fetchSamples = useCallback(async () => {
     setLoading(true);
@@ -203,7 +204,7 @@ export default function SampleIncubationPage() {
                       <button onClick={() => { setEditData(sample); setShowModal(true); }} className="p-2 text-gray-400 hover:text-navy hover:bg-blue-50 rounded-lg transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      {isAdmin && (
+                      {canDelete && (
                         <button
                           onClick={() => handleDelete(sample.id)}
                           disabled={deletingId === sample.id}

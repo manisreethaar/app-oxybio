@@ -136,7 +136,8 @@ export default function CellBankPage() {
   const [strainBatches, setStrainBatches] = useState({});
   const [expandedStrainId, setExpandedStrainId] = useState(null);
   const [lowVialDismissed, setLowVialDismissed] = useState(false);
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+  const isAdmin    = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
+  const canDelete  = ['admin', 'ceo', 'cto'].includes(role);
 
   const fetchStrainBatches = async (strainId) => {
     // Step 1: get all prep IDs for this strain
@@ -365,7 +366,7 @@ export default function CellBankPage() {
                         className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
                         <Plus className="w-3 h-3"/> New Prep
                       </button>
-                      {isAdmin && <button onClick={() => handleDeleteStrain(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
+                      {canDelete && <button onClick={() => handleDeleteStrain(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
                     </div>
                   </div>
                   {/* Batches toggle button */}
