@@ -3,10 +3,11 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const postSchema = z.object({
+  batch_id:      z.string().uuid().optional().nullable(),
   session_title: z.string().min(1, 'Session title required'),
   panelist_count: z.preprocess((val) => Number(val), z.number().min(1)),
-  sample_ids: z.string().optional(),
-  test_criteria: z.array(z.string()).min(1)
+  sample_ids:    z.string().optional(),
+  test_criteria: z.array(z.string()).min(1),
 });
 
 export async function POST(request) {
@@ -16,17 +17,21 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
+
+    // Normalize empty string → null for optional UUID field
+    if (body.batch_id === '') body.batch_id = null;
+
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
     const { error } = await supabase.from('taste_panels').insert({
       ...parsed.data,
       avg_score: 0,
-      scores: []
+      scores:    [],
     });
 
     if (error) throw error;
-    
+
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
