@@ -24,6 +24,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [creatingIncubation, setCreatingIncubation] = useState(false);
   const [deletingIncubationId, setDeletingIncubationId] = useState(null);
   const [pullingResults,       setPullingResults]       = useState(false);
+  const [mediaFormulations,    setMediaFormulations]    = useState([]);
   const isCeo = ['ceo','admin'].includes(role);
   const autoPulledRef = useRef(false);
 
@@ -85,6 +86,16 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     autoPulledRef.current = false;
     fetchQcData();
   }, [fetchQcData]);
+
+  useEffect(() => {
+    // Fetch Lab Media formulations for the dropdown
+    supabase.from('formulations')
+      .select('name')
+      .eq('category', 'Lab Media')
+      .eq('status', 'Approved')
+      .order('name')
+      .then(({data}) => setMediaFormulations(data || []));
+  }, [supabase]);
 
   // Auto-pull incubation results when they become available and no tests have been filled yet
   useEffect(() => {
@@ -443,8 +454,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               <>
                 <div className="grid grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-teal-100">
                   <div>
-                    <label className="field-label">Media Type</label>
-                    <input value={plateMedia} onChange={e=>setPlateMedia(e.target.value)} className="field-input text-xs" placeholder="MRS Agar, LB..."/>
+                    <label className="field-label">Media Type (Recipe)</label>
+                    <select value={plateMedia} onChange={e=>setPlateMedia(e.target.value)} className="field-input text-xs bg-white">
+                      <option value="">Select Recipe...</option>
+                      {mediaFormulations.map(f => (
+                        <option key={f.name} value={f.name}>{f.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="field-label">Dilution Factor</label>
