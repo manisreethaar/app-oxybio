@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, FlaskConical, Dna, Layers, ChevronRight, Search, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, FlaskConical, Dna, Layers, ChevronRight, Search, Trash2, ExternalLink, ChevronDown, Beaker } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
 const STATUS_COLOR = {
@@ -123,6 +124,7 @@ function NewPrepForm({ strains, onSave, onCancel }) {
 export default function CellBankPage() {
   const { role } = useAuth();
   const toast = useToast();
+  const supabase = createClient();
   const [tab, setTab] = useState('preparations');
   const [strains, setStrains] = useState([]);
   const [preps, setPreps] = useState([]);
@@ -131,7 +133,50 @@ export default function CellBankPage() {
   const [showPrepForm, setShowPrepForm] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [strainBatches, setStrainBatches] = useState({});
+  const [expandedStrainId, setExpandedStrainId] = useState(null);
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+
+  const fetchStrainBatches = async (strainId) => {
+    // Step 1: get all prep IDs for this strain
+    const { data: preps } = await supabase
+      .from('cell_bank_preparations')
+      .select('id')
+      .eq('strain_id', strainId);
+    if (!preps?.length) return [];
+
+    // Step 2: get all vial IDs for those preps
+    const { data: vials } = await supabase
+      .from('cell_bank_vials')
+      .select('id')
+      .in('preparation_id', preps.map(p => p.id));
+    if (!vials?.length) return [];
+
+    // Step 3: get inoculations using those vials
+    const { data: inocs } = await supabase
+      .from('batch_flask_inoculations')
+      .select('batch_id, batches(id, batch_id, status, start_time)')
+      .in('cell_bank_vial_id', vials.map(v => v.id));
+
+    // Deduplicate by batch_id
+    const seen = new Set();
+    return (inocs || []).filter(i => {
+      if (!i.batches || seen.has(i.batch_id)) return false;
+      seen.add(i.batch_id);
+      return true;
+    });
+  };
+
+  const handleToggleStrainBatches = async (strainId) => {
+    if (expandedStrainId === strainId) {
+      setExpandedStrainId(null);
+      return;
+    }
+    setExpandedStrainId(strainId);
+    if (strainBatches[strainId] !== undefined) return; // already fetched
+    const results = await fetchStrainBatches(strainId);
+    setStrainBatches(prev => ({ ...prev, [strainId]: results }));
+  };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -272,30 +317,80 @@ export default function CellBankPage() {
           <div className="text-center py-12 text-gray-400 text-sm">No strains registered. Use "Add Strain" to register one.</div>
         ) : (
           <div className="space-y-2">
-            {filteredStrains.map(s => (
-              <div key={s.id} className="surface p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <Dna className="w-5 h-5 text-indigo-600"/>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-black text-gray-900">{s.name}</p>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${SOURCE_COLOR[s.source_type] || 'bg-gray-100 text-gray-600'}`}>{s.source_type}</span>
-                    {s.accession_number && <span className="text-[10px] text-gray-500 font-semibold">{s.accession_number}</span>}
+            {filteredStrains.map(s => {
+              const isExpanded = expandedStrainId === s.id;
+              const batchList = strainBatches[s.id];
+              return (
+                <div key={s.id} className="surface overflow-hidden">
+                  <div className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                      <Dna className="w-5 h-5 text-indigo-600"/>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-black text-gray-900">{s.name}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${SOURCE_COLOR[s.source_type] || 'bg-gray-100 text-gray-600'}`}>{s.source_type}</span>
+                        {s.accession_number && <span className="text-[10px] text-gray-500 font-semibold">{s.accession_number}</span>}
+                      </div>
+                      {s.taxonomy && <p className="text-xs text-gray-500 mt-0.5 truncate">{s.taxonomy}</p>}
+                      {s.isolation_source && <p className="text-[10px] text-gray-400">Source: {s.isolation_source}</p>}
+                    </div>
+                    <div className="text-right shrink-0 space-y-1">
+                      <p className="text-[10px] text-gray-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '—'}</p>
+                      <button onClick={() => { setTab('preparations'); setShowPrepForm(true); }}
+                        className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
+                        <Plus className="w-3 h-3"/> New Prep
+                      </button>
+                      {isAdmin && <button onClick={() => handleDeleteStrain(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
+                    </div>
                   </div>
-                  {s.taxonomy && <p className="text-xs text-gray-500 mt-0.5 truncate">{s.taxonomy}</p>}
-                  {s.isolation_source && <p className="text-[10px] text-gray-400">Source: {s.isolation_source}</p>}
+                  {/* Batches toggle button */}
+                  <div className="px-4 pb-3 border-t border-gray-100 pt-2">
+                    <button
+                      onClick={() => handleToggleStrainBatches(s.id)}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      <Beaker className="w-3 h-3"/>
+                      {batchList === undefined && !isExpanded
+                        ? 'Show batches using this strain'
+                        : batchList === undefined && isExpanded
+                        ? 'Loading batches…'
+                        : `Used in ${batchList.length} batch${batchList.length === 1 ? '' : 'es'}`
+                      }
+                      <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}/>
+                    </button>
+                    {isExpanded && batchList !== undefined && (
+                      <div className="mt-2 space-y-1">
+                        {batchList.length === 0 ? (
+                          <p className="text-[10px] text-gray-400 pl-1">No batches have used a vial from this strain's preparations.</p>
+                        ) : (
+                          batchList.map(item => (
+                            <Link
+                              key={item.batch_id}
+                              href={`/batches/${item.batch_id}`}
+                              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors group"
+                            >
+                              <span className="text-[10px] font-black text-indigo-700 font-mono">{item.batches.batch_id}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                  item.batches.status === 'released' ? 'bg-emerald-100 text-emerald-700' :
+                                  item.batches.status === 'rejected' ? 'bg-red-100 text-red-600' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>{item.batches.status}</span>
+                                {item.batches.start_time && (
+                                  <span className="text-[9px] text-gray-400">{new Date(item.batches.start_time).toLocaleDateString('en-IN')}</span>
+                                )}
+                                <ExternalLink className="w-2.5 h-2.5 text-indigo-400 group-hover:text-indigo-600"/>
+                              </div>
+                            </Link>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right shrink-0 space-y-1">
-                  <p className="text-[10px] text-gray-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '—'}</p>
-                  <button onClick={() => { setTab('preparations'); setShowPrepForm(true); }}
-                    className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
-                    <Plus className="w-3 h-3"/> New Prep
-                  </button>
-                  {isAdmin && <button onClick={() => handleDeleteStrain(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}

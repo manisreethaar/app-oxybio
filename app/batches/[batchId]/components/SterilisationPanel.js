@@ -73,6 +73,16 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         operator_id: employeeProfile?.id, notes: notes || null,
       }, { onConflict: 'batch_id' });
       if (error) throw error;
+      // Log equipment usage for traceability
+      if (equipId) {
+        supabase.from('calibration_logs').insert({
+          equipment_id: equipId,
+          calibration_date: new Date().toISOString().slice(0, 10),
+          result: `Used in batch ${batch.batch_id}`,
+          status: 'Operational',
+          performed_by: employeeProfile?.id || null,
+        }).then(() => {}).catch(() => {});
+      }
       toast.success(advance ? 'Sterilisation complete.' : 'Draft saved.');
       syncStageToLNB(supabase, batch.id, 'sterilisation', {
         method,

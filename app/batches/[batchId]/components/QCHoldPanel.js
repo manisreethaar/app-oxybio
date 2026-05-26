@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microscope, ArrowDownToLine } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
@@ -25,6 +25,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [deletingIncubationId, setDeletingIncubationId] = useState(null);
   const [pullingResults,       setPullingResults]       = useState(false);
   const isCeo = ['ceo','admin'].includes(role);
+  const autoPulledRef = useRef(false);
 
   // Plating config state
   const [platingEnabled,      setPlatingEnabled]      = useState(false);
@@ -81,8 +82,66 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   useEffect(() => {
     setSample(null); setTests([]); setIncubations([]);
+    autoPulledRef.current = false;
     fetchQcData();
   }, [fetchQcData]);
+
+  // Auto-pull incubation results when they become available and no tests have been filled yet
+  useEffect(() => {
+    if (autoPulledRef.current) return;
+    if (!sample || !activeFlask) return;
+    const hasCompleted = incubations.some(r => r.end_time);
+    const allPending = tests.length > 0 && tests.every(t => t.pass_fail === 'Pending');
+    if (!hasCompleted || !allPending) return;
+
+    autoPulledRef.current = true;
+
+    const completed = incubations.filter(r => r.end_time).sort((a, b) => new Date(b.end_time) - new Date(a.end_time));
+    const rec = completed[0];
+    const updates = [];
+
+    if (rec.cfu_per_ml != null || rec.colony_count != null) {
+      const cfuTest = tests.find(t => t.test_name.toLowerCase().includes('cfu'));
+      if (cfuTest) {
+        const val = rec.cfu_per_ml != null ? String(rec.cfu_per_ml) : `${rec.colony_count} colonies`;
+        updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: val }).eq('id', cfuTest.id));
+      }
+    }
+
+    if (rec.microscopic_morphology || rec.colony_morphology) {
+      const gramTest = tests.find(t => t.test_name.toLowerCase().includes('gram'));
+      if (gramTest) {
+        const val = [rec.microscopic_morphology, rec.colony_morphology].filter(Boolean).join(' · ');
+        updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: val }).eq('id', gramTest.id));
+      }
+    }
+
+    if (rec.sterility_status && rec.sterility_status !== 'Pending') {
+      const micTest = tests.find(t => t.test_name.toLowerCase().includes('microbial') || t.test_name.toLowerCase().includes('yeast'));
+      if (micTest) {
+        const pf = rec.sterility_status === 'Sterile' ? 'Pass' : 'Fail';
+        updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: rec.sterility_status, pass_fail: pf }).eq('id', micTest.id));
+      }
+    }
+
+    if (!updates.length) return;
+
+    Promise.all(updates).then(() => {
+      syncStageToLNB(supabase, batch.id, 'plating', {
+        sterility_status: rec.sterility_status,
+        colony_count: rec.colony_count,
+        cfu_per_ml: rec.cfu_per_ml,
+        colony_morphology: rec.colony_morphology,
+        microscopic_morphology: rec.microscopic_morphology,
+        observation: rec.observation,
+        completed_at: rec.end_time,
+      }, activeFlask.flask_label);
+      fetchQcData();
+      toast.success(`${updates.length} QC test(s) updated from plating results.`);
+    }).catch(() => {
+      // silent — avoid double error if manual pull also fails
+    });
+  }, [incubations, tests]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateSample = async () => {
     if (!activeFlask) return;
@@ -107,6 +166,23 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
       }));
       await supabase.from('batch_flask_qc_tests').insert(testRows);
+
+      // Pre-fill pH test from the last fermentation reading for this flask
+      const { data: lastReading } = await supabase
+        .from('batch_fermentation_readings')
+        .select('ph')
+        .eq('flask_id', activeFlask.id)
+        .not('ph', 'is', null)
+        .order('logged_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastReading?.ph) {
+        await supabase.from('batch_flask_qc_tests')
+          .update({ result_value: String(lastReading.ph), notes: 'Auto-filled from last fermentation reading' })
+          .eq('sample_id', sRow.id)
+          .ilike('test_name', '%ph%');
+      }
+
       toast.success(`QC sample ${sampleId} created for ${activeFlask.flask_label}.`);
       fetchQcData();
     } catch (err) { toast.error(err.message); }
