@@ -8,6 +8,14 @@ import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, External
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  filterStock,
+  getItemStats,
+  getStockFilterLabel,
+  getStockRisk,
+  getStockStats,
+  type StockFilter,
+} from './inventoryUtils';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
@@ -18,6 +26,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [items, setItems] = useState(initialItems || []);
   const [vendors, setVendors] = useState(initialVendors || []);
   const [loading, setLoading] = useState(false);
+  const [syncError, setSyncError] = useState('');
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +104,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   const fetchData = useCallback(async (pageNum = 0, append = false, signal = null) => {
     if (!append) setLoading(true);
+    setSyncError('');
     try {
       const start = pageNum * PAGE_SIZE;
       const end = start + PAGE_SIZE - 1;
@@ -153,6 +163,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       }
     } catch (err) {
       console.error("Data synchronization failed:", err);
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        setSyncError('Inventory data could not be refreshed. Check the connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -394,8 +407,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           coa_required: false, allergen: false, organic_certified: '', item_code: '' 
         });
         fetchData(0, false);
-      } else { alert((await res.json()).error || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error((await res.json()).error || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const handleUpdateItem = async (e) => {
@@ -416,8 +429,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           coa_required: false, allergen: false, organic_certified: '', item_code: '' 
         });
         fetchData(0, false);
-      } else { alert((await res.json()).error || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error((await res.json()).error || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const handleUpdateVendor = async (e) => {
@@ -430,8 +443,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
         fetchData(0, false);
-      } else { alert(error.message || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error(error.message || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const handleDeleteVendor = async () => {
@@ -455,7 +468,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       setItems(items.map(i => i.preferred_supplier === deletingId ? { ...i, preferred_supplier: null } : i));
       setDeletingId(null);
     } catch (err: any) {
-      alert('Failed to delete vendor: ' + err.message);
+      toast.error('Failed to delete vendor: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -471,8 +484,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
         fetchData(0, false);
-      } else { alert(error.message || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error(error.message || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const handleSeedCategories = async () => {
@@ -520,10 +533,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         if (!equipErr) equipmentCount++;
       }
 
-      alert(`Success! Auto-Loaded ${insertedCount} inventory items & ${equipmentCount} instruments into your Equipment module.`);
+      toast.success(`Auto-loaded ${insertedCount} inventory items and ${equipmentCount} instruments.`);
       fetchData(0, false);
     } catch(err) {
-      alert("Error during seed process.");
+      toast.error("Error during seed process.");
     } finally {
       setIsSubmitting(false);
     }
@@ -543,32 +556,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewIssue({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
         fetchData(0, false);
-      } else { alert((await res.json()).error || 'Failed.'); }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+      } else { toast.error((await res.json()).error || 'Failed.'); }
+    } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
   const [batchUsageMap, setBatchUsageMap] = useState<Record<string, Array<{id: string, batch_id: string}>>>({});
-  const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'expiring', 'expired'
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all');
 
   // --- Tab-aware stats ---
-  const stockStats = useMemo(() => {
-    const totals = { total: stock.length, low: 0, expiring: 0, expired: 0 };
-    stock.forEach(s => {
-      const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
-      if (daysLeft < 0) totals.expired += 1;
-      else if (daysLeft >= 0 && daysLeft < 30) totals.expiring += 1;
-      const minLevel = parseFloat(s.inventory_items?.min_stock_level) || 0;
-      if (s.current_quantity <= minLevel) totals.low += 1;
-    });
-    return totals;
-  }, [stock]);
+  const stockStats = useMemo(() => getStockStats(stock), [stock]);
 
-  const itemStats = useMemo(() => ({
-    total: items.length,
-    hazardous: items.filter(i => i.hazardous).length,
-    coldChain: items.filter(i => i.cold_chain_required).length,
-    coaRequired: items.filter(i => i.coa_required).length,
-  }), [items]);
+  const itemStats = useMemo(() => getItemStats(items), [items]);
 
   const vendorStats = useMemo(() => ({
     total: vendors.length,
@@ -580,17 +578,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   // Legacy alias so filteredStock still compiles
   const stats = stockStats;
 
-  const filteredStock = useMemo(() => {
-    return stock.filter(s => {
-      const daysLeft = s.expiry_date ? Math.floor((new Date(s.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 999;
-      const minLevel = parseFloat(s.inventory_items?.min_stock_level) || 0;
-      
-      if (stockFilter === 'low') return s.current_quantity <= minLevel;
-      if (stockFilter === 'expiring') return daysLeft >= 0 && daysLeft < 30;
-      if (stockFilter === 'expired') return daysLeft < 0;
-      return true;
-    });
-  }, [stock, stockFilter]);
+  const filteredStock = useMemo(() => filterStock(stock, stockFilter), [stock, stockFilter]);
 
   if (authLoading) {
     return (
@@ -616,7 +604,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         ].map(tile => (
           <button
             key={tile.type}
-            onClick={() => setStockFilter(tile.type)}
+            onClick={() => setStockFilter(tile.type as StockFilter)}
             className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
               stockFilter === tile.type
                 ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-100'
@@ -681,7 +669,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <>
                     <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Stock</p>
                     {[['all','All Stock'],['low','Low Stock Only'],['expiring','Expiring (&lt;30d)'],['expired','Expired']].map(([val, label]) => (
-                      <button key={val} onClick={() => { setStockFilter(val); setShowOptions(false); }}
+                      <button key={val} onClick={() => { setStockFilter(val as StockFilter); setShowOptions(false); }}
                         className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ stockFilter === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
                         {label}
                       </button>
@@ -726,6 +714,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
       </div>
 
+      {syncError && (
+        <div className="flex items-start justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-black">Inventory sync failed</p>
+              <p className="text-xs font-semibold text-red-600">{syncError}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => fetchData(0, false)}
+            className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-black uppercase tracking-widest text-red-700 shadow-sm hover:bg-red-100"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className="flex border-b border-gray-200">
         <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
         <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
@@ -752,8 +758,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
               <Package className="w-12 h-12 text-gray-400" />
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No stock entries yet</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Receive New Stock&apos; to log your first shipment</p>
+                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">{getStockFilterLabel(stockFilter)}</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">
+                  {stockFilter === 'all' ? 'Tap Receive New Stock to log your first shipment' : 'Adjust the filter or search to see more records'}
+                </p>
               </div>
               {canDo('inventory', 'edit') && (
                 <button onClick={() => { 
@@ -768,23 +776,22 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               )}
             </div>
           ) : filteredStock.map((s) => {
-            const isNearExpiry = s.expiry_date && (new Date(s.expiry_date).getTime() - new Date().getTime() < 30 * 24 * 60 * 60 * 1000);
-            const isExpired = s.expiry_date && (new Date(s.expiry_date) < new Date());
+            const risk = getStockRisk(s);
             
             return (
               <div 
                 key={s.id} 
                 onClick={() => setSelectedStock(s)}
-                className={`bg-white rounded-3xl border ${isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} p-6 shadow-sm hover:shadow-md hover:border-teal-100 transition-all flex flex-col lg:flex-row lg:items-center gap-6 group cursor-pointer`}
+                className={`bg-white rounded-3xl border ${risk.isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} p-6 shadow-sm hover:shadow-md hover:border-teal-100 transition-all flex flex-col lg:flex-row lg:items-center gap-6 group cursor-pointer`}
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${s.inventory_items?.category === 'Raw Material' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
                       {s.inventory_items?.category}
                     </span>
-                    {(isExpired || isNearExpiry) && (
-                      <span className={`flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${isExpired ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
-                        <AlertTriangle className="w-3 h-3 mr-1" /> {isExpired ? 'Expired' : 'Near Expiry'}
+                    {(risk.isExpired || risk.isExpiring || risk.isLow) && (
+                      <span className={`flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
+                        <AlertTriangle className="w-3 h-3 mr-1" /> {risk.isOut ? 'Out of Stock' : risk.isExpired ? 'Expired' : risk.isLow ? 'Low Stock' : 'Near Expiry'}
                       </span>
                     )}
                   </div>
@@ -797,7 +804,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-teal-900 ml-1">{s.location || 'Central Store'}</span>
                     </div>
                     <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${isExpired ? 'text-red-600' : 'text-teal-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
+                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-teal-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -805,9 +812,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className="flex items-center gap-8 lg:text-right">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Available Balance</p>
-                    <p className={`text-2xl font-black font-mono tracking-tighter ${s.current_quantity <= 0 ? 'text-gray-300' : 'text-teal-800'}`}>
+                    <p className={`text-2xl font-black font-mono tracking-tighter ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-teal-800'}`}>
                       {s.current_quantity} <span className="text-xs">{s.inventory_items?.unit}</span>
                     </p>
+                    {risk.minLevel > 0 && (
+                      <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Min {risk.minLevel} {s.inventory_items?.unit}</p>
+                    )}
                   </div>
                   <div className="h-12 w-[1px] bg-gray-100"></div>
                   <div className="text-right">

@@ -54,12 +54,17 @@ async function syncIncubationToLNB(supabase, record) {
     flaskLabel = flask?.flask_label || null;
   }
 
+  const snapshotLabel = record.source_stage === 'fermentation_monitoring'
+    ? `${flaskLabel || record.sample_name} ${record.sample_name}`
+    : (flaskLabel || record.sample_name);
+
   await syncStageToLNB(supabase, record.batch_id, 'sample_incubation', {
     sample_name: record.sample_name,
     sample_category: record.sample_category,
     sample_type: record.sample_type,
     source_stage: record.source_stage,
     source_type: record.source_type,
+    fermentation_reading_id: record.fermentation_reading_id,
     incubation_date: record.incubation_date,
     incubation_temp_c: record.incubation_temp_c,
     start_time: record.start_time,
@@ -73,7 +78,20 @@ async function syncIncubationToLNB(supabase, record) {
     colony_morphology: record.colony_morphology,
     sterility_status: record.sterility_status,
     observation: record.observation,
-  }, flaskLabel || record.sample_name);
+  }, snapshotLabel);
+}
+
+async function syncLinkedFermentationReading(supabase, record) {
+  if (!record?.fermentation_reading_id) return;
+
+  await supabase
+    .from('batch_fermentation_readings')
+    .update({
+      sample_incubation_id: record.id,
+      plating_done: true,
+      plating_status: record.end_time ? 'completed' : 'done_incubating',
+    })
+    .eq('id', record.fermentation_reading_id);
 }
 
 export async function GET(request) {
@@ -109,8 +127,21 @@ export async function GET(request) {
     const records = data || [];
     const batchIds = [...new Set(records.map(r => r.batch_id).filter(Boolean))];
     const prepIds = [...new Set(records.map(r => r.cell_bank_preparation_id).filter(Boolean))];
+    const readingIds = [...new Set(records.map(r => r.fermentation_reading_id).filter(Boolean))];
     const lnbByBatch = {};
     const lnbByPrep = {};
+    const readingById = {};
+
+    if (readingIds.length > 0) {
+      const { data: readings } = await supabase
+        .from('batch_fermentation_readings')
+        .select('id, elapsed_hours, logged_at, ph, optical_density')
+        .in('id', readingIds);
+
+      (readings || []).forEach(reading => {
+        readingById[reading.id] = reading;
+      });
+    }
 
     if (batchIds.length > 0 || prepIds.length > 0) {
       let lnbQuery = supabase
@@ -137,6 +168,7 @@ export async function GET(request) {
       success: true,
       data: records.map(record => ({
         ...record,
+        fermentation_reading: readingById[record.fermentation_reading_id] || null,
         linked_lnb_id: lnbByBatch[record.batch_id] || lnbByPrep[record.cell_bank_preparation_id] || null,
       })),
     });
@@ -164,6 +196,7 @@ export async function POST(request) {
       .single();
 
     if (error) throw error;
+    await syncLinkedFermentationReading(supabase, data);
     await syncIncubationToLNB(supabase, data);
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -182,8 +215,22 @@ export async function DELETE(request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
 
+    const { data: existing } = await supabase
+      .from('sample_incubation_records')
+      .select('id, fermentation_reading_id')
+      .eq('id', id)
+      .maybeSingle();
+
     const { error } = await supabase.from('sample_incubation_records').delete().eq('id', id);
     if (error) throw error;
+
+    if (existing?.fermentation_reading_id) {
+      await supabase
+        .from('batch_fermentation_readings')
+        .update({ sample_incubation_id: null, plating_done: false, plating_status: 'not_done' })
+        .eq('id', existing.fermentation_reading_id);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Sample incubation DELETE error:', error);
@@ -213,6 +260,7 @@ export async function PUT(request) {
       .single();
 
     if (error) throw error;
+    await syncLinkedFermentationReading(supabase, data);
     await syncIncubationToLNB(supabase, data);
     return NextResponse.json({ success: true, data });
   } catch (error) {

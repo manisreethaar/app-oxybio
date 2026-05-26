@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
+import { syncStageToLNB } from '@/lib/lnbSync';
+import { validateEndpointPayload, validateReadingPayload } from '@/lib/fermentation/validation';
 
 const EDIT_ROLES = ['admin', 'ceo', 'cto'];
 
@@ -28,6 +30,10 @@ function pickReadingUpdates(updates = {}) {
     'foam_level',
     'visual_appearance',
     'plating_result',
+    'plating_done',
+    'plating_status',
+    'plating_config',
+    'sample_incubation_id',
     'notes',
     'logged_at',
     'elapsed_hours',
@@ -39,6 +45,80 @@ function pickReadingUpdates(updates = {}) {
       .filter((key) => Object.prototype.hasOwnProperty.call(updates, key))
       .map((key) => [key, updates[key]])
   );
+}
+
+function normalizePlatingConfig(config = {}) {
+  return {
+    media_type: config.media_type || null,
+    dilution: config.dilution || null,
+    plate_count: config.plate_count ? Number.parseInt(config.plate_count, 10) : null,
+    incubation_temp_c: config.incubation_temp_c ? Number.parseFloat(config.incubation_temp_c) : 37,
+    expected_hours: config.expected_hours ? Number.parseInt(config.expected_hours, 10) : 48,
+  };
+}
+
+async function createIntervalIncubation(supabase, { batchId, reading, payload, loggedBy }) {
+  const config = normalizePlatingConfig(payload.plating_config);
+  const loggedAt = payload.logged_at || reading.logged_at || new Date().toISOString();
+  const elapsed = Number.isFinite(Number(payload.elapsed_hours)) ? Number(payload.elapsed_hours) : null;
+  const sampleName = `${payload.flask_label || 'Flask'} - T+${elapsed != null ? elapsed.toFixed(1) : '0.0'}h Plate`;
+
+  const { data: incubation, error } = await supabase
+    .from('sample_incubation_records')
+    .insert({
+      sample_name: sampleName,
+      batch_id: batchId,
+      flask_id: payload.flask_id || null,
+      fermentation_reading_id: reading.id,
+      sample_category: 'Fermentation IPC',
+      sample_type: 'Agar Plate',
+      incubation_date: new Date(loggedAt).toISOString().slice(0, 10),
+      start_time: new Date(loggedAt).toISOString(),
+      incubation_temp_c: config.incubation_temp_c,
+      sterility_status: 'Pending',
+      source_stage: 'fermentation_monitoring',
+      source_type: 'Interval Plating',
+      sampled_at: new Date(loggedAt).toISOString(),
+      observation: [
+        config.media_type ? `Media: ${config.media_type}` : null,
+        config.dilution ? `Dilution: ${config.dilution}` : null,
+        config.plate_count ? `Plates: ${config.plate_count}` : null,
+        config.expected_hours ? `Expected incubation: ${config.expected_hours}h` : null,
+      ].filter(Boolean).join(' | ') || null,
+      logged_by: loggedBy || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await syncStageToLNB(supabase, batchId, 'sample_incubation', {
+    sample_name: incubation.sample_name,
+    sample_category: incubation.sample_category,
+    sample_type: incubation.sample_type,
+    source_stage: incubation.source_stage,
+    source_type: incubation.source_type,
+    fermentation_reading_id: reading.id,
+    incubation_date: incubation.incubation_date,
+    incubation_temp_c: incubation.incubation_temp_c,
+    start_time: incubation.start_time,
+    sterility_status: incubation.sterility_status,
+    plating_config: config,
+    observation: incubation.observation,
+  }, `${payload.flask_label || 'Flask'} T+${elapsed != null ? elapsed.toFixed(1) : '0.0'}h`);
+
+  const { data: updated, error: updateError } = await supabase
+    .from('batch_fermentation_readings')
+    .update({
+      sample_incubation_id: incubation.id,
+      plating_status: 'done_incubating',
+    })
+    .eq('id', reading.id)
+    .select()
+    .single();
+
+  if (updateError) throw updateError;
+  return { reading: updated || reading, incubation };
 }
 
 export async function POST(request, { params }) {
@@ -53,6 +133,13 @@ export async function POST(request, { params }) {
 
     // ── POST a fermentation reading ────────────────────────────
     if (type === 'reading') {
+      const validation = validateReadingPayload(data);
+      if (!validation.ok) {
+        return NextResponse.json({ success: false, error: validation.errors.join(' ') }, { status: 400 });
+      }
+
+      const platingDone = Boolean(data.plating_done);
+      const platingConfig = normalizePlatingConfig(data.plating_config || {});
       const { data: row, error } = await supabase
         .from('batch_fermentation_readings')
         .insert({
@@ -61,11 +148,14 @@ export async function POST(request, { params }) {
           flask_label:       data.flask_label || null,
           logged_at:         data.logged_at || new Date().toISOString(),
           elapsed_hours:     data.elapsed_hours || null,
-          ph:                data.ph || null,
-          incubator_temp_c:  data.incubator_temp_c || null,
+          ph:                validation.values.ph,
+          incubator_temp_c:  validation.values.incubator_temp_c,
           brix:              data.brix || null,
           optical_density:   data.optical_density || null,
           plating_result:    data.plating_result || null,
+          plating_done:      platingDone,
+          plating_status:    platingDone ? 'done_incubating' : 'not_done',
+          plating_config:    platingDone ? platingConfig : {},
           foam_level:        data.foam_level || null,
           visual_appearance: data.visual_appearance || null,
           is_retrospective:  data.is_retrospective || false,
@@ -78,6 +168,19 @@ export async function POST(request, { params }) {
         .single();
 
       if (error) throw error;
+
+      let responseRow = row;
+      let incubation = null;
+      if (platingDone) {
+        const linked = await createIntervalIncubation(supabase, {
+          batchId,
+          reading: row,
+          payload: { ...data, plating_config: platingConfig },
+          loggedBy: data.logged_by || null,
+        });
+        responseRow = linked.reading;
+        incubation = linked.incubation;
+      }
 
       // ── Dispatch alarm notifications if triggered ───────────
       // The DB trigger sets is_ph_alarm / is_temp_alarm. Read back the row.
@@ -113,7 +216,59 @@ export async function POST(request, { params }) {
         }).catch(()=>{});
       }
 
-      return NextResponse.json({ success: true, data: row, alarms: { ph: saved?.is_ph_alarm, temp: saved?.is_temp_alarm } });
+      return NextResponse.json({ success: true, data: responseRow, incubation, alarms: { ph: saved?.is_ph_alarm, temp: saved?.is_temp_alarm } });
+    }
+
+    if (type === 'endpoint') {
+      const validation = validateEndpointPayload(data);
+      if (!validation.ok) {
+        return NextResponse.json({ success: false, error: validation.errors.join(' ') }, { status: 400 });
+      }
+
+      if (!data.flask_id) {
+        return NextResponse.json({ success: false, error: 'Flask ID is required.' }, { status: 400 });
+      }
+
+      const endpointPayload = {
+        flask_id: data.flask_id,
+        batch_id: batchId,
+        total_hours: validation.values.total_hours,
+        end_time: new Date(data.end_time).toISOString(),
+        final_ph: validation.values.final_ph,
+        aroma: data.aroma || null,
+        colour_desc: data.colour_desc || null,
+        texture: data.texture || null,
+        sensory_overall: data.sensory_overall || null,
+        gram_stain: data.gram_stain || null,
+        notes: data.notes || null,
+        declared_by: data.declared_by || null,
+      };
+
+      const { data: endpoint, error } = await supabase
+        .from('batch_flask_endpoints')
+        .upsert(endpointPayload, { onConflict: 'flask_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await syncStageToLNB(supabase, batchId, 'fermentation', {
+        total_hours: endpointPayload.total_hours,
+        end_time: endpointPayload.end_time,
+        final_ph: endpointPayload.final_ph,
+        aroma: endpointPayload.aroma,
+        colour_desc: endpointPayload.colour_desc,
+        texture: endpointPayload.texture,
+        sensory_overall: endpointPayload.sensory_overall,
+        gram_stain: endpointPayload.gram_stain,
+        notes: endpointPayload.notes,
+      }, data.flask_label || 'Flask');
+
+      return NextResponse.json({
+        success: true,
+        data: endpoint,
+        warnings: validation.values.is_endpoint_ph_out_of_range ? ['Final pH is outside the 4.2-4.5 target band.'] : [],
+      });
     }
 
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 });

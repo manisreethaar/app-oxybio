@@ -38,7 +38,7 @@ export async function GET(request, { params }) {
     const [
       batchRes, flasksRes, mediaPrepRes, sterilRes,
       inocuRes, ferReadRes, ferEpRes, strainRes, extractRes,
-      qcSampleRes, rejectionRes, inventoryUsageRes
+      qcSampleRes, rejectionRes, inventoryUsageRes, incubationRes
     ] = await Promise.all([
       db.from('batches').select('*, formulations(name, code, version, base_volume_ml)').eq('id', batchId).single(),
       db.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
@@ -54,6 +54,7 @@ export async function GET(request, { params }) {
       db.from('inventory_usage')
         .select('*, inventory_stock(supplier_batch_number, expiry_date, inventory_items(name, unit))')
         .eq('batch_id', batchId),
+      db.from('sample_incubation_records').select('*').eq('batch_id', batchId).order('start_time'),
     ]);
 
     if (!batchRes.data) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
@@ -96,6 +97,7 @@ export async function GET(request, { params }) {
       flaskQCTests:      qcTests,
       flaskReleases:     releaseData,
       flaskRejections:   rejectionRes.data  || [],
+      sampleIncubations: incubationRes.data  || [],
       inventoryUsage:    inventoryUsageRes.data || [],
       generatedBy:       emp.full_name,
       generatedAt:       new Date().toISOString(),

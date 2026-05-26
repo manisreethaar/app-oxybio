@@ -35,7 +35,20 @@
       "Bash(git commit -m 'fix: route release through API to bypass RLS; fix stage bar for released batches *)",
       "Bash(git commit -m 'fix: replace broken React modal with window.confirm for release — modal was not rendering due to stacking context *)",
       "Bash(git commit -m 'fix: simplify ReleasePanel — direct API call on click, visible error display, no modal/confirm dialog *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(cat next.config.js)",
+      "Bash(cat next.config.mjs)",
+      "Bash(cat next.config.ts)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('next:', p.dependencies.next\\)\")",
+      "Bash(Get-ChildItem -Path E:\\\\OXYBIO -Recurse -Directory -Name)",
+      "Bash(Select-Object -First 30)",
+      "Bash(xargs grep -l \"taste_panels\\\\|sensory\\\\|consumer.*panel\\\\|panelist\")",
+      "Bash(xargs grep -l \"taste_panels\")",
+      "Bash(xargs grep -l \"panelist\\\\|score\\\\|sensory\")",
+      "Bash(xargs grep -l \"taste_panels\\\\|scores\\\\|avg_score\")",
+      "Bash(mkdir \"E:\\\\OXYBIO\\\\app\\\\api\\\\lab-notebook\\\\[id]\\\\resync\")",
+      "Bash(xargs grep -l \"shelf\")",
+      "Bash(git diff *)"
     ]
   }
 }
