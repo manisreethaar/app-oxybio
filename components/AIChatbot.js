@@ -225,7 +225,7 @@ export default function AIChatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col z-[1000] overflow-hidden h-[600px] max-h-[70vh]"
+            className="fixed bottom-[5.5rem] right-4 left-4 md:right-6 md:left-auto md:bottom-24 md:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col z-[1000] overflow-hidden h-[75vh] md:h-[600px] max-h-[75vh] md:max-h-[70vh]"
           >
             {/* Header */}
             <div className="bg-[#1F3A5F] p-4 flex justify-between items-center text-white flex-shrink-0">
@@ -370,7 +370,7 @@ export default function AIChatbot() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-teal-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-700 hover:scale-105 transition-all z-[999]"
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-teal-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-700 hover:scale-105 transition-all z-[999]"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>

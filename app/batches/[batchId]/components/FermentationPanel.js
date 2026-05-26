@@ -526,8 +526,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           <div className="p-4">
             <PhChart readings={readings}/>
           </div>
-          <div className="border-t border-gray-100">
-            <table className="w-full divide-y divide-gray-100">
+          <div className="border-t border-gray-100 overflow-x-auto">
+            <table className="w-full min-w-[480px] divide-y divide-gray-100">
               <thead><tr className="bg-gray-50/50">
                 <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Flask</th>
                 <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
