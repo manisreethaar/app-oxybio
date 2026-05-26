@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical } from 'lucide-react';
+import { Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical, SlidersHorizontal } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import dynamic from 'next/dynamic';
 const ResearchTrendChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchTrendChart })), { ssr: false });
@@ -19,6 +19,8 @@ const formSchema = z.object({
   sample_ids:    z.string().optional(),
 });
 
+const DEFAULT_CRITERIA = ['Taste', 'Texture', 'Smell', 'Appearance'];
+
 export default function ConsumerResearchPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
   const toast = useToast();
@@ -27,6 +29,9 @@ export default function ConsumerResearchPage() {
   const [loading,   setLoading]   = useState(true);
   const [showNew,   setShowNew]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeSession, setActiveSession] = useState(null);
+  const [scoreForm, setScoreForm] = useState({});
+  const [scoreSubmitting, setScoreSubmitting] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(formSchema),
@@ -78,6 +83,70 @@ export default function ConsumerResearchPage() {
       setShowNew(false); reset(); fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); }
+  };
+
+  const getCriteria = (session) => {
+    return session?.test_criteria?.length ? session.test_criteria : DEFAULT_CRITERIA;
+  };
+
+  const openScoreModal = (session) => {
+    const criteria = getCriteria(session);
+    const existingScores = Array.isArray(session.scores) && session.scores.length > 0 ? session.scores[0] : {};
+    const nextScores = criteria.reduce((acc, criterion) => {
+      acc[criterion] = Number(existingScores?.[criterion] ?? 0);
+      return acc;
+    }, {});
+    setActiveSession(session);
+    setScoreForm(nextScores);
+  };
+
+  const closeScoreModal = () => {
+    setActiveSession(null);
+    setScoreForm({});
+  };
+
+  const scoreAverage = useMemo(() => {
+    const values = Object.values(scoreForm).map(Number).filter((value) => Number.isFinite(value));
+    if (!values.length) return 0;
+    return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1));
+  }, [scoreForm]);
+
+  const updateScore = (criterion, value) => {
+    const numeric = Math.max(0, Math.min(10, Number(value)));
+    setScoreForm(prev => ({ ...prev, [criterion]: Number.isFinite(numeric) ? numeric : 0 }));
+  };
+
+  const handleSaveScores = async () => {
+    if (!activeSession || scoreSubmitting) return;
+    setScoreSubmitting(true);
+    try {
+      const criteria = getCriteria(activeSession);
+      const normalizedScores = criteria.reduce((acc, criterion) => {
+        acc[criterion] = Number(scoreForm[criterion] || 0);
+        return acc;
+      }, {});
+      const avg_score = Number((Object.values(normalizedScores).reduce((sum, value) => sum + value, 0) / criteria.length).toFixed(1));
+
+      const res = await fetch(`/api/research/${activeSession.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scores: [normalizedScores], avg_score }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed to save scores.');
+
+      setSessions(prev => prev.map(session => (
+        session.id === activeSession.id
+          ? { ...session, ...payload.panel, batches: session.batches }
+          : session
+      )));
+      toast.success('Panel scores saved.');
+      closeScoreModal();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setScoreSubmitting(false);
+    }
   };
 
   if (authLoading) return (
@@ -201,9 +270,87 @@ export default function ConsumerResearchPage() {
                 : <span className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-100"><Zap className="w-6 h-6"/></span>
               }
             </div>
+
+            <button
+              type="button"
+              onClick={() => openScoreModal(s)}
+              className="mt-5 w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 text-navy rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-navy/30 active:scale-95 transition-all"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Log Scores
+            </button>
           </div>
         ))}
       </div>
+
+      {/* Score Logging Modal */}
+      {activeSession && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
+            <button
+              onClick={closeScoreModal}
+              className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
+            >
+              <X className="w-5 h-5 text-gray-400"/>
+            </button>
+
+            <div className="p-6 border-b border-slate-100">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-navy mb-1">Sensory Score Entry</p>
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">{activeSession.session_title}</h2>
+              {activeSession.batches && (
+                <p className="text-xs font-semibold text-gray-500 mt-1">
+                  Batch {activeSession.batches.batch_id}{activeSession.batches.variant ? ` - ${activeSession.batches.variant}` : ''}
+                </p>
+              )}
+            </div>
+
+            <div className="p-6 space-y-5">
+              {getCriteria(activeSession).map((criterion) => (
+                <div key={criterion} className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{criterion}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={scoreForm[criterion] ?? 0}
+                      onChange={(event) => updateScore(criterion, event.target.value)}
+                      className="w-20 px-2 py-1.5 bg-white border border-gray-200 rounded-lg font-bold text-sm text-center outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                    />
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={scoreForm[criterion] ?? 0}
+                    onChange={(event) => updateScore(criterion, event.target.value)}
+                    className="w-full accent-[#1F3A5F]"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="px-6 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Average</p>
+                <p className={`text-3xl font-black tracking-tight ${scoreAverage >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
+                  {scoreAverage}<span className="text-sm font-semibold text-gray-400"> / 10</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveScores}
+                disabled={scoreSubmitting}
+                className="sm:min-w-40 px-4 py-2.5 bg-navy border border-navy hover:bg-navy-hover text-white font-bold rounded-lg uppercase tracking-wider text-xs shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {scoreSubmitting ? <><Loader2 className="w-4 h-4 animate-spin"/> Saving...</> : 'Save Scores'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Panel Modal */}
       {showNew && (

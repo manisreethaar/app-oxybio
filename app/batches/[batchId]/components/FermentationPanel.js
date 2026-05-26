@@ -2,7 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer } from 'lucide-react';
-import { syncStageToLNB } from '@/lib/lnbSync';
+import {
+  calculateElapsedHours,
+  validateEndpointPayload,
+  validateReadingPayload,
+} from '@/lib/fermentation/validation';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -78,31 +82,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [temp,       setTemp]       = useState('');
   const [brix,       setBrix]       = useState('');
   const [od,         setOd]         = useState('');
-  const [platingStatus, setPlatingStatus] = useState('Pending');
-  const [cfuCount,   setCfuCount]   = useState('');
   const [foam,       setFoam]       = useState('None');
   const [appearance, setAppearance] = useState('Normal');
-  const [createIncubation, setCreateIncubation] = useState(false);
+  const [platingEnabled, setPlatingEnabled] = useState(false);
+  const [platingDone, setPlatingDone] = useState(false);
+  const [plateMedia, setPlateMedia] = useState('');
+  const [plateDilution, setPlateDilution] = useState('');
+  const [plateCount, setPlateCount] = useState('2');
+  const [plateTemp, setPlateTemp] = useState('37');
+  const [plateExpectedHours, setPlateExpectedHours] = useState('48');
+  const [mediaFormulations, setMediaFormulations] = useState([]);
   const [notes,      setNotes]      = useState('');
   const [supervisedBy, setSupervisedBy] = useState('');
   const [isRetro,    setIsRetro]    = useState(false);
   const [retroReason, setRetroReason] = useState('');
   const [loggedAt,   setLoggedAt]   = useState('');
-
-  // Fermentation end time — persisted in localStorage per flask
-  const [recordedEndTime, setRecordedEndTime] = useState('');
-  useEffect(() => {
-    if (!activeFlask?.id) return;
-    const stored = localStorage.getItem(`ferm-end-${activeFlask.id}`) || '';
-    setRecordedEndTime(stored);
-  }, [activeFlask?.id]);
-  const handleSaveEndTime = (val) => {
-    setRecordedEndTime(val);
-    if (activeFlask?.id) {
-      if (val) localStorage.setItem(`ferm-end-${activeFlask.id}`, val);
-      else localStorage.removeItem(`ferm-end-${activeFlask.id}`);
-    }
-  };
 
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
@@ -158,6 +152,15 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   }, [fetchData]);
 
   useEffect(() => {
+    supabase.from('formulations')
+      .select('name')
+      .eq('category', 'Lab Media')
+      .eq('status', 'Approved')
+      .order('name')
+      .then(({ data }) => setMediaFormulations(data || []));
+  }, [supabase]);
+
+  useEffect(() => {
     // Clear endpoint form whenever the active flask changes
     setEpPh('');
     setAroma('Tangy and clean');
@@ -182,68 +185,82 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     if (!pH || saving || !activeFlask) return;
     if (isIntern && !supervisedBy) { toast.warn('Select a supervisor before submitting.'); return; }
     const elapsed = tZero ? (new Date(isRetro && loggedAt ? loggedAt : new Date()) - tZero) / 3600000 : null;
+    const validation = validateReadingPayload({
+      ph: pH,
+      incubator_temp_c: temp || null,
+      is_retrospective: isRetro,
+      retro_reason: retroReason,
+      logged_at: isRetro && loggedAt ? new Date(loggedAt).toISOString() : new Date().toISOString(),
+    });
+    if (!validation.ok) {
+      toast.warn(validation.errors.join(' '));
+      return;
+    }
     
     setSaving(true);
     try {
-      const phVal = parseFloat(pH);
-      const isAlarm = phVal < 3.8 || phVal > 5.5;
-      
-      const { error } = await supabase.from('batch_fermentation_readings').insert({
-        batch_id: batch.id, flask_id: activeFlask.id, flask_label: activeFlask.flask_label,
-        ph: phVal, incubator_temp_c: temp ? parseFloat(temp) : null,
-        brix: brix ? parseFloat(brix) : null, optical_density: od ? parseFloat(od) : null,
-        plating_result: `${platingStatus}${cfuCount ? ` — ${cfuCount}` : ''}`,
-        foam_level: foam, visual_appearance: appearance,
-        elapsed_hours: elapsed ? parseFloat(elapsed.toFixed(2)) : null,
-        logged_at: isRetro && loggedAt ? loggedAt : new Date().toISOString(),
-        is_ph_alarm: isAlarm,
-        is_retrospective: isRetro, retro_reason: isRetro ? retroReason : null,
-        supervised_by: supervisedBy || null, notes: notes || null,
-        logged_by: employeeProfile?.id
+      const loggedAtIso = isRetro && loggedAt ? new Date(loggedAt).toISOString() : new Date().toISOString();
+      const res = await fetch(`/api/batches/${batch.id}/fermentation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'reading',
+          flask_id: activeFlask.id,
+          flask_label: activeFlask.flask_label,
+          ph: parseFloat(pH),
+          incubator_temp_c: temp ? parseFloat(temp) : null,
+          brix: brix ? parseFloat(brix) : null,
+          optical_density: od ? parseFloat(od) : null,
+          foam_level: foam,
+          visual_appearance: appearance,
+          elapsed_hours: elapsed ? parseFloat(elapsed.toFixed(2)) : null,
+          logged_at: loggedAtIso,
+          is_retrospective: isRetro,
+          retro_reason: isRetro ? retroReason : null,
+          supervised_by: supervisedBy || null,
+          notes: notes || null,
+          logged_by: employeeProfile?.id,
+          plating_done: platingEnabled && platingDone,
+          plating_config: platingEnabled && platingDone ? {
+            media_type: plateMedia || null,
+            dilution: plateDilution || null,
+            plate_count: plateCount ? parseInt(plateCount, 10) : null,
+            incubation_temp_c: plateTemp ? parseFloat(plateTemp) : 37,
+            expected_hours: plateExpectedHours ? parseInt(plateExpectedHours, 10) : 48,
+          } : {},
+        }),
       });
-      if (error) throw error;
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to log reading');
 
-      // Unified Process Bus: Auto-link to Sample Incubation
-      if (createIncubation) {
-        const incRes = await fetch('/api/research/incubation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sample_name: `${activeFlask.flask_label} - T+${elapsed ? elapsed.toFixed(1) : 0}h`,
-            batch_id: batch.id,
-            flask_id: activeFlask.id,
-            sample_category: 'Fermentation IPC',
-            sample_type: 'Agar Plate',
-            incubation_date: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString().split('T')[0],
-            start_time: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString(),
-            incubation_temp_c: temp ? parseFloat(temp) : 37,
-            sterility_status: platingStatus === 'Contaminated' ? 'Contaminated' : platingStatus === 'Clear' ? 'Sterile' : 'Pending',
-            source_stage: 'fermentation',
-            observation: cfuCount ? `CFU Count: ${cfuCount}` : null
-          })
-        });
-        const incJson = await incRes.json();
-        if (!incJson.success) throw new Error(incJson.error || 'Failed to create incubation record');
-      }
-
-      toast.success('Reading logged.');
-      setPH(''); setTemp(''); setBrix(''); setOd(''); setPlatingStatus('Pending'); setCfuCount(''); setCreateIncubation(false); setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
+      toast.success(json.incubation ? 'Reading logged and incubation activity created.' : 'Reading logged.');
+      setPH(''); setTemp(''); setBrix(''); setOd('');
+      setPlatingEnabled(false); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
+      setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
 
-  const isRetroSpective = tZero && new Date(tZero) < new Date(batch.created_at || batch.start_time);
-
   const handleEndpoint = async (e) => {
     e.preventDefault();
     if (!epPh || savingEp) return;
-    if (isRetroSpective && !endpointTime) {
-      toast.warn('This is a retrospective batch — please set the actual Fermentation End Time.');
+    if (!endpointTime) {
+      toast.warn('Set the actual fermentation end time before declaring endpoint.');
       return;
     }
     const finalPh = parseFloat(epPh);
-    const phOOR = finalPh < 4.2 || finalPh > 4.5;
+    const totalHours = calculateElapsedHours(tZero, endpointTime);
+    const validation = validateEndpointPayload({
+      final_ph: finalPh,
+      total_hours: totalHours,
+      end_time: new Date(endpointTime).toISOString(),
+    });
+    if (!validation.ok) {
+      toast.warn(validation.errors.join(' '));
+      return;
+    }
+    const phOOR = validation.values.is_endpoint_ph_out_of_range;
     if (phOOR) {
       setPendingOOROverride(true);
       return;
@@ -258,32 +275,33 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   const executeEndpoint = async () => {
     const finalPh = parseFloat(epPh);
+    const totalHours = calculateElapsedHours(tZero, endpointTime);
     setSavingEp(true);
     try {
-      const epData = {
-        flask_id: activeFlask.id, batch_id: batch.id,
-        total_hours: tZero ? parseFloat(((( endpointTime ? new Date(endpointTime) : new Date()) - tZero) / 3600000).toFixed(2)) : null,
-        final_ph: finalPh, aroma, colour_desc: colourDesc,
-        texture, sensory_overall: sensory, gram_stain: gramStain, 
-        notes: epNotes, declared_by: employeeProfile?.id,
-      };
-      const { error: epErr } = await supabase.from('batch_flask_endpoints').upsert(epData, { onConflict: 'flask_id' });
-      if (epErr) throw epErr;
+      const res = await fetch(`/api/batches/${batch.id}/fermentation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'endpoint',
+          flask_id: activeFlask.id,
+          flask_label: activeFlask.flask_label,
+          total_hours: totalHours,
+          end_time: new Date(endpointTime).toISOString(),
+          final_ph: finalPh,
+          aroma,
+          colour_desc: colourDesc,
+          texture,
+          sensory_overall: sensory,
+          gram_stain: gramStain,
+          notes: epNotes,
+          declared_by: employeeProfile?.id,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to declare endpoint');
       
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
-      syncStageToLNB(supabase, batch.id, 'fermentation', {
-        total_hours: epData.total_hours,
-        final_ph: finalPh,
-        aroma,
-        colour_desc: colourDesc,
-        texture,
-        sensory_overall: sensory,
-        gram_stain: gramStain,
-        notes: epNotes || null,
-      }, activeFlask.flask_label);
       setEndpointTime('');
-      setRecordedEndTime('');
-      if (activeFlask?.id) localStorage.removeItem(`ferm-end-${activeFlask.id}`);
       fetchData(); onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEp(false); }
@@ -307,12 +325,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   const openEdit = (r) => {
     setEditingReading(r);
-    const platingParts = r.plating_result?.split(' — ') || [];
     setEditFields({
       ph: r.ph ?? '', incubator_temp_c: r.incubator_temp_c ?? '',
       brix: r.brix ?? '', optical_density: r.optical_density ?? '',
       foam_level: r.foam_level ?? 'None', visual_appearance: r.visual_appearance ?? 'Normal',
-      plating_status: platingParts[0] || 'Pending', cfu_count: platingParts[1] || '',
       notes: r.notes ?? '', logged_at: toLocalDatetime(r.logged_at),
       is_retrospective: r.is_retrospective ?? false, retro_reason: r.retro_reason ?? '',
     });
@@ -335,8 +351,6 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         optical_density: editFields.optical_density !== '' ? parseFloat(editFields.optical_density) : undefined,
         foam_level: editFields.foam_level || null,
         visual_appearance: editFields.visual_appearance || null,
-        plating_result: editFields.plating_status
-          ? `${editFields.plating_status}${editFields.cfu_count ? ` — ${editFields.cfu_count}` : ''}` : undefined,
         notes: editFields.notes || null,
         logged_at: editFields.logged_at ? new Date(editFields.logged_at).toISOString() : undefined,
         elapsed_hours: newElapsedHours !== undefined ? newElapsedHours : undefined,
@@ -375,6 +389,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     finally { setSavingDelete(false); }
   };
 
+  const platingSummary = (reading) => {
+    if (reading.sample_incubation_id) {
+      if (reading.plating_status === 'completed') return 'Plate completed';
+      return 'Plate incubating';
+    }
+    if (reading.plating_done) return 'Plate logged';
+    if (reading.plating_result) return `Legacy: ${reading.plating_result}`;
+    return null;
+  };
+
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
 
   if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Fermentation details.</div>;
@@ -398,9 +422,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           {!endpoint && tZero && (
             <button onClick={() => {
               if (!showEndpoint) {
-                if (recordedEndTime) {
-                  setEndpointTime(recordedEndTime);
-                } else if (inocu?.planned_fermentation_hrs && tZero) {
+                if (inocu?.planned_fermentation_hrs && tZero) {
                   const suggested = new Date(tZero.getTime() + inocu.planned_fermentation_hrs * 3600000);
                   if (suggested < new Date()) setEndpointTime(suggested.toISOString().slice(0, 16));
                 }
@@ -419,7 +441,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         {maxExceeded && !endpoint && <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg"><Clock className="w-4 h-4 text-amber-600 shrink-0"/><span className="text-xs font-bold text-amber-800">Planned fermentation duration exceeded. Time to declare endpoint?</span></div>}
 
         {/* Fermentation End Time — always visible once T=0 is set, before endpoint is declared */}
-        {tZero && !endpoint && (
+        {false && tZero && !endpoint && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1.5">
               Fermentation End Time <span className="text-gray-400 font-normal normal-case tracking-normal">(fill this when fermentation stops)</span>
@@ -427,23 +449,23 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             <div className="flex items-center gap-2">
               <input
                 type="datetime-local"
-                value={recordedEndTime}
+                value={endpointTime}
                 max={toLocalDatetime(new Date().toISOString())}
-                onChange={e => handleSaveEndTime(e.target.value)}
-                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${recordedEndTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-gray-200'}`}
+                onChange={e => setEndpointTime(e.target.value)}
+                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${endpointTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-gray-200'}`}
               />
-              {recordedEndTime && tZero && (
+              {endpointTime && tZero && (
                 <span className="text-sm font-black text-navy whitespace-nowrap tabular-nums">
-                  {((new Date(recordedEndTime) - tZero) / 3600000).toFixed(1)} hr
+                  {((new Date(endpointTime) - tZero) / 3600000).toFixed(1)} hr
                 </span>
               )}
-              {recordedEndTime && (
-                <button onClick={() => handleSaveEndTime('')} className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
+              {endpointTime && (
+                <button onClick={() => setEndpointTime('')} className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
                   <X className="w-3.5 h-3.5"/>
                 </button>
               )}
             </div>
-            {recordedEndTime && (
+            {endpointTime && (
               <p className="text-[9px] text-emerald-600 font-bold mt-1">✓ Saved — will auto-fill when you declare endpoint</p>
             )}
           </div>
@@ -477,30 +499,81 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   <input type="number" step="0.001" value={od} onChange={e=>setOd(e.target.value)} placeholder="0.500" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1">
+              <div className="grid grid-cols-1 gap-3">
+                <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Foam</label>
                   <select value={foam} onChange={e=>setFoam(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {FOAM_OPTS.map(o=><option key={o}>{o}</option>)}
                   </select>
                 </div>
-                <div className="col-span-1">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Plating Status</label>
-                  <select value={platingStatus} onChange={e=>setPlatingStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
-                    {['Pending', 'Clear', 'Contaminated', 'Not Done'].map(o=><option key={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">CFU Count</label>
-                  <input type="text" value={cfuCount} onChange={e=>setCfuCount(e.target.value)} placeholder="e.g. 1.2 x 10^6" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-                </div>
               </div>
-              <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-xl flex items-start gap-3">
-                <input type="checkbox" id="linkIncubation" checked={createIncubation} onChange={e=>setCreateIncubation(e.target.checked)} className="mt-1 w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"/>
-                <div>
-                  <label htmlFor="linkIncubation" className="text-xs font-bold text-gray-800 cursor-pointer">Auto-link to Sample Incubation Module</label>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Creates a tracking record for this plate to monitor its growth over the next few days.</p>
+
+              <div className="bg-teal-50/50 border border-teal-100 p-3 rounded-xl space-y-3">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="intervalPlating"
+                    checked={platingEnabled}
+                    onChange={e => {
+                      setPlatingEnabled(e.target.checked);
+                      if (!e.target.checked) setPlatingDone(false);
+                    }}
+                    className="mt-1 w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"
+                  />
+                  <div>
+                    <label htmlFor="intervalPlating" className="text-xs font-bold text-gray-800 cursor-pointer">Plating planned for this sample</label>
+                    <p className="text-[10px] text-gray-500 mt-0.5">Record setup now. Plate results stay pending in Sample Incubation until incubation ends.</p>
+                  </div>
                 </div>
+
+                {platingEnabled && (
+                  <div className="space-y-3 pl-7">
+                    <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700">
+                      <input type="checkbox" checked={platingDone} onChange={e=>setPlatingDone(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"/>
+                      Plating done now - create incubation activity
+                    </label>
+                    {platingDone && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="field-label">Media Type</label>
+                          <select value={plateMedia} onChange={e=>setPlateMedia(e.target.value)} className="field-input text-xs bg-white">
+                            <option value="">Select media...</option>
+                            {mediaFormulations.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="field-label">Dilution</label>
+                          <select value={plateDilution} onChange={e=>setPlateDilution(e.target.value)} className="field-input text-xs bg-white">
+                            <option value="">Select...</option>
+                            <option value="Direct (No dilution)">Direct (No dilution)</option>
+                            <option value="10^-1">10^-1</option>
+                            <option value="10^-2">10^-2</option>
+                            <option value="10^-3">10^-3</option>
+                            <option value="10^-4">10^-4</option>
+                            <option value="10^-5">10^-5</option>
+                            <option value="10^-6">10^-6</option>
+                            <option value="10^-7">10^-7</option>
+                            <option value="10^-8">10^-8</option>
+                            <option value="10^-9">10^-9</option>
+                            <option value="10^-10">10^-10</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="field-label">No. of Plates</label>
+                          <input type="number" min="1" value={plateCount} onChange={e=>setPlateCount(e.target.value)} className="field-input text-xs" placeholder="2"/>
+                        </div>
+                        <div>
+                          <label className="field-label">Incubation Temp (C)</label>
+                          <input type="number" step="0.1" value={plateTemp} onChange={e=>setPlateTemp(e.target.value)} className="field-input text-xs" placeholder="37"/>
+                        </div>
+                        <div>
+                          <label className="field-label">Expected Duration (hrs)</label>
+                          <input type="number" value={plateExpectedHours} onChange={e=>setPlateExpectedHours(e.target.value)} className="field-input text-xs" placeholder="48"/>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Visual Appearance</label>
@@ -572,7 +645,11 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                       <p className="text-[10px] text-gray-600 font-semibold">
                         {r.brix ? `${r.brix}°Bx` : '—'} · {r.optical_density ? `OD ${r.optical_density}` : '—'}
                       </p>
-                      {r.plating_result && <p className="text-[9px] text-gray-400 mt-0.5 truncate max-w-[140px]" title={r.plating_result}>{r.plating_result}</p>}
+                      {platingSummary(r) && (
+                        <p className="text-[9px] text-gray-400 mt-0.5 truncate max-w-[160px]" title={platingSummary(r)}>
+                          {platingSummary(r)}
+                        </p>
+                      )}
                     </td>
                     {isAdmin && (
                       <td className="px-3 py-2 whitespace-nowrap">
@@ -612,15 +689,15 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   className={`w-full px-4 py-3 border-2 rounded-xl text-2xl font-black font-mono text-center outline-none ${parseFloat(epPh)<4.2||parseFloat(epPh)>4.5?'border-red-400 text-red-600':'border-gray-200 text-gray-800 focus:border-navy'}`} placeholder="4.30"/>
               </div>
               <div>
-                <label className={`block text-[10px] font-bold uppercase mb-1 ${isRetroSpective ? 'text-amber-600' : 'text-gray-400'}`}>
-                  Fermentation End Time {isRetroSpective && <span className="text-red-500">* Required</span>}
+                <label className="block text-[10px] font-bold uppercase mb-1 text-amber-600">
+                  Fermentation End Time <span className="text-red-500">* Required</span>
                 </label>
                 <input
                   type="datetime-local"
                   value={endpointTime}
                   max={toLocalDatetime(new Date().toISOString())}
                   onChange={e => setEndpointTime(e.target.value)}
-                  className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${isRetroSpective && !endpointTime ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
+                  className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${!endpointTime ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
                 />
                 {tZero && (() => {
                   const t = endpointTime ? new Date(endpointTime) : new Date();
@@ -628,7 +705,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   return (
                     <p className="text-[10px] mt-1 font-black text-navy text-center">
                       Total: {hrs.toFixed(1)} hr
-                      {!endpointTime && isRetroSpective && <span className="text-amber-600"> — enter actual end time above</span>}
+                      {!endpointTime && <span className="text-amber-600"> — enter actual end time above</span>}
                     </p>
                   );
                 })()}
@@ -781,21 +858,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Plating Status</label>
-                  <select value={editFields.plating_status} onChange={e => setEditFields(f => ({...f, plating_status: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
-                    {['Pending','Clear','Contaminated','Not Done'].map(o => <option key={o}>{o}</option>)}
-                  </select>
+              {(editingReading.sample_incubation_id || editingReading.plating_result) && (
+                <div className="rounded-lg border border-teal-100 bg-teal-50/40 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-teal-700">Plating</p>
+                  <p className="mt-0.5 text-xs text-teal-800">
+                    {editingReading.sample_incubation_id
+                      ? 'Linked incubation results are edited in Sample Incubation.'
+                      : `Legacy result: ${editingReading.plating_result}`}
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">CFU Count</label>
-                  <input value={editFields.cfu_count} onChange={e => setEditFields(f => ({...f, cfu_count: e.target.value}))}
-                    placeholder="e.g. 1.2 x 10^6"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-                </div>
-              </div>
+              )}
               <div>
                 <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Reading Timestamp</label>
                 <input type="datetime-local" value={editFields.logged_at}

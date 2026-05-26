@@ -171,6 +171,11 @@ export default function SampleIncubationPage() {
                     {sample.batch_flasks && <div className="text-[10px] font-mono text-gray-500 mt-1">Trial: {sample.batch_flasks.flask_label}</div>}
                     {sample.batch_flask_qc_samples && <div className="text-[10px] font-mono text-gray-500 mt-1">QC: {sample.batch_flask_qc_samples.sample_id}</div>}
                     {sample.source_stage && <div className="text-[10px] uppercase font-bold text-gray-400 mt-1">Stage: {sample.source_stage.replace(/_/g, ' ')}</div>}
+                    {sample.fermentation_reading?.elapsed_hours != null && (
+                      <div className="text-[10px] font-mono text-teal-700 mt-1">
+                        Source: T+{Number(sample.fermentation_reading.elapsed_hours).toFixed(1)}h monitoring sample
+                      </div>
+                    )}
                   </td>
                   <td className="p-4">
                     <div className="font-medium text-gray-800">{sample.start_time ? new Date(sample.start_time).toLocaleString() : 'Not set'}</div>

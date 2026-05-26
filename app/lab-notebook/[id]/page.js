@@ -233,7 +233,13 @@ export default function LnbEntryPage() {
         
         {/* Main Notebook Content */}
         <div className="md:col-span-2 space-y-6">
-           <StageLogPanel snapshots={stageSnapshots} formulationMap={formulationMap} />
+           <StageLogPanel
+             snapshots={stageSnapshots}
+             formulationMap={formulationMap}
+             entryId={id}
+             role={employeeProfile.role}
+             onResync={fetchEntry}
+           />
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
            <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
            <SectionBox title="Detailed Observations" icon={<FileCheck className="w-4 h-4" />} canEdit={canEdit} value={observations} onChange={setObservations} placeholder="Record qualitative and quantitative readings..." isLarge />
@@ -509,25 +515,55 @@ function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
   );
 }
 
-function StageLogPanel({ snapshots, formulationMap = {} }) {
+function StageLogPanel({ snapshots, formulationMap = {}, entryId, role, onResync }) {
+  const [resyncing, setResyncing] = useState(false);
+  const toast = useToast();
   const present = STAGE_META.filter(s => snapshots[s.key] && Object.keys(snapshots[s.key]).length > 0);
-  if (present.length === 0) return null;
+  const canResync = ['admin', 'research_fellow', 'ceo'].includes(role);
+
+  const handleResync = async () => {
+    setResyncing(true);
+    try {
+      const res = await fetch(`/api/lab-notebook/${entryId}/resync`, { method: 'POST' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      toast.success(`Re-synced flasks: ${json.synced_flasks.join(', ')}`);
+      onResync?.();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setResyncing(false);
+    }
+  };
+
+  if (present.length === 0 && !canResync) return null;
   return (
     <div className="surface rounded-2xl border border-indigo-100 bg-indigo-50/20 overflow-hidden">
       <div className="px-5 py-3 border-b border-indigo-100 flex items-center gap-2">
         <FlaskConical className="w-4 h-4 text-indigo-500" />
         <h3 className="text-xs font-black text-indigo-600 uppercase tracking-widest">Auto-Synced Stage Data</h3>
         <span className="ml-auto text-[9px] font-semibold text-gray-400">Read-only · Updated as stages complete</span>
+        {canResync && (
+          <button
+            onClick={handleResync}
+            disabled={resyncing}
+            className="ml-2 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {resyncing ? 'Syncing...' : 'Re-sync Flasks'}
+          </button>
+        )}
       </div>
-      <div className="p-4 space-y-3">
-        {present.map(({ key, label, color, perFlask }) => {
-          const data = snapshots[key];
-          // Determine if data is grouped per-flask by checking if its top-level keys are short labels (like "A", "B", "1")
-          // If keys are long like "dilution", it's a flat object and should not be split up
-          const isActuallyPerFlask = perFlask && Object.keys(data).every(k => k.length <= 2);
-          return <StageBlock key={key} label={label} data={data} perFlask={isActuallyPerFlask} colorKey={color} formulationMap={formulationMap} />;
-        })}
-      </div>
+      {present.length > 0 && (
+        <div className="p-4 space-y-3">
+          {present.map(({ key, label, color, perFlask }) => {
+            const data = snapshots[key];
+            const isActuallyPerFlask = perFlask && Object.values(data).every(value => (
+              value && typeof value === 'object' && !Array.isArray(value)
+            ));
+            return <StageBlock key={key} label={label} data={data} perFlask={isActuallyPerFlask} colorKey={color} formulationMap={formulationMap} />;
+          })}
+        </div>
+      )}
     </div>
   );
 }

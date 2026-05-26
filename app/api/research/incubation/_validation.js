@@ -6,6 +6,7 @@ export const incubationSchema = z.object({
   batch_id: z.string().uuid().nullable().optional(),
   flask_id: z.string().uuid().nullable().optional(),
   qc_sample_id: z.string().uuid().nullable().optional(),
+  fermentation_reading_id: z.string().uuid().nullable().optional(),
   source_stage: z.string().trim().max(80).nullable().optional(),
   source_type: z.string().trim().max(120).nullable().optional(),
   sampled_at: z.string().datetime({ offset: true }).nullable().optional(),
