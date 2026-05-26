@@ -448,7 +448,20 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </div>
                   <div>
                     <label className="field-label">Dilution Factor</label>
-                    <input value={plateDilution} onChange={e=>setPlateDilution(e.target.value)} className="field-input text-xs" placeholder="10⁻³"/>
+                    <select value={plateDilution} onChange={e=>setPlateDilution(e.target.value)} className="field-input text-xs bg-white">
+                      <option value="">Select...</option>
+                      <option value="Direct (No dilution)">Direct (No dilution)</option>
+                      <option value="10⁻¹">10⁻¹</option>
+                      <option value="10⁻²">10⁻²</option>
+                      <option value="10⁻³">10⁻³</option>
+                      <option value="10⁻⁴">10⁻⁴</option>
+                      <option value="10⁻⁵">10⁻⁵</option>
+                      <option value="10⁻⁶">10⁻⁶</option>
+                      <option value="10⁻⁷">10⁻⁷</option>
+                      <option value="10⁻⁸">10⁻⁸</option>
+                      <option value="10⁻⁹">10⁻⁹</option>
+                      <option value="10⁻¹⁰">10⁻¹⁰</option>
+                    </select>
                   </div>
                   <div>
                     <label className="field-label">No. of Plates</label>
