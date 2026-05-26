@@ -194,7 +194,11 @@ export async function POST(request) {
 
     // ── Auto-create batch monitoring task ─────────────────────────────
     const taskAssignee = assigned_team.length > 0 ? assigned_team[0] : creator.id;
-    await supabase.from('tasks').insert({
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    );
+    await adminClient.from('tasks').insert({
       title:       `Execute Batch: ${batchIdStr}`,
       description: `Production run for ${formulation.name} v${formulation.version}. Type: ${experiment_type}. SKU: ${sku_target}. Volume: ${planned_volume_ml}ml × ${num_flasks} flask(s). Log all CCP data and advance through all stages.`,
       assigned_to: taskAssignee,
@@ -358,12 +362,6 @@ export async function DELETE(request) {
     await adminSupabase.from('batch_stage_sterilisation').delete().eq('batch_id', id);
     await adminSupabase.from('batch_flasks').delete().eq('batch_id', id);
     
-    // Also clear lab notebook fields that might prevent LNB deletion
-    const { data: lnbs } = await adminSupabase.from('lab_notebook_entries').select('id').eq('batch_id', id);
-    if (lnbs && lnbs.length > 0) {
-      const lnbIds = lnbs.map(l => l.id);
-      await adminSupabase.from('lab_notebook_fields').delete().in('entry_id', lnbIds);
-    }
     await adminSupabase.from('lab_notebook_entries').delete().eq('batch_id', id);
     
     await adminSupabase.from('tasks').delete().eq('batch_id', id);
