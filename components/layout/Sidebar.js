@@ -32,61 +32,71 @@ export default function Sidebar() {
   // This means the permissions matrix in lib/permissions.js is the SINGLE source of truth.
   const menuSections = [
     {
-      title: 'OPERATIONS HUB',
+      title: 'OVERVIEW',
       items: [
-        { name: 'Dashboard',         href: '/dashboard',  icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
-        { name: 'Operations Center', href: '/activity',   icon: Activity,        show: effectiveCanDo('activity', 'view') },
-        { name: 'Task Manager',      href: '/tasks',      icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
+        { name: 'Dashboard',     href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Activity Feed', href: '/activity',  icon: Activity,        show: effectiveCanDo('activity', 'view') },
+        { name: 'My Tasks',      href: '/tasks',     icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
       ]
     },
     {
-      title: 'LABORATORY',
+      title: 'R&D PIPELINE',
       items: [
-        { name: 'Recipe Management', href: '/formulations', icon: Beaker,          show: effectiveCanDo('batches', 'view') },
-        { name: 'Batch Tracking',    href: '/batches',      icon: FlaskConical,    show: effectiveCanDo('batches', 'view') },
-        { name: 'Digital LNB',       href: '/lab-notebook', icon: BookOpen,        show: effectiveCanDo('lab_notebook', 'view') },
-        { name: 'Equipment Maint.',   href: '/equipment',    icon: Wrench,          show: effectiveCanDo('equipment', 'view') },
-        { name: 'Inventory Hub',     href: '/inventory',    icon: Package,         show: effectiveCanDo('inventory', 'view') },
-        { name: 'SOP Library',       href: '/sops',         icon: BookOpen,        show: effectiveCanDo('sops', 'view') },
-        { name: 'Bioprocess Lab',    href: '/bioprocess',   icon: Microscope,      show: effectiveCanDo('batches', 'view') },
-        { name: 'Sample Incubation', href: '/research/incubation', icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
-        { name: 'Cell Bank',         href: '/research/cell-bank',  icon: Dna,          show: effectiveCanDo('batches', 'view') },
+        { name: 'Formulation Library', href: '/formulations',       icon: Beaker,     show: effectiveCanDo('batches', 'view') },
+        { name: 'Cell Bank',           href: '/research/cell-bank', icon: Dna,        show: effectiveCanDo('batches', 'view') },
+        { name: 'Bioprocess Research', href: '/bioprocess',         icon: Microscope, show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
-      title: 'SCIENCE & OPS',
+      title: 'PRODUCTION',
       items: [
-        { name: 'Shelf-Life Info',   href: '/shelf-life',   icon: Clock,           show: effectiveCanDo('batches', 'view') },
-        { name: 'Consumer Panels',   href: '/research',     icon: Activity,        show: effectiveCanDo('batches', 'view') },
-        { name: 'Grant Calendar',    href: '/calendar',     icon: CalendarDays,    show: effectiveCanDo('batches', 'view') },
+        { name: 'Batch Production', href: '/batches',              icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
+        { name: 'Incubation Lab',   href: '/research/incubation',  icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
+      ]
+    },
+    {
+      title: 'QUALITY & VALIDATION',
+      items: [
+        { name: 'Lab Notebook',      href: '/lab-notebook', icon: BookOpen,    show: effectiveCanDo('lab_notebook', 'view') },
+        { name: 'Stability Studies', href: '/shelf-life',   icon: Clock,       show: effectiveCanDo('batches', 'view') },
+        { name: 'Sensory Panels',    href: '/research',     icon: Users,       show: effectiveCanDo('batches', 'view') },
+      ]
+    },
+    {
+      title: 'OPERATIONS',
+      items: [
+        { name: 'Stock & Inventory', href: '/inventory', icon: Package,      show: effectiveCanDo('inventory', 'view') },
+        { name: 'Equipment Manager', href: '/equipment', icon: Wrench,       show: effectiveCanDo('equipment', 'view') },
+        { name: 'SOPs & Protocols',  href: '/sops',      icon: BookOpen,     show: effectiveCanDo('sops', 'view') },
+        { name: 'Research Calendar', href: '/calendar',  icon: CalendarDays, show: effectiveCanDo('batches', 'view') },
+      ]
+    },
+    {
+      title: 'COMPLIANCE',
+      items: [
+        { name: 'Document Vault',     href: '/documents',  icon: FileText,   show: effectiveCanDo('documents', 'view') },
+        { name: 'Regulatory Affairs', href: '/compliance', icon: ShieldAlert, show: effectiveCanDo('compliance', 'view') },
+        { name: 'CAPA Tracker',       href: '/capa',       icon: ShieldAlert, show: ['admin','ceo','cto'].includes(effectiveRole) },
       ]
     },
     {
       title: 'MY WORKSPACE',
       items: [
-        { name: 'Check-In & Attendance', href: '/attendance', icon: Clock, show: effectiveCanDo('attendance', 'view') },
-        { name: 'Mispunch Requests',  href: '/mispunch',     icon: ShieldAlert,     show: effectiveCanDo('attendance', 'view') },
-        { name: 'Leave Requests',    href: '/leave',        icon: CalendarOff,     show: effectiveCanDo('leave', 'view') },
-        { name: 'My Payslips',       href: '/payslips',     icon: Receipt,         show: effectiveCanDo('payslips', 'view_own') },
+        { name: 'Attendance',             href: '/attendance', icon: Clock,       show: effectiveCanDo('attendance', 'view') },
+        { name: 'Attendance Corrections', href: '/mispunch',   icon: ShieldAlert, show: effectiveCanDo('attendance', 'view') },
+        { name: 'Leave Requests',         href: '/leave',      icon: CalendarOff, show: effectiveCanDo('leave', 'view') },
+        { name: 'Payslips',               href: '/payslips',   icon: Receipt,     show: effectiveCanDo('payslips', 'view_own') },
+        { name: 'My Profile',             href: '/profile',    icon: UserCircle,  show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Staff Directory',        href: '/directory',  icon: Contact,     show: effectiveCanDo('directory', 'view') },
       ]
     },
     {
-      title: 'ADMIN & COMPLIANCE',
+      title: 'ADMIN',
       items: [
-        { name: 'Document Vault',    href: '/documents',    icon: FileText,        show: effectiveCanDo('documents', 'view') },
-        { name: 'Regulatory Setup',  href: '/compliance',   icon: CalendarDays,    show: effectiveCanDo('compliance', 'view') },
-        { name: 'CAPA Engine',       href: '/capa',         icon: ShieldAlert,     show: ['admin','ceo','cto'].includes(effectiveRole) },
-        { name: 'Access Control',    href: '/admin/users',     icon: Users,    show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
-        { name: 'Batch Settings',    href: '/admin/settings',  icon: Settings, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'User Management', href: '/admin/users',    icon: Users,    show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'System Settings', href: '/admin/settings', icon: Settings, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
       ]
     },
-    {
-      title: 'ACCOUNT',
-      items: [
-        { name: 'My Profile',        href: '/profile',      icon: UserCircle,    show: effectiveCanDo('dashboard', 'view') },
-        { name: 'Staff Directory',   href: '/directory',    icon: Contact,       show: effectiveCanDo('directory', 'view') },
-      ]
-    }
   ];
 
   const renderNavItem = (item) => {
