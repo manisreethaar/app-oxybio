@@ -8,7 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
-import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 const uploadSchema = z.object({
@@ -23,6 +23,10 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const toast = useToast();
   const [sops, setSops] = useState(initialSops || []);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [sortOrder, setSortOrder] = useState('title');
   const supabase = useMemo(() => createClient(), []);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -152,6 +156,26 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
     );
   }
 
+  const filteredSops = [...sops]
+    .filter((sop: any) => {
+      const q = searchTerm.trim().toLowerCase();
+      const matchesCategory = categoryFilter === 'All' || sop.category === categoryFilter;
+      const matchesStatus = statusFilter === 'All' || (statusFilter === 'acknowledged' ? sop.is_acknowledged : !sop.is_acknowledged);
+      const matchesSearch = !q || [
+        sop.sop_id,
+        sop.title,
+        sop.category,
+        sop.version
+      ].some(value => String(value || '').toLowerCase().includes(q));
+      return matchesCategory && matchesStatus && matchesSearch;
+    })
+    .sort((a: any, b: any) => {
+      if (sortOrder === 'effective') return new Date(b.effective_date || 0).getTime() - new Date(a.effective_date || 0).getTime();
+      if (sortOrder === 'category') return String(a.category || '').localeCompare(String(b.category || ''));
+      if (sortOrder === 'status') return Number(a.is_acknowledged) - Number(b.is_acknowledged);
+      return String(a.title || '').localeCompare(String(b.title || ''));
+    });
+
   return (
     <div className="page-container">
       <div className="flex justify-between items-center">
@@ -162,8 +186,34 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         {['admin','ceo','cto','research_fellow'].includes(role) && <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">Upload Doc</button>}
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search SOP ID, title, category..." className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-accent" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+            <option value="All">All Categories</option>
+            {['Fermentation', 'QC', 'Sanitation', 'Safety'].map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+            <option value="All">All Signatures</option>
+            <option value="pending">Needs Review</option>
+            <option value="acknowledged">Signed</option>
+          </select>
+          <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+            <option value="title">Title A-Z</option>
+            <option value="effective">Effective Date</option>
+            <option value="category">Category</option>
+            <option value="status">Signature Status</option>
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sops.map(sop => (
+        {filteredSops.length === 0 ? (
+          <div className="md:col-span-2 lg:col-span-3 py-16 text-center text-sm font-bold text-gray-400">No SOPs match the current search.</div>
+        ) : filteredSops.map((sop: any) => (
           <div key={sop.id} className={`surface p-5 flex flex-col hover:border-gray-300 transition-colors ${!sop.is_acknowledged ? 'border-blue-200 bg-blue-50/10' : ''}`}>
             <div className="flex justify-between items-start mb-3">
               <span className="font-mono text-xs font-bold tracking-wider text-navy bg-gray-100 px-1.5 py-0.5 rounded-md border border-gray-200">{sop.sop_id}</span>

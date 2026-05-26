@@ -10,7 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import {
   FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X,
   CheckCircle2, Trash2, Clock, Beaker, Activity, Users, Calendar,
-  ChevronRight, Zap
+  ChevronRight, Zap, Search
 } from 'lucide-react';
 import { format, differenceInHours, differenceInDays } from 'date-fns';
 import Link from 'next/link';
@@ -127,6 +127,8 @@ export default function BatchesPage() {
   const [creatingBatch,    setCreatingBatch]    = useState(false);
   const [batchError,       setBatchError]       = useState(null); // { message, warnings }
   const [statusFilter,     setStatusFilter]     = useState('active');
+  const [searchTerm,       setSearchTerm]       = useState('');
+  const [sortOrder,        setSortOrder]        = useState('newest');
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(batchSchema),
@@ -311,13 +313,35 @@ export default function BatchesPage() {
 
   // ─── Filtered batches (hooks must be before any conditional return) ──────
   const displayedBatches = useMemo(() => {
-    switch (statusFilter) {
-      case 'scheduled': return activeBatches.filter(isScheduledBatch);
-      case 'released':  return history.filter(b => b.status === 'released');
-      case 'rejected':  return history.filter(b => b.status === 'rejected');
-      default:          return activeBatches.filter(b => !isScheduledBatch(b));
-    }
-  }, [statusFilter, activeBatches, history]);
+    const q = searchTerm.trim().toLowerCase();
+    const list = (() => {
+      switch (statusFilter) {
+        case 'scheduled': return activeBatches.filter(isScheduledBatch);
+        case 'released':  return history.filter(b => b.status === 'released');
+        case 'rejected':  return history.filter(b => b.status === 'rejected');
+        default:          return activeBatches.filter(b => !isScheduledBatch(b));
+      }
+    })();
+
+    return list
+      .filter(batch => !q || [
+        batch.batch_id,
+        batch.experiment_type,
+        batch.sku_target,
+        batch.status,
+        batch.current_stage,
+        batch.formulations?.name,
+        batch.formulations?.code,
+        batch.batch_flasks?.map(f => f.flask_label).join(' ')
+      ].some(value => String(value || '').toLowerCase().includes(q)))
+      .sort((a, b) => {
+        if (sortOrder === 'oldest') return new Date(a.created_at || a.start_time || 0) - new Date(b.created_at || b.start_time || 0);
+        if (sortOrder === 'batch_id') return (a.batch_id || '').localeCompare(b.batch_id || '', undefined, { numeric: true });
+        if (sortOrder === 'recipe') return (a.formulations?.name || '').localeCompare(b.formulations?.name || '');
+        if (sortOrder === 'stage') return (STAGE_ORDER.indexOf(a.current_stage) - STAGE_ORDER.indexOf(b.current_stage));
+        return new Date(b.created_at || b.start_time || 0) - new Date(a.created_at || a.start_time || 0);
+      });
+  }, [statusFilter, activeBatches, history, searchTerm, sortOrder]);
 
   const isHistoryView = ['released','rejected'].includes(statusFilter);
 
@@ -404,6 +428,25 @@ export default function BatchesPage() {
         ))}
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search batch ID, recipe, SKU, flask..."
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="batch_id">Batch ID</option>
+          <option value="recipe">Recipe</option>
+          <option value="stage">Stage</option>
+        </select>
+      </div>
+
       {/* Batch Cards — active / scheduled tabs */}
       {!isHistoryView && (
       <section className="mt-4">
@@ -434,17 +477,25 @@ export default function BatchesPage() {
               const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
               const flasks   = batch.batch_flasks || [];
               const maxEpHrs = batch._maxEpHrs ?? null;
+              // Timer only meaningful from fermentation onwards; pre-fermentation shows 0
+              const PRE_FERM_STAGES = ['media_prep', 'sterilisation', 'inoculation'];
               const hours = maxEpHrs !== null
                 ? maxEpHrs.toFixed(1)
-                : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
+                : (!PRE_FERM_STAGES.includes(batch.current_stage) && batch.start_time
+                    ? differenceInHours(new Date(), new Date(batch.start_time))
+                    : 0);
 
               const isScheduled = isScheduledBatch(batch);
 
-              // Derive the furthest active stage (batch-level OR flask-level, whichever is ahead)
+              // Derive stage: media_prep / sterilisation are batch-level only — never let a
+              // stale flask stage (which has no meaning yet) override the batch stage.
               const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
-              const maxFlaskIdx = flasks
-                .filter(f => f.status !== 'rejected')
-                .reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(f.current_stage)), -1);
+              const BATCH_ONLY_STAGES = ['media_prep', 'sterilisation'];
+              const maxFlaskIdx = BATCH_ONLY_STAGES.includes(batch.current_stage)
+                ? -1
+                : flasks
+                    .filter(f => f.status !== 'rejected')
+                    .reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(f.current_stage)), -1);
               const effectiveIdx = Math.max(batchStageIdx, maxFlaskIdx);
               const derivedStage = effectiveIdx >= 0 ? STAGE_ORDER[effectiveIdx] : batch.current_stage;
               const currentIdx = isScheduled ? -1 : effectiveIdx;

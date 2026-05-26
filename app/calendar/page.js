@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Calendar as CalendarIcon, Flag, Clock, CheckCircle2, AlertTriangle, Plus, ChevronRight, Loader2, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Flag, Clock, CheckCircle2, AlertTriangle, Plus, ChevronRight, Loader2, Info, Search } from 'lucide-react';
 
 export default function RegulatoryCalendarPage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
@@ -16,6 +16,9 @@ export default function RegulatoryCalendarPage() {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [sortOrder, setSortOrder] = useState('deadline_asc');
 
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(z.object({
@@ -62,6 +65,20 @@ export default function RegulatoryCalendarPage() {
   
   if (!employeeProfile) return null;
 
+  const filteredMilestones = milestones
+    .filter(m => {
+      const q = searchTerm.trim().toLowerCase();
+      const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
+      const matchesSearch = !q || [m.title, m.category, m.status, m.priority].some(value => String(value || '').toLowerCase().includes(q));
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'deadline_desc') return new Date(b.deadline) - new Date(a.deadline);
+      if (sortOrder === 'title') return (a.title || '').localeCompare(b.title || '');
+      if (sortOrder === 'category') return (a.category || '').localeCompare(b.category || '');
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+
   return (
     <div className="page-container text-gray-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -74,12 +91,32 @@ export default function RegulatoryCalendarPage() {
         </button>
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search milestones, category, or status..." className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-accent" />
+        </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+          <option value="All">All Statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+        </select>
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+          <option value="deadline_asc">Deadline Soon</option>
+          <option value="deadline_desc">Deadline Later</option>
+          <option value="title">Title A-Z</option>
+          <option value="category">Category</option>
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 gap-4">
         {loading ? (
           <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-navy" /></div>
         ) : milestones.length === 0 ? (
           <div className="py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No active milestones. Add SISFS, DPIIT, or FSSAI deadlines to begin institutional tracking.</div>
-        ) : milestones.map(m => (
+        ) : filteredMilestones.length === 0 ? (
+          <div className="py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No milestones match the current search.</div>
+        ) : filteredMilestones.map(m => (
           <div key={m.id} className="surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all group">
             <div className="flex items-center gap-6 flex-1">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${m.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-navy'}`}>
