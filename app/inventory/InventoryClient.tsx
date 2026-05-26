@@ -814,7 +814,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <p className="text-sm font-black text-gray-800">{s.vendors?.name || 'Approved Local supplier'}</p>
                   </div>
                 </div>
-              </div>
               {batchUsageMap[s.id]?.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pt-3 mt-1 border-t border-gray-50">
                   <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Used in:</span>
@@ -830,6 +829,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   ))}
                 </div>
               )}
+            </div>
             );
           })}
           
