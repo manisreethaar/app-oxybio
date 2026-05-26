@@ -49,7 +49,7 @@ export default function AttendancePage() {
   const webcamRef = useRef(null);
   const [now, setNow] = useState(Date.now());
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const itv = setInterval(() => setNow(Date.now()), 60000);
