@@ -191,7 +191,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       if (sErr) throw sErr;
       
       const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sRow.id, flask_id: activeFlask.id, batch_id: batch?.id,
+        sample_id: sRow.id, flask_id: activeFlask.id,
         test_name: t.test_name, target_spec: t.target_spec,
         result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
       }));
@@ -230,7 +230,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     setCreating(true);
     try {
       const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sample.id, flask_id: activeFlask.id, batch_id: batch?.id,
+        sample_id: sample.id, flask_id: activeFlask.id,
         test_name: t.test_name, target_spec: t.target_spec,
         result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
       }));
