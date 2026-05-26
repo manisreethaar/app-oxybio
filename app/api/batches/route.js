@@ -22,14 +22,13 @@ const postSchema = z.object({
 });
 
 // ─────────────────────────────────────────────────────────────
-// Generate sequential batch ID: OB-YYYY-MM-SEQ
-// Sequence is global per month to match the production registry format.
+// Generate sequential batch ID: OB-FER-YY-NNN
+// Sequence resets per year (2-digit). Flasks: OB-FER-YY-NNN-FN
 // ─────────────────────────────────────────────────────────────
 async function generateBatchId(supabase) {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const prefix = `OB-${year}-${month}-`;
+  const yy = String(now.getFullYear()).slice(-2);
+  const prefix = `OB-FER-${yy}-`;
 
   const { data: lastBatch } = await supabase
     .from('batches')

@@ -178,8 +178,27 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!activeFlask) return;
     setCreating(true);
     try {
-      const now = new Date();
-      const sampleId = `QCS-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getTime().toString().slice(-4)}`;
+      // Generate sequential QC Sample ID: OB-QCS-YY-NNN-FN
+      // Format: OB-QCS-26-001-F1 (flask label embedded at end)
+      const yy = String(new Date().getFullYear()).slice(-2);
+      const qcsPrefix = `OB-QCS-${yy}-`;
+      const { data: lastQcs } = await supabase
+        .from('batch_flask_qc_samples')
+        .select('sample_id')
+        .like('sample_id', `${qcsPrefix}%`)
+        .order('sample_id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      let qcsSeq = 1;
+      if (lastQcs?.sample_id) {
+        // ID format: OB-QCS-26-001-F1 → split gives ['OB','QCS','26','001','F1']
+        // Sequential number is always at index 3
+        const parts = lastQcs.sample_id.split('-');
+        const n = parseInt(parts[3], 10);
+        if (!isNaN(n)) qcsSeq = n + 1;
+      }
+      const flaskLabel = activeFlask.flask_label || 'F?';
+      const sampleId = `${qcsPrefix}${String(qcsSeq).padStart(3, '0')}-${flaskLabel}`;
       const { data: sRow, error: sErr } = await supabase.from('batch_flask_qc_samples').insert({
         flask_id: activeFlask.id, batch_id: batch.id, sample_id: sampleId,
         sampling_date: samplingDate, sampling_operator: employeeProfile?.id,

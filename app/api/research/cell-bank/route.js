@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { syncCellBankStepToLNB } from '@/lib/cellBankLNBSync';
 
 async function generatePrepCode(supabase, type) {
-  const year = new Date().getFullYear();
-  const prefix = `OB-CB-${year}-`;
+  const yy = String(new Date().getFullYear()).slice(-2);
+  const prefix = `OB-CB-${yy}-`;
   const { data: last } = await supabase
     .from('cell_bank_preparations')
     .select('prep_code')

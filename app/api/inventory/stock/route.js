@@ -4,6 +4,28 @@ import { requireInventoryPermission } from '../_permissions';
 
 export const dynamic = 'force-dynamic';
 
+// ─────────────────────────────────────────────────────────────
+// Generate sequential internal lot number: OB-LOT-YY-NNN
+// Used when no supplier batch number is provided (in-house lots)
+// ─────────────────────────────────────────────────────────────
+async function generateLotNumber(supabase) {
+  const yy = String(new Date().getFullYear()).slice(-2);
+  const prefix = `OB-LOT-${yy}-`;
+  const { data: last } = await supabase
+    .from('inventory_stock')
+    .select('supplier_batch_number')
+    .like('supplier_batch_number', `${prefix}%`)
+    .order('supplier_batch_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let seq = 1;
+  if (last?.supplier_batch_number) {
+    const n = parseInt(last.supplier_batch_number.split('-').pop(), 10);
+    if (!isNaN(n)) seq = n + 1;
+  }
+  return `${prefix}${String(seq).padStart(3, '0')}`;
+}
+
 export async function GET() {
   try {
     const supabase = createClient();
@@ -36,6 +58,11 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Valid Quantity greater than 0 is required' }, { status: 400 });
     }
 
+    // Auto-generate internal lot number when supplier doesn't provide one
+    const resolvedLotNumber = supplier_batch_number?.trim()
+      ? supplier_batch_number.trim()
+      : await generateLotNumber(supabase);
+
     // Fetch item category to determine auto-quarantine status
     const { data: itemData, error: itemError } = await supabase
       .from('inventory_items')
@@ -56,7 +83,7 @@ export async function POST(request) {
       .insert({
         item_id,
         vendor_id,
-        supplier_batch_number,
+        supplier_batch_number: resolvedLotNumber,
         received_quantity: qtyValue,
         current_quantity: qtyValue,
         expiry_date,

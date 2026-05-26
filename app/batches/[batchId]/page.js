@@ -198,10 +198,10 @@ export default function BatchDetailPage() {
         const newRank  = FLASK_RANKS.indexOf(toStage);
         const batchRank = FLASK_RANKS.indexOf(batch.current_stage);
         if (newRank > batchRank) {
-          let newBatchStatus = 'planned';
-          if (toStage === 'fermentation')     newBatchStatus = 'fermenting';
-          else if (toStage === 'qc_hold')     newBatchStatus = 'qc-hold';
-          else if (['straining','extract_addition'].includes(toStage)) newBatchStatus = 'in_progress';
+          // Default covers inoculation, straining, extract_addition
+          let newBatchStatus = 'in-progress';
+          if (toStage === 'fermentation') newBatchStatus = 'fermenting';
+          else if (toStage === 'qc_hold') newBatchStatus = 'qc-hold';
           await supabase.from('batches')
             .update({ current_stage: toStage, status: newBatchStatus })
             .eq('id', batch.id);

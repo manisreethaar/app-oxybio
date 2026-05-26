@@ -236,6 +236,11 @@ export default function FormulationsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validate recipe code: 1–5 uppercase letters, optionally followed by up to 3 digits (R01, RKU, RKU01)
+    const codeVal = (newForm.code || '').trim().toUpperCase();
+    if (!/^[A-Z]{1,5}\d{0,3}$/.test(codeVal)) {
+      toast.warn('Recipe code must be 1–5 uppercase letters optionally followed by up to 3 digits (e.g. R01, RKU, RKU01).'); return;
+    }
     if (newForm.ingredients.length === 0) { toast.warn("Add at least one ingredient."); return; }
     if (newForm.base_version_id && !newForm.notes?.trim()) {
       toast.warn("Notes explaining the reason for this revision are mandatory."); return;
@@ -697,8 +702,8 @@ export default function FormulationsPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Code</label>
-                  <input required type="text" placeholder="e.g. R04" value={newForm.code} onChange={e => setNewForm({...newForm, code: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm font-mono outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                  <p className="text-[10px] text-gray-400 mt-1">Auto-suggested code.</p>
+                  <input required type="text" placeholder="e.g. R04 / RKU / RKU01" value={newForm.code} onChange={e => setNewForm({...newForm, code: e.target.value.toUpperCase().slice(0,8)})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm font-mono outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                  <p className="text-[10px] text-gray-400 mt-1">1–5 uppercase letters + up to 3 digits (R01, RKU, RKU01)</p>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Common Name</label>

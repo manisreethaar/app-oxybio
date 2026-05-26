@@ -31,6 +31,8 @@ export default function LnbEntryPage() {
   const [observations, setObservations] = useState('');
   const [conclusions, setConclusions] = useState('');
   const [stageSnapshots, setStageSnapshots] = useState({});
+  // Lookup map: formulation UUID → "CODE — Name" for display in snapshots
+  const [formulationMap, setFormulationMap] = useState({});
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -62,6 +64,16 @@ export default function LnbEntryPage() {
   useEffect(() => {
     if (id) fetchEntry();
   }, [id, fetchEntry]);
+
+  // Load formulations lookup once to resolve UUIDs in stage snapshots
+  useEffect(() => {
+    supabase.from('formulations').select('id, code, name').then(({ data }) => {
+      if (!data) return;
+      const map = {};
+      data.forEach(f => { map[f.id] = `${f.code} — ${f.name}`; });
+      setFormulationMap(map);
+    });
+  }, [supabase]);
 
   const handleSaveDraft = async () => {
     setSaving(true);
@@ -221,7 +233,7 @@ export default function LnbEntryPage() {
         
         {/* Main Notebook Content */}
         <div className="md:col-span-2 space-y-6">
-           <StageLogPanel snapshots={stageSnapshots} />
+           <StageLogPanel snapshots={stageSnapshots} formulationMap={formulationMap} />
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
            <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
            <SectionBox title="Detailed Observations" icon={<FileCheck className="w-4 h-4" />} canEdit={canEdit} value={observations} onChange={setObservations} placeholder="Record qualitative and quantitative readings..." isLarge />
@@ -409,22 +421,31 @@ const FIELD_LABELS = {
   vial_codes: 'Vial Codes',
 };
 
-function SnapshotRows({ data }) {
+// Keys that hold formulation UUIDs — resolved via formulationMap
+const FORMULATION_KEYS = new Set(['formulation_id', 'media_formulation_id', 'agar_formulation_id']);
+
+function SnapshotRows({ data, formulationMap = {} }) {
   const skip = new Set(['synced_at', 'tests', 'notes']);
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-1.5">
       {Object.entries(data)
         .filter(([k, v]) => !skip.has(k) && v != null && v !== '')
-        .map(([key, value]) => (
-          <div key={key} className="flex items-baseline justify-between gap-2 min-w-0">
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-wide shrink-0">
-              {FIELD_LABELS[key] || key.replace(/_/g, ' ')}
-            </span>
-            <span className="text-xs font-bold text-gray-700 text-right truncate">
-              {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
-            </span>
-          </div>
-        ))}
+        .map(([key, value]) => {
+          // Resolve formulation UUIDs to human-readable codes
+          const display = FORMULATION_KEYS.has(key) && typeof value === 'string' && formulationMap[value]
+            ? formulationMap[value]
+            : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
+          return (
+            <div key={key} className="flex items-baseline justify-between gap-2 min-w-0">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-wide shrink-0">
+                {FIELD_LABELS[key] || key.replace(/_/g, ' ')}
+              </span>
+              <span className="text-xs font-bold text-gray-700 text-right truncate">
+                {display}
+              </span>
+            </div>
+          );
+        })}
       {data.tests && (
         <div className="col-span-2 mt-2 space-y-1">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-wide mb-1">QC Test Results</p>
@@ -442,7 +463,7 @@ function SnapshotRows({ data }) {
   );
 }
 
-function StageBlock({ label, data, perFlask, colorKey }) {
+function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
   const [open, setOpen] = useState(true);
   const colorMap = {
     amber:   'bg-amber-50  border-amber-100  text-amber-700',
@@ -475,12 +496,12 @@ function StageBlock({ label, data, perFlask, colorKey }) {
               {Object.entries(data).map(([flask, flaskData]) => (
                 <div key={flask}>
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-50 pb-1">Trial {flask}</p>
-                  <SnapshotRows data={flaskData} />
+                  <SnapshotRows data={flaskData} formulationMap={formulationMap} />
                 </div>
               ))}
             </div>
           ) : (
-            <SnapshotRows data={data} />
+            <SnapshotRows data={data} formulationMap={formulationMap} />
           )}
         </div>
       )}
@@ -488,7 +509,7 @@ function StageBlock({ label, data, perFlask, colorKey }) {
   );
 }
 
-function StageLogPanel({ snapshots }) {
+function StageLogPanel({ snapshots, formulationMap = {} }) {
   const present = STAGE_META.filter(s => snapshots[s.key] && Object.keys(snapshots[s.key]).length > 0);
   if (present.length === 0) return null;
   return (
@@ -504,7 +525,7 @@ function StageLogPanel({ snapshots }) {
           // Determine if data is grouped per-flask by checking if its top-level keys are short labels (like "A", "B", "1")
           // If keys are long like "dilution", it's a flat object and should not be split up
           const isActuallyPerFlask = perFlask && Object.keys(data).every(k => k.length <= 2);
-          return <StageBlock key={key} label={label} data={data} perFlask={isActuallyPerFlask} colorKey={color} />;
+          return <StageBlock key={key} label={label} data={data} perFlask={isActuallyPerFlask} colorKey={color} formulationMap={formulationMap} />;
         })}
       </div>
     </div>
