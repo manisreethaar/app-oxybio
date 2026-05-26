@@ -110,13 +110,13 @@ export async function GET(request, { params }) {
     const storagePath = `bmr/${batchId}/${filename}`;
 
     const { error: uploadError } = await db.storage
-      .from('documents')
+      .from('document-vault')
       .upload(storagePath, pdfBuffer, { contentType: 'application/pdf', upsert: true });
 
     let signedUrl = null;
     if (!uploadError) {
       const { data: urlData } = await db.storage
-        .from('documents')
+        .from('document-vault')
         .createSignedUrl(storagePath, 31536000); // 1-year URL
       signedUrl = urlData?.signedUrl || null;
 
@@ -128,20 +128,18 @@ export async function GET(request, { params }) {
             .update({ bmr_url: signedUrl })
             .in('flask_id', flaskIds);
         }
-        // Log to Document Vault (non-fatal)
+        // Log to Document Vault (non-fatal) — columns: title, category, file_url, file_name, uploaded_by, notes
         db.from('documents').insert({
           title:       `BMR — ${batchRes.data.batch_id}`,
           category:    'Batch Record',
-          description: `Generated BMR for batch ${batchRes.data.batch_id} (${batchRes.data.sku_target || batchRes.data.experiment_type || ''})`,
           file_url:    signedUrl,
-          file_type:   'PDF',
+          file_name:   filename,
           uploaded_by: emp.id,
-          is_gmp:      true,
-          metadata:    { batch_id: batchId, generated_at: bmrData.generatedAt },
+          notes:       `Auto-generated BMR for batch ${batchRes.data.batch_id} (${batchRes.data.sku_target || batchRes.data.experiment_type || ''})`,
         }).then(() => {}).catch(e => console.warn('Document vault log (non-fatal):', e.message));
       }
     } else {
-      console.warn('[bmr] storage upload failed (non-fatal):', uploadError.message);
+      console.warn('[bmr] storage upload failed:', uploadError.message);
     }
 
     // 9. If ?download=true — stream the PDF directly
