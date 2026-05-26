@@ -34,7 +34,7 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { code, name, ingredients, notes, base_version_id, category } = body;
+    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml } = body;
 
     let nextVersion = 1;
     if (base_version_id) {
@@ -55,7 +55,7 @@ export async function POST(request) {
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations').insert({
-      code, name, ingredients, notes,
+      code, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000,
       version: nextVersion,
       created_by: emp?.id || null,
       base_version_id: base_version_id || null,
@@ -148,7 +148,7 @@ export async function PUT(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { id, code, name, ingredients, notes, category } = body;
+    const { id, code, name, ingredients, notes, category, base_volume_ml } = body;
 
     // Security: Only allow editing if Status is Draft or rejected
     const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();
@@ -158,7 +158,7 @@ export async function PUT(request) {
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations')
-      .update({ code, name, ingredients, notes, ...(category ? { category } : {}) })
+      .update({ code, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000, ...(category ? { category } : {}) })
       .eq('id', id)
       .select()
       .single();

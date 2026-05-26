@@ -490,6 +490,15 @@ export default function CellBankDetailPage() {
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLOR[prep?.status] || 'bg-gray-100 text-gray-600'}`}>{prep?.status}</span>
               </div>
               <p className="text-xs text-gray-500">{prep?.cell_bank_strains?.name} · {prep?.cell_bank_strains?.source_type} {prep?.cell_bank_strains?.accession_number}</p>
+              {(prep?.linked_formulation || prep?.cell_bank_strains?.linked_formulation) && (
+                <Link
+                  href={`/formulations?highlight=${prep?.linked_formulation?.id || prep?.cell_bank_strains?.linked_formulation?.id}`}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-navy hover:underline mt-1"
+                >
+                  <ExternalLink className="w-3 h-3"/>
+                  {prep?.linked_formulation?.code || prep?.cell_bank_strains?.linked_formulation?.code} - {prep?.linked_formulation?.name || prep?.cell_bank_strains?.linked_formulation?.name}
+                </Link>
+              )}
             </>
           )}
         </div>

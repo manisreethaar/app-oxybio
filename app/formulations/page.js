@@ -35,7 +35,7 @@ export default function FormulationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // id of recipe being actioned
   const [items, setItems] = useState([]);
-  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation' });
+  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000 });
   
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
@@ -123,7 +123,7 @@ export default function FormulationsPage() {
   const handleForwardRevision = (f) => {
     let parsedIng = [];
     try { parsedIng = typeof f.ingredients === 'string' ? JSON.parse(f.ingredients) : (f.ingredients || []); } catch(e) { parsedIng = []; }
-    setNewForm({ code: f.code, name: f.name, ingredients: parsedIng, notes: '', base_version_id: f.id });
+    setNewForm({ code: f.code, name: f.name, ingredients: parsedIng, notes: '', base_version_id: f.id, category: f.category || 'Fermentation', base_volume_ml: f.base_volume_ml || 1000 });
     setShowNew(true);
   };
 
@@ -184,7 +184,7 @@ export default function FormulationsPage() {
   const handleEditRecipe = (f) => {
     let parsedIng = [];
     try { parsedIng = typeof f.ingredients === 'string' ? JSON.parse(f.ingredients) : (f.ingredients || []); } catch(e) { parsedIng = []; }
-    setNewForm({ id: f.id, code: f.code, name: f.name, ingredients: parsedIng, notes: f.notes || '', base_version_id: f.base_version_id });
+    setNewForm({ id: f.id, code: f.code, name: f.name, ingredients: parsedIng, notes: f.notes || '', base_version_id: f.base_version_id, category: f.category || 'Fermentation', base_volume_ml: f.base_volume_ml || 1000 });
     setShowNew(true);
   };
 
@@ -197,7 +197,7 @@ export default function FormulationsPage() {
       if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
     });
     const nextCode = `R${String(maxNum + 1).padStart(2, '0')}`;
-    setNewForm({ code: nextCode, name: '', ingredients: [], notes: '', base_version_id: null });
+    setNewForm({ code: nextCode, name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000 });
     setShowNew(true);
   };
 
@@ -232,7 +232,7 @@ export default function FormulationsPage() {
       });
       if (res.ok) {
         setShowNew(false);
-        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation' });
+        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000 });
         fetchFormulations();
       } else { 
         const errData = await res.json();
@@ -404,16 +404,21 @@ export default function FormulationsPage() {
                       <div className="flex justify-between items-center mb-1">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ingredients</p>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-bold text-gray-400">Scale:</span>
-                          <input type="number" value={scaleFactors[f.id] || 1} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || 1})} step="0.5" min="0.5" className="w-10 px-1 py-0.5 text-center border border-gray-200 rounded bg-white text-[10px] font-black"/>
+                          <span className="text-[9px] font-bold text-gray-400">Vol (mL):</span>
+                          <input type="number" value={scaleFactors[f.id] || f.base_volume_ml || 1000} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || f.base_volume_ml || 1000})} step="10" min="1" className="w-16 px-1 py-0.5 text-center border border-gray-200 rounded bg-white text-[10px] font-black"/>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {parsedIng.length > 0 ? parsedIng.map((ing, idx) => (
-                          <span key={idx} className="bg-white px-2 py-0.5 border border-slate-200 rounded text-[10px] font-bold text-slate-700">
-                            {ing.name}: {((parseFloat(ing.quantity) || 0) * (scaleFactors[f.id] || 1)).toFixed(1)}{ing.unit}
-                          </span>
-                        )) : <p className="text-xs font-semibold text-gray-400 italic">No components linked.</p>}
+                        {parsedIng.length > 0 ? parsedIng.map((ing, idx) => {
+                          const baseVol = f.base_volume_ml || 1000;
+                          const targetVol = scaleFactors[f.id] || baseVol;
+                          const factor = targetVol / baseVol;
+                          return (
+                            <span key={idx} className="bg-white px-2 py-0.5 border border-slate-200 rounded text-[10px] font-bold text-slate-700">
+                              {ing.name}: {((parseFloat(ing.quantity) || 0) * factor).toFixed(2)}{ing.unit}
+                            </span>
+                          );
+                        }) : <p className="text-xs font-semibold text-gray-400 italic">No components linked.</p>}
                       </div>
                     </div>
 
@@ -620,15 +625,20 @@ export default function FormulationsPage() {
               </p>
             </div>
             <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Code</label>
                   <input required type="text" placeholder="e.g. R04" value={newForm.code} onChange={e => setNewForm({...newForm, code: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm font-mono outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                  <p className="text-[10px] text-gray-400 mt-1">Auto-suggested. Edit if needed — this code becomes part of every batch ID for this recipe.</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Auto-suggested code.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Common Name</label>
                   <input required type="text" placeholder="e.g. Agri-Boost" value={newForm.name} onChange={e => setNewForm({...newForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Base Volume (mL)</label>
+                  <input required type="number" min="1" placeholder="e.g. 1000" value={newForm.base_volume_ml} onChange={e => setNewForm({...newForm, base_volume_ml: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                  <p className="text-[10px] text-gray-400 mt-1">Scaling baseline.</p>
                 </div>
               </div>
 
