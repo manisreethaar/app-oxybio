@@ -80,7 +80,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       // Auto-heal missing tests if the sample exists but tests were not generated
       if (fetchedTests.length === 0) {
         const testRows = DEFAULT_TESTS.map(t => ({
-          sample_id: sData.id, flask_id: activeFlask.id, batch_id: batch?.id,
+          sample_id: sData.id, flask_id: activeFlask.id,
           test_name: t.test_name, target_spec: t.target_spec,
           result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
         }));
@@ -215,7 +215,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         .maybeSingle();
       if (lastReading?.ph) {
         await supabase.from('batch_flask_qc_tests')
-          .update({ result_value: String(lastReading.ph), notes: 'Auto-filled from last fermentation reading' })
+          .update({ result_value: String(lastReading.ph) })
           .eq('sample_id', sRow.id)
           .ilike('test_name', '%ph%');
       }
@@ -354,7 +354,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         .maybeSingle();
       if (lastReading?.ph) {
         await supabase.from('batch_flask_qc_tests')
-          .update({ result_value: String(lastReading.ph), notes: 'Auto-filled from last fermentation reading' })
+          .update({ result_value: String(lastReading.ph) })
           .eq('sample_id', sample.id)
           .ilike('test_name', '%ph%');
       }
