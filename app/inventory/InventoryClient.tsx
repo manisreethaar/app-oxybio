@@ -718,7 +718,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               Auto-Load Catalog
             </button>
           )}
-          {(['admin', 'ceo', 'cto'].includes(role) || user?.email === 'manisreethaar@gmail.com') && (
+          {canEditItems && (
             <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
               <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
