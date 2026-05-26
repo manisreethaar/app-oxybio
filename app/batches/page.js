@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
   'media_prep', 'sterilisation', 'inoculation', 'fermentation',
-  'straining', 'extract_addition', 'qc_hold'
+  'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
 ];
 const STAGE_LABELS = {
   media_prep:       'Media Prep',
@@ -400,15 +400,15 @@ export default function BatchesPage() {
                     </div>
                   </div>
 
-                  {/* Stage Progress Bar */}
+                  {/* Stage Progress Bar — only show the 7 process stages */}
                   <div className="px-5 pt-4 pb-2">
                     <div className="flex items-center gap-0.5 mb-1">
-                      {STAGE_ORDER.map((stage, idx) => (
+                      {STAGE_ORDER.slice(0, 7).map((stage, idx) => (
                         <div
                           key={stage}
                           title={STAGE_LABELS[stage]}
                           className={`h-1.5 flex-1 rounded-full transition-all ${
-                            idx < currentIdx  ? 'bg-navy' :
+                            currentIdx >= 7 || idx < currentIdx  ? 'bg-navy' :
                             idx === currentIdx ? 'bg-amber-500 animate-pulse' :
                             'bg-gray-100'
                           }`}
