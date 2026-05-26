@@ -6,8 +6,8 @@ import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
 import {
   ChevronLeft, CheckCircle2, Circle, FlaskConical, Microscope,
-  Thermometer, Droplets, Snowflake, Save, Plus, Clock, ChevronDown, ChevronUp,
-  ExternalLink, Package
+  Thermometer, Droplets, Snowflake, Save, ChevronDown, ChevronUp,
+  ExternalLink
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
@@ -179,7 +179,7 @@ function VialRegistrationPanel({ prepId, prep, onRegistered }) {
 }
 
 // ── Step Card ──────────────────────────────────────────────────────────────
-function StepCard({ step, data, incubations, prepId, onSave, isAdmin }) {
+function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFormulations }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm]       = useState(data || {});
   const [saving, setSaving]   = useState(false);
@@ -225,8 +225,25 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin }) {
           <div className="space-y-3">
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Media Preparation</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="field-label">Broth / Media</label>
-                <input value={form.media||''} onChange={e=>set('media',e.target.value)} className="field-input" placeholder="MRS broth"/></div>
+              <div className="col-span-2">
+                <label className="field-label">Broth / Media Recipe</label>
+                {labMediaFormulations?.length > 0 ? (
+                  <select value={form.media_formulation_id||''} onChange={e => {
+                    const f = labMediaFormulations.find(f => f.id === e.target.value);
+                    set('media_formulation_id', e.target.value);
+                    set('media', f?.name || '');
+                  }} className="field-input bg-white">
+                    <option value="">Select from Recipe module...</option>
+                    {labMediaFormulations.map(f => <option key={f.id} value={f.id}>{f.name} (v{f.version})</option>)}
+                    <option value="custom">Other (enter manually)</option>
+                  </select>
+                ) : (
+                  <input value={form.media||''} onChange={e=>set('media',e.target.value)} className="field-input" placeholder="MRS broth"/>
+                )}
+                {(form.media_formulation_id === 'custom' || !labMediaFormulations?.length) && labMediaFormulations?.length > 0 && (
+                  <input value={form.media||''} onChange={e=>set('media',e.target.value)} className="field-input mt-1" placeholder="Enter media name"/>
+                )}
+              </div>
               <div><label className="field-label">Volume (ml)</label>
                 <input type="number" value={form.volume_ml||''} onChange={e=>set('volume_ml',e.target.value)} className="field-input" placeholder="10"/></div>
               <div><label className="field-label">Sterilization Method</label>
@@ -271,8 +288,25 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin }) {
           <div className="space-y-3">
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Agar Preparation</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="field-label">Agar Media</label>
-                <input value={form.agar_media||''} onChange={e=>set('agar_media',e.target.value)} className="field-input" placeholder="MRS agar / LB agar"/></div>
+              <div className="col-span-2">
+                <label className="field-label">Agar Media Recipe</label>
+                {labMediaFormulations?.length > 0 ? (
+                  <select value={form.agar_formulation_id||''} onChange={e => {
+                    const f = labMediaFormulations.find(f => f.id === e.target.value);
+                    set('agar_formulation_id', e.target.value);
+                    set('agar_media', f?.name || '');
+                  }} className="field-input bg-white">
+                    <option value="">Select from Recipe module...</option>
+                    {labMediaFormulations.map(f => <option key={f.id} value={f.id}>{f.name} (v{f.version})</option>)}
+                    <option value="custom">Other (enter manually)</option>
+                  </select>
+                ) : (
+                  <input value={form.agar_media||''} onChange={e=>set('agar_media',e.target.value)} className="field-input" placeholder="MRS agar / LB agar"/>
+                )}
+                {(form.agar_formulation_id === 'custom' || !labMediaFormulations?.length) && labMediaFormulations?.length > 0 && (
+                  <input value={form.agar_media||''} onChange={e=>set('agar_media',e.target.value)} className="field-input mt-1" placeholder="Enter agar name"/>
+                )}
+              </div>
               <div><label className="field-label">Plates Poured</label>
                 <input type="number" value={form.plates_poured||''} onChange={e=>set('plates_poured',e.target.value)} className="field-input" placeholder="5"/></div>
               <div><label className="field-label">Sterilization Method</label>
@@ -399,6 +433,7 @@ export default function CellBankDetailPage() {
   const toast      = useToast();
   const [prep, setPrep]       = useState(null);
   const [vials, setVials]     = useState([]);
+  const [labMedia, setLabMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
@@ -406,14 +441,16 @@ export default function CellBankDetailPage() {
   const fetchPrep = useCallback(async () => {
     setLoading(true);
     try {
-      const [prepRes, vialsRes] = await Promise.all([
+      const [prepRes, vialsRes, mediaRes] = await Promise.all([
         fetch(`/api/research/cell-bank/${prepId}`),
         fetch(`/api/research/cell-bank/vials?preparation_id=${prepId}`),
+        fetch('/api/formulations?category=Lab%20Media'),
       ]);
-      const [prepJson, vialsJson] = await Promise.all([prepRes.json(), vialsRes.json()]);
+      const [prepJson, vialsJson, mediaJson] = await Promise.all([prepRes.json(), vialsRes.json(), mediaRes.json()]);
       if (!prepJson.success) throw new Error(prepJson.error);
       setPrep(prepJson.data);
       if (vialsJson.success) setVials(vialsJson.data || []);
+      if (Array.isArray(mediaJson)) setLabMedia(mediaJson.filter(f => f.status === 'Approved'));
     } catch (err) { toast.error(err.message); }
     finally { setLoading(false); }
   }, [prepId, toast]);
@@ -482,6 +519,7 @@ export default function CellBankDetailPage() {
                 prepId={prepId}
                 onSave={fetchPrep}
                 isAdmin={isAdmin}
+                labMediaFormulations={labMedia}
               />
             ))}
           </div>

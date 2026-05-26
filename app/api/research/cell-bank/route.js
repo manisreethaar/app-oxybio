@@ -2,6 +2,24 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+async function generatePrepCode(supabase, type) {
+  const year = new Date().getFullYear();
+  const prefix = `OB-CB-${year}-`;
+  const { data: last } = await supabase
+    .from('cell_bank_preparations')
+    .select('prep_code')
+    .like('prep_code', `${prefix}%`)
+    .order('prep_code', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let seq = 1;
+  if (last?.prep_code) {
+    const n = parseInt(last.prep_code.split('-').pop(), 10);
+    if (!isNaN(n)) seq = n + 1;
+  }
+  return `${prefix}${String(seq).padStart(3, '0')}`;
+}
+
 export const dynamic = 'force-dynamic';
 
 const MASTER_EMAIL = 'manisreethaar@gmail.com';
@@ -30,7 +48,7 @@ const prepSchema = z.object({
   type: z.enum(['MCB', 'WCB', 'RCB']),
   strain_id: z.string().uuid(),
   parent_id: z.string().uuid().optional().nullable(),
-  prep_code: z.string().min(1),
+  prep_code: z.string().optional().nullable(),
   passage_number: z.coerce.number().int().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
@@ -95,8 +113,10 @@ export async function POST(request) {
     // preparation
     const parsed = prepSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, error: parsed.error.issues.map(i => i.message).join(', ') }, { status: 400 });
+    const prepCode = parsed.data.prep_code?.trim() || await generatePrepCode(supabase, parsed.data.type);
     const { data, error } = await supabase.from('cell_bank_preparations').insert({
       ...parsed.data,
+      prep_code: prepCode,
       status: 'In Progress',
       step_data: {},
       created_by: access.emp?.id,

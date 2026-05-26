@@ -22,20 +22,12 @@ const postSchema = z.object({
 });
 
 // ─────────────────────────────────────────────────────────────
-// Generate sequential batch ID: OB-[RECIPE_CODE]-YYYY-SEQ
-// Sequence is scoped per recipe code + year.
+// Generate sequential batch ID: OB-FER-YYYY-SEQ
+// Sequence is global per year (no per-recipe scoping).
 // ─────────────────────────────────────────────────────────────
-async function generateBatchId(supabase, formulationId) {
+async function generateBatchId(supabase) {
   const year = new Date().getFullYear();
-
-  const { data: formulation } = await supabase
-    .from('formulations')
-    .select('code')
-    .eq('id', formulationId)
-    .single();
-
-  const recipeCode = formulation?.code || 'R00';
-  const prefix = `OB-${recipeCode}-${year}-`;
+  const prefix = `OB-FER-${year}-`;
 
   const { data: lastBatch } = await supabase
     .from('batches')
@@ -43,7 +35,7 @@ async function generateBatchId(supabase, formulationId) {
     .like('batch_id', `${prefix}%`)
     .order('batch_id', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   let seq = 1;
   if (lastBatch?.batch_id) {
@@ -154,7 +146,7 @@ export async function POST(request) {
     // Actual inventory deduction happens at Media Prep stage when lot is selected
 
     // ── Generate batch ID ───────────────────────────────────────────────
-    const batchIdStr = await generateBatchId(supabase, formulation_id);
+    const batchIdStr = await generateBatchId(supabase);
 
     // ── Create batch record ─────────────────────────────────────────────
     const { data: newBatch, error: batchInsertErr } = await supabase
@@ -384,7 +376,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'formulation_id required' }, { status: 400 });
     }
 
-    const nextId = await generateBatchId(supabase, formulationId);
+    const nextId = await generateBatchId(supabase);
     return NextResponse.json({ batch_id: nextId });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

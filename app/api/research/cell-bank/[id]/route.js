@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { syncCellBankStepToLNB } from '@/lib/cellBankLNBSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,9 +131,22 @@ export async function PATCH(request, { params }) {
       .from('cell_bank_preparations')
       .update(updates)
       .eq('id', params.id)
-      .select()
+      .select('*, cell_bank_strains(name)')
       .single();
     if (error) throw error;
+
+    // Sync step to LNB — fire and forget
+    if (step_key && step_data_patch) {
+      syncCellBankStepToLNB(
+        supabase,
+        params.id,
+        data.prep_code,
+        step_key,
+        step_data_patch,
+        access.emp?.id
+      ).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

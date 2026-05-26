@@ -35,7 +35,7 @@ export default function FormulationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // id of recipe being actioned
   const [items, setItems] = useState([]);
-  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null });
+  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation' });
   
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
@@ -220,7 +220,7 @@ export default function FormulationsPage() {
       });
       if (res.ok) {
         setShowNew(false);
-        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null });
+        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation' });
         fetchFormulations();
       } else { 
         const errData = await res.json();
@@ -582,6 +582,21 @@ export default function FormulationsPage() {
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Scientific Notes / Rationale</label>
                 <textarea rows="2" placeholder="Reason for this version or iteration..." value={newForm.notes} onChange={e => setNewForm({...newForm, notes: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all resize-none" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Category</label>
+                <div className="flex gap-2">
+                  {['Fermentation', 'Lab Media'].map(cat => (
+                    <button key={cat} type="button" onClick={() => setNewForm({...newForm, category: cat})}
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${newForm.category === cat ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'}`}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {newForm.category === 'Fermentation' ? 'Product recipe — used to create fermentation batches.' : 'Lab media recipe (MRS broth, LB agar, etc.) — available in Cell Bank module.'}
+                </p>
               </div>
 
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
