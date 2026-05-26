@@ -73,7 +73,7 @@ function StrainForm({ onSave, onCancel }) {
 }
 
 function NewPrepForm({ strains, onSave, onCancel }) {
-  const [form, setForm] = useState({ strain_id: strains[0]?.id || '', type: 'MCB', prep_code: '', passage_number: '', notes: '' });
+  const [form, setForm] = useState({ strain_id: strains[0]?.id || '', type: 'MCB', passage_number: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -94,6 +94,7 @@ function NewPrepForm({ strains, onSave, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="surface p-5 space-y-4">
       <p className="text-sm font-bold text-gray-900">Start New Cell Bank Preparation</p>
+      <p className="text-xs text-gray-500">Prep code auto-generated: <span className="font-mono font-bold">OB-CB-{new Date().getFullYear()}-NNN</span></p>
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2"><label className="field-label">Strain <span className="text-red-500">*</span></label>
           <select required value={form.strain_id} onChange={e => set('strain_id', e.target.value)} className="field-input bg-white">
@@ -106,8 +107,6 @@ function NewPrepForm({ strains, onSave, onCancel }) {
             <option value="WCB">WCB — Working Cell Bank</option>
             <option value="RCB">RCB — Research Cell Bank</option>
           </select></div>
-        <div><label className="field-label">Prep Code <span className="text-red-500">*</span></label>
-          <input required value={form.prep_code} onChange={e => set('prep_code', e.target.value)} className="field-input" placeholder="MCB-001"/></div>
         <div><label className="field-label">Passage #</label>
           <input type="number" min="0" value={form.passage_number} onChange={e => set('passage_number', e.target.value)} className="field-input" placeholder="0"/></div>
         <div><label className="field-label">Notes</label>
@@ -115,7 +114,7 @@ function NewPrepForm({ strains, onSave, onCancel }) {
       </div>
       <div className="flex gap-3">
         <button type="button" onClick={onCancel} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
-        <button type="submit" disabled={saving || !form.strain_id || !form.prep_code} className="flex-1 py-2 bg-navy text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Creating...' : 'Start Preparation'}</button>
+        <button type="submit" disabled={saving || !form.strain_id} className="flex-1 py-2 bg-navy text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Creating...' : 'Start Preparation'}</button>
       </div>
     </form>
   );
