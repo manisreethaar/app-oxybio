@@ -12,7 +12,30 @@
       "Bash(git commit -m ' *)",
       "Bash(git stash *)",
       "Bash(git pull *)",
-      "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__execute_sql"
+      "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__execute_sql",
+      "Bash(Get-ChildItem -Path \"E:\\\\OXYBIO\\\\app\" -Recurse -Name)",
+      "Bash(Select-String \"page\\\\.js|page\\\\.tsx\")",
+      "Bash(Select-Object -First 20)",
+      "Bash(xargs grep -l \"trial.*release\\\\|release.*confirmation\\\\|batch.*complete\")",
+      "Bash(xargs grep -l \"BMR\\\\|batch.*release\\\\|release.*batch\")",
+      "Bash(xargs grep -l \"release\\\\|complete\\\\|batch.*status\")",
+      "Bash(xargs grep -l \"batch\\\\|release\\\\|qc\\\\|hold\")",
+      "Bash(grep -r \"batch.*release\\\\|release.*confirmation\\\\|QC.*hold\" . --include=\"*.js\" ! -path \"*/node_modules/*\" ! -path \"*/.next/*\")",
+      "Bash(xargs grep -l \"batchStatus\\\\|batch.*status\\\\|BATCH_STATUS\")",
+      "Bash(xargs grep -l \"batch\\\\|release\\\\|qc\")",
+      "Bash(xargs grep -l \"useBatch\\\\|useRelease\\\\|useQC\")",
+      "Bash(xargs grep -l \"release\\\\|complete\")",
+      "WebFetch(domain:app.oxygenbioinnovations.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:vercel.com)",
+      "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__list_projects",
+      "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__apply_migration",
+      "Bash(git commit -m 'fix: move useMemo above early return — hooks rules violation causing error #310 *)",
+      "Bash(mkdir \"E:\\\\OXYBIO\\\\app\\\\api\\\\batches\\\\[batchId]\\\\release\")",
+      "Bash(git commit -m 'fix: route release through API to bypass RLS; fix stage bar for released batches *)",
+      "Bash(git commit -m 'fix: replace broken React modal with window.confirm for release — modal was not rendering due to stacking context *)",
+      "Bash(git commit -m 'fix: simplify ReleasePanel — direct API call on click, visible error display, no modal/confirm dialog *)",
+      "Bash(node -e ' *)"
     ]
   }
 }
