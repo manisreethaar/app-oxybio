@@ -321,7 +321,20 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider pt-1">Plating & Incubation</p>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="field-label">Dilution Factor</label>
-                <input value={form.dilution||''} onChange={e=>set('dilution',e.target.value)} className="field-input" placeholder="10⁻⁴"/></div>
+                <select value={form.dilution||''} onChange={e=>set('dilution',e.target.value)} className="field-input bg-white">
+                  <option value="">Select...</option>
+                  <option value="Direct (No dilution)">Direct (No dilution)</option>
+                  <option value="10⁻¹">10⁻¹</option>
+                  <option value="10⁻²">10⁻²</option>
+                  <option value="10⁻³">10⁻³</option>
+                  <option value="10⁻⁴">10⁻⁴</option>
+                  <option value="10⁻⁵">10⁻⁵</option>
+                  <option value="10⁻⁶">10⁻⁶</option>
+                  <option value="10⁻⁷">10⁻⁷</option>
+                  <option value="10⁻⁸">10⁻⁸</option>
+                  <option value="10⁻⁹">10⁻⁹</option>
+                  <option value="10⁻¹⁰">10⁻¹⁰</option>
+                </select></div>
               <div><label className="field-label">Incubation Temp (°C)</label>
                 <input type="number" value={form.incubation_temp||''} onChange={e=>set('incubation_temp',e.target.value)} className="field-input" placeholder="37"/></div>
               <div><label className="field-label">Incubation Hours</label>
