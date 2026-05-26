@@ -198,7 +198,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       // Unified Process Bus: Auto-link to Sample Incubation
       if (createIncubation) {
-        const { error: incErr } = await supabase.from('research_sample_incubation').insert({
+        const { error: incErr } = await supabase.from('sample_incubation_records').insert({
           sample_name: `${activeFlask.flask_label} - T+${elapsed ? elapsed.toFixed(1) : 0}h`,
           batch_id: batch.id,
           flask_id: activeFlask.id,
