@@ -16,6 +16,13 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [saving, setSaving] = useState(false);
   const isInternOrRI = ['intern','research_intern'].includes(role);
 
+  const toLocalDatetime = (utcStr) => {
+    if (!utcStr) return '';
+    const d = new Date(utcStr);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,16);
+  };
+
   const [sourceType, setSourceType] = useState('other');
   const [source,    setSource]    = useState('');
   const [vialId,    setVialId]    = useState('');
@@ -52,7 +59,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setVialId(d.cell_bank_vial_id||'');
           setInVol(d.inoculum_vol_ml||'');
           setPlannedHr(d.planned_fermentation_hrs||'');
-          setTZero(d.t_zero_time ? d.t_zero_time.slice(0,16) : '');
+          setTZero(toLocalDatetime(d.t_zero_time));
           setTransfer(d.transfer_method||'Pipette');
           setLafUsed(d.laf_used||false);
           setContCheck(d.contamination_check||'Clear');

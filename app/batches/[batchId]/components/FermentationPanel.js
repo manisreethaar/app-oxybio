@@ -133,6 +133,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const isAdmin  = ['admin','ceo','cto'].includes(role);
   const isIntern = ['intern','research_intern'].includes(role);
 
+  const toLocalDatetime = (utcStr) => {
+    if (!utcStr) return '';
+    const d = new Date(utcStr);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,16);
+  };
+
   const fetchData = useCallback(async () => {
     if (!activeFlask?.id) return;
     const [rRes, iRes, epRes] = await Promise.all([
@@ -301,7 +308,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       brix: r.brix ?? '', optical_density: r.optical_density ?? '',
       foam_level: r.foam_level ?? 'None', visual_appearance: r.visual_appearance ?? 'Normal',
       plating_status: platingParts[0] || 'Pending', cfu_count: platingParts[1] || '',
-      notes: r.notes ?? '', logged_at: r.logged_at ? r.logged_at.slice(0,16) : '',
+      notes: r.notes ?? '', logged_at: toLocalDatetime(r.logged_at),
       is_retrospective: r.is_retrospective ?? false, retro_reason: r.retro_reason ?? '',
     });
     setEditReason('');
@@ -416,7 +423,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               <input
                 type="datetime-local"
                 value={recordedEndTime}
-                max={new Date().toISOString().slice(0, 16)}
+                max={toLocalDatetime(new Date().toISOString())}
                 onChange={e => handleSaveEndTime(e.target.value)}
                 className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${recordedEndTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-gray-200'}`}
               />
@@ -502,7 +509,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
               {isRetro && (
                 <div className="space-y-2 pl-6">
-                  <input type="datetime-local" value={loggedAt} onChange={e=>setLoggedAt(e.target.value)} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-xs font-semibold outline-none"/>
+                  <input type="datetime-local" value={loggedAt} onChange={e=>setLoggedAt(e.target.value)} 
+                    max={toLocalDatetime(new Date().toISOString())}
+                    className="w-full px-3 py-2 border-2 border-amber-200 rounded-lg text-sm bg-white focus:border-amber-400 outline-none"/>
                   <input placeholder="Reason for retrospective entry (required)" value={retroReason} onChange={e=>setRetroReason(e.target.value)} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-xs font-semibold outline-none"/>
                 </div>
               )}
@@ -604,7 +613,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <input
                   type="datetime-local"
                   value={endpointTime}
-                  max={new Date().toISOString().slice(0,16)}
+                  max={toLocalDatetime(new Date().toISOString())}
                   onChange={e => setEndpointTime(e.target.value)}
                   className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${isRetroSpective && !endpointTime ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
                 />

@@ -1,6 +1,45 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
+
+const EDIT_ROLES = ['admin', 'ceo', 'cto'];
+
+async function getRequester(supabase) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+
+  const { data: employee } = await supabase
+    .from('employees')
+    .select('id, role')
+    .eq('email', user.email)
+    .maybeSingle();
+
+  if (!employee) return { error: NextResponse.json({ error: 'Employee profile not found' }, { status: 403 }) };
+  return { user, employee };
+}
+
+function pickReadingUpdates(updates = {}) {
+  const allowed = [
+    'ph',
+    'incubator_temp_c',
+    'brix',
+    'optical_density',
+    'foam_level',
+    'visual_appearance',
+    'plating_result',
+    'notes',
+    'logged_at',
+    'elapsed_hours',
+    'is_retrospective',
+    'retro_reason',
+  ];
+  return Object.fromEntries(
+    allowed
+      .filter((key) => Object.prototype.hasOwnProperty.call(updates, key))
+      .map((key) => [key, updates[key]])
+  );
+}
 
 export async function POST(request, { params }) {
   try {
@@ -106,6 +145,90 @@ export async function GET(request, { params }) {
       t_zero:    inocuRes.data?.t_zero_time || null,
     });
   } catch (err) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request, { params }) {
+  try {
+    const supabase = createClient();
+    const requester = await getRequester(supabase);
+    if (requester.error) return requester.error;
+
+    if (!EDIT_ROLES.includes(requester.employee.role?.toLowerCase())) {
+      return NextResponse.json({ error: 'Only admin, CEO, or CTO can edit fermentation readings.' }, { status: 403 });
+    }
+
+    const { batchId } = params;
+    const { reading_id, updates, reason } = await request.json();
+
+    if (!reading_id) return NextResponse.json({ error: 'Missing reading_id' }, { status: 400 });
+    if (!reason || reason.trim().length < 3) {
+      return NextResponse.json({ error: 'A reason for editing this reading is required.' }, { status: 400 });
+    }
+
+    const safeUpdates = pickReadingUpdates(updates);
+    if (Object.keys(safeUpdates).length === 0) {
+      return NextResponse.json({ error: 'No editable fields provided.' }, { status: 400 });
+    }
+
+    const adminDb = createAdminClient();
+    const { data, error } = await adminDb
+      .from('batch_fermentation_readings')
+      .update({
+        ...safeUpdates,
+        edited_at: new Date().toISOString(),
+        edited_by: requester.employee.id,
+        edit_reason: reason.trim(),
+      })
+      .eq('id', reading_id)
+      .eq('batch_id', batchId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return NextResponse.json({ error: 'Fermentation reading not found.' }, { status: 404 });
+
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    console.error('Fermentation edit API error:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const supabase = createClient();
+    const requester = await getRequester(supabase);
+    if (requester.error) return requester.error;
+
+    if (!EDIT_ROLES.includes(requester.employee.role?.toLowerCase())) {
+      return NextResponse.json({ error: 'Only admin, CEO, or CTO can delete fermentation readings.' }, { status: 403 });
+    }
+
+    const { batchId } = params;
+    const { reading_id, reason } = await request.json();
+
+    if (!reading_id) return NextResponse.json({ error: 'Missing reading_id' }, { status: 400 });
+    if (!reason || reason.trim().length < 3) {
+      return NextResponse.json({ error: 'A reason for deleting this reading is required.' }, { status: 400 });
+    }
+
+    const adminDb = createAdminClient();
+    const { data, error } = await adminDb
+      .from('batch_fermentation_readings')
+      .delete()
+      .eq('id', reading_id)
+      .eq('batch_id', batchId)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    if (!data) return NextResponse.json({ error: 'Fermentation reading not found.' }, { status: 404 });
+
+    return NextResponse.json({ success: true, deleted_id: data.id });
+  } catch (err) {
+    console.error('Fermentation delete API error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

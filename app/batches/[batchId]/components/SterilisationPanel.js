@@ -36,8 +36,8 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setMethod(d.method||'Pressure Cooker'); setEquipId(d.equipment_id||'');
       setTemp(d.cycle_temp_c||''); setPressure(d.cycle_pressure_bar||'');
       setHoldMin(d.hold_time_min||'');
-      setCycleStart(d.cycle_start?d.cycle_start.slice(0,16):'');
-      setCycleEnd(d.cycle_end?d.cycle_end.slice(0,16):'');
+      setCycleStart(d.cycle_start ? (() => { const d1 = new Date(d.cycle_start); d1.setMinutes(d1.getMinutes() - d1.getTimezoneOffset()); return d1.toISOString().slice(0,16); })() : '');
+      setCycleEnd(d.cycle_end ? (() => { const d1 = new Date(d.cycle_end); d1.setMinutes(d1.getMinutes() - d1.getTimezoneOffset()); return d1.toISOString().slice(0,16); })() : '');
       setTape(d.autoclave_tape||'Positive'); setPassFail(d.pass_fail||'Pending');
       setNotes(d.notes||'');
     }
