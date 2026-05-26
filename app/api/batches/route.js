@@ -246,7 +246,9 @@ export async function POST(request) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// GET /api/batches — List all batches (role-filtered at RLS level)
+// GET /api/batches — List all batches OR preview next batch ID
+// ?formulation_id=<uuid>  → preview next batch ID only
+// ?status=<status>        → filter list by status
 // ─────────────────────────────────────────────────────────────
 export async function GET(request) {
   try {
@@ -255,7 +257,14 @@ export async function GET(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const statusFilter = searchParams.get('status'); // optional ?status=scheduled
+    const formulationId = searchParams.get('formulation_id');
+    const statusFilter  = searchParams.get('status');
+
+    // Preview mode — just return the next batch ID
+    if (formulationId) {
+      const nextId = await generateBatchId(supabase);
+      return NextResponse.json({ batch_id: nextId });
+    }
 
     let query = supabase
       .from('batches')
@@ -359,26 +368,3 @@ export async function DELETE(request) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/batches?preview=1&formulation_id=<uuid>
-// Returns the next batch ID that would be assigned for this formulation.
-// ─────────────────────────────────────────────────────────────
-export async function GET(request) {
-  try {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { searchParams } = new URL(request.url);
-    const formulationId = searchParams.get('formulation_id');
-
-    if (!formulationId) {
-      return NextResponse.json({ error: 'formulation_id required' }, { status: 400 });
-    }
-
-    const nextId = await generateBatchId(supabase);
-    return NextResponse.json({ batch_id: nextId });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
