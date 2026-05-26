@@ -8,7 +8,6 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const [record, setRecord]   = useState(null);
   const [sensoryData, setSensoryData] = useState(null);
   const [saving, setSaving]   = useState(false);
-  const [pendingRelease, setPendingRelease] = useState(false);
   const isCeo    = ['ceo','admin'].includes(role);
 
   const [yieldVol, setYieldVol] = useState('');
@@ -51,14 +50,9 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
   useEffect(() => { setRecord(null); loadRecord(); }, [loadRecord]);
 
-  const handleSave = async () => {
-    if (!isCeo) return;
-    setPendingRelease(true);
-  };
-
   const confirmRelease = async () => {
-    if (!activeFlask) return;
-    setPendingRelease(false);
+    if (!activeFlask || !isCeo) return;
+    if (!window.confirm(`Release Trial ${activeFlask.flask_label}? This cannot be undone.`)) return;
     setSaving(true);
     try {
       const res = await window.fetch(`/api/batches/${batchId || batch.id}/release`, {
@@ -150,7 +144,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                   </div>
                 );
               })()}
-              <button onClick={handleSave} disabled={saving} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
+              <button onClick={confirmRelease} disabled={saving} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
                 {saving ? 'Releasing...' : `✓ Confirm Release of ${activeFlask.flask_label}`}
               </button>
             </>
@@ -158,29 +152,6 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
         </div>
       )}
 
-      {pendingRelease && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Trial Release</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Confirm release for {activeFlask.flask_label}? This will lock the record and CANNOT be undone.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setPendingRelease(false)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRelease}
-                disabled={saving}
-                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full disabled:opacity-50"
-              >
-                ✓ Confirm Release
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
