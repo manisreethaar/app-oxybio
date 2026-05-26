@@ -88,7 +88,7 @@ export async function POST(request) {
     // ── Gate 1: Approved recipe check ──────────────────────────────────
     const { data: formulation, error: formErr } = await supabase
       .from('formulations')
-      .select('id, name, code, version, status, ingredients, steps')
+      .select('id, name, code, version, status, ingredients, steps, base_volume_ml')
       .eq('id', formulation_id)
       .single();
 
@@ -126,19 +126,26 @@ export async function POST(request) {
         : (formulation.ingredients || []);
     } catch { ingredients = []; }
 
+    const baseVol = formulation.base_volume_ml || 1000;
+    const targetVol = (planned_volume_ml || 0) * (num_flasks || 1) || baseVol;
+    const scaleFactor = targetVol / baseVol;
+
     const inventoryWarnings = [];
     for (const ing of ingredients) {
       if (!ing.item_id || !ing.quantity) continue;
+      const requiredQty = parseFloat(ing.quantity) * scaleFactor;
+      
       const { data: stocks } = await supabase
         .from('inventory_stock')
         .select('current_quantity')
         .eq('item_id', ing.item_id)
         .gt('current_quantity', 0);
       const totalAvailable = (stocks || []).reduce((sum, s) => sum + parseFloat(s.current_quantity || 0), 0);
-      if (totalAvailable < parseFloat(ing.quantity)) {
+      
+      if (totalAvailable < requiredQty) {
         inventoryWarnings.push({
           item:      ing.name || ing.item_id,
-          required:  ing.quantity,
+          required:  requiredQty.toFixed(2),
           available: totalAvailable.toFixed(2),
           unit:      ing.unit || '',
         });
