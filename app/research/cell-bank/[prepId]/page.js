@@ -485,8 +485,11 @@ export default function CellBankDetailPage() {
     finally { setCompleting(false); }
   };
 
-  const completedSteps = prep ? STEPS.filter(s => prep.step_data?.[s.key]?.completed).length : 0;
-  const nonVialSteps   = STEPS.filter(s => s.key !== 'vial_storage');
+  const completedSteps = prep ? STEPS.filter(s => {
+    if (s.key === 'vial_storage') return vials.length > 0; // vial step = done when vials registered
+    return prep.step_data?.[s.key]?.completed;
+  }).length : 0;
+  const nonVialSteps = STEPS.filter(s => s.key !== 'vial_storage');
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-5">
