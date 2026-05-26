@@ -376,62 +376,63 @@ export default function BatchDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-6">
-        {/* ── LEFT COLUMN ── */}
-        <div className="space-y-4">
-
-          {/* Batch Header */}
-          <div className="surface p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="font-mono text-lg font-black text-gray-900 tracking-wider">{batch.batch_id}</p>
-                <div className="flex gap-1.5 mt-1 flex-wrap">
-                  {batch.sku_target && batch.sku_target !== 'Unassigned' && (
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-blue-50 text-blue-700 border-blue-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
-                  )}
-                  <span className="px-2 py-0.5 rounded text-[9px] font-black bg-gray-100 text-gray-600 border border-gray-200 uppercase">{batch.experiment_type}</span>
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-rose-50 text-rose-700 border-rose-100' : derivedStatus==='processing' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>{derivedStatus}</span>
-                </div>
-              </div>
-              <div className="text-right flex flex-col items-end gap-2">
-                <div>
-                  {(() => {
-                    const maxEpHrs = flaskEndpoints.length > 0
-                      ? Math.max(...flaskEndpoints.map(e => e.total_hours || 0))
-                      : null;
-                    const hrs = maxEpHrs !== null
-                      ? maxEpHrs
-                      : (new Date() - new Date(batch.start_time)) / 3600000;
-                    return (
-                      <>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">{maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
-                        <p className="text-xl font-black text-gray-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
-                      </>
-                    );
-                  })()}
-                </div>
-                {!isTerminal && ['admin','ceo','cto'].includes(role) && (
-                  <button
-                    onClick={handleCancelBatch}
-                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-                    title="Cancel this batch and restore inventory"
-                  >
-                    <Trash2 className="w-3 h-3"/> Cancel Batch
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
-              <div>
-                <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Recipe</p>
-                <Link href="/formulations" className="font-bold text-gray-800 hover:text-navy hover:underline block">
-                  {batch.formulations?.name}
-                </Link>
-                <p className="text-gray-400">v{batch.formulations?.version}</p>
-              </div>
-              <div><p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-gray-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
+      {/* Batch Header — always at top on all screen sizes */}
+      <div className="surface p-4 md:p-5">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-mono text-lg font-black text-gray-900 tracking-wider">{batch.batch_id}</p>
+            <div className="flex gap-1.5 mt-1 flex-wrap">
+              {batch.sku_target && batch.sku_target !== 'Unassigned' && (
+                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-blue-50 text-blue-700 border-blue-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
+              )}
+              <span className="px-2 py-0.5 rounded text-[9px] font-black bg-gray-100 text-gray-600 border border-gray-200 uppercase">{batch.experiment_type}</span>
+              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-rose-50 text-rose-700 border-rose-100' : derivedStatus==='processing' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>{derivedStatus}</span>
             </div>
           </div>
+          <div className="text-right flex flex-col items-end gap-2">
+            <div>
+              {(() => {
+                const maxEpHrs = flaskEndpoints.length > 0
+                  ? Math.max(...flaskEndpoints.map(e => e.total_hours || 0))
+                  : null;
+                const hrs = maxEpHrs !== null
+                  ? maxEpHrs
+                  : (new Date() - new Date(batch.start_time)) / 3600000;
+                return (
+                  <>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">{maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
+                    <p className="text-xl font-black text-gray-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
+                  </>
+                );
+              })()}
+            </div>
+            {!isTerminal && ['admin','ceo','cto'].includes(role) && (
+              <button
+                onClick={handleCancelBatch}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                title="Cancel this batch and restore inventory"
+              >
+                <Trash2 className="w-3 h-3"/> Cancel Batch
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
+          <div>
+            <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Recipe</p>
+            <Link href="/formulations" className="font-bold text-gray-800 hover:text-navy hover:underline block">
+              {batch.formulations?.name}
+            </Link>
+            <p className="text-gray-400">v{batch.formulations?.version}</p>
+          </div>
+          <div><p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-gray-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+        {/* ── LEFT COLUMN — sidebar (stage nav + flask cards) ── */}
+        {/* order-2/lg:order-1: on mobile panel content shows first, sidebar shows below */}
+        <div className="space-y-4 order-2 lg:order-1">
 
           {/* Stage Timeline */}
           <div className="surface p-4">
@@ -579,8 +580,8 @@ export default function BatchDetailPage() {
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN — Stage Panel ── */}
-        <div>
+        {/* ── RIGHT COLUMN — Stage Panel (shows first on mobile) ── */}
+        <div className="order-1 lg:order-2">
           {/* View / Edit Mode Banner */}
           {viewingStage && (
             <div className={`flex items-center justify-between rounded-xl px-4 py-2.5 mb-4 ${editingStage === viewingStage ? 'bg-amber-50 border border-amber-300' : 'bg-blue-50 border border-blue-200'}`}>
@@ -748,7 +749,7 @@ export default function BatchDetailPage() {
       {fermentingFlasks.length > 0 && (
         <button
           onClick={() => { setShowQuickLog(true); setQuickLogFlaskId(fermentingFlasks[0]?.id || ''); }}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-navy text-white rounded-2xl shadow-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all"
+          className="fixed bottom-20 left-4 md:left-auto md:bottom-20 md:right-6 z-40 flex items-center gap-2 px-4 py-3 bg-navy text-white rounded-2xl shadow-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all"
         >
           ⚡ Log Reading
         </button>

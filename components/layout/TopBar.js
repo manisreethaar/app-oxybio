@@ -196,7 +196,7 @@ export default function TopBar() {
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-100 max-h-96 flex flex-col">
+            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-100 max-h-96 flex flex-col">
               <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                 <span className="text-xs font-black text-gray-800 uppercase tracking-widest">Recent Activity</span>
                 <Link href="/notifications" onClick={() => setNotifOpen(false)} className="text-[10px] font-bold text-navy hover:text-teal-600">View All</Link>

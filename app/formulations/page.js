@@ -636,13 +636,15 @@ export default function FormulationsPage() {
 
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Bill of Materials (BOM)</label>
-                <div className="flex gap-2 mb-3">
+                <div className="flex flex-col sm:flex-row gap-2 mb-3">
                   <select className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedItem} onChange={e => setSelectedItem(e.target.value)}>
                     <option value="">Select Ingredient...</option>
                     {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
                   </select>
-                  <input type="number" placeholder="Qty" className="w-20 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedQty} onChange={e => setSelectedQty(e.target.value)}/>
-                  <button type="button" onClick={addIngredient} className="p-2 bg-navy text-white rounded-lg hover:bg-navy-hover transition-all"><Plus className="w-4 h-4"/></button>
+                  <div className="flex gap-2">
+                    <input type="number" placeholder="Qty" className="flex-1 sm:w-20 sm:flex-none px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedQty} onChange={e => setSelectedQty(e.target.value)}/>
+                    <button type="button" onClick={addIngredient} className="shrink-0 px-4 py-2 bg-navy text-white rounded-lg hover:bg-navy-hover transition-all flex items-center gap-1 text-xs font-bold"><Plus className="w-4 h-4"/> Add</button>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {newForm.ingredients.map((ing, idx) => (

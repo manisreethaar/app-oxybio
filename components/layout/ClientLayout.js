@@ -145,7 +145,7 @@ export default function ClientLayout({ children }) {
     <ToastProvider>
     <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-900 border-t-4 border-navy">
       <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden pb-16 md:pb-0 relative z-10">
+      <div className="flex flex-col flex-1 overflow-hidden pb-20 md:pb-0 relative z-10">
         <TopBar />
         <PushManager />
 
