@@ -20,7 +20,7 @@ export async function POST(request, { params }) {
     if (getErr || !batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
     // Guard: status check alone is insufficient — intermediate stages reset status to 'planned',
     // so also check current_stage to prevent re-starting a batch that is already in progress.
-    if (batch.status !== 'planned' || batch.current_stage !== null) {
+    if (!['planned', 'scheduled'].includes(batch.status) || batch.current_stage !== null) {
       return NextResponse.json({ error: 'Batch is already started or completed' }, { status: 400 });
     }
 

@@ -70,7 +70,7 @@ export async function POST(request, { params }) {
     else if (to_stage === 'rejected')     newStatus = 'rejected';
     else if (to_stage === 'fermentation') newStatus = 'fermenting';
     else if (to_stage === 'qc_hold')      newStatus = 'qc-hold';
-    else                                  newStatus = 'planned';
+    else                                  newStatus = 'in_progress';
 
     // ── Update batch ─────────────────────────────────────────
     const { error: updateErr } = await supabase
@@ -103,6 +103,12 @@ export async function POST(request, { params }) {
               });
           }
           await supabase.from('batch_flasks').insert(newFlasks);
+        } else {
+          await supabase
+            .from('batch_flasks')
+            .update({ current_stage: 'inoculation', status: 'planned' })
+            .eq('batch_id', batchId)
+            .is('current_stage', null);
         }
       } catch (err) {
         console.error('Failed to auto-generate flasks:', err);
