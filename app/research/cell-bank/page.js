@@ -20,7 +20,7 @@ const SOURCE_COLOR = {
 };
 
 function StrainForm({ onSave, onCancel }) {
-  const [form, setForm] = useState({ name: '', source_type: 'MTCC', accession_number: '', isolation_source: '', received_date: '', taxonomy: '', notes: '' });
+  const [form, setForm] = useState({ name: '', source_type: 'MTCC', accession_number: '', strain_short_code: '', isolation_source: '', received_date: '', taxonomy: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -43,13 +43,18 @@ function StrainForm({ onSave, onCancel }) {
       <p className="text-sm font-bold text-gray-900">Register New Strain</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2"><label className="field-label">Strain Name / Organism <span className="text-red-500">*</span></label>
-          <input required value={form.name} onChange={e => set('name', e.target.value)} className="field-input" placeholder="e.g. Lactobacillus plantarum MTCC 1408"/></div>
+          <input required value={form.name} onChange={e => set('name', e.target.value)} className="field-input" placeholder="e.g. Lactobacillus brevis MTCC 1408"/></div>
         <div><label className="field-label">Source</label>
           <select value={form.source_type} onChange={e => set('source_type', e.target.value)} className="field-input bg-white">
             {['MTCC','NCIM','Isolated','Other'].map(s => <option key={s}>{s}</option>)}
           </select></div>
         <div><label className="field-label">Accession / Lot #</label>
           <input value={form.accession_number} onChange={e => set('accession_number', e.target.value)} className="field-input" placeholder="MTCC-1408"/></div>
+        <div>
+          <label className="field-label">Strain Short Code <span className="text-red-500">*</span></label>
+          <input required maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
+          <p className="text-[9px] text-gray-400 mt-0.5">2–4 letters used in vial codes e.g. <strong>MCB-26-LB-001</strong></p>
+        </div>
         <div><label className="field-label">Isolation Source</label>
           <input value={form.isolation_source} onChange={e => set('isolation_source', e.target.value)} className="field-input" placeholder="Fermented rice"/></div>
         <div><label className="field-label">Date Received</label>
@@ -61,7 +66,7 @@ function StrainForm({ onSave, onCancel }) {
       </div>
       <div className="flex gap-3">
         <button type="button" onClick={onCancel} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
-        <button type="submit" disabled={saving} className="flex-1 py-2 bg-navy text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Register Strain'}</button>
+        <button type="submit" disabled={saving || !form.strain_short_code} className="flex-1 py-2 bg-navy text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Register Strain'}</button>
       </div>
     </form>
   );
@@ -99,6 +104,7 @@ function NewPrepForm({ strains, onSave, onCancel }) {
           <select value={form.type} onChange={e => set('type', e.target.value)} className="field-input bg-white">
             <option value="MCB">MCB — Master Cell Bank</option>
             <option value="WCB">WCB — Working Cell Bank</option>
+            <option value="RCB">RCB — Research Cell Bank</option>
           </select></div>
         <div><label className="field-label">Prep Code <span className="text-red-500">*</span></label>
           <input required value={form.prep_code} onChange={e => set('prep_code', e.target.value)} className="field-input" placeholder="MCB-001"/></div>
@@ -221,7 +227,7 @@ export default function CellBankPage() {
         </div>
         {tab === 'preparations' && (
           <div className="flex gap-1">
-            {['all', 'MCB', 'WCB'].map(f => (
+            {['all', 'MCB', 'WCB', 'RCB'].map(f => (
               <button key={f} onClick={() => setTypeFilter(f)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${typeFilter === f ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'}`}>
                 {f === 'all' ? 'All Types' : f}
@@ -241,7 +247,7 @@ export default function CellBankPage() {
             {filteredPreps.map(p => (
               <Link key={p.id} href={`/research/cell-bank/${p.id}`}
                 className="surface p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
                   {p.type}
                 </div>
                 <div className="flex-1 min-w-0">

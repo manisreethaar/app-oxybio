@@ -22,11 +22,12 @@ const strainSchema = z.object({
   isolation_source: z.string().optional().nullable(),
   received_date: z.string().optional().nullable(),
   taxonomy: z.string().optional().nullable(),
+  strain_short_code: z.string().max(4).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 
 const prepSchema = z.object({
-  type: z.enum(['MCB', 'WCB']),
+  type: z.enum(['MCB', 'WCB', 'RCB']),
   strain_id: z.string().uuid(),
   parent_id: z.string().uuid().optional().nullable(),
   prep_code: z.string().min(1),
