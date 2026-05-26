@@ -70,7 +70,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         if (cfg.expected_hours)   setPlateExpectedHours(String(cfg.expected_hours));
       }
       const [tRes, incRes] = await Promise.all([
-        supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('created_at'),
+        supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('test_name'),
         fetch(`/api/research/incubation?qc_sample_id=${sData.id}`).then(r => r.json()),
       ]);
       if (!isCurrent) return;
@@ -381,7 +381,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
         }));
         await supabase.from('batch_flask_qc_tests').insert(testRows);
-        const { data: fresh } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sample.id).order('created_at');
+        const { data: fresh } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sample.id).order('test_name');
         currentTests = fresh || [];
       }
 
