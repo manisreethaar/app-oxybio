@@ -12,7 +12,7 @@ import {
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2,
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp,
   ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
-  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical
+  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { canAssignTo } from '@/lib/permissions';
@@ -33,6 +33,8 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
   const [assigneeFilter, setAssigneeFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState('due_asc');
   const [viewMode, setViewMode] = useState('grouped'); // 'grouped' or 'individual'
 
   const isMaster = employeeProfile?.email === 'manisreethaar@gmail.com';
@@ -348,7 +350,30 @@ export default function TasksPage() {
     if (success) { if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks'); setRejectNote(''); setSelectedTask(null); fetchTasks(); }
   };
 
-  const filteredTasks = tasks.filter(t => (statusFilter === 'All' || t.status === statusFilter) && (assigneeFilter === 'All' || t.assigned_to === assigneeFilter));
+  const filteredTasks = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
+    return tasks
+      .filter(t => {
+        const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
+        const matchesAssignee = assigneeFilter === 'All' || t.assigned_to === assigneeFilter;
+        const matchesSearch = !q || [
+          t.title,
+          t.description,
+          t.priority,
+          t.status,
+          t.assigned_user?.full_name,
+          t.creator?.full_name
+        ].some(value => String(value || '').toLowerCase().includes(q));
+        return matchesStatus && matchesAssignee && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'due_desc') return new Date(b.due_date || 0) - new Date(a.due_date || 0);
+        if (sortOrder === 'priority') return (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
+        if (sortOrder === 'title') return (a.title || '').localeCompare(b.title || '');
+        return new Date(a.due_date || 0) - new Date(b.due_date || 0);
+      });
+  }, [tasks, statusFilter, assigneeFilter, searchTerm, sortOrder]);
   
   const groupedTasks = useMemo(() => {
     const groups = {};
@@ -496,16 +521,35 @@ export default function TasksPage() {
         </form>
       )}
 
-      {isAdmin && (
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search tasks, assignees, status..."
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold text-gray-700 focus:ring-2 focus:ring-accent outline-none"
+          />
+        </div>
         <div className="flex flex-wrap gap-2">
+          <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
+            <option value="due_asc">Due Soon</option>
+            <option value="due_desc">Due Later</option>
+            <option value="priority">Priority</option>
+            <option value="title">Title A-Z</option>
+          </select>
+          {isAdmin && (
+            <>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
           </select>
           <select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="All">All Assignees</option>{employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       {viewMode === 'grouped' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

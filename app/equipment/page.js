@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X } from 'lucide-react';
+import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X, Search } from 'lucide-react';
 import Link from 'next/link';
 
 const equipSchema = z.object({
@@ -43,6 +43,9 @@ export default function EquipmentPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [batchUsageMap, setBatchUsageMap] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [sortOrder, setSortOrder] = useState('name');
   
   // REACT HOOK FORM SETUPS
   const { register: regEquip, handleSubmit: handEquip, formState: { errors: eqErrors, isSubmitting: isEqSubmitting }, reset: resetEquip } = useForm({
@@ -146,6 +149,27 @@ export default function EquipmentPage() {
     }
   };
 
+  const filteredEquipment = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return equipment
+      .filter(device => {
+        const matchesStatus = statusFilter === 'All' || device.status === statusFilter;
+        const matchesSearch = !q || [
+          device.name,
+          device.model,
+          device.serial_number,
+          device.status,
+          batchUsageMap[device.id]?.batch_id
+        ].some(value => String(value || '').toLowerCase().includes(q));
+        return matchesStatus && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'due') return new Date(a.calibration_due_date || '9999-12-31') - new Date(b.calibration_due_date || '9999-12-31');
+        if (sortOrder === 'status') return (a.status || '').localeCompare(b.status || '');
+        return (a.name || '').localeCompare(b.name || '');
+      });
+  }, [equipment, searchTerm, statusFilter, sortOrder, batchUsageMap]);
+
 
   if (loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
 
@@ -163,8 +187,35 @@ export default function EquipmentPage() {
         )}
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search equipment, model, serial, or batch..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+          />
+        </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
+          <option value="All">All Statuses</option>
+          <option value="Operational">Operational</option>
+          <option value="Under Maintenance">Under Maintenance</option>
+          <option value="Out of Service">Out of Service</option>
+        </select>
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
+          <option value="name">Name A-Z</option>
+          <option value="due">Calibration Due</option>
+          <option value="status">Status</option>
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {equipment.map((device) => {
+        {filteredEquipment.length === 0 ? (
+          <div className="md:col-span-2 lg:col-span-3 py-16 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-sm font-bold text-gray-400">
+            No equipment matches the current search.
+          </div>
+        ) : filteredEquipment.map((device) => {
           const isCalibrationDue = device.calibration_due_date && (new Date(device.calibration_due_date) < new Date());
           const isNearDue = device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
 

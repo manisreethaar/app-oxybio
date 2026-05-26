@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock } from 'lucide-react';
+import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock, Search } from 'lucide-react';
 import { differenceInDays, format, addMonths, addYears, addWeeks } from 'date-fns';
 
 export default function CompliancePage() {
@@ -17,6 +17,9 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [sortOrder, setSortOrder] = useState('due_asc');
   
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm({
     resolver: zodResolver(z.object({
@@ -102,6 +105,25 @@ export default function CompliancePage() {
   const thisWeek = items.filter(i => i.calculated_status !== 'done' && i.calculated_status !== 'overdue' && differenceInDays(new Date(i.due_date), new Date()) <= 7);
   const thisMonth = items.filter(i => i.calculated_status !== 'done' && i.calculated_status !== 'overdue' && differenceInDays(new Date(i.due_date), new Date()) > 7 && differenceInDays(new Date(i.due_date), new Date()) <= 30);
   const onTrack = items.filter(i => i.calculated_status !== 'done' && i.calculated_status !== 'overdue' && differenceInDays(new Date(i.due_date), new Date()) > 30);
+  const filteredItems = items
+    .filter(item => {
+      const q = searchTerm.trim().toLowerCase();
+      const matchesStatus = statusFilter === 'All' || item.calculated_status === statusFilter;
+      const matchesSearch = !q || [
+        item.title,
+        item.category,
+        item.recurrence,
+        item.calculated_status,
+        item.employees?.full_name
+      ].some(value => String(value || '').toLowerCase().includes(q));
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'due_desc') return new Date(b.due_date) - new Date(a.due_date);
+      if (sortOrder === 'title') return (a.title || '').localeCompare(b.title || '');
+      if (sortOrder === 'category') return (a.category || '').localeCompare(b.category || '');
+      return new Date(a.due_date) - new Date(b.due_date);
+    });
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -185,9 +207,31 @@ export default function CompliancePage() {
         </form>
       )}
 
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search compliance title, category, or owner..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-500" />
+        </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
+          <option value="All">All Statuses</option>
+          <option value="overdue">Overdue</option>
+          <option value="open">Open</option>
+          <option value="done">Done</option>
+        </select>
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
+          <option value="due_asc">Due Soon</option>
+          <option value="due_desc">Due Later</option>
+          <option value="title">Title A-Z</option>
+          <option value="category">Category</option>
+        </select>
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {filteredItems.length === 0 ? (
+          <div className="py-16 text-center text-sm font-bold text-gray-400">No compliance items match the current search.</div>
+        ) : (
         <ul className="divide-y divide-gray-100">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const daysTo = differenceInDays(new Date(item.due_date), new Date());
             const statusColor = 
               item.calculated_status === 'overdue' ? 'bg-red-50' :
@@ -225,6 +269,7 @@ export default function CompliancePage() {
             );
           })}
         </ul>
+        )}
       </div>
     </div>
   );

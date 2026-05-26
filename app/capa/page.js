@@ -10,7 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
 import {
   AlertTriangle, Plus, X, ShieldCheck, Loader2, ChevronRight,
-  Wrench, CheckCircle2, ArrowLeft, FileWarning, Microscope, BadgeAlert, BarChart2, FlaskConical
+  Wrench, CheckCircle2, ArrowLeft, FileWarning, Microscope, BadgeAlert, BarChart2, FlaskConical, Search
 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -35,6 +35,10 @@ export default function CapaPage() {
   const [selected, setSelected] = useState(null);
   const [investigation, setInvestigation] = useState(null);
   const [capaActions, setCapaActions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [severityFilter, setSeverityFilter] = useState('All');
+  const [sortOrder, setSortOrder] = useState('newest');
 
   const [showRaise, setShowRaise] = useState(false);
   const [raising, setRaising] = useState(false);
@@ -230,6 +234,27 @@ export default function CapaPage() {
   const openCount = deviations.filter(d => d.status === 'Open').length;
   const criticalCount = deviations.filter(d => d.severity === 'Critical' && d.status !== 'Closed').length;
   const pieData = [{ name: 'Open', value: openCount, fill: '#ef4444' }, { name: 'Investigation', value: deviations.filter(d => d.status === 'Investigating').length, fill: '#8b5cf6' }, { name: 'Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, fill: '#f59e0b' }, { name: 'Closed', value: deviations.filter(d => d.status === 'Closed').length, fill: '#10b981' }].filter(d => d.value > 0);
+  const filteredDeviations = deviations
+    .filter(dev => {
+      const q = searchTerm.trim().toLowerCase();
+      const matchesStatus = statusFilter === 'All' || dev.status === statusFilter;
+      const matchesSeverity = severityFilter === 'All' || dev.severity === severityFilter;
+      const matchesSearch = !q || [
+        dev.title,
+        dev.description,
+        dev.source,
+        dev.status,
+        dev.severity,
+        dev.reporter?.full_name,
+        dev.batches?.batch_id
+      ].some(value => String(value || '').toLowerCase().includes(q));
+      return matchesStatus && matchesSeverity && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
+      if (sortOrder === 'severity') return (SEVERITIES.indexOf(b.severity) - SEVERITIES.indexOf(a.severity));
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
 
   return (
     <div className="page-container">
@@ -254,9 +279,31 @@ export default function CapaPage() {
         </div>
       )}
 
-      {deviations.length === 0 ? <div className="text-center py-16 text-gray-400 text-sm">No NCRs recorded.</div> : (
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search NCR title, source, reporter, or batch..." className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-accent" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+            <option value="All">All Statuses</option>
+            {Object.keys(STATUS_STYLE).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+            <option value="All">All Severities</option>
+            {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="severity">Severity</option>
+          </select>
+        </div>
+      </div>
+
+      {deviations.length === 0 ? <div className="text-center py-16 text-gray-400 text-sm">No NCRs recorded.</div> : filteredDeviations.length === 0 ? <div className="text-center py-16 text-gray-400 text-sm">No NCRs match the current search.</div> : (
         <div className="space-y-2">
-          {deviations.map(dev => (
+          {filteredDeviations.map(dev => (
             <div key={dev.id} role="button" tabIndex={0} onClick={() => loadDetail(dev)} onKeyDown={e => e.key === 'Enter' && loadDetail(dev)} className="w-full surface p-4 flex items-center justify-between hover:border-gray-300 transition-colors text-left cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className={`w-1 h-10 rounded-full shrink-0 ${dev.severity === 'Critical' ? 'bg-red-500' : dev.severity === 'Major' ? 'bg-amber-500' : 'bg-blue-400'}`}/>

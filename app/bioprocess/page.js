@@ -9,7 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import {
   FlaskConical, Plus, BarChart2, Activity, Beaker,
-  ChevronRight, Loader2, X, Clock, CheckCircle, Settings
+  ChevronRight, Loader2, X, Clock, CheckCircle, Settings, Search
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -42,6 +42,8 @@ export default function BioprocessPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest');
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm({
     resolver: zodResolver(createSchema),
@@ -83,7 +85,29 @@ export default function BioprocessPage() {
     }
   };
 
-  const filtered = typeFilter === 'all' ? experiments : experiments.filter(e => e.type === typeFilter);
+  const filtered = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return experiments
+      .filter(e => {
+        const matchesType = typeFilter === 'all' || e.type === typeFilter;
+        const matchesSearch = !q || [
+          e.title,
+          e.description,
+          e.response_variable,
+          e.response_unit,
+          e.status,
+          TYPE_META[e.type]?.label,
+          e.creator?.full_name
+        ].some(value => String(value || '').toLowerCase().includes(q));
+        return matchesType && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
+        if (sortOrder === 'title') return (a.title || '').localeCompare(b.title || '');
+        if (sortOrder === 'status') return (a.status || '').localeCompare(b.status || '');
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+  }, [experiments, typeFilter, searchTerm, sortOrder]);
 
   if (authLoading) return (
     <div className="flex items-center justify-center h-64">
@@ -120,6 +144,24 @@ export default function BioprocessPage() {
         ))}
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search experiments, response, creator..."
+            className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy"
+          />
+        </div>
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 outline-none">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="title">Title A-Z</option>
+          <option value="status">Status</option>
+        </select>
+      </div>
+
       {/* Experiment Cards */}
       {loading ? (
         <div className="flex items-center justify-center h-48">
@@ -128,8 +170,8 @@ export default function BioprocessPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <FlaskConical className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-semibold">No experiments yet</p>
-          <p className="text-sm text-gray-400 mt-1">Create your first bioprocess experiment to get started</p>
+          <p className="text-gray-500 font-semibold">{experiments.length === 0 ? 'No experiments yet' : 'No matching experiments'}</p>
+          <p className="text-sm text-gray-400 mt-1">{experiments.length === 0 ? 'Create your first bioprocess experiment to get started' : 'Adjust search, type, or sort controls'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
