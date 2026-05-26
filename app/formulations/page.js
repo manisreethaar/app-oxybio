@@ -56,6 +56,26 @@ export default function FormulationsPage() {
 
   useEffect(() => {
     fetchFormulations(); fetchInventoryItems();
+
+    // Subscribe to realtime formulation updates to prevent stale statuses (e.g. Approved vs In Review)
+    const channel = supabase.channel('formulations_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'formulations' }, () => {
+        fetchFormulations();
+      })
+      .subscribe();
+
+    // Fallback: refresh on window focus in case realtime is disconnected or missing table publication
+    const handleFocus = () => fetchFormulations();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') fetchFormulations();
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
