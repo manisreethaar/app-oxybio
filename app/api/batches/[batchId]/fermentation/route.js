@@ -132,16 +132,16 @@ export async function GET(request, { params }) {
 
     const { batchId } = params;
 
-    const [readingsRes, endpointRes, inocuRes] = await Promise.all([
+    const [readingsRes, endpointsRes, inocuRes] = await Promise.all([
       supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batchId).order('logged_at'),
-      supabase.from('batch_fermentation_endpoint').select('*, batch_flask_endpoints(*)').eq('batch_id', batchId).single(),
-      supabase.from('batch_stage_inoculation').select('t_zero_time').eq('batch_id', batchId).single(),
+      supabase.from('batch_flask_endpoints').select('*').eq('batch_id', batchId),
+      supabase.from('batch_flask_inoculations').select('t_zero_time').eq('batch_id', batchId).not('t_zero_time', 'is', null).order('t_zero_time').limit(1).maybeSingle(),
     ]);
 
     return NextResponse.json({
       success: true,
       readings:  readingsRes.data  || [],
-      endpoint:  endpointRes.data  || null,
+      endpoint:  endpointsRes.data?.[0] || null,
       t_zero:    inocuRes.data?.t_zero_time || null,
     });
   } catch (err) {
