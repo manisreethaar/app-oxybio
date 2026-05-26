@@ -25,6 +25,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [deletingIncubationId, setDeletingIncubationId] = useState(null);
   const [pullingResults,       setPullingResults]       = useState(false);
   const [mediaFormulations,    setMediaFormulations]    = useState([]);
+  const [regenerating,         setRegenerating]         = useState(false);
   const isCeo = ['ceo','admin'].includes(role);
   const autoPulledRef = useRef(false);
 
@@ -225,27 +226,6 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     finally { setCreating(false); }
   };
 
-  const handleRegenerateTests = async () => {
-    if (!sample || !activeFlask) return;
-    setCreating(true);
-    try {
-      const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sample.id, flask_id: activeFlask.id,
-        test_name: t.test_name, target_spec: t.target_spec,
-        result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
-      }));
-      const { error: testErr } = await supabase.from('batch_flask_qc_tests').insert(testRows);
-      if (testErr) throw testErr;
-      toast.success('Tests regenerated successfully');
-      fetchQcData();
-    } catch(err) {
-      console.error(err);
-      toast.error('Failed to regenerate tests: ' + err.message);
-    } finally {
-      setCreating(false);
-    }
-  };
-
   const handleUpdateTest = async (testId, field, value) => {
     const updatedTests = tests.map(t => t.id === testId ? { ...t, [field]: value } : t);
     setTests(updatedTests);
@@ -351,6 +331,40 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     }
   };
 
+  const handleRegenerateTests = async () => {
+    if (!sample) return;
+    setRegenerating(true);
+    try {
+      const testRows = DEFAULT_TESTS.map(t => ({
+        sample_id: sample.id, flask_id: activeFlask.id,
+        test_name: t.test_name, target_spec: t.target_spec,
+        result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
+      }));
+      const { error } = await supabase.from('batch_flask_qc_tests').insert(testRows);
+      if (error) throw error;
+
+      // Pre-fill pH from last fermentation reading
+      const { data: lastReading } = await supabase
+        .from('batch_fermentation_readings')
+        .select('ph')
+        .eq('flask_id', activeFlask.id)
+        .not('ph', 'is', null)
+        .order('logged_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastReading?.ph) {
+        await supabase.from('batch_flask_qc_tests')
+          .update({ result_value: String(lastReading.ph), notes: 'Auto-filled from last fermentation reading' })
+          .eq('sample_id', sample.id)
+          .ilike('test_name', '%ph%');
+      }
+
+      toast.success('Standard tests regenerated successfully.');
+      fetchQcData();
+    } catch (err) { toast.error(err.message); }
+    finally { setRegenerating(false); }
+  };
+
   const handlePullPlatingResults = async () => {
     if (!sample || !activeFlask) return;
     const completed = incubations.filter(r => r.end_time).sort((a, b) => new Date(b.end_time) - new Date(a.end_time));
@@ -358,10 +372,23 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     const rec = completed[0];
     setPullingResults(true);
     try {
+      // If tests don't exist yet, generate them first then re-fetch before mapping
+      let currentTests = tests;
+      if (currentTests.length === 0) {
+        const testRows = DEFAULT_TESTS.map(t => ({
+          sample_id: sample.id, flask_id: activeFlask.id,
+          test_name: t.test_name, target_spec: t.target_spec,
+          result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
+        }));
+        await supabase.from('batch_flask_qc_tests').insert(testRows);
+        const { data: fresh } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sample.id).order('created_at');
+        currentTests = fresh || [];
+      }
+
       const updates = [];
 
       if (rec.cfu_per_ml != null || rec.colony_count != null) {
-        const cfuTest = tests.find(t => t.test_name.toLowerCase().includes('cfu'));
+        const cfuTest = currentTests.find(t => t.test_name.toLowerCase().includes('cfu'));
         if (cfuTest) {
           const val = rec.cfu_per_ml != null ? String(rec.cfu_per_ml) : `${rec.colony_count} colonies`;
           updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: val }).eq('id', cfuTest.id));
@@ -369,7 +396,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }
 
       if (rec.microscopic_morphology || rec.colony_morphology) {
-        const gramTest = tests.find(t => t.test_name.toLowerCase().includes('gram'));
+        const gramTest = currentTests.find(t => t.test_name.toLowerCase().includes('gram'));
         if (gramTest) {
           const val = [rec.microscopic_morphology, rec.colony_morphology].filter(Boolean).join(' · ');
           updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: val }).eq('id', gramTest.id));
@@ -377,14 +404,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }
 
       if (rec.sterility_status && rec.sterility_status !== 'Pending') {
-        const micTest = tests.find(t => t.test_name.toLowerCase().includes('microbial') || t.test_name.toLowerCase().includes('yeast'));
+        const micTest = currentTests.find(t => t.test_name.toLowerCase().includes('microbial') || t.test_name.toLowerCase().includes('yeast'));
         if (micTest) {
           const pf = rec.sterility_status === 'Sterile' ? 'Pass' : 'Fail';
           updates.push(supabase.from('batch_flask_qc_tests').update({ result_value: rec.sterility_status, pass_fail: pf }).eq('id', micTest.id));
         }
       }
 
-      if (!updates.length) { toast.warn('No mappable results in the incubation record yet (colony count, morphology, or sterility).'); return; }
+      if (!updates.length) { toast.warn('No mappable results in the incubation record yet (colony count, morphology, or sterility).'); setPullingResults(false); fetchQcData(); return; }
       await Promise.all(updates);
 
       syncStageToLNB(supabase, batch.id, 'plating', {
@@ -672,13 +699,19 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             </div>
           )}
 
-          {tests.length === 0 && (
-            <div className="surface p-8 text-center text-gray-500">
-              <p className="text-4xl mx-auto mb-3 text-amber-500">⚠️</p>
-              <h3 className="text-sm font-bold text-gray-800 mb-1">Standard tests are missing</h3>
-              <p className="text-xs mb-4">The sample was created, but standard QC tests failed to generate. You need to regenerate them to proceed.</p>
-              <button onClick={handleRegenerateTests} disabled={creating} className="px-4 py-2 bg-navy hover:bg-navy-hover text-white rounded-lg text-xs font-bold shadow-sm">
-                {creating ? 'Generating...' : 'Regenerate Standard Tests'}
+          {sample && tests.length === 0 && (
+            <div className="surface p-5 flex flex-col items-center gap-3 border border-amber-200 bg-amber-50/40 text-center">
+              <span className="text-3xl">⚠️</span>
+              <div>
+                <p className="text-sm font-black text-amber-900">Standard tests are missing</p>
+                <p className="text-xs text-amber-700 mt-1">The sample was created, but standard QC tests failed to generate. You need to regenerate them to proceed.</p>
+              </div>
+              <button
+                onClick={handleRegenerateTests}
+                disabled={regenerating}
+                className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-black rounded-xl text-xs uppercase tracking-wider disabled:opacity-60"
+              >
+                {regenerating ? 'Regenerating...' : 'Regenerate Standard Tests'}
               </button>
             </div>
           )}
