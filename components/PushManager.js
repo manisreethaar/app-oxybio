@@ -3,6 +3,15 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BellRing, X, Loader2, Smartphone } from 'lucide-react';
 
+// Converts a base64url VAPID public key to a Uint8Array.
+// atob() requires standard base64 with padding — VAPID keys are base64url without padding.
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
 export default function PushManager() {
   const { user } = useAuth();
   const [showBanner, setShowBanner] = useState(false);
@@ -17,7 +26,7 @@ export default function PushManager() {
 
     const checkIOS = () => {
       const ua = navigator.userAgent;
-      return /iPad|iPhone|iPod/.test(ua) || 
+      return /iPad|iPhone|iPod/.test(ua) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     };
     setIsIOS(checkIOS());
@@ -25,16 +34,23 @@ export default function PushManager() {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.ready.then(reg => {
         if (!isMounted) return;
-        reg.pushManager.getSubscription().then(sub => {
+        reg.pushManager.getSubscription().then(async sub => {
           if (!isMounted) return;
           if (sub) {
             setSubscribed(true);
-            saveSubscription(sub);
+            // Only refresh the server-side subscription once per session to avoid
+            // hammering the API on every page load. If the server clears the
+            // subscription (410), the user will be prompted again on next login.
+            const sessionKey = `push_saved_${user.id}`;
+            if (!sessionStorage.getItem(sessionKey)) {
+              const ok = await saveSubscription(sub, reg);
+              if (ok) sessionStorage.setItem(sessionKey, '1');
+            }
           } else if (Notification.permission !== 'denied') {
             setShowBanner(true);
           }
         }).catch(err => {
-          console.error('Error checking subscription:', err);
+          console.error('Error checking push subscription:', err);
         });
       }).catch(err => {
         console.error('Service worker not ready:', err);
@@ -45,18 +61,30 @@ export default function PushManager() {
     return () => { isMounted = false; };
   }, [user]);
 
-  const saveSubscription = async (subscription) => {
+  // Returns true on success. If the server reports the subscription is invalid
+  // (4xx other than auth errors), also unsubscribes the browser so the user
+  // gets re-prompted rather than silently failing forever.
+  const saveSubscription = async (subscription, reg) => {
     try {
       const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription })
       });
-      if (!res.ok) {
-        console.error('Failed to save push subscription to server.');
+      if (res.ok) return true;
+      if (res.status === 401) return false; // not logged in yet, skip silently
+      // Any other server error means the subscription is rejected — clean up browser side
+      console.warn('[PushManager] Server rejected subscription, unsubscribing browser:', res.status);
+      if (reg) {
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) await existing.unsubscribe();
       }
+      setSubscribed(false);
+      setShowBanner(Notification.permission !== 'denied');
+      return false;
     } catch (err) {
       console.error('Failed to save subscription:', err);
+      return false;
     }
   };
 
@@ -75,19 +103,24 @@ export default function PushManager() {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const reg = await navigator.serviceWorker.ready;
-        const keyBytes = Uint8Array.from(atob(vapidKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        // urlBase64ToUint8Array handles the missing padding that atob() requires
+        const applicationServerKey = urlBase64ToUint8Array(vapidKey);
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: keyBytes
+          applicationServerKey,
         });
-        await saveSubscription(sub);
-        setSubscribed(true);
-        setShowBanner(false);
+        const ok = await saveSubscription(sub, reg);
+        if (ok) {
+          const sessionKey = `push_saved_${user?.id}`;
+          sessionStorage.setItem(sessionKey, '1');
+          setSubscribed(true);
+          setShowBanner(false);
+        }
       } else if (permission === 'denied') {
         setShowBanner(false);
       }
     } catch (err) {
-      console.error("Failed to subscribe", err);
+      console.error('Failed to subscribe to push notifications:', err);
       setError('Failed to enable notifications. Please try again.');
     } finally {
       setLoading(false);

@@ -3,7 +3,7 @@
 // Push notifications are still fully handled.
 // Static icons ARE cached for fast loading.
 
-const ICON_CACHE = 'oxyos-icons-v1';
+const ICON_CACHE = 'oxyos-icons-v2';
 const ICON_URLS = [
   '/icon-192x192.png',
   '/icon-512x512.png',
@@ -23,7 +23,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== ICON_CACHE)
+          .filter((key) => key !== ICON_CACHE) // deletes oxyos-icons-v1 and any older caches
           .map((key) => caches.delete(key))
       )
     ).then(() => self.clients.claim())
@@ -48,8 +48,16 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Everything else: straight to network, no caching at all
-  // This is the safest approach for Next.js with Vercel deployments
-  event.respondWith(fetch(event.request));
+  // This is the safest approach for Next.js with Vercel deployments.
+  // The .catch() returns a 503 instead of an unhandled rejection when offline.
+  event.respondWith(
+    fetch(event.request).catch(() =>
+      new Response(JSON.stringify({ error: 'Offline' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+  );
 });
 
 // Push Notification handler - preserved fully
