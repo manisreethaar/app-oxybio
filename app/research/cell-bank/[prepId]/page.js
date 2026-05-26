@@ -436,7 +436,7 @@ export default function CellBankDetailPage() {
   const [labMedia, setLabMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+  const isAdmin = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
 
   const fetchPrep = useCallback(async () => {
     setLoading(true);
