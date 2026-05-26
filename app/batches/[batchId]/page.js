@@ -42,6 +42,18 @@ const PANEL_MAP = {
   qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
 
+const STAGE_CHECKLIST_MAP = {
+  media_prep:       'Media Preparation',
+  sterilisation:    'Sterilisation',
+  inoculation:      'Inoculation',
+  fermentation:     'fermentation readings',
+  straining:        'Straining',
+  extract_addition: 'extract',
+  qc_hold:          'QC Hold',
+  released:         'Release or Reject',
+  rejected:         'Release or Reject',
+};
+
 export default function BatchDetailPage() {
   const { batchId }  = useParams();
   const { role, employeeProfile, canDo, loading: authLoading } = useAuth();
@@ -68,6 +80,14 @@ export default function BatchDetailPage() {
   const [editingStage,       setEditingStage]       = useState(null);
   const [lnbByFlask,         setLnbByFlask]         = useState({});
   const [flaskInoculations,  setFlaskInoculations]  = useState([]);
+
+  const [showQuickLog,    setShowQuickLog]    = useState(false);
+  const [quickLogFlaskId, setQuickLogFlaskId] = useState('');
+  const [quickPh,         setQuickPh]         = useState('');
+  const [quickTemp,       setQuickTemp]       = useState('');
+  const [quickOd,         setQuickOd]         = useState('');
+  const [quickVisual,     setQuickVisual]     = useState('Clear');
+  const [quickLogSaving,  setQuickLogSaving]  = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -137,28 +157,40 @@ export default function BatchDetailPage() {
     return overtime;
   }, [flaskInoculations, flasks]);
 
+  const tickTaskChecklist = useCallback(async (completedStage) => {
+    const keyword = STAGE_CHECKLIST_MAP[completedStage];
+    if (!keyword) return;
+    const { data: task } = await supabase.from('tasks').select('id, checklist').eq('batch_id', batchId).maybeSingle();
+    if (!task?.checklist?.length) return;
+    const updated = task.checklist.map(item =>
+      item.text?.toLowerCase().includes(keyword.toLowerCase()) ? { ...item, done: true } : item
+    );
+    await supabase.from('tasks').update({ checklist: updated }).eq('id', task.id).catch(() => {});
+  }, [supabase, batchId]);
+
   const handleFlaskTransition = useCallback((flaskId, toStage) => {
     if (toStage === 'released' && lnbCount === 0) {
       toast.warn('Cannot release — Lab Notebook is empty.');
       return;
     }
     const flask = flasks.find(f => f.id === flaskId);
-    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage });
+    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage, fromStage: flask?.current_stage });
   }, [flasks, lnbCount, toast]);
 
   const confirmFlaskAdvance = useCallback(async () => {
     if (!pendingFlaskAdvance) return;
-    const { flaskId, toStage } = pendingFlaskAdvance;
+    const { flaskId, toStage, fromStage } = pendingFlaskAdvance;
     setPendingFlaskAdvance(null);
     setActionLoading(true);
     try {
       const { error } = await supabase.from('batch_flasks').update({ current_stage: toStage }).eq('id', flaskId);
       if (error) throw error;
       toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
+      tickTaskChecklist(fromStage).catch(() => {});
       fetchAll();
     } catch (err) { toast.error(err.message); }
     finally { setActionLoading(false); }
-  }, [pendingFlaskAdvance, supabase, toast, fetchAll]);
+  }, [pendingFlaskAdvance, supabase, toast, fetchAll, tickTaskChecklist]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
@@ -202,6 +234,7 @@ export default function BatchDetailPage() {
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Stage transition failed.'); return; }
       toast.success(`Advanced to ${toStage.replace(/_/g, ' ')}.`);
+      tickTaskChecklist(batch.current_stage).catch(() => {});
       // Notify CEO/CTO when batch reaches QC Hold
       if (toStage === 'qc_hold') {
         const ceoCtoCandidates = employees.filter(e => ['ceo','cto','admin'].includes(e.role));
@@ -280,6 +313,41 @@ export default function BatchDetailPage() {
   const activeStage = isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage;
   const displayStage = viewingStage || activeStage;
   const CurrentPanel = PANEL_MAP[displayStage] || null;
+
+  const fermentingFlasks = flasks.filter(f => f.current_stage === 'fermentation' && f.status === 'active');
+
+  const handleQuickLogSubmit = async () => {
+    if (!quickPh) return;
+    setQuickLogSaving(true);
+    try {
+      const elapsed = null;
+      const { error } = await supabase.from('batch_fermentation_readings').insert({
+        batch_id: batch.id,
+        flask_id: quickLogFlaskId,
+        flask_label: flasks.find(f => f.id === quickLogFlaskId)?.flask_label,
+        ph: parseFloat(quickPh),
+        incubator_temp_c: quickTemp ? parseFloat(quickTemp) : null,
+        optical_density: quickOd ? parseFloat(quickOd) : null,
+        visual_appearance: quickVisual,
+        logged_at: new Date().toISOString(),
+        is_ph_alarm: parseFloat(quickPh) < 3.8 || parseFloat(quickPh) > 5.5,
+        logged_by: employeeProfile?.id,
+      });
+      if (error) throw error;
+      const label = flasks.find(f => f.id === quickLogFlaskId)?.flask_label || quickLogFlaskId;
+      toast.success(`Reading logged for ${label}`);
+      setShowQuickLog(false);
+      setQuickPh('');
+      setQuickTemp('');
+      setQuickOd('');
+      setQuickVisual('Clear');
+      fetchAll();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setQuickLogSaving(false);
+    }
+  };
 
   return (
     <div className="page-container">
@@ -659,17 +727,125 @@ export default function BatchDetailPage() {
             <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Abort & Reject Trial</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to forcibly reject <strong>{selectedFlask.flask_label}</strong> at its current stage? This cannot be undone.</p>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setPendingFlaskReject(false)}
                 className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
               >
                 Nevermind
               </button>
-              <button 
+              <button
                 onClick={() => { setPendingFlaskReject(false); handleFlaskTransition(selectedFlask.id, 'rejected'); }}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm"
               >
                 Yes, Reject Trial
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Log Floating Button */}
+      {fermentingFlasks.length > 0 && (
+        <button
+          onClick={() => { setShowQuickLog(true); setQuickLogFlaskId(fermentingFlasks[0]?.id || ''); }}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-navy text-white rounded-2xl shadow-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all"
+        >
+          ⚡ Log Reading
+        </button>
+      )}
+
+      {/* Quick Log Modal */}
+      {showQuickLog && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-base font-black text-gray-900 mb-4">Quick Fermentation Reading</h3>
+
+            {/* Flask selector */}
+            <div className="mb-3">
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Flask</label>
+              <select
+                value={quickLogFlaskId}
+                onChange={e => setQuickLogFlaskId(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-navy/30"
+              >
+                {fermentingFlasks.map(f => (
+                  <option key={f.id} value={f.id}>{f.flask_label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* pH — required */}
+            <div className="mb-3">
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">pH <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="14"
+                value={quickPh}
+                onChange={e => setQuickPh(e.target.value)}
+                placeholder="e.g. 4.20"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+              />
+              {quickPh && (parseFloat(quickPh) < 3.8 || parseFloat(quickPh) > 5.5) && (
+                <p className="text-[10px] text-red-600 font-bold mt-0.5">⚠ pH out of range — alarm will be flagged</p>
+              )}
+            </div>
+
+            {/* Incubator Temp */}
+            <div className="mb-3">
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Incubator Temp °C <span className="text-gray-300">(optional)</span></label>
+              <input
+                type="number"
+                step="0.1"
+                value={quickTemp}
+                onChange={e => setQuickTemp(e.target.value)}
+                placeholder="e.g. 30.0"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+              />
+            </div>
+
+            {/* OD 600nm */}
+            <div className="mb-3">
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">OD 600nm <span className="text-gray-300">(optional)</span></label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={quickOd}
+                onChange={e => setQuickOd(e.target.value)}
+                placeholder="e.g. 1.25"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+              />
+            </div>
+
+            {/* Visual */}
+            <div className="mb-5">
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Visual Appearance</label>
+              <select
+                value={quickVisual}
+                onChange={e => setQuickVisual(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-navy/30"
+              >
+                {['Clear', 'Turbid', 'Foamy', 'Settling', 'Other'].map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowQuickLog(false); setQuickPh(''); setQuickTemp(''); setQuickOd(''); setQuickVisual('Clear'); }}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleQuickLogSubmit}
+                disabled={!quickPh || quickLogSaving}
+                className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {quickLogSaving ? <Loader className="w-4 h-4 animate-spin"/> : 'Log Reading'}
               </button>
             </div>
           </div>

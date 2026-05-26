@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, FlaskConical, Dna, Layers, ChevronRight, Search, Trash2, ExternalLink, ChevronDown, Beaker } from 'lucide-react';
+import { Plus, FlaskConical, Dna, Layers, ChevronRight, Search, Trash2, ExternalLink, ChevronDown, Beaker, AlertTriangle } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
 const STATUS_COLOR = {
@@ -135,6 +135,7 @@ export default function CellBankPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [strainBatches, setStrainBatches] = useState({});
   const [expandedStrainId, setExpandedStrainId] = useState(null);
+  const [lowVialDismissed, setLowVialDismissed] = useState(false);
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
 
   const fetchStrainBatches = async (strainId) => {
@@ -194,6 +195,13 @@ export default function CellBankPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Compute low-vial strains: any active strain with total registered vials < 3
+  const lowVialStrains = strains.filter(s => {
+    const strainPreps = preps.filter(p => p.strain_id === s.id);
+    const totalVials = strainPreps.reduce((sum, p) => sum + (p.vial_count || 0), 0);
+    return totalVials > 0 && totalVials < 3;
+  });
+
   const filteredPreps = preps.filter(p => {
     const matchType = typeFilter === 'all' || p.type === typeFilter;
     const matchSearch = !search || p.prep_code?.toLowerCase().includes(search.toLowerCase()) || p.cell_bank_strains?.name?.toLowerCase().includes(search.toLowerCase());
@@ -233,6 +241,22 @@ export default function CellBankPage() {
           )}
         </div>
       </div>
+
+      {/* Low Vial Stock Warning */}
+      {lowVialStrains.length > 0 && !lowVialDismissed && (
+        <div className="surface p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-800">Low Vial Stock Warning</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              {lowVialStrains.map(s => s.name).join(', ')} — fewer than 3 vials remaining. Consider preparing a new Working Cell Bank.
+            </p>
+          </div>
+          <button onClick={() => setLowVialDismissed(true)} className="text-amber-400 hover:text-amber-700 transition-colors shrink-0" aria-label="Dismiss">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
