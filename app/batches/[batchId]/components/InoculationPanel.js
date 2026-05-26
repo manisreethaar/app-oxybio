@@ -47,12 +47,10 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
       .finally(() => setVialsLoading(false));
   }, [sourceType]);
 
-  useEffect(() => {
+  const fetchRecord = useCallback(() => {
     if (!activeFlask?.id) return;
-    let isCurrent = true;
     supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single()
       .then(({ data: d }) => {
-        if (!isCurrent) return;
         if (d) {
           setSourceType(d.inoculum_source_type || 'other');
           setSource(d.inoculum_source||'');
@@ -70,8 +68,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setTZero('');
         }
       });
-    return () => { isCurrent = false; };
   }, [activeFlask?.id, supabase]);
+
+  useEffect(() => { fetchRecord(); }, [fetchRecord]);
 
   const selectedVial = availVials.find(v => v.id === vialId);
 
@@ -122,6 +121,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
       if (advance && onAdvanceFlaskStage) {
         await onAdvanceFlaskStage('fermentation');
       } else {
+        fetchRecord();
         onDataSaved();
       }
     } catch (err) { toast.error(err.message); }

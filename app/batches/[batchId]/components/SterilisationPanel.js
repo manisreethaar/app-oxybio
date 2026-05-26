@@ -96,6 +96,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       if (advance) {
         await onAdvanceStage('inoculation');
       } else {
+        fetch();
         onDataSaved();
       }
     } catch (err) { toast.error(err.message); }
