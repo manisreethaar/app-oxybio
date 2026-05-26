@@ -4,8 +4,7 @@ import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { syncStageToLNB } from '@/lib/lnbSync';
 import { validateEndpointPayload, validateReadingPayload } from '@/lib/fermentation/validation';
-
-const EDIT_ROLES = ['admin', 'ceo', 'cto'];
+import { can, isMasterAdmin } from '@/lib/permissions';
 
 async function getRequester(supabase) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -310,7 +309,7 @@ export async function PATCH(request, { params }) {
     const requester = await getRequester(supabase);
     if (requester.error) return requester.error;
 
-    if (!EDIT_ROLES.includes(requester.employee.role?.toLowerCase())) {
+    if (!can(requester.employee.role, 'batches', 'release') && !isMasterAdmin(requester.user.email)) {
       return NextResponse.json({ error: 'Only admin, CEO, or CTO can edit fermentation readings.' }, { status: 403 });
     }
 
@@ -357,7 +356,7 @@ export async function DELETE(request, { params }) {
     const requester = await getRequester(supabase);
     if (requester.error) return requester.error;
 
-    if (!EDIT_ROLES.includes(requester.employee.role?.toLowerCase())) {
+    if (!can(requester.employee.role, 'batches', 'release') && !isMasterAdmin(requester.user.email)) {
       return NextResponse.json({ error: 'Only admin, CEO, or CTO can delete fermentation readings.' }, { status: 403 });
     }
 

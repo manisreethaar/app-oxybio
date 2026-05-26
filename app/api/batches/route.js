@@ -3,6 +3,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { can, isMasterAdmin } from '@/lib/permissions';
 
 // ─────────────────────────────────────────────────────────────
 // Batch Creation Schema — v3
@@ -111,9 +112,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Employee profile not found' }, { status: 403 });
     }
 
-    // Only research_fellow+ can create batches (CEO/CTO/admin/research_fellow/scientist... but spec says research_fellow+)
-    const BATCH_CREATE_ROLES = ['ceo', 'cto', 'admin', 'research_fellow'];
-    if (!BATCH_CREATE_ROLES.includes(creator.role)) {
+    if (!can(creator.role, 'batches', 'create') && !isMasterAdmin(user.email)) {
       return NextResponse.json({ error: 'Insufficient permissions to create a batch.' }, { status: 403 });
     }
 

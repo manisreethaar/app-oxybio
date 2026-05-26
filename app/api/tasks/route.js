@@ -18,10 +18,26 @@ const createTaskSchema = z.object({
   is_personal_reminder: z.boolean().default(false)
 });
 
+const ACTION_PAYLOAD_SCHEMAS = {
+  start_timer:      z.object({}),
+  acknowledge_task: z.object({}),
+  approve:          z.object({}),
+  pause_timer:      z.object({ logged_minutes: z.number().min(0) }),
+  update_checklist: z.object({ checklist: z.array(z.object({ text: z.string(), done: z.boolean() })) }),
+  update_progress:  z.object({ percentage: z.number().min(0).max(100), note: z.string().optional() }),
+  submit_review:    z.object({
+    completion_note:      z.string().optional(),
+    proof_url:            z.string().optional(),
+    logged_minutes:       z.number().min(0),
+    is_personal_reminder: z.boolean().optional(),
+  }),
+  reject: z.object({ reject_note: z.string().min(5, 'Rejection note must be at least 5 characters') }),
+};
+
 const patchSchema = z.object({
-  action: z.enum(['start_timer', 'pause_timer', 'update_checklist', 'submit_review', 'approve', 'reject', 'acknowledge_task', 'update_progress']),
+  action:  z.enum(['start_timer', 'pause_timer', 'update_checklist', 'submit_review', 'approve', 'reject', 'acknowledge_task', 'update_progress']),
   task_id: z.string().uuid(),
-  payload: z.any()
+  payload: z.record(z.unknown()).optional().default({}),
 });
 
 export async function POST(request) {
@@ -107,10 +123,17 @@ export async function PATCH(request) {
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
     const { action, task_id, payload } = parsed.data;
+
+    const payloadParsed = ACTION_PAYLOAD_SCHEMAS[action].safeParse(payload);
+    if (!payloadParsed.success) {
+      return NextResponse.json({ error: 'Invalid payload', details: payloadParsed.error.format() }, { status: 400 });
+    }
+    const safePayload = payloadParsed.data;
+
     let updateData = {};
 
     const { data: task } = await supabase.from('tasks')
-      .select('title, assigned_by, assigned_to, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+      .select('title, assigned_by, assigned_to, progress_logs, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
       .eq('id', task_id).single();
 
     switch (action) {
@@ -144,17 +167,17 @@ export async function PATCH(request) {
         }
         break;
       case 'pause_timer':
-        updateData = { time_started_at: null, logged_minutes: payload.logged_minutes };
+        updateData = { time_started_at: null, logged_minutes: safePayload.logged_minutes };
         break;
       case 'update_progress':
         updateData = {
-          progress_percentage: payload.percentage,
+          progress_percentage: safePayload.percentage,
           progress_logs: [
             ...(task.progress_logs || []),
             {
               timestamp: new Date().toISOString(),
-              percentage: payload.percentage,
-              note: payload.note || 'Progress update'
+              percentage: safePayload.percentage,
+              note: safePayload.note || 'Progress update',
             }
           ]
         };
@@ -162,26 +185,26 @@ export async function PATCH(request) {
           await sendServerNotification(
             task.assigned_by,
             'Progress Update',
-            `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${payload.percentage}%: ${payload.note || ''}`,
+            `${task.assigned_user?.full_name || 'An employee'} updated "${task.title}" to ${safePayload.percentage}%: ${safePayload.note || ''}`,
             '/tasks'
           );
         }
         break;
       case 'update_checklist':
-        updateData = { checklist: payload.checklist };
+        updateData = { checklist: safePayload.checklist };
         break;
       case 'submit_review':
         updateData = {
           status: 'done',
-          approval_status: payload.is_personal_reminder ? 'approved' : 'pending_review',
-          completion_note: payload.completion_note,
+          approval_status: safePayload.is_personal_reminder ? 'approved' : 'pending_review',
+          completion_note: safePayload.completion_note,
           completed_at: new Date().toISOString(),
-          proof_url: payload.proof_url || null,
-          logged_minutes: payload.logged_minutes,
+          proof_url: safePayload.proof_url || null,
+          logged_minutes: safePayload.logged_minutes,
           time_started_at: null,
           progress_percentage: 100
         };
-        if (!payload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
+        if (!safePayload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
           await sendServerNotification(
             task.assigned_by,
             'Task Ready for Review',
@@ -202,19 +225,16 @@ export async function PATCH(request) {
         }
         break;
       case 'reject':
-        if (!payload.reject_note || payload.reject_note.trim().length < 5) {
-            return NextResponse.json({ error: 'A mandatory rejection remark (min 5 chars) is required.' }, { status: 400 });
-        }
         updateData = {
             approval_status: 'rejected',
             status: 'in-progress',
-            completion_note: payload.reject_note
+            completion_note: safePayload.reject_note,
         };
         if (task?.assigned_to && task.assigned_to !== task.assigned_by) {
           await sendServerNotification(
             task.assigned_to,
             '🔄 Task Needs Revision',
-            `Your task "${task.title}" was sent back: ${payload.reject_note}`,
+            `Your task "${task.title}" was sent back: ${safePayload.reject_note}`,
             '/tasks'
           );
         }
