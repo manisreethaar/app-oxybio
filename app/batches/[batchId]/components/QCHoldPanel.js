@@ -195,10 +195,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         test_name: t.test_name, target_spec: t.target_spec,
         result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
       }));
-      const insertRes = await supabase.from('batch_flask_qc_tests').insert(testRows);
-      if (insertRes.error) {
-        console.error("Test insert error:", insertRes.error);
-        throw new Error("Failed to insert tests: " + insertRes.error.message);
+      const { error: testErr } = await supabase.from('batch_flask_qc_tests').insert(testRows);
+      if (testErr) {
+        console.error('Test creation error:', testErr);
+        toast.error('Sample created, but failed to create standard tests: ' + testErr.message);
+      } else {
+        toast.success('Sample & tests created successfully');
       }
 
       // Pre-fill pH test from the last fermentation reading for this flask
@@ -221,6 +223,27 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       fetchQcData();
     } catch (err) { toast.error(err.message); }
     finally { setCreating(false); }
+  };
+
+  const handleRegenerateTests = async () => {
+    if (!sample || !activeFlask) return;
+    setCreating(true);
+    try {
+      const testRows = DEFAULT_TESTS.map(t => ({
+        sample_id: sample.id, flask_id: activeFlask.id, batch_id: batch?.id,
+        test_name: t.test_name, target_spec: t.target_spec,
+        result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
+      }));
+      const { error: testErr } = await supabase.from('batch_flask_qc_tests').insert(testRows);
+      if (testErr) throw testErr;
+      toast.success('Tests regenerated successfully');
+      fetchQcData();
+    } catch(err) {
+      console.error(err);
+      toast.error('Failed to regenerate tests: ' + err.message);
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleUpdateTest = async (testId, field, value) => {
@@ -649,19 +672,31 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             </div>
           )}
 
-          <div className="surface overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-100">
-                <thead><tr className="bg-gray-50/50">
-                  <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-48">Test</th>
-                  <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase">Target Spec</th>
-                  <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-28">Result</th>
-                  <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-16">Unit</th>
-                  <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase">Date</th>
-                  <th className="px-4 py-3 text-center text-[9px] font-bold text-gray-400 uppercase w-32">Pass/Fail</th>
-                </tr></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {tests.map(t => (
+          {tests.length === 0 && (
+            <div className="surface p-8 text-center text-gray-500">
+              <p className="text-4xl mx-auto mb-3 text-amber-500">⚠️</p>
+              <h3 className="text-sm font-bold text-gray-800 mb-1">Standard tests are missing</h3>
+              <p className="text-xs mb-4">The sample was created, but standard QC tests failed to generate. You need to regenerate them to proceed.</p>
+              <button onClick={handleRegenerateTests} disabled={creating} className="px-4 py-2 bg-navy hover:bg-navy-hover text-white rounded-lg text-xs font-bold shadow-sm">
+                {creating ? 'Generating...' : 'Regenerate Standard Tests'}
+              </button>
+            </div>
+          )}
+
+          {tests.length > 0 && (
+            <div className="surface overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100">
+                  <thead><tr className="bg-gray-50/50">
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-48">Test</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase">Target Spec</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-28">Result</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-16">Unit</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase">Date</th>
+                    <th className="px-4 py-3 text-center text-[9px] font-bold text-gray-400 uppercase w-32">Pass/Fail</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {tests.map(t => (
                     <tr key={t.id} className={t.pass_fail==='Fail'?'bg-red-50':t.pass_fail==='Pass'?'bg-emerald-50/50':'hover:bg-gray-50/30'}>
                       <td className="px-4 py-3 text-xs font-bold text-gray-800">{t.test_name}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{t.target_spec}</td>
@@ -690,6 +725,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               </table>
             </div>
           </div>
+          )}
 
           {!allDone && (
             <div className="surface p-4 bg-gray-50 flex items-center gap-2 text-xs text-gray-500">
