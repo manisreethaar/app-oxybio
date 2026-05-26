@@ -30,7 +30,7 @@ function clearCache() {
 
 // ─────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children, initialSession, initialProfile }) => {
-  const supabase      = createClient();
+  const supabase      = useMemo(() => createClient(), []);
   const router        = useRouter();
   const fetchingRef   = useRef(false);
   const initializedRef= useRef(false);

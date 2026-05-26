@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -35,7 +35,8 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch('/api/research/cell-bank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'strain', ...form }) });
+      const n = (v) => (v === '' ? null : v);
+      const res = await fetch('/api/research/cell-bank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'strain', ...form, formulation_id: n(form.formulation_id), accession_number: n(form.accession_number), isolation_source: n(form.isolation_source), received_date: n(form.received_date), taxonomy: n(form.taxonomy), notes: n(form.notes) }) });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       toast.success('Strain registered.');
@@ -112,7 +113,8 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch('/api/research/cell-bank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      const n = (v) => (v === '' ? null : v);
+      const res = await fetch('/api/research/cell-bank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, formulation_id: n(form.formulation_id), parent_id: n(form.parent_id), passage_number: n(form.passage_number), notes: n(form.notes) }) });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       toast.success('Preparation started.');
@@ -160,7 +162,7 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
 export default function CellBankPage() {
   const { role } = useAuth();
   const toast = useToast();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [requestedFormulationId, setRequestedFormulationId] = useState('');
   const [tab, setTab] = useState('preparations');
   const [strains, setStrains] = useState([]);

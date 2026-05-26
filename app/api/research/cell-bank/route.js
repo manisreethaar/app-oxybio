@@ -104,6 +104,18 @@ export async function POST(request) {
 
     const body = await request.json();
 
+    // Normalize empty strings → null for optional UUID / date fields
+    // (HTML selects send "" when nothing is chosen; Zod's .uuid() rejects empty strings)
+    const emptyToNull = (v) => (v === '' || v === undefined) ? null : v;
+    body.formulation_id  = emptyToNull(body.formulation_id);
+    body.parent_id       = emptyToNull(body.parent_id);
+    body.received_date   = emptyToNull(body.received_date);
+    body.accession_number  = emptyToNull(body.accession_number);
+    body.isolation_source  = emptyToNull(body.isolation_source);
+    body.taxonomy          = emptyToNull(body.taxonomy);
+    body.notes             = emptyToNull(body.notes);
+    body.strain_short_code = emptyToNull(body.strain_short_code);
+
     if (body.type === 'strain') {
       const parsed = strainSchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ success: false, error: parsed.error.issues.map(i => i.message).join(', ') }, { status: 400 });
