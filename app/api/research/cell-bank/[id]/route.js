@@ -57,6 +57,31 @@ export async function PATCH(request, { params }) {
 
     const body = await request.json();
 
+    // ── Edit strain ────────────────────────────────────────────────────────
+    if (body.target === 'strain') {
+      const n = (v) => (v === '' ? null : v);
+      const updates = {
+        name:              body.name,
+        source_type:       body.source_type,
+        accession_number:  n(body.accession_number),
+        strain_short_code: n(body.strain_short_code),
+        isolation_source:  n(body.isolation_source),
+        received_date:     n(body.received_date),
+        taxonomy:          n(body.taxonomy),
+        notes:             n(body.notes),
+        formulation_id:    n(body.formulation_id),
+        updated_at:        new Date().toISOString(),
+      };
+      const { data, error } = await supabase
+        .from('cell_bank_strains')
+        .update(updates)
+        .eq('id', params.id)
+        .select('*, linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id,code,name,version,category)')
+        .single();
+      if (error) throw error;
+      return NextResponse.json({ success: true, data });
+    }
+
     // ── Register vials action ──────────────────────────────────────────────
     if (body.action === 'register_vials') {
       const { count, storage_temp, freezer_id, rack, box } = body;

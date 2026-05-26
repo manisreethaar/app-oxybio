@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen } from 'lucide-react';
+import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
 const STATUS_COLOR = {
@@ -81,6 +81,81 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
       <div className="flex gap-3">
         <button type="button" onClick={onCancel} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
         <button type="submit" disabled={saving || !form.strain_short_code} className="flex-1 py-2 bg-navy text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Register Strain'}</button>
+      </div>
+    </form>
+  );
+}
+
+function EditStrainForm({ strain, formulations, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    name:              strain.name || '',
+    source_type:       strain.source_type || 'MTCC',
+    formulation_id:    strain.formulation_id || '',
+    accession_number:  strain.accession_number || '',
+    strain_short_code: strain.strain_short_code || '',
+    isolation_source:  strain.isolation_source || '',
+    received_date:     strain.received_date ? strain.received_date.slice(0, 10) : '',
+    taxonomy:          strain.taxonomy || '',
+    notes:             strain.notes || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/research/cell-bank/${strain.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: 'strain', ...form }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      toast.success('Strain updated.');
+      onSave(json.data);
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="surface p-5 space-y-4 border-2 border-indigo-200">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-gray-900 flex items-center gap-2"><Pencil className="w-4 h-4 text-indigo-500"/>Edit Strain</p>
+        <button type="button" onClick={onCancel} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4"/></button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2"><label className="field-label">Strain Name / Organism <span className="text-red-500">*</span></label>
+          <input required value={form.name} onChange={e => set('name', e.target.value)} className="field-input" placeholder="e.g. Lactobacillus brevis MTCC 1408"/></div>
+        <div className="sm:col-span-2"><label className="field-label">Linked Recipe / Formulation</label>
+          <select value={form.formulation_id} onChange={e => set('formulation_id', e.target.value)} className="field-input bg-white">
+            <option value="">No linked recipe</option>
+            {formulations.map(f => <option key={f.id} value={f.id}>{recipeLabel(f)} ({f.category})</option>)}
+          </select></div>
+        <div><label className="field-label">Source</label>
+          <select value={form.source_type} onChange={e => set('source_type', e.target.value)} className="field-input bg-white">
+            {['MTCC','NCIM','Isolated','Other'].map(s => <option key={s}>{s}</option>)}
+          </select></div>
+        <div><label className="field-label">Accession / Lot #</label>
+          <input value={form.accession_number} onChange={e => set('accession_number', e.target.value)} className="field-input" placeholder="MTCC-1408"/></div>
+        <div>
+          <label className="field-label">Strain Short Code <span className="text-red-500">*</span></label>
+          <input required maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
+          <p className="text-[9px] text-gray-400 mt-0.5">2–4 letters used in vial codes</p>
+        </div>
+        <div><label className="field-label">Isolation Source</label>
+          <input value={form.isolation_source} onChange={e => set('isolation_source', e.target.value)} className="field-input" placeholder="Fermented rice"/></div>
+        <div><label className="field-label">Date Received</label>
+          <input type="date" value={form.received_date} onChange={e => set('received_date', e.target.value)} className="field-input"/></div>
+        <div className="sm:col-span-2"><label className="field-label">Taxonomy</label>
+          <input value={form.taxonomy} onChange={e => set('taxonomy', e.target.value)} className="field-input" placeholder="Firmicutes > Lactobacillales > Lactobacillaceae"/></div>
+        <div className="sm:col-span-2"><label className="field-label">Notes</label>
+          <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold outline-none resize-none"/></div>
+      </div>
+      <div className="flex gap-3">
+        <button type="button" onClick={onCancel} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button type="submit" disabled={saving || !form.strain_short_code} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
       </div>
     </form>
   );
@@ -176,6 +251,7 @@ export default function CellBankPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [strainBatches, setStrainBatches] = useState({});
   const [expandedStrainId, setExpandedStrainId] = useState(null);
+  const [editingStrainId, setEditingStrainId] = useState(null);
   const [lowVialDismissed, setLowVialDismissed] = useState(false);
   const isAdmin    = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
   const canDelete  = ['admin', 'ceo', 'cto'].includes(role);
@@ -458,9 +534,31 @@ export default function CellBankPage() {
                         className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
                         <Plus className="w-3 h-3"/> New Prep
                       </button>
+                      {isAdmin && (
+                        <button onClick={() => setEditingStrainId(editingStrainId === s.id ? null : s.id)}
+                          className="text-[10px] text-indigo-500 hover:text-indigo-700 font-bold flex items-center gap-1 ml-auto">
+                          <Pencil className="w-3 h-3"/> Edit
+                        </button>
+                      )}
                       {canDelete && <button onClick={() => handleDeleteStrain(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
                     </div>
                   </div>
+
+                  {/* Inline edit form */}
+                  {editingStrainId === s.id && (
+                    <div className="px-4 pb-4 border-t border-indigo-100">
+                      <EditStrainForm
+                        strain={s}
+                        formulations={formulations}
+                        onSave={(updated) => {
+                          setStrains(prev => prev.map(x => x.id === updated.id ? { ...x, ...updated } : x));
+                          setEditingStrainId(null);
+                        }}
+                        onCancel={() => setEditingStrainId(null)}
+                      />
+                    </div>
+                  )}
+
                   {/* Batches toggle button */}
                   <div className="px-4 pb-3 border-t border-gray-100 pt-2">
                     <button
