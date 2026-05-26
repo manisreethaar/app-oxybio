@@ -43,7 +43,16 @@ export async function GET(request, { params }) {
       .eq('cell_bank_preparation_id', params.id)
       .order('created_at', { ascending: true });
 
-    return NextResponse.json({ success: true, data: { ...data, incubations: incubations || [] } });
+    const { data: lnbEntry } = await supabase
+      .from('lab_notebook_entries')
+      .select('id')
+      .eq('cell_bank_preparation_id', params.id)
+      .neq('status', 'Countersigned')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return NextResponse.json({ success: true, data: { ...data, incubations: incubations || [], lnb_entry_id: lnbEntry?.id || null } });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -122,6 +131,22 @@ export async function PATCH(request, { params }) {
 
       // Update prep vial_count
       await supabase.from('cell_bank_preparations').update({ vial_count: count }).eq('id', params.id);
+      await syncCellBankStepToLNB(
+        supabase,
+        params.id,
+        prep.prep_code,
+        'vial_storage',
+        {
+          count,
+          storage_temp: storage_temp || '-20°C',
+          freezer_id: freezer_id || null,
+          rack: rack || null,
+          box: box || null,
+          vial_codes: vials.map(v => v.vial_code),
+          completed: true,
+        },
+        access.emp?.id
+      );
 
       return NextResponse.json({ success: true, vials });
     }
@@ -163,6 +188,21 @@ export async function PATCH(request, { params }) {
     if (error) throw error;
 
     // Sync step to LNB — fire and forget
+    if (status === 'Completed') {
+      await syncCellBankStepToLNB(
+        supabase,
+        params.id,
+        data.prep_code,
+        'completion',
+        {
+          status: data.status,
+          vial_count: data.vial_count,
+          completed_at: data.completed_at,
+        },
+        access.emp?.id
+      );
+    }
+
     if (step_key && step_data_patch) {
       syncCellBankStepToLNB(
         supabase,

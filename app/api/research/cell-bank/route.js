@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { syncCellBankStepToLNB } from '@/lib/cellBankLNBSync';
 
 async function generatePrepCode(supabase, type) {
   const year = new Date().getFullYear();
@@ -147,6 +148,14 @@ export async function POST(request) {
       created_by: access.emp?.id,
     }).select().single();
     if (error) throw error;
+    await syncCellBankStepToLNB(supabase, data.id, data.prep_code, 'preparation', {
+      type: data.type,
+      status: data.status,
+      strain_id: data.strain_id,
+      parent_id: data.parent_id,
+      formulation_id: data.formulation_id,
+      started_at: data.created_at,
+    }, access.emp?.id);
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

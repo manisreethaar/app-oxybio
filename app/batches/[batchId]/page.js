@@ -68,6 +68,7 @@ export default function BatchDetailPage() {
   const [availableStock, setAvailableStock] = useState([]);
   const [flaskEndpoints, setFlaskEndpoints] = useState([]);
   const [lnbCount,       setLnbCount]       = useState(0);
+  const [lnbEntryId,     setLnbEntryId]     = useState(null);
   const [actionLoading,  setActionLoading]  = useState(false);
   const [bmrLoading,     setBmrLoading]     = useState(false);
   const [bmrUrl,         setBmrUrl]         = useState(null);
@@ -107,6 +108,7 @@ export default function BatchDetailPage() {
     if (stockRes.data)  setAvailableStock(stockRes.data);
     const lnbEntries = lnbRes.data || [];
     setLnbCount(lnbEntries.length);
+    setLnbEntryId(lnbEntries[0]?.id || null);
     const byFlask = {};
     lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
     setLnbByFlask(byFlask);
@@ -540,7 +542,7 @@ export default function BatchDetailPage() {
           <div className="surface p-4">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Quick Links</p>
             <div className="space-y-2">
-              <Link href="/lab-notebook" className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+              <Link href={lnbEntryId ? `/lab-notebook/${lnbEntryId}` : '/lab-notebook'} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-2"><BookOpen className="w-3.5 h-3.5 text-gray-400"/><span className="text-xs font-semibold text-gray-700">Lab Notebook</span></div>
                 <span className={`text-xs font-black px-1.5 py-0.5 rounded ${lnbCount>0?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>{lnbCount}</span>
               </Link>

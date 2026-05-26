@@ -165,6 +165,11 @@ export default function LnbEntryPage() {
                   <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Batch: {entry.batches.batch_id}
                </div>
              )}
+             {entry.cell_bank_preparations && (
+               <div className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                  <FlaskConical className="w-3.5 h-3.5 mr-1.5" /> Cell Bank: {entry.cell_bank_preparations.prep_code}
+               </div>
+             )}
              <div className="flex items-center text-xs font-bold text-gray-500">
                 <Clock className="w-3.5 h-3.5 mr-1.5" /> {new Date(entry.created_at).toLocaleString()}
              </div>
@@ -326,12 +331,21 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
 }
 
 const STAGE_META = [
+  { key: 'preparation',    label: 'Cell Bank Preparation', color: 'emerald', perFlask: false },
+  { key: 'strain_source',  label: 'Strain Source',         color: 'emerald', perFlask: false },
+  { key: 'broth_culture_1', label: 'Broth Culture #1',     color: 'teal',    perFlask: false },
+  { key: 'colony_pick',    label: 'Colony Pick',           color: 'indigo',  perFlask: false },
+  { key: 'broth_culture_2', label: 'Broth Culture #2',     color: 'teal',    perFlask: false },
+  { key: 'glycerol_stock', label: 'Glycerol Stock',        color: 'blue',    perFlask: false },
+  { key: 'vial_storage',   label: 'Vial Registration',     color: 'blue',    perFlask: false },
+  { key: 'completion',     label: 'Preparation Completion', color: 'emerald', perFlask: false },
   { key: 'media_prep',    label: 'Media Preparation',      color: 'amber',   perFlask: false },
   { key: 'sterilisation', label: 'Sterilisation',           color: 'blue',    perFlask: false },
   { key: 'inoculation',   label: 'Inoculation',             color: 'indigo',  perFlask: true  },
   { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'teal',    perFlask: true  },
   { key: 'qc',            label: 'QC Hold',                 color: 'emerald', perFlask: true  },
   { key: 'plating',       label: 'Plating Results',         color: 'teal',    perFlask: true  },
+  { key: 'sample_incubation', label: 'Sample Incubation',    color: 'blue',    perFlask: true  },
 ];
 
 const FIELD_LABELS = {
@@ -352,6 +366,25 @@ const FIELD_LABELS = {
   cfu_per_ml: 'CFU / ml', colony_morphology: 'Colony Morphology',
   microscopic_morphology: 'Microscopic Morphology', observation: 'Final Observation',
   completed_at: 'Incubation Completed At',
+  sample_name: 'Sample Name', sample_category: 'Sample Category', sample_type: 'Sample Type',
+  source_stage: 'Source Stage', source_type: 'Source Type', incubation_date: 'Incubation Date',
+  incubation_temp_c: 'Incubation Temp (C)', start_time: 'Start Time', end_time: 'End Time',
+  od_value: 'OD Value', ph_value: 'pH Value', staining_method: 'Staining Method',
+  type: 'Type', status: 'Status', strain_id: 'Strain ID', parent_id: 'Parent Prep',
+  formulation_id: 'Recipe ID', started_at: 'Started At', culture_condition: 'Culture Condition',
+  date_revived: 'Date Revived', observations: 'Observations', media: 'Media',
+  media_formulation_id: 'Media Recipe ID', volume_ml: 'Volume (ml)',
+  sterilization_method: 'Sterilization Method', sterilization_temp: 'Sterilization Temp (C)',
+  sterilization_min: 'Sterilization Time (min)', media_ph_after: 'Media pH After Prep',
+  media_lot_notes: 'Media Lot Notes', incubation_temp: 'Incubation Temp (C)',
+  duration_h: 'Duration (h)', od_600: 'OD 600nm', od_target_reached: 'Target OD Reached',
+  agar_media: 'Agar Media', agar_formulation_id: 'Agar Recipe ID', plates_poured: 'Plates Poured',
+  agar_sterilization_method: 'Agar Sterilization Method', agar_batch_notes: 'Agar Batch Notes',
+  dilution: 'Dilution', incubation_hours: 'Incubation Hours',
+  colony_observations: 'Colony Observations', picked_colony_id: 'Picked Colony ID',
+  pick_reason: 'Pick Reason', glycerol_percent: 'Glycerol (%)', vial_count: 'Vial Count',
+  storage_temp: 'Storage Temp', freezer_id: 'Freezer ID', rack: 'Rack', box: 'Box',
+  vial_codes: 'Vial Codes',
 };
 
 function SnapshotRows({ data }) {

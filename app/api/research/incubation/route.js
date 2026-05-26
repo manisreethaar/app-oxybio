@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { can } from '@/lib/permissions';
 import { incubationSchema } from './_validation';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,41 @@ function parsePayload(body) {
   return { data: parsed.data };
 }
 
+async function syncIncubationToLNB(supabase, record) {
+  if (!record?.batch_id) return;
+
+  let flaskLabel = null;
+  if (record.flask_id) {
+    const { data: flask } = await supabase
+      .from('batch_flasks')
+      .select('flask_label')
+      .eq('id', record.flask_id)
+      .maybeSingle();
+    flaskLabel = flask?.flask_label || null;
+  }
+
+  await syncStageToLNB(supabase, record.batch_id, 'sample_incubation', {
+    sample_name: record.sample_name,
+    sample_category: record.sample_category,
+    sample_type: record.sample_type,
+    source_stage: record.source_stage,
+    source_type: record.source_type,
+    incubation_date: record.incubation_date,
+    incubation_temp_c: record.incubation_temp_c,
+    start_time: record.start_time,
+    end_time: record.end_time,
+    od_value: record.od_value,
+    ph_value: record.ph_value,
+    colony_count: record.colony_count,
+    cfu_per_ml: record.cfu_per_ml,
+    staining_method: record.staining_method,
+    microscopic_morphology: record.microscopic_morphology,
+    colony_morphology: record.colony_morphology,
+    sterility_status: record.sterility_status,
+    observation: record.observation,
+  }, flaskLabel || record.sample_name);
+}
+
 export async function GET(request) {
   try {
     const supabase = createClient();
@@ -70,7 +106,40 @@ export async function GET(request) {
     const { data, error } = await query.limit(200);
 
     if (error) throw error;
-    return NextResponse.json({ success: true, data });
+    const records = data || [];
+    const batchIds = [...new Set(records.map(r => r.batch_id).filter(Boolean))];
+    const prepIds = [...new Set(records.map(r => r.cell_bank_preparation_id).filter(Boolean))];
+    const lnbByBatch = {};
+    const lnbByPrep = {};
+
+    if (batchIds.length > 0 || prepIds.length > 0) {
+      let lnbQuery = supabase
+        .from('lab_notebook_entries')
+        .select('id, batch_id, cell_bank_preparation_id')
+        .neq('status', 'Countersigned');
+
+      if (batchIds.length > 0 && prepIds.length > 0) {
+        lnbQuery = lnbQuery.or(`batch_id.in.(${batchIds.join(',')}),cell_bank_preparation_id.in.(${prepIds.join(',')})`);
+      } else if (batchIds.length > 0) {
+        lnbQuery = lnbQuery.in('batch_id', batchIds);
+      } else {
+        lnbQuery = lnbQuery.in('cell_bank_preparation_id', prepIds);
+      }
+
+      const { data: lnbs } = await lnbQuery.order('created_at', { ascending: false });
+      (lnbs || []).forEach(entry => {
+        if (entry.batch_id && !lnbByBatch[entry.batch_id]) lnbByBatch[entry.batch_id] = entry.id;
+        if (entry.cell_bank_preparation_id && !lnbByPrep[entry.cell_bank_preparation_id]) lnbByPrep[entry.cell_bank_preparation_id] = entry.id;
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: records.map(record => ({
+        ...record,
+        linked_lnb_id: lnbByBatch[record.batch_id] || lnbByPrep[record.cell_bank_preparation_id] || null,
+      })),
+    });
   } catch (error) {
     console.error('Sample incubation API error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -95,6 +164,7 @@ export async function POST(request) {
       .single();
 
     if (error) throw error;
+    await syncIncubationToLNB(supabase, data);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Sample incubation API error:', error);
@@ -143,6 +213,7 @@ export async function PUT(request) {
       .single();
 
     if (error) throw error;
+    await syncIncubationToLNB(supabase, data);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Sample incubation API error:', error);

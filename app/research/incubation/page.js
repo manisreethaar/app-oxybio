@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, FlaskConical, Beaker, Clock, CheckCircle2, AlertCircle, Edit2, Search, Trash2 } from 'lucide-react';
+import { Plus, FlaskConical, Beaker, Clock, CheckCircle2, AlertCircle, Edit2, Search, Trash2, BookOpen } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import IncubationFormModal from './components/IncubationFormModal';
 
@@ -204,6 +204,15 @@ export default function SampleIncubationPage() {
                       <button onClick={() => { setEditData(sample); setShowModal(true); }} className="p-2 text-gray-400 hover:text-navy hover:bg-blue-50 rounded-lg transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
+                      {sample.linked_lnb_id && (
+                        <Link
+                          href={`/lab-notebook/${sample.linked_lnb_id}`}
+                          className="p-2 text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="View linked LNB"
+                        >
+                          <BookOpen className="w-4 h-4" />
+                        </Link>
+                      )}
                       {canDelete && (
                         <button
                           onClick={() => handleDelete(sample.id)}

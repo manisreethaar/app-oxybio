@@ -205,20 +205,25 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       // Unified Process Bus: Auto-link to Sample Incubation
       if (createIncubation) {
-        const { error: incErr } = await supabase.from('sample_incubation_records').insert({
-          sample_name: `${activeFlask.flask_label} - T+${elapsed ? elapsed.toFixed(1) : 0}h`,
-          batch_id: batch.id,
-          flask_id: activeFlask.id,
-          sample_category: 'Fermentation IPC',
-          sample_type: 'Agar Plate',
-          incubation_date: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString().split('T')[0],
-          start_time: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString(),
-          incubation_temp_c: temp ? parseFloat(temp) : 37,
-          sterility_status: platingStatus === 'Contaminated' ? 'Contaminated' : platingStatus === 'Clear' ? 'Sterile' : 'Pending',
-          source_stage: 'fermentation',
-          observation: cfuCount ? `CFU Count: ${cfuCount}` : null
+        const incRes = await fetch('/api/research/incubation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sample_name: `${activeFlask.flask_label} - T+${elapsed ? elapsed.toFixed(1) : 0}h`,
+            batch_id: batch.id,
+            flask_id: activeFlask.id,
+            sample_category: 'Fermentation IPC',
+            sample_type: 'Agar Plate',
+            incubation_date: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString().split('T')[0],
+            start_time: (isRetro && loggedAt ? new Date(loggedAt) : new Date()).toISOString(),
+            incubation_temp_c: temp ? parseFloat(temp) : 37,
+            sterility_status: platingStatus === 'Contaminated' ? 'Contaminated' : platingStatus === 'Clear' ? 'Sterile' : 'Pending',
+            source_stage: 'fermentation',
+            observation: cfuCount ? `CFU Count: ${cfuCount}` : null
+          })
         });
-        if (incErr) throw incErr;
+        const incJson = await incRes.json();
+        if (!incJson.success) throw new Error(incJson.error || 'Failed to create incubation record');
       }
 
       toast.success('Reading logged.');
