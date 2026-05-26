@@ -4,6 +4,15 @@ import { NextResponse } from 'next/server';
 
 const APPROVER_ROLES = ['admin', 'ceo', 'cto'];
 
+// Recipe code: R + digits (R01, R12) OR 2–5 uppercase letters optionally followed by digits (RKU, RKU01, KAVNI)
+const CODE_RE = /^[A-Z]{1,5}\d{0,3}$/;
+function validateCode(code) {
+  if (!code || typeof code !== 'string') return 'Recipe code is required.';
+  const c = code.trim().toUpperCase();
+  if (!CODE_RE.test(c)) return 'Recipe code must be 1–5 uppercase letters optionally followed by up to 3 digits (e.g. R01, RKU, RKU01).';
+  return null;
+}
+
 export async function GET(request) {
   try {
     const supabase = createClient();
@@ -36,6 +45,10 @@ export async function POST(request) {
     const body = await request.json();
     const { code, name, ingredients, notes, base_version_id, category, base_volume_ml } = body;
 
+    const codeErr = validateCode(code);
+    if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
+    const normCode = code.trim().toUpperCase();
+
     let nextVersion = 1;
     if (base_version_id) {
       const { data: base } = await supabase.from('formulations').select('version').eq('id', base_version_id).single();
@@ -43,7 +56,7 @@ export async function POST(request) {
     } else {
       const { data: latest } = await supabase.from('formulations')
         .select('version')
-        .eq('code', code)
+        .eq('code', normCode)
         .order('version', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -55,7 +68,7 @@ export async function POST(request) {
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations').insert({
-      code, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000,
+      code: normCode, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000,
       version: nextVersion,
       created_by: emp?.id || null,
       base_version_id: base_version_id || null,
@@ -148,7 +161,12 @@ export async function PUT(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { id, code, name, ingredients, notes, category, base_volume_ml } = body;
+    const { id, name, ingredients, notes, category, base_volume_ml } = body;
+    let { code } = body;
+
+    const codeErr = validateCode(code);
+    if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
+    code = code.trim().toUpperCase();
 
     // Security: Only allow editing if Status is Draft or rejected
     const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();

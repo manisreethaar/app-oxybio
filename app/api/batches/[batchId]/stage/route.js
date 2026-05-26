@@ -1,5 +1,14 @@
-import { createClient } from '@/utils/supabase/server';
+import { createClient as createAnonClient } from '@/utils/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+
+// Service-role client — bypasses RLS for batch/flask writes
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 // ─────────────────────────────────────────────────────────────
 // Stage Transition API — v4 (Flask-Level Support)
@@ -45,8 +54,9 @@ async function checkGate(supabase, batchId, fromStage, toStage, empRole) {
 // ─────────────────────────────────────────────────────────────
 export async function POST(request, { params }) {
   try {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Auth via anon client (reads session cookie), all DB writes via admin (bypasses RLS)
+    const authClient = createAnonClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const { batchId } = params;
@@ -54,12 +64,14 @@ export async function POST(request, { params }) {
 
     if (!to_stage) return NextResponse.json({ success: false, error: 'Target stage is required.' }, { status: 400 });
 
+    const db = adminClient();
+
     // Lookup employee
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    const { data: emp } = await db.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ success: false, error: 'Employee profile not found.' }, { status: 404 });
 
     // ── Quality Gate ─────────────────────────────────────────
-    const gateError = await checkGate(supabase, batchId, from_stage, to_stage, emp.role);
+    const gateError = await checkGate(db, batchId, from_stage, to_stage, emp.role);
     if (gateError) {
       return NextResponse.json({ success: false, error: gateError, gate_blocked: true }, { status: 422 });
     }
@@ -70,10 +82,10 @@ export async function POST(request, { params }) {
     else if (to_stage === 'rejected')     newStatus = 'rejected';
     else if (to_stage === 'fermentation') newStatus = 'fermenting';
     else if (to_stage === 'qc_hold')      newStatus = 'qc-hold';
-    else                                  newStatus = 'in_progress';
+    else                                  newStatus = 'in-progress';
 
-    // ── Update batch ─────────────────────────────────────────
-    const { error: updateErr } = await supabase
+    // ── Update batch (service role — RLS bypassed, guaranteed to write) ─
+    const { error: updateErr } = await db
       .from('batches')
       .update({ current_stage: to_stage, status: newStatus })
       .eq('id', batchId);
@@ -81,30 +93,29 @@ export async function POST(request, { params }) {
 
     // ── Audit trail ──────────────────────────────────────────
     const cleanNotes = notes ? notes.substring(0, 500).replace(/[<>]/g, '') : '';
-    await supabase.from('stage_transitions').insert({
+    await db.from('stage_transitions').insert({
       batch_id: batchId, from_stage, to_stage, changed_by: emp.id, notes: cleanNotes,
     });
 
     // ── Auto-Generate Flasks on Sterilisation -> Inoculation ──
     if (to_stage === 'inoculation' && from_stage === 'sterilisation') {
       try {
-        const { data: b } = await supabase.from('batches').select('num_flasks').eq('id', batchId).single();
+        const { data: b } = await db.from('batches').select('num_flasks, batch_id').eq('id', batchId).single();
         const numFlasks = b?.num_flasks || 1;
-        const { data: existingFlasks } = await supabase.from('batch_flasks').select('id').eq('batch_id', batchId);
-        
+        const batchIdStr = b?.batch_id || '';
+        const { data: existingFlasks } = await db.from('batch_flasks').select('id').eq('batch_id', batchId);
+
         if (!existingFlasks || existingFlasks.length === 0) {
-          const newFlasks = [];
-          for (let i = 1; i <= numFlasks; i++) {
-              newFlasks.push({
-                  batch_id: batchId,
-                  flask_label: `F${i}`,
-                  current_stage: 'inoculation',
-                  status: 'planned'
-              });
-          }
-          await supabase.from('batch_flasks').insert(newFlasks);
+          const newFlasks = Array.from({ length: numFlasks }, (_, i) => ({
+            batch_id:      batchId,
+            flask_label:   `F${i + 1}`,
+            flask_full_id: batchIdStr ? `${batchIdStr}-F${i + 1}` : undefined,
+            current_stage: 'inoculation',
+            status:        'planned',
+          }));
+          await db.from('batch_flasks').insert(newFlasks);
         } else {
-          await supabase
+          await db
             .from('batch_flasks')
             .update({ current_stage: 'inoculation', status: 'planned' })
             .eq('batch_id', batchId)

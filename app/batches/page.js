@@ -46,7 +46,9 @@ const SKU_COLORS = {
 const STATUS_COLORS = {
   scheduled:   'bg-blue-50 text-blue-700 border-blue-100',
   planned:     'bg-blue-50 text-blue-700 border-blue-100',
-  in_progress: 'bg-orange-50 text-orange-700 border-orange-100',
+  active:       'bg-orange-50 text-orange-700 border-orange-100', // legacy DB value
+  'in-progress':'bg-orange-50 text-orange-700 border-orange-100', // DB canonical value
+  in_progress:  'bg-orange-50 text-orange-700 border-orange-100', // code alias
   fermenting:  'bg-amber-50 text-amber-700 border-amber-100',
   qc_hold:     'bg-purple-50 text-purple-700 border-purple-100',
   'qc-hold':   'bg-purple-50 text-purple-700 border-purple-100',
@@ -437,22 +439,22 @@ export default function BatchesPage() {
                 : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
 
               const isScheduled = isScheduledBatch(batch);
-              // Derive stage from flask data — handles case where batch.current_stage lags behind flask stages
+
+              // Derive the furthest active stage (batch-level OR flask-level, whichever is ahead)
               const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
-              const hasAdvancedFlasks = flasks.some(f => STAGE_ORDER.indexOf(f.current_stage) > 1);
-              const isPostSteril = !isScheduled && (batchStageIdx > 1 || batch.current_stage === 'inoculation' || hasAdvancedFlasks);
-              let derivedStage = batch.current_stage;
-              if (isPostSteril && flasks.length > 0) {
-                const activeFlasks = flasks.filter(f => f.status !== 'rejected');
-                if (activeFlasks.length > 0) {
-                  const maxIdx = activeFlasks.reduce((best, f) => {
-                    const idx = STAGE_ORDER.indexOf(f.current_stage);
-                    return idx > best ? idx : best;
-                  }, 0);
-                  derivedStage = STAGE_ORDER[maxIdx] || batch.current_stage;
-                }
-              }
-              const currentIdx = isScheduled ? -1 : STAGE_ORDER.indexOf(derivedStage);
+              const maxFlaskIdx = flasks
+                .filter(f => f.status !== 'rejected')
+                .reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(f.current_stage)), -1);
+              const effectiveIdx = Math.max(batchStageIdx, maxFlaskIdx);
+              const derivedStage = effectiveIdx >= 0 ? STAGE_ORDER[effectiveIdx] : batch.current_stage;
+              const currentIdx = isScheduled ? -1 : effectiveIdx;
+
+              // If batch status column is stale (still 'planned'/'scheduled') but stages have advanced,
+              // show the real stage-derived status so the badge is accurate.
+              const isStatusStale = SCHEDULED_STATUSES.includes(normaliseStatus(batch.status)) && effectiveIdx >= 0;
+              const displayStatus = isScheduled ? 'scheduled'
+                : isStatusStale ? (STAGE_LABELS[derivedStage] || 'in progress').toLowerCase()
+                : batch.status;
 
               return (
                 <div
@@ -472,9 +474,9 @@ export default function BatchesPage() {
                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
                           {batch.experiment_type}
                         </span>
-                        {/* Status badge */}
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${hasAlarm ? 'bg-red-100 text-red-700 border-red-200 animate-pulse' : STATUS_COLORS[batch.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                          {hasAlarm ? '⚠ Alarm' : isScheduled ? 'scheduled' : batch.status}
+                        {/* Status badge — uses displayStatus which corrects stale DB status */}
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${hasAlarm ? 'bg-red-100 text-red-700 border-red-200 animate-pulse' : STATUS_COLORS[normaliseStatus(batch.status)] || STATUS_COLORS['in_progress'] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                          {hasAlarm ? '⚠ Alarm' : displayStatus}
                         </span>
                       </div>
                     </div>
