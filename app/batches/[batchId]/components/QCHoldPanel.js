@@ -12,7 +12,7 @@ const DEFAULT_TESTS = [
   { test_name: 'Sensory — Colour',                  target_spec: 'Consistent with SKU target', result_unit: '' },
   { test_name: 'Sensory — Taste',                   target_spec: 'Acceptable per panel',       result_unit: '' },
   { test_name: 'Sensory — Overall',                 target_spec: 'PASS ≥7/10',                result_unit: 'score' },
-  { test_name: 'Microbial (Yeast + Mould)',          target_spec: 'Defer to Phase 1',          result_unit: 'CFU/ml', pass_fail: 'N/A' },
+  { test_name: 'Microbial (Yeast + Mould)',          target_spec: 'Defer to Phase 1',          result_unit: 'CFU/ml' },
 ];
 
 export default function QCHoldPanel({ batch, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
