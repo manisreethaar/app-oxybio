@@ -21,9 +21,9 @@ export async function GET(request, { params }) {
     const [
       batchRes, flasksRes, mediaPrepRes, sterilRes, 
       inocuRes, ferReadRes, ferEpRes, strainRes, extractRes,
-      qcSampleRes, releaseRes, rejectionRes,
+      qcSampleRes, releaseRes, rejectionRes, inventoryUsageRes
     ] = await Promise.all([
-      supabase.from('batches').select('*, formulations(name, code, version)').eq('id', batchId).single(),
+      supabase.from('batches').select('*, formulations(name, code, version, base_volume_ml)').eq('id', batchId).single(),
       supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
       supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batchId).single(),
       supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batchId).single(),
@@ -35,6 +35,7 @@ export async function GET(request, { params }) {
       supabase.from('batch_flask_qc_samples').select('*').eq('batch_id', batchId),
       supabase.from('batch_flask_release_record').select('*').eq('batch_id', batchId),
       supabase.from('batch_flask_rejection_record').select('*').eq('batch_id', batchId),
+      supabase.from('inventory_usage').select('*, inventory_stock(supplier_batch_number, expiry_date, inventory_items(name, unit))').eq('batch_id', batchId),
     ]);
 
     if (!batchRes.data) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
@@ -62,6 +63,7 @@ export async function GET(request, { params }) {
       flaskQCTests:         qcTests,
       flaskReleases:        releaseRes.data || [],
       flaskRejections:      rejectionRes.data || [],
+      inventoryUsage:       inventoryUsageRes.data || [],
       generatedBy:          emp.full_name,
       generatedAt:          new Date().toISOString(),
     };
