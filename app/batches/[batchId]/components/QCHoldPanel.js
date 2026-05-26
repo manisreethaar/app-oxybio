@@ -73,7 +73,25 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         fetch(`/api/research/incubation?qc_sample_id=${sData.id}`).then(r => r.json()),
       ]);
       if (!isCurrent) return;
-      setTests(tRes.data || []);
+
+      let fetchedTests = tRes.data || [];
+
+      // Auto-heal missing tests if the sample exists but tests were not generated
+      if (fetchedTests.length === 0) {
+        const testRows = DEFAULT_TESTS.map(t => ({
+          sample_id: sData.id, flask_id: activeFlask.id, batch_id: batch?.id,
+          test_name: t.test_name, target_spec: t.target_spec,
+          result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
+        }));
+        const iRes = await supabase.from('batch_flask_qc_tests').insert(testRows).select();
+        if (iRes.error) {
+          console.error("Auto-heal QC insert error:", iRes.error);
+        } else if (iRes.data && iRes.data.length > 0) {
+          fetchedTests = iRes.data;
+        }
+      }
+
+      setTests(fetchedTests);
       setIncubations(incRes.success ? incRes.data || [] : []);
     } else {
       setSample(null); setTests([]); setIncubations([]);
@@ -172,11 +190,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       if (sErr) throw sErr;
       
       const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sRow.id, flask_id: activeFlask.id,
+        sample_id: sRow.id, flask_id: activeFlask.id, batch_id: batch?.id,
         test_name: t.test_name, target_spec: t.target_spec,
         result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
       }));
-      await supabase.from('batch_flask_qc_tests').insert(testRows);
+      const insertRes = await supabase.from('batch_flask_qc_tests').insert(testRows);
+      if (insertRes.error) {
+        console.error("Test insert error:", insertRes.error);
+        throw new Error("Failed to insert tests: " + insertRes.error.message);
+      }
 
       // Pre-fill pH test from the last fermentation reading for this flask
       const { data: lastReading } = await supabase
