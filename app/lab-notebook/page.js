@@ -14,7 +14,7 @@ import Skeleton from '@/components/Skeleton';
 const STAGE_LABELS = {
   media_prep: 'Media Prep', sterilisation: 'Sterilisation', inoculation: 'Inoculation',
   fermentation: 'Fermentation', straining: 'Centrifugation', extract_addition: 'Extract Addition',
-  qc_hold: 'QC Hold',
+  qc_hold: 'QC Hold', cell_bank: 'Cell Bank',
 };
 
 export default function DigitalLnbPage() {
@@ -188,6 +188,16 @@ export default function DigitalLnbPage() {
                         >
                           <FlaskConical className="w-3 h-3 text-indigo-400" />
                           <span className="font-bold text-indigo-800">{entry.batches.batch_id}</span>
+                        </button>
+                      )}
+                      {entry.cell_bank_preparations && (
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); if (entry.cell_bank_preparations?.id) router.push(`/research/cell-bank/${entry.cell_bank_preparations.id}`); }}
+                          className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                        >
+                          <FlaskConical className="w-3 h-3 text-emerald-500" />
+                          <span className="font-bold">{entry.cell_bank_preparations.prep_code}</span>
                         </button>
                       )}
                       {entry.flask?.flask_label && (

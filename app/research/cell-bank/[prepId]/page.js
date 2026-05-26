@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, CheckCircle2, Circle, FlaskConical, Microscope,
   Thermometer, Droplets, Snowflake, Save, ChevronDown, ChevronUp,
-  ExternalLink
+  ExternalLink, BookOpen
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
@@ -510,6 +510,15 @@ export default function CellBankDetailPage() {
                 >
                   <ExternalLink className="w-3 h-3"/>
                   {prep?.linked_formulation?.code || prep?.cell_bank_strains?.linked_formulation?.code} - {prep?.linked_formulation?.name || prep?.cell_bank_strains?.linked_formulation?.name}
+                </Link>
+              )}
+              {prep?.lnb_entry_id && (
+                <Link
+                  href={`/lab-notebook/${prep.lnb_entry_id}`}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:underline mt-1 ml-3"
+                >
+                  <BookOpen className="w-3 h-3"/>
+                  View Linked LNB
                 </Link>
               )}
             </>

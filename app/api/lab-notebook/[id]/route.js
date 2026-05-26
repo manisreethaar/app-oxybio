@@ -14,8 +14,12 @@ export async function GET(request, { params }) {
       .from('lab_notebook_entries')
       .select(`
         id, title, objective, methodology, observations, conclusions, status, created_at, countersigned_at,
+        stage_snapshots, batch_stage, attachment_url,
         batches (
           id, batch_id, variant
+        ),
+        cell_bank_preparations (
+          id, prep_code, type, status
         ),
         author:employees!lab_notebook_entries_created_by_fkey (
           id, full_name, role
