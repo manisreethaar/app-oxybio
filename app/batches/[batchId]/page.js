@@ -93,7 +93,7 @@ export default function BatchDetailPage() {
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
     const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await Promise.all([
-      supabase.from('batches').select('*, formulations(id, name, code, version, ingredients)').eq('id', batchId).single(),
+      supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
       supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
       supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
       supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
