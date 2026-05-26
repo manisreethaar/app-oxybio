@@ -26,11 +26,15 @@ export default function AdminDashboard({ employeeId }) {
   const [rejectRemark, setRejectRemark] = useState('');
   const [pendingQuickApprove, setPendingQuickApprove] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [lowStock, setLowStock] = useState([]);
+  const [calibDue, setCalibDue] = useState([]);
+  const [openCapa, setOpenCapa] = useState([]);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchDashboardData(true);
     fetchThresholds();
+    fetchOperationalAlerts();
   }, []);
 
   const fetchThresholds = async () => {
@@ -97,6 +101,22 @@ export default function AdminDashboard({ employeeId }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchOperationalAlerts = async () => {
+    try {
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      const [stockRes, calibRes, capaRes] = await Promise.all([
+        supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).limit(50),
+        supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
+        supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5)
+      ]);
+      const lowStockItems = (stockRes.data || []).filter(s => (s.current_quantity || 0) < (s.min_stock_level || 0));
+      setLowStock(lowStockItems.slice(0, 5));
+      setCalibDue(calibRes.data || []);
+      setOpenCapa(capaRes.data || []);
+    } catch (err) { console.error('Operational alerts fetch error:', err); }
   };
 
   const handleMispunchReview = async (action) => {
@@ -245,32 +265,117 @@ export default function AdminDashboard({ employeeId }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeBatches.map(batch => {
-                const hoursElapsed = differenceInHours(new Date(), new Date(batch.created_at || new Date()));
-                const latestPh = batch.ph_readings?.[batch.ph_readings.length - 1];
+              {(() => {
+                const BATCH_STAGES = ['media_prep','sterilisation','inoculation','fermentation','qc_hold','released'];
+                const STAGE_LABEL  = { media_prep:'Media Prep', sterilisation:'Sterilisation', inoculation:'Inoculation', fermentation:'Fermentation', qc_hold:'QC Hold', released:'Released' };
+                const STAGE_COLOR  = { media_prep:'bg-indigo-100 text-indigo-700', sterilisation:'bg-blue-100 text-blue-700', inoculation:'bg-violet-100 text-violet-700', fermentation:'bg-teal-100 text-teal-700', qc_hold:'bg-rose-100 text-rose-700', released:'bg-emerald-100 text-emerald-700' };
+                return activeBatches.map(batch => {
+                  const hoursElapsed = differenceInHours(new Date(), new Date(batch.created_at || new Date()));
+                  const latestPh = batch.ph_readings?.[batch.ph_readings.length - 1];
+                  const stageIdx = BATCH_STAGES.indexOf(batch.current_stage);
+                  const progress = stageIdx >= 0 ? Math.round(((stageIdx + 1) / BATCH_STAGES.length) * 100) : 0;
+                  return (
+                    <div key={batch.id} className="border border-gray-200 rounded-xl p-4 flex flex-col hover:border-gray-300 transition-colors bg-white relative">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-mono text-xs font-bold text-gray-400 mb-1">{batch.batch_id}</p>
+                          <p className="font-bold text-gray-900 tracking-tight text-sm leading-tight">{batch.variant}</p>
+                        </div>
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">{hoursElapsed}H</span>
+                      </div>
+                      <div className="mb-3">
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${STAGE_COLOR[batch.current_stage] || 'bg-gray-100 text-gray-500'}`}>
+                          {STAGE_LABEL[batch.current_stage] || batch.current_stage || 'Unknown'}
+                        </span>
+                        <div className="mt-2 w-full bg-gray-100 rounded-full h-1">
+                          <div className="bg-navy rounded-full h-1 transition-all" style={{ width: `${progress}%` }}/>
+                        </div>
+                      </div>
+                      <div className="flex items-center mt-auto pt-3 border-t border-gray-100 justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">pH</p>
+                          <p className={`font-black text-lg ${latestPh?.is_deviation ? 'text-red-500' : 'text-emerald-600'}`}>
+                            {latestPh?.ph_value || '—'}
+                          </p>
+                        </div>
+                        <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm">
+                          Open Batch
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Operational Alerts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="surface p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500"/> Low Stock Alerts
+          </h3>
+          {lowStock.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2 text-center">All stock levels OK.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {lowStock.map(item => (
+                <Link key={item.id} href={`/inventory?search=${encodeURIComponent(item.item?.name || '')}`} className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
+                  <span className="text-xs font-bold text-amber-800 truncate">{item.item?.name}</span>
+                  <span className="text-[10px] font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? '—'} {item.unit}</span>
+                </Link>
+              ))}
+              <Link href="/inventory" className="block text-center text-xs font-bold text-amber-600 hover:underline mt-1 pt-1 border-t border-amber-100">View Inventory →</Link>
+            </div>
+          )}
+        </div>
+
+        <div className="surface p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Settings className="w-4 h-4 text-blue-500"/> Calibration Due
+          </h3>
+          {calibDue.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2 text-center">No overdue calibrations.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {calibDue.map(eq => {
+                const isOverdue = new Date(eq.calibration_due_date) < new Date();
                 return (
-                  <div key={batch.id} className="border border-gray-200 rounded-xl p-4 flex flex-col hover:border-gray-300 transition-colors bg-white relative">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="font-mono text-xs font-bold text-gray-400 mb-1">{batch.batch_id}</p>
-                        <p className="font-bold text-gray-900 tracking-tight text-sm leading-tight">{batch.variant}</p>
-                      </div>
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">{hoursElapsed}H</span>
-                    </div>
-                    <div className="flex items-center mt-auto pt-4 border-t border-gray-100 justify-between">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">pH</p>
-                        <p className={`font-black text-lg ${latestPh?.is_deviation ? 'text-red-500' : 'text-emerald-600'}`}>
-                          {latestPh?.ph_value || '—'}
-                        </p>
-                      </div>
-                      <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm">
-                        Log Data
-                      </Link>
-                    </div>
-                  </div>
+                  <Link key={eq.id} href="/equipment" className={`flex justify-between items-center p-2 rounded-lg border hover:opacity-90 transition-colors ${isOverdue ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
+                    <span className={`text-xs font-bold truncate ${isOverdue ? 'text-red-800' : 'text-amber-800'}`}>{eq.name}</span>
+                    <span className={`text-[10px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{new Date(eq.calibration_due_date).toLocaleDateString()}</span>
+                  </Link>
                 );
               })}
+              <Link href="/equipment" className="block text-center text-xs font-bold text-blue-600 hover:underline mt-1 pt-1 border-t border-gray-100">View Equipment →</Link>
+            </div>
+          )}
+        </div>
+
+        <div className="surface p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-red-500"/> Open CAPA Items
+          </h3>
+          {openCapa.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2 text-center">No open deviations.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {openCapa.map(dev => (
+                <div key={dev.id} className="p-2 bg-red-50 rounded-lg border border-red-100 space-y-1">
+                  <Link href="/capa" className="flex justify-between items-center hover:opacity-80 transition-opacity">
+                    <span className="text-xs font-bold text-red-800 truncate">{dev.title}</span>
+                    <span className={`text-[9px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>{dev.severity}</span>
+                  </Link>
+                  {dev.batches && (
+                    <Link href={`/batches/${dev.batches.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white text-teal-700 text-[9px] font-black rounded border border-teal-100 hover:bg-teal-50 transition-colors">
+                      Batch {dev.batches.batch_id}
+                    </Link>
+                  )}
+                </div>
+              ))}
+              <Link href="/capa" className="block text-center text-xs font-bold text-red-600 hover:underline mt-1 pt-1 border-t border-red-100">View CAPA Manager →</Link>
             </div>
           )}
         </div>

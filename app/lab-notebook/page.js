@@ -6,39 +6,60 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload } from 'lucide-react';
+import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
+
+const STAGE_LABELS = {
+  media_prep: 'Media Prep', sterilisation: 'Sterilisation', inoculation: 'Inoculation',
+  fermentation: 'Fermentation', straining: 'Centrifugation', extract_addition: 'Extract Addition',
+  qc_hold: 'QC Hold',
+};
 
 export default function DigitalLnbPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
   const toast = useToast();
-  const [entries, setEntries] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
+  const [entries,     setEntries]     = useState([]);
+  const [batches,     setBatches]     = useState([]);
+  const [batchFlasks, setBatchFlasks] = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [submitting,  setSubmitting]  = useState(false);
   const [suggestedTags, setSuggestedTags] = useState([]);
-  const [showNew, setShowNew] = useState(false);
+  const [showNew,     setShowNew]     = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [selectedFlaskId,  setSelectedFlaskId]  = useState('');
+  const [selectedStage,    setSelectedStage]    = useState('');
   const fileRef = useRef(null);
+  const supabase = useMemo(() => createClient(), []);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
-    resolver: zodResolver(z.object({ 
-      title: z.string().min(3, 'Experiment title is required'), 
-      batch_id: z.string().optional() 
+    resolver: zodResolver(z.object({
+      title:    z.string().min(3, 'Experiment title is required'),
+      batch_id: z.string().optional()
     })),
     defaultValues: { title: '', batch_id: '' }
   });
-  
-  const currentTitle = watch('title');
-  const supabase = useMemo(() => createClient(), []);
+
+  const watchedBatchId = watch('batch_id');
+  const currentTitle   = watch('title');
+
+  // When batch changes in form, load its flasks and reset flask/stage selection
+  useEffect(() => {
+    setSelectedFlaskId('');
+    setSelectedStage('');
+    if (!watchedBatchId) { setBatchFlasks([]); return; }
+    supabase.from('batch_flasks').select('id, flask_label').eq('batch_id', watchedBatchId).order('flask_label')
+      .then(({ data }) => setBatchFlasks(data || []));
+  }, [watchedBatchId, supabase]);
 
   useEffect(() => {
     if (currentTitle && currentTitle.length > 5) {
       const tags = [];
       const t = currentTitle.toLowerCase();
-      if (t.includes('yield')) tags.push('#Performance');
+      if (t.includes('yield'))   tags.push('#Performance');
       if (t.includes('trial') || t.includes('test')) tags.push('#Experimental');
       if (t.includes('formula')) tags.push('#Scientific');
       if (t.includes('optimize')) tags.push('#R&D');
@@ -52,7 +73,7 @@ export default function DigitalLnbPage() {
     setLoading(true);
     try {
       const [entriesRes, { data: batchData }] = await Promise.all([
-        fetch('/api/lab-notebook').then(res => res.json()),
+        fetch('/api/lab-notebook').then(r => r.json()),
         supabase.from('batches').select('id, batch_id, variant').limit(100)
       ]);
       if (entriesRes.success) setEntries(entriesRes.data || []);
@@ -81,10 +102,21 @@ export default function DigitalLnbPage() {
       }
       const res = await fetch('/api/lab-notebook', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, attachment_url })
+        body: JSON.stringify({
+          ...data,
+          flask_id:    selectedFlaskId || null,
+          batch_stage: selectedStage   || null,
+          attachment_url
+        })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create entry');
-      setShowNew(false); reset(); setAttachedFile(null); fetchData();
+      setShowNew(false);
+      reset();
+      setAttachedFile(null);
+      setSelectedFlaskId('');
+      setSelectedStage('');
+      setBatchFlasks([]);
+      fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); setUploadProgress(''); }
   };
@@ -143,15 +175,31 @@ export default function DigitalLnbPage() {
                       )}
                     </div>
                     <h2 className="text-lg font-black text-gray-900 group-hover:text-navy transition-colors">{entry.title}</h2>
-                    <div className="flex items-center gap-4 mt-3 flex-wrap">
+                    <div className="flex items-center gap-3 mt-3 flex-wrap">
                       <div className="flex items-center text-sm text-gray-600">
                         <FileSignature className="w-4 h-4 mr-1.5 text-gray-400" />
                         <span className="font-semibold">{entry.author?.full_name || 'Unknown Author'}</span>
                       </div>
                       {entry.batches && (
-                        <div className="flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                          <FlaskConical className="w-3.5 h-3.5 mr-1.5 text-indigo-400" />
-                          <span className="font-bold text-indigo-900">{entry.batches.batch_id}</span>
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); if (entry.batches?.id) router.push(`/batches/${entry.batches.id}`); }}
+                          className="flex items-center gap-1 text-xs text-gray-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                        >
+                          <FlaskConical className="w-3 h-3 text-indigo-400" />
+                          <span className="font-bold text-indigo-800">{entry.batches.batch_id}</span>
+                        </button>
+                      )}
+                      {entry.flask?.flask_label && (
+                        <div className="flex items-center gap-1 text-xs bg-navy/5 text-navy px-2 py-0.5 rounded border border-navy/15">
+                          <FlaskConical className="w-3 h-3" />
+                          <span className="font-bold">{entry.flask.flask_label}</span>
+                        </div>
+                      )}
+                      {entry.batch_stage && (
+                        <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-100">
+                          <Activity className="w-3 h-3" />
+                          <span className="font-bold">{STAGE_LABELS[entry.batch_stage] || entry.batch_stage}</span>
                         </div>
                       )}
                     </div>
@@ -174,7 +222,7 @@ export default function DigitalLnbPage() {
                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">Create Notebook Entry</h2>
                 <p className="text-xs font-medium text-gray-500 mt-1">Initialize a new experiment document draft</p>
               </div>
-              <button onClick={() => { setShowNew(false); reset(); setAttachedFile(null); }} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowNew(false); reset(); setAttachedFile(null); setSelectedFlaskId(''); setSelectedStage(''); setBatchFlasks([]); }} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSubmit(handleCreateSubmit)} className="p-6 space-y-4">
               <div>
@@ -191,12 +239,32 @@ export default function DigitalLnbPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Target Batch (Optional)</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Target Batch <span className="text-gray-400 font-normal">(Optional)</span></label>
                 <select {...register('batch_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
                   <option value="">No Batch Linked</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.batch_id} ({b.variant})</option>)}
                 </select>
               </div>
+
+              {/* Flask + Stage — only shown when a batch is selected */}
+              {watchedBatchId && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Trial / Flask <span className="text-gray-400 font-normal">(Optional)</span></label>
+                    <select value={selectedFlaskId} onChange={e => setSelectedFlaskId(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all">
+                      <option value="">Whole Batch</option>
+                      {batchFlasks.map(f => <option key={f.id} value={f.id}>{f.flask_label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Stage <span className="text-gray-400 font-normal">(Optional)</span></label>
+                    <select value={selectedStage} onChange={e => setSelectedStage(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all">
+                      <option value="">Any Stage</option>
+                      {Object.entries(STAGE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* File Attachment */}
               <div>

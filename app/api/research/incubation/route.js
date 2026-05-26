@@ -102,6 +102,25 @@ export async function POST(request) {
   }
 }
 
+export async function DELETE(request) {
+  try {
+    const supabase = createClient();
+    const access = await requireLabAccess(supabase, 'edit');
+    if (access.error) return access.error;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
+
+    const { error } = await supabase.from('sample_incubation_records').delete().eq('id', id);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Sample incubation DELETE error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
 export async function PUT(request) {
   try {
     const supabase = createClient();

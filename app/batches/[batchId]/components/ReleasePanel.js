@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { CheckCircle, Lock } from 'lucide-react';
 
-export default function ReleasePanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved }) {
+export default function ReleasePanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved, batchId }) {
   const toast    = useToast();
   const [record, setRecord]   = useState(null);
   const [saving, setSaving]   = useState(false);
@@ -16,21 +16,24 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const [notes,    setNotes]    = useState('');
 
   const fetch = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
     const { data } = await supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).single();
-    if (data) { 
-      setRecord(data); 
-      setYieldVol(data.yield_volume_ml||''); 
-      setBottles(data.bottles_produced||''); 
-      setBotVol(data.bottle_volume_ml||''); 
-      setNotes(data.release_notes||''); 
+    if (!isCurrent) return;
+    if (data) {
+      setRecord(data);
+      setYieldVol(data.yield_volume_ml||'');
+      setBottles(data.bottles_produced||'');
+      setBotVol(data.bottle_volume_ml||'');
+      setNotes(data.release_notes||'');
     } else {
       setRecord(null);
       setYieldVol(''); setBottles(''); setBotVol(''); setNotes('');
     }
-  }, [activeFlask, supabase]);
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, supabase]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { setRecord(null); fetch(); }, [fetch]);
 
   const handleSave = async () => {
     if (!isCeo) return;
@@ -52,17 +55,28 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
       }, { onConflict: 'flask_id' });
       if (error) throw error;
       
-      // Auto-create shelf-life record per flask
-      await supabase.from('shelf_life_records').insert({
-        batch_id: batch.id, batch_code: `${batch.batch_id}-${activeFlask.flask_label}`,
-        product_name: batch.sku_target || 'Fermented Beverage',
-        manufacture_date: new Date().toISOString().slice(0,10),
-        storage_condition: '2-8°C', status: 'Active',
-        notes: `Auto-created for trial ${activeFlask.flask_label} upon release.`,
-      }).then(()=>{}).catch(e=>console.warn('Shelf-life create warning:', e.message));
+      // Auto-create shelf-life study with expiry (90-day default for fermented beverage)
+      const manufactureDate = new Date();
+      const expiryDate = new Date(manufactureDate);
+      expiryDate.setDate(expiryDate.getDate() + 90);
+      await supabase.from('shelf_life_studies').insert({
+        batch_id: batch.id,
+        storage_condition: '2-8°C',
+        test_parameters: ['pH', 'CFU count', 'Sensory', 'Appearance'],
+        start_date: manufactureDate.toISOString().slice(0, 10),
+        expiry_date: expiryDate.toISOString().slice(0, 10),
+        status: 'In Progress',
+        created_by: employeeProfile?.id,
+      }).then(()=>{}).catch(() => {});
       
       toast.success(`Trial ${activeFlask.flask_label} released.`);
       onDataSaved();
+
+      // Auto-generate BMR in the background — fire and forget
+      fetch(`/api/batches/${batchId || batch.id}/bmr`)
+        .then(r => r.json())
+        .then(d => { if (d.success) toast.success('BMR generated and saved to Document Vault.'); })
+        .catch(() => {});
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
@@ -109,9 +123,15 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                 <div><label className="field-label">Bottle Vol (ml)</label><input type="number" step="1" value={botVol} onChange={e=>setBotVol(e.target.value)} className="field-input" placeholder="e.g. 100"/></div>
               </div>
               <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Release notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
-              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 font-semibold">
-                ℹ On save: A specific shelf-life record for this trial will be generated.
-              </div>
+              {(() => {
+                const exp = new Date(); exp.setDate(exp.getDate() + 90);
+                return (
+                  <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-800 font-semibold space-y-1">
+                    <p>📅 Best Before: <span className="font-black">{exp.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span> (90 days)</p>
+                    <p className="text-emerald-600">A shelf-life study with D7/D14/D30/D60/D90 tasks will be auto-created on release.</p>
+                  </div>
+                );
+              })()}
               <button onClick={handleSave} disabled={saving} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
                 {saving ? 'Releasing...' : `✓ Confirm Release of ${activeFlask.flask_label}`}
               </button>

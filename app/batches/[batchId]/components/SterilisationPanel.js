@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { ShieldCheck, AlertTriangle, ExternalLink } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Filter','Chemical','Other'];
 const TAPE_RES = ['Positive','Negative'];
@@ -24,10 +25,12 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   const [notes,     setNotes]     = useState('');
 
   const fetch = useCallback(async () => {
+    let isCurrent = true;
     const [dRes, eqRes] = await Promise.all([
       supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
       supabase.from('equipment').select('id, name, status, calibration_due_date').order('name'),
     ]);
+    if (!isCurrent) return;
     if (dRes.data) {
       const d = dRes.data;
       setMethod(d.method||'Pressure Cooker'); setEquipId(d.equipment_id||'');
@@ -39,6 +42,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setNotes(d.notes||'');
     }
     if (eqRes.data) setEquipment(eqRes.data);
+    return () => { isCurrent = false; };
   }, [batch.id, supabase]);
 
   useEffect(() => { fetch(); }, [fetch]);
@@ -70,6 +74,15 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       }, { onConflict: 'batch_id' });
       if (error) throw error;
       toast.success(advance ? 'Sterilisation complete.' : 'Draft saved.');
+      syncStageToLNB(supabase, batch.id, 'sterilisation', {
+        method,
+        equipment: equipment.find(e => e.id === equipId)?.name || null,
+        cycle_temp_c: temp ? parseFloat(temp) : null,
+        cycle_pressure_bar: pressure ? parseFloat(pressure) : null,
+        hold_time_min: holdTime ? parseFloat(holdTime) : null,
+        autoclave_tape: tape,
+        pass_fail: passFail,
+      });
       if (advance) {
         await onAdvanceStage('inoculation');
       } else {

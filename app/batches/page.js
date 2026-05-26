@@ -92,6 +92,18 @@ export default function BatchesPage() {
   });
 
   const watchExperimentType = watch('experiment_type');
+  const watchFormulationId  = watch('formulation_id');
+  const [batchIdPreview, setBatchIdPreview] = useState('');
+
+  useEffect(() => {
+    if (!watchFormulationId) { setBatchIdPreview(''); return; }
+    let cancelled = false;
+    fetch(`/api/batches?formulation_id=${watchFormulationId}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled && d.batch_id) setBatchIdPreview(d.batch_id); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [watchFormulationId]);
 
   // ─── Data Fetching ─────────────────────────────────────────
   const fetchBatches = useCallback(async () => {
@@ -104,7 +116,7 @@ export default function BatchesPage() {
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
             formulations(name, code, version),
-            batch_flasks(id, flask_label, status)
+            batch_flasks(id, flask_label, status, current_stage)
           `)
           .not('status', 'in', '("released","rejected")')
           .order('created_at', { ascending: false }),
@@ -119,11 +131,26 @@ export default function BatchesPage() {
       const active    = activeRes.data    || [];
       const completed = completedRes.data || [];
 
+      // Fetch endpoints separately (nested select requires explicit FK in schema)
+      let epMap = {};
+      if (active.length > 0) {
+        const { data: epData } = await supabase
+          .from('batch_flask_endpoints')
+          .select('batch_id, total_hours')
+          .in('batch_id', active.map(b => b.id));
+        (epData || []).forEach(ep => {
+          if (ep.total_hours != null && (epMap[ep.batch_id] == null || ep.total_hours > epMap[ep.batch_id])) {
+            epMap[ep.batch_id] = ep.total_hours;
+          }
+        });
+      }
+      const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id] ?? null }));
+
       // has_alarm is set by DB trigger on reading insert — no need to scan readings
-      const hasAlarm = active.some(b => b.has_alarm === true);
+      const hasAlarm = activeWithEp.some(b => b.has_alarm === true);
 
       setIsAlert(hasAlarm);
-      setActiveBatches(active);
+      setActiveBatches(activeWithEp);
       setHistory(completed);
     } catch (err) {
       console.error('Fetch batches error:', err);
@@ -283,9 +310,27 @@ export default function BatchesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {activeBatches.map(batch => {
               const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
-              const hours    = batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0;
-              const currentIdx = STAGE_ORDER.indexOf(batch.current_stage);
               const flasks   = batch.batch_flasks || [];
+              const maxEpHrs = batch._maxEpHrs ?? null;
+              const hours = maxEpHrs !== null
+                ? maxEpHrs.toFixed(1)
+                : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
+
+              // Derive stage from flask data for post-sterilisation batches
+              const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
+              const isPostSteril = batchStageIdx > 1 || batch.current_stage === 'inoculation';
+              let derivedStage = batch.current_stage;
+              if (isPostSteril && flasks.length > 0) {
+                const activeFlasks = flasks.filter(f => f.status !== 'rejected');
+                if (activeFlasks.length > 0) {
+                  const maxIdx = activeFlasks.reduce((best, f) => {
+                    const idx = STAGE_ORDER.indexOf(f.current_stage);
+                    return idx > best ? idx : best;
+                  }, 0);
+                  derivedStage = STAGE_ORDER[maxIdx] || batch.current_stage;
+                }
+              }
+              const currentIdx = STAGE_ORDER.indexOf(derivedStage);
 
               return (
                 <div
@@ -341,7 +386,7 @@ export default function BatchesPage() {
                       ))}
                     </div>
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                      {STAGE_LABELS[batch.current_stage] || batch.current_stage}
+                      {STAGE_LABELS[derivedStage] || derivedStage}
                     </p>
                   </div>
 
@@ -500,6 +545,12 @@ export default function BatchesPage() {
                         ))}
                       </select>
                       {errors.formulation_id && <p className="text-xs text-red-600 mt-1 font-semibold">{errors.formulation_id.message}</p>}
+                      {batchIdPreview && (
+                        <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-100 rounded-lg">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-teal-500">Batch ID will be</span>
+                          <span className="font-black font-mono text-teal-800 text-sm tracking-tight">{batchIdPreview}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* ── Row 2: Experiment Type + SKU Target ──── */}

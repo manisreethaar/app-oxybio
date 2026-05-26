@@ -37,8 +37,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
   const mshStock = availableStock.filter(s => s.inventory_items?.category === 'mushroom_extract' || s.inventory_items?.category === 'raw_material');
 
   const fetchRecord = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
     const { data } = await supabase.from('batch_flask_extract_addition').select('*').eq('flask_id', activeFlask.id).single();
+    if (!isCurrent) return;
     if (data) {
       setRecord(data);
       setSpecies(data.mushroom_species||SPECIES[0]); setLotId(data.mushroom_lot_id||'');
@@ -50,10 +52,11 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       setFinalPh(data.final_product_ph||''); setAddTemp(data.addition_temp||ADD_TEMP[0]);
       setAddMethod(data.addition_method||ADD_METHOD[0]); setColBefore(data.colour_before||'');
       setColAfter(data.colour_after||''); setLafUsed(data.laf_used??true); setNotes(data.notes||'');
-    }
-  }, [activeFlask, supabase]);
+    } else { setRecord(null); }
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, supabase]);
 
-  useEffect(() => { fetchRecord(); }, [fetchRecord]);
+  useEffect(() => { setRecord(null); fetchRecord(); }, [fetchRecord]);
 
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
