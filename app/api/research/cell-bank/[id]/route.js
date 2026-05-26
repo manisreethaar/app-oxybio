@@ -54,9 +54,54 @@ export async function PATCH(request, { params }) {
     if (access.error) return access.error;
 
     const body = await request.json();
+
+    // ── Register vials action ──────────────────────────────────────────────
+    if (body.action === 'register_vials') {
+      const { count, storage_temp, freezer_id, rack, box } = body;
+      if (!count || count < 1) return NextResponse.json({ success: false, error: 'count must be >= 1' }, { status: 400 });
+
+      // Fetch prep + strain for code generation
+      const { data: prep, error: prepErr } = await supabase
+        .from('cell_bank_preparations')
+        .select('type, prep_code, strain_id, cell_bank_strains(strain_short_code)')
+        .eq('id', params.id)
+        .single();
+      if (prepErr || !prep) return NextResponse.json({ success: false, error: 'Preparation not found' }, { status: 404 });
+
+      const year = String(new Date().getFullYear()).slice(-2);
+      const short = (prep.cell_bank_strains?.strain_short_code || 'XX').toUpperCase();
+      const baseCode = `${prep.type}-${year}-${short}`;
+
+      const vialRows = Array.from({ length: count }, (_, i) => ({
+        preparation_id: params.id,
+        vial_code: `${baseCode}-${String(i + 1).padStart(3, '0')}`,
+        storage_temp: storage_temp || '-20°C',
+        freezer_id: freezer_id || null,
+        rack: rack || null,
+        box: box || null,
+        status: 'Available',
+      }));
+
+      const { data: vials, error: vialErr } = await supabase.from('cell_bank_vials').insert(vialRows).select();
+      if (vialErr) throw vialErr;
+
+      // Insert log entries for each vial
+      const logRows = vials.map(v => ({
+        vial_id: v.id,
+        action: 'registered',
+        operator_id: access.emp?.id || null,
+      }));
+      await supabase.from('cell_bank_vial_logs').insert(logRows).catch(() => {});
+
+      // Update prep vial_count
+      await supabase.from('cell_bank_preparations').update({ vial_count: count }).eq('id', params.id);
+
+      return NextResponse.json({ success: true, vials });
+    }
+
+    // ── Standard step_data / status update ────────────────────────────────
     const { step_key, step_data_patch, status, vial_count, notes } = body;
 
-    // Fetch current record
     const { data: current, error: fetchErr } = await supabase
       .from('cell_bank_preparations')
       .select('step_data, status')
