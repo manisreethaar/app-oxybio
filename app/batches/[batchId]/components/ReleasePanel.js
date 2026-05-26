@@ -16,7 +16,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const [botVol,   setBotVol]   = useState('');
   const [notes,    setNotes]    = useState('');
 
-  const fetch = useCallback(async () => {
+  const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
     const [relRes, epRes] = await Promise.all([
@@ -49,7 +49,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
     return () => { isCurrent = false; };
   }, [activeFlask?.id, supabase]);
 
-  useEffect(() => { setRecord(null); fetch(); }, [fetch]);
+  useEffect(() => { setRecord(null); loadRecord(); }, [loadRecord]);
 
   const handleSave = async () => {
     if (!isCeo) return;
@@ -61,6 +61,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
     setPendingRelease(false);
     setSaving(true);
     try {
+      // Save release record
       const { error } = await supabase.from('batch_flask_release_record').upsert({
         flask_id: activeFlask.id, batch_id: batch.id,
         released_by: employeeProfile?.id,
@@ -70,8 +71,30 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
         release_notes: notes || null,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
-      
-      // Auto-create shelf-life study with expiry (90-day default for fermented beverage)
+
+      // Mark this flask as formally released
+      await supabase.from('batch_flasks')
+        .update({ status: 'released', current_stage: 'released' })
+        .eq('id', activeFlask.id);
+
+      // Check if all non-rejected flasks are now released → close out the batch
+      const { data: allFlasks } = await supabase
+        .from('batch_flasks')
+        .select('id, status, current_stage')
+        .eq('batch_id', batch.id);
+
+      const nonRejected = (allFlasks || []).filter(f => f.status !== 'rejected');
+      const allReleased = nonRejected.every(f =>
+        f.id === activeFlask.id ? true : f.current_stage === 'released'
+      );
+
+      if (allReleased) {
+        await supabase.from('batches')
+          .update({ status: 'released', current_stage: 'released' })
+          .eq('id', batch.id);
+      }
+
+      // Auto-create shelf-life study (90-day default for fermented beverage)
       const manufactureDate = new Date();
       const expiryDate = new Date(manufactureDate);
       expiryDate.setDate(expiryDate.getDate() + 90);
@@ -84,12 +107,12 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
         status: 'In Progress',
         created_by: employeeProfile?.id,
       }).then(()=>{}).catch(() => {});
-      
+
       toast.success(`Trial ${activeFlask.flask_label} released.`);
       onDataSaved();
 
-      // Auto-generate BMR in the background — fire and forget
-      fetch(`/api/batches/${batchId || batch.id}/bmr`)
+      // Auto-generate BMR in the background — window.fetch to avoid shadowing loadRecord
+      window.fetch(`/api/batches/${batchId || batch.id}/bmr`)
         .then(r => r.json())
         .then(d => { if (d.success) toast.success('BMR generated and saved to Document Vault.'); })
         .catch(() => {});
@@ -174,15 +197,16 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Trial Release</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">Confirm release for {activeFlask.flask_label}? This will lock the record and CANNOT be undone.</p>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setPendingRelease(false)}
                 className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={confirmRelease}
-                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
+                disabled={saving}
+                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full disabled:opacity-50"
               >
                 ✓ Confirm Release
               </button>

@@ -232,7 +232,30 @@ export default function BatchesPage() {
   }
 
   // ─── Filtered batches ────────────────────────────────────
-  const displayedActive = activeBatches;
+  const displayedBatches = useMemo(() => {
+    switch (statusFilter) {
+      case 'scheduled': return activeBatches.filter(b => ['planned','scheduled'].includes(b.status));
+      case 'released':  return history.filter(b => b.status === 'released');
+      case 'rejected':  return history.filter(b => b.status === 'rejected');
+      default:          return activeBatches.filter(b => !['planned','scheduled'].includes(b.status));
+    }
+  }, [statusFilter, activeBatches, history]);
+
+  const isHistoryView = ['released','rejected'].includes(statusFilter);
+
+  const SECTION_LABELS = {
+    active:    'Active & In‑Progress Batches',
+    scheduled: 'Scheduled Batches',
+    released:  'Released Batches',
+    rejected:  'Rejected Batches',
+  };
+
+  const tabCounts = {
+    active:    activeBatches.filter(b => !['planned','scheduled'].includes(b.status)).length,
+    scheduled: activeBatches.filter(b => ['planned','scheduled'].includes(b.status)).length,
+    released:  history.filter(b => b.status === 'released').length,
+    rejected:  history.filter(b => b.status === 'rejected').length,
+  };
 
   return (
     <div className="page-container">
@@ -276,28 +299,34 @@ export default function BatchesPage() {
           <button
             key={f}
             onClick={() => setStatusFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${statusFilter === f ? 'bg-navy text-white border-navy' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 ${statusFilter === f ? 'bg-navy text-white border-navy' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
           >
             {f}
+            {tabCounts[f] > 0 && (
+              <span className={`text-[9px] font-black px-1 py-0.5 rounded-full min-w-[16px] text-center ${statusFilter === f ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                {tabCounts[f]}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Active Batches Grid */}
+      {/* Batch Cards — active / scheduled tabs */}
+      {!isHistoryView && (
       <section className="mt-4">
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
           <Activity className="w-4 h-4 mr-1.5 text-navy"/>
-          Active &amp; In‑Progress Batches
-          {activeBatches.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-navy text-white text-[10px] font-black rounded-full">{activeBatches.length}</span>
+          {SECTION_LABELS[statusFilter]}
+          {displayedBatches.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-navy text-white text-[10px] font-black rounded-full">{displayedBatches.length}</span>
           )}
         </h2>
 
-        {activeBatches.length === 0 ? (
+        {displayedBatches.length === 0 ? (
           <div className="surface p-10 text-center">
             <Beaker className="w-10 h-10 text-gray-200 mx-auto mb-3"/>
-            <p className="text-gray-400 font-medium text-sm">No active batches.</p>
-            {canDo('batches', 'create') && (
+            <p className="text-gray-400 font-medium text-sm">No {statusFilter} batches.</p>
+            {statusFilter === 'active' && canDo('batches', 'create') && (
               <button
                 onClick={() => { reset(); setBatchError(null); setShowNewBatchModal(true); }}
                 className="mt-4 px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg"
@@ -308,7 +337,7 @@ export default function BatchesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {activeBatches.map(batch => {
+            {displayedBatches.map(batch => {
               const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
               const flasks   = batch.batch_flasks || [];
               const maxEpHrs = batch._maxEpHrs ?? null;
@@ -316,9 +345,10 @@ export default function BatchesPage() {
                 ? maxEpHrs.toFixed(1)
                 : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
 
-              // Derive stage from flask data for post-sterilisation batches
+              // Derive stage from flask data — handles case where batch.current_stage lags behind flask stages
               const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
-              const isPostSteril = batchStageIdx > 1 || batch.current_stage === 'inoculation';
+              const hasAdvancedFlasks = flasks.some(f => STAGE_ORDER.indexOf(f.current_stage) > 1);
+              const isPostSteril = batchStageIdx > 1 || batch.current_stage === 'inoculation' || hasAdvancedFlasks;
               let derivedStage = batch.current_stage;
               if (isPostSteril && flasks.length > 0) {
                 const activeFlasks = flasks.filter(f => f.status !== 'rejected');
@@ -427,12 +457,17 @@ export default function BatchesPage() {
           </div>
         )}
       </section>
+      )}
 
-      {/* Batch History Table */}
-      <section className="mt-12">
+      {/* History Table — released / rejected tabs */}
+      {isHistoryView && (
+      <section className="mt-4">
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
           <Clock className="w-4 h-4 mr-1.5 text-gray-400"/>
-          Batch History
+          {SECTION_LABELS[statusFilter]}
+          {displayedBatches.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-navy text-white text-[10px] font-black rounded-full">{displayedBatches.length}</span>
+          )}
         </h2>
         <div className="surface overflow-hidden">
           <div className="overflow-x-auto">
@@ -448,7 +483,7 @@ export default function BatchesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {history.map(l => (
+                {displayedBatches.map(l => (
                   <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-3.5 text-xs font-mono font-bold text-gray-800">{l.batch_id}</td>
                     <td className="px-6 py-3.5">
@@ -473,14 +508,15 @@ export default function BatchesPage() {
                     </td>
                   </tr>
                 ))}
-                {history.length === 0 && (
-                  <tr><td colSpan={6} className="px-6 py-8 text-center text-xs text-gray-400 font-medium">No completed batches.</td></tr>
+                {displayedBatches.length === 0 && (
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-xs text-gray-400 font-medium">No {statusFilter} batches.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
       </section>
+      )}
 
       {/* ── New Batch Modal ──────────────────────────────────── */}
       <AnimatePresence>

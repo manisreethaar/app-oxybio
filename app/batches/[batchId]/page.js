@@ -183,14 +183,35 @@ export default function BatchDetailPage() {
     setPendingFlaskAdvance(null);
     setActionLoading(true);
     try {
-      const { error } = await supabase.from('batch_flasks').update({ current_stage: toStage }).eq('id', flaskId);
+      // Update flask stage + status (rejected locks it; released stays 'active' until ReleasePanel confirms)
+      const flaskStatus = toStage === 'rejected' ? 'rejected' : 'active';
+      const { error } = await supabase.from('batch_flasks')
+        .update({ current_stage: toStage, status: flaskStatus })
+        .eq('id', flaskId);
       if (error) throw error;
+
+      // Keep batch.current_stage in sync with the most-advanced flask (excluding released/rejected terminal update)
+      if (batch?.id && toStage !== 'rejected') {
+        const FLASK_RANKS = ['inoculation','fermentation','straining','extract_addition','qc_hold','released'];
+        const newRank  = FLASK_RANKS.indexOf(toStage);
+        const batchRank = FLASK_RANKS.indexOf(batch.current_stage);
+        if (newRank > batchRank) {
+          let newBatchStatus = 'planned';
+          if (toStage === 'fermentation')     newBatchStatus = 'fermenting';
+          else if (toStage === 'qc_hold')     newBatchStatus = 'qc-hold';
+          else if (['straining','extract_addition'].includes(toStage)) newBatchStatus = 'in_progress';
+          await supabase.from('batches')
+            .update({ current_stage: toStage, status: newBatchStatus })
+            .eq('id', batch.id);
+        }
+      }
+
       toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
       tickTaskChecklist(fromStage).catch(() => {});
       fetchAll();
     } catch (err) { toast.error(err.message); }
     finally { setActionLoading(false); }
-  }, [pendingFlaskAdvance, supabase, toast, fetchAll, tickTaskChecklist]);
+  }, [pendingFlaskAdvance, supabase, toast, fetchAll, tickTaskChecklist, batch]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
