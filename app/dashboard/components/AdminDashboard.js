@@ -29,6 +29,8 @@ export default function AdminDashboard({ employeeId }) {
   const [lowStock, setLowStock] = useState([]);
   const [calibDue, setCalibDue] = useState([]);
   const [openCapa, setOpenCapa] = useState([]);
+  const [qcHoldBatches, setQcHoldBatches] = useState([]);
+  const [qcHoldDismissed, setQcHoldDismissed] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -107,15 +109,17 @@ export default function AdminDashboard({ employeeId }) {
     try {
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-      const [stockRes, calibRes, capaRes] = await Promise.all([
+      const [stockRes, calibRes, capaRes, qcHoldRes] = await Promise.all([
         supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).limit(50),
         supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
-        supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5)
+        supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5),
+        supabase.from('batches').select('id, batch_id, current_stage, status, formulations(name)').eq('current_stage', 'qc_hold').not('status', 'in', '("released","rejected")').order('created_at', { ascending: false })
       ]);
       const lowStockItems = (stockRes.data || []).filter(s => (s.current_quantity || 0) < (s.min_stock_level || 0));
       setLowStock(lowStockItems.slice(0, 5));
       setCalibDue(calibRes.data || []);
       setOpenCapa(capaRes.data || []);
+      setQcHoldBatches(qcHoldRes.data || []);
     } catch (err) { console.error('Operational alerts fetch error:', err); }
   };
 
@@ -310,6 +314,37 @@ export default function AdminDashboard({ employeeId }) {
           )}
         </div>
       </div>
+
+      {/* QC Hold — Awaiting Release Decision */}
+      {qcHoldBatches.length > 0 && !qcHoldDismissed && (
+        <div className="surface overflow-hidden">
+          <div className="px-6 py-4 border-b border-amber-200 flex justify-between items-center bg-amber-50">
+            <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600"/>
+              ⚠ Awaiting Release Decision
+              <span className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black">{qcHoldBatches.length}</span>
+            </h2>
+            <button onClick={() => setQcHoldDismissed(true)} className="text-amber-400 hover:text-amber-700 transition-colors" aria-label="Dismiss">
+              <X className="w-4 h-4"/>
+            </button>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {qcHoldBatches.map(b => (
+                <div key={b.id} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs font-black text-amber-900">{b.batch_id}</p>
+                    {b.formulations?.name && <p className="text-[11px] text-amber-700 font-semibold truncate mt-0.5">{b.formulations.name}</p>}
+                  </div>
+                  <Link href={`/batches/${b.id}`} className="ml-3 shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                    Review →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Operational Alerts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
