@@ -8,7 +8,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
   Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
-  FileText, Download, Loader, Trash2
+  FileText, Download, Loader, Trash2, ArrowRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -291,6 +291,22 @@ export default function BatchDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchId, bmrLoading]);
 
+  const handleStartBatch = useCallback(async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/batches/${batchId}/start`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start batch');
+      toast.success('Batch started at Media Prep.');
+      fetchAll();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [actionLoading, batchId, fetchAll, toast]);
+
   const handleCancelBatch = useCallback(async () => {
     setPendingCancel(true);
   }, []);
@@ -311,12 +327,14 @@ export default function BatchDetailPage() {
   if (authLoading || !batch) return <div className="p-8 text-center text-gray-400 animate-pulse">Loading batch...</div>;
 
   const currentIdx  = STAGES.findIndex(s => s.id === batch.current_stage);
+  const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
-  const isPostSterilisation = currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting';
+  const isPostSterilisation = !isScheduled && (currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting');
 
   const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
+    if (isScheduled) return 'scheduled';
     if (!isPostSterilisation || flasks.length === 0) return batch.status;
     const allRejected = flasks.every(f => f.status === 'rejected');
     if (allRejected) return 'rejected';
@@ -333,7 +351,7 @@ export default function BatchDetailPage() {
   })();
 
   const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
-  const activeStage = isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage;
+  const activeStage = isScheduled ? null : (isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage);
   const displayStage = viewingStage || activeStage;
   const CurrentPanel = PANEL_MAP[displayStage] || null;
 
@@ -418,12 +436,14 @@ export default function BatchDetailPage() {
                 const maxEpHrs = flaskEndpoints.length > 0
                   ? Math.max(...flaskEndpoints.map(e => e.total_hours || 0))
                   : null;
-                const hrs = maxEpHrs !== null
+                const hrs = isScheduled
+                  ? 0
+                  : maxEpHrs !== null
                   ? maxEpHrs
                   : (new Date() - new Date(batch.start_time)) / 3600000;
                 return (
                   <>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase">{maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">{isScheduled ? 'Scheduled' : maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
                     <p className="text-xl font-black text-gray-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
                   </>
                 );
@@ -524,7 +544,7 @@ export default function BatchDetailPage() {
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <p className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>
-                      {f.status==='rejected' ? 'REJECTED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
+                      {f.status==='rejected' ? 'REJECTED' : isScheduled ? 'PLANNED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
                     </p>
                     {lnbByFlask[f.id] > 0 && (
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 flex items-center gap-0.5">
@@ -535,7 +555,7 @@ export default function BatchDetailPage() {
                 </button>
               ))}
             </div>
-            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-[10px] text-amber-700 font-bold">Complete Sterilisation to unlock individual trial tracking.</span></div>}
+            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-[10px] text-amber-700 font-bold">{isScheduled ? 'Start batch to unlock stage tracking.' : 'Complete Sterilisation to unlock individual trial tracking.'}</span></div>}
           </div>
 
           {/* Linked Records (compact — Lab Notebook + BMR only) */}
@@ -657,7 +677,20 @@ export default function BatchDetailPage() {
             </div>
           )}
 
-          {CurrentPanel ? (
+          {isScheduled ? (
+            <div className="surface p-8 text-center">
+              <Clock className="w-8 h-8 text-navy mx-auto mb-3" />
+              <p className="text-sm font-black text-gray-900 uppercase tracking-wider">Batch Scheduled</p>
+              <p className="text-xs text-gray-500 mt-1 mb-5">Start this batch when production begins. The first active stage will be Media Prep.</p>
+              <button
+                onClick={handleStartBatch}
+                disabled={actionLoading}
+                className="inline-flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white text-xs font-black rounded-lg disabled:opacity-60"
+              >
+                {actionLoading ? 'Starting...' : 'Start Batch'} <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </button>
+            </div>
+          ) : CurrentPanel ? (
             <div
               key={`${selectedFlaskId ?? 'batch'}-${displayStage}`}
               className={viewingStage && editingStage !== viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}

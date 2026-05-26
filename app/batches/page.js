@@ -95,6 +95,10 @@ function normaliseBatchForList(batch) {
   };
 }
 
+function isScheduledBatch(batch) {
+  return SCHEDULED_STATUSES.includes(normaliseStatus(batch.status)) && !batch.current_stage;
+}
+
 const batchSchema = z.object({
   formulation_id:    z.string().uuid('Select an approved formulation'),
   experiment_type:   z.string().min(1, 'Select experiment type'),
@@ -287,13 +291,29 @@ export default function BatchesPage() {
     }
   };
 
+  const handleStartBatch = async (id) => {
+    setCreatingBatch(true);
+    try {
+      const res = await fetch(`/api/batches/${id}/start`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start batch');
+      toast.success('Batch started at Media Prep.');
+      fetchBatches();
+      setStatusFilter('active');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCreatingBatch(false);
+    }
+  };
+
   // ─── Filtered batches (hooks must be before any conditional return) ──────
   const displayedBatches = useMemo(() => {
     switch (statusFilter) {
-      case 'scheduled': return activeBatches.filter(b => SCHEDULED_STATUSES.includes(b.status));
+      case 'scheduled': return activeBatches.filter(isScheduledBatch);
       case 'released':  return history.filter(b => b.status === 'released');
       case 'rejected':  return history.filter(b => b.status === 'rejected');
-      default:          return activeBatches.filter(b => !SCHEDULED_STATUSES.includes(b.status));
+      default:          return activeBatches.filter(b => !isScheduledBatch(b));
     }
   }, [statusFilter, activeBatches, history]);
 
@@ -307,8 +327,8 @@ export default function BatchesPage() {
   };
 
   const tabCounts = {
-    active:    activeBatches.filter(b => !SCHEDULED_STATUSES.includes(b.status)).length,
-    scheduled: activeBatches.filter(b => SCHEDULED_STATUSES.includes(b.status)).length,
+    active:    activeBatches.filter(b => !isScheduledBatch(b)).length,
+    scheduled: activeBatches.filter(isScheduledBatch).length,
     released:  history.filter(b => b.status === 'released').length,
     rejected:  history.filter(b => b.status === 'rejected').length,
   };
@@ -416,10 +436,11 @@ export default function BatchesPage() {
                 ? maxEpHrs.toFixed(1)
                 : (batch.start_time ? differenceInHours(new Date(), new Date(batch.start_time)) : 0);
 
+              const isScheduled = isScheduledBatch(batch);
               // Derive stage from flask data — handles case where batch.current_stage lags behind flask stages
               const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
               const hasAdvancedFlasks = flasks.some(f => STAGE_ORDER.indexOf(f.current_stage) > 1);
-              const isPostSteril = batchStageIdx > 1 || batch.current_stage === 'inoculation' || hasAdvancedFlasks;
+              const isPostSteril = !isScheduled && (batchStageIdx > 1 || batch.current_stage === 'inoculation' || hasAdvancedFlasks);
               let derivedStage = batch.current_stage;
               if (isPostSteril && flasks.length > 0) {
                 const activeFlasks = flasks.filter(f => f.status !== 'rejected');
@@ -431,7 +452,7 @@ export default function BatchesPage() {
                   derivedStage = STAGE_ORDER[maxIdx] || batch.current_stage;
                 }
               }
-              const currentIdx = STAGE_ORDER.indexOf(derivedStage);
+              const currentIdx = isScheduled ? -1 : STAGE_ORDER.indexOf(derivedStage);
 
               return (
                 <div
@@ -453,7 +474,7 @@ export default function BatchesPage() {
                         </span>
                         {/* Status badge */}
                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${hasAlarm ? 'bg-red-100 text-red-700 border-red-200 animate-pulse' : STATUS_COLORS[batch.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                          {hasAlarm ? '⚠ Alarm' : batch.status}
+                          {hasAlarm ? '⚠ Alarm' : isScheduled ? 'scheduled' : batch.status}
                         </span>
                       </div>
                     </div>
@@ -487,7 +508,7 @@ export default function BatchesPage() {
                       ))}
                     </div>
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                      {STAGE_LABELS[derivedStage] || derivedStage}
+                      {isScheduled ? 'Scheduled' : (STAGE_LABELS[derivedStage] || derivedStage)}
                     </p>
                   </div>
 
@@ -498,7 +519,7 @@ export default function BatchesPage() {
                       {flasks.map(f => (
                         <span
                           key={f.id}
-                          className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${f.status === 'active' ? 'bg-navy/5 text-navy border-navy/20' : f.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200 line-through' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${f.status === 'active' ? 'bg-navy/5 text-navy border-navy/20' : f.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200 line-through' : f.status === 'planned' ? 'bg-gray-50 text-gray-500 border-gray-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}
                         >
                           {f.flask_label}
                         </span>
@@ -516,12 +537,22 @@ export default function BatchesPage() {
                   </div>
 
                   {/* CTA */}
-                  <Link
-                    href={`/batches/${batch.id}`}
-                    className={`w-full py-3 flex justify-center items-center text-xs font-bold transition-colors border-t border-gray-100 ${hasAlarm ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-50/50 hover:bg-gray-100 text-navy'}`}
-                  >
-                    {hasAlarm ? '⚠ Review Alarm' : 'Continue Batch'} <ArrowRight className="w-3.5 h-3.5 ml-1.5"/>
-                  </Link>
+                  {isScheduled ? (
+                    <button
+                      onClick={() => handleStartBatch(batch.id)}
+                      disabled={creatingBatch}
+                      className="w-full py-3 flex justify-center items-center text-xs font-bold transition-colors border-t border-gray-100 bg-gray-50/50 hover:bg-gray-100 text-navy disabled:opacity-60"
+                    >
+                      Start Batch <ArrowRight className="w-3.5 h-3.5 ml-1.5"/>
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/batches/${batch.id}`}
+                      className={`w-full py-3 flex justify-center items-center text-xs font-bold transition-colors border-t border-gray-100 ${hasAlarm ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-50/50 hover:bg-gray-100 text-navy'}`}
+                    >
+                      {hasAlarm ? '⚠ Review Alarm' : 'Continue Batch'} <ArrowRight className="w-3.5 h-3.5 ml-1.5"/>
+                    </Link>
+                  )}
                 </div>
               );
             })}

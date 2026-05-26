@@ -22,12 +22,14 @@ const postSchema = z.object({
 });
 
 // ─────────────────────────────────────────────────────────────
-// Generate sequential batch ID: OB-FER-YYYY-SEQ
-// Sequence is global per year (no per-recipe scoping).
+// Generate sequential batch ID: OB-YYYY-MM-SEQ
+// Sequence is global per month to match the production registry format.
 // ─────────────────────────────────────────────────────────────
 async function generateBatchId(supabase) {
-  const year = new Date().getFullYear();
-  const prefix = `OB-FER-${year}-`;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const prefix = `OB-${year}-${month}-`;
 
   const { data: lastBatch } = await supabase
     .from('batches')
@@ -160,9 +162,9 @@ export async function POST(request) {
         num_flasks,
         planned_start_date: planned_start_date || null,
         assigned_team:      assigned_team.length > 0 ? assigned_team : [creator.id],
-        current_stage:      'media_prep',
+        current_stage:      null,
         status:             'scheduled',
-        start_time:         new Date().toISOString(),
+        start_time:         null,
         created_by:         creator.id,
         notes:              notes || null,
       })
@@ -176,7 +178,8 @@ export async function POST(request) {
       batch_id:     newBatch.id,
       flask_label:  `F${i + 1}`,
       flask_full_id: `${batchIdStr}-F${i + 1}`,
-      status:       'active',
+      current_stage: null,
+      status:       'planned',
     }));
     await supabase.from('batch_flasks').insert(flaskRows).then(() => {}).catch(err => {
       console.warn('Flask auto-creation warning:', err.message);
