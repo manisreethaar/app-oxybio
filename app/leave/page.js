@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
+// import removed as notifications are handled by the backend API route
 import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } from 'lucide-react';
 import { differenceInBusinessDays } from 'date-fns';
 

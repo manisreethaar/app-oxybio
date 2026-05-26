@@ -10,17 +10,20 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch full experiment notebooks
     const { data, error } = await supabase
       .from('lab_notebook_entries')
       .select(`
         id,
         title,
         status,
+        batch_stage,
         created_at,
         batches (
           batch_id,
           variant
+        ),
+        flask:batch_flasks!lab_notebook_entries_flask_id_fkey (
+          flask_label
         ),
         author:employees!lab_notebook_entries_created_by_fkey (
           full_name,
@@ -51,13 +54,12 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, batch_id } = await request.json();
+    const { title, batch_id, flask_id, batch_stage, attachment_url } = await request.json();
 
     if (!title) {
       return NextResponse.json({ success: false, error: 'Experiment title is required' }, { status: 400 });
     }
 
-    // Lookup employee by UUID
     const { data: emp, error: empErr } = await supabase
       .from('employees')
       .select('id')
@@ -68,12 +70,14 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Employee profile not found' }, { status: 404 });
     }
 
-    // Create a new drafted notebook entry
     const { data, error } = await supabase
       .from('lab_notebook_entries')
       .insert({
         title,
-        batch_id: batch_id || null,
+        batch_id:    batch_id    || null,
+        flask_id:    flask_id    || null,
+        batch_stage: batch_stage || null,
+        attachment_url: attachment_url || null,
         created_by: emp.id,
         status: 'Draft'
       })

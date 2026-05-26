@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X } from 'lucide-react';
+import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer } from 'lucide-react';
+import { syncStageToLNB } from '@/lib/lnbSync';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -87,6 +88,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [retroReason, setRetroReason] = useState('');
   const [loggedAt,   setLoggedAt]   = useState('');
 
+  // Fermentation end time — persisted in localStorage per flask
+  const [recordedEndTime, setRecordedEndTime] = useState('');
+  useEffect(() => {
+    if (!activeFlask?.id) return;
+    const stored = localStorage.getItem(`ferm-end-${activeFlask.id}`) || '';
+    setRecordedEndTime(stored);
+  }, [activeFlask?.id]);
+  const handleSaveEndTime = (val) => {
+    setRecordedEndTime(val);
+    if (activeFlask?.id) {
+      if (val) localStorage.setItem(`ferm-end-${activeFlask.id}`, val);
+      else localStorage.removeItem(`ferm-end-${activeFlask.id}`);
+    }
+  };
+
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
   const [epPh,       setEpPh]       = useState('');
@@ -108,23 +124,30 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [deletingReading, setDeletingReading] = useState(null);
   const [deleteReason,    setDeleteReason]    = useState('');
   const [savingDelete,    setSavingDelete]    = useState(false);
+  const [editingEndpoint, setEditingEndpoint] = useState(false);
+  const [epEditHours,     setEpEditHours]     = useState('');
+  const [epEditPh,        setEpEditPh]        = useState('');
+  const [savingEpEdit,    setSavingEpEdit]    = useState(false);
 
   const isAdmin  = ['admin','ceo','cto'].includes(role);
   const isIntern = ['intern','research_intern'].includes(role);
 
   const fetchData = useCallback(async () => {
-    if (!activeFlask) return;
+    if (!activeFlask?.id) return;
     const [rRes, iRes, epRes] = await Promise.all([
-      supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batch.id).order('logged_at'),
+      supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
       supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
       supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
     ]);
     if (rRes.data) setReadings(rRes.data);
-    if (iRes.data) setInocu(iRes.data);
+    if (iRes.data) setInocu(iRes.data); else setInocu(null);
     setEndpoint(epRes.data ?? null);
-  }, [batch.id, activeFlask, supabase]);
+  }, [batch.id, activeFlask?.id, supabase]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    setReadings([]); setInocu(null); setEndpoint(null);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     // Clear endpoint form whenever the active flask changes
@@ -178,9 +201,15 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     finally { setSaving(false); }
   };
 
+  const isRetroSpective = tZero && new Date(tZero) < new Date(batch.created_at || batch.start_time);
+
   const handleEndpoint = async (e) => {
     e.preventDefault();
     if (!epPh || savingEp) return;
+    if (isRetroSpective && !endpointTime) {
+      toast.warn('This is a retrospective batch — please set the actual Fermentation End Time.');
+      return;
+    }
     const finalPh = parseFloat(epPh);
     const phOOR = finalPh < 4.2 || finalPh > 4.5;
     if (phOOR) {
@@ -210,10 +239,38 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (epErr) throw epErr;
       
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
+      syncStageToLNB(supabase, batch.id, 'fermentation', {
+        total_hours: epData.total_hours,
+        final_ph: finalPh,
+        aroma,
+        colour_desc: colourDesc,
+        texture,
+        sensory_overall: sensory,
+        gram_stain: gramStain,
+        notes: epNotes || null,
+      }, activeFlask.flask_label);
       setEndpointTime('');
+      setRecordedEndTime('');
+      if (activeFlask?.id) localStorage.removeItem(`ferm-end-${activeFlask.id}`);
       fetchData(); onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEp(false); }
+  };
+
+  const handleEndpointEdit = async (e) => {
+    e.preventDefault();
+    if (!epEditHours || !epEditPh) return;
+    setSavingEpEdit(true);
+    try {
+      const { error } = await supabase.from('batch_flask_endpoints')
+        .update({ total_hours: parseFloat(epEditHours), final_ph: parseFloat(epEditPh) })
+        .eq('flask_id', activeFlask.id);
+      if (error) throw error;
+      toast.success('Endpoint updated.');
+      setEditingEndpoint(false);
+      fetchData(); onDataSaved();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingEpEdit(false); }
   };
 
   const openEdit = (r) => {
@@ -302,7 +359,19 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             )}
           </div>
           {!endpoint && tZero && (
-            <button onClick={() => { setShowEndpoint(s => !s); if (showEndpoint) setEndpointTime(''); }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
+            <button onClick={() => {
+              if (!showEndpoint) {
+                if (recordedEndTime) {
+                  setEndpointTime(recordedEndTime);
+                } else if (inocu?.planned_fermentation_hrs && tZero) {
+                  const suggested = new Date(tZero.getTime() + inocu.planned_fermentation_hrs * 3600000);
+                  if (suggested < new Date()) setEndpointTime(suggested.toISOString().slice(0, 16));
+                }
+              } else {
+                setEndpointTime('');
+              }
+              setShowEndpoint(s => !s);
+            }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
               {showEndpoint ? 'Cancel Endpoint' : 'Declare Endpoint'}
             </button>
           )}
@@ -311,6 +380,37 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         {endpoint && <div className="flex items-center gap-2 mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg"><CheckCircle2 className="w-4 h-4 text-emerald-600"/><span className="text-xs font-bold text-emerald-800">Endpoint declared — Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total</span></div>}
         {latestAlarm && <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg"><AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5"/><span className="text-xs font-bold text-red-800">⚠ Active alarm — a recent reading for this flask is out of bounds.</span></div>}
         {maxExceeded && !endpoint && <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg"><Clock className="w-4 h-4 text-amber-600 shrink-0"/><span className="text-xs font-bold text-amber-800">Planned fermentation duration exceeded. Time to declare endpoint?</span></div>}
+
+        {/* Fermentation End Time — always visible once T=0 is set, before endpoint is declared */}
+        {tZero && !endpoint && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1.5">
+              Fermentation End Time <span className="text-gray-400 font-normal normal-case tracking-normal">(fill this when fermentation stops)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="datetime-local"
+                value={recordedEndTime}
+                max={new Date().toISOString().slice(0, 16)}
+                onChange={e => handleSaveEndTime(e.target.value)}
+                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${recordedEndTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-gray-200'}`}
+              />
+              {recordedEndTime && tZero && (
+                <span className="text-sm font-black text-navy whitespace-nowrap tabular-nums">
+                  {((new Date(recordedEndTime) - tZero) / 3600000).toFixed(1)} hr
+                </span>
+              )}
+              {recordedEndTime && (
+                <button onClick={() => handleSaveEndTime('')} className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
+                  <X className="w-3.5 h-3.5"/>
+                </button>
+              )}
+            </div>
+            {recordedEndTime && (
+              <p className="text-[9px] text-emerald-600 font-bold mt-1">✓ Saved — will auto-fill when you declare endpoint</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -399,34 +499,37 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           <div className="p-4">
             <PhChart readings={readings}/>
           </div>
-          <div className="overflow-x-auto border-t border-gray-100">
-            <table className="min-w-full divide-y divide-gray-100">
+          <div className="border-t border-gray-100">
+            <table className="w-full divide-y divide-gray-100">
               <thead><tr className="bg-gray-50/50">
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Flask</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">pH</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Temp</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">OD</th>
-                <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Plating</th>
-                {isAdmin && <th className="px-4 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Actions</th>}
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Flask</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">pH</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Temp</th>
+                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix · OD · Plating</th>
+                {isAdmin && <th className="px-3 py-2 text-[9px] font-bold text-gray-400 uppercase"></th>}
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {[...readings].filter(r => r.flask_id === activeFlask.id).reverse().map(r => (
                   <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-gray-50/30'}>
-                    <td className="px-4 py-2 text-xs font-black text-navy whitespace-nowrap">
-                      {r.flask_label}
-                      {r.is_retrospective && <span className="ml-1 px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-bold">RETRO</span>}
-                      {r.edit_reason && <span className="ml-1 px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <p className="text-xs font-black text-navy">{r.flask_label}</p>
+                      <div className="flex gap-1 mt-0.5 flex-wrap">
+                        {r.is_retrospective && <span className="px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-[7px] font-bold">RETRO</span>}
+                        {r.edit_reason && <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[7px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
+                      </div>
                     </td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
-                    <td className={`px-4 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
-                    <td className={`px-4 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.brix ? `${r.brix}` : '—'}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">{r.optical_density ? `${r.optical_density}` : '—'}</td>
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-600 truncate max-w-[120px]" title={r.plating_result || ''}>{r.plating_result || '—'}</td>
+                    <td className="px-3 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
+                    <td className={`px-3 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
+                    <td className={`px-3 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
+                    <td className="px-3 py-2">
+                      <p className="text-[10px] text-gray-600 font-semibold">
+                        {r.brix ? `${r.brix}°Bx` : '—'} · {r.optical_density ? `OD ${r.optical_density}` : '—'}
+                      </p>
+                      {r.plating_result && <p className="text-[9px] text-gray-400 mt-0.5 truncate max-w-[140px]" title={r.plating_result}>{r.plating_result}</p>}
+                    </td>
                     {isAdmin && (
-                      <td className="px-4 py-2 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <button onClick={() => openEdit(r)} title="Edit reading"
                             className="p-1 rounded hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors">
@@ -441,7 +544,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     )}
                   </tr>
                 ))}
-                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 8 : 7} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
+                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -463,20 +566,23 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   className={`w-full px-4 py-3 border-2 rounded-xl text-2xl font-black font-mono text-center outline-none ${parseFloat(epPh)<4.2||parseFloat(epPh)>4.5?'border-red-400 text-red-600':'border-gray-200 text-gray-800 focus:border-navy'}`} placeholder="4.30"/>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Fermentation End Time</label>
+                <label className={`block text-[10px] font-bold uppercase mb-1 ${isRetroSpective ? 'text-amber-600' : 'text-gray-400'}`}>
+                  Fermentation End Time {isRetroSpective && <span className="text-red-500">* Required</span>}
+                </label>
                 <input
                   type="datetime-local"
                   value={endpointTime}
                   max={new Date().toISOString().slice(0,16)}
                   onChange={e => setEndpointTime(e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy"
+                  className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${isRetroSpective && !endpointTime ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
                 />
                 {tZero && (() => {
                   const t = endpointTime ? new Date(endpointTime) : new Date();
                   const hrs = (t - tZero) / 3600000;
                   return (
                     <p className="text-[10px] mt-1 font-black text-navy text-center">
-                      Total: {hrs.toFixed(1)} hr  {!endpointTime && <span className="text-amber-500">(using now — set end time for retrospective batches)</span>}
+                      Total: {hrs.toFixed(1)} hr
+                      {!endpointTime && isRetroSpective && <span className="text-amber-600"> — enter actual end time above</span>}
                     </p>
                   );
                 })()}
@@ -525,14 +631,56 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Advance button (after endpoint declared) */}
       {endpoint && (
-        <div className="surface p-5 flex items-center justify-between">
+        <div className="surface p-5 flex items-center justify-between gap-4">
           <div className="text-sm">
             <p className="font-bold text-gray-900">Endpoint declared ✓</p>
             <p className="text-gray-500 text-xs">Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total fermentation</p>
           </div>
-          <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
-            Advance Trial → Straining
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => { setEpEditHours(endpoint.total_hours?.toFixed(2) || ''); setEpEditPh(endpoint.final_ph || ''); setEditingEndpoint(true); }}
+                className="px-3 py-2 border border-amber-300 bg-amber-50 text-amber-700 text-xs font-black rounded-lg hover:bg-amber-100 transition-colors"
+              >
+                Edit Hours
+              </button>
+            )}
+            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+              Advance Trial → Straining
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Endpoint Modal */}
+      {editingEndpoint && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-amber-700 mb-1 flex items-center gap-2">
+              <Pencil className="w-4 h-4"/> Correct Endpoint Record
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">Admin correction — update total fermentation hours and final pH stored for this endpoint.</p>
+            <form onSubmit={handleEndpointEdit} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Total Fermentation Hours</label>
+                <input type="number" step="0.01" min="0" required value={epEditHours} onChange={e => setEpEditHours(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm font-semibold outline-none focus:border-amber-500"/>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Final pH</label>
+                <input type="number" step="0.01" min="0" max="14" required value={epEditPh} onChange={e => setEpEditPh(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm font-semibold outline-none focus:border-amber-500"/>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setEditingEndpoint(false)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={savingEpEdit}
+                  className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 disabled:opacity-50">
+                  {savingEpEdit ? 'Saving...' : 'Save Correction'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

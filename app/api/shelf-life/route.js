@@ -29,6 +29,25 @@ export async function POST(request) {
     }).select().single();
 
     if (error) throw error;
+
+    // Auto-create tasks for each standard shelf-life timepoint
+    const { data: batchRow } = await supabase.from('batches').select('batch_id').eq('id', parsed.data.batch_id).single();
+    const startDate = new Date(parsed.data.start_date);
+    const taskRows = [7, 14, 30, 60, 90].map(day => {
+      const due = new Date(startDate);
+      due.setDate(due.getDate() + day);
+      return {
+        title: `Shelf-Life D${day} — ${batchRow?.batch_id || 'Batch'}`,
+        description: `Day ${day} shelf-life test. Storage: ${parsed.data.storage_condition}. Tests: ${(parsed.data.test_parameters || []).join(', ')}.`,
+        priority: day <= 14 ? 'high' : 'medium',
+        status: 'todo',
+        batch_id: parsed.data.batch_id,
+        assigned_by: emp.id,
+        due_date: due.toISOString().slice(0, 10),
+      };
+    });
+    await supabase.from('tasks').insert(taskRows).catch(() => {});
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

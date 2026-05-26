@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { notifyAdmins } from '@/utils/serverNotify';
 
 export async function GET(request, { params }) {
   try {
@@ -76,6 +77,17 @@ export async function PUT(request, { params }) {
       .single();
 
     if (error) throw error;
+
+    // Notify supervisors when entry is submitted for countersigning
+    if (updates.status === 'Submitted') {
+      notifyAdmins(
+        `LNB Review Required — ${data.title || 'Untitled Entry'}`,
+        `A lab notebook entry has been submitted for countersigning. Please review and countersign.`,
+        `/lab-notebook/${id}`,
+        'info'
+      ).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Digital LNB API PUT [id] Error:', error);

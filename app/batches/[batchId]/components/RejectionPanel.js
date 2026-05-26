@@ -12,23 +12,37 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
   const [pendingReject, setPendingReject] = useState(false);
   const isCeo    = ['ceo','admin'].includes(role);
 
-  const [reason,   setReason]   = useState('');
-  const [stage,    setStage]    = useState('');
-  const [disposal, setDisposal] = useState('Autoclave + Drain');
-  const [capaReq,  setCapaReq]  = useState(false);
-  const [notes,    setNotes]    = useState('');
+  const [reason,          setReason]          = useState('');
+  const [stage,           setStage]           = useState('');
+  const [disposal,        setDisposal]        = useState('Autoclave + Drain');
+  const [capaReq,         setCapaReq]         = useState(false);
+  const [notes,           setNotes]           = useState('');
+  const [supplierDefect,  setSupplierDefect]  = useState(false);
+  const [implicatedLotId, setImplicatedLotId] = useState('');
+  const [batchLots,       setBatchLots]       = useState([]);
 
   const fetch = useCallback(async () => {
-    if (!activeFlask) return;
-    const { data } = await supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single();
-    if (data) setRecord(data);
-    else {
-      setRecord(null);
-      setStage(activeFlask.current_stage || '');
+    if (!activeFlask?.id) return;
+    let isCurrent = true;
+    const [{ data }, mediaPrep] = await Promise.all([
+      supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single(),
+      supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).single(),
+    ]);
+    if (!isCurrent) return;
+    if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
+    else { setRecord(null); setStage(activeFlask.current_stage || ''); }
+    // Build lot list from media prep
+    const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
+    if (lotIds.length) {
+      const { data: lots } = await supabase.from('inventory_stock')
+        .select('id, supplier_batch_number, inventory_items(name)')
+        .in('id', lotIds);
+      if (lots) setBatchLots(lots);
     }
-  }, [activeFlask, supabase]);
+    return () => { isCurrent = false; };
+  }, [activeFlask?.id, batch.id, supabase]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { setRecord(null); fetch(); }, [fetch]);
 
   const handleSave = async () => {
     if (!isCeo) return;
@@ -47,21 +61,31 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         root_cause: reason, rejection_stage: stage || activeFlask.current_stage,
         disposal_method: disposal,
         capa_required: capaReq, notes: notes || null,
+        supplier_defect: supplierDefect,
+        implicated_lot_id: supplierDefect && implicatedLotId ? implicatedLotId : null,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
-      
-      // Update flask status
+
       await supabase.from('batch_flasks').update({ status: 'rejected' }).eq('id', activeFlask.id);
 
       if (capaReq) {
+        // Auto-create a deviation so it appears immediately in the CAPA module
+        await supabase.from('deviations').insert({
+          batch_id:    batch.id,
+          title:       `Flask ${activeFlask.flask_label} rejected — ${reason.substring(0, 80)}`,
+          severity:    supplierDefect ? 'critical' : 'major',
+          reported_by: employeeProfile?.id,
+          status:      'open',
+        }).then(()=>{}).catch(()=>{});
+
         await supabase.from('notifications').insert({
           employee_id: employeeProfile?.id,
           title: `CAPA Required — Trial ${activeFlask.flask_label} rejected`,
-          message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${reason}.`,
-          link: '/compliance',
+          message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${reason}. A deviation has been raised in the CAPA module.`,
+          link: '/capa',
         }).then(()=>{}).catch(()=>{});
       }
-      toast.success(`Trial ${activeFlask.flask_label} officially rejected.`);
+      toast.success(`Trial ${activeFlask.flask_label} officially rejected.${ capaReq ? ' Deviation raised in CAPA.' : '' }`);
       onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
@@ -90,8 +114,11 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Failed Stage</p><p className="font-bold text-gray-800">{record.rejection_stage?.replace(/_/g,' ') || '—'}</p></div>
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Disposal Method</p><p className="font-bold text-gray-800">{record.disposal_method}</p></div>
             </div>
+            {record.supplier_defect && (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl font-bold text-orange-800 text-xs">🏭 Supplier defect flagged — Critical deviation raised.</div>
+            )}
             {record.capa_required && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">⚠ CAPA required — raise in Compliance module.</div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">⚠ CAPA raised — check the CAPA module for the open deviation.</div>
             )}
           </div>
         </div>
@@ -131,9 +158,24 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
                   ))}
                 </div>
               </div>
+              <div className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-200 rounded-xl">
+                <input type="checkbox" id="supplierDefect" checked={supplierDefect} onChange={e=>setSupplierDefect(e.target.checked)} className="w-4 h-4 rounded border-orange-300"/>
+                <label htmlFor="supplierDefect" className="text-xs font-bold text-orange-800">Supplier / Raw Material Defect — escalates deviation to Critical</label>
+              </div>
+              {supplierDefect && batchLots.length > 0 && (
+                <div>
+                  <label className="field-label">Implicated Lot</label>
+                  <select value={implicatedLotId} onChange={e=>setImplicatedLotId(e.target.value)} className="field-input bg-white">
+                    <option value="">Select lot...</option>
+                    {batchLots.map(l=>(
+                      <option key={l.id} value={l.id}>{l.inventory_items?.name} — {l.supplier_batch_number||'No lot#'}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <input type="checkbox" id="capaReq" checked={capaReq} onChange={e=>setCapaReq(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
-                <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">CAPA Required — raise corrective action in Compliance after this</label>
+                <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">CAPA Required — a deviation will be auto-created in the CAPA module</label>
               </div>
               <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
               <button onClick={handleSave} disabled={saving||!reason.trim()} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">

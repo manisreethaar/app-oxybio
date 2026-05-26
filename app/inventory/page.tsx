@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 
 export const metadata = { title: 'Inventory - OxyOS' };
 
-export default async function InventoryPage() {
+export default async function InventoryPage({ searchParams }: { searchParams?: { search?: string } }) {
   const supabase = createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
+
   if (authError || !user) {
     redirect('/login');
   }
@@ -20,10 +20,11 @@ export default async function InventoryPage() {
   ]);
 
   return (
-    <InventoryClient 
+    <InventoryClient
       initialStock={stockRes.data || []}
       initialItems={itemsRes.data || []}
       initialVendors={vendorsRes.data || []}
+      initialSearch={searchParams?.search || ''}
     />
   );
 }

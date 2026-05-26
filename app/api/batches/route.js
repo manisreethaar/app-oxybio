@@ -22,13 +22,12 @@ const postSchema = z.object({
 });
 
 // ─────────────────────────────────────────────────────────────
-// Generate sequential batch ID: OB-YYYY-MM-SEQ
+// Generate sequential batch ID: OB-FER-YYYY-SEQ
+// Sequence is global per year (no per-recipe scoping).
 // ─────────────────────────────────────────────────────────────
 async function generateBatchId(supabase) {
-  const now = new Date();
-  const year  = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const prefix = `OB-${year}-${month}-`;
+  const year = new Date().getFullYear();
+  const prefix = `OB-FER-${year}-`;
 
   const { data: lastBatch } = await supabase
     .from('batches')
@@ -36,7 +35,7 @@ async function generateBatchId(supabase) {
     .like('batch_id', `${prefix}%`)
     .order('batch_id', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   let seq = 1;
   if (lastBatch?.batch_id) {
@@ -247,7 +246,9 @@ export async function POST(request) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// GET /api/batches — List all batches (role-filtered at RLS level)
+// GET /api/batches — List all batches OR preview next batch ID
+// ?formulation_id=<uuid>  → preview next batch ID only
+// ?status=<status>        → filter list by status
 // ─────────────────────────────────────────────────────────────
 export async function GET(request) {
   try {
@@ -256,7 +257,14 @@ export async function GET(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const statusFilter = searchParams.get('status'); // optional ?status=scheduled
+    const formulationId = searchParams.get('formulation_id');
+    const statusFilter  = searchParams.get('status');
+
+    // Preview mode — just return the next batch ID
+    if (formulationId) {
+      const nextId = await generateBatchId(supabase);
+      return NextResponse.json({ batch_id: nextId });
+    }
 
     let query = supabase
       .from('batches')
@@ -359,3 +367,4 @@ export async function DELETE(request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+

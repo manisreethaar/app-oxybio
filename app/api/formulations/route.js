@@ -4,15 +4,21 @@ import { NextResponse } from 'next/server';
 
 const APPROVER_ROLES = ['admin', 'ceo', 'cto'];
 
-export async function GET() {
+export async function GET(request) {
   try {
     const supabase = createClient();
-    // Return ALL non-archived formulations so the page can show status-based workflow
-    const { data, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+
+    let query = supabase
       .from('formulations')
       .select('*, approver:employees!formulations_approved_by_fkey(full_name)')
       .neq('status', 'Archived')
       .order('created_at', { ascending: false });
+
+    if (category) query = query.eq('category', category);
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return NextResponse.json(data);
@@ -28,7 +34,7 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { code, name, ingredients, notes, base_version_id } = body;
+    const { code, name, ingredients, notes, base_version_id, category } = body;
 
     let nextVersion = 1;
     if (base_version_id) {
@@ -53,7 +59,8 @@ export async function POST(request) {
       version: nextVersion,
       created_by: emp?.id || null,
       base_version_id: base_version_id || null,
-      status: 'Draft'  // All new recipes start as Draft
+      status: 'Draft',
+      category: category || 'Fermentation',
     }).select().single();
 
     if (error) throw error;
@@ -141,7 +148,7 @@ export async function PUT(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { id, code, name, ingredients, notes } = body;
+    const { id, code, name, ingredients, notes, category } = body;
 
     // Security: Only allow editing if Status is Draft or rejected
     const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();
@@ -151,7 +158,7 @@ export async function PUT(request) {
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations')
-      .update({ code, name, ingredients, notes })
+      .update({ code, name, ingredients, notes, ...(category ? { category } : {}) })
       .eq('id', id)
       .select()
       .single();

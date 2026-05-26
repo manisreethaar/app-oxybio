@@ -2,12 +2,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Plus, FlaskConical, Beaker, Clock, CheckCircle2, AlertCircle, Edit2, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, FlaskConical, Beaker, Clock, CheckCircle2, AlertCircle, Edit2, Search, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import IncubationFormModal from './components/IncubationFormModal';
 
 export default function SampleIncubationPage() {
-  const { employeeProfile, loading: authLoading } = useAuth();
+  const { employeeProfile, role, loading: authLoading } = useAuth();
   const toast = useToast();
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +17,8 @@ export default function SampleIncubationPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
 
   const fetchSamples = useCallback(async () => {
     setLoading(true);
@@ -51,6 +54,19 @@ export default function SampleIncubationPage() {
       return acc;
     }, { total: 0, ongoing: 0, contaminated: 0, overdue: 0 });
   }, [samples]);
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this incubation record? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/research/incubation?id=${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Delete failed');
+      toast.success('Record deleted.');
+      fetchSamples();
+    } catch (err) { toast.error(err.message); }
+    finally { setDeletingId(null); }
+  };
 
   const openNewRecord = () => {
     setEditData(null);
@@ -146,7 +162,11 @@ export default function SampleIncubationPage() {
                         {sample.sample_type === 'Agar Plate' ? <Beaker className="w-3.5 h-3.5 mr-1.5 text-orange-500" /> : <FlaskConical className="w-3.5 h-3.5 mr-1.5 text-blue-500" />}
                         {sample.sample_type}
                     </div>
-                    {sample.batches && <div className="text-[10px] font-mono text-gray-500 mt-1">Batch: {sample.batches.batch_id}</div>}
+                    {sample.batches && (
+                      <Link href={`/batches/${sample.batch_id}`} className="text-[10px] font-mono text-navy hover:underline mt-1 block" onClick={e => e.stopPropagation()}>
+                        Batch: {sample.batches.batch_id}
+                      </Link>
+                    )}
                     {sample.batch_flasks && <div className="text-[10px] font-mono text-gray-500 mt-1">Trial: {sample.batch_flasks.flask_label}</div>}
                     {sample.batch_flask_qc_samples && <div className="text-[10px] font-mono text-gray-500 mt-1">QC: {sample.batch_flask_qc_samples.sample_id}</div>}
                     {sample.source_stage && <div className="text-[10px] uppercase font-bold text-gray-400 mt-1">Stage: {sample.source_stage.replace(/_/g, ' ')}</div>}
@@ -179,9 +199,21 @@ export default function SampleIncubationPage() {
                     </div>
                   </td>
                   <td className="p-4 text-right">
-                     <button onClick={() => { setEditData(sample); setShowModal(true); }} className="p-2 text-gray-400 hover:text-navy hover:bg-blue-50 rounded-lg transition-colors">
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => { setEditData(sample); setShowModal(true); }} className="p-2 text-gray-400 hover:text-navy hover:bg-blue-50 rounded-lg transition-colors">
                         <Edit2 className="w-4 h-4" />
-                     </button>
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(sample.id)}
+                          disabled={deletingId === sample.id}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                          title="Delete record"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
