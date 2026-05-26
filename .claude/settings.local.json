@@ -8,7 +8,11 @@
       "Bash(git push:*)",
       "Bash(grep -n \"CREATE TABLE.*batch_flask\" /e/OXYBIO/supabase/*.sql)",
       "Bash(grep -n \"batch_flask_\" /e/OXYBIO/app/batches/\\\\[batchId\\\\]/components/*.js)",
-      "Bash(grep -r \"batch_flask\" /e/OXYBIO/supabase/*.sql)"
+      "Bash(grep -r \"batch_flask\" /e/OXYBIO/supabase/*.sql)",
+      "Bash(git commit -m ' *)",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__execute_sql"
     ]
   }
 }

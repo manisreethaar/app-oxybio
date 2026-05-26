@@ -55,6 +55,9 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         if (nameLower.includes('kavuni')) setKavuniWt(String(ing.quantity || ''));
         if (nameLower.includes('water'))  setWaterVol(String(ing.quantity || ''));
       }
+      if (batch.planned_volume_ml && batch.num_flasks) {
+        setTotalVol(String(batch.planned_volume_ml * batch.num_flasks));
+      }
     }
     return () => { isCurrent = false; };
   }, [batch.id, supabase]); // eslint-disable-line

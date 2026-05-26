@@ -22,11 +22,34 @@ export async function GET(req, { params }) {
 
   if (expRes.error) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  let kineticData = kineticsRes.data || [];
+  
+  // ── Unified Process Bus: Batch Readings ↔ Bioprocess Charts ──
+  // If this experiment is linked to a batch, dynamically pull real-time fermentation readings
+  if (expRes.data?.batch_id) {
+    const { data: batchReadings } = await supabase
+      .from('batch_fermentation_readings')
+      .select('elapsed_hours, optical_density, ph, brix')
+      .eq('batch_id', expRes.data.batch_id)
+      .order('elapsed_hours', { ascending: true });
+
+    if (batchReadings && batchReadings.length > 0) {
+      kineticData = batchReadings.map((r, i) => ({
+        id: `auto-${i}`,
+        sort_order: i,
+        time_h: r.elapsed_hours || 0,
+        od600: r.optical_density || null,
+        ph: r.ph || null,
+        glucose_gl: r.brix || null, // Mapping Brix to glucose column for chart compatibility
+      }));
+    }
+  }
+
   return NextResponse.json({
     experiment:   expRes.data,
     factors:      factorsRes.data || [],
     responses:    responsesRes.data || [],
-    kineticData:  kineticsRes.data || [],
+    kineticData:  kineticData,
   });
 }
 
