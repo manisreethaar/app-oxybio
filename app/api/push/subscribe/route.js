@@ -15,10 +15,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing subscription object' }, { status: 400 });
     }
 
+    // ilike = case-insensitive match; consistent with how profile lookup works in layout.js
     const { error } = await supabase
       .from('employees')
       .update({ push_subscription: subscription })
-      .eq('email', user.email);
+      .ilike('email', user.email);
       
     if (error) throw error;
 
