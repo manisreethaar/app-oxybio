@@ -40,7 +40,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       if (lots) setBatchLots(lots);
     }
     return () => { isCurrent = false; };
-  }, [activeFlask?.id, batch.id, supabase]);
+  }, [activeFlask?.id, activeFlask?.current_stage, batch.id, supabase]);
 
   useEffect(() => { setRecord(null); fetch(); }, [fetch]);
 
