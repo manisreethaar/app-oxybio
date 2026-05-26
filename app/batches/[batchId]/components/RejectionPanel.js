@@ -68,16 +68,16 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
 
       await supabase.from('batch_flasks').update({ status: 'rejected' }).eq('id', activeFlask.id);
 
-      if (capaReq) {
-        // Auto-create a deviation so it appears immediately in the CAPA module
-        await supabase.from('deviations').insert({
-          batch_id:    batch.id,
-          title:       `Flask ${activeFlask.flask_label} rejected — ${reason.substring(0, 80)}`,
-          severity:    supplierDefect ? 'critical' : 'major',
-          reported_by: employeeProfile?.id,
-          status:      'open',
-        }).then(()=>{}).catch(()=>{});
+      // Always raise a deviation on flask rejection
+      await supabase.from('deviations').insert({
+        batch_id:    batch.id,
+        title:       `Flask ${activeFlask.flask_label} rejected — ${reason.substring(0, 80)}`,
+        severity:    supplierDefect ? 'critical' : (capaReq ? 'major' : 'minor'),
+        reported_by: employeeProfile?.id,
+        status:      'open',
+      }).then(()=>{}).catch(()=>{});
 
+      if (capaReq || supplierDefect) {
         await supabase.from('notifications').insert({
           employee_id: employeeProfile?.id,
           title: `CAPA Required — Trial ${activeFlask.flask_label} rejected`,
@@ -85,7 +85,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
           link: '/capa',
         }).then(()=>{}).catch(()=>{});
       }
-      toast.success(`Trial ${activeFlask.flask_label} officially rejected.${ capaReq ? ' Deviation raised in CAPA.' : '' }`);
+      toast.success(`Trial ${activeFlask.flask_label} officially rejected. Deviation raised in CAPA.`);
       onDataSaved();
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
@@ -175,7 +175,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               )}
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <input type="checkbox" id="capaReq" checked={capaReq} onChange={e=>setCapaReq(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
-                <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">CAPA Required — a deviation will be auto-created in the CAPA module</label>
+                <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">Notify CAPA — a deviation is always raised; checking this also sends a CAPA notification</label>
               </div>
               <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
               <button onClick={handleSave} disabled={saving||!reason.trim()} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">

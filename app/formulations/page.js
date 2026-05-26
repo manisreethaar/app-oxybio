@@ -48,6 +48,8 @@ export default function FormulationsPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState(null); // replaces window.confirm
   const [pendingArchiveId, setPendingArchiveId] = useState(null);
   const [batchCounts, setBatchCounts] = useState({});
+  const [expandedBatchHistory, setExpandedBatchHistory] = useState(null);
+  const [batchHistory, setBatchHistory] = useState({});
 
   const supabase = useMemo(() => createClient(), []);
   const isApprover = APPROVER_ROLES.includes(role?.toLowerCase());
@@ -106,6 +108,16 @@ export default function FormulationsPage() {
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  };
+
+  const fetchBatchHistory = async (formulationId) => {
+    const { data } = await supabase
+      .from('batches')
+      .select('id, batch_id, status, experiment_type, start_time, current_stage')
+      .eq('formulation_id', formulationId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setBatchHistory(prev => ({ ...prev, [formulationId]: data || [] }));
   };
 
   const handleForwardRevision = (f) => {
@@ -368,9 +380,19 @@ export default function FormulationsPage() {
 
                     {batchCounts[f.id] > 0 && (
                       <div className="mb-2">
-                        <Link href="/batches" className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">
-                          <FlaskConical className="w-2.5 h-2.5"/> Used in {batchCounts[f.id]} batch{batchCounts[f.id] !== 1 ? 'es' : ''}
-                        </Link>
+                        <button
+                          onClick={() => {
+                            const isExpanding = expandedBatchHistory !== f.id;
+                            setExpandedBatchHistory(isExpanding ? f.id : null);
+                            if (isExpanding && !batchHistory[f.id]) {
+                              fetchBatchHistory(f.id);
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors"
+                        >
+                          <FlaskConical className="w-2.5 h-2.5"/>
+                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} →
+                        </button>
                       </div>
                     )}
 
@@ -522,6 +544,60 @@ export default function FormulationsPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Batch History Panel */}
+                    <AnimatePresence>
+                      {expandedBatchHistory === f.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden mt-3"
+                        >
+                          <div className="border-t border-slate-100 pt-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1">
+                              <History className="w-3 h-3"/> Batch History
+                            </p>
+                            {!batchHistory[f.id] ? (
+                              <div className="flex justify-center py-3">
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-300"/>
+                              </div>
+                            ) : batchHistory[f.id].length === 0 ? (
+                              <p className="text-[10px] text-gray-400 italic text-center py-2">No batches yet.</p>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {batchHistory[f.id].map(b => {
+                                  const bStatus = (b.status || '').toLowerCase();
+                                  const bStatusColor =
+                                    bStatus === 'released'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    bStatus === 'rejected'   ? 'bg-red-50 text-red-600 border-red-200' :
+                                    bStatus === 'active'     ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    bStatus === 'scheduled'  ? 'bg-navy/5 text-navy border-navy/20' :
+                                                               'bg-gray-50 text-gray-500 border-gray-200';
+                                  return (
+                                    <Link
+                                      key={b.id}
+                                      href={`/batches/${b.id}`}
+                                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-navy/30 hover:bg-blue-50/40 transition-all group/batch"
+                                    >
+                                      <span className="font-mono text-[10px] font-bold text-gray-800 truncate">{b.batch_id || b.id.slice(0, 8)}</span>
+                                      <span className={`shrink-0 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${bStatusColor}`}>
+                                        {b.status || 'Unknown'}
+                                      </span>
+                                      <span className="shrink-0 text-[9px] text-gray-400">
+                                        {b.start_time ? new Date(b.start_time).toLocaleDateString() : '—'}
+                                      </span>
+                                      <ChevronRight className="w-3 h-3 text-gray-300 group-hover/batch:text-navy shrink-0 transition-colors"/>
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </motion.div>
               );

@@ -67,6 +67,7 @@ export default function BatchDetailPage() {
   const [viewingStage,       setViewingStage]       = useState(null);
   const [editingStage,       setEditingStage]       = useState(null);
   const [lnbByFlask,         setLnbByFlask]         = useState({});
+  const [flaskInoculations,  setFlaskInoculations]  = useState([]);
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
@@ -100,6 +101,41 @@ export default function BatchDetailPage() {
       setSelectedFlaskId(flasks[0].id);
     }
   }, [flasks, selectedFlaskId]);
+
+  // Fetch inoculation data for overtime detection when batch is fermenting
+  useEffect(() => {
+    if (!batch || !batchId) return;
+    const fermentingFlasks = flasks.filter(f => f.current_stage === 'fermentation' && f.status !== 'rejected');
+    if (fermentingFlasks.length === 0) {
+      setFlaskInoculations([]);
+      return;
+    }
+    supabase
+      .from('batch_flask_inoculations')
+      .select('flask_id, t_zero_time, planned_fermentation_hrs')
+      .eq('batch_id', batchId)
+      .then(({ data }) => {
+        setFlaskInoculations(data || []);
+      });
+  }, [flasks, batch, batchId, supabase]);
+
+  // Compute overtime flasks from inoculation data
+  const overtimeFlasksComputed = useMemo(() => {
+    if (!flaskInoculations.length) return [];
+    const now = Date.now();
+    const overtime = [];
+    for (const inoc of flaskInoculations) {
+      if (!inoc.t_zero_time || !inoc.planned_fermentation_hrs) continue;
+      const hoursElapsed = (now - new Date(inoc.t_zero_time)) / 3600000;
+      if (hoursElapsed > inoc.planned_fermentation_hrs) {
+        const flask = flasks.find(f => f.id === inoc.flask_id);
+        if (flask && flask.status !== 'rejected' && flask.current_stage === 'fermentation') {
+          overtime.push({ ...flask, label: flask.flask_label, hoursElapsed, plannedHrs: inoc.planned_fermentation_hrs });
+        }
+      }
+    }
+    return overtime;
+  }, [flaskInoculations, flasks]);
 
   const handleFlaskTransition = useCallback((flaskId, toStage) => {
     if (toStage === 'released' && lnbCount === 0) {
@@ -166,6 +202,19 @@ export default function BatchDetailPage() {
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Stage transition failed.'); return; }
       toast.success(`Advanced to ${toStage.replace(/_/g, ' ')}.`);
+      // Notify CEO/CTO when batch reaches QC Hold
+      if (toStage === 'qc_hold') {
+        const ceoCtoCandidates = employees.filter(e => ['ceo','cto','admin'].includes(e.role));
+        const notifRows = ceoCtoCandidates.map(e => ({
+          employee_id: e.id,
+          title: `QC Hold — ${batch.batch_id} ready for review`,
+          message: `Batch ${batch.batch_id} has reached QC Hold stage. Review results and make a release decision.`,
+          link: `/batches/${batchId}`,
+        }));
+        if (notifRows.length > 0) {
+          supabase.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
+        }
+      }
       fetchAll();
     } catch (err) { toast.error(err.message); }
     finally       { setActionLoading(false); }
@@ -246,6 +295,16 @@ export default function BatchDetailPage() {
             <p className="text-xs text-amber-600">Cannot release without LNB entries.</p>
           </div>
           <Link href="/lab-notebook" className="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg">Open LNB →</Link>
+        </div>
+      )}
+
+      {overtimeFlasksComputed.length > 0 && (
+        <div className="surface p-4 bg-amber-50 border-amber-300 border flex items-center gap-3 mb-4">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0"/>
+          <div>
+            <p className="text-sm font-bold text-amber-800">Fermentation overtime: {overtimeFlasksComputed.map(f => f.label).join(', ')}</p>
+            <p className="text-xs text-amber-700">Planned duration exceeded. Declare endpoint or extend planned time.</p>
+          </div>
         </div>
       )}
 
