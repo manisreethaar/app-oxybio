@@ -244,7 +244,16 @@ export default function BatchesPage() {
       });
       const resData = await res.json();
       if (!res.ok) {
-        setBatchError({ message: resData.error || 'Failed to create batch', warnings: null });
+        const detailText = resData.details
+          ? Object.entries(resData.details)
+              .filter(([, value]) => value?._errors?.length)
+              .map(([field, value]) => `${field}: ${value._errors.join(', ')}`)
+              .join(' | ')
+          : '';
+        setBatchError({
+          message: detailText || resData.error || 'Failed to create batch',
+          warnings: null,
+        });
         return;
       }
       // Show inventory warnings if any (non-blocking)
