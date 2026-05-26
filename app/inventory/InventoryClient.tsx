@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
+  const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || user?.email === 'manisreethaar@gmail.com';
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState(initialStock || []);
@@ -944,19 +945,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                           </div>
                         ) : (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            {canEditItems && (
+                              <button
+                                onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                                <FileText className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             {isAdmin && (
-                              <>
-                                <button
-                                  onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
-                                  <FileText className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
-                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </>
+                              <button
+                                onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
                         )}
@@ -1066,19 +1067,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           ) : vendors.map(vendor => (
             <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2">
+                 {canEditItems && (
+                    <button
+                      onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
+                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                      <FileText className="w-3.5 h-3.5" />
+                    </button>
+                 )}
                  {isAdmin && (
-                    <>
-                      <button 
-                        onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
-                        className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
-                        <FileText className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={() => { setDeleteType('vendor'); setDeletingId(vendor.id); }}
-                        className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </>
+                    <button
+                      onClick={() => { setDeleteType('vendor'); setDeletingId(vendor.id); }}
+                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                  )}
               </div>
               <h3 className="text-lg font-black text-teal-950">{vendor.name}</h3>
