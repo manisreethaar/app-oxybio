@@ -12,7 +12,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const isIntern = ['intern','research_intern'].includes(role);
   const isF2 = batch.experiment_type === 'F2';
 
-  // Parse formulation ingredient guide
   const formulationIngredients = (() => {
     try {
       const raw = batch.formulations?.ingredients;
@@ -20,6 +19,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     } catch { return []; }
   })();
   const ingByItemId = Object.fromEntries(formulationIngredients.map(i => [i.item_id, i]));
+
+  const baseVol = batch.formulations?.base_volume_ml || 1000;
+  const targetVol = (batch.planned_volume_ml || 0) * (batch.num_flasks || 1) || baseVol;
+  const scaleFactor = targetVol / baseVol;
 
   const [ragiLot,    setRagiLot]    = useState('');
   const [ragiWt,     setRagiWt]     = useState('');
@@ -51,9 +54,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       // Pre-populate weights from formulation if no saved data
       for (const ing of formulationIngredients) {
         const nameLower = ing.name?.toLowerCase() || '';
-        if (nameLower.includes('ragi'))   setRagiWt(String(ing.quantity || ''));
-        if (nameLower.includes('kavuni')) setKavuniWt(String(ing.quantity || ''));
-        if (nameLower.includes('water'))  setWaterVol(String(ing.quantity || ''));
+        const scaledQty = ((parseFloat(ing.quantity) || 0) * scaleFactor).toFixed(2);
+        // Strip trailing zeros if it's a clean number (e.g., 20.00 -> 20)
+        const displayQty = String(parseFloat(scaledQty));
+        
+        if (nameLower.includes('ragi'))   setRagiWt(displayQty);
+        if (nameLower.includes('kavuni')) setKavuniWt(displayQty);
+        if (nameLower.includes('water'))  setWaterVol(displayQty);
       }
       if (batch.planned_volume_ml && batch.num_flasks) {
         setTotalVol(String(batch.planned_volume_ml * batch.num_flasks));
@@ -204,7 +211,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             {formulationIngredients.map(ing => (
               <div key={ing.item_id} className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-indigo-100">
                 <span className="text-xs font-bold text-indigo-800">{ing.name}</span>
-                <span className="text-xs font-black text-indigo-600">{ing.quantity}{ing.unit}</span>
+                <span className="text-xs font-black text-indigo-600">{parseFloat(((parseFloat(ing.quantity) || 0) * scaleFactor).toFixed(2))}{ing.unit}</span>
                 <span className="text-[9px] text-indigo-400 uppercase font-bold">target</span>
               </div>
             ))}

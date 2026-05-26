@@ -36,6 +36,7 @@ const strainSchema = z.object({
   type: z.literal('strain'),
   name: z.string().min(1),
   source_type: z.enum(['MTCC', 'NCIM', 'Isolated', 'Other']),
+  formulation_id: z.string().uuid().optional().nullable(),
   accession_number: z.string().optional().nullable(),
   isolation_source: z.string().optional().nullable(),
   received_date: z.string().optional().nullable(),
@@ -48,6 +49,7 @@ const prepSchema = z.object({
   type: z.enum(['MCB', 'WCB', 'RCB']),
   strain_id: z.string().uuid(),
   parent_id: z.string().uuid().optional().nullable(),
+  formulation_id: z.string().uuid().optional().nullable(),
   prep_code: z.string().optional().nullable(),
   passage_number: z.coerce.number().int().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -66,7 +68,7 @@ export async function GET(request) {
     if (view === 'strains') {
       const { data, error } = await supabase
         .from('cell_bank_strains')
-        .select('*, employees(full_name)')
+        .select('*, employees(full_name), linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id, code, name, version, category, status)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ success: true, data });
@@ -76,8 +78,9 @@ export async function GET(request) {
       .from('cell_bank_preparations')
       .select(`
         id, type, prep_code, status, passage_number, vial_count, notes,
-        created_at, completed_at,
-        cell_bank_strains(id, name, source_type, accession_number),
+        formulation_id, created_at, completed_at,
+        linked_formulation:formulations!cell_bank_preparations_formulation_id_fkey(id, code, name, version, category, status),
+        cell_bank_strains(id, name, source_type, accession_number, formulation_id, linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type),
         employees(full_name)
       `)
@@ -114,8 +117,18 @@ export async function POST(request) {
     const parsed = prepSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, error: parsed.error.issues.map(i => i.message).join(', ') }, { status: 400 });
     const prepCode = parsed.data.prep_code?.trim() || await generatePrepCode(supabase, parsed.data.type);
+    let formulationId = parsed.data.formulation_id || null;
+    if (!formulationId) {
+      const { data: strain } = await supabase
+        .from('cell_bank_strains')
+        .select('formulation_id')
+        .eq('id', parsed.data.strain_id)
+        .maybeSingle();
+      formulationId = strain?.formulation_id || null;
+    }
     const { data, error } = await supabase.from('cell_bank_preparations').insert({
       ...parsed.data,
+      formulation_id: formulationId,
       prep_code: prepCode,
       status: 'In Progress',
       step_data: {},

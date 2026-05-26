@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, FlaskConical, Dna, Layers, ChevronRight, Search, Trash2, ExternalLink, ChevronDown, Beaker, AlertTriangle } from 'lucide-react';
+import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
 const STATUS_COLOR = {
@@ -20,8 +20,13 @@ const SOURCE_COLOR = {
   Other:    'bg-gray-100 text-gray-600',
 };
 
-function StrainForm({ onSave, onCancel }) {
-  const [form, setForm] = useState({ name: '', source_type: 'MTCC', accession_number: '', strain_short_code: '', isolation_source: '', received_date: '', taxonomy: '', notes: '' });
+function recipeLabel(recipe) {
+  if (!recipe) return '';
+  return `${recipe.code ? `${recipe.code} - ` : ''}${recipe.name}${recipe.version ? ` v${recipe.version}` : ''}`;
+}
+
+function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
+  const [form, setForm] = useState({ name: '', source_type: 'MTCC', formulation_id: initialFormulationId || '', accession_number: '', strain_short_code: '', isolation_source: '', received_date: '', taxonomy: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -42,9 +47,16 @@ function StrainForm({ onSave, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="surface p-5 space-y-4">
       <p className="text-sm font-bold text-gray-900">Register New Strain</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2"><label className="field-label">Strain Name / Organism <span className="text-red-500">*</span></label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2"><label className="field-label">Strain Name / Organism <span className="text-red-500">*</span></label>
           <input required value={form.name} onChange={e => set('name', e.target.value)} className="field-input" placeholder="e.g. Lactobacillus brevis MTCC 1408"/></div>
+        <div className="sm:col-span-2"><label className="field-label">Linked Recipe / Formulation</label>
+          <select value={form.formulation_id} onChange={e => set('formulation_id', e.target.value)} className="field-input bg-white">
+            <option value="">No linked recipe yet</option>
+            {formulations.map(f => <option key={f.id} value={f.id}>{recipeLabel(f)} ({f.category})</option>)}
+          </select>
+          <p className="text-[10px] text-gray-400 mt-0.5">This keeps strain lineage tied back to the recipe or media definition it belongs with.</p>
+        </div>
         <div><label className="field-label">Source</label>
           <select value={form.source_type} onChange={e => set('source_type', e.target.value)} className="field-input bg-white">
             {['MTCC','NCIM','Isolated','Other'].map(s => <option key={s}>{s}</option>)}
@@ -60,9 +72,9 @@ function StrainForm({ onSave, onCancel }) {
           <input value={form.isolation_source} onChange={e => set('isolation_source', e.target.value)} className="field-input" placeholder="Fermented rice"/></div>
         <div><label className="field-label">Date Received</label>
           <input type="date" value={form.received_date} onChange={e => set('received_date', e.target.value)} className="field-input"/></div>
-        <div className="col-span-2"><label className="field-label">Taxonomy</label>
+        <div className="sm:col-span-2"><label className="field-label">Taxonomy</label>
           <input value={form.taxonomy} onChange={e => set('taxonomy', e.target.value)} className="field-input" placeholder="Firmicutes > Lactobacillales > Lactobacillaceae"/></div>
-        <div className="col-span-2"><label className="field-label">Notes</label>
+        <div className="sm:col-span-2"><label className="field-label">Notes</label>
           <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold outline-none resize-none"/></div>
       </div>
       <div className="flex gap-3">
@@ -73,11 +85,28 @@ function StrainForm({ onSave, onCancel }) {
   );
 }
 
-function NewPrepForm({ strains, onSave, onCancel }) {
-  const [form, setForm] = useState({ strain_id: strains[0]?.id || '', type: 'MCB', passage_number: '', notes: '' });
+function NewPrepForm({ strains, formulations, initialFormulationId, initialStrainId, onSave, onCancel }) {
+  const getStrainRecipe = useCallback((strainId) => strains.find(s => s.id === strainId)?.formulation_id || '', [strains]);
+  const defaultStrainId = initialStrainId || strains[0]?.id || '';
+  const [form, setForm] = useState({ strain_id: defaultStrainId, type: 'MCB', formulation_id: initialFormulationId || getStrainRecipe(defaultStrainId), passage_number: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    setForm(f => {
+      const strainId = initialStrainId || f.strain_id || strains[0]?.id || '';
+      return {
+        ...f,
+        strain_id: strainId,
+        formulation_id: initialFormulationId || (initialStrainId ? getStrainRecipe(strainId) : f.formulation_id || getStrainRecipe(strainId)),
+      };
+    });
+  }, [strains, initialStrainId, initialFormulationId, getStrainRecipe]);
+
+  const handleStrainChange = (strainId) => {
+    setForm(f => ({ ...f, strain_id: strainId, formulation_id: f.formulation_id || getStrainRecipe(strainId) }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,12 +125,19 @@ function NewPrepForm({ strains, onSave, onCancel }) {
     <form onSubmit={handleSubmit} className="surface p-5 space-y-4">
       <p className="text-sm font-bold text-gray-900">Start New Cell Bank Preparation</p>
       <p className="text-xs text-gray-500">Prep code auto-generated: <span className="font-mono font-bold">OB-CB-{new Date().getFullYear()}-NNN</span></p>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2"><label className="field-label">Strain <span className="text-red-500">*</span></label>
-          <select required value={form.strain_id} onChange={e => set('strain_id', e.target.value)} className="field-input bg-white">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2"><label className="field-label">Strain <span className="text-red-500">*</span></label>
+          <select required value={form.strain_id} onChange={e => handleStrainChange(e.target.value)} className="field-input bg-white">
             <option value="">Select strain...</option>
             {strains.map(s => <option key={s.id} value={s.id}>{s.name} ({s.source_type}{s.accession_number ? ' ' + s.accession_number : ''})</option>)}
           </select></div>
+        <div className="sm:col-span-2"><label className="field-label">Linked Recipe / Formulation</label>
+          <select value={form.formulation_id} onChange={e => set('formulation_id', e.target.value)} className="field-input bg-white">
+            <option value="">Use strain default / not linked</option>
+            {formulations.map(f => <option key={f.id} value={f.id}>{recipeLabel(f)} ({f.category})</option>)}
+          </select>
+          <p className="text-[10px] text-gray-400 mt-0.5">This recipe appears on the Cell Bank prep and can be opened from Recipe Management.</p>
+        </div>
         <div><label className="field-label">Type</label>
           <select value={form.type} onChange={e => set('type', e.target.value)} className="field-input bg-white">
             <option value="MCB">MCB — Master Cell Bank</option>
@@ -125,12 +161,15 @@ export default function CellBankPage() {
   const { role } = useAuth();
   const toast = useToast();
   const supabase = createClient();
+  const [requestedFormulationId, setRequestedFormulationId] = useState('');
   const [tab, setTab] = useState('preparations');
   const [strains, setStrains] = useState([]);
   const [preps, setPreps] = useState([]);
+  const [formulations, setFormulations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showStrainForm, setShowStrainForm] = useState(false);
   const [showPrepForm, setShowPrepForm] = useState(false);
+  const [prepStrainId, setPrepStrainId] = useState('');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [strainBatches, setStrainBatches] = useState({});
@@ -138,6 +177,10 @@ export default function CellBankPage() {
   const [lowVialDismissed, setLowVialDismissed] = useState(false);
   const isAdmin    = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
   const canDelete  = ['admin', 'ceo', 'cto'].includes(role);
+
+  useEffect(() => {
+    setRequestedFormulationId(new URLSearchParams(window.location.search).get('formulation_id') || '');
+  }, []);
 
   const fetchStrainBatches = async (strainId) => {
     // Step 1: get all prep IDs for this strain
@@ -183,18 +226,27 @@ export default function CellBankPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [sRes, pRes] = await Promise.all([
+      const [sRes, pRes, fRes] = await Promise.all([
         fetch('/api/research/cell-bank?view=strains'),
         fetch('/api/research/cell-bank?view=preparations'),
+        fetch('/api/formulations'),
       ]);
-      const [sJson, pJson] = await Promise.all([sRes.json(), pRes.json()]);
+      const [sJson, pJson, fJson] = await Promise.all([sRes.json(), pRes.json(), fRes.json()]);
       if (sJson.success) setStrains(sJson.data || []);
       if (pJson.success) setPreps(pJson.data || []);
+      if (Array.isArray(fJson)) setFormulations(fJson.filter(f => f.status === 'Approved'));
     } catch (err) { toast.error('Failed to load cell bank data'); }
     finally { setLoading(false); }
   }, [toast]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    if (requestedFormulationId) {
+      setShowPrepForm(true);
+      setShowStrainForm(false);
+    }
+  }, [requestedFormulationId]);
 
   // Compute low-vial strains: any active strain with total registered vials < 3
   const lowVialStrains = strains.filter(s => {
@@ -234,7 +286,7 @@ export default function CellBankPage() {
                 className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 shadow-sm">
                 <Dna className="w-3.5 h-3.5"/> Add Strain
               </button>
-              <button onClick={() => { setShowPrepForm(v => !v); setShowStrainForm(false); }}
+              <button onClick={() => { setPrepStrainId(''); setShowPrepForm(v => !v); setShowStrainForm(false); }}
                 className="flex items-center gap-1.5 px-3 py-2 bg-navy text-white rounded-xl text-xs font-bold shadow-sm hover:bg-navy/90">
                 <Plus className="w-3.5 h-3.5"/> New Preparation
               </button>
@@ -242,6 +294,16 @@ export default function CellBankPage() {
           )}
         </div>
       </div>
+
+      {requestedFormulationId && (
+        <div className="surface p-4 bg-blue-50 border border-blue-100 flex items-start gap-3">
+          <BookOpen className="w-5 h-5 text-navy shrink-0 mt-0.5"/>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-gray-900">Recipe linked from Recipe Management</p>
+            <p className="text-xs text-gray-600 mt-0.5">The new preparation form is pre-selected to carry this recipe relationship into the Cell Bank record.</p>
+          </div>
+        </div>
+      )}
 
       {/* Low Vial Stock Warning */}
       {lowVialStrains.length > 0 && !lowVialDismissed && (
@@ -275,8 +337,24 @@ export default function CellBankPage() {
       </div>
 
       {/* Forms */}
-      {showStrainForm && <StrainForm onSave={(d) => { setStrains(v => [d, ...v]); setShowStrainForm(false); }} onCancel={() => setShowStrainForm(false)}/>}
-      {showPrepForm && <NewPrepForm strains={strains} onSave={() => { fetchAll(); setShowPrepForm(false); }} onCancel={() => setShowPrepForm(false)}/>}
+      {showStrainForm && (
+        <StrainForm
+          formulations={formulations}
+          initialFormulationId={requestedFormulationId}
+          onSave={(d) => { setStrains(v => [d, ...v]); setShowStrainForm(false); }}
+          onCancel={() => setShowStrainForm(false)}
+        />
+      )}
+      {showPrepForm && (
+        <NewPrepForm
+          strains={strains}
+          formulations={formulations}
+          initialFormulationId={requestedFormulationId}
+          initialStrainId={prepStrainId}
+          onSave={() => { fetchAll(); setShowPrepForm(false); setPrepStrainId(''); }}
+          onCancel={() => { setShowPrepForm(false); setPrepStrainId(''); }}
+        />
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
@@ -326,6 +404,12 @@ export default function CellBankPage() {
                     {p.passage_number != null && <span className="text-[10px] font-bold text-gray-400">P{p.passage_number}</span>}
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5 truncate">{p.cell_bank_strains?.name}</p>
+                  {(p.linked_formulation || p.cell_bank_strains?.linked_formulation) && (
+                    <p className="text-[10px] text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
+                      <BookOpen className="w-3 h-3 shrink-0"/>
+                      {recipeLabel(p.linked_formulation || p.cell_bank_strains?.linked_formulation)}
+                    </p>
+                  )}
                   {p.type === 'WCB' && p.parent && <p className="text-[10px] text-gray-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
                 </div>
                 <div className="text-right shrink-0">
@@ -339,7 +423,7 @@ export default function CellBankPage() {
         )
       ) : (
         filteredStrains.length === 0 ? (
-          <div className="text-center py-12 text-gray-400 text-sm">No strains registered. Use "Add Strain" to register one.</div>
+          <div className="text-center py-12 text-gray-400 text-sm">No strains registered. Use &quot;Add Strain&quot; to register one.</div>
         ) : (
           <div className="space-y-2">
             {filteredStrains.map(s => {
@@ -359,10 +443,16 @@ export default function CellBankPage() {
                       </div>
                       {s.taxonomy && <p className="text-xs text-gray-500 mt-0.5 truncate">{s.taxonomy}</p>}
                       {s.isolation_source && <p className="text-[10px] text-gray-400">Source: {s.isolation_source}</p>}
+                      {s.linked_formulation && (
+                        <p className="text-[10px] text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
+                          <BookOpen className="w-3 h-3 shrink-0"/>
+                          {recipeLabel(s.linked_formulation)}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right shrink-0 space-y-1">
                       <p className="text-[10px] text-gray-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '—'}</p>
-                      <button onClick={() => { setTab('preparations'); setShowPrepForm(true); }}
+                      <button onClick={() => { setPrepStrainId(s.id); setTab('preparations'); setShowPrepForm(true); setShowStrainForm(false); }}
                         className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
                         <Plus className="w-3 h-3"/> New Prep
                       </button>
@@ -387,7 +477,7 @@ export default function CellBankPage() {
                     {isExpanded && batchList !== undefined && (
                       <div className="mt-2 space-y-1">
                         {batchList.length === 0 ? (
-                          <p className="text-[10px] text-gray-400 pl-1">No batches have used a vial from this strain's preparations.</p>
+                          <p className="text-[10px] text-gray-400 pl-1">No batches have used a vial from this strain&apos;s preparations.</p>
                         ) : (
                           batchList.map(item => (
                             <Link

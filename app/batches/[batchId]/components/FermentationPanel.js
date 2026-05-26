@@ -321,24 +321,27 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         incubator_temp_c: editFields.incubator_temp_c !== '' ? parseFloat(editFields.incubator_temp_c) : undefined,
         brix: editFields.brix !== '' ? parseFloat(editFields.brix) : undefined,
         optical_density: editFields.optical_density !== '' ? parseFloat(editFields.optical_density) : undefined,
-        foam_level: editFields.foam_level || undefined,
-        visual_appearance: editFields.visual_appearance || undefined,
+        foam_level: editFields.foam_level || null,
+        visual_appearance: editFields.visual_appearance || null,
         plating_result: editFields.plating_status
           ? `${editFields.plating_status}${editFields.cfu_count ? ` — ${editFields.cfu_count}` : ''}` : undefined,
-        notes: editFields.notes || undefined,
+        notes: editFields.notes || null,
         logged_at: editFields.logged_at ? new Date(editFields.logged_at).toISOString() : undefined,
         elapsed_hours: newElapsedHours !== undefined ? newElapsedHours : undefined,
         is_retrospective: editFields.is_retrospective,
-        retro_reason: editFields.retro_reason || undefined,
+        retro_reason: editFields.retro_reason || null,
       };
       Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
-      const { error } = await supabase.rpc('update_fermentation_reading', {
+      const { data, error } = await supabase.rpc('update_fermentation_reading', {
         p_reading_id: editingReading.id, p_updates: updates, p_reason: editReason,
       });
       if (error) throw error;
+      if (!data?.id) throw new Error('Reading update did not return the saved row. Please run the latest Batch Monitoring RPC migration.');
+      setReadings(prev => prev.map(r => r.id === data.id ? data : r));
       toast.success('Reading updated.');
       setEditingReading(null);
-      fetchData();
+      await fetchData();
+      onDataSaved?.();
     } catch (err) { toast.error(err.message); }
     finally { setSavingEdit(false); }
   };
@@ -351,9 +354,11 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         p_reading_id: deletingReading.id, p_reason: deleteReason,
       });
       if (error) throw error;
+      setReadings(prev => prev.filter(r => r.id !== deletingReading.id));
       toast.success('Reading deleted.');
       setDeletingReading(null); setDeleteReason('');
-      fetchData();
+      await fetchData();
+      onDataSaved?.();
     } catch (err) { toast.error(err.message); }
     finally { setSavingDelete(false); }
   };

@@ -24,8 +24,9 @@ export async function GET(request, { params }) {
       .from('cell_bank_preparations')
       .select(`
         *,
-        cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, notes),
-        parent:parent_id(id, prep_code, type, step_data),
+        linked_formulation:formulations!cell_bank_preparations_formulation_id_fkey(id, code, name, version, category, status),
+        cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id, code, name, version, category, status)),
+        parent:parent_id(id, prep_code, type, step_data, formulation_id),
         employees(full_name),
         cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status, used_in_batch_id, used_at, notes)
       `)
@@ -101,7 +102,7 @@ export async function PATCH(request, { params }) {
     }
 
     // ── Standard step_data / status update ────────────────────────────────
-    const { step_key, step_data_patch, status, vial_count, notes } = body;
+    const { step_key, step_data_patch, status, vial_count, notes, formulation_id } = body;
 
     const { data: current, error: fetchErr } = await supabase
       .from('cell_bank_preparations')
@@ -126,6 +127,7 @@ export async function PATCH(request, { params }) {
 
     if (vial_count !== undefined) updates.vial_count = vial_count;
     if (notes !== undefined) updates.notes = notes;
+    if (formulation_id !== undefined) updates.formulation_id = formulation_id || null;
 
     const { data, error } = await supabase
       .from('cell_bank_preparations')
