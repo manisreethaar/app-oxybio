@@ -46,12 +46,12 @@ export async function POST(request) {
         .eq('code', code)
         .order('version', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       if (latest) nextVersion = latest.version + 1;
     }
 
     // Get the employee record for created_by
-    const { data: emp } = await supabase.from('employees').select('id').eq('user_id', user.id).single();
+    const { data: emp } = await supabase.from('employees').select('id').eq('user_id', user.id).maybeSingle();
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations').insert({
