@@ -162,3 +162,49 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const supabase = createClient();
+    const { id } = params;
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
+    const { data: emp, error: empErr } = await supabase
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+
+    if (empErr || !emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
+
+    const { data: currentEntry, error: fetchErr } = await supabase
+      .from('lab_notebook_entries')
+      .select('status, created_by')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !currentEntry) return NextResponse.json({ success: false, error: 'Entry not found' }, { status: 404 });
+
+    if (currentEntry.status !== 'Draft') {
+      return NextResponse.json({ success: false, error: 'Only drafts can be deleted.' }, { status: 403 });
+    }
+
+    if (currentEntry.created_by !== emp.id && !['ceo', 'admin'].includes(emp.role)) {
+       return NextResponse.json({ success: false, error: 'You can only delete your own draft entries.' }, { status: 403 });
+    }
+
+    const { error } = await supabase
+      .from('lab_notebook_entries')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Digital LNB API DELETE [id] Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

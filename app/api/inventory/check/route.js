@@ -20,7 +20,7 @@ export async function GET(request) {
     // 1. Fetch Batch Details (incorporating formulation parsing)
     const { data: batch, error: batchErr } = await supabase
       .from('batches')
-      .select('*, formulations(ingredients)')
+      .select('*, formulations(ingredients, base_volume_ml)')
       .eq('id', batch_id)
       .single();
 
@@ -69,8 +69,12 @@ export async function GET(request) {
     // 4. Compare requirement against active stock
     const missingMaterials = [];
 
+    const baseVol = batch.formulations?.base_volume_ml || 1000;
+    const targetVol = (batch.planned_volume_ml || 0) * (batch.num_flasks || 1) || baseVol;
+    const scaleFactor = targetVol / baseVol;
+
     for (const ing of requiredIngredients) {
-      const requiredQty = parseFloat(ing.quantity || 0);
+      const requiredQty = parseFloat(ing.quantity || 0) * scaleFactor;
       const availableQty = physicalStockSums[ing.item_id] || 0;
 
       if (availableQty < requiredQty) {
