@@ -28,7 +28,12 @@ const formSchema = z.object({
 });
 
 export default function IncubationFormModal({ onClose, onSuccess, initialData = null }) {
-  const [batches, setBatches] = useState([]);
+  const [batches, setBatches] = useState(() => {
+    if (initialData?.batches && initialData?.batch_id) {
+      return [{ id: initialData.batch_id, batch_id: initialData.batches.batch_id }];
+    }
+    return [];
+  });
   const [submitting, setSubmitting] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
@@ -58,7 +63,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   useEffect(() => {
     async function fetchBatches() {
       const { data } = await supabase.from('batches').select('id, batch_id').order('created_at', { ascending: false }).limit(20);
-      if (data) setBatches(data);
+      if (data) {
+        setBatches(prev => {
+          const existingIds = new Set(data.map(d => d.id));
+          const toKeep = prev.filter(p => !existingIds.has(p.id));
+          return [...toKeep, ...data];
+        });
+      }
     }
     fetchBatches();
   }, [supabase]);
