@@ -99,7 +99,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       setSample(null); setTests([]); setIncubations([]);
     }
     return () => { isCurrent = false; };
-  }, [activeFlask?.id, supabase]);
+  }, [activeFlask?.id, supabase, toast]);
 
   useEffect(() => {
     setSample(null); setTests([]); setIncubations([]);

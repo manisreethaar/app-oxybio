@@ -18,11 +18,24 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
+    // Fetch current scores to preserve history before overwriting
+    const { data: current } = await supabase
+      .from('taste_panels')
+      .select('scores, scores_history')
+      .eq('id', params.id)
+      .single();
+
+    const existingHistory = Array.isArray(current?.scores_history) ? current.scores_history : [];
+    const newHistory = current?.scores?.length
+      ? [...existingHistory, { scored_at: new Date().toISOString(), scores: current.scores }]
+      : existingHistory;
+
     const { data, error } = await supabase
       .from('taste_panels')
       .update({
-        avg_score: parsed.data.avg_score,
-        scores: parsed.data.scores,
+        avg_score:      parsed.data.avg_score,
+        scores:         parsed.data.scores,
+        scores_history: newHistory,
       })
       .eq('id', params.id)
       .select()

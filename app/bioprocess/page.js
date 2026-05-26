@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -51,7 +51,7 @@ export default function BioprocessPage() {
   });
   const watchedType = watch('type');
 
-  const fetchExperiments = async () => {
+  const fetchExperiments = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/bioprocess');
@@ -63,9 +63,9 @@ export default function BioprocessPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  useEffect(() => { fetchExperiments(); }, []);
+  useEffect(() => { fetchExperiments(); }, [fetchExperiments]);
 
   const onSubmit = async (data) => {
     try {

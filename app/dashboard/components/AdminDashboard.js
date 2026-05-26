@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
@@ -37,7 +37,7 @@ export default function AdminDashboard({ employeeId }) {
     fetchDashboardData(true);
     fetchThresholds();
     fetchOperationalAlerts();
-  }, []);
+  }, [fetchOperationalAlerts]);
 
   const fetchThresholds = async () => {
     try {
@@ -105,7 +105,7 @@ export default function AdminDashboard({ employeeId }) {
     }
   };
 
-  const fetchOperationalAlerts = async () => {
+  const fetchOperationalAlerts = useCallback(async () => {
     try {
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
@@ -121,7 +121,7 @@ export default function AdminDashboard({ employeeId }) {
       setOpenCapa(capaRes.data || []);
       setQcHoldBatches(qcHoldRes.data || []);
     } catch (err) { console.error('Operational alerts fetch error:', err); }
-  };
+  }, [supabase]);
 
   const handleMispunchReview = async (action) => {
     if (!reviewingMispunch) return;

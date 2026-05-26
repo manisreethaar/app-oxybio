@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
@@ -29,12 +29,12 @@ export function ToastProvider({ children }) {
     timers.current[id] = setTimeout(() => remove(id), 5000);
   }, [remove]);
 
-  const toast = {
+  const toast = useMemo(() => ({
     success: (msg) => add(msg, 'success'),
     error:   (msg) => add(msg, 'error'),
     warn:    (msg) => add(msg, 'warn'),
     info:    (msg) => add(msg, 'info'),
-  };
+  }), [add]);
 
   return (
     <ToastContext.Provider value={{ toasts, remove, toast }}>

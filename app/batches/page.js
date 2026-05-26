@@ -126,6 +126,7 @@ export default function BatchesPage() {
   const [skuTargets,       setSkuTargets]       = useState([]);
   const [creatingBatch,    setCreatingBatch]    = useState(false);
   const [batchError,       setBatchError]       = useState(null); // { message, warnings }
+  const [cancelConfirmId,  setCancelConfirmId]  = useState(null);
   const [statusFilter,     setStatusFilter]     = useState('active');
   const [searchTerm,       setSearchTerm]       = useState('');
   const [sortOrder,        setSortOrder]        = useState('newest');
@@ -283,7 +284,6 @@ export default function BatchesPage() {
 
   // ─── Cancel Batch ──────────────────────────────────────────
   const handleCancelBatch = async (id) => {
-    if (!confirm('Cancel this batch? Tasks will be deleted. This is permanent.')) return;
     try {
       const res  = await fetch(`/api/batches?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -535,7 +535,7 @@ export default function BatchesPage() {
                       <p className="text-xl font-black text-gray-800 tabular-nums">{hours} <span className="text-xs font-bold text-gray-400">HRS</span></p>
                       {(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') && (
                         <button
-                          onClick={e => { e.preventDefault(); handleCancelBatch(batch.id); }}
+                          onClick={e => { e.preventDefault(); setCancelConfirmId(batch.id); }}
                           className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
                           title="Cancel Batch"
                         >
@@ -859,6 +859,44 @@ export default function BatchesPage() {
                   </>
                 )}
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Cancel Batch Confirmation Modal ──────────────────── */}
+      <AnimatePresence>
+        {cancelConfirmId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-2xl border border-red-100 p-6 w-full max-w-sm"
+            >
+              <div className="flex items-start gap-3 mb-4">
+                <div className="p-2 bg-red-50 rounded-xl shrink-0">
+                  <Trash2 className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <h3 className="font-black text-gray-900 text-sm">Cancel this batch?</h3>
+                  <p className="text-xs text-gray-500 mt-1">All associated tasks will be deleted. This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setCancelConfirmId(null)}
+                  className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  Keep Batch
+                </button>
+                <button
+                  onClick={() => { const id = cancelConfirmId; setCancelConfirmId(null); handleCancelBatch(id); }}
+                  className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
+                >
+                  Yes, Cancel
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

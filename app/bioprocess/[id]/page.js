@@ -146,7 +146,7 @@ export default function BioprocessDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

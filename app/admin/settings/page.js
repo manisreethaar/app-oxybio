@@ -128,7 +128,7 @@ export default function BatchSettingsPage() {
       })
       .catch(() => toast.error('Failed to load settings'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [toast]);
 
   const handleSave = async (key, options) => {
     setSaving(true);
