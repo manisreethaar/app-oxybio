@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity } from 'lucide-react';
+import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
@@ -32,6 +32,10 @@ export default function DigitalLnbPage() {
   const [uploadProgress, setUploadProgress] = useState('');
   const [selectedFlaskId,  setSelectedFlaskId]  = useState('');
   const [selectedStage,    setSelectedStage]    = useState('');
+  const [searchTerm,       setSearchTerm]       = useState('');
+  const [sortOrder,        setSortOrder]        = useState('newest'); // newest, oldest, status
+  const [filterGroup,      setFilterGroup]      = useState('all'); // all, cell_bank, fermentation
+
   const fileRef = useRef(null);
   const supabase = useMemo(() => createClient(), []);
 
@@ -151,78 +155,180 @@ export default function DigitalLnbPage() {
         </button>
       </div>
 
-      <div className="grid gap-4 mt-8">
-        {entries.length === 0 ? (
-          <div className="surface p-12 text-center">
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-700">No LNB Entries Found</h3>
-            <p className="text-sm text-gray-500 mt-1 mb-6">Start documenting your experiments and protocols.</p>
-            <button onClick={() => setShowNew(true)} className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all">Start First Entry</button>
+      {/* ── Search + Sort + Group controls ── */}
+      <div className="mt-6 space-y-3">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"/>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search by title, author, batch ID or prep code…"
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4"/>
+            </button>
+          )}
+        </div>
+
+        {/* Group tabs + Sort */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            {[
+              { key: 'all',          label: 'All' },
+              { key: 'fermentation', label: 'Fermentation / Batch' },
+              { key: 'cell_bank',    label: 'Cell Bank' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setFilterGroup(tab.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterGroup === tab.key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        ) : (
-          entries.map((entry) => (
-            <Link key={entry.id} href={`/lab-notebook/${entry.id}`} className="block group">
-              <div className="surface p-5 hover:shadow-md transition-all border border-gray-100 hover:border-navy/20 cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      {getStatusBadge(entry.status)}
-                      <span className="text-xs font-bold text-gray-400">{new Date(entry.created_at).toLocaleDateString()}</span>
-                      {entry.attachment_url && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                          <Paperclip className="w-3 h-3"/> Attachment
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="text-lg font-black text-gray-900 group-hover:text-navy transition-colors">{entry.title}</h2>
-                    <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <FileSignature className="w-4 h-4 mr-1.5 text-gray-400" />
-                        <span className="font-semibold">{entry.author?.full_name || 'Unknown Author'}</span>
-                      </div>
-                      {entry.batches && (
-                        <button
-                          type="button"
-                          onClick={e => { e.preventDefault(); e.stopPropagation(); if (entry.batches?.id) router.push(`/batches/${entry.batches.id}`); }}
-                          className="flex items-center gap-1 text-xs text-gray-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 hover:bg-indigo-100 transition-colors"
-                        >
-                          <FlaskConical className="w-3 h-3 text-indigo-400" />
-                          <span className="font-bold text-indigo-800">{entry.batches.batch_id}</span>
-                        </button>
-                      )}
-                      {entry.cell_bank_preparations && (
-                        <button
-                          type="button"
-                          onClick={e => { e.preventDefault(); e.stopPropagation(); if (entry.cell_bank_preparations?.id) router.push(`/research/cell-bank/${entry.cell_bank_preparations.id}`); }}
-                          className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                        >
-                          <FlaskConical className="w-3 h-3 text-emerald-500" />
-                          <span className="font-bold">{entry.cell_bank_preparations.prep_code}</span>
-                        </button>
-                      )}
-                      {entry.flask?.flask_label && (
-                        <div className="flex items-center gap-1 text-xs bg-navy/5 text-navy px-2 py-0.5 rounded border border-navy/15">
-                          <FlaskConical className="w-3 h-3" />
-                          <span className="font-bold">{entry.flask.flask_label}</span>
-                        </div>
-                      )}
-                      {entry.batch_stage && (
-                        <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-100">
-                          <Activity className="w-3 h-3" />
-                          <span className="font-bold">{STAGE_LABELS[entry.batch_stage] || entry.batch_stage}</span>
-                        </div>
-                      )}
-                    </div>
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            {[
+              { key: 'newest', label: 'Newest', Icon: SortDesc },
+              { key: 'oldest', label: 'Oldest', Icon: SortAsc  },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={() => setSortOrder(key)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortOrder === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Icon className="w-3 h-3"/> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Entry list (grouped) ── */}
+      {(() => {
+        // 1. Filter by search
+        const q = searchTerm.toLowerCase();
+        const filtered = entries.filter(e =>
+          !q ||
+          e.title?.toLowerCase().includes(q) ||
+          e.author?.full_name?.toLowerCase().includes(q) ||
+          e.batches?.batch_id?.toLowerCase().includes(q) ||
+          e.cell_bank_preparations?.prep_code?.toLowerCase().includes(q)
+        );
+
+        // 2. Classify each entry
+        const isCellBank = e => !!e.cell_bank_preparations || e.batch_stage === 'cell_bank';
+        const isFermentation = e => !!e.batches;
+
+        // 3. Apply group filter
+        const grouped = filterGroup === 'cell_bank'
+          ? { 'Cell Bank': filtered.filter(isCellBank) }
+          : filterGroup === 'fermentation'
+          ? { 'Fermentation / Batch': filtered.filter(isFermentation) }
+          : {
+              'Fermentation / Batch': filtered.filter(isFermentation),
+              'Cell Bank':            filtered.filter(isCellBank),
+              'General':              filtered.filter(e => !isCellBank(e) && !isFermentation(e)),
+            };
+
+        // 4. Sort within each group
+        const sort = (arr) => [...arr].sort((a, b) => {
+          const da = new Date(a.created_at), db = new Date(b.created_at);
+          return sortOrder === 'oldest' ? da - db : db - da;
+        });
+
+        const totalVisible = Object.values(grouped).flat().length;
+
+        if (totalVisible === 0) return (
+          <div className="surface p-12 text-center mt-4">
+            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4"/>
+            <h3 className="text-lg font-bold text-gray-700">{entries.length === 0 ? 'No LNB Entries Found' : 'No results match your search'}</h3>
+            <p className="text-sm text-gray-500 mt-1 mb-6">{entries.length === 0 ? 'Start documenting your experiments.' : 'Try a different search term or group.'}</p>
+            {entries.length === 0 && <button onClick={() => setShowNew(true)} className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all">Start First Entry</button>}
+          </div>
+        );
+
+        const EntryCard = ({ entry }) => (
+          <Link key={entry.id} href={`/lab-notebook/${entry.id}`} className="block group">
+            <div className="surface p-5 hover:shadow-md transition-all border border-gray-100 hover:border-navy/20 cursor-pointer">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    {getStatusBadge(entry.status)}
+                    <span className="text-xs font-bold text-gray-400">{new Date(entry.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    {entry.attachment_url && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                        <Paperclip className="w-3 h-3"/> Attachment
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center justify-center p-3 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors">
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-navy" />
+                  <h2 className="text-base font-black text-gray-900 group-hover:text-navy transition-colors">{entry.title}</h2>
+                  <div className="flex items-center gap-3 mt-3 flex-wrap">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <FileSignature className="w-4 h-4 mr-1.5 text-gray-400"/>
+                      <span className="font-semibold text-xs">{entry.author?.full_name || 'Unknown Author'}</span>
+                    </div>
+                    {entry.batches && (
+                      <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/batches/${entry.batches.id}`); }}
+                        className="flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 hover:bg-indigo-100 transition-colors">
+                        <FlaskConical className="w-3 h-3 text-indigo-400"/>
+                        <span className="font-bold">{entry.batches.batch_id}</span>
+                      </button>
+                    )}
+                    {entry.cell_bank_preparations && (
+                      <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/research/cell-bank/${entry.cell_bank_preparations.id}`); }}
+                        className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 hover:bg-emerald-100 transition-colors">
+                        <Microscope className="w-3 h-3 text-emerald-500"/>
+                        <span className="font-bold">{entry.cell_bank_preparations.prep_code}</span>
+                      </button>
+                    )}
+                    {entry.flask?.flask_label && (
+                      <div className="flex items-center gap-1 text-xs bg-navy/5 text-navy px-2 py-0.5 rounded border border-navy/15">
+                        <FlaskConical className="w-3 h-3"/>
+                        <span className="font-bold">{entry.flask.flask_label}</span>
+                      </div>
+                    )}
+                    {entry.batch_stage && (
+                      <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-100">
+                        <Activity className="w-3 h-3"/>
+                        <span className="font-bold">{STAGE_LABELS[entry.batch_stage] || entry.batch_stage}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+                <div className="flex items-center justify-center p-3 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors shrink-0">
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-navy"/>
+                </div>
               </div>
-            </Link>
-          ))
-        )}
-      </div>
+            </div>
+          </Link>
+        );
+
+        return (
+          <div className="mt-4 space-y-6">
+            {Object.entries(grouped).map(([groupName, groupEntries]) => {
+              const sorted = sort(groupEntries);
+              if (sorted.length === 0) return null;
+              const groupIcon = groupName === 'Cell Bank' ? <Microscope className="w-3.5 h-3.5"/> : groupName === 'Fermentation / Batch' ? <FlaskConical className="w-3.5 h-3.5"/> : <BookOpen className="w-3.5 h-3.5"/>;
+              const groupColor = groupName === 'Cell Bank' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : groupName === 'Fermentation / Batch' ? 'text-indigo-700 bg-indigo-50 border-indigo-200' : 'text-gray-600 bg-gray-50 border-gray-200';
+              return (
+                <div key={groupName}>
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black border mb-3 ${groupColor}`}>
+                    {groupIcon} {groupName} <span className="opacity-60">({sorted.length})</span>
+                  </div>
+                  <div className="grid gap-3">
+                    {sorted.map(entry => <EntryCard key={entry.id} entry={entry}/>)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {showNew && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
