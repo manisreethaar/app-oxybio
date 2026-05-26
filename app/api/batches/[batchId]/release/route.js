@@ -42,8 +42,10 @@ export async function POST(request, { params }) {
     }
 
     // 3. Upsert release record (admin client → RLS bypassed)
-    // Note: batch_id column may not exist in older DB instances — omit it; flask_id is the unique key
-    const { error: relErr } = await db.from('batch_flask_release_record').upsert({
+    // The live table may be missing newer columns (batch_id, yield_volume_ml, etc.) if the
+    // schema migration hasn't been applied yet.  Try the full payload first; on a PostgREST
+    // schema-cache column error fall back to the minimal safe set so the release still lands.
+    const fullPayload = {
       flask_id,
       released_by:      emp.id,
       release_date:     new Date().toISOString(),
@@ -51,7 +53,26 @@ export async function POST(request, { params }) {
       bottles_produced: bottles_produced ?? null,
       bottle_volume_ml: bottle_volume_ml ?? null,
       release_notes:    release_notes    ?? null,
-    }, { onConflict: 'flask_id' });
+    };
+
+    let { error: relErr } = await db
+      .from('batch_flask_release_record')
+      .upsert(fullPayload, { onConflict: 'flask_id' });
+
+    if (relErr && (relErr.code === 'PGRST204' || relErr.message?.includes('schema cache'))) {
+      // Columns not yet in the live schema — retry with only the guaranteed-safe set
+      console.warn('[release] full upsert hit schema gap, retrying minimal:', relErr.message);
+      const minimalPayload = {
+        flask_id,
+        released_by:   emp.id,
+        release_date:  new Date().toISOString(),
+        release_notes: release_notes ?? null,
+      };
+      const { error: minErr } = await db
+        .from('batch_flask_release_record')
+        .upsert(minimalPayload, { onConflict: 'flask_id' });
+      relErr = minErr ?? null;
+    }
 
     if (relErr) {
       console.error('[release] upsert error:', relErr);
