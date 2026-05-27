@@ -133,6 +133,7 @@ export default function GrowthStudiesPage() {
                 </div>
 
                 <h3 className="font-black text-slate-800 text-base group-hover:text-teal-700 transition-colors mb-1">{study.name}</h3>
+                <p className="text-[10px] font-mono text-slate-400 mb-0.5">{study.study_code || '—'}</p>
                 <p className="text-xs text-slate-500 font-medium mb-4">{isolateName} · {mediaName}</p>
 
                 {study.temperature_c && (

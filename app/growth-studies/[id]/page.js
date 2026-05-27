@@ -5,7 +5,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
   Clock, CheckCircle2, AlertCircle, Play, Square, BarChart2,
-  FlaskConical, Microscope, X, Upload, ChevronRight, FileText, Loader2
+  FlaskConical, Microscope, X, ChevronRight, FileText, Loader2,
+  Package, TestTube2
 } from 'lucide-react';
 
 const GrowthCurveChart = dynamic(() => import('@/components/charts/GrowthCurveChart'), { ssr: false });
@@ -49,6 +50,13 @@ export default function GrowthStudyDetailPage() {
   const [showLines, setShowLines] = useState(['od', 'ph']);
   const [logScale, setLogScale] = useState(false);
 
+  // Start Study confirmation modal
+  const [startModal, setStartModal] = useState(false);
+  const [startInfo, setStartInfo] = useState(null);
+  const [startInfoLoading, setStartInfoLoading] = useState(false);
+  const [lotSelections, setLotSelections] = useState({});
+  const [startErr, setStartErr] = useState('');
+
   const load = useCallback(() => {
     fetch(`/api/growth-studies/${id}`)
       .then(r => r.json())
@@ -73,6 +81,41 @@ export default function GrowthStudyDetailPage() {
       body: JSON.stringify({ status: newStatus }),
     });
     setActionLoading(false);
+    load();
+  };
+
+  const openStartModal = async () => {
+    setStartModal(true);
+    setStartInfo(null);
+    setLotSelections({});
+    setStartErr('');
+    setStartInfoLoading(true);
+    const res = await fetch(`/api/growth-studies/${id}/start-info`);
+    const json = await res.json();
+    setStartInfoLoading(false);
+    if (!res.ok) { setStartErr(json.error); return; }
+    setStartInfo(json);
+    // Default lot selection to first available lot per ingredient
+    const defaults = {};
+    (json.ingredients || []).forEach((ing, i) => {
+      if (ing.available_lots?.[0]) defaults[i] = { stock_id: ing.available_lots[0].id, quantity_used: ing.quantity_needed, item_name: ing.name };
+    });
+    setLotSelections(defaults);
+  };
+
+  const confirmStart = async () => {
+    setActionLoading(true);
+    setStartErr('');
+    const selections = Object.values(lotSelections).filter(s => s.stock_id && s.quantity_used > 0);
+    const res = await fetch(`/api/growth-studies/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'active', lot_selections: selections }),
+    });
+    const json = await res.json();
+    setActionLoading(false);
+    if (!res.ok) { setStartErr(json.error); return; }
+    setStartModal(false);
     load();
   };
 
@@ -128,7 +171,7 @@ export default function GrowthStudyDetailPage() {
   if (loading) return <div className="p-8 text-center text-slate-500">Loading study…</div>;
   if (!data?.study) return <div className="p-8 text-center text-red-500">Study not found.</div>;
 
-  const { study, time_points, measurements, plate_observations } = data;
+  const { study, time_points, measurements, plate_observations, inventory_usage } = data;
   const isFermentation = study.study_type === 'fermentation';
   const isActive = study.status === 'active';
 
@@ -158,6 +201,11 @@ export default function GrowthStudyDetailPage() {
             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${isFermentation ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-violet-50 text-violet-700 border-violet-200'}`}>
               {isFermentation ? 'Fermentation' : 'Growth Curve'}
             </span>
+            {study.study_code && (
+              <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
+                {study.study_code}
+              </span>
+            )}
             {isActive && (
               <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded-full border border-teal-100">
                 T + {elapsed.toFixed(1)}h elapsed
@@ -171,7 +219,7 @@ export default function GrowthStudyDetailPage() {
 
         <div className="flex items-center gap-3 shrink-0">
           {study.status === 'setup' && (
-            <button onClick={() => handleStatusChange('active')} disabled={actionLoading}
+            <button onClick={openStartModal} disabled={actionLoading}
               className="flex items-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm disabled:opacity-50"
             >
               <Play className="w-4 h-4" /> Start Study
@@ -307,6 +355,42 @@ export default function GrowthStudyDetailPage() {
             >
               <Microscope className="w-3.5 h-3.5" /> Add Plate Observation
             </button>
+          )}
+
+          {/* Vial used */}
+          {study.cell_bank_vials && (
+            <div className="glass-card rounded-2xl p-5">
+              <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <TestTube2 className="w-4 h-4 text-violet-600" /> Vial Used
+              </h3>
+              <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 space-y-1">
+                <p className="text-sm font-black text-violet-800 font-mono">{study.cell_bank_vials.vial_code}</p>
+                {study.cell_bank_vials.storage_temp && <p className="text-xs text-violet-600 font-medium">{study.cell_bank_vials.storage_temp}</p>}
+                {study.cell_bank_vials.freezer_id && (
+                  <p className="text-xs text-violet-500 font-medium">
+                    {study.cell_bank_vials.freezer_id}{study.cell_bank_vials.rack ? ` · Rack ${study.cell_bank_vials.rack}` : ''}{study.cell_bank_vials.position ? ` · Pos ${study.cell_bank_vials.position}` : ''}
+                  </p>
+                )}
+                <span className="inline-block text-[9px] font-black px-1.5 py-0.5 rounded border bg-rose-50 text-rose-600 border-rose-200">Used</span>
+              </div>
+            </div>
+          )}
+
+          {/* Inventory usage */}
+          {inventory_usage?.length > 0 && (
+            <div className="glass-card rounded-2xl p-5">
+              <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <Package className="w-4 h-4 text-amber-600" /> Materials Used
+              </h3>
+              <div className="space-y-1.5">
+                {inventory_usage.map(u => (
+                  <div key={u.id} className="flex items-center justify-between text-xs bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                    <span className="font-bold text-slate-700">{u.inventory_stock?.inventory_items?.name || '—'}</span>
+                    <span className="font-black text-amber-700">{u.quantity_used} {u.inventory_stock?.inventory_items?.unit || ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
@@ -455,6 +539,119 @@ export default function GrowthStudyDetailPage() {
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Start Study Confirmation Modal ── */}
+      {startModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-slate-800">Confirm Study Start</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Review vial & materials before inoculation.</p>
+              </div>
+              <button onClick={() => setStartModal(false)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-5">
+              {startInfoLoading ? (
+                <div className="flex items-center justify-center py-8 gap-3 text-slate-400">
+                  <Loader2 className="w-5 h-5 animate-spin" /> Loading study info…
+                </div>
+              ) : (
+                <>
+                  {/* Study identity */}
+                  <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-teal-500 uppercase tracking-wider mb-1">Study</p>
+                    <p className="font-black text-slate-800">{study.name}</p>
+                    {study.study_code && <p className="text-xs font-mono text-slate-500 mt-0.5">{study.study_code}</p>}
+                  </div>
+
+                  {/* Vial section */}
+                  {startInfo?.has_vial && startInfo?.vial ? (
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Vial to be used</p>
+                      <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 flex items-center gap-3">
+                        <TestTube2 className="w-4 h-4 text-violet-600 shrink-0" />
+                        <div>
+                          <p className="text-sm font-black text-violet-800 font-mono">{startInfo.vial.vial_code}</p>
+                          <p className="text-xs text-violet-500">{startInfo.vial.storage_temp || ''}{startInfo.vial.freezer_id ? ` · ${startInfo.vial.freezer_id}` : ''}</p>
+                        </div>
+                        <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded border bg-teal-50 text-teal-700 border-teal-200">→ Will be marked Used</span>
+                      </div>
+                    </div>
+                  ) : startInfo?.has_vial && !startInfo?.vial ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs font-bold text-amber-700">
+                      No vial linked to this study. Vial can only be selected during study creation.
+                    </div>
+                  ) : null}
+
+                  {/* Ingredients / lot selection */}
+                  {startInfo?.has_formulation && startInfo?.ingredients?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
+                        Media ingredients — scaled to {study.volume_ml} mL
+                      </p>
+                      <div className="space-y-3">
+                        {startInfo.ingredients.map((ing, i) => (
+                          <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-slate-700">{ing.name}</span>
+                              <span className="text-xs font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                {ing.quantity_needed} {ing.unit}
+                              </span>
+                            </div>
+                            {ing.available_lots.length === 0 ? (
+                              <p className="text-[10px] text-red-600 font-bold">No available lots — proceed without deduction or restock first.</p>
+                            ) : (
+                              <select
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white"
+                                value={lotSelections[i]?.stock_id || ''}
+                                onChange={e => {
+                                  const lot = ing.available_lots.find(l => l.id === e.target.value);
+                                  setLotSelections(prev => ({
+                                    ...prev,
+                                    [i]: lot ? { stock_id: lot.id, quantity_used: ing.quantity_needed, item_name: ing.name } : undefined,
+                                  }));
+                                }}
+                              >
+                                <option value="">Skip deduction</option>
+                                {ing.available_lots.map(l => (
+                                  <option key={l.id} value={l.id}>
+                                    Lot {l.supplier_batch_number} · {l.current_quantity} {ing.unit} avail{l.expiry_date ? ` · Exp ${l.expiry_date}` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium mt-2">Skipped ingredients will not be deducted from inventory.</p>
+                    </div>
+                  )}
+
+                  {startInfo?.has_formulation === false && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-500">
+                      No linked formulation — inventory deduction skipped.
+                    </div>
+                  )}
+
+                  {startErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{startErr}</p>}
+
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => setStartModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">
+                      Cancel
+                    </button>
+                    <button onClick={confirmStart} disabled={actionLoading}
+                      className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Play className="w-4 h-4" /> Confirm & Start</>}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

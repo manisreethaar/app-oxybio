@@ -8,8 +8,11 @@ export async function PATCH(req, { params }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
+    if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+
     const { id } = await params;
-    const { status } = await req.json();
+    const { status, lot_selections } = await req.json();
 
     const allowed = ['setup', 'active', 'completed', 'analysed'];
     if (!allowed.includes(status)) {
@@ -22,15 +25,24 @@ export async function PATCH(req, { params }) {
 
     const supabaseAdmin = createAdminClient();
 
-    // If starting (active), compute scheduled_at for all time points
+    // Fetch current study for vial_id and study_code
+    const { data: study } = await supabaseAdmin
+      .from('growth_studies')
+      .select('id, study_code, vial_id')
+      .eq('id', id)
+      .single();
+
+    // When activating: compute time point schedule, mark vial, deduct inventory
     if (status === 'active') {
+      const inocTime = new Date(updates.inoculation_time);
+
+      // 1. Schedule time points
       const { data: tps } = await supabaseAdmin
         .from('growth_study_time_points')
         .select('id, planned_hour')
         .eq('study_id', id);
 
       if (tps?.length) {
-        const inocTime = new Date(updates.inoculation_time);
         for (const tp of tps) {
           await supabaseAdmin
             .from('growth_study_time_points')
@@ -38,9 +50,75 @@ export async function PATCH(req, { params }) {
             .eq('id', tp.id);
         }
       }
+
+      // 2. Mark vial as used
+      if (study?.vial_id) {
+        await supabaseAdmin
+          .from('cell_bank_vials')
+          .update({
+            status: 'Used',
+            used_in_study_id: id,
+            used_at: inocTime.toISOString(),
+          })
+          .eq('id', study.vial_id);
+
+        await supabaseAdmin.from('cell_bank_vial_logs').insert({
+          vial_id: study.vial_id,
+          action: 'used_in_study',
+          operator_id: emp.id,
+          notes: `Inoculated into Growth Study ${study.study_code || id}`,
+        });
+      }
+
+      // 3. Deduct inventory lots
+      if (lot_selections?.length) {
+        for (const sel of lot_selections) {
+          if (!sel.stock_id || !sel.quantity_used || sel.quantity_used <= 0) continue;
+
+          // Fetch current stock
+          const { data: stockRow } = await supabaseAdmin
+            .from('inventory_stock')
+            .select('current_quantity, inventory_items(min_stock_level)')
+            .eq('id', sel.stock_id)
+            .single();
+
+          if (!stockRow) continue;
+
+          const newQty = Math.max(0, stockRow.current_quantity - sel.quantity_used);
+
+          // Update stock level
+          await supabaseAdmin
+            .from('inventory_stock')
+            .update({
+              current_quantity: newQty,
+              ...(newQty <= 0 ? { status: 'Out of Stock' } : {}),
+            })
+            .eq('id', sel.stock_id);
+
+          // Log inventory movement
+          await supabaseAdmin.from('inventory_movements').insert({
+            stock_id: sel.stock_id,
+            movement_type: 'Issue',
+            quantity: sel.quantity_used,
+            purpose: 'R&D',
+            issued_by: user.id,
+            notes: `Growth Study ${study.study_code || id} — ${sel.item_name || ''}`,
+          });
+
+          // Log usage with growth_study_id
+          await supabaseAdmin.from('inventory_usage').insert({
+            stock_id: sel.stock_id,
+            growth_study_id: id,
+            quantity_used: sel.quantity_used,
+            logged_by: emp.id,
+            stage: 'media_prep',
+            notes: `${sel.item_name || ''} for ${study.study_code || id}`,
+          });
+        }
+      }
     }
 
-    // Mark all pending time points as missed when completing
+    // When completing: mark all pending time points as missed
     if (status === 'completed') {
       await supabaseAdmin
         .from('growth_study_time_points')
