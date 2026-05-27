@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 const postSchema = z.object({
   batch_id: z.string().uuid('Invalid batch ID'),
+  flask_id: z.string().optional(),
   storage_condition: z.string().min(1),
   test_parameters: z.array(z.string()).min(1),
   start_date: z.string().min(1)

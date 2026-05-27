@@ -33,6 +33,9 @@ export async function POST(request, { params }) {
       .maybeSingle();
 
     if (existing) {
+      if (emp.role !== 'admin') {
+        return NextResponse.json({ error: 'Only admins can modify existing logged data' }, { status: 403 });
+      }
       const { data, error } = await supabase
         .from('shelf_life_logs')
         .update({ test_data, logged_by: emp.id })

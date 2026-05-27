@@ -275,7 +275,7 @@ export default function ConsumerResearchPage() {
             </div>
 
             <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
-            {(employeeProfile.role === 'admin' || employeeProfile.role === 'manager') && (
+            {employeeProfile.role === 'admin' && (
               <button onClick={() => handleDeleteSession(s.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
             )}
             </div>
@@ -302,14 +302,16 @@ export default function ConsumerResearchPage() {
               }
             </div>
 
+            {(!s.scores || s.scores.length === 0 || employeeProfile.role === 'admin') && (
             <button
               type="button"
               onClick={() => openScoreModal(s)}
               className="mt-5 w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 text-navy rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-navy/30 active:scale-95 transition-all"
             >
               <SlidersHorizontal className="w-4 h-4" />
-              Log Scores
+              {s.scores && s.scores.length > 0 ? 'Edit Scores' : 'Log Scores'}
             </button>
+            )}
           </div>
         ))}
       </div>
