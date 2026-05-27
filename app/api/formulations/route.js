@@ -2,9 +2,24 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { can, isMasterAdmin } from '@/lib/permissions';
+import {
+  canCreateFormulation,
+  canDeleteFormulation,
+  canEditFormulation,
+  validateFormulationStatusChange,
+} from '@/lib/formulations/access';
 
 import { validateCode } from '@/lib/schemas/formulations';
 export { validateCode };
+
+async function getEmployeeForUser(supabase, user) {
+  const { data } = await supabase
+    .from('employees')
+    .select('id, role')
+    .or(`email.eq.${user.email},user_id.eq.${user.id}`)
+    .maybeSingle();
+  return data || null;
+}
 
 export async function GET(request) {
   try {
@@ -57,7 +72,9 @@ export async function POST(request) {
     }
 
     // Get the employee record for created_by
-    const { data: emp } = await supabase.from('employees').select('id').eq('user_id', user.id).maybeSingle();
+    const emp = await getEmployeeForUser(supabase, user);
+    const createAccess = canCreateFormulation(emp, user.email);
+    if (!createAccess.allowed) return NextResponse.json({ error: createAccess.error }, { status: 403 });
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations').insert({
@@ -86,17 +103,22 @@ export async function PATCH(request) {
     if (!id || !status) return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
 
     // Look up employee for role checks
-    let emp = null;
-    const { data: empByEmail } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
-    emp = empByEmail;
-
+    const emp = await getEmployeeForUser(supabase, user);
     const isApprover = emp && (can(emp.role, 'recipes', 'approve') || isMasterAdmin(user.email));
+    const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
+    if (!current) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+
+    const statusAccess = validateFormulationStatusChange({
+      formulation: current,
+      employee: emp,
+      email: user.email,
+      nextStatus: status,
+      rejectionReason: rejection_reason,
+    });
+    if (!statusAccess.allowed) return NextResponse.json({ error: statusAccess.error }, { status: 403 });
 
     // 1. APPROVAL logic
     if (status === 'Approved') {
-      if (!isApprover) {
-        return NextResponse.json({ error: 'Only CEO, CTO, or Admin can approve formulations.' }, { status: 403 });
-      }
       // Log who approved and when, and clear any old rejection reason
       const { data, error } = await supabase
         .from('formulations')
@@ -117,7 +139,6 @@ export async function PATCH(request) {
     if (status === 'Draft' && isApprover) {
         if (!rejection_reason || rejection_reason.trim().length < 5) {
             // Only enforce mandatory reason if it's currently "In Review" (i.e., a real rejection)
-            const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();
             if (current?.status === 'In Review') {
                 return NextResponse.json({ error: 'A mandatory rejection reason (min 5 characters) is required to return a recipe to Draft.' }, { status: 400 });
             }
@@ -125,7 +146,7 @@ export async function PATCH(request) {
     }
 
     // For other status transitions (Draft → In Review, Approved → Archived)
-    const validTransitions = ['Draft', 'In Review', 'Archived'];
+    const validTransitions = ['Draft', 'In Review', 'Archived', 'active'];
     if (!validTransitions.includes(status)) {
       return NextResponse.json({ error: `Invalid status: ${status}` }, { status: 400 });
     }
@@ -161,11 +182,11 @@ export async function PUT(request) {
     if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
     code = code.trim().toUpperCase();
 
-    // Security: Only allow editing if Status is Draft or rejected
-    const { data: current } = await supabase.from('formulations').select('status').eq('id', id).single();
-    if (current && !['Draft', 'active', 'rejected', 'In Review'].includes(current.status)) {
-       return NextResponse.json({ error: 'Cannot edit an approved formulation. Please create a new version instead.' }, { status: 403 });
-    }
+    // Security: Only allow editing if requester owns the recipe or can approve recipes.
+    const emp = await getEmployeeForUser(supabase, user);
+    const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
+    const editAccess = canEditFormulation(current, emp, user.email);
+    if (!editAccess.allowed) return NextResponse.json({ error: editAccess.error }, { status: 403 });
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations')
@@ -192,26 +213,17 @@ export async function DELETE(request) {
     if (!id) return NextResponse.json({ error: 'Missing recipe ID' }, { status: 400 });
 
     // Check requester role
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).maybeSingle();
-    const isApprover = emp && (can(emp.role, 'recipes', 'approve') || isMasterAdmin(user.email));
+    const emp = await getEmployeeForUser(supabase, user);
 
     // Fetch the recipe to check its status and owner
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
     if (!current) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
 
     // APPROVED recipes — only admins/CEO/CTO can delete; others must Archive
-    if (current.status === 'Approved' && !isApprover) {
-      return NextResponse.json(
-        { error: 'Only admin/CEO/CTO can delete an approved recipe. Use Archive to hide it instead.' },
-        { status: 403 }
-      );
-    }
+    const deleteAccess = canDeleteFormulation(current, emp, user.email);
+    if (!deleteAccess.allowed) return NextResponse.json({ error: deleteAccess.error }, { status: 403 });
 
     // IN REVIEW — only admins/CEO/CTO can delete
-    if (current.status === 'In Review' && !isApprover) {
-      return NextResponse.json({ error: 'Only an admin can delete a recipe that is In Review. Recall it to Draft first, or ask an admin to delete it.' }, { status: 403 });
-    }
-
     // DRAFT — anyone can delete their own; admins can delete any
     const adminDb = createAdminClient();
     const { data: deleted, error } = await adminDb.from('formulations').delete().eq('id', id).select();
