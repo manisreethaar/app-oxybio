@@ -54,12 +54,15 @@ function elapsedHours(inocTime) {
   return (Date.now() - new Date(inocTime).getTime()) / 3600000;
 }
 
-function buildSourceLabel(sourceType, batch, study) {
+function buildSourceLabel(sourceType, batch, study, cellPrep) {
   if (sourceType === 'batch' && batch)  return `Batch ${batch.batch_id}`;
   if (sourceType === 'growth_study' && study) {
     return study.study_code
       ? `Growth Study ${study.study_code}`
       : `Growth Study ${study.name}`;
+  }
+  if (sourceType === 'cell_bank' && cellPrep) {
+    return `Cell Bank ${cellPrep.prep_code}`;
   }
   return null;
 }
@@ -72,8 +75,9 @@ function buildTimepointLabel(logHour) {
   return h % 1 === 0 ? `T+${h}h` : `T+${h.toFixed(1)}h`;
 }
 
-function autoSampleLabel(sourceType, batch, study, flaskLabel, logHour) {
-  const src  = buildSourceLabel(sourceType, batch, study) || (sourceType === 'batch' ? 'Batch' : 'Study');
+function autoSampleLabel(sourceType, batch, study, cellPrep, flaskLabel, logHour) {
+  const src  = buildSourceLabel(sourceType, batch, study, cellPrep)
+    || (sourceType === 'batch' ? 'Batch' : sourceType === 'cell_bank' ? 'Cell Bank' : 'Study');
   const flask = flaskLabel ? ` · ${flaskLabel}` : '';
   const tp   = buildTimepointLabel(logHour);
   return `${src}${flask}${tp ? ` ${tp}` : ''}`;
@@ -152,7 +156,7 @@ export default function QuickLogPage() {
   const searchParams = useSearchParams();
   const { employeeProfile } = useAuth();
 
-  const [sources, setSources]       = useState({ batches: [], growth_studies: [] });
+  const [sources, setSources]       = useState({ batches: [], growth_studies: [], cell_bank_preparations: [] });
   const [sourcesLoading, setSourcesLoading] = useState(true);
 
   const [sourceType, setSourceType] = useState('batch');
@@ -221,6 +225,7 @@ export default function QuickLogPage() {
     b.batch_id === sourceId || b.id === sourceId
   );
   const selectedStudy = sources.growth_studies.find(s => s.id === sourceId);
+  const selectedCellPrep = sources.cell_bank_preparations?.find(p => p.id === sourceId);
 
   // Auto-suggest hour when selecting a growth study time point
   useEffect(() => {
@@ -259,7 +264,7 @@ export default function QuickLogPage() {
     e.preventDefault();
     setError('');
 
-    if (!sourceId) { setError('Select a batch or growth study first.'); return; }
+    if (!sourceId) { setError('Select a batch, growth study, or cell bank preparation first.'); return; }
     if (logHour === '' || isNaN(Number(logHour))) { setError('Enter the log hour.'); return; }
     if (sourceType === 'batch' && !flaskId) { setError('Select a flask.'); return; }
 
@@ -321,9 +326,9 @@ export default function QuickLogPage() {
       flask_id:         sourceType === 'batch' ? flaskId : null,
       flask_label:      sourceType === 'batch' ? flaskLabel : null,
       log_hour:         Number(logHour),
-      source_label:     buildSourceLabel(sourceType, selectedBatch, selectedStudy),
+      source_label:     buildSourceLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep),
       timepoint_label:  buildTimepointLabel(logHour),
-      sample_label:     autoSampleLabel(sourceType, selectedBatch, selectedStudy, flaskLabel, logHour),
+      sample_label:     autoSampleLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep, flaskLabel, logHour),
       collected_at:     new Date(collectedAt).toISOString(),
       notes:            notes || null,
       tests:            testPayload,
@@ -413,10 +418,11 @@ export default function QuickLogPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* ── Source Type Selector ── */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { value: 'batch',       label: 'Batch Production', icon: FlaskConical },
             { value: 'growth_study', label: 'Growth Study',    icon: Activity },
+            { value: 'cell_bank',   label: 'Cell Bank',        icon: ClipboardList },
           ].map(({ value, label, icon: Icon }) => (
             <button
               key={value} type="button"
@@ -437,7 +443,11 @@ export default function QuickLogPage() {
         {/* ── Source Selection ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
           <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
-            {sourceType === 'batch' ? 'Select Batch & Flask' : 'Select Study & Timepoint'}
+            {sourceType === 'batch'
+              ? 'Select Batch & Flask'
+              : sourceType === 'growth_study'
+                ? 'Select Study & Timepoint'
+                : 'Select Cell Bank Preparation'}
           </h3>
 
           {sourcesLoading ? (
@@ -494,7 +504,7 @@ export default function QuickLogPage() {
                 <p className="text-amber-600 text-xs font-bold">No flasks found for this batch.</p>
               )}
             </>
-          ) : (
+          ) : sourceType === 'growth_study' ? (
             <>
               {sources.growth_studies.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
@@ -546,6 +556,36 @@ export default function QuickLogPage() {
                         </button>
                       ))}
                     </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {sources.cell_bank_preparations?.length === 0 ? (
+                <p className="text-slate-400 text-sm font-medium py-2">
+                  No in-progress cell bank preparations.{' '}
+                  <Link href="/research/cell-bank" className="text-teal-600 font-bold hover:underline">Go to Cell Bank</Link>
+                </p>
+              ) : (
+                <div>
+                  <label className={LabelCls}>Preparation</label>
+                  <select
+                    className={InputCls}
+                    value={sourceId}
+                    onChange={e => { setSourceId(e.target.value); setTimePointId(''); }}
+                  >
+                    <option value="">Select preparation...</option>
+                    {sources.cell_bank_preparations.map(prep => (
+                      <option key={prep.id} value={prep.id}>
+                        {prep.prep_code} - {prep.type}{prep.cell_bank_strains?.name ? ` - ${prep.cell_bank_strains.name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedCellPrep && (
+                    <p className="text-[10px] text-slate-500 font-semibold mt-2">
+                      {selectedCellPrep.cell_bank_strains?.strain_short_code || selectedCellPrep.cell_bank_strains?.accession_number || 'Strain'} · Passage {selectedCellPrep.passage_number ?? '-'}
+                    </p>
                   )}
                 </div>
               )}
@@ -802,7 +842,7 @@ export default function QuickLogPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={LabelCls}>Colony Count</label>
+                  <label className={LabelCls}>No. of Plates</label>
                   <input
                     className={InputCls}
                     type="number" min="0"

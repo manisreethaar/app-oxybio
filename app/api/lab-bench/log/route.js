@@ -15,6 +15,7 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import {
   syncToBatchFermentation,
+  syncToCellBankSample,
   syncToGrowthMeasurement,
 } from '@/lib/labBench/bridgeSync';
 
@@ -34,7 +35,7 @@ export async function POST(request) {
 
     const body = await request.json();
     const {
-      source_type,      // 'batch' | 'growth_study'
+      source_type,      // 'batch' | 'growth_study' | 'cell_bank'
       source_id,        // batch UUID string or growth_study UUID
       flask_id,         // UUID — batch only
       flask_label,      // text — batch only
@@ -49,9 +50,9 @@ export async function POST(request) {
     } = body;
 
     // ── Validation ──────────────────────────────────────────────
-    if (!source_type || !['batch', 'growth_study'].includes(source_type)) {
+    if (!source_type || !['batch', 'growth_study', 'cell_bank'].includes(source_type)) {
       return NextResponse.json(
-        { error: 'source_type must be "batch" or "growth_study"' },
+        { error: 'source_type must be "batch", "growth_study", or "cell_bank"' },
         { status: 400 }
       );
     }
@@ -93,14 +94,24 @@ export async function POST(request) {
     let bridgeResult = {};
 
     if (source_type === 'batch') {
+      const { data: batchRow } = await supabase
+        .from('batches')
+        .select('id')
+        .eq('batch_id', source_id)
+        .maybeSingle();
+
       bridgeResult = await syncToBatchFermentation(supabase, {
         batchId:     source_id,
+        batchUuid:   batchRow?.id || null,
         flaskId:     flask_id,
         flaskLabel:  flask_label,
         logHour:     log_hour,
         collectedAt: loggedAt,
         tests,
         employeeId:  employee?.id,
+        sample,
+        sourceLabel: source_label,
+        timepointLabel: timepoint_label,
       });
     } else if (source_type === 'growth_study') {
       bridgeResult = await syncToGrowthMeasurement(supabase, {
@@ -110,12 +121,27 @@ export async function POST(request) {
         collectedAt: loggedAt,
         tests,
         employeeId:  employee?.id,
+        sample,
+        sourceLabel: source_label,
+        timepointLabel: timepoint_label,
+      });
+    } else if (source_type === 'cell_bank') {
+      bridgeResult = await syncToCellBankSample(supabase, {
+        preparationId: source_id,
+        logHour:     log_hour,
+        collectedAt: loggedAt,
+        tests,
+        employeeId:  employee?.id,
+        sample,
+        sourceLabel: source_label,
+        timepointLabel: timepoint_label,
       });
     }
 
     const fermentationReadingId = bridgeResult.reading?.id     || null;
     const growthMeasurementId   = bridgeResult.measurement?.id || null;
     const incubationRecordId    = bridgeResult.incubation?.id  || null;
+    const incubationRecordIds   = (bridgeResult.incubations || []).map(row => row.id);
 
     // ── Step 3: Insert test_results rows ─────────────────────────
     // Each test gets one row, with bridge FK back to the module record.
@@ -127,7 +153,9 @@ export async function POST(request) {
       unit:                           t.unit         || null,
       skipped:                        t.skipped      || false,
       skip_reason:                    t.skip_reason  || null,
-      detail:                         t.detail       || {},
+      detail:                         t.test_type === 'plate_analysis'
+        ? { ...(t.detail || {}), incubation_record_ids: incubationRecordIds }
+        : (t.detail || {}),
       synced_fermentation_reading_id: source_type === 'batch'
         ? fermentationReadingId
         : null,
@@ -163,6 +191,7 @@ export async function POST(request) {
         fermentation_reading: bridgeResult.reading     || null,
         growth_measurement:   bridgeResult.measurement || null,
         incubation_record:    bridgeResult.incubation  || null,
+        incubation_records:   bridgeResult.incubations || [],
         alarms:               bridgeResult.alarms      || null,
       },
     });

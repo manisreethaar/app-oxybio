@@ -110,7 +110,7 @@ export async function GET(request) {
 
     let query = supabase
       .from('sample_incubation_records')
-      .select('*, employees(full_name), batches(batch_id), batch_flasks(flask_label), batch_flask_qc_samples(sample_id)')
+      .select('*, employees(full_name), batches(batch_id), batch_flasks(flask_label), batch_flask_qc_samples(sample_id), samples(sample_label, source_type, source_label, log_hour, timepoint_label, flask_label)')
       .order('created_at', { ascending: false });
 
     if (status === 'ongoing') query = query.is('end_time', null);

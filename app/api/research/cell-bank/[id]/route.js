@@ -39,7 +39,7 @@ export async function GET(request, { params }) {
     // Fetch linked incubation records for this preparation
     const { data: incubations } = await supabase
       .from('sample_incubation_records')
-      .select('id, sample_name, sample_type, start_time, end_time, duration_hours, sterility_status, colony_count, cfu_per_ml, colony_morphology, microscopic_morphology, incubation_temp_c, media_used')
+      .select('id, sample_name, sample_type, start_time, end_time, duration_hours, sterility_status, colony_count, cfu_per_ml, colony_morphology, microscopic_morphology, incubation_temp_c, media_used, lab_bench_sample_id, source_label, log_hour, timepoint_label, plate_label, plate_index, plate_total')
       .eq('cell_bank_preparation_id', params.id)
       .order('created_at', { ascending: true });
 
@@ -97,7 +97,7 @@ export async function PATCH(request, { params }) {
         .from('cell_bank_strains')
         .update(updates)
         .eq('id', params.id)
-        .select('*, linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id,code,name,version,category)')
+        .select('*, linked_formulation:formulations(id,code,name,version,category)')
         .single();
       if (error) {
         return NextResponse.json({ success: false, error: error.message || 'Unable to update strain.' }, { status: 400 });

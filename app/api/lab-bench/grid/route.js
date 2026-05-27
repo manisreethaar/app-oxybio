@@ -115,14 +115,24 @@ export async function POST(request) {
       if (!entry.skipped) {
         try {
           if (source_type === 'batch') {
+            const { data: batchRow } = await supabase
+              .from('batches')
+              .select('id')
+              .eq('batch_id', source_id)
+              .maybeSingle();
+
             bridgeResult = await syncToBatchFermentation(supabase, {
               batchId:     source_id,
+              batchUuid:   batchRow?.id || null,
               flaskId,
               flaskLabel,
               logHour:     entryHour,
               collectedAt: loggedAt,
               tests,
               employeeId:  employee?.id,
+              sample,
+              sourceLabel: source_label,
+              timepointLabel,
             });
             ferReadingId  = bridgeResult.reading?.id    || null;
             incubRecordId = bridgeResult.incubation?.id || null;
@@ -137,6 +147,9 @@ export async function POST(request) {
               collectedAt: loggedAt,
               tests,
               employeeId:  employee?.id,
+              sample,
+              sourceLabel: source_label,
+              timepointLabel,
             });
             growthMeasId = bridgeResult.measurement?.id || null;
           }
@@ -163,7 +176,9 @@ export async function POST(request) {
           skip_reason:                    entry.skipped
                                             ? (entry.skip_reason || null)
                                             : (t.skip_reason || null),
-          detail:                         t.detail       || {},
+          detail:                         t.test_type === 'plate_analysis'
+                                            ? { ...(t.detail || {}), incubation_record_ids: (bridgeResult.incubations || []).map(row => row.id) }
+                                            : (t.detail || {}),
           synced_fermentation_reading_id: source_type === 'batch' ? ferReadingId : null,
           synced_growth_measurement_id:   source_type === 'growth_study' ? growthMeasId : null,
           synced_incubation_record_id:    t.test_type === 'plate_analysis' && !entry.skipped
