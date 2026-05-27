@@ -53,8 +53,21 @@ export async function GET(request) {
     }
 
     const employeeIds = [...new Set(openShifts.map(s => s.employee_id))];
+    const openShiftIds = openShifts.map(s => s.id);
 
-    // 2. Fetch employee names
+    // 2. Auto-close all open shifts: reset hours to 0, set mispunch required
+    const { error: resetError } = await supabaseAdmin
+      .from('attendance_log')
+      .update({
+        check_out_time: nowUtc.toISOString(),
+        total_hours: 0,
+        mispunch_status: 'required'
+      })
+      .in('id', openShiftIds);
+
+    if (resetError) throw resetError;
+
+    // 3. Fetch employee names
     const { data: employees, error: empError } = await supabaseAdmin
       .from('employees')
       .select('id, full_name')
@@ -62,19 +75,20 @@ export async function GET(request) {
 
     if (empError) throw empError;
 
-    // 3. Insert in-app notifications and Send push
+    // 4. Insert in-app notifications and send push
     const notifyPromises = employees.map(emp => sendServerNotification(
       emp.id,
-      '🔴 You Are Still Checked In',
-      'It is 9:00 PM and your shift is still open. Please check out now — at midnight your hours will be set to 0 and a Mispunch will be required.',
-      '/attendance'
+      '🔴 Shift Auto-Closed — Mispunch Required',
+      'It is 9:00 PM and your shift was still open. Your hours have been reset to 0. Please submit a Mispunch request with your actual hours.',
+      '/mispunch'
     ));
 
     await Promise.allSettled(notifyPromises);
 
     return NextResponse.json({
       success: true,
-      message: `Sent 9 PM warnings to ${employees.length} employee(s).`,
+      message: `Auto-closed ${openShifts.length} shift(s) and notified ${employees.length} employee(s).`,
+      shifts_reset: openShifts.length,
     });
 
   } catch (error) {
