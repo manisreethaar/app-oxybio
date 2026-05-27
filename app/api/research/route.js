@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 const postSchema = z.object({
   batch_id:      z.string().uuid().optional().nullable(),
+  flask_id:      z.string().optional().nullable(),
   session_title: z.string().min(1, 'Session title required'),
   panelist_count: z.preprocess((val) => Number(val), z.number().min(1)),
   sample_ids:    z.string().optional(),
