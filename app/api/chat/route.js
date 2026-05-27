@@ -3,7 +3,7 @@ import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { sendServerNotification } from '@/utils/serverNotify';
-import { NextResponse } from 'next/server';
+import { canUseOpsAssistant, validateChatMessages } from '@/lib/chat/guards';
 
 export async function POST(req) {
   try {
@@ -27,14 +27,25 @@ export async function POST(req) {
     }
 
     const effectiveRole = profile.role?.toLowerCase();
-    if (effectiveRole !== 'ceo' && effectiveRole !== 'admin') {
+    if (!canUseOpsAssistant(effectiveRole)) {
       return new Response(JSON.stringify({ error: 'Access denied — CEO/Admin only.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Use the internal employee UUID for all database operations
     const employeeId = profile.id;
 
-    const { messages } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON request body.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const validation = validateChatMessages(body?.messages);
+    if (!validation.ok) {
+      return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    const { messages } = validation;
 
     const result = streamText({
       model: google('gemini-2.5-pro'),
