@@ -26,7 +26,7 @@ export async function POST(request, { params }) {
     const { data: existing } = await supabase
       .from('shelf_life_logs')
       .select('id')
-      .eq('shelf_life_id', study_id)
+      .eq('study_id', study_id)
       .eq('day_number', day_number)
       .maybeSingle();
 
@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
       const { data, error } = await supabase
         .from('shelf_life_logs')
         .insert({
-          shelf_life_id: study_id,
+          study_id: study_id,
           day_number,
           test_data,
           logged_by: emp.id
