@@ -140,7 +140,6 @@ export default function GrowthStudyDetailPage() {
   const nextTp = tpPending.find(tp => tp.planned_hour >= elapsed) || tpPending[0];
   const overdueTps = isActive ? tpPending.filter(tp => tp.planned_hour < elapsed - 0.25) : [];
 
-
   const availableLines = [
     { key: 'od', label: `OD${study.od_wavelength || 600}` },
     { key: 'ph', label: 'pH' },
