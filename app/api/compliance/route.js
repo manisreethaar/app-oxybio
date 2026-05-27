@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { addMonths, addYears, addWeeks } from 'date-fns';
+import { requireComplianceManager } from '@/lib/compliance/access';
 
 const createSchema = z.object({
   title: z.string().min(1, 'Title required'),
@@ -20,11 +21,24 @@ const patchSchema = z.object({
   item_id: z.string().uuid()
 });
 
+async function getEmployeeForUser(supabase, user) {
+  const { data } = await supabase
+    .from('employees')
+    .select('id, role')
+    .eq('email', user.email)
+    .maybeSingle();
+  return data || null;
+}
+
 export async function POST(request) {
   try {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const emp = await getEmployeeForUser(supabase, user);
+    const access = requireComplianceManager(emp, user.email, 'create compliance items');
+    if (!access.allowed) return NextResponse.json({ error: access.error }, { status: 403 });
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -44,6 +58,10 @@ export async function PATCH(request) {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const emp = await getEmployeeForUser(supabase, user);
+    const access = requireComplianceManager(emp, user.email, 'mark compliance items done');
+    if (!access.allowed) return NextResponse.json({ error: access.error }, { status: 403 });
 
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
