@@ -68,12 +68,24 @@ export async function PATCH(request, { params }) {
 
     // ── Edit strain ────────────────────────────────────────────────────────
     if (body.target === 'strain') {
-      const n = (v) => (v === '' ? null : v);
+      const n = (v) => (v === '' || v === undefined ? null : v);
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const sourceType = body.source_type || 'Other';
+      const allowedSourceTypes = ['MTCC', 'NCIM', 'Isolated', 'Other'];
+
+      if (!name) {
+        return NextResponse.json({ success: false, error: 'Strain name is required.' }, { status: 400 });
+      }
+
+      if (!allowedSourceTypes.includes(sourceType)) {
+        return NextResponse.json({ success: false, error: 'Invalid strain source type.' }, { status: 400 });
+      }
+
       const updates = {
-        name:              body.name,
-        source_type:       body.source_type,
+        name,
+        source_type:       sourceType,
         accession_number:  n(body.accession_number),
-        strain_short_code: n(body.strain_short_code),
+        strain_short_code: body.strain_short_code ? String(body.strain_short_code).trim().toUpperCase().slice(0, 4) : null,
         isolation_source:  n(body.isolation_source),
         received_date:     n(body.received_date),
         taxonomy:          n(body.taxonomy),
@@ -87,7 +99,12 @@ export async function PATCH(request, { params }) {
         .eq('id', params.id)
         .select('*, linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id,code,name,version,category)')
         .single();
-      if (error) throw error;
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message || 'Unable to update strain.' }, { status: 400 });
+      }
+      if (!data) {
+        return NextResponse.json({ success: false, error: 'Strain not found.' }, { status: 404 });
+      }
       return NextResponse.json({ success: true, data });
     }
 

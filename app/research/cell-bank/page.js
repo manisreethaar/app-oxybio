@@ -104,15 +104,32 @@ function EditStrainForm({ strain, formulations, onSave, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name.trim()) {
+      toast.error('Strain name is required.');
+      return;
+    }
+
     setSaving(true);
     try {
+      const n = (v) => (v === '' ? null : v);
       const res = await fetch(`/api/research/cell-bank/${strain.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: 'strain', ...form }),
+        body: JSON.stringify({
+          target: 'strain',
+          ...form,
+          name: form.name.trim(),
+          formulation_id: n(form.formulation_id),
+          accession_number: n(form.accession_number),
+          strain_short_code: n(form.strain_short_code),
+          isolation_source: n(form.isolation_source),
+          received_date: n(form.received_date),
+          taxonomy: n(form.taxonomy),
+          notes: n(form.notes),
+        }),
       });
       const json = await res.json();
-      if (!json.success) throw new Error(json.error);
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update strain.');
       toast.success('Strain updated.');
       onSave(json.data);
     } catch (err) { toast.error(err.message); }
@@ -140,9 +157,13 @@ function EditStrainForm({ strain, formulations, onSave, onCancel }) {
         <div><label className="field-label">Accession / Lot #</label>
           <input value={form.accession_number} onChange={e => set('accession_number', e.target.value)} className="field-input" placeholder="MTCC-1408"/></div>
         <div>
-          <label className="field-label">Strain Short Code <span className="text-red-500">*</span></label>
-          <input required maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
-          <p className="text-[9px] text-gray-400 mt-0.5">2–4 letters used in vial codes</p>
+          <label className="field-label">Strain Short Code</label>
+          <input maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
+          {form.strain_short_code ? (
+            <p className="text-[9px] text-gray-400 mt-0.5">2-4 letters used in vial codes</p>
+          ) : (
+            <p className="text-[9px] text-amber-600 font-semibold mt-0.5">Short code is recommended for vial code generation.</p>
+          )}
         </div>
         <div><label className="field-label">Isolation Source</label>
           <input value={form.isolation_source} onChange={e => set('isolation_source', e.target.value)} className="field-input" placeholder="Fermented rice"/></div>
@@ -155,7 +176,7 @@ function EditStrainForm({ strain, formulations, onSave, onCancel }) {
       </div>
       <div className="flex gap-3">
         <button type="button" onClick={onCancel} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
-        <button type="submit" disabled={saving || !form.strain_short_code} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
+        <button type="submit" disabled={saving} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
       </div>
     </form>
   );
