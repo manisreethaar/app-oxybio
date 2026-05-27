@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import FormulaDiff from '@/components/science/FormulaDiff';
 import Skeleton from '@/components/Skeleton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
+import EditRequestButton from '@/components/ui/EditRequestButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -53,12 +55,21 @@ export default function FormulationsPage() {
   const [batchCounts, setBatchCounts] = useState({});
   const [expandedBatchHistory, setExpandedBatchHistory] = useState(null);
   const [batchHistory, setBatchHistory] = useState({});
+  const [pendingIds, setPendingIds] = useState(new Set());
 
   const supabase = useMemo(() => createClient(), []);
   const isApprover = APPROVER_ROLES.includes(role?.toLowerCase());
 
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
   useEffect(() => {
-    fetchFormulations(); fetchInventoryItems();
+    fetchFormulations(); fetchInventoryItems(); fetchPendingIds();
 
     // Subscribe to realtime formulation updates to prevent stale statuses (e.g. Approved vs In Review)
     const channel = supabase.channel('formulations_realtime')
@@ -113,7 +124,7 @@ export default function FormulationsPage() {
     try {
       const { data, error } = await supabase
         .from('formulations')
-        .select('*, approver:employees!formulations_approved_by_fkey(full_name)')
+        .select('*, approver:employees!formulations_approved_by_fkey(full_name), creator:employees!formulations_created_by_fkey(id, full_name, initials)')
         .neq('status', 'Archived')
         .order('created_at', { ascending: false });
       if (!error) setFormulations(data || []);
@@ -433,22 +444,43 @@ export default function FormulationsPage() {
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
                           {statusCfg.label}
                         </span>
-                        {/* Edit + Delete icons for Draft and In Review (approvers only for In Review) */}
-                        {/* Delete also available for Approved — approvers can delete approved recipes */}
-                        {(f.status === 'Draft' || f.status === 'active' || (f.status === 'In Review' && isApprover) || (f.status === 'Approved' && isApprover)) && (
-                           <div className="flex gap-1 ml-1">
-                              {/* Edit: author can edit their own Draft; admin can edit any Draft or In Review */}
+                        {/* Admin: direct edit/delete; owners: edit-request flow */}
+                        {isApprover ? (
+                          (f.status === 'Draft' || f.status === 'active' || (f.status === 'In Review' && isApprover) || (f.status === 'Approved' && isApprover)) && (
+                            <div className="flex gap-1 ml-1">
                               {(f.status === 'Draft' || f.status === 'active' || isApprover) && (
                                 <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-navy hover:bg-gray-200 transition-all" title="Edit Recipe">
                                   <Plus className="w-3 h-3 rotate-45"/>
                                 </button>
                               )}
-                              {/* Delete: only for Draft/In Review - not Approved */}
                               <button onClick={() => handleDeleteRecipe(f.id)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all" title="Delete Recipe">
                                 <Trash2 className="w-3 h-3"/>
                               </button>
-                           </div>
-                        )}
+                            </div>
+                          )
+                        ) : f.created_by === employeeProfile?.id ? (
+                          <div className="ml-1">
+                            <EditRequestButton
+                              tableName="formulations"
+                              recordId={f.id}
+                              moduleLabel="Formulations"
+                              fields={[
+                                { key: 'name', label: 'Name' },
+                                { key: 'notes', label: 'Notes', type: 'textarea' },
+                                { key: 'category', label: 'Category', type: 'select', options: [
+                                  { value: 'Fermentation', label: 'Fermentation' },
+                                  { value: 'Media', label: 'Media' },
+                                  { value: 'Buffer', label: 'Buffer' },
+                                  { value: 'Other', label: 'Other' },
+                                ]},
+                              ]}
+                              currentData={f}
+                              hasPending={pendingIds.has(f.id)}
+                              allowDelete={f.status === 'Draft' || f.status === 'active'}
+                              onSuccess={() => { fetchFormulations(); fetchPendingIds(); }}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     </div>
 
@@ -495,6 +527,14 @@ export default function FormulationsPage() {
                         }) : <p className="text-xs font-semibold text-gray-400 italic">No components linked.</p>}
                       </div>
                     </div>
+
+                    {/* Creator badge */}
+                    {f.creator && (
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <CreatorBadge initials={f.creator.initials} fullName={f.creator.full_name} size="sm"/>
+                        <span className="text-[10px] text-gray-400 font-medium">by {f.creator.full_name}</span>
+                      </div>
+                    )}
 
                     {/* Approved by info */}
                     {f.status === 'Approved' && f.approver && (

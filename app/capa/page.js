@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 const CapaSeverityChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaSeverityChart })), { ssr: false });
 const CapaStatusChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaStatusChart })), { ssr: false });
 
@@ -40,6 +42,7 @@ export default function CapaPage() {
   const [severityFilter, setSeverityFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('newest');
 
+  const [pendingIds, setPendingIds] = useState(new Set());
   const [showRaise, setShowRaise] = useState(false);
   const [raising, setRaising] = useState(false);
   const { register: regRaise, handleSubmit: handRaise, formState: { errors: raiseErrors }, reset: resetRaise } = useForm({
@@ -63,7 +66,15 @@ export default function CapaPage() {
 
   const isAdmin = role === 'admin' || role === 'ceo' || role === 'cto';
 
-  useEffect(() => { fetchAll(); 
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
+  useEffect(() => { fetchAll(); fetchPendingIds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -71,7 +82,7 @@ export default function CapaPage() {
     setLoading(true);
     try {
       const [{ data: devs }, { data: emps }] = await Promise.all([
-        supabase.from('deviations').select('*, reporter:employees!deviations_reported_by_fkey(full_name), batches(id, batch_id)').order('created_at', { ascending: false }),
+        supabase.from('deviations').select('*, reported_by, created_by, reporter:employees!deviations_reported_by_fkey(full_name), creator:employees!deviations_created_by_fkey(id, full_name, initials), batches(id, batch_id)').order('created_at', { ascending: false }),
         supabase.from('employees').select('id, full_name').eq('is_active', true)
       ]);
       setDeviations(devs || []); setEmployees(emps || []);
@@ -322,7 +333,30 @@ export default function CapaPage() {
                   )}
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-400 shrink-0"/>
+              <div className="flex items-center gap-2 shrink-0">
+                {dev.creator && (
+                  <CreatorBadge initials={dev.creator.initials} fullName={dev.creator.full_name} size="sm"/>
+                )}
+                {!isAdmin && dev.created_by === employeeProfile?.id && dev.status === 'Open' && (
+                  <div onClick={e => e.stopPropagation()}>
+                    <EditRequestButton
+                      tableName="deviations"
+                      recordId={dev.id}
+                      moduleLabel="Deviations"
+                      fields={[
+                        { key: 'title', label: 'Title' },
+                        { key: 'description', label: 'Description', type: 'textarea' },
+                        { key: 'severity', label: 'Severity', type: 'select', options: SEVERITIES.map(s => ({ value: s, label: s })) },
+                        { key: 'source', label: 'Source', type: 'select', options: SOURCES.map(s => ({ value: s, label: s })) },
+                      ]}
+                      currentData={dev}
+                      hasPending={pendingIds.has(dev.id)}
+                      onSuccess={() => { fetchAll(); fetchPendingIds(); }}
+                    />
+                  </div>
+                )}
+                <ChevronRight className="w-4 h-4 text-gray-400"/>
+              </div>
             </div>
           ))}
         </div>

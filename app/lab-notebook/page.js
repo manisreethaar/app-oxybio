@@ -7,6 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope } from 'lucide-react';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
@@ -35,6 +37,7 @@ export default function DigitalLnbPage() {
   const [searchTerm,       setSearchTerm]       = useState('');
   const [sortOrder,        setSortOrder]        = useState('newest'); // newest, oldest, status
   const [filterGroup,      setFilterGroup]      = useState('all'); // all, cell_bank, fermentation
+  const [pendingIds,       setPendingIds]       = useState(new Set());
 
   const fileRef = useRef(null);
   const supabase = useMemo(() => createClient(), []);
@@ -86,7 +89,15 @@ export default function DigitalLnbPage() {
     finally { setLoading(false); }
   }, [supabase]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
+  useEffect(() => { fetchData(); fetchPendingIds(); }, [fetchData]);
 
   const handleCreateSubmit = async (data) => {
     setSubmitting(true);
@@ -300,8 +311,30 @@ export default function DigitalLnbPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center justify-center p-3 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors shrink-0">
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-navy"/>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {entry.author && (
+                    <CreatorBadge initials={entry.author.initials} fullName={entry.author.full_name} size="sm"/>
+                  )}
+                  {entry.status === 'Draft' && entry.created_by === employeeProfile?.id && (
+                    <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                      <EditRequestButton
+                        tableName="lab_notebook_entries"
+                        recordId={entry.id}
+                        moduleLabel="Lab Notebook"
+                        fields={[
+                          { key: 'title', label: 'Experiment Title' },
+                          { key: 'batch_stage', label: 'Stage', type: 'select', options: Object.entries(STAGE_LABELS).map(([v, l]) => ({ value: v, label: l })) },
+                        ]}
+                        currentData={entry}
+                        hasPending={pendingIds.has(entry.id)}
+                        allowDelete={entry.status === 'Draft'}
+                        onSuccess={() => { fetchData(); fetchPendingIds(); }}
+                      />
+                    </div>
+                  )}
+                  <div className="p-3 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors">
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-navy"/>
+                  </div>
                 </div>
               </div>
             </div>
