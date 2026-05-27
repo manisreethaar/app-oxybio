@@ -60,8 +60,8 @@ export async function DELETE(request, { params }) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    if (!emp || !['admin', 'manager'].includes(emp.role)) {
-      return NextResponse.json({ error: 'Permission denied. Admins or Managers only.' }, { status: 403 });
+    if (!emp || emp.role !== 'admin') {
+      return NextResponse.json({ error: 'Permission denied. Admins only.' }, { status: 403 });
     }
 
     const { error } = await supabase.from('taste_panels').delete().eq('id', params.id);

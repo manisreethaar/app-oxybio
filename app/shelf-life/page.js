@@ -25,6 +25,7 @@ export default function ShelfLifePage() {
   const [activeStudy, setActiveStudy] = useState(null);
   const [logForm, setLogForm] = useState({ day_number: 7, test_data: {} });
   const [logSubmitting, setLogSubmitting] = useState(false);
+  const isAdmin = employeeProfile?.role === 'admin';
 
   const { register, handleSubmit, reset, watch, setValue } = useForm({
     resolver: zodResolver(z.object({
@@ -42,6 +43,7 @@ export default function ShelfLifePage() {
   });
 
   const watchedCondition = watch('storage_condition');
+  const selectedBatchId = watch('batch_id');
   const supabase = useMemo(() => createClient(), []);
 
   const fetchData = useCallback(async () => {
@@ -54,7 +56,7 @@ export default function ShelfLifePage() {
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')
-          .select('id, batch_id, variant, experiment_type')
+          .select('id, batch_id, variant, experiment_type, batch_flasks(id, flask_label, status, current_stage)')
           .eq('status', 'released')
           .limit(100),
       ]);
@@ -79,8 +81,21 @@ export default function ShelfLifePage() {
     } catch (err) { toast.error(err.message); }
   };
 
+  const getLogForDay = (study, day) => (study?.shelf_life_logs || []).find(log => log.day_number === day);
+  const activeDayLog = activeStudy ? getLogForDay(activeStudy, logForm.day_number) : null;
+  const canSaveActiveLog = !activeDayLog || isAdmin;
+
+  const selectLogDay = (day) => {
+    const existing = getLogForDay(activeStudy, day);
+    setLogForm({ day_number: day, test_data: existing?.test_data || {} });
+  };
+
   const handleSaveLog = async () => {
     if (!activeStudy || logSubmitting) return;
+    if (!canSaveActiveLog) {
+      toast.error('Only admins can modify existing stability logs.');
+      return;
+    }
     setLogSubmitting(true);
     try {
       const res = await fetch(`/api/shelf-life/${activeStudy.id}/log`, {
@@ -98,7 +113,8 @@ export default function ShelfLifePage() {
   const openLogModal = (study) => {
     const completedDays = new Set((study.shelf_life_logs || []).map(log => log.day_number));
     const nextDay = TIMEPOINTS.find(day => !completedDays.has(day)) ?? TIMEPOINTS[0];
-    setLogForm({ day_number: nextDay, test_data: {} });
+    const existing = getLogForDay(study, nextDay);
+    setLogForm({ day_number: nextDay, test_data: existing?.test_data || {} });
     setActiveStudy(study);
   };
 
@@ -134,6 +150,8 @@ export default function ShelfLifePage() {
   };
 
   const TIMEPOINTS = [0, 7, 14, 30, 60, 90];
+  const selectedBatch = batches.find(batch => batch.id === selectedBatchId);
+  const selectedFlasks = selectedBatch?.batch_flasks || [];
 
   if (authLoading) return <div className="page-container space-y-6"><Skeleton width={300} height={40}/><Skeleton className="h-64 w-full rounded-2xl"/></div>;
   if (!employeeProfile) return null;
@@ -214,9 +232,14 @@ export default function ShelfLifePage() {
 
 
               <div className="flex gap-2">
-                {study.status !== 'Completed' && employeeProfile.role === 'admin' && (
+                {study.status !== 'Completed' && isAdmin && (
                   <button onClick={() => concludeStudy(study.id)} className="flex-1 py-2.5 bg-white border border-red-100 text-[10px] font-bold uppercase tracking-wider text-red-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all focus:outline-none">
                     Conclude
+                  </button>
+                )}
+                {isAdmin && (
+                  <button onClick={() => handleDeleteStudy(study.id)} className="px-3 py-2.5 bg-white border border-red-100 text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Delete study">
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
                 <button onClick={() => openLogModal(study)} className="flex-[2] py-2.5 bg-navy text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-navy-hover transition-all flex items-center justify-center gap-2">
@@ -248,10 +271,25 @@ export default function ShelfLifePage() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Flask ID (Optional)</label>
-                <input type="text" {...register('flask_id')} placeholder="e.g. F1, F2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-              </div>
+              {selectedFlasks.length > 0 ? (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Flask / Trial</label>
+                  <select {...register('flask_id')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">
+                    <option value="">Batch-level study</option>
+                    {selectedFlasks.map(flask => (
+                      <option key={flask.id} value={flask.flask_label}>
+                        {flask.flask_label}{flask.status ? ` | ${flask.status}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-gray-500 font-semibold mt-1">Create separate stability records for F1, F2, F3 when results differ by flask.</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Flask ID (Optional)</label>
+                  <input type="text" {...register('flask_id')} placeholder="e.g. F1, F2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Storage Condition</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -291,12 +329,15 @@ export default function ShelfLifePage() {
                 <label className="block text-xs font-bold text-gray-700 mb-1">Timepoint (Day)</label>
                 <div className="flex flex-wrap gap-2">
                   {[0, 7, 14, 30, 60, 90].map(d => (
-                    <button key={d} onClick={() => setLogForm(p => ({ ...p, day_number: d }))} 
+                    <button key={d} onClick={() => selectLogDay(d)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${logForm.day_number === d ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                       D{d}
                     </button>
                   ))}
                 </div>
+                {activeDayLog && !isAdmin && (
+                  <p className="text-[10px] font-semibold text-amber-600 mt-2">This day is already logged. Only admins can modify existing stability data.</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-4">
@@ -316,7 +357,7 @@ export default function ShelfLifePage() {
 
             <div className="p-6 bg-gray-50 flex gap-3">
               <button onClick={() => setActiveStudy(null)} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg hover:bg-gray-100 transition">Cancel</button>
-              <button disabled={logSubmitting} onClick={handleSaveLog} className="flex-[2] py-2.5 bg-navy text-white text-xs font-bold uppercase rounded-lg shadow hover:bg-navy-hover transition flex items-center justify-center gap-2">
+              <button disabled={logSubmitting || !canSaveActiveLog} onClick={handleSaveLog} className="flex-[2] py-2.5 bg-navy text-white text-xs font-bold uppercase rounded-lg shadow hover:bg-navy-hover transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 {logSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Save Log Data'}
               </button>
             </div>

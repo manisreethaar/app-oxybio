@@ -14,6 +14,7 @@ const ResearchRadarChart = dynamic(() => import('@/components/charts/ResearchCha
 
 const formSchema = z.object({
   batch_id:      z.string().uuid('Select a released batch').or(z.literal('')).optional().nullable(),
+  flask_id:      z.string().optional().nullable(),
   session_title: z.string().min(1, 'Title required'),
   panelist_count: z.preprocess((val) => Number(val), z.number().min(1, 'Min 1 panelist')),
   sample_ids:    z.string().optional(),
@@ -33,6 +34,7 @@ export default function ConsumerResearchPage() {
   const [scoreForms, setScoreForms] = useState([]);
   const [activePanelist, setActivePanelist] = useState(0);
   const [scoreSubmitting, setScoreSubmitting] = useState(false);
+  const isAdmin = employeeProfile?.role === 'admin';
   const handleDeleteSession = async (id) => {
     if (!confirm('Are you sure you want to delete this session?')) return;
     try {
@@ -43,10 +45,11 @@ export default function ConsumerResearchPage() {
     } catch (err) { toast.error(err.message); }
   };
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: { batch_id: '', session_title: '', flask_id: '', panelist_count: 5, sample_ids: '' },
   });
+  const selectedBatchId = watch('batch_id');
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -60,7 +63,7 @@ export default function ConsumerResearchPage() {
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')
-          .select('id, batch_id, variant, experiment_type')
+          .select('id, batch_id, variant, experiment_type, batch_flasks(id, flask_label, status, current_stage)')
           .eq('status', 'released')
           .limit(100),
       ]);
@@ -83,6 +86,7 @@ export default function ConsumerResearchPage() {
       const body = {
         ...data,
         batch_id:      data.batch_id || null,
+        flask_id:      data.flask_id || null,
         test_criteria: ['Taste', 'Texture', 'Smell', 'Appearance'],
       };
       const res = await fetch('/api/research', {
@@ -98,6 +102,13 @@ export default function ConsumerResearchPage() {
   const getCriteria = (session) => {
     return session?.test_criteria?.length ? session.test_criteria : DEFAULT_CRITERIA;
   };
+
+  const selectedBatch = batches.find(batch => batch.id === selectedBatchId);
+  const selectedFlasks = selectedBatch?.batch_flasks || [];
+  const sessionIdentity = (session) => [
+    session.batches?.batch_id ? `Batch ${session.batches.batch_id}` : null,
+    session.flask_id ? `Flask ${session.flask_id}` : null,
+  ].filter(Boolean).join(' | ');
 
   const openScoreModal = (session) => {
     const criteria = getCriteria(session);
@@ -214,8 +225,13 @@ export default function ConsumerResearchPage() {
       {/* Released batches with no panel yet — quick-start chips */}
       {!loading && batches.length > 0 && (
         (() => {
-          const linkedBatchIds = new Set(sessions.map(s => s.batch_id).filter(Boolean));
-          const unlinked = batches.filter(b => !linkedBatchIds.has(b.id));
+          const linkedKeys = new Set(sessions.map(s => `${s.batch_id || ''}::${s.flask_id || ''}`));
+          const unlinked = batches.flatMap(batch => {
+            const flasks = batch.batch_flasks?.length ? batch.batch_flasks : [{ id: '', flask_label: '' }];
+            return flasks
+              .filter(flask => !linkedKeys.has(`${batch.id}::${flask.flask_label || ''}`))
+              .map(flask => ({ batch, flask }));
+          });
           if (unlinked.length === 0) return null;
           return (
             <div className="mt-8 mb-2 p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -223,16 +239,23 @@ export default function ConsumerResearchPage() {
                 <FlaskConical className="w-4 h-4"/> Released Batches Awaiting Panel Testing
               </p>
               <div className="flex flex-wrap gap-2">
-                {unlinked.map(b => (
+                {unlinked.map(({ batch, flask }) => (
                   <button
-                    key={b.id}
+                    key={`${batch.id}-${flask.id || 'batch'}`}
                     onClick={() => {
-                      reset({ batch_id: b.id, session_title: `Panel — ${b.batch_id}`, panelist_count: 5, sample_ids: '' });
+                      const flaskLabel = flask.flask_label || '';
+                      reset({
+                        batch_id: batch.id,
+                        flask_id: flaskLabel,
+                        session_title: `Panel - ${batch.batch_id}${flaskLabel ? ` ${flaskLabel}` : ''}`,
+                        panelist_count: 5,
+                        sample_ids: flaskLabel,
+                      });
                       setShowNew(true);
                     }}
                     className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-all"
                   >
-                    {b.batch_id}{b.variant ? ` · ${b.variant}` : ''}
+                    {batch.batch_id}{flask.flask_label ? ` | ${flask.flask_label}` : ''}{batch.variant ? ` | ${batch.variant}` : ''}
                   </button>
                 ))}
               </div>
@@ -275,11 +298,12 @@ export default function ConsumerResearchPage() {
             </div>
 
             <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
-            {employeeProfile.role === 'admin' && (
+            {isAdmin && (
               <button onClick={() => handleDeleteSession(s.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
             )}
             </div>
-            <p className="text-xs font-bold text-navy font-mono mb-5">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
+            <p className="text-xs font-bold text-navy font-mono mb-1">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
+            {sessionIdentity(s) && <p className="text-[10px] font-semibold text-gray-500 mb-5">{sessionIdentity(s)}</p>}
 
             {/* Sensory radar chart */}
             <div className="h-44 w-full mb-5 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
@@ -302,7 +326,7 @@ export default function ConsumerResearchPage() {
               }
             </div>
 
-            {(!s.scores || s.scores.length === 0 || employeeProfile.role === 'admin') && (
+            {(!s.scores || s.scores.length === 0 || isAdmin) && (
             <button
               type="button"
               onClick={() => openScoreModal(s)}
@@ -332,7 +356,7 @@ export default function ConsumerResearchPage() {
               <h2 className="text-lg font-bold text-gray-900 tracking-tight">{activeSession.session_title}</h2>
               {activeSession.batches && (
                 <p className="text-xs font-semibold text-gray-500 mt-1">
-                  Batch {activeSession.batches.batch_id}{activeSession.batches.variant ? ` - ${activeSession.batches.variant}` : ''}
+                  Batch {activeSession.batches.batch_id}{activeSession.flask_id ? ` | Flask ${activeSession.flask_id}` : ''}{activeSession.batches.variant ? ` | ${activeSession.batches.variant}` : ''}
                 </p>
               )}
               
@@ -432,6 +456,24 @@ export default function ConsumerResearchPage() {
               </div>
 
               {/* Session title */}
+              {selectedFlasks.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Flask / Trial</label>
+                  <select
+                    {...register('flask_id')}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                  >
+                    <option value="">Batch-level panel</option>
+                    {selectedFlasks.map(flask => (
+                      <option key={flask.id} value={flask.flask_label}>
+                        {flask.flask_label}{flask.status ? ` | ${flask.status}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-gray-500 font-semibold mt-1">Use one sensory session per flask when F1, F2, F3 have different results.</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Session Target</label>
                 <input
