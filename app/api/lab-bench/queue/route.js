@@ -142,43 +142,78 @@ export async function GET() {
         ? `Growth Study ${study.study_code}`
         : `Growth Study ${study.name}`;
 
-      for (const tp of pendingTps) {
-        const overdueBh = currentElapsed - tp.planned_hour;
-        let urgency, detail, sortKey;
+      if (pendingTps.length > 0) {
+        // ── Studies with a formal time-point schedule ──
+        for (const tp of pendingTps) {
+          const overdueBh = currentElapsed - tp.planned_hour;
+          let urgency, detail, sortKey;
 
-        if (overdueBh > 0.5) {
+          if (overdueBh > 0.5) {
+            urgency = 'overdue';
+            detail  = `${overdueBh.toFixed(1)}h overdue`;
+            sortKey = overdueBh;
+          } else if (tp.planned_hour <= currentElapsed + 1.5) {
+            urgency = 'due_soon';
+            const minsUntil = Math.round((tp.planned_hour - currentElapsed) * 60);
+            detail  = minsUntil <= 0
+              ? 'Due now'
+              : `Due in ${minsUntil} min`;
+            sortKey = -(tp.planned_hour - currentElapsed);
+          } else {
+            urgency = 'upcoming';
+            const hoursUntil = (tp.planned_hour - currentElapsed).toFixed(1);
+            detail  = `In ${hoursUntil}h`;
+            sortKey = -(tp.planned_hour - currentElapsed);
+          }
+
+          items.push({
+            id:              `study::${study.id}::${tp.id}`,
+            type:            'growth_timepoint',
+            urgency,
+            source_type:     'growth_study',
+            source_id:       study.id,
+            source_label:    studyLabel,
+            time_point_id:   tp.id,
+            timepoint_label: `T+${tp.planned_hour}h`,
+            sample_types:    tp.sample_types || [],
+            detail,
+            planned_hour:    tp.planned_hour,
+            current_elapsed: parseFloat(currentElapsed.toFixed(2)),
+            od_wavelength:   study.od_wavelength || 600,
+            sort_key:        sortKey,
+          });
+        }
+      } else {
+        // ── Active study with no time points defined — show as open item ──
+        // Urgency mirrors fermentation: >6h = overdue, 3–6h = due_soon, <3h = active
+        const elapsed = parseFloat(currentElapsed.toFixed(1));
+        let urgency, detail;
+        if (currentElapsed > 6) {
           urgency = 'overdue';
-          detail  = `${overdueBh.toFixed(1)}h overdue`;
-          sortKey = overdueBh;
-        } else if (tp.planned_hour <= currentElapsed + 1.5) {
+          detail  = `Running ${elapsed}h — no readings logged`;
+        } else if (currentElapsed > 3) {
           urgency = 'due_soon';
-          const minsUntil = Math.round((tp.planned_hour - currentElapsed) * 60);
-          detail  = minsUntil <= 0
-            ? 'Due now'
-            : `Due in ${minsUntil} min`;
-          sortKey = -(tp.planned_hour - currentElapsed); // closer = higher sort
+          detail  = `Running ${elapsed}h — log a measurement`;
         } else {
-          urgency = 'upcoming';
-          const hoursUntil = (tp.planned_hour - currentElapsed).toFixed(1);
-          detail  = `In ${hoursUntil}h`;
-          sortKey = -(tp.planned_hour - currentElapsed);
+          urgency = 'active';
+          detail  = `Running ${elapsed}h`;
         }
 
         items.push({
-          id:              `study::${study.id}::${tp.id}`,
+          id:              `study::${study.id}::open`,
           type:            'growth_timepoint',
           urgency,
           source_type:     'growth_study',
           source_id:       study.id,
           source_label:    studyLabel,
-          time_point_id:   tp.id,
-          timepoint_label: `T+${tp.planned_hour}h`,
-          sample_types:    tp.sample_types || [],
+          time_point_id:   null,
+          timepoint_label: `T+${elapsed}h elapsed`,
+          sample_types:    [],
           detail,
-          planned_hour:    tp.planned_hour,
-          current_elapsed: parseFloat(currentElapsed.toFixed(2)),
+          planned_hour:    null,
+          current_elapsed: elapsed,
           od_wavelength:   study.od_wavelength || 600,
-          sort_key:        sortKey,
+          sort_key:        currentElapsed, // higher elapsed = surfaced first within group
         });
       }
     }
