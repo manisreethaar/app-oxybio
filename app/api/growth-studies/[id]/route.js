@@ -72,7 +72,35 @@ export async function PATCH(req, { params }) {
     const { id } = await params;
     const body = await req.json();
 
-    const { data, error } = await supabase
+    const supabaseAdmin = createAdminClient();
+
+    // Handle vial change: restore old vial, mark new vial
+    if ('vial_id' in body) {
+      const { data: current } = await supabaseAdmin
+        .from('growth_studies')
+        .select('vial_id, status')
+        .eq('id', id)
+        .single();
+
+      const oldVialId = current?.vial_id;
+      const newVialId = body.vial_id;
+
+      if (oldVialId && oldVialId !== newVialId) {
+        await supabaseAdmin
+          .from('cell_bank_vials')
+          .update({ status: 'Available', used_in_study_id: null, used_at: null })
+          .eq('id', oldVialId);
+      }
+
+      if (newVialId && newVialId !== oldVialId && current?.status === 'active') {
+        await supabaseAdmin
+          .from('cell_bank_vials')
+          .update({ status: 'Used', used_in_study_id: id, used_at: new Date().toISOString() })
+          .eq('id', newVialId);
+      }
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('growth_studies')
       .update({ ...body, updated_at: new Date().toISOString() })
       .eq('id', id)

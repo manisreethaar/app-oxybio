@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { createClient } from '@/utils/supabase/client';
 import {
   Clock, AlertCircle, Play, Square, BarChart2,
   FlaskConical, Microscope, X, FileText, Loader2,
@@ -12,6 +13,7 @@ import {
 
 const GrowthCurveChart = dynamic(() => import('@/components/charts/GrowthCurveChart'), { ssr: false });
 
+const VESSEL_TYPES = ['test_tube','flask_50ml','flask_125ml','flask_250ml','flask_500ml','flask_1000ml','bioreactor_1L','bioreactor_5L','bioreactor_10L'];
 const TURBIDITY_OPTIONS = ['clear', 'slightly_turbid', 'turbid', 'very_turbid'];
 const PLATE_MEDIA_OPTIONS = ['TSA', 'LB Agar', 'MRS Agar', 'PDA', 'Nutrient Agar', 'R2A', 'Other'];
 const DILUTION_OPTIONS = ['undiluted', '10⁻¹', '10⁻²', '10⁻³', '10⁻⁴', '10⁻⁵', '10⁻⁶'];
@@ -62,6 +64,8 @@ export default function GrowthStudyDetailPage() {
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [editErr, setEditErr] = useState('');
+  const [editMeta, setEditMeta] = useState({ strains: [], preps: [], formulations: [], vials: [] });
+  const [editMetaLoading, setEditMetaLoading] = useState(false);
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -154,34 +158,86 @@ export default function GrowthStudyDetailPage() {
     load();
   };
 
-  const openEditModal = (study) => {
+  const openEditModal = async (study) => {
+    const src = study.cell_bank_strain_id ? 'strain' : (study.cell_bank_preparation_id ? 'prep' : 'strain');
     setEditForm({
       name: study.name || '',
+      study_type: study.study_type || 'growth_curve',
       objective: study.objective || '',
       notes: study.notes || '',
+      isolate_source: src,
+      cell_bank_strain_id: study.cell_bank_strain_id || '',
+      cell_bank_preparation_id: study.cell_bank_preparation_id || '',
+      vial_id: study.vial_id || '',
+      formulation_id: study.formulation_id || '',
+      media_name: study.media_name || '',
+      vessel_type: study.vessel_type || '',
+      volume_ml: study.volume_ml ?? '',
       temperature_c: study.temperature_c ?? '',
       agitation_rpm: study.agitation_rpm ?? '',
-      volume_ml: study.volume_ml ?? '',
+      inoculum_percentage: study.inoculum_percentage ?? '',
+      inoculum_volume_ml: study.inoculum_volume_ml ?? '',
       od_wavelength: study.od_wavelength ?? 600,
       expected_duration_hours: study.expected_duration_hours ?? '',
-      inoculum_percentage: study.inoculum_percentage ?? '',
-      inoculation_time: toDatetimeLocal(study.inoculation_time), // may be empty for setup studies
     });
     setEditErr('');
     setEditModal(true);
+    setEditMetaLoading(true);
+    const sb = createClient();
+    const [strRes, prRes, fmRes] = await Promise.all([
+      sb.from('cell_bank_strains').select('id, name, accession_number').order('name'),
+      sb.from('cell_bank_preparations').select('id, prep_code, type, passage_number').order('created_at', { ascending: false }),
+      sb.from('formulations').select('id, name, code').eq('status', 'Approved').order('name'),
+    ]);
+    let vials = [];
+    if (study.cell_bank_preparation_id) {
+      const { data: v } = await sb
+        .from('cell_bank_vials')
+        .select('id, vial_code, storage_temp, freezer_id, rack, position, status')
+        .eq('preparation_id', study.cell_bank_preparation_id)
+        .in('status', ['Available', 'Used'])
+        .order('vial_code');
+      vials = v || [];
+    }
+    setEditMeta({ strains: strRes.data || [], preps: prRes.data || [], formulations: fmRes.data || [], vials });
+    setEditMetaLoading(false);
+  };
+
+  const loadEditVials = async (prepId) => {
+    if (!prepId) { setEditMeta(m => ({ ...m, vials: [] })); return; }
+    const sb = createClient();
+    const { data } = await sb
+      .from('cell_bank_vials')
+      .select('id, vial_code, storage_temp, freezer_id, rack, position, status')
+      .eq('preparation_id', prepId)
+      .in('status', ['Available', 'Used'])
+      .order('vial_code');
+    setEditMeta(m => ({ ...m, vials: data || [] }));
   };
 
   const saveEdit = async () => {
     setEditSaving(true);
     setEditErr('');
-    const payload = { ...editForm };
-    Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
-    ['temperature_c', 'agitation_rpm', 'volume_ml', 'od_wavelength', 'expected_duration_hours', 'inoculum_percentage']
-      .forEach(k => { if (payload[k] !== undefined) payload[k] = parseFloat(payload[k]); });
-    // Convert datetime-local string to ISO for inoculation_time
-    if (payload.inoculation_time) {
-      payload.inoculation_time = new Date(payload.inoculation_time).toISOString();
-    }
+    const f = editForm;
+    const payload = {
+      name: f.name || null,
+      study_type: f.study_type || null,
+      objective: f.objective || null,
+      notes: f.notes || null,
+      cell_bank_strain_id: f.isolate_source === 'strain' && f.cell_bank_strain_id ? f.cell_bank_strain_id : null,
+      cell_bank_preparation_id: f.isolate_source === 'prep' && f.cell_bank_preparation_id ? f.cell_bank_preparation_id : null,
+      vial_id: f.isolate_source === 'prep' && f.vial_id ? f.vial_id : null,
+      formulation_id: f.formulation_id || null,
+      media_name: !f.formulation_id ? (f.media_name || null) : null,
+      vessel_type: f.vessel_type || null,
+      volume_ml: f.volume_ml !== '' ? parseFloat(f.volume_ml) : null,
+      temperature_c: f.temperature_c !== '' ? parseFloat(f.temperature_c) : null,
+      agitation_rpm: f.agitation_rpm !== '' ? parseFloat(f.agitation_rpm) : null,
+      inoculum_percentage: f.inoculum_percentage !== '' ? parseFloat(f.inoculum_percentage) : null,
+      inoculum_volume_ml: f.inoculum_volume_ml !== '' ? parseFloat(f.inoculum_volume_ml) : null,
+      od_wavelength: f.od_wavelength ? parseInt(f.od_wavelength) : 600,
+      expected_duration_hours: f.expected_duration_hours !== '' ? parseInt(f.expected_duration_hours) : null,
+    };
     const res = await fetch(`/api/growth-studies/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -910,81 +966,166 @@ export default function GrowthStudyDetailPage() {
       {/* ── Edit Study Modal ── */}
       {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-y-auto max-h-[92vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
-                <h3 className="font-black text-slate-800">Edit Study Details</h3>
+                <h3 className="font-black text-slate-800">Edit Study</h3>
                 <p className="text-xs text-slate-500 mt-0.5 font-mono">{study.study_code}</p>
               </div>
               <button onClick={() => setEditModal(false)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className={LabelCls}>Study Name *</label>
-                <input className={InputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div>
-                <label className={LabelCls}>Objective</label>
-                <textarea className={InputCls} rows={2} value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} placeholder="What are you trying to characterise?" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={LabelCls}>Temperature (°C)</label>
-                  <input className={InputCls} type="number" step="0.5" value={editForm.temperature_c} onChange={e => setEditForm(f => ({ ...f, temperature_c: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Agitation (rpm)</label>
-                  <input className={InputCls} type="number" value={editForm.agitation_rpm} onChange={e => setEditForm(f => ({ ...f, agitation_rpm: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Volume (mL)</label>
-                  <input className={InputCls} type="number" value={editForm.volume_ml} onChange={e => setEditForm(f => ({ ...f, volume_ml: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>OD Wavelength (nm)</label>
-                  <input className={InputCls} type="number" value={editForm.od_wavelength} onChange={e => setEditForm(f => ({ ...f, od_wavelength: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Inoculum (%v/v)</label>
-                  <input className={InputCls} type="number" step="0.1" value={editForm.inoculum_percentage} onChange={e => setEditForm(f => ({ ...f, inoculum_percentage: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Expected Duration (h)</label>
-                  <input className={InputCls} type="number" value={editForm.expected_duration_hours} onChange={e => setEditForm(f => ({ ...f, expected_duration_hours: e.target.value }))} />
-                </div>
-              </div>
 
-              {/* Inoculation time — only editable when study is active */}
-              {study.inoculation_time && (
-                <div>
-                  <label className={LabelCls}>Inoculation Time</label>
-                  <input
-                    className={InputCls}
-                    type="datetime-local"
-                    value={editForm.inoculation_time}
-                    max={nowDatetimeLocal()}
-                    onChange={e => setEditForm(f => ({ ...f, inoculation_time: e.target.value }))}
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1 font-medium">
-                    Auto-set when the study was started. Correct if the actual inoculation happened at a different time — time point schedules will be recalculated automatically.
-                  </p>
-                </div>
-              )}
+            {editMetaLoading ? (
+              <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin" /> Loading…
+              </div>
+            ) : (
+              <div className="p-6 space-y-5">
 
-              <div>
-                <label className={LabelCls}>Notes</label>
-                <textarea className={InputCls} rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                {/* ── Identity ── */}
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Identity</p>
+                  <div>
+                    <label className={LabelCls}>Study Name *</label>
+                    <input className={InputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className={LabelCls}>Study Type</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[['growth_curve','Growth Curve'],['fermentation','Fermentation']].map(([v,l]) => (
+                        <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
+                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
+                        >{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={LabelCls}>Objective</label>
+                    <textarea className={InputCls} rows={2} value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} placeholder="What are you trying to characterise?" />
+                  </div>
+                </div>
+
+                <hr className="border-slate-100" />
+
+                {/* ── Isolate ── */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
+                  <div className="flex gap-3">
+                    {[['strain','Cell Bank Strain'],['prep','Preparation / Vial']].map(([v,l]) => (
+                      <button key={v} type="button"
+                        onClick={() => setEditForm(f => ({ ...f, isolate_source: v, cell_bank_strain_id: '', cell_bank_preparation_id: '', vial_id: '' }))}
+                        className={`flex-1 py-2 rounded-xl border text-xs font-black transition-colors ${editForm.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+                      >{l}</button>
+                    ))}
+                  </div>
+                  {editForm.isolate_source === 'strain' ? (
+                    <select className={InputCls} value={editForm.cell_bank_strain_id} onChange={e => setEditForm(f => ({ ...f, cell_bank_strain_id: e.target.value }))}>
+                      <option value="">Select strain…</option>
+                      {editMeta.strains.map(s => <option key={s.id} value={s.id}>{s.name}{s.accession_number ? ` (${s.accession_number})` : ''}</option>)}
+                    </select>
+                  ) : (
+                    <>
+                      <select className={InputCls} value={editForm.cell_bank_preparation_id}
+                        onChange={e => { setEditForm(f => ({ ...f, cell_bank_preparation_id: e.target.value, vial_id: '' })); loadEditVials(e.target.value); }}
+                      >
+                        <option value="">Select preparation…</option>
+                        {editMeta.preps.map(p => <option key={p.id} value={p.id}>{p.prep_code} — {p.type}{p.passage_number ? ` P${p.passage_number}` : ''}</option>)}
+                      </select>
+                      {editForm.cell_bank_preparation_id && (
+                        <div>
+                          <label className={LabelCls}>Vial <span className="text-teal-600 normal-case font-medium">(link or change)</span></label>
+                          <select className={InputCls} value={editForm.vial_id} onChange={e => setEditForm(f => ({ ...f, vial_id: e.target.value }))}>
+                            <option value="">No vial linked</option>
+                            {editMeta.vials.map(v => (
+                              <option key={v.id} value={v.id}>
+                                {v.vial_code}{v.status === 'Used' ? ' (Currently Used)' : ' (Available)'}{v.storage_temp ? ` · ${v.storage_temp}` : ''}{v.freezer_id ? ` · ${v.freezer_id}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-slate-400 mt-1">Changing vial restores the previous one to Available.</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <hr className="border-slate-100" />
+
+                {/* ── Media ── */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
+                  <select className={InputCls} value={editForm.formulation_id} onChange={e => setEditForm(f => ({ ...f, formulation_id: e.target.value, media_name: '' }))}>
+                    <option value="">Select from Formulation Library…</option>
+                    {editMeta.formulations.map(fm => <option key={fm.id} value={fm.id}>{fm.name} ({fm.code})</option>)}
+                  </select>
+                  {!editForm.formulation_id && (
+                    <input className={InputCls} value={editForm.media_name} onChange={e => setEditForm(f => ({ ...f, media_name: e.target.value }))} placeholder="Or type media name manually (e.g. MRS Broth)" />
+                  )}
+                </div>
+
+                <hr className="border-slate-100" />
+
+                {/* ── Conditions ── */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={LabelCls}>Vessel Type</label>
+                      <select className={InputCls} value={editForm.vessel_type} onChange={e => setEditForm(f => ({ ...f, vessel_type: e.target.value }))}>
+                        <option value="">Select…</option>
+                        {VESSEL_TYPES.map(v => <option key={v} value={v}>{v.replace(/_/g, ' ')}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Volume (mL)</label>
+                      <input className={InputCls} type="number" value={editForm.volume_ml} onChange={e => setEditForm(f => ({ ...f, volume_ml: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Temperature (°C)</label>
+                      <input className={InputCls} type="number" step="0.5" value={editForm.temperature_c} onChange={e => setEditForm(f => ({ ...f, temperature_c: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Agitation (rpm)</label>
+                      <input className={InputCls} type="number" value={editForm.agitation_rpm} onChange={e => setEditForm(f => ({ ...f, agitation_rpm: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Inoculum (%v/v)</label>
+                      <input className={InputCls} type="number" step="0.1" value={editForm.inoculum_percentage} onChange={e => setEditForm(f => ({ ...f, inoculum_percentage: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Inoculum Volume (mL)</label>
+                      <input className={InputCls} type="number" step="0.1" value={editForm.inoculum_volume_ml} onChange={e => setEditForm(f => ({ ...f, inoculum_volume_ml: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>OD Wavelength (nm)</label>
+                      <input className={InputCls} type="number" value={editForm.od_wavelength} onChange={e => setEditForm(f => ({ ...f, od_wavelength: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Planned Duration (h)</label>
+                      <input className={InputCls} type="number" value={editForm.expected_duration_hours} onChange={e => setEditForm(f => ({ ...f, expected_duration_hours: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="border-slate-100" />
+
+                <div>
+                  <label className={LabelCls}>Notes</label>
+                  <textarea className={InputCls} rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                </div>
+
+                {editErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{editErr}</p>}
+
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
+                  <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
+                    className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+                  </button>
+                </div>
               </div>
-              {editErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{editErr}</p>}
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
-                <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
-                  className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
