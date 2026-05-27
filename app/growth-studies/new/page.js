@@ -24,6 +24,7 @@ export default function NewGrowthStudyPage() {
   const [strains, setStrains] = useState([]);
   const [preps, setPreps] = useState([]);
   const [formulations, setFormulations] = useState([]);
+  const [vials, setVials] = useState([]);
 
   const [form, setForm] = useState({
     name: '',
@@ -35,6 +36,7 @@ export default function NewGrowthStudyPage() {
     cell_bank_preparation_id: '',
     formulation_id: '',
     media_name: '',
+    vial_id: '',
     // Step 2 - conditions
     vessel_type: 'flask_250ml',
     volume_ml: '',
@@ -67,6 +69,22 @@ export default function NewGrowthStudyPage() {
       setFormulations(f.data || []);
     });
   }, [supabase]);
+
+  // Fetch available vials when a preparation is selected
+  useEffect(() => {
+    if (form.isolate_source !== 'prep' || !form.cell_bank_preparation_id) {
+      setVials([]);
+      setField('vial_id', '');
+      return;
+    }
+    supabase
+      .from('cell_bank_vials')
+      .select('id, vial_code, storage_temp, freezer_id, rack, box, position')
+      .eq('preparation_id', form.cell_bank_preparation_id)
+      .eq('status', 'Available')
+      .order('vial_code')
+      .then(({ data }) => setVials(data || []));
+  }, [supabase, form.isolate_source, form.cell_bank_preparation_id]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -101,6 +119,7 @@ export default function NewGrowthStudyPage() {
         objective: form.objective || null,
         cell_bank_strain_id: form.isolate_source === 'strain' && form.cell_bank_strain_id ? form.cell_bank_strain_id : null,
         cell_bank_preparation_id: form.isolate_source === 'prep' && form.cell_bank_preparation_id ? form.cell_bank_preparation_id : null,
+        vial_id: form.isolate_source === 'prep' && form.vial_id ? form.vial_id : null,
         formulation_id: form.formulation_id || null,
         media_name: !form.formulation_id ? form.media_name || null : null,
         vessel_type: form.vessel_type || null,
@@ -199,10 +218,32 @@ export default function NewGrowthStudyPage() {
                   {strains.map(s => <option key={s.id} value={s.id}>{s.name}{s.accession_number ? ` (${s.accession_number})` : ''}</option>)}
                 </select>
               ) : (
-                <select className={InputCls} value={form.cell_bank_preparation_id} onChange={e => setField('cell_bank_preparation_id', e.target.value)}>
-                  <option value="">Select preparation…</option>
-                  {preps.map(p => <option key={p.id} value={p.id}>{p.prep_code} — {p.type}{p.passage_number ? ` P${p.passage_number}` : ''}</option>)}
-                </select>
+                <>
+                  <select className={InputCls} value={form.cell_bank_preparation_id} onChange={e => { setField('cell_bank_preparation_id', e.target.value); setField('vial_id', ''); }}>
+                    <option value="">Select preparation…</option>
+                    {preps.map(p => <option key={p.id} value={p.id}>{p.prep_code} — {p.type}{p.passage_number ? ` P${p.passage_number}` : ''}</option>)}
+                  </select>
+                  {form.cell_bank_preparation_id && (
+                    <div className="mt-3">
+                      <label className={LabelCls}>Select Vial to Use <span className="text-teal-600">*</span></label>
+                      {vials.length === 0 ? (
+                        <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-medium">
+                          No available vials for this preparation.
+                        </div>
+                      ) : (
+                        <select className={InputCls} value={form.vial_id} onChange={e => setField('vial_id', e.target.value)}>
+                          <option value="">Select vial…</option>
+                          {vials.map(v => (
+                            <option key={v.id} value={v.id}>
+                              {v.vial_code}{v.storage_temp ? ` · ${v.storage_temp}` : ''}{v.freezer_id ? ` · ${v.freezer_id}` : ''}{v.rack ? `/${v.rack}` : ''}{v.position ? `/${v.position}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">The selected vial will be marked as Used when the study is started.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div>

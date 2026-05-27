@@ -10,14 +10,15 @@ export async function GET(req, { params }) {
 
     const { id } = await params;
 
-    const [studyRes, tpRes, measRes, plateRes] = await Promise.all([
+    const [studyRes, tpRes, measRes, plateRes, usageRes] = await Promise.all([
       supabase
         .from('growth_studies')
         .select(`
           *,
           cell_bank_strains(id, name, accession_number),
           cell_bank_preparations(id, prep_code, type, passage_number),
-          formulations(id, name, code, version),
+          formulations(id, name, code, version, base_volume_ml, ingredients),
+          cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status),
           employees!growth_studies_created_by_fkey(full_name)
         `)
         .eq('id', id)
@@ -40,6 +41,12 @@ export async function GET(req, { params }) {
         .select('*, employees!growth_plate_observations_recorded_by_fkey(full_name)')
         .eq('study_id', id)
         .order('time_point_hours'),
+
+      supabase
+        .from('inventory_usage')
+        .select('id, quantity_used, stage, notes, inventory_stock(id, supplier_batch_number, inventory_items(name, unit))')
+        .eq('growth_study_id', id)
+        .order('created_at'),
     ]);
 
     if (studyRes.error) throw studyRes.error;
@@ -49,6 +56,7 @@ export async function GET(req, { params }) {
       time_points: tpRes.data || [],
       measurements: measRes.data || [],
       plate_observations: plateRes.data || [],
+      inventory_usage: usageRes.data || [],
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

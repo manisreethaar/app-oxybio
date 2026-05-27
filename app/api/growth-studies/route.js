@@ -15,7 +15,7 @@ export async function GET(req) {
     let query = supabase
       .from('growth_studies')
       .select(`
-        id, name, study_type, status, vessel_type, temperature_c,
+        id, study_code, name, study_type, status, vessel_type, temperature_c,
         inoculation_time, expected_duration_hours, completed_at, created_at,
         cell_bank_strains(id, name),
         cell_bank_preparations(id, prep_code, type),
@@ -50,9 +50,13 @@ export async function POST(req) {
 
     const supabaseAdmin = createAdminClient();
 
+    // Generate OB-GCS-YY-NNN code atomically
+    const { data: generatedCode, error: codeErr } = await supabaseAdmin.rpc('generate_gcs_code');
+    if (codeErr) throw codeErr;
+
     const { data: study, error: studyErr } = await supabaseAdmin
       .from('growth_studies')
-      .insert({ ...studyData, created_by: emp.id })
+      .insert({ ...studyData, created_by: emp.id, study_code: generatedCode })
       .select()
       .single();
     if (studyErr) throw studyErr;
