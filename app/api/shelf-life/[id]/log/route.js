@@ -23,12 +23,10 @@ export async function POST(request, { params }) {
     const { day_number, test_data } = parsed.data;
     const study_id = params.id;
 
-    // Upsert logic based on shelf_life_id and day_number
-    // We can just query if one exists, then update, else insert.
     const { data: existing } = await supabase
       .from('shelf_life_logs')
       .select('id')
-      .eq('study_id', study_id)
+      .eq('shelf_life_id', study_id)
       .eq('day_number', day_number)
       .maybeSingle();
 
@@ -48,7 +46,7 @@ export async function POST(request, { params }) {
       const { data, error } = await supabase
         .from('shelf_life_logs')
         .insert({
-          study_id: study_id,
+          shelf_life_id: study_id,
           day_number,
           test_data,
           logged_by: emp.id

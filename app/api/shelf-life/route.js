@@ -23,11 +23,14 @@ export async function POST(request) {
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
-    const { data, error } = await supabase.from('shelf_life_studies').insert({
+    const studyPayload = {
       ...parsed.data,
+      flask_id: parsed.data.flask_id || null,
       created_by: emp.id,
       status: 'In Progress'
-    }).select().single();
+    };
+
+    const { data, error } = await supabase.from('shelf_life_studies').insert(studyPayload).select().single();
 
     if (error) throw error;
 
