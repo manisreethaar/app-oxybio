@@ -32,7 +32,7 @@ export async function GET(req, { params }) {
 
       supabase
         .from('growth_measurements')
-        .select('*, employees!growth_measurements_recorded_by_fkey(full_name)')
+        .select('*, recorded_by, recorder:employees!growth_measurements_recorded_by_fkey(id, full_name, initials)')
         .eq('study_id', id)
         .order('actual_hour'),
 

@@ -10,6 +10,8 @@ import {
   FlaskConical, Microscope, X, FileText, Loader2,
   Package, TestTube2, Pencil, Trash2, Info
 } from 'lucide-react';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const GrowthCurveChart = dynamic(() => import('@/components/charts/GrowthCurveChart'), { ssr: false });
 
@@ -49,7 +51,8 @@ function StatusBadge({ status }) {
 export default function GrowthStudyDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { role } = useAuth();
+  const { role, employeeProfile } = useAuth();
+  const [pendingIds, setPendingIds] = useState(new Set());
 
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
   const canEdit = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role);
@@ -98,7 +101,15 @@ export default function GrowthStudyDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  useEffect(() => { load(); }, [load]);
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
+  useEffect(() => { load(); fetchPendingIds(); }, [load]);
 
   useEffect(() => {
     if (!data?.study?.inoculation_time) return;
@@ -623,7 +634,7 @@ export default function GrowthStudyDetailPage() {
                 <table className="w-full text-xs font-medium">
                   <thead>
                     <tr className="border-b border-slate-100">
-                      {['Hour', `OD${study.od_wavelength || 600}`, 'pH', 'Temp (°C)', 'Glucose (g/L)', 'Protein (mg/mL)', ...(isFermentation ? ['DO%'] : []), 'Turbidity', 'Notes'].map(h => (
+                      {['Hour', `OD${study.od_wavelength || 600}`, 'pH', 'Temp (°C)', 'Glucose (g/L)', 'Protein (mg/mL)', ...(isFermentation ? ['DO%'] : []), 'Turbidity', 'Notes', ''].map(h => (
                         <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-[9px] whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -640,6 +651,29 @@ export default function GrowthStudyDetailPage() {
                         {isFermentation && <td className="py-2 pr-4">{m.dissolved_oxygen_pct ?? '—'}</td>}
                         <td className="py-2 pr-4">{m.culture_turbidity ? m.culture_turbidity.replace(/_/g, ' ') : '—'}</td>
                         <td className="py-2 pr-4 max-w-[120px] truncate text-slate-400">{m.notes || '—'}</td>
+                        <td className="py-2 pl-1 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            {m.recorder && <CreatorBadge initials={m.recorder.initials} fullName={m.recorder.full_name} size="sm"/>}
+                            {!isAdmin && m.recorded_by === employeeProfile?.id && (
+                              <EditRequestButton
+                                tableName="growth_measurements"
+                                recordId={m.id}
+                                moduleLabel="Growth Measurement"
+                                fields={[
+                                  { key: 'od_value', label: `OD${study.od_wavelength || 600}`, type: 'number' },
+                                  { key: 'ph_value', label: 'pH', type: 'number' },
+                                  { key: 'temperature_actual_c', label: 'Temp (°C)', type: 'number' },
+                                  { key: 'actual_hour', label: 'Hour (T+)', type: 'number' },
+                                  { key: 'notes', label: 'Notes', type: 'textarea' },
+                                ]}
+                                currentData={m}
+                                hasPending={pendingIds.has(m.id)}
+                                allowDelete
+                                onSuccess={() => { load(); fetchPendingIds(); }}
+                              />
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

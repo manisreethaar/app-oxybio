@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer } from 'lucide-react';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 import {
   calculateElapsedHours,
   validateEndpointPayload,
@@ -111,6 +113,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [pendingOOROverride, setPendingOOROverride] = useState(false);
   const [endpointTime, setEndpointTime] = useState('');
 
+  // Pending edit-request tracking
+  const [pendingIds, setPendingIds] = useState(new Set());
+
   // Admin edit/delete state
   const [editingReading,  setEditingReading]  = useState(null);
   const [editFields,      setEditFields]      = useState({});
@@ -137,7 +142,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const fetchData = useCallback(async () => {
     if (!activeFlask?.id) return;
     const [rRes, iRes, epRes] = await Promise.all([
-      supabase.from('batch_fermentation_readings').select('*').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
+      supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
       supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
       supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
     ]);
@@ -146,9 +151,17 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     setEndpoint(epRes.data ?? null);
   }, [batch.id, activeFlask?.id, supabase]);
 
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
   useEffect(() => {
     setReadings([]); setInocu(null); setEndpoint(null);
-    fetchData();
+    fetchData(); fetchPendingIds();
   }, [fetchData]);
 
   useEffect(() => {
@@ -651,20 +664,41 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                         </p>
                       )}
                     </td>
-                    {isAdmin && (
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => openEdit(r)} title="Edit reading"
-                            className="p-1 rounded hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors">
-                            <Pencil className="w-3 h-3"/>
-                          </button>
-                          <button onClick={() => { setDeletingReading(r); setDeleteReason(''); }} title="Delete reading"
-                            className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
-                            <Trash2 className="w-3 h-3"/>
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        {r.logger && <CreatorBadge initials={r.logger.initials} fullName={r.logger.full_name} size="sm"/>}
+                        {isAdmin ? (
+                          <>
+                            <button onClick={() => openEdit(r)} title="Edit reading"
+                              className="p-1 rounded hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors">
+                              <Pencil className="w-3 h-3"/>
+                            </button>
+                            <button onClick={() => { setDeletingReading(r); setDeleteReason(''); }} title="Delete reading"
+                              className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
+                              <Trash2 className="w-3 h-3"/>
+                            </button>
+                          </>
+                        ) : r.logged_by === employeeProfile?.id ? (
+                          <EditRequestButton
+                            tableName="batch_fermentation_readings"
+                            recordId={r.id}
+                            moduleLabel="Fermentation Reading"
+                            fields={[
+                              { key: 'ph', label: 'pH', type: 'number' },
+                              { key: 'optical_density', label: 'OD', type: 'number' },
+                              { key: 'incubator_temp_c', label: 'Incubator Temp (°C)', type: 'number' },
+                              { key: 'brix', label: 'Brix (°Bx)', type: 'number' },
+                              { key: 'elapsed_hours', label: 'Elapsed Hours (T+)', type: 'number' },
+                              { key: 'notes', label: 'Notes', type: 'textarea' },
+                            ]}
+                            currentData={r}
+                            hasPending={pendingIds.has(r.id)}
+                            allowDelete
+                            onSuccess={() => { fetchData(); fetchPendingIds(); }}
+                          />
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
