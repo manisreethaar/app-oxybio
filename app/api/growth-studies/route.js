@@ -16,7 +16,8 @@ export async function GET(req) {
       .from('growth_studies')
       .select(`
         id, study_code, name, study_type, status, vessel_type, temperature_c,
-        inoculation_time, expected_duration_hours, completed_at, created_at,
+        inoculation_time, expected_duration_hours, completed_at, created_at, created_by,
+        creator:employees!growth_studies_created_by_fkey(id, full_name, initials),
         cell_bank_strains(id, name),
         cell_bank_preparations(id, prep_code, type),
         formulations(id, name, code),

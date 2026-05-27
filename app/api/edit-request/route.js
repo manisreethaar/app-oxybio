@@ -21,6 +21,7 @@ const ALLOWED_TABLES = {
   samples:              'created_by',
   ph_readings:          'created_by',
   shelf_life_logs:      'created_by',
+  shelf_life_studies:   'created_by',
   deviations:           'created_by',
   capa_actions:         'created_by',
   growth_studies:       'created_by',
