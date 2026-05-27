@@ -65,7 +65,7 @@ export async function GET(req) {
 
     // Configure Web Push
     webpush.setVapidDetails(
-      'mailto:founder@oxybio.in',
+      process.env.VAPID_CONTACT_EMAIL || 'mailto:ceo@oxygenbioinnovations.com',
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
       process.env.VAPID_PRIVATE_KEY
     );
