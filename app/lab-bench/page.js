@@ -1,123 +1,350 @@
 'use client';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  FlaskConical, Activity, Grid3x3, ClipboardList,
-  Plus, ChevronRight, Clock, Construction
+  Plus, Grid3x3, RefreshCw, FlaskConical, Activity,
+  AlertCircle, Clock, ChevronRight, Loader2, ClipboardList,
+  CheckCircle2, Beaker
 } from 'lucide-react';
+import clsx from 'clsx';
 
-export default function LabBenchPage() {
-  const actions = [
-    {
-      href:    '/lab-bench/log',
-      icon:    Plus,
-      color:   'bg-teal-600',
-      bg:      'bg-teal-50 border-teal-200',
-      label:   'Quick Log',
-      desc:    'Log pH, OD, sterility, or plate analysis for any active process in one form.',
-      ready:   true,
-    },
-    {
-      href:    '/lab-bench/grid',
-      icon:    Grid3x3,
-      color:   'bg-violet-600',
-      bg:      'bg-violet-50 border-violet-200',
-      label:   'Grid Entry',
-      desc:    'Log multiple timepoints across flasks in a table — fastest for end-of-run data.',
-      ready:   true,
-    },
-    {
-      href:    '#',
-      icon:    Clock,
-      color:   'bg-amber-500',
-      bg:      'bg-amber-50 border-amber-200',
-      label:   'Active Queue',
-      desc:    'See everything due for sampling right now across all running processes.',
-      ready:   false,
-    },
-  ];
+// ── Urgency config ─────────────────────────────────────────────────────────
+const URGENCY = {
+  overdue:  { label: 'Overdue',   dot: 'bg-red-500',    text: 'text-red-700',    badge: 'bg-red-50 border-red-200 text-red-700',    ring: 'border-red-200' },
+  due_soon: { label: 'Due Soon',  dot: 'bg-amber-400',  text: 'text-amber-700',  badge: 'bg-amber-50 border-amber-200 text-amber-700', ring: 'border-amber-200' },
+  active:   { label: 'Active',    dot: 'bg-teal-400',   text: 'text-teal-700',   badge: 'bg-teal-50 border-teal-200 text-teal-700',  ring: 'border-slate-200' },
+  upcoming: { label: 'Upcoming',  dot: 'bg-slate-300',  text: 'text-slate-500',  badge: 'bg-slate-50 border-slate-200 text-slate-500', ring: 'border-slate-200' },
+};
 
-  const shortcuts = [
-    { href: '/batches',        label: 'Batch Production', icon: FlaskConical, desc: 'Review & manage batches' },
-    { href: '/growth-studies', label: 'Growth Studies',   icon: Activity,     desc: 'Curves & timepoints' },
-    { href: '/research/incubation', label: 'Incubation Lab', icon: ClipboardList, desc: 'Plates & sterility records' },
-  ];
+// ── Helpers ────────────────────────────────────────────────────────────────
+function relativeTime(isoStr) {
+  if (!isoStr) return '';
+  const mins = Math.round((Date.now() - new Date(isoStr).getTime()) / 60000);
+  if (mins < 1)   return 'just now';
+  if (mins < 60)  return `${mins}m ago`;
+  const h = (mins / 60).toFixed(1);
+  return `${h}h ago`;
+}
+
+function quickLogUrl(item) {
+  const p = new URLSearchParams();
+  p.set('source_type', item.source_type);
+  if (item.source_type === 'batch') {
+    p.set('source_id', item.source_id);
+    if (item.flask_id) p.set('flask_id', item.flask_id);
+  } else {
+    p.set('source_id', item.source_id);
+    if (item.time_point_id) p.set('tp_id', item.time_point_id);
+  }
+  return `/lab-bench/log?${p.toString()}`;
+}
+
+function gridUrl(item) {
+  const p = new URLSearchParams();
+  p.set('source_type', item.source_type);
+  p.set('source_id', item.source_id);
+  return `/lab-bench/grid?${p.toString()}`;
+}
+
+// ── Queue Item Card ────────────────────────────────────────────────────────
+function QueueCard({ item }) {
+  const u   = URGENCY[item.urgency] || URGENCY.active;
+  const isGrowth = item.type === 'growth_timepoint';
+  const isFerm   = item.type === 'fermentation_flask';
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-8">
-
-      {/* Header */}
-      <div>
-        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">OxyOS</p>
-        <h1 className="text-2xl font-black text-slate-800">Lab Bench</h1>
-        <p className="text-slate-500 text-sm font-medium mt-1">
-          One place to log samples, track active runs, and see what needs attention.
-        </p>
-      </div>
-
-      {/* Primary Actions */}
-      <div className="space-y-3">
-        <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Log & Entry</h2>
-        {actions.map(({ href, icon: Icon, color, bg, label, desc, ready }) => (
-          <div key={label} className="relative">
-            {ready ? (
-              <Link
-                href={href}
-                className={`flex items-start gap-4 p-4 rounded-2xl border ${bg} hover:shadow-md transition-all group`}
-              >
-                <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center shrink-0 mt-0.5`}>
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-800 text-sm">{label}</span>
-                    <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-[10px] font-black rounded-full border border-teal-200">Ready</span>
-                  </div>
-                  <p className="text-slate-500 text-xs font-medium mt-0.5 leading-relaxed">{desc}</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0 mt-0.5" />
-              </Link>
-            ) : (
-              <div className="flex items-start gap-4 p-4 rounded-2xl border border-slate-200 bg-slate-50 opacity-60">
-                <div className={`w-10 h-10 rounded-xl bg-slate-300 flex items-center justify-center shrink-0 mt-0.5`}>
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-600 text-sm">{label}</span>
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-slate-200 text-slate-500 text-[10px] font-black rounded-full border border-slate-300">
-                      <Construction className="w-3 h-3" /> Coming soon
-                    </span>
-                  </div>
-                  <p className="text-slate-400 text-xs font-medium mt-0.5 leading-relaxed">{desc}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Module Shortcuts */}
-      <div className="space-y-3">
-        <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Module Review</h2>
-        <p className="text-xs font-medium text-slate-400 -mt-1">
-          Existing modules are unchanged — use them to review logged data.
-        </p>
-        <div className="grid grid-cols-1 gap-2">
-          {shortcuts.map(({ href, label, icon: Icon, desc }) => (
-            <Link
-              key={href} href={href}
-              className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all group"
-            >
-              <Icon className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
-              <div className="flex-1 min-w-0">
-                <span className="font-bold text-slate-700 text-sm">{label}</span>
-                <p className="text-slate-400 text-xs font-medium">{desc}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors shrink-0" />
-            </Link>
-          ))}
+    <div className={clsx(
+      'bg-white rounded-2xl border p-4 flex items-start gap-3 hover:shadow-sm transition-all',
+      u.ring
+    )}>
+      {/* Urgency dot + icon */}
+      <div className="flex flex-col items-center gap-1.5 pt-0.5 shrink-0">
+        <div className={`w-2.5 h-2.5 rounded-full ${u.dot} shrink-0`} />
+        <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
+          {isGrowth
+            ? <Activity className="w-3.5 h-3.5 text-slate-500" />
+            : <FlaskConical className="w-3.5 h-3.5 text-slate-500" />
+          }
         </div>
       </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-sm font-black text-slate-800 truncate">{item.source_label}</p>
+
+            {/* Sub-label: flask name or timepoint */}
+            <p className="text-xs font-bold text-slate-500 mt-0.5">
+              {isFerm && item.flask_label && (
+                <span className="text-teal-700">{item.flask_label}</span>
+              )}
+              {isGrowth && (
+                <span className="text-violet-700">{item.timepoint_label}</span>
+              )}
+              {isGrowth && item.sample_types?.length > 0 && (
+                <span className="text-slate-400 ml-1">
+                  · {item.sample_types.join(', ')}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Urgency badge */}
+          <span className={clsx(
+            'px-2 py-0.5 rounded-full text-[10px] font-black border shrink-0',
+            u.badge
+          )}>
+            {u.label}
+          </span>
+        </div>
+
+        {/* Detail line */}
+        <p className={clsx('text-xs font-bold mt-1.5', u.text)}>
+          {item.detail}
+        </p>
+
+        {/* Last values (fermentation only) */}
+        {isFerm && (item.last_ph != null || item.last_od != null) && (
+          <p className="text-[11px] font-medium text-slate-400 mt-1">
+            {item.last_ph  != null && `pH ${item.last_ph}`}
+            {item.last_ph  != null && item.last_od != null && ' · '}
+            {item.last_od  != null && `OD ${item.last_od}`}
+            {item.last_elapsed != null && ` @ T+${item.last_elapsed}h`}
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 mt-3">
+          <Link
+            href={quickLogUrl(item)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-[11px] font-black rounded-lg transition-colors"
+          >
+            <Plus className="w-3 h-3" /> Log Now
+          </Link>
+          <Link
+            href={gridUrl(item)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-lg transition-colors"
+          >
+            <Grid3x3 className="w-3 h-3" /> Grid
+          </Link>
+          <Link
+            href={item.source_type === 'batch'
+              ? `/batches/${item.source_id}`
+              : `/growth-studies/${item.source_id}`
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-lg transition-colors"
+          >
+            View <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Section header ─────────────────────────────────────────────────────────
+function SectionHeader({ urgency, count }) {
+  const u = URGENCY[urgency];
+  return (
+    <div className="flex items-center gap-2 px-1">
+      <div className={`w-2 h-2 rounded-full ${u.dot}`} />
+      <h2 className={`text-[11px] font-black uppercase tracking-widest ${u.text}`}>
+        {u.label}
+      </h2>
+      <span className={clsx(
+        'px-1.5 py-0.5 rounded-full text-[10px] font-black border',
+        u.badge
+      )}>
+        {count}
+      </span>
+    </div>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────
+export default function LabBenchPage() {
+  const [queue, setQueue]       = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [asOf, setAsOf]         = useState(null);
+  const [filter, setFilter]     = useState('all'); // 'all' | 'overdue' | 'due_soon' | 'active'
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/lab-bench/queue');
+      const json = await res.json();
+      if (json.success) {
+        setQueue(json);
+        setAsOf(json.as_of);
+      }
+    } catch (_) {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const t = setInterval(load, 5 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const items    = queue?.items || [];
+  const summary  = queue?.summary || {};
+  const filtered = filter === 'all' ? items : items.filter(i => i.urgency === filter);
+
+  // Group by urgency for rendering
+  const groups = ['overdue', 'due_soon', 'active', 'upcoming']
+    .map(u => ({ urgency: u, items: filtered.filter(i => i.urgency === u) }))
+    .filter(g => g.items.length > 0);
+
+  const hasUrgent = (summary.overdue || 0) + (summary.due_soon || 0) > 0;
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-6">
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">OxyOS</p>
+          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+            Lab Bench
+            {!loading && hasUrgent && (
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block mb-1" />
+            )}
+          </h1>
+          {asOf && (
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              Updated {relativeTime(asOf)}
+            </p>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={load}
+            disabled={loading}
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors disabled:opacity-50"
+            title="Refresh queue"
+          >
+            <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
+          </button>
+          <Link
+            href="/lab-bench/grid"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-violet-100 hover:bg-violet-200 text-violet-700 font-black text-xs rounded-xl transition-colors"
+          >
+            <Grid3x3 className="w-4 h-4" /> Grid
+          </Link>
+          <Link
+            href="/lab-bench/log"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black text-xs rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Quick Log
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Summary chips ── */}
+      {!loading && queue && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {[
+            { key: 'all',      label: 'All',       count: items.length },
+            { key: 'overdue',  label: 'Overdue',   count: summary.overdue  || 0 },
+            { key: 'due_soon', label: 'Due Soon',  count: summary.due_soon || 0 },
+            { key: 'active',   label: 'Active',    count: summary.active   || 0 },
+          ].map(({ key, label, count }) => (
+            count > 0 || key === 'all' ? (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all',
+                  filter === key
+                    ? key === 'overdue'  ? 'bg-red-50    border-red-300    text-red-700'
+                    : key === 'due_soon' ? 'bg-amber-50  border-amber-300  text-amber-700'
+                    : key === 'active'   ? 'bg-teal-50   border-teal-300   text-teal-700'
+                    :                      'bg-slate-800 border-slate-800  text-white'
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                )}
+              >
+                {key !== 'all' && (
+                  <span className={clsx(
+                    'w-1.5 h-1.5 rounded-full',
+                    key === 'overdue'  ? 'bg-red-500'
+                    : key === 'due_soon' ? 'bg-amber-400'
+                    : 'bg-teal-400'
+                  )} />
+                )}
+                {label}
+                <span className={clsx(
+                  'px-1.5 py-0.5 rounded-full text-[10px]',
+                  filter === key ? 'bg-white/30' : 'bg-slate-100 text-slate-600'
+                )}>
+                  {count}
+                </span>
+              </button>
+            ) : null
+          ))}
+        </div>
+      )}
+
+      {/* ── Loading ── */}
+      {loading && (
+        <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm font-medium">Loading active runs…</span>
+        </div>
+      )}
+
+      {/* ── Empty state ── */}
+      {!loading && items.length === 0 && (
+        <div className="text-center py-16 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-7 h-7 text-teal-500" />
+          </div>
+          <p className="font-black text-slate-700">All clear</p>
+          <p className="text-slate-400 text-sm font-medium max-w-xs mx-auto">
+            No active batches in fermentation or running growth studies right now.
+          </p>
+          <div className="flex gap-2 justify-center pt-2">
+            <Link href="/batches"        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">Batches</Link>
+            <Link href="/growth-studies" className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">Growth Studies</Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Queue groups ── */}
+      {!loading && groups.map(({ urgency, items: groupItems }) => (
+        <div key={urgency} className="space-y-2.5">
+          <SectionHeader urgency={urgency} count={groupItems.length} />
+          {groupItems.map(item => (
+            <QueueCard key={item.id} item={item} />
+          ))}
+        </div>
+      ))}
+
+      {/* ── Module shortcuts (collapsed at bottom) ── */}
+      {!loading && (
+        <div className="pt-2 border-t border-slate-100 space-y-2">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Module Review</p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { href: '/batches',             icon: FlaskConical,  label: 'Batches' },
+              { href: '/growth-studies',      icon: Activity,      label: 'Growth Studies' },
+              { href: '/research/incubation', icon: ClipboardList, label: 'Incubation' },
+            ].map(({ href, icon: Icon, label }) => (
+              <Link key={href} href={href}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-slate-500"
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-[10px] font-bold">{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );

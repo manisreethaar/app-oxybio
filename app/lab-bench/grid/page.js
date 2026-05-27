@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Loader2,
@@ -62,6 +63,7 @@ function rowHasData(row) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function GridEntryPage() {
+  const searchParams = useSearchParams();
   const { employeeProfile } = useAuth();
 
   const [sources, setSources]         = useState({ batches: [], growth_studies: [] });
@@ -78,14 +80,27 @@ export default function GridEntryPage() {
   const [error, setError]             = useState('');
   const [result, setResult]           = useState(null);
 
-  // ── Load sources ─────────────────────────────────────────────
+  // ── Load sources, then apply URL pre-fill ────────────────────
+  // Deep-link format (from Active Queue "Grid" button):
+  //   ?source_type=batch&source_id=OXY-B-26-001
+  //   ?source_type=growth_study&source_id=uuid
   useEffect(() => {
     setSourcesLoading(true);
     fetch('/api/lab-bench/sources')
       .then(r => r.json())
-      .then(json => { if (json.success) setSources(json); })
+      .then(json => {
+        if (json.success) {
+          setSources(json);
+          const paramType = searchParams.get('source_type');
+          const paramSrc  = searchParams.get('source_id');
+          if (paramType && paramSrc) {
+            setSourceType(paramType);
+            setSourceId(paramSrc);
+          }
+        }
+      })
       .finally(() => setSourcesLoading(false));
-  }, []);
+  }, [searchParams]);
 
   // ── Rebuild rows when source changes ─────────────────────────
   const selectedBatch = sources.batches.find(
