@@ -85,3 +85,40 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req, { params }) {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
+    if (!['admin', 'ceo', 'cto'].includes(emp?.role)) {
+      return NextResponse.json({ error: 'Only admins can delete studies' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const supabaseAdmin = createAdminClient();
+
+    // If a vial was used in this study, restore it to Available
+    const { data: study } = await supabaseAdmin
+      .from('growth_studies')
+      .select('vial_id')
+      .eq('id', id)
+      .single();
+
+    if (study?.vial_id) {
+      await supabaseAdmin
+        .from('cell_bank_vials')
+        .update({ status: 'Available', used_in_study_id: null, used_at: null })
+        .eq('id', study.vial_id);
+    }
+
+    const { error } = await supabaseAdmin.from('growth_studies').delete().eq('id', id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

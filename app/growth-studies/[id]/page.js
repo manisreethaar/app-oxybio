@@ -3,10 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import {
-  Clock, CheckCircle2, AlertCircle, Play, Square, BarChart2,
-  FlaskConical, Microscope, X, ChevronRight, FileText, Loader2,
-  Package, TestTube2
+  Clock, AlertCircle, Play, Square, BarChart2,
+  FlaskConical, Microscope, X, FileText, Loader2,
+  Package, TestTube2, Pencil, Trash2, Info
 } from 'lucide-react';
 
 const GrowthCurveChart = dynamic(() => import('@/components/charts/GrowthCurveChart'), { ssr: false });
@@ -33,11 +34,26 @@ function StatusBadge({ status }) {
 export default function GrowthStudyDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { role } = useAuth();
+
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+  const canEdit = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+
+  // Edit modal
+  const [editModal, setEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editErr, setEditErr] = useState('');
+
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteErr, setDeleteErr] = useState('');
 
   // Modal state
   const [modal, setModal] = useState(null); // null | { type: 'measurement' | 'plate', tp }
@@ -117,6 +133,51 @@ export default function GrowthStudyDetailPage() {
     if (!res.ok) { setStartErr(json.error); return; }
     setStartModal(false);
     load();
+  };
+
+  const openEditModal = (study) => {
+    setEditForm({
+      name: study.name || '',
+      objective: study.objective || '',
+      notes: study.notes || '',
+      temperature_c: study.temperature_c ?? '',
+      agitation_rpm: study.agitation_rpm ?? '',
+      volume_ml: study.volume_ml ?? '',
+      od_wavelength: study.od_wavelength ?? 600,
+      expected_duration_hours: study.expected_duration_hours ?? '',
+      inoculum_percentage: study.inoculum_percentage ?? '',
+    });
+    setEditErr('');
+    setEditModal(true);
+  };
+
+  const saveEdit = async () => {
+    setEditSaving(true);
+    setEditErr('');
+    const payload = { ...editForm };
+    Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
+    ['temperature_c', 'agitation_rpm', 'volume_ml', 'od_wavelength', 'expected_duration_hours', 'inoculum_percentage']
+      .forEach(k => { if (payload[k] !== undefined) payload[k] = parseFloat(payload[k]); });
+    const res = await fetch(`/api/growth-studies/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    setEditSaving(false);
+    if (!res.ok) { setEditErr(json.error); return; }
+    setEditModal(false);
+    load();
+  };
+
+  const deleteStudy = async () => {
+    setDeleteLoading(true);
+    setDeleteErr('');
+    const res = await fetch(`/api/growth-studies/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    setDeleteLoading(false);
+    if (!res.ok) { setDeleteErr(json.error); return; }
+    router.push('/growth-studies');
   };
 
   const openMeasurementModal = (tp) => {
@@ -240,26 +301,80 @@ export default function GrowthStudyDetailPage() {
             </Link>
           )}
           {isActive && (
-            <>
-              <button onClick={() => openMeasurementModal(nextTp)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl text-sm"
-              >
-                <FlaskConical className="w-4 h-4" /> Record Sample
-              </button>
-            </>
+            <button onClick={() => openMeasurementModal(nextTp)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl text-sm"
+            >
+              <FlaskConical className="w-4 h-4" /> Record Sample
+            </button>
+          )}
+          {canEdit && (
+            <button onClick={() => openEditModal(study)}
+              className="flex items-center gap-2 px-3 py-2.5 bg-white border border-slate-200 hover:border-slate-400 text-slate-600 font-bold rounded-xl text-sm"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={() => { setDeleteConfirm(true); setDeleteErr(''); }}
+              className="flex items-center gap-2 px-3 py-2.5 bg-white border border-red-200 hover:border-red-400 text-red-500 font-bold rounded-xl text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Conditions strip */}
-      <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl px-5 py-3">
-        {study.temperature_c && <span>🌡 {study.temperature_c}°C</span>}
-        {study.agitation_rpm && <span>🔄 {study.agitation_rpm} rpm</span>}
-        {study.vessel_type && <span>🧪 {study.vessel_type.replace(/_/g, ' ')}</span>}
-        {study.volume_ml && <span>💧 {study.volume_ml} mL</span>}
-        {study.inoculum_percentage && <span>💉 {study.inoculum_percentage}% inoculum</span>}
-        {study.od_wavelength && <span>📊 OD@{study.od_wavelength}nm</span>}
-        {study.expected_duration_hours && <span>⏱ {study.expected_duration_hours}h planned</span>}
+      {/* Study Details card */}
+      <div className="glass-card rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
+            <Info className="w-4 h-4 text-slate-500" /> Study Details
+          </h3>
+          {canEdit && (
+            <button onClick={() => openEditModal(study)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-teal-700 border border-slate-200 hover:border-teal-400 rounded-xl transition-colors"
+            >
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-xs">
+          {[
+            { label: 'Study Code',    value: study.study_code || '—', mono: true },
+            { label: 'Type',          value: isFermentation ? 'Fermentation' : 'Growth Curve' },
+            { label: 'Status',        value: study.status?.charAt(0).toUpperCase() + study.status?.slice(1) },
+            { label: 'Isolate',       value: isolateName },
+            { label: 'Media',         value: mediaName },
+            { label: 'Vessel',        value: study.vessel_type?.replace(/_/g, ' ') || '—' },
+            { label: 'Volume',        value: study.volume_ml ? `${study.volume_ml} mL` : '—' },
+            { label: 'Temperature',   value: study.temperature_c ? `${study.temperature_c}°C` : '—' },
+            { label: 'Agitation',     value: study.agitation_rpm ? `${study.agitation_rpm} rpm` : '—' },
+            { label: 'Inoculum',      value: study.inoculum_percentage ? `${study.inoculum_percentage}%` : '—' },
+            { label: `OD Wavelength`, value: study.od_wavelength ? `${study.od_wavelength} nm` : '—' },
+            { label: 'Planned Duration', value: study.expected_duration_hours ? `${study.expected_duration_hours}h` : '—' },
+            { label: 'Created By',    value: study.employees?.full_name || '—' },
+            { label: 'Created',       value: study.created_at ? new Date(study.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
+            ...(study.inoculation_time ? [{ label: 'Inoculated', value: new Date(study.inoculation_time).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }] : []),
+            ...(study.completed_at ? [{ label: 'Completed', value: new Date(study.completed_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }] : []),
+          ].map(({ label, value, mono }) => (
+            <div key={label}>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
+              <p className={`font-bold text-slate-700 ${mono ? 'font-mono' : ''}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+        {study.objective && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
+            <p className="text-xs font-medium text-slate-600 italic">{study.objective}</p>
+          </div>
+        )}
+        {study.notes && (
+          <div className="mt-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Notes</p>
+            <p className="text-xs font-medium text-slate-600">{study.notes}</p>
+          </div>
+        )}
       </div>
 
       {/* Overdue alerts */}
@@ -746,6 +861,100 @@ export default function GrowthStudyDetailPage() {
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Observation'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Study Modal ── */}
+      {editModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-slate-800">Edit Study Details</h3>
+                <p className="text-xs text-slate-500 mt-0.5 font-mono">{study.study_code}</p>
+              </div>
+              <button onClick={() => setEditModal(false)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className={LabelCls}>Study Name *</label>
+                <input className={InputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div>
+                <label className={LabelCls}>Objective</label>
+                <textarea className={InputCls} rows={2} value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} placeholder="What are you trying to characterise?" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LabelCls}>Temperature (°C)</label>
+                  <input className={InputCls} type="number" step="0.5" value={editForm.temperature_c} onChange={e => setEditForm(f => ({ ...f, temperature_c: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={LabelCls}>Agitation (rpm)</label>
+                  <input className={InputCls} type="number" value={editForm.agitation_rpm} onChange={e => setEditForm(f => ({ ...f, agitation_rpm: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={LabelCls}>Volume (mL)</label>
+                  <input className={InputCls} type="number" value={editForm.volume_ml} onChange={e => setEditForm(f => ({ ...f, volume_ml: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={LabelCls}>OD Wavelength (nm)</label>
+                  <input className={InputCls} type="number" value={editForm.od_wavelength} onChange={e => setEditForm(f => ({ ...f, od_wavelength: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={LabelCls}>Inoculum (%v/v)</label>
+                  <input className={InputCls} type="number" step="0.1" value={editForm.inoculum_percentage} onChange={e => setEditForm(f => ({ ...f, inoculum_percentage: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={LabelCls}>Expected Duration (h)</label>
+                  <input className={InputCls} type="number" value={editForm.expected_duration_hours} onChange={e => setEditForm(f => ({ ...f, expected_duration_hours: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className={LabelCls}>Notes</label>
+                <textarea className={InputCls} rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              {editErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{editErr}</p>}
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
+                <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
+                  className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation ── */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800">Delete Study?</h3>
+                <p className="text-xs text-slate-500 mt-0.5">This will permanently delete all measurements, time points, and plate observations.</p>
+              </div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs font-black text-red-700">{study.study_code} — {study.name}</p>
+              {study.cell_bank_vials && <p className="text-[10px] text-red-500 mt-0.5">Vial {study.cell_bank_vials.vial_code} will be restored to Available.</p>}
+            </div>
+            {deleteErr && <p className="text-xs text-red-600 font-bold">{deleteErr}</p>}
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
+              <button onClick={deleteStudy} disabled={deleteLoading}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete'}
+              </button>
             </div>
           </div>
         </div>
