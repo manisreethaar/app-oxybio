@@ -5,11 +5,12 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
 import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
 import Link from 'next/link';
 import { differenceInHours } from 'date-fns';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
 
 export default function AdminDashboard({ employeeId }) {
   const toast = useToast();
