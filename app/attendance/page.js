@@ -49,12 +49,120 @@ export default function AttendancePage() {
   const webcamRef = useRef(null);
   const [now, setNow] = useState(Date.now());
 
+  // Liveness verification state
+  const [faceStatus, setFaceStatus] = useState('waiting'); // 'waiting' | 'detected' | 'missing'
+  const [livenessProgress, setLivenessProgress] = useState(0);
+  const [captureReady, setCaptureReady] = useState(false);
+  const canvasRef = useRef(null);
+  const prevFrameDataRef = useRef(null);
+  const detectionIntervalRef = useRef(null);
+  const consecutiveFaceRef = useRef(0);
+  const motionCountRef = useRef(0);
+  const faceDetectorRef = useRef(null);
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const itv = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(itv);
   }, []);
+
+  // Initialize FaceDetector once on mount (Chrome/Edge only)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'FaceDetector' in window) {
+      try { faceDetectorRef.current = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }); }
+      catch {}
+    }
+  }, []);
+
+  const analyzeFrame = useCallback(async () => {
+    const video = webcamRef.current?.video;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < 2) return;
+
+    const W = 320, H = 240;
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, W, H);
+
+    const frame = ctx.getImageData(0, 0, W, H);
+    const data = frame.data;
+
+    // Motion detection via pixel diff from previous frame
+    if (prevFrameDataRef.current) {
+      let changedPx = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const diff = Math.abs(data[i] - prevFrameDataRef.current[i])
+                   + Math.abs(data[i+1] - prevFrameDataRef.current[i+1])
+                   + Math.abs(data[i+2] - prevFrameDataRef.current[i+2]);
+        if (diff > 30) changedPx++;
+      }
+      if (changedPx > 500) motionCountRef.current = Math.min(motionCountRef.current + 1, 5);
+    }
+    prevFrameDataRef.current = new Uint8ClampedArray(data);
+
+    // Face detection: FaceDetector API if available, skin-tone fallback otherwise
+    let faceDetected = false;
+    try {
+      if (faceDetectorRef.current) {
+        const faces = await faceDetectorRef.current.detect(video);
+        faceDetected = faces.length > 0;
+      } else {
+        // Skin-tone pixel sampling — center 120×120 region
+        const cx = Math.floor(W / 2), cy = Math.floor(H / 2), r = 60;
+        let skin = 0, total = 0;
+        for (let py = cy - r; py < cy + r; py++) {
+          for (let px = cx - r; px < cx + r; px++) {
+            const i = (py * W + px) * 4;
+            const [rv, g, b] = [data[i], data[i+1], data[i+2]];
+            total++;
+            if (rv > 95 && g > 40 && b > 20 && rv > g && rv > b && Math.abs(rv - g) > 15) skin++;
+          }
+        }
+        faceDetected = skin / total > 0.18;
+      }
+    } catch {}
+
+    if (faceDetected) {
+      consecutiveFaceRef.current++;
+      setFaceStatus('detected');
+    } else {
+      consecutiveFaceRef.current = 0;
+      setFaceStatus('missing');
+    }
+
+    // Need 6 consecutive face frames (3s) + 3 motion frames to unlock capture
+    const fp = Math.min(consecutiveFaceRef.current / 6, 1);
+    const mp = Math.min(motionCountRef.current / 3, 1);
+    const progress = Math.round((fp * 0.65 + mp * 0.35) * 100);
+    setLivenessProgress(progress);
+
+    if (consecutiveFaceRef.current >= 6 && motionCountRef.current >= 3) {
+      setCaptureReady(true);
+      clearInterval(detectionIntervalRef.current);
+    }
+  }, []);
+
+  // Start/stop detection loop with webcam visibility
+  useEffect(() => {
+    if (!showWebcam) {
+      clearInterval(detectionIntervalRef.current);
+      setFaceStatus('waiting');
+      setLivenessProgress(0);
+      setCaptureReady(false);
+      consecutiveFaceRef.current = 0;
+      motionCountRef.current = 0;
+      prevFrameDataRef.current = null;
+      return;
+    }
+    const timer = setTimeout(() => {
+      detectionIntervalRef.current = setInterval(analyzeFrame, 500);
+    }, 1500);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(detectionIntervalRef.current);
+    };
+  }, [showWebcam, analyzeFrame]);
 
   const elapsedHours = useMemo(() => {
     if (!todayLog?.check_in_time) return '0.0';
@@ -224,6 +332,10 @@ export default function AttendancePage() {
   };
 
   const captureSelfieAndCheckIn = useCallback(async () => {
+    if (!captureReady) {
+      setCheckInError('Liveness check not complete. Keep your face visible and move slightly.');
+      return;
+    }
     setActionLoading(true);
     setCheckInError('');
     const imageSrc = webcamRef.current.getScreenshot();
@@ -277,7 +389,7 @@ export default function AttendancePage() {
       setActionLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [webcamRef, geoData, employeeProfile, overrideLocation]);
+  }, [webcamRef, geoData, employeeProfile, overrideLocation, captureReady]);
 
   const handleCheckOut = async () => {
     setActionLoading(true);
@@ -615,14 +727,16 @@ export default function AttendancePage() {
         </div>
       )}
 
+      {/* Hidden canvas for liveness frame analysis */}
+      <canvas ref={canvasRef} className="hidden" />
+
       {/* Selfie Capture Modal */}
       {showWebcam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-md relative">
-            <div className="p-6 text-center border-b border-slate-100">
-              <h3 className="text-xl font-black text-slate-800">Liveness Verification</h3>
-              <p className="text-sm text-slate-500 font-medium mt-1">Please take a clear photo of your face.</p>
-              
+            <div className="p-5 text-center border-b border-slate-100">
+              <h3 className="text-xl font-black text-slate-800">Live Face Verification</h3>
+              <p className="text-sm text-slate-500 font-medium mt-1">Keep your face in the oval and move slightly.</p>
               <div className="mt-2 text-[10px] font-bold text-teal-700 bg-teal-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
                 <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {MAX_RADIUS_METERS}m)
               </div>
@@ -634,37 +748,69 @@ export default function AttendancePage() {
                 ref={webcamRef}
                 screenshotFormat="image/webp"
                 screenshotQuality={1}
-                videoConstraints={{ 
-                  width: { ideal: 1280 },
-                  height: { ideal: 720 },
-                  facingMode: "user" 
-                }}
+                videoConstraints={{ width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }}
                 className="w-full h-full object-cover"
                 mirrored={true}
               />
-              
-              {/* Overlay guides */}
-              <div className="absolute inset-0 border-[40px] border-slate-900/40 pointer-events-none"></div>
-              <div className="absolute inset-0 m-10 border-2 border-white/40 border-dashed rounded-[100%] pointer-events-none"></div>
+
+              {/* Oval guide — color reflects face status */}
+              <div className="absolute inset-0 border-[40px] border-slate-900/40 pointer-events-none" />
+              <div className={`absolute inset-0 m-10 border-4 rounded-[100%] pointer-events-none transition-colors duration-300 ${
+                captureReady ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' :
+                faceStatus === 'detected' ? 'border-teal-400' :
+                faceStatus === 'missing' ? 'border-red-400' : 'border-white/40 border-dashed'
+              }`} />
+
+              {/* Face status badge */}
+              <div className={`absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                captureReady ? 'bg-emerald-500 text-white' :
+                faceStatus === 'detected' ? 'bg-teal-500 text-white' :
+                faceStatus === 'missing' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300'
+              }`}>
+                {captureReady ? '✓ Ready' : faceStatus === 'detected' ? 'Face Detected' : faceStatus === 'missing' ? 'No Face' : 'Scanning…'}
+              </div>
             </div>
 
-            <div className="p-6 bg-slate-50 flex gap-4">
-              <button 
-                onClick={() => setShowWebcam(false)} 
+            {/* Liveness progress bar */}
+            <div className="px-6 pt-4 pb-1">
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                <span>Liveness Check</span>
+                <span>{livenessProgress}%</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${captureReady ? 'bg-emerald-500' : 'bg-teal-500'}`}
+                  style={{ width: `${livenessProgress}%` }}
+                />
+              </div>
+              {!captureReady && (
+                <p className="text-[10px] text-slate-400 mt-1.5 text-center">
+                  {faceStatus === 'missing' ? 'Centre your face in the oval' : 'Keep still, then move your head slightly'}
+                </p>
+              )}
+            </div>
+
+            <div className="p-5 bg-slate-50 flex gap-4">
+              <button
+                onClick={() => setShowWebcam(false)}
                 disabled={actionLoading}
                 className="flex-1 py-3.5 px-4 bg-white text-slate-600 font-bold rounded-2xl border border-slate-200 hover:bg-slate-100 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
-              <button 
-                onClick={captureSelfieAndCheckIn} 
-                disabled={actionLoading}
-                className="flex-1 py-3.5 px-4 bg-teal-800 hover:bg-teal-900 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center disabled:opacity-50"
+              <button
+                onClick={captureSelfieAndCheckIn}
+                disabled={actionLoading || !captureReady}
+                className={`flex-1 py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center ${
+                  captureReady
+                    ? 'bg-teal-800 hover:bg-teal-900 text-white'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                } disabled:opacity-60`}
               >
-                {actionLoading ? 'Uploading...' : 'Take Photo & Check In'}
+                {actionLoading ? 'Uploading…' : captureReady ? 'Check In' : `Verifying… ${livenessProgress}%`}
               </button>
             </div>
-            
+
             <button onClick={() => setShowWebcam(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 bg-white/80 rounded-full backdrop-blur"><X className="w-5 h-5"/></button>
           </div>
         </div>

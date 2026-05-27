@@ -20,7 +20,7 @@ export async function GET(request) {
 
     // Get current date in IST (UTC+5:30)
     const nowUtc = new Date();
-    // 9:30 AM IST = 4:00 AM UTC. If cron runs at exactly 4:00 AM UTC, doing +5:30 hours pushes it to 9:30 AM local.
+    // 10:00 AM IST = 4:30 AM UTC. Cron runs at 4:30 UTC.
     const nowIst = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
     const todayStr = nowIst.toISOString().split('T')[0];
 
@@ -63,7 +63,7 @@ export async function GET(request) {
     const notifications = missingEmployees.map(emp => ({
       employee_id: emp.id,
       title: '⏰ Attendance Reminder',
-      message: 'It is past 9:30 AM and you have not checked in yet. Please log your attendance.',
+      message: 'It is past 10:00 AM and you have not checked in yet. Please log your attendance.',
       link: '/attendance',
       is_read: false
     }));
@@ -76,14 +76,17 @@ export async function GET(request) {
 
     // Fire off Push Notifications
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com';
-    await Promise.allSettled(missingEmployees.map(emp => 
+    await Promise.allSettled(missingEmployees.map(emp =>
       fetch(`${appUrl}/api/push/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CRON_SECRET}`
+        },
         body: JSON.stringify({
           assigned_to: emp.id,
           title: '⏰ Missing Check-In',
-          body: 'It is past 9:30 AM. Please check in now via OxyOS.',
+          body: 'It is past 10:00 AM. Please check in now via OxyOS.',
           url: '/attendance'
         })
       })
