@@ -18,7 +18,7 @@ export async function GET(req, { params }) {
           cell_bank_strains(id, name, accession_number),
           cell_bank_preparations(id, prep_code, type, passage_number),
           formulations(id, name, code, version, base_volume_ml, ingredients),
-          cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status),
+          cell_bank_vials!growth_studies_vial_id_fkey(id, vial_code, storage_temp, freezer_id, rack, box, position, status),
           employees!growth_studies_created_by_fkey(full_name)
         `)
         .eq('id', id)
@@ -44,9 +44,9 @@ export async function GET(req, { params }) {
 
       supabase
         .from('inventory_usage')
-        .select('id, quantity_used, stage, notes, inventory_stock(id, supplier_batch_number, inventory_items(name, unit))')
+        .select('id, quantity_used, stage, notes, inventory_stock!inventory_usage_stock_id_fkey(id, supplier_batch_number, inventory_items!inventory_stock_item_id_fkey(name, unit))')
         .eq('growth_study_id', id)
-        .order('created_at'),
+        .order('created_at', { ascending: true }),
     ]);
 
     if (studyRes.error) throw studyRes.error;
@@ -56,7 +56,7 @@ export async function GET(req, { params }) {
       time_points: tpRes.data || [],
       measurements: measRes.data || [],
       plate_observations: plateRes.data || [],
-      inventory_usage: usageRes.data || [],
+      inventory_usage: usageRes.error ? [] : (usageRes.data || []),
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
