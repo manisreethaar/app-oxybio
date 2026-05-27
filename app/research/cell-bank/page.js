@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X } from 'lucide-react';
+import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 
 const STATUS_COLOR = {
@@ -349,6 +349,16 @@ export default function CellBankPage() {
     else toast.error(json.error);
   };
 
+  const handleDeletePrep = async (e, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Delete this preparation? This will remove all associated vials.')) return;
+    const res = await fetch(`/api/research/cell-bank/${id}?target=preparation`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) { toast.success('Preparation deleted.'); fetchAll(); }
+    else toast.error(json.error);
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5">
       {/* Header */}
@@ -490,10 +500,19 @@ export default function CellBankPage() {
                   )}
                   {p.type === 'WCB' && p.parent && <p className="text-[10px] text-gray-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
                 </div>
-                <div className="text-right shrink-0">
+                <div className="text-right shrink-0 mr-2">
                   {p.vial_count > 0 && <p className="text-xs font-black text-gray-700">{p.vial_count} vials</p>}
                   <p className="text-[10px] text-gray-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
                 </div>
+                {canDelete && (
+                  <button 
+                    onClick={(e) => handleDeletePrep(e, p.id)} 
+                    className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                    title="Delete Preparation"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0"/>
               </Link>
             ))}
