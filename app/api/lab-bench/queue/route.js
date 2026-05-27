@@ -36,13 +36,14 @@ export async function GET() {
 
     // ── 1. Active batches in fermentation ───────────────────────
     const [batchRes, studyRes] = await Promise.all([
-      // 'in-progress' covers inoculation → fermentation → straining stages.
-      // 'fermenting' is set when current_stage is explicitly advanced to 'fermentation'.
-      // Both are valid active-monitoring states.
+      // Only batches that have actually reached fermentation monitoring.
+      // Stages media_prep / sterilisation / inoculation are pre-fermentation — no readings needed.
+      // qc_hold is explicitly a hold state — excluded here; qc_hold flasks are also filtered below.
+      // straining / extract_addition are post-fermentation but may still need readings.
       supabase
         .from('batches')
-        .select('id, batch_id, batch_flasks(id, flask_label)')
-        .in('status', ['in-progress', 'fermenting'])
+        .select('id, batch_id, current_stage, batch_flasks(id, flask_label, status, current_stage)')
+        .in('current_stage', ['fermentation', 'straining', 'extract_addition'])
         .order('created_at', { ascending: false })
         .limit(20),
 
@@ -83,7 +84,10 @@ export async function GET() {
 
     // ── Fermentation flasks ──
     for (const batch of batches) {
-      const flasks = batch.batch_flasks || [];
+      const flasks = (batch.batch_flasks || []).filter(f =>
+        // Skip flasks not yet inoculated (planned) or explicitly on QC hold
+        f.status !== 'planned' && f.current_stage !== 'qc_hold'
+      );
       for (const flask of flasks) {
         const key     = `${batch.batch_id}::${flask.id}`;
         const reading = latestReadingMap[key] || null;

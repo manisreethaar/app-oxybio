@@ -19,8 +19,9 @@ export async function GET() {
     }
 
     const [batchRes, growthRes] = await Promise.all([
-      // Active batches — 'in-progress' covers inoculation→fermentation→straining;
-      // 'fermenting' is set when current_stage is explicitly 'fermentation'.
+      // Only batches that have entered fermentation monitoring.
+      // media_prep / sterilisation / inoculation are pre-fermentation — flasks not ready for readings.
+      // qc_hold is an explicit hold state — excluded.
       supabase
         .from('batches')
         .select(`
@@ -29,9 +30,9 @@ export async function GET() {
           status,
           current_stage,
           created_at,
-          batch_flasks(id, flask_label)
+          batch_flasks(id, flask_label, status, current_stage)
         `)
-        .in('status', ['in-progress', 'fermenting'])
+        .in('current_stage', ['fermentation', 'straining', 'extract_addition'])
         .order('created_at', { ascending: false })
         .limit(30),
 
@@ -60,9 +61,17 @@ export async function GET() {
         .sort((a, b) => a.planned_hour - b.planned_hour),
     }));
 
+    // Strip planned / qc_hold flasks from each batch before returning
+    const batches = (batchRes.data || []).map(b => ({
+      ...b,
+      batch_flasks: (b.batch_flasks || []).filter(
+        f => f.status !== 'planned' && f.current_stage !== 'qc_hold'
+      ),
+    }));
+
     return NextResponse.json({
       success: true,
-      batches:       batchRes.data  || [],
+      batches,
       growth_studies: growthStudies,
     });
   } catch (err) {
