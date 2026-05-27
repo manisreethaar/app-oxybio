@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FlaskConical, Activity, CheckSquare,
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
-  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna, Settings
+  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna, Settings, LayoutGrid
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -37,6 +37,12 @@ export default function Sidebar() {
         { name: 'Dashboard',     href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
         { name: 'Activity Feed', href: '/activity',  icon: Activity,        show: effectiveCanDo('activity', 'view') },
         { name: 'My Tasks',      href: '/tasks',     icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
+      ]
+    },
+    {
+      title: 'LAB BENCH',
+      items: [
+        { name: 'Lab Bench',           href: '/lab-bench',          icon: LayoutGrid, show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
