@@ -36,10 +36,13 @@ export async function GET() {
 
     // ── 1. Active batches in fermentation ───────────────────────
     const [batchRes, studyRes] = await Promise.all([
+      // 'in-progress' covers inoculation → fermentation → straining stages.
+      // 'fermenting' is set when current_stage is explicitly advanced to 'fermentation'.
+      // Both are valid active-monitoring states.
       supabase
         .from('batches')
         .select('id, batch_id, batch_flasks(id, flask_label)')
-        .eq('current_stage', 'fermentation')
+        .in('status', ['in-progress', 'fermenting'])
         .order('created_at', { ascending: false })
         .limit(20),
 

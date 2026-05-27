@@ -204,24 +204,19 @@ export default function LabBenchPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-6">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">OxyOS</p>
-          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-            Lab Bench
-            {!loading && hasUrgent && (
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block mb-1" />
-            )}
-          </h1>
+      {/* ── Action bar (title already shown in layout top bar) ── */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          {!loading && hasUrgent && (
+            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+          )}
           {asOf && (
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <p className="text-xs text-slate-400 font-medium">
               Updated {relativeTime(asOf)}
             </p>
           )}
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={load}
