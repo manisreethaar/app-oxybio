@@ -170,6 +170,17 @@ export default function SampleIncubationPage() {
                     )}
                     {sample.batch_flasks && <div className="text-[10px] font-mono text-gray-500 mt-1">Trial: {sample.batch_flasks.flask_label}</div>}
                     {sample.batch_flask_qc_samples && <div className="text-[10px] font-mono text-gray-500 mt-1">QC: {sample.batch_flask_qc_samples.sample_id}</div>}
+                    {(sample.source_label || sample.samples?.source_label) && (
+                      <div className="text-[10px] font-mono text-teal-700 mt-1">
+                        Group: {sample.source_label || sample.samples?.source_label}
+                        {(sample.timepoint_label || sample.samples?.timepoint_label) ? ` | ${sample.timepoint_label || sample.samples?.timepoint_label}` : ''}
+                      </div>
+                    )}
+                    {sample.plate_label && (
+                      <div className="text-[10px] font-mono text-rose-700 mt-1">
+                        {sample.plate_label}{sample.plate_total ? ` of ${sample.plate_total}` : ''}
+                      </div>
+                    )}
                     {sample.source_stage && <div className="text-[10px] uppercase font-bold text-gray-400 mt-1">Stage: {sample.source_stage.replace(/_/g, ' ')}</div>}
                     {sample.fermentation_reading?.elapsed_hours != null && (
                       <div className="text-[10px] font-mono text-teal-700 mt-1">
