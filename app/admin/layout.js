@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }) {
     .eq("email", user.email)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (!['admin', 'ceo', 'cto'].includes(profile?.role)) {
     redirect("/dashboard");
   }
 

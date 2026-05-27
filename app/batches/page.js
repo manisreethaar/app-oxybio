@@ -16,6 +16,8 @@ import { format, differenceInHours, differenceInDays } from 'date-fns';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import CreatorBadge from '@/components/ui/CreatorBadge';
+import EditRequestButton from '@/components/ui/EditRequestButton';
 
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
@@ -130,6 +132,7 @@ export default function BatchesPage() {
   const [statusFilter,     setStatusFilter]     = useState('active');
   const [searchTerm,       setSearchTerm]       = useState('');
   const [sortOrder,        setSortOrder]        = useState('newest');
+  const [pendingIds,       setPendingIds]       = useState(new Set());
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(batchSchema),
@@ -165,6 +168,7 @@ export default function BatchesPage() {
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
+            created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
@@ -175,6 +179,7 @@ export default function BatchesPage() {
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
+            created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
@@ -239,7 +244,15 @@ export default function BatchesPage() {
     } catch {}
   }, []);
 
-  useEffect(() => { fetchBatches(); fetchFormulations(); fetchBatchOptions(); }, [fetchBatches, fetchFormulations, fetchBatchOptions]);
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
+  useEffect(() => { fetchBatches(); fetchFormulations(); fetchBatchOptions(); fetchPendingIds(); }, [fetchBatches, fetchFormulations, fetchBatchOptions]);
 
   // ─── Batch Creation ────────────────────────────────────────
   const handleBatchSubmit = async (data) => {
@@ -533,7 +546,7 @@ export default function BatchesPage() {
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
                       <p className="text-xl font-black text-gray-800 tabular-nums">{hours} <span className="text-xs font-bold text-gray-400">HRS</span></p>
-                      {(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') && (
+                      {(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') ? (
                         <button
                           onClick={e => { e.preventDefault(); setCancelConfirmId(batch.id); }}
                           className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
@@ -541,6 +554,25 @@ export default function BatchesPage() {
                         >
                           <Trash2 className="w-3 h-3"/>
                         </button>
+                      ) : batch.created_by === employeeProfile?.id ? (
+                        <EditRequestButton
+                          tableName="batches"
+                          recordId={batch.id}
+                          moduleLabel="Batches"
+                          fields={[
+                            { key: 'sku_target', label: 'SKU Target', type: 'select', options: skuTargets.map(s => ({ value: s, label: s })) },
+                            { key: 'planned_volume_ml', label: 'Planned Volume (mL)', type: 'number' },
+                          ]}
+                          currentData={batch}
+                          hasPending={pendingIds.has(batch.id)}
+                          allowDelete
+                          onSuccess={() => { fetchBatches(); fetchPendingIds(); }}
+                        />
+                      ) : null}
+                      {batch.creator && (
+                        <div className="mt-1">
+                          <CreatorBadge initials={batch.creator.initials} fullName={batch.creator.full_name} size="sm"/>
+                        </div>
                       )}
                     </div>
                   </div>

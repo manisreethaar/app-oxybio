@@ -3,35 +3,52 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
-import { 
-  ShieldAlert, Clock, Calendar, AlertCircle, 
-  CheckCircle2, Send, Loader2, ArrowRight, History
+import {
+  ShieldAlert, Clock, Calendar, AlertCircle,
+  CheckCircle2, Send, Loader2, ArrowRight, History, LogOut
 } from 'lucide-react';
 
 export default function MispunchPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
   const toast = useToast();
   const [mispunches, setMispunches] = useState([]);
+  const [openShifts, setOpenShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [selfReportLog, setSelfReportLog] = useState(null);
   const [formData, setFormData] = useState({ hours: '', reason: '' });
+  const [selfReportData, setSelfReportData] = useState({ hours: '', reason: '' });
   const supabase = useMemo(() => createClient(), []);
 
-  const fetchMispunches = async () => {
+  const fetchData = async () => {
     if (!employeeProfile) return;
     setLoading(true);
     try {
-      // Fetch logs marked as 'required' OR already 'pending' for this user
-      const { data, error } = await supabase
-        .from('attendance_log')
-        .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
-        .eq('employee_id', employeeProfile.id)
-        .not('mispunch_status', 'is', null)
-        .order('date', { ascending: false });
+      const [mispunchRes, openRes] = await Promise.all([
+        // Logs already flagged by the cron (required/pending/approved/rejected)
+        supabase
+          .from('attendance_log')
+          .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
+          .eq('employee_id', employeeProfile.id)
+          .not('mispunch_status', 'is', null)
+          .order('date', { ascending: false }),
 
-      if (error) throw error;
-      setMispunches(data || []);
+        // Open shifts — checked in but never checked out, cron hasn't run yet
+        supabase
+          .from('attendance_log')
+          .select('id, date, check_in_time')
+          .eq('employee_id', employeeProfile.id)
+          .is('check_out_time', null)
+          .is('mispunch_status', null)
+          .order('date', { ascending: false }),
+      ]);
+
+      if (mispunchRes.error) throw mispunchRes.error;
+      if (openRes.error) throw openRes.error;
+
+      setMispunches(mispunchRes.data || []);
+      setOpenShifts(openRes.data || []);
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -40,15 +57,15 @@ export default function MispunchPage() {
   };
 
   useEffect(() => {
-    fetchMispunches();
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
+  // Submit for a cron-flagged record (mispunch_status = 'required')
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedLog || !formData.hours || !formData.reason) return;
     setSubmitting(true);
-
     try {
       const res = await fetch('/api/mispunch/request', {
         method: 'POST',
@@ -56,19 +73,47 @@ export default function MispunchPage() {
         body: JSON.stringify({
           logId: selectedLog.id,
           hours: parseFloat(formData.hours),
-          reason: formData.reason
-        })
+          reason: formData.reason,
+        }),
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Submission failed');
       }
-
       setSelectedLog(null);
       setFormData({ hours: '', reason: '' });
-      fetchMispunches();
+      fetchData();
       toast.success('Mispunch request submitted for approval!');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Self-report for an open shift the cron hasn't closed yet
+  const handleSelfReport = async (e) => {
+    e.preventDefault();
+    if (!selfReportLog || !selfReportData.hours || !selfReportData.reason) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/mispunch/self-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          logId: selfReportLog.id,
+          hours: parseFloat(selfReportData.hours),
+          reason: selfReportData.reason,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Submission failed');
+      }
+      setSelfReportLog(null);
+      setSelfReportData({ hours: '', reason: '' });
+      fetchData();
+      toast.success('Missed checkout reported. Awaiting admin approval.');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -79,7 +124,7 @@ export default function MispunchPage() {
   if (loading) return <div className="p-8 text-center text-gray-400">Syncing attendance records...</div>;
 
   const requiredLogs = mispunches.filter(m => m.mispunch_status === 'required');
-  const historyLogs = mispunches.filter(m => m.mispunch_status !== 'required');
+  const historyLogs  = mispunches.filter(m => m.mispunch_status !== 'required');
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -92,12 +137,49 @@ export default function MispunchPage() {
         </p>
       </div>
 
-      {/* Action Area: Required Mispunches */}
+      {/* ── Self-Report Section: open shifts the cron hasn't touched yet ── */}
+      {openShifts.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xs font-black text-amber-500 uppercase tracking-widest flex items-center gap-2">
+            <LogOut className="w-3 h-3" /> Forgot to Check Out? ({openShifts.length})
+          </h2>
+          <div className="grid gap-3">
+            {openShifts.map(log => (
+              <div key={log.id} className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-amber-100 p-2.5 rounded-lg border border-amber-200">
+                    <Calendar className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">
+                      {new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </p>
+                    <p className="text-[10px] font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
+                      Shift Still Open — Not Checked Out
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelfReportLog(log)}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                  Report <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 flex items-start gap-1.5">
+            <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+            Your shift will be closed with 0 hours and submitted for admin approval with the hours you enter.
+          </p>
+        </section>
+      )}
+
+      {/* ── Cron-flagged Mispunches ── */}
       <section className="space-y-4">
         <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
           <Clock className="w-3 h-3" /> Pending Resolution ({requiredLogs.length})
         </h2>
-        
         {requiredLogs.length === 0 ? (
           <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex items-center gap-4 text-emerald-700">
             <CheckCircle2 className="w-5 h-5" />
@@ -118,7 +200,7 @@ export default function MispunchPage() {
                     </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setSelectedLog(log)}
                   className="px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover transition-colors flex items-center gap-1.5"
                 >
@@ -130,7 +212,7 @@ export default function MispunchPage() {
         )}
       </section>
 
-      {/* History Area */}
+      {/* ── History ── */}
       {historyLogs.length > 0 && (
         <section className="space-y-4 pt-6 border-t border-gray-100">
           <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -147,7 +229,7 @@ export default function MispunchPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black text-gray-500 uppercase">{log.mispunch_requested_hours}H Requested</span>
                   <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
-                    log.mispunch_status === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                    log.mispunch_status === 'pending'  ? 'bg-amber-100 text-amber-700 border-amber-200' :
                     log.mispunch_status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                     'bg-red-100 text-red-700 border-red-200'
                   }`}>
@@ -160,7 +242,68 @@ export default function MispunchPage() {
         </section>
       )}
 
-      {/* Application Modal */}
+      {/* ── Self-Report Modal ── */}
+      {selfReportLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <form onSubmit={handleSelfReport}>
+              <div className="p-6 border-b border-gray-100 bg-amber-50">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <LogOut className="w-5 h-5 text-amber-500" /> Missed Checkout
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(selfReportLog.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+                  {' — '}Enter the hours you actually worked. An admin will review and approve.
+                </p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    max="16"
+                    required
+                    className="w-full h-10 px-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm font-bold"
+                    placeholder="e.g. 8.5"
+                    value={selfReportData.hours}
+                    onChange={e => setSelfReportData({ ...selfReportData, hours: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Reason</label>
+                  <textarea
+                    required
+                    placeholder="e.g. Left the office in a hurry and forgot to check out..."
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm min-h-[90px] resize-none"
+                    value={selfReportData.reason}
+                    onChange={e => setSelfReportData({ ...selfReportData, reason: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="p-4 bg-gray-50 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelfReportLog(null)}
+                  className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2" /> Submit for Approval</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cron-flagged Request Modal ── */}
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
@@ -169,12 +312,11 @@ export default function MispunchPage() {
                 <h3 className="text-lg font-bold text-gray-900">Mispunch For {new Date(selectedLog.date).toLocaleDateString()}</h3>
                 <p className="text-xs text-gray-500 mt-1">Please provide the actual hours worked and reason.</p>
               </div>
-              
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     step="0.5"
                     min="0.5"
                     max="16"
@@ -187,7 +329,7 @@ export default function MispunchPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Reason for Mispunch</label>
-                  <textarea 
+                  <textarea
                     required
                     placeholder="e.g. Forgot to check out while leaving for field visit..."
                     className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm min-h-[100px] resize-none"
@@ -196,21 +338,20 @@ export default function MispunchPage() {
                   />
                 </div>
               </div>
-
               <div className="p-4 bg-gray-50 flex gap-3">
-                <button 
+                <button
                   type="button"
                   onClick={() => setSelectedLog(null)}
                   className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm"
                 >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2"/> Submit Application</>}
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2" /> Submit Application</>}
                 </button>
               </div>
             </form>

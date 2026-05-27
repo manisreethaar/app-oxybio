@@ -16,8 +16,13 @@ function toISTDateStr(utcDate) {
 // sendServerNotification handles both DB insertions and push notifications
 
 export async function GET(request) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error('[Evening Warning Cron] CRON_SECRET env var is not set. Set it in Vercel Project Settings → Environment Variables so Vercel can authenticate cron calls.');
+    return NextResponse.json({ error: 'Server misconfiguration: CRON_SECRET not set' }, { status: 500 });
+  }
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -61,7 +66,8 @@ export async function GET(request) {
       .update({
         check_out_time: nowUtc.toISOString(),
         total_hours: 0,
-        mispunch_status: 'required'
+        mispunch_status: 'required',
+        notes: '[SYSTEM: AUTO-CLOSED AT 9 PM — MISPUNCH REVIEW REQUIRED]',
       })
       .in('id', openShiftIds);
 

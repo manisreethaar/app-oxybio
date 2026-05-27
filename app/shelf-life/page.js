@@ -7,6 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock, Trash2 } from 'lucide-react';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion } from 'framer-motion';
@@ -25,7 +27,8 @@ export default function ShelfLifePage() {
   const [activeStudy, setActiveStudy] = useState(null);
   const [logForm, setLogForm] = useState({ day_number: 7, test_data: {} });
   const [logSubmitting, setLogSubmitting] = useState(false);
-  const isAdmin = employeeProfile?.role === 'admin';
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(employeeProfile?.role);
+  const [pendingIds, setPendingIds] = useState(new Set());
 
   const { register, handleSubmit, reset, watch, setValue } = useForm({
     resolver: zodResolver(z.object({
@@ -52,7 +55,7 @@ export default function ShelfLifePage() {
       const [{ data: studyData, error: studyErr }, { data: batchData }] = await Promise.all([
         supabase
           .from('shelf_life_studies')
-          .select('*, batches(id, batch_id, variant, experiment_type), shelf_life_logs(id, day_number, test_data, logged_by, created_at)')
+          .select('*, created_by, creator:employees!shelf_life_studies_created_by_fkey(id, full_name, initials), batches(id, batch_id, variant, experiment_type), shelf_life_logs(id, day_number, test_data, logged_by, created_at)')
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')
@@ -67,8 +70,17 @@ export default function ShelfLifePage() {
     finally { setLoading(false); }
   }, [supabase]);
 
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchPendingIds();
   }, [fetchData]);
 
   const handleDeleteStudy = async (id) => {
@@ -231,6 +243,12 @@ export default function ShelfLifePage() {
                 </div>
 
 
+              {study.creator && (
+                <div className="flex items-center gap-1.5 mb-3">
+                  <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm"/>
+                  <span className="text-[10px] text-gray-400 font-medium">by {study.creator.full_name}</span>
+                </div>
+              )}
               <div className="flex gap-2">
                 {study.status !== 'Completed' && isAdmin && (
                   <button onClick={() => concludeStudy(study.id)} className="flex-1 py-2.5 bg-white border border-red-100 text-[10px] font-bold uppercase tracking-wider text-red-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all focus:outline-none">
@@ -241,6 +259,20 @@ export default function ShelfLifePage() {
                   <button onClick={() => handleDeleteStudy(study.id)} className="px-3 py-2.5 bg-white border border-red-100 text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Delete study">
                     <Trash2 className="w-4 h-4" />
                   </button>
+                )}
+                {!isAdmin && study.created_by === employeeProfile?.id && (
+                  <EditRequestButton
+                    tableName="shelf_life_studies"
+                    recordId={study.id}
+                    moduleLabel="Shelf Life"
+                    fields={[
+                      { key: 'storage_condition', label: 'Storage Condition' },
+                    ]}
+                    currentData={study}
+                    hasPending={pendingIds.has(study.id)}
+                    allowDelete={study.status !== 'Completed'}
+                    onSuccess={() => { fetchData(); fetchPendingIds(); }}
+                  />
                 )}
                 <button onClick={() => openLogModal(study)} className="flex-[2] py-2.5 bg-navy text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-navy-hover transition-all flex items-center justify-center gap-2">
                   Open Log &amp; Parameters <ChevronRight className="w-4 h-4 opacity-50" />

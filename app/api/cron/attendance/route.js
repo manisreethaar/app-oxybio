@@ -14,8 +14,13 @@ function toISTDateStr(utcDate) {
 }
 
 export async function GET(request) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error('[Attendance Cron] CRON_SECRET env var is not set. Set it in Vercel Project Settings → Environment Variables so Vercel can authenticate cron calls.');
+    return NextResponse.json({ error: 'Server misconfiguration: CRON_SECRET not set' }, { status: 500 });
+  }
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
