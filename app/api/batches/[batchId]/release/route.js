@@ -116,14 +116,33 @@ export async function POST(request, { params }) {
       }).then(() => {}).catch(() => {});
     }
 
-    // 6. Kick off shelf-life study (non-blocking)
+    // Fetch flask label for auto-creation
+    const { data: flaskData } = await db.from('batch_flasks').select('flask_label').eq('id', flask_id).single();
+    const flaskLabel = flaskData?.flask_label || '';
+
+    // 6. Kick off shelf-life study and sensory session (non-blocking)
     const start  = new Date().toISOString().slice(0, 10);
     const expiry = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+    
     db.from('shelf_life_studies').insert({
-      batch_id: batchId, storage_condition: '2-8°C',
+      batch_id: batchId,
+      flask_id: flaskLabel,
+      storage_condition: '2-8°C',
       test_parameters: ['pH', 'CFU count', 'Sensory', 'Appearance'],
-      start_date: start, expiry_date: expiry, status: 'In Progress', created_by: emp.id,
-    }).then(() => {}).catch(() => {});
+      start_date: start, 
+      status: 'In Progress', 
+      created_by: emp.id,
+    }).then(() => {}).catch(err => console.error('Auto shelf-life failed', err));
+
+    db.from('taste_panels').insert({
+      batch_id: batchId,
+      flask_id: flaskLabel,
+      session_title: `Sensory Evaluation - ${batchId}${flaskLabel ? ' ' + flaskLabel : ''}`,
+      panelist_count: 5,
+      test_criteria: ['Taste', 'Aroma', 'Appearance', 'Overall Acceptability'],
+      avg_score: 0,
+      scores: []
+    }).then(() => {}).catch(err => console.error('Auto sensory failed', err));
 
     return NextResponse.json({ success: true, all_released: allReleased });
 
