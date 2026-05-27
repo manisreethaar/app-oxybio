@@ -19,7 +19,8 @@ export async function GET() {
     }
 
     const [batchRes, growthRes] = await Promise.all([
-      // Batches currently in fermentation monitoring stage
+      // Active batches — 'in-progress' covers inoculation→fermentation→straining;
+      // 'fermenting' is set when current_stage is explicitly 'fermentation'.
       supabase
         .from('batches')
         .select(`
@@ -30,7 +31,7 @@ export async function GET() {
           created_at,
           batch_flasks(id, flask_label)
         `)
-        .eq('current_stage', 'fermentation')
+        .in('status', ['in-progress', 'fermenting'])
         .order('created_at', { ascending: false })
         .limit(30),
 
