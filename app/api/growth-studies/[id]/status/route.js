@@ -54,7 +54,7 @@ export async function PATCH(req, { params }) {
         }
       }
 
-      // 2. Mark vial as used
+      // 2. Mark vial as used + log consumption in inventory_usage
       if (study?.vial_id) {
         await supabaseAdmin
           .from('cell_bank_vials')
@@ -65,15 +65,27 @@ export async function PATCH(req, { params }) {
           })
           .eq('id', study.vial_id);
 
+        // Enriched vial log now includes study_id
         await supabaseAdmin.from('cell_bank_vial_logs').insert({
-          vial_id: study.vial_id,
-          action: 'used_in_study',
+          vial_id:   study.vial_id,
+          action:    'used_in_study',
+          study_id:  id,
           operator_id: emp.id,
           notes: `Inoculated into Growth Study ${study.study_code || id}`,
         });
+
+        // Track vial consumption in inventory_usage for cross-module traceability
+        await supabaseAdmin.from('inventory_usage').insert({
+          vial_id:         study.vial_id,
+          growth_study_id: id,
+          quantity_used:   1,   // 1 vial consumed; volume tracked separately in cell_bank_vials.volume_ml
+          logged_by:       emp.id,
+          stage:           'inoculation',
+          notes:           `Vial used for Growth Study ${study.study_code || id}`,
+        });
       }
 
-      // 3. Deduct inventory lots
+      // 3. Deduct media/ingredient inventory lots
       if (lot_selections?.length) {
         for (const sel of lot_selections) {
           if (!sel.stock_id || !sel.quantity_used || sel.quantity_used <= 0) continue;
@@ -98,24 +110,24 @@ export async function PATCH(req, { params }) {
             })
             .eq('id', sel.stock_id);
 
-          // Log inventory movement
+          // Log inventory movement — correct column is 'type', not 'movement_type'
           await supabaseAdmin.from('inventory_movements').insert({
-            stock_id: sel.stock_id,
-            movement_type: 'Issue',
-            quantity: sel.quantity_used,
-            purpose: 'R&D',
+            stock_id:  sel.stock_id,
+            type:      'Issue',
+            quantity:  sel.quantity_used,
+            purpose:   'R&D',
             issued_by: user.id,
-            notes: `Growth Study ${study.study_code || id} — ${sel.item_name || ''}`,
+            notes:     `Growth Study ${study.study_code || id} — ${sel.item_name || ''}`,
           });
 
-          // Log usage with growth_study_id
+          // Log usage with correct columns (stage + notes now exist after migration)
           await supabaseAdmin.from('inventory_usage').insert({
-            stock_id: sel.stock_id,
+            stock_id:        sel.stock_id,
             growth_study_id: id,
-            quantity_used: sel.quantity_used,
-            logged_by: emp.id,
-            stage: 'media_prep',
-            notes: `${sel.item_name || ''} for ${study.study_code || id}`,
+            quantity_used:   sel.quantity_used,
+            logged_by:       emp.id,
+            stage:           'media_prep',
+            notes:           `${sel.item_name || ''} for ${study.study_code || id}`,
           });
         }
       }
