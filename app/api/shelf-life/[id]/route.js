@@ -13,7 +13,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Delete logs first to maintain integrity (if no cascade)
-    await supabase.from('shelf_life_logs').delete().eq('study_id', params.id);
+    await supabase.from('shelf_life_logs').delete().eq('shelf_life_id', params.id);
     
     // Delete study
     const { error } = await supabase.from('shelf_life_studies').delete().eq('id', params.id);
