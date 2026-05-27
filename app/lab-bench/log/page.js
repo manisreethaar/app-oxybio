@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
   FlaskConical, Activity, ChevronDown, CheckCircle2,
@@ -148,15 +148,16 @@ function TestCard({ title, icon: Icon, color, skipped, onSkipToggle, children, s
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function QuickLogPage() {
-  const router = useRouter();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
   const { employeeProfile } = useAuth();
 
   const [sources, setSources]       = useState({ batches: [], growth_studies: [] });
   const [sourcesLoading, setSourcesLoading] = useState(true);
 
-  const [sourceType, setSourceType] = useState('batch'); // 'batch' | 'growth_study'
-  const [sourceId, setSourceId]     = useState('');      // for batch: batch text ID; for GS: UUID
-  const [flaskId, setFlaskId]       = useState('');      // UUID
+  const [sourceType, setSourceType] = useState('batch');
+  const [sourceId, setSourceId]     = useState('');
+  const [flaskId, setFlaskId]       = useState('');
   const [flaskLabel, setFlaskLabel] = useState('');
   const [timePointId, setTimePointId] = useState('');
   const [logHour, setLogHour]       = useState('');
@@ -168,18 +169,50 @@ export default function QuickLogPage() {
 
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
-  const [success, setSuccess]       = useState(null); // { sample_label, alarms }
+  const [success, setSuccess]       = useState(null);
 
-  // ── Load active sources ──────────────────────────────────────
+  // ── Load active sources, then apply URL pre-fill ─────────────
+  // Deep-link format (from Active Queue "Log Now"):
+  //   ?source_type=batch&source_id=OXY-B-26-001&flask_id=uuid
+  //   ?source_type=growth_study&source_id=uuid&tp_id=uuid
   const loadSources = useCallback(async () => {
     setSourcesLoading(true);
     try {
-      const res = await fetch('/api/lab-bench/sources');
+      const res  = await fetch('/api/lab-bench/sources');
       const json = await res.json();
-      if (json.success) setSources(json);
+      if (json.success) {
+        setSources(json);
+
+        // Apply URL params after sources are available
+        const paramType  = searchParams.get('source_type');
+        const paramSrc   = searchParams.get('source_id');
+        const paramFlask = searchParams.get('flask_id');
+        const paramTp    = searchParams.get('tp_id');
+
+        if (paramType && paramSrc) {
+          setSourceType(paramType);
+          setSourceId(paramSrc);
+
+          if (paramType === 'batch' && paramFlask) {
+            const batch = json.batches?.find(b => b.batch_id === paramSrc || b.id === paramSrc);
+            const flask = batch?.batch_flasks?.find(f => f.id === paramFlask);
+            if (flask) {
+              setFlaskId(flask.id);
+              setFlaskLabel(flask.flask_label || '');
+            }
+          }
+
+          if (paramType === 'growth_study' && paramTp) {
+            setTimePointId(paramTp);
+            const study = json.growth_studies?.find(s => s.id === paramSrc);
+            const tp    = study?.growth_study_time_points?.find(t => t.id === paramTp);
+            if (tp) setLogHour(String(tp.planned_hour));
+          }
+        }
+      }
     } catch (_) {}
     setSourcesLoading(false);
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => { loadSources(); }, [loadSources]);
 
@@ -799,7 +832,7 @@ export default function QuickLogPage() {
               </div>
             ) : (
               <p className="text-slate-400 text-xs font-medium py-1">
-                Not performed at this timepoint — toggle "Mark Done" if a plate was taken, or "Skip" to record it was not done with a reason.
+                Not performed at this timepoint - toggle &quot;Mark Done&quot; if a plate was taken, or &quot;Skip&quot; to record it was not done with a reason.
               </p>
             )}
           </div>
