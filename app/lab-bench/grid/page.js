@@ -43,6 +43,7 @@ function blankStudyRow(tp) {
     time_point_id:    tp.id,
     log_hour:         tp.planned_hour,
     timepoint_label:  `T+${tp.planned_hour}h`,
+    is_adhoc:         false,
     skipped:          false,
     skip_reason:      '',
     ph:               '',
@@ -51,6 +52,24 @@ function blankStudyRow(tp) {
     plate_done:       false,
     colony_count:     '',
     notes:            '',
+  };
+}
+
+// Ad-hoc row: no formal time point — user sets the hour manually
+function blankAdHocRow(hour = 0) {
+  return {
+    time_point_id:   null,
+    log_hour:        hour,
+    timepoint_label: '',
+    is_adhoc:        true,
+    skipped:         false,
+    skip_reason:     '',
+    ph:              '',
+    od:              '',
+    sterility:       '',
+    plate_done:      false,
+    colony_count:    '',
+    notes:           '',
   };
 }
 
@@ -76,6 +95,7 @@ export default function GridEntryPage() {
   const [odWavelength, setOdWavelength] = useState(600);
 
   const [rows, setRows]               = useState([]);
+  const [adHocMode, setAdHocMode]     = useState(false); // true when study has no formal time points
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState('');
   const [result, setResult]           = useState(null);
@@ -111,15 +131,30 @@ export default function GridEntryPage() {
   useEffect(() => {
     if (sourceType === 'batch' && selectedBatch) {
       setRows((selectedBatch.batch_flasks || []).map(blankBatchRow));
+      setAdHocMode(false);
       setOdWavelength(600);
     } else if (sourceType === 'growth_study' && selectedStudy) {
       const pending = (selectedStudy.growth_study_time_points || [])
         .filter(tp => tp.status === 'pending')
         .sort((a, b) => a.planned_hour - b.planned_hour);
-      setRows(pending.map(blankStudyRow));
+
+      if (pending.length > 0) {
+        // Formal time point schedule exists
+        setRows(pending.map(blankStudyRow));
+        setAdHocMode(false);
+      } else {
+        // No formal time points — ad-hoc mode: start with one row at current elapsed time
+        const inocTime = selectedStudy.inoculation_time;
+        const elapsed = inocTime
+          ? parseFloat(((Date.now() - new Date(inocTime).getTime()) / 3_600_000).toFixed(1))
+          : 0;
+        setRows([blankAdHocRow(elapsed)]);
+        setAdHocMode(true);
+      }
       setOdWavelength(selectedStudy.od_wavelength || 600);
     } else {
       setRows([]);
+      setAdHocMode(false);
     }
   }, [sourceId, sourceType, selectedBatch, selectedStudy]);
 
@@ -181,8 +216,10 @@ export default function GridEntryPage() {
         .map(r => ({
           ...r,
           od_wavelength: odWavelength,
-          // growth study: include per-row hour
-          log_hour: r.log_hour ?? (sourceType === 'batch' ? Number(logHour) : null),
+          // Always normalise log_hour to a number; batch uses the global field, study uses per-row
+          log_hour: r.log_hour != null && r.log_hour !== ''
+            ? Number(r.log_hour)
+            : (sourceType === 'batch' ? Number(logHour) : null),
         })),
     };
 
@@ -374,18 +411,39 @@ export default function GridEntryPage() {
         </div>
       </div>
 
+      {/* ── Ad-hoc mode banner ── */}
+      {isStudy && adHocMode && rows.length > 0 && (
+        <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3">
+          <Activity className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-violet-700">No time point schedule — ad-hoc entry</p>
+            <p className="text-[11px] text-violet-500 font-medium mt-0.5">
+              This study has no formal time points. Enter measurements at any hour. The hour is editable per row.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const lastHour = rows.length > 0
+                ? (Number(rows[rows.length - 1].log_hour) || 0) + 2
+                : 0;
+              setRows(prev => [...prev, blankAdHocRow(lastHour)]);
+            }}
+            className="shrink-0 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-black rounded-lg transition-colors"
+          >
+            + Add row
+          </button>
+        </div>
+      )}
+
       {/* ── Empty state ── */}
       {sourceId && rows.length === 0 && (
         <div className="text-center py-10 text-slate-400">
           <p className="font-bold text-sm">
-            {isBatch
-              ? 'No flasks found for this batch.'
-              : 'No pending timepoints for this study.'}
+            {isBatch ? 'No flasks found for this batch.' : 'No pending timepoints for this study.'}
           </p>
           <p className="text-xs mt-1">
-            {isBatch
-              ? 'Add flasks to the batch first.'
-              : 'All timepoints may already be completed.'}
+            {isBatch ? 'Add flasks to the batch first.' : 'All timepoints may already be completed.'}
           </p>
         </div>
       )}
@@ -495,17 +553,33 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
   return (
     <>
       <tr className={clsx('transition-colors', dim ? 'bg-slate-50' : 'hover:bg-slate-50/40')}>
-        {/* Label */}
+        {/* Label — editable hour for ad-hoc rows, static for scheduled rows */}
         <td className={clsx(
           'px-3 py-2 sticky left-0 z-10 transition-colors',
           dim ? 'bg-slate-50' : 'bg-white group-hover:bg-slate-50/40'
         )}>
-          <span className={clsx(
-            'text-sm font-black',
-            dim ? 'text-slate-400' : 'text-slate-700'
-          )}>
-            {label}
-          </span>
+          {row.is_adhoc ? (
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] font-black text-violet-500">T+</span>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                disabled={dim}
+                className="w-16 px-1.5 py-1 text-sm font-black text-violet-700 bg-violet-50 border border-violet-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-50"
+                value={row.log_hour}
+                onChange={e => updateRow(idx, 'log_hour', e.target.value)}
+              />
+              <span className="text-[10px] font-bold text-slate-400">h</span>
+            </div>
+          ) : (
+            <span className={clsx(
+              'text-sm font-black',
+              dim ? 'text-slate-400' : 'text-slate-700'
+            )}>
+              {label}
+            </span>
+          )}
         </td>
 
         {/* Skip toggle */}
