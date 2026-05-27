@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
-import { FlaskConical, Plus, Clock, CheckCircle2, Activity, BarChart2, AlertCircle } from 'lucide-react';
+import { FlaskConical, Plus, CheckCircle2, Activity, Search, ArrowUpDown } from 'lucide-react';
 
 const STATUS_META = {
   setup:     { label: 'Setup',     color: 'bg-slate-100 text-slate-600 border-slate-200' },
@@ -22,10 +22,20 @@ function elapsedLabel(inocTime) {
   return `${h.toFixed(1)}h elapsed`;
 }
 
+const SORT_OPTIONS = [
+  { value: 'newest',  label: 'Newest First' },
+  { value: 'oldest',  label: 'Oldest First' },
+  { value: 'name_az', label: 'Name A → Z' },
+  { value: 'name_za', label: 'Name Z → A' },
+  { value: 'status',  label: 'By Status' },
+];
+
 export default function GrowthStudiesPage() {
   const [studies, setStudies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('newest');
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -36,9 +46,36 @@ export default function GrowthStudiesPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return studies;
-    return studies.filter(s => s.status === filter || s.study_type === filter);
-  }, [studies, filter]);
+    let result = studies;
+
+    // Filter by status/type
+    if (filter !== 'all') result = result.filter(s => s.status === filter || s.study_type === filter);
+
+    // Search by name, study_code, isolate, media
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(s =>
+        s.name?.toLowerCase().includes(q) ||
+        s.study_code?.toLowerCase().includes(q) ||
+        s.cell_bank_strains?.name?.toLowerCase().includes(q) ||
+        s.cell_bank_preparations?.prep_code?.toLowerCase().includes(q) ||
+        s.formulations?.name?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    result = [...result];
+    if (sort === 'newest') result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    else if (sort === 'oldest') result.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    else if (sort === 'name_az') result.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === 'name_za') result.sort((a, b) => b.name.localeCompare(a.name));
+    else if (sort === 'status') {
+      const order = { active: 0, setup: 1, completed: 2, analysed: 3 };
+      result.sort((a, b) => (order[a.status] ?? 4) - (order[b.status] ?? 4));
+    }
+
+    return result;
+  }, [studies, filter, search, sort]);
 
   const counts = useMemo(() => ({
     active: studies.filter(s => s.status === 'active').length,
@@ -82,6 +119,32 @@ export default function GrowthStudiesPage() {
         ))}
       </div>
 
+      {/* Search + Sort */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder:text-slate-400"
+            placeholder="Search by name, code, isolate, media…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold">✕</button>
+          )}
+        </div>
+        <div className="relative">
+          <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          <select
+            className="pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none"
+            value={sort}
+            onChange={e => setSort(e.target.value)}
+          >
+            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
         {['all', 'active', 'setup', 'completed', 'growth_curve', 'fermentation'].map(f => (
@@ -95,6 +158,13 @@ export default function GrowthStudiesPage() {
             {f === 'all' ? 'All' : f === 'growth_curve' ? 'Growth Curve' : f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
+        {(search || filter !== 'all') && (
+          <button onClick={() => { setSearch(''); setFilter('all'); }}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
