@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion } from 'framer-motion';
@@ -22,6 +22,9 @@ export default function ShelfLifePage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pendingConclude, setPendingConclude] = useState(null);
+  const [activeStudy, setActiveStudy] = useState(null);
+  const [logForm, setLogForm] = useState({ day_number: 7, test_data: {} });
+  const [logSubmitting, setLogSubmitting] = useState(false);
 
   const { register, handleSubmit, reset, watch, setValue } = useForm({
     resolver: zodResolver(z.object({
@@ -64,6 +67,32 @@ export default function ShelfLifePage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleDeleteStudy = async (id) => {
+    if (!confirm('Are you sure you want to delete this study and all its logs?')) return;
+    try {
+      const res = await fetch(`/api/shelf-life/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete study');
+      toast.success('Study deleted');
+      fetchData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleSaveLog = async () => {
+    if (!activeStudy || logSubmitting) return;
+    setLogSubmitting(true);
+    try {
+      const res = await fetch(`/api/shelf-life/${activeStudy.id}/log`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logForm)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to save log');
+      toast.success('Log saved');
+      setActiveStudy(null);
+      fetchData();
+    } catch (err) { toast.error(err.message); }
+    finally { setLogSubmitting(false); }
+  };
 
   const handleStudySubmit = async (data) => {
     setSubmitting(true);
@@ -228,6 +257,57 @@ export default function ShelfLifePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      
+      {/* Log Modal */}
+      {activeStudy && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Log Data for {activeStudy.batches?.batch_id}</h3>
+                <p className="text-xs text-gray-500">Enter test data for a specific timepoint</p>
+              </div>
+              <button onClick={() => setActiveStudy(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg">✕</button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Timepoint (Day)</label>
+                <div className="flex flex-wrap gap-2">
+                  {[0, 7, 14, 30, 60, 90].map(d => (
+                    <button key={d} onClick={() => setLogForm(p => ({ ...p, day_number: d }))} 
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${logForm.day_number === d ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      D{d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                {(activeStudy.test_parameters || []).map(param => (
+                  <div key={param}>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">{param}</label>
+                    <input type="text" 
+                      value={logForm.test_data[param] || ''}
+                      onChange={e => setLogForm(p => ({ ...p, test_data: { ...p.test_data, [param]: e.target.value } }))}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                      placeholder={`Enter ${param}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 flex gap-3">
+              <button onClick={() => setActiveStudy(null)} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg hover:bg-gray-100 transition">Cancel</button>
+              <button disabled={logSubmitting} onClick={handleSaveLog} className="flex-[2] py-2.5 bg-navy text-white text-xs font-bold uppercase rounded-lg shadow hover:bg-navy-hover transition flex items-center justify-center gap-2">
+                {logSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Save Log Data'}
+              </button>
+            </div>
           </div>
         </div>
       )}

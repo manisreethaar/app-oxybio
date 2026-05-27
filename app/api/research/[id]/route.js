@@ -48,3 +48,23 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
+    if (!emp || !['admin', 'manager'].includes(emp.role)) {
+      return NextResponse.json({ error: 'Permission denied. Admins or Managers only.' }, { status: 403 });
+    }
+
+    const { error } = await supabase.from('taste_panels').delete().eq('id', params.id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
