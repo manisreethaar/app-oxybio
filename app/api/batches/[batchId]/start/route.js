@@ -1,6 +1,8 @@
 import { createClient as createAnonClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
+import { canOperateBatch, validateBatchStart } from '@/lib/batches/stagePolicy';
 
 // Service-role client — bypasses RLS
 function adminClient() {
@@ -21,17 +23,30 @@ export async function POST(request, { params }) {
 
     const db = adminClient();
 
+    const { data: emp } = await db
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+    if (!emp) return NextResponse.json({ error: 'Employee profile not found.' }, { status: 404 });
+
     // Ensure batch exists and is planned
     const { data: batch, error: getErr } = await db
       .from('batches')
-      .select('status, current_stage')
+      .select('status, current_stage, assigned_team, created_by')
       .eq('id', batchId)
       .single();
 
     if (getErr || !batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
-    // Guard: if current_stage is already set, the batch was started (even if status column lagged).
-    if (!['planned', 'scheduled'].includes(batch.status) || batch.current_stage !== null) {
-      return NextResponse.json({ error: 'Batch is already started or completed' }, { status: 400 });
+
+    const access = canOperateBatch({ batch, employee: emp, isMaster: isMasterAdmin(user.email) });
+    if (!access.allowed) {
+      return NextResponse.json({ error: access.error }, { status: 403 });
+    }
+
+    const startCheck = validateBatchStart(batch);
+    if (!startCheck.ok) {
+      return NextResponse.json({ error: startCheck.error }, { status: 400 });
     }
 
     // Transition the batch from planned/scheduled → media_prep
@@ -54,7 +69,7 @@ export async function POST(request, { params }) {
       batch_id:   batchId,
       from_stage: 'planned',
       to_stage:   'media_prep',
-      changed_by: user.id,
+      changed_by: emp.id,
       notes:      'Initial Batch Activation'
     });
 

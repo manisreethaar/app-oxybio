@@ -1,6 +1,12 @@
 import { createClient as createAnonClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
+import {
+  canOperateBatch,
+  getBatchStatusForStage,
+  validateParentStageTransition,
+} from '@/lib/batches/stagePolicy';
 
 // Service-role client — bypasses RLS for batch/flask writes
 function adminClient() {
@@ -42,7 +48,7 @@ async function gateSterilisationToInoculation(supabase, batchId) {
 }
 
 // ── Gate router ───────────────────────────────────────────────
-async function checkGate(supabase, batchId, fromStage, toStage, empRole) {
+async function checkGate(supabase, batchId, fromStage, toStage) {
   const key = `${fromStage}→${toStage}`;
   switch (key) {
     case 'media_prep→sterilisation':    return gateMediaPrepToSterilisation(supabase, batchId);
@@ -62,43 +68,53 @@ export async function POST(request, { params }) {
     const { batchId } = params;
     const { from_stage, to_stage, notes } = await request.json();
 
-    if (!to_stage) return NextResponse.json({ success: false, error: 'Target stage is required.' }, { status: 400 });
-
     const db = adminClient();
 
     // Lookup employee
     const { data: emp } = await db.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ success: false, error: 'Employee profile not found.' }, { status: 404 });
 
+    const { data: batch, error: batchErr } = await db
+      .from('batches')
+      .select('id, status, current_stage, assigned_team, created_by')
+      .eq('id', batchId)
+      .single();
+    if (batchErr || !batch) return NextResponse.json({ success: false, error: 'Batch not found.' }, { status: 404 });
+
+    const access = canOperateBatch({ batch, employee: emp, isMaster: isMasterAdmin(user.email) });
+    if (!access.allowed) {
+      return NextResponse.json({ success: false, error: access.error }, { status: 403 });
+    }
+
+    const transition = validateParentStageTransition({ batch, fromStage: from_stage, toStage: to_stage });
+    if (!transition.ok) {
+      return NextResponse.json({ success: false, error: transition.error }, { status: 422 });
+    }
+
     // ── Quality Gate ─────────────────────────────────────────
-    const gateError = await checkGate(db, batchId, from_stage, to_stage, emp.role);
+    const gateError = await checkGate(db, batchId, transition.fromStage, transition.toStage);
     if (gateError) {
       return NextResponse.json({ success: false, error: gateError, gate_blocked: true }, { status: 422 });
     }
 
     // ── Determine new batch status ───────────────────────────
-    let newStatus;
-    if (to_stage === 'released')          newStatus = 'released';
-    else if (to_stage === 'rejected')     newStatus = 'rejected';
-    else if (to_stage === 'fermentation') newStatus = 'fermenting';
-    else if (to_stage === 'qc_hold')      newStatus = 'qc-hold';
-    else                                  newStatus = 'in-progress';
+    const newStatus = getBatchStatusForStage(transition.toStage);
 
     // ── Update batch (service role — RLS bypassed, guaranteed to write) ─
     const { error: updateErr } = await db
       .from('batches')
-      .update({ current_stage: to_stage, status: newStatus })
+      .update({ current_stage: transition.toStage, status: newStatus })
       .eq('id', batchId);
     if (updateErr) throw updateErr;
 
     // ── Audit trail ──────────────────────────────────────────
     const cleanNotes = notes ? notes.substring(0, 500).replace(/[<>]/g, '') : '';
     await db.from('stage_transitions').insert({
-      batch_id: batchId, from_stage, to_stage, changed_by: emp.id, notes: cleanNotes,
+      batch_id: batchId, from_stage: transition.fromStage, to_stage: transition.toStage, changed_by: emp.id, notes: cleanNotes,
     });
 
     // ── Auto-Generate Flasks on Sterilisation -> Inoculation ──
-    if (to_stage === 'inoculation' && from_stage === 'sterilisation') {
+    if (transition.toStage === 'inoculation' && transition.fromStage === 'sterilisation') {
       try {
         const { data: b } = await db.from('batches').select('num_flasks, batch_id').eq('id', batchId).single();
         const numFlasks = b?.num_flasks || 1;
@@ -126,7 +142,7 @@ export async function POST(request, { params }) {
       }
     }
 
-    return NextResponse.json({ success: true, new_stage: to_stage, new_status: newStatus });
+    return NextResponse.json({ success: true, new_stage: transition.toStage, new_status: newStatus });
 
   } catch (error) {
     console.error('Stage Transition Error:', error);
