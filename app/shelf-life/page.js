@@ -95,6 +95,13 @@ export default function ShelfLifePage() {
     finally { setLogSubmitting(false); }
   };
 
+  const openLogModal = (study) => {
+    const completedDays = new Set((study.shelf_life_logs || []).map(log => log.day_number));
+    const nextDay = TIMEPOINTS.find(day => !completedDays.has(day)) ?? TIMEPOINTS[0];
+    setLogForm({ day_number: nextDay, test_data: {} });
+    setActiveStudy(study);
+  };
+
   const handleStudySubmit = async (data) => {
     setSubmitting(true);
     try {
@@ -212,7 +219,7 @@ export default function ShelfLifePage() {
                     Conclude
                   </button>
                 )}
-                <button disabled title="Document generation module pending" className="flex-[2] py-2.5 bg-gray-50 border border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400 cursor-not-allowed rounded-lg flex items-center justify-center gap-2">
+                <button onClick={() => openLogModal(study)} className="flex-[2] py-2.5 bg-navy text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-navy-hover transition-all flex items-center justify-center gap-2">
                   Open Log &amp; Parameters <ChevronRight className="w-4 h-4 opacity-50" />
                 </button>
               </div>
