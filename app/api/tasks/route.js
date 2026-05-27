@@ -5,6 +5,7 @@ import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { canAssignTo } from '@/lib/permissions';
 import { createTaskSchema, ACTION_PAYLOAD_SCHEMAS, patchSchema } from '@/lib/schemas/tasks';
+import { canPatchTaskAction } from '@/lib/tasks/access';
 
 export { createTaskSchema, ACTION_PAYLOAD_SCHEMAS };
 
@@ -100,9 +101,22 @@ export async function PATCH(request) {
 
     let updateData = {};
 
-    const { data: task } = await supabase.from('tasks')
-      .select('title, assigned_by, assigned_to, progress_logs, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+    const { data: task, error: taskError } = await supabase.from('tasks')
+      .select('title, assigned_by, assigned_to, progress_logs, is_personal_reminder, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
       .eq('id', task_id).single();
+    if (taskError || !task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    const { data: currentUser } = await supabase.from('employees')
+      .select('id, role')
+      .eq('email', user.email.toLowerCase())
+      .maybeSingle();
+
+    const access = canPatchTaskAction({ action, task, currentUser, userEmail: user.email });
+    if (!access.allowed) {
+      return NextResponse.json({ error: access.error }, { status: 403 });
+    }
 
     switch (action) {
       case 'acknowledge_task':
@@ -164,7 +178,7 @@ export async function PATCH(request) {
       case 'submit_review':
         updateData = {
           status: 'done',
-          approval_status: safePayload.is_personal_reminder ? 'approved' : 'pending_review',
+          approval_status: task.is_personal_reminder ? 'approved' : 'pending_review',
           completion_note: safePayload.completion_note,
           completed_at: new Date().toISOString(),
           proof_url: safePayload.proof_url || null,
@@ -172,7 +186,7 @@ export async function PATCH(request) {
           time_started_at: null,
           progress_percentage: 100
         };
-        if (!safePayload.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
+        if (!task.is_personal_reminder && task?.assigned_by && task.assigned_by !== task.assigned_to) {
           await sendServerNotification(
             task.assigned_by,
             'Task Ready for Review',
@@ -182,7 +196,7 @@ export async function PATCH(request) {
         }
         break;
       case 'approve':
-        updateData = { approval_status: 'approved' };
+        updateData = { approval_status: 'approved', status: 'done' };
         if (task?.assigned_to && task.assigned_to !== task.assigned_by) {
           await sendServerNotification(
             task.assigned_to,

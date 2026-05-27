@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { notifyEmployee, notifyAll } from '@/lib/notifyEmployee';
 import {
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2,
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp,
@@ -339,15 +338,13 @@ export default function TasksPage() {
   };
 
   const handleApprove = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
     const success = await executeTaskPatch('approve', taskId);
-    if (success) { if (task?.assigned_to) notifyEmployee(task.assigned_to, '✅ Task Approved', `Your task "${task.title}" has been approved.`, '/tasks'); setSelectedTask(null); fetchTasks(); }
+    if (success) { setSelectedTask(null); fetchTasks(); }
   };
 
   const handleReject = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
     const success = await executeTaskPatch('reject', taskId, { reject_note: rejectNote });
-    if (success) { if (task?.assigned_to) notifyEmployee(task.assigned_to, '🔄 Task Returned', `Your task "${task.title}" needs revision: ${rejectNote}`, '/tasks'); setRejectNote(''); setSelectedTask(null); fetchTasks(); }
+    if (success) { setRejectNote(''); setSelectedTask(null); fetchTasks(); }
   };
 
   const filteredTasks = useMemo(() => {
