@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { canResyncLabNotebookEntry } from '@/lib/labNotebook/access';
 
 // Re-syncs all per-flask operational data from source tables into stage_snapshots.
 // Used to recover missing flasks when data was entered after countersigning.
@@ -17,17 +18,15 @@ export async function POST(request, { params }) {
       .eq('email', user.email)
       .single();
 
-    if (!emp || !['admin', 'research_fellow', 'ceo'].includes(emp.role)) {
-      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
-    }
-
     const { data: entry, error: entryErr } = await supabase
       .from('lab_notebook_entries')
-      .select('id, batch_id, stage_snapshots')
+      .select('id, batch_id, status, stage_snapshots')
       .eq('id', id)
       .single();
 
     if (entryErr || !entry) return NextResponse.json({ success: false, error: 'Entry not found' }, { status: 404 });
+    const access = canResyncLabNotebookEntry(entry, emp, user.email);
+    if (!access.allowed) return NextResponse.json({ success: false, error: access.error }, { status: 403 });
     if (!entry.batch_id) return NextResponse.json({ success: false, error: 'No batch linked to this entry' }, { status: 400 });
 
     const syncedAt = new Date().toISOString();

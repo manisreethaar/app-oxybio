@@ -1,6 +1,21 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { notifyAdmins } from '@/utils/serverNotify';
+import {
+  canCountersignLabNotebookEntry,
+  canDeleteLabNotebookEntry,
+  canEditLabNotebookEntry,
+  validateLabNotebookStatusUpdate,
+} from '@/lib/labNotebook/access';
+
+async function getEmployeeForUser(supabase, user) {
+  const { data } = await supabase
+    .from('employees')
+    .select('id, role')
+    .eq('email', user.email)
+    .single();
+  return data || null;
+}
 
 export async function GET(request, { params }) {
   try {
@@ -51,6 +66,8 @@ export async function PUT(request, { params }) {
 
     const { title, objective, methodology, observations, conclusions, status, batch_id } = await request.json();
 
+    const emp = await getEmployeeForUser(supabase, user);
+
     // Verify ownership and current status
     const { data: currentEntry, error: fetchErr } = await supabase
       .from('lab_notebook_entries')
@@ -62,16 +79,18 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, error: 'Entry not found' }, { status: 404 });
     }
 
-    if (currentEntry.status !== 'Draft') {
-      return NextResponse.json({ success: false, error: 'Only drafts can be modified.' }, { status: 403 });
-    }
+    const editAccess = canEditLabNotebookEntry(currentEntry, emp, user.email);
+    if (!editAccess.allowed) return NextResponse.json({ success: false, error: editAccess.error }, { status: 403 });
+
+    const statusAccess = validateLabNotebookStatusUpdate(currentEntry.status, status);
+    if (!statusAccess.allowed) return NextResponse.json({ success: false, error: statusAccess.error }, { status: 400 });
 
     const updates = { 
       title, objective, methodology, observations, conclusions, updated_at: new Date().toISOString() 
     };
     
     if (batch_id !== undefined) updates.batch_id = batch_id || null;
-    if (status) updates.status = status; // Allows transitioning from Draft to Submitted
+    if (status) updates.status = statusAccess.status; // Allows transitioning from Draft to Submitted
 
     const { data, error } = await supabase
       .from('lab_notebook_entries')
@@ -114,18 +133,8 @@ export async function PATCH(request, { params }) {
     }
 
     // Lookup employee by UUID to check if they can countersign
-    const { data: emp, error: empErr } = await supabase
-      .from('employees')
-      .select('id, role')
-      .eq('email', user.email)
-      .single();
-
-    if (empErr || !emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
-
-    // Only admins or lab managers (not implemented, but admin works) can countersign
-    if (emp.role !== 'admin' && emp.role !== 'research_fellow') {
-      return NextResponse.json({ success: false, error: 'Insufficient permissions to countersign' }, { status: 403 });
-    }
+    const emp = await getEmployeeForUser(supabase, user);
+    if (!emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
 
     const { data: currentEntry, error: fetchErr } = await supabase
       .from('lab_notebook_entries')
@@ -135,13 +144,8 @@ export async function PATCH(request, { params }) {
 
     if (fetchErr || !currentEntry) return NextResponse.json({ success: false, error: 'Entry not found' }, { status: 404 });
 
-    if (currentEntry.status !== 'Submitted') {
-      return NextResponse.json({ success: false, error: 'Only submitted entries can be countersigned.' }, { status: 400 });
-    }
-
-    if (currentEntry.created_by === emp.id) {
-       return NextResponse.json({ success: false, error: 'You cannot countersign your own entries.' }, { status: 403 });
-    }
+    const countersignAccess = canCountersignLabNotebookEntry(currentEntry, emp, user.email);
+    if (!countersignAccess.allowed) return NextResponse.json({ success: false, error: countersignAccess.error }, { status: 403 });
 
     const { data, error } = await supabase
       .from('lab_notebook_entries')
@@ -171,13 +175,8 @@ export async function DELETE(request, { params }) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp, error: empErr } = await supabase
-      .from('employees')
-      .select('id, role')
-      .eq('email', user.email)
-      .single();
-
-    if (empErr || !emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
+    const emp = await getEmployeeForUser(supabase, user);
+    if (!emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
 
     const { data: currentEntry, error: fetchErr } = await supabase
       .from('lab_notebook_entries')
@@ -187,13 +186,8 @@ export async function DELETE(request, { params }) {
 
     if (fetchErr || !currentEntry) return NextResponse.json({ success: false, error: 'Entry not found' }, { status: 404 });
 
-    if (currentEntry.status !== 'Draft') {
-      return NextResponse.json({ success: false, error: 'Only drafts can be deleted.' }, { status: 403 });
-    }
-
-    if (currentEntry.created_by !== emp.id && !['ceo', 'admin'].includes(emp.role)) {
-       return NextResponse.json({ success: false, error: 'You can only delete your own draft entries.' }, { status: 403 });
-    }
+    const deleteAccess = canDeleteLabNotebookEntry(currentEntry, emp, user.email);
+    if (!deleteAccess.allowed) return NextResponse.json({ success: false, error: deleteAccess.error }, { status: 403 });
 
     const { error } = await supabase
       .from('lab_notebook_entries')
