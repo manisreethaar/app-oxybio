@@ -3,9 +3,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 // Facility Geometry
-const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.7409; 
-const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.8253; 
-const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 350; // Use the 350m strict buffer
+const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065; 
+const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016; 
+const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300; // Use the 350m strict buffer
 
 // Haversine formula (Server-side Source of Truth)
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {

@@ -2,8 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
 // Facility Geometry
-const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.7409; 
-const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.8253; 
+const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065; 
+const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016; 
 const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300;
 
 // Haversine formula (Server-side Source of Truth)
