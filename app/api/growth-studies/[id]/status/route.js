@@ -12,7 +12,7 @@ export async function PATCH(req, { params }) {
     if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
     const { id } = await params;
-    const { status, lot_selections } = await req.json();
+    const { status, lot_selections, inoculation_time: customInocTime } = await req.json();
 
     const allowed = ['setup', 'active', 'completed', 'analysed'];
     if (!allowed.includes(status)) {
@@ -20,7 +20,10 @@ export async function PATCH(req, { params }) {
     }
 
     const updates = { status, updated_at: new Date().toISOString() };
-    if (status === 'active') updates.inoculation_time = new Date().toISOString();
+    if (status === 'active') {
+      // Use caller-supplied time if provided (retroactive entry), otherwise default to now
+      updates.inoculation_time = customInocTime || new Date().toISOString();
+    }
     if (status === 'completed') updates.completed_at = new Date().toISOString();
 
     const supabaseAdmin = createAdminClient();

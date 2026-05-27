@@ -16,6 +16,19 @@ const TURBIDITY_OPTIONS = ['clear', 'slightly_turbid', 'turbid', 'very_turbid'];
 const PLATE_MEDIA_OPTIONS = ['TSA', 'LB Agar', 'MRS Agar', 'PDA', 'Nutrient Agar', 'R2A', 'Other'];
 const DILUTION_OPTIONS = ['undiluted', '10⁻¹', '10⁻²', '10⁻³', '10⁻⁴', '10⁻⁵', '10⁻⁶'];
 
+// Convert an ISO string → value suitable for <input type="datetime-local">
+function toDatetimeLocal(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Get a datetime-local string for "right now" (local time)
+function nowDatetimeLocal() {
+  return toDatetimeLocal(new Date().toISOString());
+}
+
 function elapsedHours(inocTime) {
   if (!inocTime) return 0;
   return (Date.now() - new Date(inocTime).getTime()) / 3600000;
@@ -72,6 +85,7 @@ export default function GrowthStudyDetailPage() {
   const [startInfoLoading, setStartInfoLoading] = useState(false);
   const [lotSelections, setLotSelections] = useState({});
   const [startErr, setStartErr] = useState('');
+  const [actualInocTime, setActualInocTime] = useState('');
 
   const load = useCallback(() => {
     fetch(`/api/growth-studies/${id}`)
@@ -105,6 +119,7 @@ export default function GrowthStudyDetailPage() {
     setStartInfo(null);
     setLotSelections({});
     setStartErr('');
+    setActualInocTime(nowDatetimeLocal()); // default to now, user can correct
     setStartInfoLoading(true);
     const res = await fetch(`/api/growth-studies/${id}/start-info`);
     const json = await res.json();
@@ -123,10 +138,14 @@ export default function GrowthStudyDetailPage() {
     setActionLoading(true);
     setStartErr('');
     const selections = Object.values(lotSelections).filter(s => s.stock_id && s.quantity_used > 0);
+    // Convert local datetime-input value to ISO; fall back to now if blank
+    const inocISO = actualInocTime
+      ? new Date(actualInocTime).toISOString()
+      : new Date().toISOString();
     const res = await fetch(`/api/growth-studies/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'active', lot_selections: selections }),
+      body: JSON.stringify({ status: 'active', lot_selections: selections, inoculation_time: inocISO }),
     });
     const json = await res.json();
     setActionLoading(false);
@@ -146,6 +165,7 @@ export default function GrowthStudyDetailPage() {
       od_wavelength: study.od_wavelength ?? 600,
       expected_duration_hours: study.expected_duration_hours ?? '',
       inoculum_percentage: study.inoculum_percentage ?? '',
+      inoculation_time: toDatetimeLocal(study.inoculation_time), // may be empty for setup studies
     });
     setEditErr('');
     setEditModal(true);
@@ -158,6 +178,10 @@ export default function GrowthStudyDetailPage() {
     Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
     ['temperature_c', 'agitation_rpm', 'volume_ml', 'od_wavelength', 'expected_duration_hours', 'inoculum_percentage']
       .forEach(k => { if (payload[k] !== undefined) payload[k] = parseFloat(payload[k]); });
+    // Convert datetime-local string to ISO for inoculation_time
+    if (payload.inoculation_time) {
+      payload.inoculation_time = new Date(payload.inoculation_time).toISOString();
+    }
     const res = await fetch(`/api/growth-studies/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -753,6 +777,23 @@ export default function GrowthStudyDetailPage() {
                     </div>
                   )}
 
+                  {/* Actual inoculation time — defaults to now, editable */}
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">
+                      Actual Inoculation Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      value={actualInocTime}
+                      max={nowDatetimeLocal()}
+                      onChange={e => setActualInocTime(e.target.value)}
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                      Defaults to now. Correct this if you inoculated earlier and are entering data retroactively.
+                    </p>
+                  </div>
+
                   {startErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{startErr}</p>}
 
                   <div className="flex gap-3 pt-2">
@@ -912,6 +953,24 @@ export default function GrowthStudyDetailPage() {
                   <input className={InputCls} type="number" value={editForm.expected_duration_hours} onChange={e => setEditForm(f => ({ ...f, expected_duration_hours: e.target.value }))} />
                 </div>
               </div>
+
+              {/* Inoculation time — only editable when study is active */}
+              {study.inoculation_time && (
+                <div>
+                  <label className={LabelCls}>Inoculation Time</label>
+                  <input
+                    className={InputCls}
+                    type="datetime-local"
+                    value={editForm.inoculation_time}
+                    max={nowDatetimeLocal()}
+                    onChange={e => setEditForm(f => ({ ...f, inoculation_time: e.target.value }))}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                    Auto-set when the study was started. Correct if the actual inoculation happened at a different time — time point schedules will be recalculated automatically.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className={LabelCls}>Notes</label>
                 <textarea className={InputCls} rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
