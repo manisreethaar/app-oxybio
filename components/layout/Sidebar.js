@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FlaskConical, Activity, CheckSquare,
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
-  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna, Settings, LayoutGrid
+  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna, Settings, LayoutGrid, FileCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -100,8 +100,9 @@ export default function Sidebar() {
     {
       title: 'ADMIN',
       items: [
-        { name: 'User Management', href: '/admin/users',    icon: Users,    show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
-        { name: 'System Settings', href: '/admin/settings', icon: Settings, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'User Management', href: '/admin/users',    icon: Users,      show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'Edit Approvals',  href: '/admin/approvals', icon: FileCheck, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'System Settings', href: '/admin/settings', icon: Settings,   show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
       ]
     },
   ];
