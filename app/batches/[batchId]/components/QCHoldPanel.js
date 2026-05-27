@@ -15,6 +15,49 @@ const DEFAULT_TESTS = [
   { test_name: 'Microbial (Yeast + Mould)',          target_spec: 'Defer to Phase 1',          result_unit: 'CFU/ml' },
 ];
 
+const DEFAULT_TEST_ORDER = new Map(DEFAULT_TESTS.map((test, index) => [test.test_name, index]));
+
+function buildStandardTestRows(sampleId, flaskId, existingTests = []) {
+  const existingNames = new Set(existingTests.map(test => test.test_name));
+  return DEFAULT_TESTS
+    .filter(test => !existingNames.has(test.test_name))
+    .map(test => ({
+      sample_id: sampleId,
+      flask_id: flaskId,
+      test_name: test.test_name,
+      target_spec: test.target_spec,
+      result_unit: test.result_unit,
+      pass_fail: test.pass_fail || 'Pending',
+    }));
+}
+
+function dedupeQcTests(rows = []) {
+  const byName = new Map();
+
+  for (const row of rows) {
+    const current = byName.get(row.test_name);
+    if (!current || scoreQcRow(row) > scoreQcRow(current)) {
+      byName.set(row.test_name, row);
+    }
+  }
+
+  return Array.from(byName.values()).sort((a, b) => {
+    const aOrder = DEFAULT_TEST_ORDER.has(a.test_name) ? DEFAULT_TEST_ORDER.get(a.test_name) : Number.MAX_SAFE_INTEGER;
+    const bOrder = DEFAULT_TEST_ORDER.has(b.test_name) ? DEFAULT_TEST_ORDER.get(b.test_name) : Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.test_name.localeCompare(b.test_name);
+  });
+}
+
+function scoreQcRow(row) {
+  let score = 0;
+  if (row.result_value) score += 4;
+  if (row.tested_at) score += 3;
+  if (row.pass_fail && row.pass_fail !== 'Pending') score += 2;
+  if (row.updated_at) score += 1;
+  return score;
+}
+
 export default function QCHoldPanel({ batch, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast    = useToast();
   const [sample,     setSample]     = useState(null);
@@ -79,11 +122,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
       // Auto-heal missing tests if the sample exists but tests were not generated
       if (fetchedTests.length === 0) {
-        const testRows = DEFAULT_TESTS.map(t => ({
-          sample_id: sData.id, flask_id: activeFlask.id,
-          test_name: t.test_name, target_spec: t.target_spec,
-          result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
-        }));
+        const testRows = buildStandardTestRows(sData.id, activeFlask.id, fetchedTests);
         const iRes = await supabase.from('batch_flask_qc_tests').insert(testRows).select();
         if (iRes.error) {
           console.error("Auto-heal QC insert error:", iRes.error);
@@ -93,7 +132,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         }
       }
 
-      setTests(fetchedTests);
+      setTests(dedupeQcTests(fetchedTests));
       setIncubations(incRes.success ? incRes.data || [] : []);
     } else {
       setSample(null); setTests([]); setIncubations([]);
@@ -210,11 +249,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }).select().single();
       if (sErr) throw sErr;
       
-      const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sRow.id, flask_id: activeFlask.id,
-        test_name: t.test_name, target_spec: t.target_spec,
-        result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
-      }));
+      const testRows = buildStandardTestRows(sRow.id, activeFlask.id);
       const { error: testErr } = await supabase.from('batch_flask_qc_tests').insert(testRows);
       if (testErr) {
         console.error('Test creation error:', testErr);
@@ -354,11 +389,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!sample) return;
     setRegenerating(true);
     try {
-      const testRows = DEFAULT_TESTS.map(t => ({
-        sample_id: sample.id, flask_id: activeFlask.id,
-        test_name: t.test_name, target_spec: t.target_spec,
-        result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
-      }));
+      const testRows = buildStandardTestRows(sample.id, activeFlask.id, tests);
+      if (testRows.length === 0) {
+        toast.info('All standard tests already exist.');
+        return;
+      }
       const { error } = await supabase.from('batch_flask_qc_tests').insert(testRows);
       if (error) throw error;
 
@@ -394,14 +429,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       // If tests don't exist yet, generate them first then re-fetch before mapping
       let currentTests = tests;
       if (currentTests.length === 0) {
-        const testRows = DEFAULT_TESTS.map(t => ({
-          sample_id: sample.id, flask_id: activeFlask.id,
-          test_name: t.test_name, target_spec: t.target_spec,
-          result_unit: t.result_unit, pass_fail: t.pass_fail || 'Pending',
-        }));
-        await supabase.from('batch_flask_qc_tests').insert(testRows);
+        const testRows = buildStandardTestRows(sample.id, activeFlask.id, currentTests);
+        if (testRows.length > 0) {
+          await supabase.from('batch_flask_qc_tests').insert(testRows);
+        }
         const { data: fresh } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sample.id).order('test_name');
-        currentTests = fresh || [];
+        currentTests = dedupeQcTests(fresh || []);
       }
 
       const updates = [];
