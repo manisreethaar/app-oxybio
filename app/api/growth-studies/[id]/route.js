@@ -80,6 +80,26 @@ export async function PATCH(req, { params }) {
       .single();
 
     if (error) throw error;
+
+    // If inoculation_time was changed, reschedule all time points
+    if (body.inoculation_time) {
+      const inocTime = new Date(body.inoculation_time);
+      const supabaseAdmin = createAdminClient();
+      const { data: tps } = await supabaseAdmin
+        .from('growth_study_time_points')
+        .select('id, planned_hour')
+        .eq('study_id', id);
+
+      if (tps?.length) {
+        await Promise.all(tps.map(tp =>
+          supabaseAdmin
+            .from('growth_study_time_points')
+            .update({ scheduled_at: new Date(inocTime.getTime() + tp.planned_hour * 3_600_000).toISOString() })
+            .eq('id', tp.id)
+        ));
+      }
+    }
+
     return NextResponse.json({ data });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
