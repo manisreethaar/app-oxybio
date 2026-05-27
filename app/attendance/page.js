@@ -423,26 +423,63 @@ export default function AttendancePage() {
       return;
     }
 
-    // Non-executives: get GPS and send to API for geofence verification
+    // Non-executives: geofenced checkout — must be within MAX_RADIUS_METERS of facility
     if (!navigator.geolocation) {
       setCheckInError('Geolocation is not supported by your browser.');
       setActionLoading(false);
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        await doCheckout(pos.coords.latitude, pos.coords.longitude);
-      },
-      (err) => {
-        let msg = 'Unable to retrieve location for checkout. Please enable GPS.';
-        if (err.code === err.PERMISSION_DENIED) msg = 'Location access denied. Please enable GPS for OxyOS in browser settings.';
-        else if (err.code === err.TIMEOUT) msg = 'GPS timed out during checkout. Please try again.';
-        setCheckInError(msg);
-        setActionLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
+    // GPS accuracy-aware retry — same guard as check-in.
+    // maximumAge: 0 forces a fresh reading — prevents using a cached office location
+    // after the user has already left the building.
+    const ACCURACY_THRESHOLD = 300;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 3;
+
+    const tryGetPosition = () => {
+      attempts++;
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+
+          if (accuracy > ACCURACY_THRESHOLD && attempts < MAX_ATTEMPTS) {
+            setCheckInError(`📡 GPS signal weak (±${Math.round(accuracy)}m — cell tower only). Retrying… (${attempts}/${MAX_ATTEMPTS})`);
+            setTimeout(tryGetPosition, 8000);
+            return;
+          }
+
+          // Client-side pre-flight distance check — surfaces the error instantly
+          // without waiting for the round-trip API call.
+          const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
+          if (distance > MAX_RADIUS_METERS) {
+            if (accuracy > ACCURACY_THRESHOLD) {
+              setCheckInError(
+                `📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`
+              );
+            } else {
+              setCheckInError(
+                `🚫 You are ${Math.round(distance)}m from the facility. You must be within ${MAX_RADIUS_METERS}m to check out.`
+              );
+            }
+            setActionLoading(false);
+            return;
+          }
+
+          await doCheckout(latitude, longitude);
+        },
+        (err) => {
+          let msg = 'Unable to retrieve location for checkout. Please enable GPS.';
+          if (err.code === err.PERMISSION_DENIED) msg = '🔒 Location access denied. Please enable GPS for OxyOS in browser settings.';
+          else if (err.code === err.TIMEOUT) msg = '⏱ GPS timed out. Step near a window and try again.';
+          setCheckInError(msg);
+          setActionLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+
+    tryGetPosition();
   };
 
   const formatTime = (ts) => {
@@ -599,12 +636,18 @@ export default function AttendancePage() {
                     Checked in at <br/><strong className="text-slate-800 text-lg">{formatTime(todayLog.check_in_time)}</strong>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={handleCheckOut} disabled={actionLoading}
                   className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-slate-900/10 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-70 active:scale-95"
                 >
                   <ArrowLeftCircle className="w-5 h-5 mr-2" /> Check Out
                 </button>
+                <a
+                  href="/mispunch"
+                  className="mt-3 text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors"
+                >
+                  Not at the office? Report a missed checkout →
+                </a>
               </div>
             ) : (
               <div className="w-full max-w-[280px] pt-4">

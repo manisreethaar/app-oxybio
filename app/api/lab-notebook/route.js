@@ -18,6 +18,7 @@ export async function GET() {
         status,
         batch_stage,
         created_at,
+        created_by,
         batches (
           id,
           batch_id,
@@ -33,7 +34,9 @@ export async function GET() {
           flask_label
         ),
         author:employees!lab_notebook_entries_created_by_fkey (
+          id,
           full_name,
+          initials,
           role
         ),
         countersigner:employees!lab_notebook_entries_countersigned_by_fkey (

@@ -3,6 +3,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import { FlaskConical, Plus, CheckCircle2, Activity, Search, ArrowUpDown } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const STATUS_META = {
   setup:     { label: 'Setup',     color: 'bg-slate-100 text-slate-600 border-slate-200' },
@@ -31,19 +34,32 @@ const SORT_OPTIONS = [
 ];
 
 export default function GrowthStudiesPage() {
+  const { employeeProfile, role } = useAuth();
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
   const [studies, setStudies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
+  const [pendingIds, setPendingIds] = useState(new Set());
   const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
+  const fetchStudies = () => {
     fetch('/api/growth-studies')
       .then(r => r.json())
       .then(d => { setStudies(d.data || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  };
+
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
+  useEffect(() => { fetchStudies(); fetchPendingIds(); }, []);
 
   const filtered = useMemo(() => {
     let result = studies;
@@ -187,45 +203,71 @@ export default function GrowthStudiesPage() {
             const tm = TYPE_META[study.study_type] || TYPE_META.growth_curve;
 
             return (
-              <Link key={study.id} href={`/growth-studies/${study.id}`}
-                className="glass-card rounded-2xl p-6 hover:shadow-lg transition-all group block"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex gap-2 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${sm.color}`}>{sm.label}</span>
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${tm.color}`}>{tm.label}</span>
+              <div key={study.id} className="glass-card rounded-2xl overflow-hidden hover:shadow-lg transition-all group">
+                <Link href={`/growth-studies/${study.id}`} className="p-6 block">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex gap-2 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${sm.color}`}>{sm.label}</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${tm.color}`}>{tm.label}</span>
+                    </div>
+                    {study.status === 'active' && (
+                      <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
+                        {elapsedLabel(study.inoculation_time)}
+                      </span>
+                    )}
                   </div>
-                  {study.status === 'active' && (
-                    <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
-                      {elapsedLabel(study.inoculation_time)}
-                    </span>
+
+                  <h3 className="font-black text-slate-800 text-base group-hover:text-teal-700 transition-colors mb-1">{study.name}</h3>
+                  <p className="text-[10px] font-mono text-slate-400 mb-0.5">{study.study_code || '—'}</p>
+                  <p className="text-xs text-slate-500 font-medium mb-4">{isolateName} · {mediaName}</p>
+
+                  {study.temperature_c && (
+                    <div className="flex gap-3 text-[11px] font-bold text-slate-500 mb-4">
+                      <span>{study.temperature_c}°C</span>
+                      {study.agitation_rpm && <span>{study.agitation_rpm} rpm</span>}
+                      {study.vessel_type && <span>{study.vessel_type.replace(/_/g, ' ')}</span>}
+                    </div>
                   )}
-                </div>
 
-                <h3 className="font-black text-slate-800 text-base group-hover:text-teal-700 transition-colors mb-1">{study.name}</h3>
-                <p className="text-[10px] font-mono text-slate-400 mb-0.5">{study.study_code || '—'}</p>
-                <p className="text-xs text-slate-500 font-medium mb-4">{isolateName} · {mediaName}</p>
+                  {total > 0 && (
+                    <div>
+                      <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                        <span>Time points</span>
+                        <span>{done}/{total}</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </Link>
 
-                {study.temperature_c && (
-                  <div className="flex gap-3 text-[11px] font-bold text-slate-500 mb-4">
-                    <span>{study.temperature_c}°C</span>
-                    {study.agitation_rpm && <span>{study.agitation_rpm} rpm</span>}
-                    {study.vessel_type && <span>{study.vessel_type.replace(/_/g, ' ')}</span>}
+                {/* Creator + edit actions below the link area */}
+                {(study.creator || (!isAdmin && study.created_by === employeeProfile?.id)) && (
+                  <div className="px-6 pb-4 flex items-center justify-between border-t border-white/40 pt-3">
+                    <div className="flex items-center gap-1.5">
+                      {study.creator && <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm"/>}
+                      {study.creator && <span className="text-[10px] text-slate-400 font-medium">{study.creator.full_name}</span>}
+                    </div>
+                    {!isAdmin && study.created_by === employeeProfile?.id && (
+                      <EditRequestButton
+                        tableName="growth_studies"
+                        recordId={study.id}
+                        moduleLabel="Growth Studies"
+                        fields={[
+                          { key: 'name', label: 'Study Name' },
+                          { key: 'vessel_type', label: 'Vessel Type' },
+                          { key: 'temperature_c', label: 'Temperature (°C)', type: 'number' },
+                        ]}
+                        currentData={study}
+                        hasPending={pendingIds.has(study.id)}
+                        allowDelete={study.status === 'setup'}
+                        onSuccess={() => { fetchStudies(); fetchPendingIds(); }}
+                      />
+                    )}
                   </div>
                 )}
-
-                {total > 0 && (
-                  <div>
-                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
-                      <span>Time points</span>
-                      <span>{done}/{total}</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
-                    </div>
-                  </div>
-                )}
-              </Link>
+              </div>
             );
           })}
         </div>

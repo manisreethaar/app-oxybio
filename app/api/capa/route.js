@@ -55,7 +55,7 @@ export async function POST(request) {
       if (!title) return NextResponse.json({ error: 'Title required' }, { status: 400 });
       
       const { data, error } = await supabase.from('deviations').insert({
-        title, severity, source, description, reported_by: emp.id, status: 'Open'
+        title, severity, source, description, reported_by: emp.id, created_by: emp.id, status: 'Open'
       }).select().single();
       
       if (error) throw error;
