@@ -7,8 +7,8 @@ import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
 const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 
-const TARGET_LAT = 12.7409;
-const TARGET_LNG = 77.8253;
+const TARGET_LAT = 12.716065;
+const TARGET_LNG = 77.870016;
 const MAX_RADIUS_METERS = 300; // 300m accounts for indoor GPS drift (mobile GPS drifts 50-150m indoors)
 
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
