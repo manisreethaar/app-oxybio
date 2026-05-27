@@ -14,18 +14,21 @@ const editRequestSchema = z.object({
 
 // Tables that support the edit-request flow and their ownership column
 const ALLOWED_TABLES = {
-  tasks:                'created_by',
-  formulations:         'created_by',
-  lab_notebook_entries: 'created_by',
-  inventory_items:      'created_by',
-  samples:              'created_by',
-  ph_readings:          'created_by',
-  shelf_life_logs:      'created_by',
-  shelf_life_studies:   'created_by',
-  deviations:           'created_by',
-  capa_actions:         'created_by',
-  growth_studies:       'created_by',
-  batches:              'created_by',
+  tasks:                       'created_by',
+  formulations:                'created_by',
+  lab_notebook_entries:        'created_by',
+  inventory_items:             'created_by',
+  samples:                     'collected_by',   // uses collected_by, not created_by
+  ph_readings:                 'created_by',
+  shelf_life_logs:             'created_by',
+  shelf_life_studies:          'created_by',
+  deviations:                  'created_by',
+  capa_actions:                'created_by',
+  growth_studies:              'created_by',
+  batches:                     'created_by',
+  batch_fermentation_readings: 'logged_by',
+  growth_measurements:         'recorded_by',
+  test_results:                'entered_by',
 };
 
 export async function POST(request) {
