@@ -13,21 +13,25 @@ export async function PATCH(request, { params }) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+
+    const { id } = params;
+    
+    const { data: current } = await supabase.from('taste_panels').select('scores, scores_history').eq('id', id).single();
+    const hasScores = current && Array.isArray(current.scores) && current.scores.length > 0;
+    if (hasScores && emp.role !== 'admin') {
+      return NextResponse.json({ error: 'Only admins can modify existing sensory scores' }, { status: 403 });
+    }
+
     const parsed = patchSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    // Fetch current scores to preserve history before overwriting
-    const { data: current } = await supabase
-      .from('taste_panels')
-      .select('scores, scores_history')
-      .eq('id', params.id)
-      .single();
-
     const existingHistory = Array.isArray(current?.scores_history) ? current.scores_history : [];
     const newHistory = current?.scores?.length
-      ? [...existingHistory, { scored_at: new Date().toISOString(), scores: current.scores }]
+      ? [...existingHistory, { scored_at: new Date().toISOString(), scores: current.scores, avg_score: current.avg_score }]
       : existingHistory;
 
     const { data, error } = await supabase

@@ -29,12 +29,13 @@ export default function ShelfLifePage() {
   const { register, handleSubmit, reset, watch, setValue } = useForm({
     resolver: zodResolver(z.object({
       batch_id: z.string().uuid('Invalid batch ID').min(1, 'Select a batch'),
+      flask_id: z.string().optional(),
       storage_condition: z.string().min(1),
       test_parameters: z.array(z.string()).min(1),
       start_date: z.string().min(1)
     })),
     defaultValues: {
-      batch_id: '', storage_condition: 'Refrigerated (4°C)',
+      batch_id: '', flask_id: '', storage_condition: 'Refrigerated (4°C)',
       test_parameters: ['pH', 'CFU', 'Sensory', 'Color'],
       start_date: new Date().toISOString().split('T')[0]
     }
@@ -173,7 +174,7 @@ export default function ShelfLifePage() {
                     ) : (
                       <h3 className="text-lg font-bold text-gray-900">{study.batches?.batch_id}</h3>
                     )}
-                    <p className="text-xs font-semibold text-gray-500 mt-1">{study.batches?.variant} | {study.storage_condition}</p>
+                    <p className="text-xs font-semibold text-gray-500 mt-1">{study.batches?.variant} | {study.storage_condition}{study.flask_id ? ' | Flask: ' + study.flask_id : ''}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Status</p>
@@ -206,7 +207,7 @@ export default function ShelfLifePage() {
 
 
               <div className="flex gap-2">
-                {study.status !== 'Completed' && (
+                {study.status !== 'Completed' && employeeProfile.role === 'admin' && (
                   <button onClick={() => concludeStudy(study.id)} className="flex-1 py-2.5 bg-white border border-red-100 text-[10px] font-bold uppercase tracking-wider text-red-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all focus:outline-none">
                     Conclude
                   </button>
@@ -239,6 +240,10 @@ export default function ShelfLifePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Flask ID (Optional)</label>
+                <input type="text" {...register('flask_id')} placeholder="e.g. F1, F2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Storage Condition</label>
