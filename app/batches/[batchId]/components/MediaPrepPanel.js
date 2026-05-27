@@ -97,50 +97,29 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
 
-  const deductLot = async (lotId, weightG, label) => {
-    if (!lotId || !weightG) return;
-    const qty = parseFloat(weightG);
-    const { data: stockRow } = await supabase
-      .from('inventory_stock')
-      .select('current_quantity, inventory_items(name, unit, min_stock_level)')
-      .eq('id', lotId).single();
-    if (!stockRow) { toast.warn(`${label}: lot not found in inventory.`); return; }
-    const shortfall = qty - parseFloat(stockRow.current_quantity);
-    const newQty = Math.max(0, parseFloat(stockRow.current_quantity) - qty);
-    if (shortfall > 0) toast.warn(`${label}: used ${qty} but only ${parseFloat(stockRow.current_quantity).toFixed(1)} available — inventory set to 0.`);
-    await supabase.from('inventory_stock')
-      .update({ current_quantity: newQty, status: newQty <= 0 ? 'Out of Stock' : undefined })
-      .eq('id', lotId);
+  // Server-side deduction — called once when Media Prep is marked complete.
+  // Replaces the old client-side deductLot() which used wrong column names
+  // (movement_type / batch_reference don't exist in inventory_movements).
+  const deductAllLots = async () => {
+    const entries = formulationIngredients
+      .map(ing => {
+        const u = bomUsage[ing.item_id];
+        if (u?.lotId && u?.usedQty && parseFloat(u.usedQty) > 0) {
+          return { stock_id: u.lotId, quantity_used: parseFloat(u.usedQty), item_name: ing.name };
+        }
+        return null;
+      })
+      .filter(Boolean);
 
-    // Auto-create procurement task if stock drops below minimum
-    const minLevel = parseFloat(stockRow.inventory_items?.min_stock_level || 0);
-    if (minLevel > 0 && newQty < minLevel) {
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      supabase.from('tasks').insert({
-        title: `Restock: ${stockRow.inventory_items?.name || label} — below minimum`,
-        description: `Batch ${batch.batch_id} media prep used ${qty}${stockRow.inventory_items?.unit || ''}. Remaining: ${newQty.toFixed(1)} (min: ${minLevel}). Please reorder.`,
-        priority: 'high', status: 'todo',
-        batch_id: batch.id,
-        assigned_by: employeeProfile?.id,
-        due_date: tomorrow.toISOString().slice(0, 10),
-      }).then(() => {}).catch(() => {});
-      toast.warn(`${label} below minimum stock — procurement task created.`);
-    }
-    await supabase.from('inventory_movements').insert({
-      stock_id:        lotId,
-      movement_type:   'Batch Deduction',
-      quantity:        qty,
-      batch_reference: batch.batch_id,
-      issued_by:       employeeProfile?.id,
-      notes:           `Media Prep BOM trace: ${batch.batch_id} — ${label}`,
-    }).then(()=>{}).catch(()=>{});
-    // Record usage in inventory_usage for cross-module traceability
-    await supabase.from('inventory_usage').insert({
-      stock_id:      lotId,
-      batch_id:      batch.id,
-      quantity_used: qty,
-      logged_by:     employeeProfile?.id,
-    }).then(()=>{}).catch(()=>{});
+    if (!entries.length) return;
+
+    const res = await fetch(`/api/batches/${batch.id}/media-deduct`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ entries, employee_id: employeeProfile?.id }),
+    });
+    const json = await res.json();
+    (json.warnings || []).forEach(w => toast.warn(w));
   };
 
   const handleSave = async (advance = false) => {
@@ -180,14 +159,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       if (error) throw error;
 
       if (advance) {
-        const deductions = formulationIngredients.map(ing => {
-           const u = bomUsage[ing.item_id];
-           if (u && u.lotId && u.usedQty) {
-              return deductLot(u.lotId, u.usedQty, ing.name);
-           }
-           return Promise.resolve();
-        });
-        await Promise.all(deductions);
+        await deductAllLots();
       }
 
       toast.success(advance ? 'Media Prep complete. BOM Inventory deducted.' : 'Draft saved.');

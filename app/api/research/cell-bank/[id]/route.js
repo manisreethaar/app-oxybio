@@ -24,8 +24,8 @@ export async function GET(request, { params }) {
       .from('cell_bank_preparations')
       .select(`
         *,
-        linked_formulation:formulations!cell_bank_preparations_formulation_id_fkey(id, code, name, version, category, status),
-        cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, linked_formulation:formulations!cell_bank_strains_formulation_id_fkey(id, code, name, version, category, status)),
+        linked_formulation:formulations(id, code, name, version, category, status),
+        cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type, step_data, formulation_id),
         employees(full_name),
         cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status, used_in_batch_id, used_at, notes)
