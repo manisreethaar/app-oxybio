@@ -34,12 +34,6 @@ export default function AdminDashboard({ employeeId }) {
   const [qcHoldDismissed, setQcHoldDismissed] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    fetchDashboardData(true);
-    fetchThresholds();
-    fetchOperationalAlerts();
-  }, [fetchOperationalAlerts]);
-
   const fetchThresholds = async () => {
     try {
       const res = await fetch('/api/admin/thresholds');
@@ -124,8 +118,14 @@ export default function AdminDashboard({ employeeId }) {
     } catch (err) { console.error('Operational alerts fetch error:', err); }
   }, [supabase]);
 
-  const handleMispunchReview = async (action) => {
-    if (!reviewingMispunch) return;
+  useEffect(() => {
+    fetchDashboardData(true);
+    fetchThresholds();
+    fetchOperationalAlerts();
+  }, [fetchOperationalAlerts]);
+
+  const handleMispunchReview = async (action, selectedMispunch = reviewingMispunch) => {
+    if (!selectedMispunch) return;
     if (action === 'reject' && (!rejectRemark || rejectRemark.trim().length < 5)) {
         toast.warn("Please provide a valid rejection remark (min 5 characters).");
         return;
@@ -136,7 +136,7 @@ export default function AdminDashboard({ employeeId }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                logId: reviewingMispunch.id,
+                logId: selectedMispunch.id,
                 action,
                 remark: action === 'reject' ? rejectRemark : undefined
             })
@@ -573,9 +573,10 @@ export default function AdminDashboard({ employeeId }) {
               </button>
               <button 
                 onClick={async () => {
-                  setReviewingMispunch(pendingQuickApprove);
+                  const selectedMispunch = pendingQuickApprove;
+                  setReviewingMispunch(selectedMispunch);
                   setPendingQuickApprove(null);
-                  await handleMispunchReview('approve');
+                  await handleMispunchReview('approve', selectedMispunch);
                 }}
                 disabled={actionLoading}
                 className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
