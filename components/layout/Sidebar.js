@@ -44,6 +44,7 @@ export default function Sidebar() {
       items: [
         { name: 'Formulation Library', href: '/formulations',       icon: Beaker,     show: effectiveCanDo('batches', 'view') },
         { name: 'Cell Bank',           href: '/research/cell-bank', icon: Dna,        show: effectiveCanDo('batches', 'view') },
+        { name: 'Growth Studies',      href: '/growth-studies',     icon: Activity,   show: effectiveCanDo('batches', 'view') },
         { name: 'Bioprocess Research', href: '/bioprocess',         icon: Microscope, show: effectiveCanDo('batches', 'view') },
       ]
     },
