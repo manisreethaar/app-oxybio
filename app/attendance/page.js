@@ -636,12 +636,18 @@ export default function AttendancePage() {
                     Checked in at <br/><strong className="text-slate-800 text-lg">{formatTime(todayLog.check_in_time)}</strong>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={handleCheckOut} disabled={actionLoading}
                   className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-slate-900/10 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-70 active:scale-95"
                 >
                   <ArrowLeftCircle className="w-5 h-5 mr-2" /> Check Out
                 </button>
+                <a
+                  href="/mispunch"
+                  className="mt-3 text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors"
+                >
+                  Not at the office? Report a missed checkout →
+                </a>
               </div>
             ) : (
               <div className="w-full max-w-[280px] pt-4">
