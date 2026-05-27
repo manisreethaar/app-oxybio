@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -140,7 +140,6 @@ export default function GrowthStudyDetailPage() {
   const nextTp = tpPending.find(tp => tp.planned_hour >= elapsed) || tpPending[0];
   const overdueTps = isActive ? tpPending.filter(tp => tp.planned_hour < elapsed - 0.25) : [];
 
-  const chartData = useMemo(() => measurements, [measurements]);
 
   const availableLines = [
     { key: 'od', label: `OD${study.od_wavelength || 600}` },
@@ -332,7 +331,7 @@ export default function GrowthStudyDetailPage() {
               </div>
             </div>
             <div style={{ height: 280 }}>
-              <GrowthCurveChart data={chartData} wavelength={study.od_wavelength || 600} showLines={showLines} logScale={logScale} />
+              <GrowthCurveChart data={measurements} wavelength={study.od_wavelength || 600} showLines={showLines} logScale={logScale} />
             </div>
           </div>
 
