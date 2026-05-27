@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@media print {
+  nav, aside, header, [data-print-hide] { display: none !important; }
+  body { background: white !important; font-size: 11px; }
+  .glass-card, .glass-panel { box-shadow: none !important; border: 1px solid #e2e8f0 !important; background: white !important; }
+  @page { margin: 1.5cm; }
+}
+
 @layer base {
   html, body {
     @apply text-gray-900 antialiased bg-gray-50 selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden;
