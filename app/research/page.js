@@ -45,7 +45,7 @@ export default function ConsumerResearchPage() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(formSchema),
-    defaultValues: { batch_id: '', session_title: '', panelist_count: 5, sample_ids: '' },
+    defaultValues: { batch_id: '', session_title: '', flask_id: '', panelist_count: 5, sample_ids: '' },
   });
 
   const supabase = useMemo(() => createClient(), []);
