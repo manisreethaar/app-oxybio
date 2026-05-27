@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical, SlidersHorizontal } from 'lucide-react';
+import { Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical, SlidersHorizontal, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import dynamic from 'next/dynamic';
 const ResearchTrendChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchTrendChart })), { ssr: false });
@@ -30,8 +30,18 @@ export default function ConsumerResearchPage() {
   const [showNew,   setShowNew]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeSession, setActiveSession] = useState(null);
-  const [scoreForm, setScoreForm] = useState({});
+  const [scoreForms, setScoreForms] = useState([]);
+  const [activePanelist, setActivePanelist] = useState(0);
   const [scoreSubmitting, setScoreSubmitting] = useState(false);
+  const handleDeleteSession = async (id) => {
+    if (!confirm('Are you sure you want to delete this session?')) return;
+    try {
+      const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete');
+      toast.success('Session deleted');
+      fetchData();
+    } catch (err) { toast.error(err.message); }
+  };
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(formSchema),
@@ -91,29 +101,44 @@ export default function ConsumerResearchPage() {
 
   const openScoreModal = (session) => {
     const criteria = getCriteria(session);
-    const existingScores = Array.isArray(session.scores) && session.scores.length > 0 ? session.scores[0] : {};
-    const nextScores = criteria.reduce((acc, criterion) => {
-      acc[criterion] = Number(existingScores?.[criterion] ?? 0);
-      return acc;
-    }, {});
+    const count = session.panelist_count || 1;
+    const nextForms = Array.from({ length: count }).map((_, idx) => {
+      const existingScores = Array.isArray(session.scores) && session.scores.length > idx ? session.scores[idx] : {};
+      return criteria.reduce((acc, criterion) => {
+        acc[criterion] = Number(existingScores?.[criterion] ?? 0);
+        return acc;
+      }, {});
+    });
     setActiveSession(session);
-    setScoreForm(nextScores);
+    setScoreForms(nextForms);
+    setActivePanelist(0);
   };
 
   const closeScoreModal = () => {
     setActiveSession(null);
-    setScoreForm({});
+    setScoreForms([]);
+    setActivePanelist(0);
   };
 
   const scoreAverage = useMemo(() => {
-    const values = Object.values(scoreForm).map(Number).filter((value) => Number.isFinite(value));
-    if (!values.length) return 0;
-    return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1));
-  }, [scoreForm]);
+    if (!scoreForms || scoreForms.length === 0) return 0;
+    let totalSum = 0;
+    let totalCount = 0;
+    scoreForms.forEach(form => {
+      const values = Object.values(form).map(Number).filter((value) => Number.isFinite(value));
+      values.forEach(v => { totalSum += v; totalCount += 1; });
+    });
+    if (totalCount === 0) return 0;
+    return Number((totalSum / totalCount).toFixed(1));
+  }, [scoreForms]);
 
   const updateScore = (criterion, value) => {
     const numeric = Math.max(0, Math.min(10, Number(value)));
-    setScoreForm(prev => ({ ...prev, [criterion]: Number.isFinite(numeric) ? numeric : 0 }));
+    setScoreForms(prev => {
+      const newForms = [...prev];
+      newForms[activePanelist] = { ...newForms[activePanelist], [criterion]: Number.isFinite(numeric) ? numeric : 0 };
+      return newForms;
+    });
   };
 
   const handleSaveScores = async () => {
@@ -121,16 +146,18 @@ export default function ConsumerResearchPage() {
     setScoreSubmitting(true);
     try {
       const criteria = getCriteria(activeSession);
-      const normalizedScores = criteria.reduce((acc, criterion) => {
-        acc[criterion] = Number(scoreForm[criterion] || 0);
-        return acc;
-      }, {});
-      const avg_score = Number((Object.values(normalizedScores).reduce((sum, value) => sum + value, 0) / criteria.length).toFixed(1));
+      const normalizedScoresList = scoreForms.map(form => {
+        return criteria.reduce((acc, criterion) => {
+          acc[criterion] = Number(form[criterion] || 0);
+          return acc;
+        }, {});
+      });
+      const avg_score = scoreAverage;
 
       const res = await fetch(`/api/research/${activeSession.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scores: [normalizedScores], avg_score }),
+        body: JSON.stringify({ scores: normalizedScoresList, avg_score }),
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'Failed to save scores.');
@@ -247,7 +274,11 @@ export default function ConsumerResearchPage() {
               </p>
             </div>
 
-            <h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
+            <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
+            {(employeeProfile.role === 'admin' || employeeProfile.role === 'manager') && (
+              <button onClick={() => handleDeleteSession(s.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
+            )}
+            </div>
             <p className="text-xs font-bold text-navy font-mono mb-5">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
 
             {/* Sensory radar chart */}
@@ -302,6 +333,15 @@ export default function ConsumerResearchPage() {
                   Batch {activeSession.batches.batch_id}{activeSession.batches.variant ? ` - ${activeSession.batches.variant}` : ''}
                 </p>
               )}
+              
+              <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                {Array.from({ length: activeSession.panelist_count || 1 }).map((_, idx) => (
+                  <button key={idx} onClick={() => setActivePanelist(idx)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${activePanelist === idx ? 'bg-navy text-white border-navy' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}>
+                    Panelist {idx + 1}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="p-6 space-y-5">
@@ -314,7 +354,7 @@ export default function ConsumerResearchPage() {
                       min="0"
                       max="10"
                       step="0.1"
-                      value={scoreForm[criterion] ?? 0}
+                      value={scoreForms[activePanelist]?.[criterion] ?? 0}
                       onChange={(event) => updateScore(criterion, event.target.value)}
                       className="w-20 px-2 py-1.5 bg-white border border-gray-200 rounded-lg font-bold text-sm text-center outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                     />
@@ -324,7 +364,7 @@ export default function ConsumerResearchPage() {
                     min="0"
                     max="10"
                     step="0.1"
-                    value={scoreForm[criterion] ?? 0}
+                    value={scoreForms[activePanelist]?.[criterion] ?? 0}
                     onChange={(event) => updateScore(criterion, event.target.value)}
                     className="w-full accent-[#1F3A5F]"
                   />
