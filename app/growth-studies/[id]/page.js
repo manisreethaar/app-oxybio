@@ -278,7 +278,7 @@ export default function GrowthStudyDetailPage() {
   };
 
   const openPlateModal = (tp) => {
-    setPForm({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '' });
+    setPForm({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1 });
     setModal({ type: 'plate', tp });
     setModalErr('');
   };
@@ -948,6 +948,10 @@ export default function GrowthStudyDetailPage() {
                 <div>
                   <label className={LabelCls}>Incubation Time (h)</label>
                   <input className={InputCls} type="number" value={pForm.incubation_hours || ''} onChange={e => setPForm(f => ({ ...f, incubation_hours: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={LabelCls}>No. of Plates</label>
+                  <input className={InputCls} type="number" min="1" max="20" value={pForm.plate_count || 1} onChange={e => setPForm(f => ({ ...f, plate_count: e.target.value }))} />
                 </div>
                 {pForm.observation_type !== 'sterility' ? (
                   <>
