@@ -231,6 +231,54 @@ export async function PATCH(request, { params }) {
       ).catch(() => {});
     }
 
+    // Auto-create incubation record(s) when plating step is saved with plates_poured
+    if (step_key === 'plating' && parseInt(step_data_patch?.plates_poured, 10) > 0) {
+      try {
+        const { count: existing } = await supabase
+          .from('sample_incubation_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('cell_bank_preparation_id', params.id);
+
+        if ((existing || 0) === 0) {
+          const plateCount = Math.min(20, Math.max(1, parseInt(step_data_patch.plates_poured, 10)));
+          const sourceLabel = data.prep_code || params.id;
+          const strainName = data.cell_bank_strains?.name || null;
+          const baseLabel = [sourceLabel, strainName].filter(Boolean).join(' — ');
+          const loggedAt = new Date().toISOString();
+          const observation = [
+            step_data_patch.agar_media  ? `Media: ${step_data_patch.agar_media}` : null,
+            step_data_patch.dilution    ? `Dilution: ${step_data_patch.dilution}` : null,
+            step_data_patch.incubation_hours ? `Expected: ${step_data_patch.incubation_hours}h` : null,
+          ].filter(Boolean).join(' | ') || null;
+
+          const incRows = Array.from({ length: plateCount }, (_, i) => ({
+            sample_name:             plateCount > 1 ? `${baseLabel} — Plate ${i + 1}/${plateCount}` : `${baseLabel} — Plate`,
+            sample_category:         'Cell Bank',
+            sample_type:             'Agar Plate',
+            cell_bank_preparation_id: params.id,
+            source_type:             'cell_bank',
+            source_id:               params.id,
+            source_label:            sourceLabel,
+            plate_label:             plateCount > 1 ? `Plate ${i + 1}/${plateCount}` : 'Plate 1',
+            plate_index:             i + 1,
+            plate_total:             plateCount,
+            incubation_date:         loggedAt.slice(0, 10),
+            start_time:              loggedAt,
+            incubation_temp_c:       step_data_patch.incubation_temp ? parseFloat(step_data_patch.incubation_temp) : null,
+            sterility_status:        'Pending',
+            source_stage:            'cell_bank',
+            sampled_at:              loggedAt,
+            observation,
+            logged_by:               access.emp?.id || null,
+          }));
+
+          await supabase.from('sample_incubation_records').insert(incRows);
+        }
+      } catch (syncErr) {
+        console.error('[cell-bank/plating] incubation sync failed:', syncErr.message);
+      }
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
