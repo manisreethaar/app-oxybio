@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { notifyAdmins } from '@/utils/serverNotify';
+import { notifyAdmins, sendServerNotification } from '@/utils/serverNotify';
 import {
   canCountersignLabNotebookEntry,
   canDeleteLabNotebookEntry,
@@ -160,6 +160,18 @@ export async function PATCH(request, { params }) {
       .single();
 
     if (error) throw error;
+
+    // Notify the author that their entry has been countersigned
+    if (currentEntry.created_by) {
+      sendServerNotification(
+        currentEntry.created_by,
+        `✅ Lab Notebook Entry Countersigned`,
+        `Your entry "${data.title || 'Untitled'}" has been reviewed and countersigned.`,
+        `/lab-notebook/${id}`,
+        'success'
+      ).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Digital LNB API PATCH [id] Error:', error);
