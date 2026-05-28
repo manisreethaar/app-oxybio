@@ -1,6 +1,5 @@
 import webpush from 'web-push';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { sendWhatsApp } from '@/utils/whatsapp';
 
 /**
  * Sends a notification to a specific employee.
@@ -28,21 +27,16 @@ export async function sendServerNotification(assignedTo, title, message, url = '
     console.error('[serverNotify] DB Insert Error:', dbInsertError);
   }
 
-  // 2. Fetch subscription + phone for push and WhatsApp
+  // 2. Fetch subscription and send push notification
   const { data: employee, error: dbError } = await supabaseAdmin
     .from('employees')
-    .select('push_subscription, phone')
+    .select('push_subscription')
     .eq('id', assignedTo)
     .single();
 
-  if (dbError || !employee) return;
-
-  // 3. WhatsApp notification (if employee has a phone number saved)
-  if (employee.phone) {
-    sendWhatsApp(employee.phone, `*${title}*\n${message}`).catch(() => {});
+  if (dbError || !employee?.push_subscription) {
+    return; // No push subscription, but DB insert is done
   }
-
-  if (!employee.push_subscription) return;
 
   if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     console.error('[serverNotify] VAPID keys not configured');
