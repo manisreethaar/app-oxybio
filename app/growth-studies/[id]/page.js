@@ -481,7 +481,7 @@ export default function GrowthStudyDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
         {/* Left: Timeline */}
         <div className="lg:col-span-1 space-y-4">
           <div className="glass-card rounded-2xl p-5">
@@ -630,7 +630,63 @@ export default function GrowthStudyDetailPage() {
             {measurements.length === 0 ? (
               <p className="text-slate-400 text-sm font-medium text-center py-6">No measurements recorded yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* Mobile card view */}
+                <div className="sm:hidden space-y-2">
+                  {measurements.map(m => (
+                    <div key={m.id} className="bg-slate-50 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-black text-teal-700 text-sm">T+{m.actual_hour}h</span>
+                        <div className="flex items-center gap-1">
+                          {m.recorder && <CreatorBadge initials={m.recorder.initials} fullName={m.recorder.full_name} size="sm"/>}
+                          {!isAdmin && m.recorded_by === employeeProfile?.id && (
+                            <EditRequestButton
+                              tableName="growth_measurements"
+                              recordId={m.id}
+                              moduleLabel="Growth Measurement"
+                              fields={[
+                                { key: 'od_value', label: `OD${study.od_wavelength || 600}`, type: 'number' },
+                                { key: 'ph_value', label: 'pH', type: 'number' },
+                                { key: 'temperature_actual_c', label: 'Temp (°C)', type: 'number' },
+                                { key: 'actual_hour', label: 'Hour (T+)', type: 'number' },
+                                { key: 'notes', label: 'Notes', type: 'textarea' },
+                              ]}
+                              currentData={m}
+                              hasPending={pendingIds.has(m.id)}
+                              allowDelete
+                              onSuccess={() => { load(); fetchPendingIds(); }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                          <p className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">OD{study.od_wavelength || 600}</p>
+                          <p className="text-base font-black text-slate-800 tabular-nums leading-none">{m.od_value ?? '—'}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                          <p className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">pH</p>
+                          <p className="text-base font-black text-slate-800 tabular-nums leading-none">{m.ph_value ?? '—'}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                          <p className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">Temp</p>
+                          <p className="text-sm font-black text-slate-700 leading-none mt-1">{m.temperature_actual_c != null ? `${m.temperature_actual_c}°` : '—'}</p>
+                        </div>
+                      </div>
+                      {(m.glucose_g_l != null || m.protein_mg_ml != null || m.dissolved_oxygen_pct != null || m.culture_turbidity || m.notes) && (
+                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+                          {m.glucose_g_l != null && <span>Glc {m.glucose_g_l} g/L</span>}
+                          {m.protein_mg_ml != null && <span>Pro {m.protein_mg_ml} mg/mL</span>}
+                          {m.dissolved_oxygen_pct != null && <span>DO {m.dissolved_oxygen_pct}%</span>}
+                          {m.culture_turbidity && <span>{m.culture_turbidity.replace(/_/g, ' ')}</span>}
+                          {m.notes && <span className="text-slate-400">{m.notes}</span>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop table view */}
+                <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-xs font-medium">
                   <thead>
                     <tr className="border-b border-slate-100">
@@ -678,7 +734,8 @@ export default function GrowthStudyDetailPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+            </>
             )}
           </div>
         </div>
@@ -696,7 +753,7 @@ export default function GrowthStudyDetailPage() {
               <button onClick={() => setModal(null)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={LabelCls}>Actual Hour *</label>
                   <input className={InputCls} type="number" step="0.1" value={mForm.actual_hour || ''} onChange={e => setMForm(f => ({ ...f, actual_hour: e.target.value }))} />
@@ -915,7 +972,7 @@ export default function GrowthStudyDetailPage() {
               <button onClick={() => setModal(null)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={LabelCls}>Time Point (h) *</label>
                   <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
@@ -1025,7 +1082,7 @@ export default function GrowthStudyDetailPage() {
                   </div>
                   <div>
                     <label className={LabelCls}>Study Type</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[['growth_curve','Growth Curve'],['fermentation','Fermentation']].map(([v,l]) => (
                         <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
                           className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
@@ -1102,7 +1159,7 @@ export default function GrowthStudyDetailPage() {
                 {/* ── Conditions ── */}
                 <div className="space-y-3">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Vessel Type</label>
                       <select className={InputCls} value={editForm.vessel_type} onChange={e => setEditForm(f => ({ ...f, vessel_type: e.target.value }))}>

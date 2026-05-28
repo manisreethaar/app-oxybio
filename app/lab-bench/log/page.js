@@ -418,7 +418,7 @@ export default function QuickLogPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* ── Source Type Selector ── */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
             { value: 'batch',       label: 'Batch Production', icon: FlaskConical },
             { value: 'growth_study', label: 'Growth Study',    icon: Activity },
@@ -535,7 +535,7 @@ export default function QuickLogPage() {
                   {studyTimePoints.length === 0 ? (
                     <p className="text-slate-400 text-xs font-medium">No pending timepoints — enter hour manually below.</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {studyTimePoints.map(tp => (
                         <button
                           key={tp.id} type="button"
@@ -596,7 +596,7 @@ export default function QuickLogPage() {
         {/* ── Hour & Time ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
           <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-4">Sample Timepoint</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={LabelCls}>Log Hour (T+)</label>
               <div className="relative">
@@ -636,7 +636,7 @@ export default function QuickLogPage() {
             onSkipToggle={() => updateTest('ph', { skipped: !tests.ph.skipped, skip_reason: '' })}
             onSkipReasonChange={v => updateTest('ph', { skip_reason: v })}
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={LabelCls}>pH Value</label>
                 <input
@@ -670,7 +670,7 @@ export default function QuickLogPage() {
             onSkipToggle={() => updateTest('od', { skipped: !tests.od.skipped, skip_reason: '' })}
             onSkipReasonChange={v => updateTest('od', { skip_reason: v })}
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={LabelCls}>OD Value</label>
                 <input
@@ -727,7 +727,7 @@ export default function QuickLogPage() {
           >
             <div>
               <label className={LabelCls}>Result</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {['Pass', 'Fail', 'Pending'].map(opt => (
                   <button
                     key={opt} type="button"
@@ -818,7 +818,7 @@ export default function QuickLogPage() {
                 onChange={v => updateTest('plate_analysis', { skip_reason: v })}
               />
             ) : tests.plate_analysis.active ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={LabelCls}>Media Type</label>
                   <select

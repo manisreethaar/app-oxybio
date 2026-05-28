@@ -442,7 +442,7 @@ export default function BatchesPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             value={searchTerm}
@@ -777,7 +777,7 @@ export default function BatchesPage() {
                     </div>
 
                     {/* ── Row 2: Experiment Type + SKU Target ──── */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
                           Experiment Type
@@ -818,7 +818,7 @@ export default function BatchesPage() {
                     )}
 
                     {/* ── Row 3: Volume + Flasks ────────────────── */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
                           Planned Volume (ml)
