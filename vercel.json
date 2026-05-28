@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/attendance",
       "schedule": "30 18 * * *"
+    },
+    {
+      "path": "/api/cron/incubation-overdue",
+      "schedule": "30 2 * * *"
     }
   ]
 }
