@@ -4,7 +4,9 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FlaskConical, Activity, CheckSquare,
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
-  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X, ShieldAlert, Beaker, Wrench, Package, Microscope, Dna, Settings, LayoutGrid, FileCheck
+  BookOpen, Users, LogOut, UserCircle, Contact, Menu, X,
+  ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
+  Settings, LayoutGrid, FileCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -14,7 +16,7 @@ export default function Sidebar() {
   const { employeeProfile, role, canDo, signOut } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   const isLoading = !employeeProfile;
   const effectiveRole = role || 'intern';
   const effectiveCanDo = isLoading ? () => true : canDo;
@@ -27,9 +29,6 @@ export default function Sidebar() {
     return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
   };
 
-  // ── Sidebar Menu Definition ─────────────────────────────────────────────
-  // Each item now uses canDo() from the RBAC engine instead of a hardcoded roles array.
-  // This means the permissions matrix in lib/permissions.js is the SINGLE source of truth.
   const menuSections = [
     {
       title: 'OVERVIEW',
@@ -40,33 +39,23 @@ export default function Sidebar() {
       ]
     },
     {
-      title: 'LAB BENCH',
+      title: 'LAB & PRODUCTION',
       items: [
-        { name: 'Lab Bench',           href: '/lab-bench',          icon: LayoutGrid, show: effectiveCanDo('batches', 'view') },
+        { name: 'Lab Bench',        href: '/lab-bench',           icon: LayoutGrid,   show: effectiveCanDo('batches', 'view') },
+        { name: 'Batch Production', href: '/batches',             icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
+        { name: 'Lab Notebook',     href: '/lab-notebook',        icon: BookOpen,     show: effectiveCanDo('lab_notebook', 'view') },
+        { name: 'Incubation Lab',   href: '/research/incubation', icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
-      title: 'R&D PIPELINE',
+      title: 'R&D RESEARCH',
       items: [
         { name: 'Formulation Library', href: '/formulations',       icon: Beaker,     show: effectiveCanDo('batches', 'view') },
         { name: 'Cell Bank',           href: '/research/cell-bank', icon: Dna,        show: effectiveCanDo('batches', 'view') },
         { name: 'Growth Studies',      href: '/growth-studies',     icon: Activity,   show: effectiveCanDo('batches', 'view') },
         { name: 'Bioprocess Research', href: '/bioprocess',         icon: Microscope, show: effectiveCanDo('batches', 'view') },
-      ]
-    },
-    {
-      title: 'PRODUCTION',
-      items: [
-        { name: 'Batch Production', href: '/batches',              icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
-        { name: 'Incubation Lab',   href: '/research/incubation',  icon: FlaskConical, show: effectiveCanDo('batches', 'view') },
-      ]
-    },
-    {
-      title: 'QUALITY & VALIDATION',
-      items: [
-        { name: 'Lab Notebook',      href: '/lab-notebook', icon: BookOpen,    show: effectiveCanDo('lab_notebook', 'view') },
-        { name: 'Stability Studies', href: '/shelf-life',   icon: Clock,       show: effectiveCanDo('batches', 'view') },
-        { name: 'Sensory Panels',    href: '/research',     icon: Users,       show: effectiveCanDo('batches', 'view') },
+        { name: 'Stability Studies',   href: '/shelf-life',         icon: Clock,      show: effectiveCanDo('batches', 'view') },
+        { name: 'Sensory Panels',      href: '/research',           icon: Users,      show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
@@ -74,35 +63,32 @@ export default function Sidebar() {
       items: [
         { name: 'Stock & Inventory', href: '/inventory', icon: Package,      show: effectiveCanDo('inventory', 'view') },
         { name: 'Equipment Manager', href: '/equipment', icon: Wrench,       show: effectiveCanDo('equipment', 'view') },
-        { name: 'SOPs & Protocols',  href: '/sops',      icon: BookOpen,     show: effectiveCanDo('sops', 'view') },
         { name: 'Research Calendar', href: '/calendar',  icon: CalendarDays, show: effectiveCanDo('batches', 'view') },
       ]
     },
     {
       title: 'COMPLIANCE',
       items: [
-        { name: 'Document Vault',     href: '/documents',  icon: FileText,   show: effectiveCanDo('documents', 'view') },
-        { name: 'Regulatory Affairs', href: '/compliance', icon: ShieldAlert, show: effectiveCanDo('compliance', 'view') },
-        { name: 'CAPA Tracker',       href: '/capa',       icon: ShieldAlert, show: ['admin','ceo','cto'].includes(effectiveRole) },
+        { name: 'Documents & SOPs',  href: '/documents',  icon: FileText,    show: effectiveCanDo('documents', 'view') },
+        { name: 'Compliance & CAPA', href: '/compliance', icon: ShieldAlert, show: effectiveCanDo('compliance', 'view') },
       ]
     },
     {
       title: 'MY WORKSPACE',
       items: [
-        { name: 'Attendance',             href: '/attendance', icon: Clock,       show: effectiveCanDo('attendance', 'view') },
-        { name: 'Attendance Corrections', href: '/mispunch',   icon: ShieldAlert, show: effectiveCanDo('attendance', 'view') },
-        { name: 'Leave Requests',         href: '/leave',      icon: CalendarOff, show: effectiveCanDo('leave', 'view') },
-        { name: 'Payslips',               href: '/payslips',   icon: Receipt,     show: effectiveCanDo('payslips', 'view_own') },
-        { name: 'My Profile',             href: '/profile',    icon: UserCircle,  show: effectiveCanDo('dashboard', 'view') },
-        { name: 'Staff Directory',        href: '/directory',  icon: Contact,     show: effectiveCanDo('directory', 'view') },
+        { name: 'Attendance',      href: '/attendance', icon: Clock,       show: effectiveCanDo('attendance', 'view') },
+        { name: 'Leave Requests',  href: '/leave',      icon: CalendarOff, show: effectiveCanDo('leave', 'view') },
+        { name: 'Payslips',        href: '/payslips',   icon: Receipt,     show: effectiveCanDo('payslips', 'view_own') },
+        { name: 'My Profile',      href: '/profile',    icon: UserCircle,  show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Staff Directory', href: '/directory',  icon: Contact,     show: effectiveCanDo('directory', 'view') },
       ]
     },
     {
       title: 'ADMIN',
       items: [
-        { name: 'User Management', href: '/admin/users',    icon: Users,      show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'User Management', href: '/admin/users',     icon: Users,     show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
         { name: 'Edit Approvals',  href: '/admin/approvals', icon: FileCheck, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
-        { name: 'System Settings', href: '/admin/settings', icon: Settings,   show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
+        { name: 'System Settings', href: '/admin/settings',  icon: Settings,  show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
       ]
     },
   ];
@@ -117,8 +103,8 @@ export default function Sidebar() {
           href={item.href}
           className={clsx(
             "flex items-center px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-150",
-            isActive 
-              ? "text-navy bg-blue-50/80 shadow-sm border border-blue-100/50" 
+            isActive
+              ? "text-navy bg-blue-50/80 shadow-sm border border-blue-100/50"
               : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-transparent"
           )}
         >
@@ -139,7 +125,7 @@ export default function Sidebar() {
           </div>
           <span className="text-2xl font-black tracking-tighter text-gray-900">OxyOS</span>
         </div>
-        
+
         <nav className="flex-1 overflow-y-auto py-6 custom-scrollbar">
           {menuSections.map((section, idx) => {
             const visibleItems = section.items.filter(i => i.show);
@@ -156,22 +142,21 @@ export default function Sidebar() {
             );
           })}
         </nav>
-        
-        {/* Fixed Sign Out at the Bottom */}
+
         <div className="p-4 border-t border-gray-100">
-           <button
-             onClick={signOut}
-             className="w-full flex items-center px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-150 group"
-           >
-             <LogOut className="w-5 h-5 mr-3 text-red-400 group-hover:text-red-600 transition-colors" />
-             Sign Out
-           </button>
+          <button
+            onClick={signOut}
+            className="w-full flex items-center px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-150 group"
+          >
+            <LogOut className="w-5 h-5 mr-3 text-red-400 group-hover:text-red-600 transition-colors" />
+            Sign Out
+          </button>
         </div>
       </aside>
 
-      {/* Mobile Slide-Up Full Menu Overlay */}
+      {/* Mobile Slide-Up Full Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white/90 backdrop-blur-xl w-full h-[85vh] rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom border-t border-white/50">
             <div className="flex items-center justify-between p-6 border-b border-slate-200/50">
               <span className="text-xl font-black text-slate-800 tracking-tight">OxyOS Hubs</span>
@@ -179,7 +164,6 @@ export default function Sidebar() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
             <nav className="flex-1 overflow-y-auto px-6 py-6 pb-24">
               {menuSections.map((section, idx) => {
                 const visibleItems = section.items.filter(i => i.show);
@@ -194,8 +178,8 @@ export default function Sidebar() {
                         const Icon = item.icon;
                         const isActive = pathname.startsWith(item.href);
                         return (
-                          <Link 
-                            key={item.href} href={item.href} 
+                          <Link
+                            key={item.href} href={item.href}
                             onClick={() => setMobileMenuOpen(false)}
                             className={clsx(
                               "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all",
@@ -205,13 +189,12 @@ export default function Sidebar() {
                             <Icon className={clsx("w-6 h-6 mb-2", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
                             <span className="text-xs font-bold">{item.name}</span>
                           </Link>
-                        )
+                        );
                       })}
                     </div>
                   </div>
                 );
               })}
-              
               <button onClick={signOut} className="mt-4 w-full py-4 rounded-2xl bg-red-50 text-red-600 font-bold flex items-center justify-center border border-red-100">
                 <LogOut className="w-5 h-5 mr-2" /> Sign Out
               </button>
@@ -220,19 +203,18 @@ export default function Sidebar() {
         </div>
       )}
 
-        {/* Mobile Bottom Dock (Fixed, No Scrolling) */}
+      {/* Mobile Bottom Dock */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-40 pb-safe shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] px-2">
-        {/* Render only 4 explicit quick actions in the dock */}
         {[
-          { name: 'Dash', href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
-          { name: 'Activity', href: '/activity', icon: Activity, show: effectiveCanDo('activity', 'view') },
-          { name: 'Check-In', href: '/attendance', icon: Clock, show: effectiveCanDo('attendance', 'view') },
-          { name: 'Tasks', href: '/tasks', icon: CheckSquare, show: effectiveCanDo('tasks', 'view') }
-        ].filter(i=>i.show).slice(0, 4).map((item) => {
+          { name: 'Dash',     href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+          { name: 'Activity', href: '/activity',  icon: Activity,        show: effectiveCanDo('activity', 'view') },
+          { name: 'Check-In', href: '/attendance', icon: Clock,          show: effectiveCanDo('attendance', 'view') },
+          { name: 'Tasks',    href: '/tasks',     icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
+        ].filter(i => i.show).slice(0, 4).map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
-            <Link 
+            <Link
               key={item.name} href={item.href}
               className={clsx(
                 "flex flex-col items-center justify-center w-16 h-[72px] transition-all relative",
@@ -243,11 +225,9 @@ export default function Sidebar() {
               <Icon className={clsx("w-6 h-6 mb-1.5 transition-all", isActive ? "stroke-[2.5px] scale-110" : "stroke-2")} />
               <span className={clsx("text-[10px] whitespace-nowrap", isActive ? "font-bold" : "font-medium")}>{item.name}</span>
             </Link>
-          )
+          );
         })}
-
-        {/* The Menu Toggle Button */}
-        <button 
+        <button
           onClick={() => setMobileMenuOpen(true)}
           className="flex flex-col items-center justify-center w-16 h-[72px] text-slate-400 hover:text-slate-700 transition-all"
         >

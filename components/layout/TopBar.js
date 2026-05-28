@@ -1,7 +1,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
-import { Bell, Download, LogOut } from 'lucide-react';
+import { Bell, Download, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -13,14 +13,12 @@ export default function TopBar() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const { employeeProfile, signOut } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
-  
-  // Notification State
+
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = useMemo(() => createClient(), []);
-  
-  // Custom click away listener to close dropdowns
+
   const topbarRef = useRef(null);
 
   useEffect(() => {
@@ -30,8 +28,8 @@ export default function TopBar() {
         setNotifOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -52,7 +50,6 @@ export default function TopBar() {
 
     fetchNotifs();
 
-    // Realtime — bell badge updates instantly when a new notification arrives
     const channel = supabase
       .channel(`notif-bell-${employeeProfile.id}`)
       .on(
@@ -82,73 +79,60 @@ export default function TopBar() {
     const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
     return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
   };
-  
+
   useEffect(() => {
-    // Listen for the native PWA install prompt event
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault(); // Prevent Chrome from showing the mini-infobar automatically
-      setDeferredPrompt(e); // Save the event so it can be triggered later
+      e.preventDefault();
+      setDeferredPrompt(e);
     };
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    
-    // Show the native install prompt
     deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-      setDeferredPrompt(null); // Hide the button once installed
-    } else {
-      console.log('User dismissed the install prompt');
-    }
+    if (outcome === 'accepted') setDeferredPrompt(null);
   };
 
-  // Create a mapping or logic to determine page title
   const getPageTitle = () => {
     const path = pathname.split('/')[1];
     if (!path) return 'Dashboard';
-    
-    // Convert e.g. 'leave' -> 'Leave', 'admin' -> 'Admin'
-    const defaultTitle = path.charAt(0).toUpperCase() + path.slice(1);
-    
-    switch(path) {
-      case 'dashboard': return 'Dashboard';
-      case 'batches': return 'Batch Manager';
-      case 'activity': return 'Lab Activity Feed';
-      case 'leave': return 'Leave Management';
-      case 'attendance': return 'Attendance';
-      case 'tasks': return 'Task Management';
-      case 'documents': return 'Document Vault';
-      case 'sops': return 'SOP Library';
-      case 'payslips': return 'Payslips';
-      case 'compliance': return 'Compliance Calendar';
+    switch (path) {
+      case 'dashboard':    return 'Dashboard';
+      case 'batches':      return 'Batch Manager';
+      case 'activity':     return 'Lab Activity Feed';
+      case 'leave':        return 'Leave Management';
+      case 'attendance':   return 'Attendance & Corrections';
+      case 'mispunch':     return 'Attendance Corrections';
+      case 'tasks':        return 'Task Management';
+      case 'documents':    return 'Documents & SOPs';
+      case 'sops':         return 'SOPs & Protocols';
+      case 'payslips':     return 'Payslips';
+      case 'compliance':   return 'Compliance & CAPA';
+      case 'capa':         return 'CAPA Tracker';
       case 'formulations': return 'Recipe Management';
-      case 'shelf-life': return 'Shelf-Life Studies';
-      case 'research': return 'Consumer Panels';
-      case 'calendar': return 'Regulatory Calendar';
-      case 'admin': return 'User Management';
-      default: return defaultTitle;
+      case 'shelf-life':   return 'Shelf-Life Studies';
+      case 'research':     return 'Consumer Panels';
+      case 'calendar':     return 'Regulatory Calendar';
+      case 'admin':        return 'User Management';
+      default:             return path.charAt(0).toUpperCase() + path.slice(1);
     }
   };
 
   const todayStr = format(new Date(), 'MMM d, yyyy');
 
+  const openSearch = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('oxysearch:open'));
+    }
+  };
+
   return (
     <header ref={topbarRef} className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 shrink-0 sticky top-0 z-40">
       <h1 className="text-xl font-bold text-gray-900 hidden md:block tracking-tight">{getPageTitle()}</h1>
-      
-      {/* Mobile brand header */}
+
       <div className="md:hidden flex items-center">
         <div className="w-8 h-8 rounded-xl bg-navy text-white font-bold flex items-center justify-center text-sm mr-2 shadow-sm">
           O₂
@@ -156,21 +140,38 @@ export default function TopBar() {
         <span className="text-lg font-black tracking-tight text-gray-900">OxyOS</span>
       </div>
 
-      <div className="flex items-center space-x-3 sm:space-x-5">
-        
-        {/* Manual PWA Install Button (Only shows on Android/Chrome before installation) */}
+      <div className="flex items-center space-x-2 sm:space-x-3">
+
+        {/* Global Search trigger */}
+        <button
+          onClick={openSearch}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
+          title="Search modules (Ctrl+K)"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span>Search</span>
+          <kbd className="text-[10px] text-gray-400">⌘K</kbd>
+        </button>
+
+        {/* Mobile search icon */}
+        <button
+          onClick={openSearch}
+          className="md:hidden flex items-center justify-center w-9 h-9 text-gray-400 hover:text-navy hover:bg-gray-100 rounded-xl transition-all"
+          aria-label="Search"
+        >
+          <Search className="w-5 h-5" />
+        </button>
+
         {deferredPrompt && (
-          <button 
+          <button
             onClick={handleInstallClick}
             className="hidden sm:flex items-center text-xs font-black uppercase tracking-wider bg-navy text-white px-3 py-1.5 rounded-xl hover:bg-navy-hover transition-all shadow-sm active:scale-95"
           >
             <Download className="w-3.5 h-3.5 mr-1.5" /> Install App
           </button>
         )}
-
-        {/* Mobile-only condensed Install button */}
         {deferredPrompt && (
-          <button 
+          <button
             onClick={handleInstallClick}
             className="sm:hidden flex items-center justify-center w-8 h-8 bg-navy text-white rounded-xl hover:bg-navy-hover transition-all shadow-sm active:scale-95"
             aria-label="Install App"
@@ -182,9 +183,9 @@ export default function TopBar() {
         <div className="hidden md:block text-xs text-gray-500 font-bold bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
           {todayStr}
         </div>
-        
+
         <div className="relative">
-          <button 
+          <button
             onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
             className="relative p-2.5 text-gray-400 hover:text-navy rounded-full hover:bg-gray-100 transition-all duration-200 focus:outline-none"
           >
@@ -209,8 +210,8 @@ export default function TopBar() {
                   </div>
                 ) : (
                   notifications.map(n => (
-                    <div 
-                      key={n.id} 
+                    <div
+                      key={n.id}
                       onClick={() => markAsRead(n.id, n.link || '/notifications')}
                       className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${!n.is_read ? 'bg-teal-50/30' : ''}`}
                     >
@@ -229,7 +230,7 @@ export default function TopBar() {
 
         {employeeProfile && (
           <div className="relative">
-            <button 
+            <button
               onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
               className="flex items-center space-x-2 focus:outline-none hover:bg-gray-50 p-1 rounded-full transition-all border border-gray-100"
             >
@@ -249,10 +250,10 @@ export default function TopBar() {
                     <User className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> View Profile
                   </Link>
                   <Link href="/profile" onClick={() => setProfileOpen(false)} className="w-full flex items-center px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-navy transition-colors">
-                    <CreditCard className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> ID Card & Safety
+                    <CreditCard className="w-3.5 h-3.5 mr-2 stroke-[2.5px]" /> ID Card &amp; Safety
                   </Link>
                 </div>
-                <button 
+                <button
                   onClick={signOut}
                   className="w-full flex items-center px-4 py-2 text-xs font-bold text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors"
                 >
