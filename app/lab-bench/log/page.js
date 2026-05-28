@@ -346,8 +346,9 @@ export default function QuickLogPage() {
       if (!res.ok) { setError(json.error || 'Failed to save.'); setSaving(false); return; }
 
       setSuccess({
-        sample_label: json.sample?.sample_label || 'Sample logged',
-        alarms: json.bridge?.alarms || null,
+        sample_label:    json.sample?.sample_label || 'Sample logged',
+        alarms:          json.bridge?.alarms || null,
+        incubation_count: (json.bridge?.incubation_records?.length || 0) + (json.bridge?.incubation_record ? 1 : 0),
       });
       resetForm();
     } catch (err) {
@@ -379,7 +380,17 @@ export default function QuickLogPage() {
           </div>
         )}
 
-        <p className="text-slate-400 text-xs mb-8">Data saved to module records and unified log.</p>
+        <p className="text-slate-400 text-xs mb-4">Data saved to module records and unified log.</p>
+
+        {success.incubation_count > 0 && (
+          <Link
+            href="/research/incubation"
+            className="mx-auto mb-6 flex items-center justify-center gap-2 max-w-xs px-4 py-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl text-teal-700 font-bold text-sm transition-colors"
+          >
+            <FlaskConical className="w-4 h-4" />
+            {success.incubation_count} incubation plate{success.incubation_count !== 1 ? 's' : ''} created — View in Incubation Hub →
+          </Link>
+        )}
 
         <div className="flex gap-3 justify-center">
           <button
