@@ -28,6 +28,9 @@ export async function POST(request) {
     const permission = await requireInventoryPermission(supabase, 'edit');
     if (permission.error) return permission.error;
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).maybeSingle();
+
     const { name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code } = await request.json();
 
     if (!name || !category || !unit) {
@@ -36,11 +39,11 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from('inventory_items')
-      .insert({ 
-        name, 
-        category, 
+      .insert({
+        name,
+        category,
         sub_category,
-        unit, 
+        unit,
         min_stock_level: parseFloat(min_stock_level) || 0,
         storage_condition,
         preferred_supplier: preferred_supplier || null,
@@ -49,7 +52,8 @@ export async function POST(request) {
         coa_required: !!coa_required,
         allergen: !!allergen,
         organic_certified,
-        item_code
+        item_code,
+        created_by: emp?.id || null,
       })
       .select()
       .single();

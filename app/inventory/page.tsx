@@ -15,7 +15,7 @@ export default async function InventoryPage({ searchParams }: { searchParams?: {
   // Fetch initial data for the first page
   const [stockRes, itemsRes, vendorsRes] = await Promise.all([
     supabase.from('inventory_stock').select('*, inventory_items(name, unit, category), vendors(name)').order('expiry_date', { ascending: true }).range(0, 24),
-    supabase.from('inventory_items').select('*').order('name').limit(1000),
+    supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').order('name').limit(1000),
     supabase.from('vendors').select('*').order('name').limit(500)
   ]);
 
