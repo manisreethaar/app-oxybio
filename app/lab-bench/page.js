@@ -4,9 +4,11 @@ import Link from 'next/link';
 import {
   Plus, Grid3x3, RefreshCw, FlaskConical, Activity,
   AlertCircle, Clock, ChevronRight, Loader2, ClipboardList,
-  CheckCircle2, Beaker
+  CheckCircle2, Beaker, History
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuth } from '@/context/AuthContext';
+import EditRequestButton from '@/components/ui/EditRequestButton';
 
 // ── Urgency config ─────────────────────────────────────────────────────────
 const URGENCY = {
@@ -162,12 +164,52 @@ function SectionHeader({ urgency, count }) {
   );
 }
 
+const TEST_TYPE_LABELS = {
+  ph:             'pH',
+  od:             'OD',
+  sterility:      'Sterility',
+  plate_analysis: 'Plate Analysis',
+  temperature:    'Temperature',
+  brix:           'Brix',
+};
+
+function formatTestValue(tr) {
+  if (tr.skipped) return `Skipped — ${tr.skip_reason || 'no reason'}`;
+  if (tr.numeric_value != null) return `${tr.numeric_value}${tr.unit ? ` ${tr.unit}` : ''}`;
+  if (tr.text_value) return tr.text_value;
+  return '—';
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────
 export default function LabBenchPage() {
+  const { role, employeeProfile } = useAuth();
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+
   const [queue, setQueue]       = useState(null);
   const [loading, setLoading]   = useState(true);
   const [asOf, setAsOf]         = useState(null);
   const [filter, setFilter]     = useState('all'); // 'all' | 'overdue' | 'due_soon' | 'active'
+  const [recentEntries, setRecentEntries] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+  const [pendingIds, setPendingIds] = useState(new Set());
+
+  const fetchPendingIds = useCallback(async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  }, []);
+
+  const fetchRecent = useCallback(async () => {
+    setRecentLoading(true);
+    try {
+      const res = await fetch('/api/lab-bench/recent');
+      const json = await res.json();
+      if (json.success) setRecentEntries(json.data || []);
+    } catch (_) {}
+    setRecentLoading(false);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -182,9 +224,9 @@ export default function LabBenchPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); fetchRecent(); fetchPendingIds(); }, [load, fetchRecent, fetchPendingIds]);
 
-  // Auto-refresh every 5 minutes
+  // Auto-refresh queue every 5 minutes
   useEffect(() => {
     const t = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(t);
@@ -338,6 +380,70 @@ export default function LabBenchPage() {
               </Link>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── My Recent Entries ── */}
+      {!isAdmin && (
+        <div className="pt-4 border-t border-slate-100 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-slate-400" />
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">My Recent Entries</p>
+            </div>
+            {recentLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+          </div>
+
+          {!recentLoading && recentEntries.length === 0 && (
+            <p className="text-xs text-slate-400 font-medium px-1">No entries yet — use Quick Log or Grid to record measurements.</p>
+          )}
+
+          {recentEntries.map(sample => (
+            <div key={sample.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                <p className="text-xs font-black text-slate-700 truncate">
+                  {sample.source_label || sample.sample_label}
+                  {sample.flask_label && <span className="text-slate-400 font-medium"> · {sample.flask_label}</span>}
+                  {sample.timepoint_label && <span className="text-teal-600 font-medium"> {sample.timepoint_label}</span>}
+                </p>
+                <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                  {new Date(sample.collected_at).toLocaleString()}
+                </p>
+              </div>
+
+              {(sample.test_results || []).filter(tr => !tr.skipped).map(tr => (
+                <div key={tr.id} className="flex items-center justify-between px-4 py-2 border-b border-slate-50 last:border-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider w-20 shrink-0">
+                      {TEST_TYPE_LABELS[tr.test_type] || tr.test_type}
+                    </span>
+                    <span className="text-sm font-black text-slate-800 font-mono">
+                      {formatTestValue(tr)}
+                    </span>
+                    {tr.notes && (
+                      <span className="text-[10px] text-slate-400 font-medium truncate max-w-[80px]">{tr.notes}</span>
+                    )}
+                  </div>
+                  {tr.entered_by === employeeProfile?.id && (
+                    <EditRequestButton
+                      tableName="test_results"
+                      recordId={tr.id}
+                      moduleLabel="Test Result"
+                      fields={[
+                        { key: 'numeric_value', label: `${TEST_TYPE_LABELS[tr.test_type] || tr.test_type} Value`, type: 'number' },
+                        { key: 'text_value',    label: 'Text Result',  type: 'text' },
+                        { key: 'notes',         label: 'Notes',        type: 'textarea' },
+                      ]}
+                      currentData={tr}
+                      hasPending={pendingIds.has(tr.id)}
+                      allowDelete
+                      onSuccess={() => { fetchRecent(); fetchPendingIds(); }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
 
