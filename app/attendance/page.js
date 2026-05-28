@@ -6,10 +6,11 @@ import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPi
 import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
 const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
+const MispunchContent = dynamic(() => import('./MispunchContent'), { ssr: false });
 
 const TARGET_LAT = 12.716065;
 const TARGET_LNG = 77.870016;
-const MAX_RADIUS_METERS = 300; // 300m accounts for indoor GPS drift (mobile GPS drifts 50-150m indoors)
+const MAX_RADIUS_METERS = 300;
 
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
@@ -49,8 +50,7 @@ export default function AttendancePage() {
   const webcamRef = useRef(null);
   const [now, setNow] = useState(Date.now());
 
-  // Liveness verification state
-  const [faceStatus, setFaceStatus] = useState('waiting'); // 'waiting' | 'detected' | 'missing'
+  const [faceStatus, setFaceStatus] = useState('waiting');
   const [livenessProgress, setLivenessProgress] = useState(0);
   const [captureReady, setCaptureReady] = useState(false);
   const canvasRef = useRef(null);
@@ -67,7 +67,12 @@ export default function AttendancePage() {
     return () => clearInterval(itv);
   }, []);
 
-  // Initialize FaceDetector once on mount (Chrome/Edge only)
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab === 'corrections') setActiveTab('corrections');
+    else if (tab === 'analytics') setActiveTab('analytics');
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'FaceDetector' in window) {
       try { faceDetectorRef.current = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }); }
@@ -88,7 +93,6 @@ export default function AttendancePage() {
     const frame = ctx.getImageData(0, 0, W, H);
     const data = frame.data;
 
-    // Motion detection via pixel diff from previous frame
     if (prevFrameDataRef.current) {
       let changedPx = 0;
       for (let i = 0; i < data.length; i += 4) {
@@ -101,14 +105,12 @@ export default function AttendancePage() {
     }
     prevFrameDataRef.current = new Uint8ClampedArray(data);
 
-    // Face detection: FaceDetector API if available, skin-tone fallback otherwise
     let faceDetected = false;
     try {
       if (faceDetectorRef.current) {
         const faces = await faceDetectorRef.current.detect(video);
         faceDetected = faces.length > 0;
       } else {
-        // Skin-tone pixel sampling — center 120×120 region
         const cx = Math.floor(W / 2), cy = Math.floor(H / 2), r = 60;
         let skin = 0, total = 0;
         for (let py = cy - r; py < cy + r; py++) {
@@ -131,7 +133,6 @@ export default function AttendancePage() {
       setFaceStatus('missing');
     }
 
-    // Need 6 consecutive face frames (3s) + 3 motion frames to unlock capture
     const fp = Math.min(consecutiveFaceRef.current / 6, 1);
     const mp = Math.min(motionCountRef.current / 3, 1);
     const progress = Math.round((fp * 0.65 + mp * 0.35) * 100);
@@ -143,7 +144,6 @@ export default function AttendancePage() {
     }
   }, []);
 
-  // Start/stop detection loop with webcam visibility
   useEffect(() => {
     if (!showWebcam) {
       clearInterval(detectionIntervalRef.current);
@@ -190,7 +190,6 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (employeeProfile) fetchAttendanceData();
-    
     const interval = setInterval(() => {
       if (todayLog && !todayLog.check_out_time) {
         setTodayLog({ ...todayLog, current_time: new Date() });
@@ -203,50 +202,29 @@ export default function AttendancePage() {
   const fetchAttendanceData = async () => {
     if (!employeeProfile || !employeeProfile.id) return;
     setLoading(true);
-    
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-
-      // 1. Universally fetch personal attendance for the logged-in user
       const { data: today } = await supabase.from('attendance_log')
-        .select('*')
-        .eq('employee_id', employeeProfile.id)
-        .eq('date', todayStr)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
+        .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
       setTodayLog(today || null);
 
       const { data: history } = await supabase.from('attendance_log')
-        .select('*')
-        .eq('employee_id', employeeProfile.id)
-        .order('date', { ascending: false })
-        .limit(30);
-      
+        .select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).limit(30);
       setMyHistory(history || []);
 
-      // 2. Fetch leave data for everyone (non-admins need to see their own leave status)
       const { data: leavesToday } = await supabase.from('leave_applications')
-        .select('employee_id')
-        .eq('status', 'approved')
-        .lte('start_date', todayStr)
-        .gte('end_date', todayStr);
+        .select('employee_id').eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr);
       setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
 
-      // 3. Fetch team roster ONLY if the user is an admin/ceo/cto
       if (['admin', 'ceo', 'cto'].includes(role)) {
         const { data: teamLogs } = await supabase.from('attendance_log')
-          .select('*, employees(full_name, role)')
-          .eq('date', todayStr);
-
+          .select('*, employees(full_name, role)').eq('date', todayStr);
         const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
-
         const combined = (allEmps || []).map(emp => {
           const log = (teamLogs || []).find(l => l.employee_id === emp.id);
           return { ...emp, attendance: log };
         });
-
         setTeamToday(combined);
       }
     } catch (err) {
@@ -259,54 +237,36 @@ export default function AttendancePage() {
   const initiateCheckIn = () => {
     setCheckInError('');
     setActionLoading(true);
-
     if (overrideLocation) {
       setGeoData({ lat: TARGET_LAT, lng: TARGET_LNG, in_geofence: true, distance: 0 });
       setShowWebcam(true);
       setActionLoading(false);
       return;
     }
-
     if (!navigator.geolocation) {
       setCheckInError("Geolocation is not supported by your browser.");
       setActionLoading(false);
       return;
     }
-
-    // GPS accuracy-aware retry — up to 3 attempts, 8s apart
-    // Cell towers give accuracy of 1000–5000m. Satellite gives <50m.
-    // We wait for a reading with accuracy < 300m before trusting the distance.
     let attempts = 0;
     const MAX_ATTEMPTS = 3;
-    const ACCURACY_THRESHOLD = 300; // metres — anything worse = cell tower only
-
+    const ACCURACY_THRESHOLD = 300;
     const tryGetPosition = () => {
       attempts++;
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude, accuracy } = position.coords;
-
-          // If accuracy is poor (cell tower) and we have retries left, wait and retry
           if (accuracy > ACCURACY_THRESHOLD && attempts < MAX_ATTEMPTS) {
             setCheckInError(`📡 GPS signal weak (accuracy ±${Math.round(accuracy)}m — cell tower only). Retrying… (${attempts}/${MAX_ATTEMPTS})`);
             setTimeout(tryGetPosition, 8000);
             return;
           }
-
           const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
-
           if (distance > MAX_RADIUS_METERS) {
-            // Distinguish: poor GPS accuracy vs genuinely outside
             if (accuracy > ACCURACY_THRESHOLD) {
-              setCheckInError(
-                `📡 GPS signal too weak (accuracy ±${Math.round(accuracy)}m). Your phone is using a cell tower instead of satellites. ` +
-                `Please: (1) Step near a window, (2) Enable WiFi, (3) Wait 30 seconds and tap Check In again.`
-              );
+              setCheckInError(`📡 GPS signal too weak (accuracy ±${Math.round(accuracy)}m). Please: (1) Step near a window, (2) Enable WiFi, (3) Wait 30 seconds and tap Check In again.`);
             } else {
-              setCheckInError(
-                `🚫 Location verified: You are ${Math.round(distance)}m from the facility. ` +
-                `You must be within ${MAX_RADIUS_METERS}m to check in.`
-              );
+              setCheckInError(`🚫 Location verified: You are ${Math.round(distance)}m from the facility. You must be within ${MAX_RADIUS_METERS}m to check in.`);
             }
             setActionLoading(false);
           } else {
@@ -327,7 +287,6 @@ export default function AttendancePage() {
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     };
-
     tryGetPosition();
   };
 
@@ -339,48 +298,27 @@ export default function AttendancePage() {
     setActionLoading(true);
     setCheckInError('');
     const imageSrc = webcamRef.current.getScreenshot();
-    
     if (!imageSrc) {
        setCheckInError("Failed to capture photo. Please check camera permissions.");
        setActionLoading(false);
        return;
     }
-    
     try {
-      // Convert base64 String (WebP) to Blob for Supabase Storage
       const res = await fetch(imageSrc);
       const blob = await res.blob();
-      
-      // Upload to Supabase Storage Ephemeral Bucket
       const filename = `${employeeProfile.id}_${Date.now()}.webp`;
-      const { error: uploadError } = await supabase.storage
-        .from('attendance-proofs')
-        .upload(filename, blob, { contentType: 'image/webp' });
-
+      const { error: uploadError } = await supabase.storage.from('attendance-proofs').upload(filename, blob, { contentType: 'image/webp' });
       if (uploadError) throw new Error("Photo upload failed: " + uploadError.message);
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('attendance-proofs')
-        .getPublicUrl(filename);
-
-      // Call proper API route — handles IST date, duplicate check, RLS, geofence gate atomically
+      const { data: { publicUrl } } = supabase.storage.from('attendance-proofs').getPublicUrl(filename);
       const apiRes = await fetch('/api/attendance/check-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lat: geoData.lat,
-          lng: geoData.lng,
-          photo_url: publicUrl,
-          override: overrideLocation,
-        }),
+        body: JSON.stringify({ lat: geoData.lat, lng: geoData.lng, photo_url: publicUrl, override: overrideLocation }),
       });
-
       const apiData = await apiRes.json();
       if (!apiRes.ok) throw new Error(apiData.error || 'Check-in failed');
-
       setShowWebcam(false);
-      setOverrideLocation(false); // auto-reset after use
+      setOverrideLocation(false);
       setCheckInError('');
       fetchAttendanceData();
     } catch (err) {
@@ -394,19 +332,12 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     setActionLoading(true);
     setCheckInError('');
-
     const isExecutive = ['admin', 'ceo', 'cto'].includes(role);
-
     const doCheckout = async (lat, lng) => {
       try {
         const body = { id: todayLog.id };
         if (lat !== null) { body.lat = lat; body.lng = lng; }
-
-        const res = await fetch('/api/attendance/check-out', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
+        const res = await fetch('/api/attendance/check-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Check-out failed');
         await fetchAttendanceData();
@@ -416,56 +347,31 @@ export default function AttendancePage() {
         setActionLoading(false);
       }
     };
-
-    // Executives skip GPS — API has its own bypass
-    if (isExecutive) {
-      await doCheckout(null, null);
-      return;
-    }
-
-    // Non-executives: geofenced checkout — must be within MAX_RADIUS_METERS of facility
-    if (!navigator.geolocation) {
-      setCheckInError('Geolocation is not supported by your browser.');
-      setActionLoading(false);
-      return;
-    }
-
-    // GPS accuracy-aware retry — same guard as check-in.
-    // maximumAge: 0 forces a fresh reading — prevents using a cached office location
-    // after the user has already left the building.
+    if (isExecutive) { await doCheckout(null, null); return; }
+    if (!navigator.geolocation) { setCheckInError('Geolocation is not supported by your browser.'); setActionLoading(false); return; }
     const ACCURACY_THRESHOLD = 300;
     let attempts = 0;
     const MAX_ATTEMPTS = 3;
-
     const tryGetPosition = () => {
       attempts++;
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
-
           if (accuracy > ACCURACY_THRESHOLD && attempts < MAX_ATTEMPTS) {
             setCheckInError(`📡 GPS signal weak (±${Math.round(accuracy)}m — cell tower only). Retrying… (${attempts}/${MAX_ATTEMPTS})`);
             setTimeout(tryGetPosition, 8000);
             return;
           }
-
-          // Client-side pre-flight distance check — surfaces the error instantly
-          // without waiting for the round-trip API call.
           const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
           if (distance > MAX_RADIUS_METERS) {
             if (accuracy > ACCURACY_THRESHOLD) {
-              setCheckInError(
-                `📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`
-              );
+              setCheckInError(`📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`);
             } else {
-              setCheckInError(
-                `🚫 You are ${Math.round(distance)}m from the facility. You must be within ${MAX_RADIUS_METERS}m to check out.`
-              );
+              setCheckInError(`🚫 You are ${Math.round(distance)}m from the facility. You must be within ${MAX_RADIUS_METERS}m to check out.`);
             }
             setActionLoading(false);
             return;
           }
-
           await doCheckout(latitude, longitude);
         },
         (err) => {
@@ -478,7 +384,6 @@ export default function AttendancePage() {
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     };
-
     tryGetPosition();
   };
 
@@ -503,7 +408,6 @@ export default function AttendancePage() {
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Attendance & Timesheets</h1>
           <p className="text-slate-500 mt-1 font-medium">GPS tracked shift check-ins and history.</p>
         </div>
-        
         {!todayLog && ['admin', 'ceo', 'cto'].includes(role) && (
           <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 flex items-center justify-between text-xs max-w-sm">
             <span className="text-amber-800 font-bold mr-3"><ShieldCheck className="inline w-4 h-4 mr-1"/> Admin Test Mode</span>
@@ -521,6 +425,9 @@ export default function AttendancePage() {
         </button>
         <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'analytics' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <BarChart2 className="w-4 h-4" /> Analytics
+        </button>
+        <button onClick={() => setActiveTab('corrections')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'corrections' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          <AlertCircle className="w-4 h-4" /> Corrections
         </button>
       </div>
 
@@ -597,14 +504,12 @@ export default function AttendancePage() {
                 </div>
                 <h3 className="text-2xl font-black text-slate-800 mb-2">Not Checked In</h3>
                 <p className="text-sm text-slate-500 mb-8 font-medium">GPS & Selfie verification required.</p>
-                
                 {checkInError && (
                   <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-xs font-bold border border-red-200 flex items-start text-left shadow-sm">
                     <AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />
                     <span>{checkInError}</span>
                   </div>
                 )}
-
                 <button 
                   onClick={initiateCheckIn} disabled={actionLoading}
                   className="w-full py-4 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white rounded-2xl font-black text-lg shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-50 active:scale-95"
@@ -642,12 +547,12 @@ export default function AttendancePage() {
                 >
                   <ArrowLeftCircle className="w-5 h-5 mr-2" /> Check Out
                 </button>
-                <a
-                  href="/mispunch"
+                <button
+                  onClick={() => setActiveTab('corrections')}
                   className="mt-3 text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors"
                 >
-                  Not at the office? Report a missed checkout →
-                </a>
+                  Not at the office? Report a missed checkout &rarr;
+                </button>
               </div>
             ) : (
               <div className="w-full max-w-[280px] pt-4">
@@ -670,7 +575,6 @@ export default function AttendancePage() {
             )}
           </div>
 
-          {/* History Card */}
           <div className="glass-panel rounded-[2rem] p-6 lg:p-8 relative flex flex-col">
             <h2 className="text-lg font-black text-slate-800 mb-6">Recent Shifts</h2>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar" style={{ maxHeight: '400px' }}>
@@ -703,14 +607,15 @@ export default function AttendancePage() {
                     </div>
                   )
                 })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
       )}
 
-      {/* Admin Roster View */}
-      {['admin', 'ceo', 'cto'].includes(role) && (
+      {activeTab === 'corrections' && <MispunchContent />}
+
+      {activeTab !== 'corrections' && ['admin', 'ceo', 'cto'].includes(role) && (
         <div className="glass-card rounded-[2rem] p-8 relative">
           <div className="flex justify-between items-center mb-8 border-b border-white/40 pb-5">
             <div>
@@ -721,13 +626,11 @@ export default function AttendancePage() {
               <Download className="w-4 h-4 mr-2" /> Export CSV
             </button>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {teamToday.map(emp => {
                const status = emp.attendance 
                   ? (emp.attendance.check_out_time ? 'completed' : 'active') 
                   : 'absent';
-               
                return (
                  <div key={emp.id} className="flex p-5 bg-white/60 border border-white hover:bg-white rounded-2xl items-center relative gap-4 transition-all shadow-sm">
                     <div className="relative">
@@ -743,17 +646,14 @@ export default function AttendancePage() {
                       )}
                       {status === 'active' && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-teal-500 border-2 border-white rounded-full animate-pulse"></div>}
                     </div>
-                    
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-slate-800 truncate">{emp.full_name}</p>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mt-0.5">{emp.role}</p>
-                      
                       <div className="mt-2.5">
                         {status === 'active' && <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded inline-flex items-center border border-teal-100"><Clock className="w-3 h-3 mr-1"/> IN: {formatTime(emp.attendance.check_in_time)}</span>}
                         {status === 'completed' && <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded inline-flex items-center border border-slate-200">{emp.attendance.total_hours}h completed</span>}
                         {status === 'absent' && <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded inline-flex items-center border border-red-100">Not Signed In</span>}
                       </div>
-
                       {status !== 'absent' && (
                         <div className="mt-1.5 flex gap-1 items-center">
                           {emp.attendance?.in_geofence 
@@ -770,10 +670,8 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Hidden canvas for liveness frame analysis */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Selfie Capture Modal */}
       {showWebcam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-md relative">
@@ -784,27 +682,18 @@ export default function AttendancePage() {
                 <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {MAX_RADIUS_METERS}m)
               </div>
             </div>
-
             <div className="relative bg-slate-900 aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
               <Webcam
-                audio={false}
-                ref={webcamRef}
-                screenshotFormat="image/webp"
-                screenshotQuality={1}
+                audio={false} ref={webcamRef} screenshotFormat="image/webp" screenshotQuality={1}
                 videoConstraints={{ width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }}
-                className="w-full h-full object-cover"
-                mirrored={true}
+                className="w-full h-full object-cover" mirrored={true}
               />
-
-              {/* Oval guide — color reflects face status */}
               <div className="absolute inset-0 border-[40px] border-slate-900/40 pointer-events-none" />
               <div className={`absolute inset-0 m-10 border-4 rounded-[100%] pointer-events-none transition-colors duration-300 ${
                 captureReady ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' :
                 faceStatus === 'detected' ? 'border-teal-400' :
                 faceStatus === 'missing' ? 'border-red-400' : 'border-white/40 border-dashed'
               }`} />
-
-              {/* Face status badge */}
               <div className={`absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                 captureReady ? 'bg-emerald-500 text-white' :
                 faceStatus === 'detected' ? 'bg-teal-500 text-white' :
@@ -813,18 +702,12 @@ export default function AttendancePage() {
                 {captureReady ? '✓ Ready' : faceStatus === 'detected' ? 'Face Detected' : faceStatus === 'missing' ? 'No Face' : 'Scanning…'}
               </div>
             </div>
-
-            {/* Liveness progress bar */}
             <div className="px-6 pt-4 pb-1">
               <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                <span>Liveness Check</span>
-                <span>{livenessProgress}%</span>
+                <span>Liveness Check</span><span>{livenessProgress}%</span>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${captureReady ? 'bg-emerald-500' : 'bg-teal-500'}`}
-                  style={{ width: `${livenessProgress}%` }}
-                />
+                <div className={`h-full rounded-full transition-all duration-300 ${captureReady ? 'bg-emerald-500' : 'bg-teal-500'}`} style={{ width: `${livenessProgress}%` }} />
               </div>
               {!captureReady && (
                 <p className="text-[10px] text-slate-400 mt-1.5 text-center">
@@ -832,28 +715,14 @@ export default function AttendancePage() {
                 </p>
               )}
             </div>
-
             <div className="p-5 bg-slate-50 flex gap-4">
-              <button
-                onClick={() => setShowWebcam(false)}
-                disabled={actionLoading}
-                className="flex-1 py-3.5 px-4 bg-white text-slate-600 font-bold rounded-2xl border border-slate-200 hover:bg-slate-100 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={captureSelfieAndCheckIn}
-                disabled={actionLoading || !captureReady}
-                className={`flex-1 py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center ${
-                  captureReady
-                    ? 'bg-teal-800 hover:bg-teal-900 text-white'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                } disabled:opacity-60`}
-              >
+              <button onClick={() => setShowWebcam(false)} disabled={actionLoading} className="flex-1 py-3.5 px-4 bg-white text-slate-600 font-bold rounded-2xl border border-slate-200 hover:bg-slate-100 transition-colors disabled:opacity-50">Cancel</button>
+              <button onClick={captureSelfieAndCheckIn} disabled={actionLoading || !captureReady} className={`flex-1 py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center ${
+                captureReady ? 'bg-teal-800 hover:bg-teal-900 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              } disabled:opacity-60`}>
                 {actionLoading ? 'Uploading…' : captureReady ? 'Check In' : `Verifying… ${livenessProgress}%`}
               </button>
             </div>
-
             <button onClick={() => setShowWebcam(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 bg-white/80 rounded-full backdrop-blur"><X className="w-5 h-5"/></button>
           </div>
         </div>
