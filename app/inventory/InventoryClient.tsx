@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3 } from 'lucide-react';
+import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,6 +73,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingSeed, setPendingSeed] = useState(false);
 
+  // Pending edit-request tracking
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+
   // Multi-select state
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
@@ -122,7 +127,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       const [stockRes, itemsRes, vendorsRes] = await Promise.all([
         stockQuery,
-        pageNum === 0 ? supabase.from('inventory_items').select('*').order('name').limit(1000) : Promise.resolve({ data: null }),
+        pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').order('name').limit(1000) : Promise.resolve({ data: null }),
         pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: null })
       ]);
 
@@ -196,6 +201,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         loadAll();
       }
       checkTraining(controller.signal);
+      fetch('/api/edit-request').then(r => r.ok ? r.json() : null).then(d => {
+        if (d?.data) setPendingIds(new Set(d.data.filter((r: any) => r.status === 'pending').map((r: any) => r.record_id)));
+      });
     }
 
     return () => {
@@ -954,21 +962,49 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                             {selectedItemIds.has(item.id) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
                           </div>
                         ) : (
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            {canEditItems && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            {(item as any).creator && (
+                              <CreatorBadge initials={(item as any).creator.initials} fullName={(item as any).creator.full_name} size="sm" />
+                            )}
+                            {isAdmin ? (
+                              <>
+                                <button
+                                  onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
+                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                                  <FileText className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
+                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : (item as any).created_by === employeeProfile?.id ? (
+                              <EditRequestButton
+                                tableName="inventory_items"
+                                recordId={item.id}
+                                moduleLabel="Inventory Item"
+                                fields={[
+                                  { key: 'name',              label: 'Item Name',         type: 'text' },
+                                  { key: 'category',          label: 'Category',          type: 'text' },
+                                  { key: 'sub_category',      label: 'Sub-Category',      type: 'text' },
+                                  { key: 'unit',              label: 'Unit',              type: 'text' },
+                                  { key: 'min_stock_level',   label: 'Min Reorder Level', type: 'number' },
+                                  { key: 'storage_condition', label: 'Storage Condition', type: 'text' },
+                                  { key: 'item_code',         label: 'Item Code',         type: 'text' },
+                                ]}
+                                currentData={item}
+                                hasPending={pendingIds.has(item.id)}
+                                allowDelete
+                                onSuccess={() => fetchData(0, false)}
+                              />
+                            ) : canEditItems ? (
                               <button
                                 onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
                                 className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
                                 <FileText className="w-3.5 h-3.5" />
                               </button>
-                            )}
-                            {isAdmin && (
-                              <button
-                                onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
-                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            ) : null}
                           </div>
                         )}
                       </div>
