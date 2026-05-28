@@ -2,8 +2,16 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+function deriveInitials(fullName) {
+  if (!fullName) return null;
+  const words = fullName.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0][0].toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
 const patchSchema = z.object({
   full_name: z.string().optional().nullable(),
+  initials: z.string().max(3).optional().nullable(),
   employee_code: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   designation: z.string().optional().nullable(),
@@ -53,6 +61,11 @@ export async function PATCH(request) {
     // Clean up empty strings or undefined for date fields
     if (updateData.date_of_birth === '') updateData.date_of_birth = null;
     if (updateData.joined_date === '') updateData.joined_date = null;
+    // Auto-derive initials from full_name if not explicitly set
+    if (!updateData.initials && updateData.full_name) {
+      updateData.initials = deriveInitials(updateData.full_name);
+    }
+    if (updateData.initials) updateData.initials = updateData.initials.toUpperCase().slice(0, 3);
 
     let query = supabase.from('employees').update(updateData);
     if (targetId) {

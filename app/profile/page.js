@@ -7,10 +7,11 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { 
-  User, Phone, MapPin, Calendar, Droplets, AlertCircle, 
-  Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X, 
-  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock, Loader2, ArrowLeftCircle
+import {
+  User, Phone, MapPin, Calendar, Droplets, AlertCircle,
+  Mail, Briefcase, Hash, LogOut, Upload, Edit3, Save, X,
+  CreditCard, ArrowLeft, ShieldCheck, CheckSquare, Lock, Loader2, ArrowLeftCircle,
+  Badge
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -98,6 +99,7 @@ export default function ProfilePage() {
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(z.object({
       full_name: z.string().min(1, "Name is required"),
+      initials: z.string().max(3).optional().nullable(),
       employee_code: z.string().optional().nullable(),
       phone: z.string().optional().nullable(),
       designation: z.string().optional().nullable(),
@@ -148,6 +150,7 @@ export default function ProfilePage() {
       setEmp(profileData);
       reset({
         full_name: profileData.full_name || '',
+        initials: profileData.initials || '',
         employee_code: profileData.employee_code || '',
         phone: profileData.phone || '',
         designation: profileData.designation || '',
@@ -385,12 +388,17 @@ export default function ProfilePage() {
           <form id="profile-form" onSubmit={handleSubmit(handleSaveSubmit)} className="glass-card rounded-[2rem] p-8">
             <h3 className="text-lg font-black text-slate-700 mb-6 uppercase tracking-wider text-sm">Personal Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <InfoField 
-                label="Full Name" 
-                value={emp.full_name} 
-                icon={User} 
+              <InfoField
+                label="Full Name"
+                value={emp.full_name}
+                icon={User}
                 editing={editing}
                 registerProps={register('full_name')}
+              />
+              <InitialsField
+                value={emp.initials}
+                editing={editing}
+                registerProps={register('initials')}
               />
               <InfoField label="Email Address" value={emp.email} icon={Mail} readonly />
               <InfoField 
@@ -508,6 +516,49 @@ export default function ProfilePage() {
             </div>
           )}
         </>
+      )}
+    </div>
+  );
+}
+
+function InitialsField({ value, editing, registerProps }) {
+  const display = value || '??';
+  const colors = ['bg-teal-600', 'bg-violet-600', 'bg-sky-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600'];
+  const colorIdx = display.charCodeAt(0) % colors.length;
+  const bg = colors[colorIdx];
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+        <Badge className="w-3.5 h-3.5" /> Initials / Badge
+      </label>
+      {editing ? (
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center text-white text-xs font-black shrink-0`}>
+            {display}
+          </div>
+          <input
+            type="text"
+            maxLength={3}
+            placeholder="e.g. MB"
+            {...registerProps}
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 uppercase"
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-white/40 rounded-xl border border-white/60 min-h-[42px]">
+          <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center text-white text-xs font-black shrink-0`}>
+            {display}
+          </div>
+          <span className="text-sm font-bold text-slate-700">
+            {value || <span className="text-slate-400 italic">not set — auto-generated on next save</span>}
+          </span>
+        </div>
+      )}
+      {editing && (
+        <p className="text-[10px] font-medium text-slate-400 px-1">
+          1–3 letters shown in badges across the app. Leave blank to auto-generate from your name.
+        </p>
       )}
     </div>
   );
