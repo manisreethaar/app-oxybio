@@ -2,14 +2,15 @@
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import PushManager from '../PushManager';
 import { useAuth } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import Skeleton from '../Skeleton';
-import AIChatbot from '../AIChatbot';
-import GlobalSearch from '../GlobalSearch';
+
+const PushManager = dynamic(() => import('../PushManager'), { ssr: false });
+const AIChatbot = dynamic(() => import('../AIChatbot'), { ssr: false });
+const GlobalSearch = dynamic(() => import('../GlobalSearch'), { ssr: false });
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -17,6 +18,7 @@ export default function ClientLayout({ children }) {
   const [isOffline, setIsOffline] = useState(false);
   const [navLoading, setNavLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [shellExtrasReady, setShellExtrasReady] = useState(false);
 
   const lastPathRef = useRef(pathname);
   const progressTimerRef = useRef(null);
@@ -76,6 +78,14 @@ export default function ClientLayout({ children }) {
   }, []);
 
   useEffect(() => {
+    if (pathname === '/login') return;
+    const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1200));
+    const cancelIdle = window.cancelIdleCallback || clearTimeout;
+    const idleId = scheduleIdle(() => setShellExtrasReady(true));
+    return () => cancelIdle(idleId);
+  }, [pathname]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsOffline(!navigator.onLine);
       const handleOnline = () => setIsOffline(false);
@@ -126,7 +136,7 @@ export default function ClientLayout({ children }) {
         <Sidebar />
         <div className="flex flex-col flex-1 overflow-hidden pb-20 md:pb-0 relative z-10">
           <TopBar />
-          <PushManager />
+          {shellExtrasReady && <PushManager />}
 
           {navLoading && (
             <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-teal-100">
@@ -139,7 +149,7 @@ export default function ClientLayout({ children }) {
 
           {sessionExpired && (
             <div className="bg-amber-500 text-white text-xs font-bold px-4 py-2 text-center flex items-center justify-center gap-3 animate-in slide-in-from-top duration-300">
-              <span>⚠️ Your session has expired. Redirecting to login…</span>
+              <span>Your session has expired. Redirecting to login...</span>
               <button
                 onClick={() => { clearSessionExpired(); window.location.href = '/login'; }}
                 className="underline font-black hover:text-amber-100 transition-colors"
@@ -157,40 +167,27 @@ export default function ClientLayout({ children }) {
           )}
 
           <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-            <AnimatePresence mode="sync">
-              {loading ? (
-                <motion.div
-                  key="loading-skeleton"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="space-y-6"
-                >
-                  <div className="flex justify-between items-center">
-                    <Skeleton width={250} height={32} />
-                    <Skeleton width={120} height={40} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Skeleton className="h-64 w-full rounded-2xl" />
-                    <Skeleton className="h-64 w-full rounded-2xl" />
-                    <Skeleton className="h-64 w-full rounded-2xl" />
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                >
-                  {children}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {loading ? (
+              <div className="space-y-6 animate-fade-in">
+                <div className="flex justify-between items-center">
+                  <Skeleton width={250} height={32} />
+                  <Skeleton width={120} height={40} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Skeleton className="h-64 w-full rounded-2xl" />
+                  <Skeleton className="h-64 w-full rounded-2xl" />
+                  <Skeleton className="h-64 w-full rounded-2xl" />
+                </div>
+              </div>
+            ) : (
+              <div key={pathname} className="animate-page-enter">
+                {children}
+              </div>
+            )}
           </main>
         </div>
-        <GlobalSearch />
-        <AIChatbot />
+        {shellExtrasReady && <GlobalSearch />}
+        {shellExtrasReady && <AIChatbot />}
       </div>
     </ToastProvider>
   );

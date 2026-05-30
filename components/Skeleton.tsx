@@ -1,6 +1,3 @@
-'use client';
-import { motion } from 'framer-motion';
-
 interface SkeletonProps {
   className?: string;
   variant?: 'rect' | 'circle' | 'text';
@@ -21,16 +18,7 @@ export default function Skeleton({ className = '', variant = 'rect', width, heig
       className={`${baseStyles} ${variantStyles[variant]} ${className}`}
       style={{ width, height }}
     >
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shadow-inner"
-        initial={{ x: '-100%' }}
-        animate={{ x: '100%' }}
-        transition={{ 
-          repeat: Infinity, 
-          duration: 1.5, 
-          ease: "linear" 
-        }}
-      />
+      <div className="skeleton-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent shadow-inner" />
     </div>
   );
 }

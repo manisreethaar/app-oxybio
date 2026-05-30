@@ -12,7 +12,7 @@
 @layer base {
   html, body {
     @apply text-gray-900 antialiased bg-gray-50 selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
     max-width: 100vw;
   }
   
@@ -57,6 +57,33 @@
   .field-input {
     @apply w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy/50 transition-all;
   }
+
+  .animate-fade-in {
+    animation: fade-in 180ms ease-out both;
+  }
+
+  .animate-page-enter {
+    animation: page-enter 220ms ease-out both;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes skeleton-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  animation: skeleton-shimmer 1.5s linear infinite;
 }
 
 

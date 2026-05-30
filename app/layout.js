@@ -1,9 +1,13 @@
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ClientLayout from "@/components/layout/ClientLayout";
 
-const inter = Inter({ subsets: ["latin"] });
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist-sans",
+  display: "swap",
+});
 
 export const metadata = {
   title: "OxyOS Platform",
@@ -63,7 +67,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en">
       {/* No manual <head> needed — Next.js generates viewport meta from the export above */}
-      <body className={inter.className}>
+      <body className={geistSans.className}>
         <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>
