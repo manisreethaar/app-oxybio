@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
   Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
@@ -12,16 +13,27 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import MediaPrepPanel      from './components/MediaPrepPanel';
-import SterilisationPanel  from './components/SterilisationPanel';
-import InoculationPanel    from './components/InoculationPanel';
-import FermentationPanel   from './components/FermentationPanel';
-import StrainingPanel      from './components/StrainingPanel';
-import ExtractAdditionPanel from './components/ExtractAdditionPanel';
-import QCHoldPanel         from './components/QCHoldPanel';
-import ReleasePanel        from './components/ReleasePanel';
-import RejectionPanel      from './components/RejectionPanel';
-import LinkedRecordsPanel  from './components/LinkedRecordsPanel';
+const PanelLoading = () => (
+  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-4" />
+    <div className="space-y-3">
+      <div className="h-10 rounded-xl bg-slate-100 animate-pulse" />
+      <div className="h-10 rounded-xl bg-slate-100 animate-pulse" />
+      <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+    </div>
+  </div>
+);
+
+const MediaPrepPanel = dynamic(() => import('./components/MediaPrepPanel'), { ssr: false, loading: PanelLoading });
+const SterilisationPanel = dynamic(() => import('./components/SterilisationPanel'), { ssr: false, loading: PanelLoading });
+const InoculationPanel = dynamic(() => import('./components/InoculationPanel'), { ssr: false, loading: PanelLoading });
+const FermentationPanel = dynamic(() => import('./components/FermentationPanel'), { ssr: false, loading: PanelLoading });
+const StrainingPanel = dynamic(() => import('./components/StrainingPanel'), { ssr: false, loading: PanelLoading });
+const ExtractAdditionPanel = dynamic(() => import('./components/ExtractAdditionPanel'), { ssr: false, loading: PanelLoading });
+const QCHoldPanel = dynamic(() => import('./components/QCHoldPanel'), { ssr: false, loading: PanelLoading });
+const ReleasePanel = dynamic(() => import('./components/ReleasePanel'), { ssr: false, loading: PanelLoading });
+const RejectionPanel = dynamic(() => import('./components/RejectionPanel'), { ssr: false, loading: PanelLoading });
+const LinkedRecordsPanel = dynamic(() => import('./components/LinkedRecordsPanel'), { ssr: false });
 
 const STAGES = [
   { id: 'media_prep',       label: 'Media Prep',       icon: Beaker,      color: 'text-indigo-600', bg: 'bg-indigo-50',  border: 'border-indigo-200' },
