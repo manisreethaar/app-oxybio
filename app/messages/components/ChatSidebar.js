@@ -1,3 +1,4 @@
+'use client';
 import { Search, User, Users, Plus, Hash } from 'lucide-react';
 import { useState } from 'react';
 
@@ -94,7 +95,7 @@ export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateG
                   </div>
                   {isGroup && (
                     <p className="text-[10px] text-gray-400 truncate uppercase tracking-wider font-bold">
-                      {chat.type} â€¢ {chat.members?.length || 0} Members
+                      {chat.type} • {chat.members?.length || 0} Members
                     </p>
                   )}
                 </div>
