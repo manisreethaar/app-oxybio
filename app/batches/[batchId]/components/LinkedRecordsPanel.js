@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Package, Wrench, BookOpen, AlertTriangle, Clock, CheckSquare,
-  ChevronRight, Loader, FlaskConical,
+  ChevronRight, Loader, FlaskConical, ExternalLink,
 } from 'lucide-react';
 import {
   getLinkedInventory, getLinkedEquipment, getLinkedDeviations,
@@ -319,19 +319,29 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
   }, [batch.id, supabase]);
 
   const TABS = useMemo(() => [
-    { id: 'inventory',  label: 'Inventory Used',   icon: Package,       count: all?.inventory.length  },
-    { id: 'equipment',  label: 'Equipment',         icon: Wrench,        count: all?.equipment.length  },
-    { id: 'notebook',   label: 'Lab Notebook',      icon: BookOpen,      count: all?.notebook.length   },
-    { id: 'deviations', label: 'Deviations & CAPA', icon: AlertTriangle, count: all?.deviations.length },
-    { id: 'shelflife',  label: 'Shelf-Life',        icon: Clock,         count: all?.shelflife.length  },
-    { id: 'tasks',      label: 'Tasks',             icon: CheckSquare,   count: all?.tasks.length      },
-    { id: 'incubation', label: 'Incubation',        icon: FlaskConical,  count: all?.incubation.length },
+    { id: 'inventory',  label: 'Inventory Used',   icon: Package,       count: all?.inventory.length,  href: '/inventory'            },
+    { id: 'equipment',  label: 'Equipment',         icon: Wrench,        count: all?.equipment.length,  href: '/equipment'            },
+    { id: 'notebook',   label: 'Lab Notebook',      icon: BookOpen,      count: all?.notebook.length,   href: '/lab-notebook'         },
+    { id: 'deviations', label: 'Deviations & CAPA', icon: AlertTriangle, count: all?.deviations.length, href: '/compliance'           },
+    { id: 'shelflife',  label: 'Shelf-Life',        icon: Clock,         count: all?.shelflife.length,  href: '/shelf-life'           },
+    { id: 'tasks',      label: 'Tasks',             icon: CheckSquare,   count: all?.tasks.length,      href: '/tasks'                },
+    { id: 'incubation', label: 'Incubation',        icon: FlaskConical,  count: all?.incubation.length, href: '/research/incubation'  },
   ], [all]);
 
   return (
     <div className="surface mt-6">
       <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Linked Records</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Linked Records</h3>
+          {(() => {
+            const tab = TABS.find(t => t.id === activeTab);
+            return tab ? (
+              <Link href={tab.href} className="flex items-center gap-1 text-[10px] font-black text-navy hover:text-navy-hover transition-colors">
+                Open {tab.label} <ExternalLink className="w-3 h-3"/>
+              </Link>
+            ) : null;
+          })()}
+        </div>
         <div className="flex gap-1.5 flex-wrap">
           {TABS.map(tab => {
             const Icon   = tab.icon;
