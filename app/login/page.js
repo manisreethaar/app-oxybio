@@ -10,7 +10,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [view, setView] = useState('login'); // 'login' | 'forgot_password'
   const router = useRouter();
   const supabase = createClient();
 
@@ -18,10 +20,19 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setMessage(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { setError(error.message); } 
-      else { router.push('/dashboard'); }
+      if (view === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { setError(error.message); } 
+        else { router.push('/dashboard'); }
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) { setError(error.message); }
+        else { setMessage('Password reset link has been sent to your email.'); }
+      }
     } catch (err) { setError('An unexpected error occurred. Please try again.'); } 
     finally { setLoading(false); }
   };
@@ -48,8 +59,14 @@ export default function LoginPage() {
         className="bg-white rounded-[2rem] p-5 md:p-8 md:p-6 md:p-8 shadow-2xl shadow-navy/10 border border-gray-100"
       >
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 border-l-4 border-navy pl-4">Sign In</h2>
-          <p className="text-xs font-medium text-gray-500 mt-1 pl-5">Enter your credentials to access the node.</p>
+          <h2 className="text-xl font-bold text-gray-900 border-l-4 border-navy pl-4">
+            {view === 'login' ? 'Sign In' : 'Reset Password'}
+          </h2>
+          <p className="text-xs font-medium text-gray-500 mt-1 pl-5">
+            {view === 'login' 
+              ? 'Enter your credentials to access the node.'
+              : 'Enter your email to receive a password reset link.'}
+          </p>
         </div>
         
         {error && (
@@ -60,6 +77,17 @@ export default function LoginPage() {
           >
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
             {error}
+          </motion.div>
+        )}
+
+        {message && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-100 flex items-center gap-2"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            {message}
           </motion.div>
         )}
 
@@ -77,40 +105,61 @@ export default function LoginPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-4 focus:ring-navy/5 focus:border-navy outline-none transition-all font-semibold text-sm pr-12"
-                required
-                disabled={loading}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition-all"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+          {view === 'login' && (
+            <div>
+              <div className="flex justify-between items-end mb-1.5">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
+                <button
+                  type="button"
+                  onClick={() => { setView('forgot_password'); setError(null); setMessage(null); }}
+                  className="text-[10px] font-bold text-navy hover:text-navy-hover transition-all"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-4 focus:ring-navy/5 focus:border-navy outline-none transition-all font-semibold text-sm pr-12"
+                  required={view === 'login'}
+                  disabled={loading}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition-all"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full py-4 px-4 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl shadow-lg shadow-navy/20 transition-all active:scale-[0.98] disabled:opacity-50 text-sm flex justify-center items-center"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue to Platform'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (view === 'login' ? 'Continue to Platform' : 'Send Reset Link')}
           </button>
 
           <div className="text-center pt-2">
-            <button type="button" className="text-[10px] font-bold text-gray-400 hover:text-navy transition-all uppercase tracking-widest">
-              Need access? Contact Admin
-            </button>
+            {view === 'login' ? (
+              <button type="button" className="text-[10px] font-bold text-gray-400 hover:text-navy transition-all uppercase tracking-widest">
+                Need access? Contact Admin
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={() => { setView('login'); setError(null); setMessage(null); }}
+                className="text-[10px] font-bold text-gray-400 hover:text-navy transition-all uppercase tracking-widest"
+              >
+                Back to Sign In
+              </button>
+            )}
           </div>
         </form>
       </motion.div>

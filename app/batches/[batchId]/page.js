@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
   Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
-  FileText, Download, Loader, Trash2, ArrowRight
+  FileText, Download, Loader, Trash2, ArrowRight, MessageSquare
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -461,15 +461,24 @@ export default function BatchDetailPage() {
                 );
               })()}
             </div>
-            {!isTerminal && ['admin','ceo','cto'].includes(role) && (
+            <div className="flex gap-2">
               <button
-                onClick={handleCancelBatch}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-                title="Archive this batch"
+                onClick={() => router.push(`/messages?pin_type=batch&pin_id=${batch.batch_id}&pin_title=${encodeURIComponent('Batch ' + batch.batch_id)}`)}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-600 border border-indigo-200 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                title="Discuss this batch"
               >
-                <Trash2 className="w-3 h-3"/> Archive Batch
+                <MessageSquare className="w-3 h-3"/> Discuss
               </button>
-            )}
+              {!isTerminal && ['admin','ceo','cto'].includes(role) && (
+                <button
+                  onClick={handleCancelBatch}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                  title="Archive this batch"
+                >
+                  <Trash2 className="w-3 h-3"/> Archive Batch
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">

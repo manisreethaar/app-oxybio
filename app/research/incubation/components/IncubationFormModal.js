@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const formSchema = z.object({
   sample_name: z.string().min(1, 'Sample name is required'),
@@ -51,6 +52,7 @@ const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm f
 const labelCls = 'block text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5';
 
 export default function IncubationFormModal({ onClose, onSuccess, initialData = null }) {
+  const { employeeProfile } = useAuth();
   const [batches, setBatches] = useState(() =>
     initialData?.batches && initialData?.batch_id
       ? [{ id: initialData.batch_id, batch_id: initialData.batches.batch_id }]
@@ -104,7 +106,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     const hour = Number(h);
     if (!hour || plateReads.some(r => r.hour === hour)) return;
     setPlateReads(prev =>
-      [...prev, { hour, status: 'no_growth', colony_count: '', notes: '' }]
+      [...prev, { hour, status: 'no_growth', colony_count: '', notes: '', recorded_by: employeeProfile?.full_name || 'Unknown' }]
         .sort((a, b) => a.hour - b.hour)
     );
     setCustomHour('');
@@ -342,7 +344,14 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     {plateReads.map(read => (
                       <div key={read.hour} className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50/40">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-black text-navy font-mono">T+{read.hour}h Read</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-navy font-mono">T+{read.hour}h Read</span>
+                            {read.recorded_by && (
+                              <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
+                                Logged by: {read.recorded_by}
+                              </span>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={() => removeRead(read.hour)}
