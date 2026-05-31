@@ -16,7 +16,8 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
   const [searchQuery, setSearchQuery] = useState('');
   
   const [typingUsers, setTypingUsers] = useState(new Set());
-  
+  const [activeMessageId, setActiveMessageId] = useState(null);
+
   const messagesEndRef = useRef(null);
   const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
@@ -245,7 +246,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
       )}
 
       {/* Messages List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50" onClick={() => setActiveMessageId(null)}>
         {loading ? (
           <div className="text-center py-10 text-gray-400 font-medium text-sm">Loading messages...</div>
         ) : filteredMessages.length === 0 ? (
@@ -269,6 +270,9 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
             
             const replyMsg = msg.reply_to_id ? messages.find(m => m.id === msg.reply_to_id) : null;
 
+            const isActive = activeMessageId === msg.id;
+            const actionClass = `transition-opacity flex items-center gap-1 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+
             return (
               <div key={msg.id} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
                 {showName && (
@@ -276,32 +280,34 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
                     {msg.sender?.full_name || 'Unknown'}
                   </span>
                 )}
-                
+
                 <div className="flex items-center gap-2 max-w-full">
-                  
+
                   {isMe && !msg.is_deleted && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                      <button onClick={() => setEditingMessage(msg)} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-100 rounded" title="Edit">
+                    <div className={actionClass}>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingMessage(msg); setActiveMessageId(null); }} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-100 rounded" title="Edit">
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => handleDelete(msg.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Delete">
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); setActiveMessageId(null); }} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Delete">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   )}
 
                   {!isMe && !msg.is_deleted && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 order-last">
-                      <button onClick={() => setReplyingToMessage(msg)} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-100 rounded" title="Reply">
+                    <div className={`${actionClass} order-last`}>
+                      <button onClick={(e) => { e.stopPropagation(); setReplyingToMessage(msg); setActiveMessageId(null); }} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-100 rounded" title="Reply">
                         <Reply className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   )}
-                  
-                  <div className={`relative max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl rounded-2xl px-4 py-2 shadow-sm ${
-                    isMe ? 'bg-navy text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
-                  }`}>
-                    
+
+                  <div
+                    onClick={(e) => { e.stopPropagation(); setActiveMessageId(isActive ? null : msg.id); }}
+                    className={`relative max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl rounded-2xl px-4 py-2 shadow-sm cursor-pointer select-none ${
+                      isMe ? 'bg-navy text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
+                    }`}
+                  >
                     {msg.is_deleted ? (
                       <p className="text-sm italic opacity-60">This message was deleted</p>
                     ) : (
@@ -314,7 +320,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
                         )}
 
                         {msg.content && <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>}
-                        
+
                         {msg.image_url && (
                           <div className="mt-2 rounded-xl overflow-hidden border border-black/10">
                             <img src={msg.image_url} alt="Attachment" className="max-w-full h-auto max-h-64 object-contain bg-black/5" loading="lazy" />
@@ -322,7 +328,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
                         )}
 
                         {msg.attachment_url && (
-                          <a href={msg.attachment_url} target="_blank" rel="noreferrer" className={`mt-2 flex items-center gap-2 p-2 rounded-lg border ${isMe ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'} transition-colors no-underline`}>
+                          <a href={msg.attachment_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className={`mt-2 flex items-center gap-2 p-2 rounded-lg border ${isMe ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'} transition-colors no-underline`}>
                             <File className={`w-5 h-5 ${isMe ? 'text-white' : 'text-gray-500'}`} />
                             <div className="flex-1 min-w-0">
                               <p className={`text-xs font-bold truncate ${isMe ? 'text-white' : 'text-gray-700'}`}>{msg.attachment_name}</p>
@@ -342,10 +348,10 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
                       </>
                     )}
                   </div>
-                  
+
                   {isMe && !msg.is_deleted && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 order-last">
-                      <button onClick={() => setReplyingToMessage(msg)} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-100 rounded" title="Reply">
+                    <div className={`${actionClass} order-last`}>
+                      <button onClick={(e) => { e.stopPropagation(); setReplyingToMessage(msg); setActiveMessageId(null); }} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-100 rounded" title="Reply">
                         <Reply className="w-3.5 h-3.5" />
                       </button>
                     </div>
