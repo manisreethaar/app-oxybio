@@ -19,6 +19,7 @@ import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import EditRequestButton from '@/components/ui/EditRequestButton';
+import MobilePageHeader from '@/components/ui/MobilePageHeader';
 
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
@@ -465,7 +466,27 @@ export default function BatchesPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <MobilePageHeader
+        icon={FlaskConical}
+        title="Batches"
+        subtitle="Track active runs, scheduled production, and archived batch records."
+        stats={[
+          { label: 'Active', value: tabCounts.active },
+          { label: 'Scheduled', value: tabCounts.scheduled },
+          { label: 'Archived', value: tabCounts.archived },
+        ]}
+        action={canDo('batches', 'create') ? (
+          <button
+            onClick={() => { reset(); setBatchError(null); setShowNewBatchModal(true); }}
+            className="w-10 h-10 rounded-2xl bg-navy text-white flex items-center justify-center shadow-sm"
+            aria-label="Schedule batch"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        ) : null}
+      />
+
+      <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Production Batches</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -483,12 +504,12 @@ export default function BatchesPage() {
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="flex gap-2 flex-wrap mt-6">
+      <div className="mobile-scroll-tabs mt-4 md:mt-6">
         {['active', 'scheduled', 'released', 'rejected', 'archived'].map(f => (
           <button
             key={f}
             onClick={() => setStatusFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 ${statusFilter === f ? 'bg-navy text-white border-navy' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+            className={`px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${statusFilter === f ? 'bg-navy text-white border-navy' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
           >
             {f}
             {tabCounts[f] > 0 && (
@@ -500,7 +521,7 @@ export default function BatchesPage() {
         ))}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
+      <div className="surface p-3 flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
@@ -716,7 +737,45 @@ export default function BatchesPage() {
           )}
         </h2>
         <div className="surface overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="md:hidden p-3 space-y-3">
+            {displayedBatches.map(l => (
+              <div key={l.id} className="mobile-card p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black font-mono text-slate-900">{l.batch_id}</p>
+                    <p className="text-xs font-semibold text-gray-500 mt-1 line-clamp-1">{l.formulations?.name || 'No recipe'}</p>
+                  </div>
+                  <span className={`px-2 py-1 inline-flex text-[9px] font-black uppercase tracking-wider rounded border ${statusFilter === 'archived' ? 'bg-slate-50 text-slate-600 border-slate-200' : l.status === 'released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                    {statusFilter === 'archived' ? 'archived' : l.status}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black border ${SKU_COLORS[l.sku_target] || SKU_COLORS.Unassigned}`}>{l.sku_target || 'SKU'}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-gray-100 text-gray-600 border border-gray-200">{l.experiment_type || 'Type'}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-gray-50 text-gray-500 border border-gray-200">
+                    {l.start_time ? format(new Date(l.start_time), 'MMM d, yyyy') : 'No date'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  {statusFilter === 'archived' && isAdmin ? (
+                    <button
+                      onClick={() => handlePermanentDeleteBatch(l.id)}
+                      className="px-3 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black"
+                    >
+                      Delete permanently
+                    </button>
+                  ) : null}
+                  <Link href={`/batches/${l.id}`} className="px-3 py-2 rounded-xl bg-navy text-white text-xs font-black">
+                    View
+                  </Link>
+                </div>
+              </div>
+            ))}
+            {displayedBatches.length === 0 && (
+              <div className="py-8 text-center text-xs text-gray-400 font-medium">No {statusFilter} batches.</div>
+            )}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
               <thead>
                 <tr className="bg-gray-50/50">
@@ -775,12 +834,12 @@ export default function BatchesPage() {
       {/* ── New Batch Modal ──────────────────────────────────── */}
       <AnimatePresence>
         {showNewBatchModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center z-50 p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-end md:items-center z-50 p-0 md:p-4 overflow-y-auto">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.98, y: 28 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100 overflow-hidden my-4"
+              exit={{ opacity: 0, scale: 0.98, y: 28 }}
+              className="bg-white rounded-t-3xl md:rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100 overflow-hidden md:my-4 max-h-[92vh] flex flex-col"
             >
               {/* Modal Header */}
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
@@ -798,7 +857,7 @@ export default function BatchesPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(handleBatchSubmit)} className="p-6 space-y-5">
+              <form onSubmit={handleSubmit(handleBatchSubmit)} className="p-4 md:p-6 space-y-5 overflow-y-auto">
 
                 {/* Server Error */}
                 {batchError && (

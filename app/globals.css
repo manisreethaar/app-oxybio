@@ -33,7 +33,34 @@
   }
   
   .page-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-48 sm:pb-24 space-y-8;
+    @apply max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-36 sm:pb-24 space-y-5 sm:space-y-8;
+  }
+
+  .mobile-card {
+    @apply bg-white border border-gray-200 rounded-2xl shadow-sm shadow-navy/5;
+  }
+
+  .mobile-scroll-tabs {
+    @apply flex gap-2 overflow-x-auto -mx-3 px-3 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap;
+    scrollbar-width: none;
+  }
+
+  .mobile-scroll-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-action-bar {
+    @apply fixed left-3 right-3 bottom-24 z-30 md:hidden;
+  }
+
+  @media (max-width: 640px) {
+    .surface {
+      @apply rounded-2xl shadow-sm border-gray-200 bg-white;
+    }
+
+    .glass-card {
+      @apply rounded-2xl shadow-sm hover:shadow-md hover:translate-y-0;
+    }
   }
   
   .mesh-bg {

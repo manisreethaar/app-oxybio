@@ -204,19 +204,20 @@ export default function Sidebar() {
       )}
 
       {/* Mobile Bottom Dock */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-40 pb-safe shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200 flex justify-around items-center z-40 pb-safe shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] px-1">
         {[
           { name: 'Dash',      href: '/dashboard',  icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
-          { name: 'Lab Bench', href: '/lab-bench',  icon: LayoutGrid,      show: effectiveCanDo('batches', 'view') },
+          { name: 'Batches',   href: '/batches',    icon: FlaskConical,    show: effectiveCanDo('batches', 'view') },
+          { name: 'Tasks',     href: '/tasks',      icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
           { name: 'Check-In',  href: '/attendance', icon: Clock,           show: effectiveCanDo('attendance', 'view') },
-        ].filter(i => i.show).slice(0, 3).map((item) => {
+        ].filter(i => i.show).slice(0, 4).map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
             <Link
               key={item.name} href={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center w-16 h-[72px] transition-all relative",
+                "flex flex-col items-center justify-center min-w-0 flex-1 h-[68px] transition-all relative",
                 isActive ? "text-navy" : "text-gray-400 hover:text-gray-700"
               )}
             >
@@ -228,7 +229,7 @@ export default function Sidebar() {
         })}
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center justify-center w-16 h-[72px] text-slate-400 hover:text-slate-700 transition-all"
+          className="flex flex-col items-center justify-center min-w-0 flex-1 h-[68px] text-slate-400 hover:text-slate-700 transition-all"
         >
           <Menu className="w-6 h-6 mb-1.5 stroke-2" />
           <span className="text-[10px] font-medium whitespace-nowrap">Menu</span>

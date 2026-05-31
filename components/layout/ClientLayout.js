@@ -167,7 +167,7 @@ export default function ClientLayout({ children }) {
             </div>
           )}
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 scroll-smooth">
             {loading ? (
               <div className="space-y-6 animate-fade-in">
                 <div className="flex justify-between items-center">

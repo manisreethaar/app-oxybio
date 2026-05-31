@@ -163,7 +163,7 @@ export default function TopBar() {
   };
 
   return (
-    <header ref={topbarRef} className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 shrink-0 sticky top-0 z-40">
+    <header ref={topbarRef} className="bg-white/95 backdrop-blur border-b border-gray-200 h-14 md:h-16 flex items-center justify-between px-3 sm:px-4 md:px-8 shrink-0 sticky top-0 z-40">
       <h1 className="text-xl font-bold text-gray-900 hidden md:block tracking-tight">{getPageTitle()}</h1>
 
       <div className="md:hidden flex items-center">
