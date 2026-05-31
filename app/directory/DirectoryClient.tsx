@@ -597,7 +597,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 )}
             </div>
         </div>
-      ), document.body)}
+      , document.body)}
 
       {/* Add Employee Modal */}
       {showInviteModal && typeof document !== 'undefined' && createPortal(
@@ -689,7 +689,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
             </form>
           </div>
         </div>
-      ), document.body)}
+      , document.body)}
 
       <style>{`
         .input-field {
