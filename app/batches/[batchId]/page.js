@@ -329,10 +329,10 @@ export default function BatchDetailPage() {
       const res  = await fetch(`/api/batches?id=${batchId}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success('Batch cancelled. Materials restored.');
+      toast.success(data.message || 'Batch archived.');
       router.push('/batches');
     } catch (err) {
-      toast.error('Failed to cancel batch: ' + err.message);
+      toast.error('Failed to archive batch: ' + err.message);
     }
   };
 
@@ -465,9 +465,9 @@ export default function BatchDetailPage() {
               <button
                 onClick={handleCancelBatch}
                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-                title="Cancel this batch and restore inventory"
+                title="Archive this batch"
               >
-                <Trash2 className="w-3 h-3"/> Cancel Batch
+                <Trash2 className="w-3 h-3"/> Archive Batch
               </button>
             )}
           </div>
@@ -755,15 +755,15 @@ export default function BatchDetailPage() {
         </div>
       )}
 
-      {/* Cancel Modal */}
+      {/* Archive Modal */}
       {pendingCancel && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Cancel Entire Batch</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to cancel this ENTIRE batch and delete all its records? Inventory items used will be placed back into circulation.</p>
+            <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Archive Entire Batch</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">This hides the batch from active lists. Permanent delete is available only from Archived.</p>
             <div className="flex gap-3">
               <button onClick={() => setPendingCancel(false)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold">Nevermind</button>
-              <button onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm">Yes, Cancel Batch</button>
+              <button onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm">Archive Batch</button>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -96,6 +97,64 @@ export async function PATCH(request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const supabase = createClient();
+    const supabaseAdmin = createAdminClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const permanent = searchParams.get('permanent') === 'true';
+    if (!id) return NextResponse.json({ error: 'Missing activity ID' }, { status: 400 });
+
+    const { data: emp, error: empError } = await supabase
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+    if (empError || !emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+
+    const isAdmin = ['admin', 'ceo', 'cto'].includes(emp.role);
+    if (!isAdmin) return NextResponse.json({ error: 'Forbidden: Admin access required.' }, { status: 403 });
+
+    const { data: log, error: fetchErr } = await supabaseAdmin
+      .from('activity_log')
+      .select('id, archived_at')
+      .eq('id', id)
+      .single();
+    if (fetchErr || !log) return NextResponse.json({ error: 'Activity not found' }, { status: 404 });
+
+    if (!permanent) {
+      if (log.archived_at) {
+        return NextResponse.json({ success: true, message: 'Activity is already archived.' });
+      }
+
+      const { error } = await supabaseAdmin
+        .from('activity_log')
+        .update({
+          archived_at: new Date().toISOString(),
+          archived_by: emp.id,
+        })
+        .eq('id', id);
+      if (error) throw error;
+      return NextResponse.json({ success: true, archived: true, message: 'Activity archived.' });
+    }
+
+    if (!log.archived_at) {
+      return NextResponse.json({ error: 'Archive this activity before permanently deleting it.' }, { status: 409 });
+    }
+
+    const { error } = await supabaseAdmin.from('activity_log').delete().eq('id', id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, permanentlyDeleted: true, message: 'Archived activity permanently deleted.' });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

@@ -256,6 +256,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const formulationId = searchParams.get('formulation_id');
     const statusFilter  = searchParams.get('status');
+    const archiveFilter = searchParams.get('archived');
 
     // Preview mode — just return the next batch ID
     if (formulationId) {
@@ -268,12 +269,16 @@ export async function GET(request) {
       .select(`
         id, batch_id, experiment_type, sku_target, status, current_stage,
         planned_volume_ml, num_flasks, planned_start_date,
-        start_time, created_at, assigned_team, created_by,
+        start_time, created_at, assigned_team, created_by, archived_at, archived_by,
         formulations(name, code, version),
         batch_flasks(id, flask_label, flask_full_id, status),
         batch_fermentation_readings(ph, is_ph_alarm, is_temp_alarm, logged_at)
       `)
       .order('created_at', { ascending: false });
+
+    query = archiveFilter === 'true'
+      ? query.not('archived_at', 'is', null)
+      : query.is('archived_at', null);
 
     if (statusFilter) {
       query = query.eq('status', statusFilter);
@@ -300,7 +305,17 @@ export async function DELETE(request) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const permanent = searchParams.get('permanent') === 'true';
     if (!id) return NextResponse.json({ error: 'Missing batch ID' }, { status: 400 });
+
+    const { data: currentUser } = await supabase
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+    if (!currentUser || (!can(currentUser.role, 'batches', 'delete') && !isMasterAdmin(user.email))) {
+      return NextResponse.json({ error: 'Insufficient permissions to archive or delete batches.' }, { status: 403 });
+    }
 
     const { data: batch, error: fetchErr } = await supabase
       .from('batches')
@@ -309,8 +324,36 @@ export async function DELETE(request) {
       .single();
 
     if (fetchErr || !batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
-    if (['released', 'rejected'].includes(batch.status)) {
-      return NextResponse.json({ error: 'Cannot delete a finalised batch.' }, { status: 403 });
+
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    if (!permanent) {
+      if (batch.archived_at) {
+        return NextResponse.json({ success: true, message: 'Batch is already archived.' });
+      }
+
+      const { error: archiveErr } = await adminSupabase
+        .from('batches')
+        .update({
+          archived_at: new Date().toISOString(),
+          archived_by: currentUser.id,
+        })
+        .eq('id', id);
+      if (archiveErr) throw archiveErr;
+
+      return NextResponse.json({
+        success: true,
+        archived: true,
+        message: 'Batch archived. Permanent delete is available only from Archived.',
+      });
+    }
+
+    if (!batch.archived_at) {
+      return NextResponse.json({ error: 'Archive this batch before permanently deleting it.' }, { status: 409 });
     }
 
     // Reverse any inventory movements already recorded
@@ -332,13 +375,6 @@ export async function DELETE(request) {
       }
     }
 
-    // Use admin client to bypass RLS blocks on immutable tables (like Lab Notebooks or Stage History)
-    const adminSupabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
     // Explicitly delete child records to satisfy constraints without needing ON DELETE CASCADE
     await adminSupabase.from('stage_transitions').delete().eq('batch_id', id);
     await adminSupabase.from('batch_stage_media_prep').delete().eq('batch_id', id);
@@ -352,7 +388,7 @@ export async function DELETE(request) {
     const { error: deleteErr } = await adminSupabase.from('batches').delete().eq('id', id);
     if (deleteErr) throw deleteErr;
 
-    return NextResponse.json({ success: true, message: 'Batch cancelled. Materials restored.' });
+    return NextResponse.json({ success: true, permanentlyDeleted: true, message: 'Archived batch permanently deleted. Materials restored.' });
 
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

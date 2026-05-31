@@ -120,6 +120,7 @@ export default function BatchesPage() {
 
   const [activeBatches,    setActiveBatches]    = useState([]);
   const [history,          setHistory]          = useState([]);
+  const [archivedBatches,  setArchivedBatches]  = useState([]);
   const [isAlert,          setIsAlert]          = useState(false);
   const [loadingBatches,   setLoadingBatches]   = useState(true);
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
@@ -162,30 +163,43 @@ export default function BatchesPage() {
   const fetchBatches = useCallback(async () => {
     setLoadingBatches(true);
     try {
-      const [activeRes, completedRes] = await Promise.all([
+      const [activeRes, completedRes, archivedRes] = await Promise.all([
         supabase
           .from('batches')
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
-            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
+            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
             created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
+          .is('archived_at', null)
           .not('status', 'in', '("released","rejected")')
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
-            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm,
+            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
             created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
+          .is('archived_at', null)
           .in('status', ['released', 'rejected'])
           .order('created_at', { ascending: false })
           .limit(20),
+        supabase
+          .from('batches')
+          .select(`
+            id, batch_id, experiment_type, sku_target, status, current_stage,
+            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
+            created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
+            formulations(name, code, version),
+            batch_flasks(id, flask_label, status, current_stage)
+          `)
+          .not('archived_at', 'is', null)
+          .order('archived_at', { ascending: false }),
       ]);
 
       const fetchedActive = (activeRes.data || []).map(normaliseBatchForList);
@@ -217,6 +231,7 @@ export default function BatchesPage() {
       setIsAlert(hasAlarm);
       setActiveBatches(activeWithEp);
       setHistory(completed);
+      setArchivedBatches((archivedRes.data || []).map(normaliseBatchForList));
     } catch (err) {
       console.error('Fetch batches error:', err);
     } finally {
@@ -312,9 +327,22 @@ export default function BatchesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setActiveBatches(prev => prev.filter(b => b.id !== id));
-      toast.success('Batch cancelled.');
+      fetchBatches();
+      toast.success(data.message || 'Batch archived.');
     } catch (err) {
-      toast.error('Failed to cancel batch: ' + err.message);
+      toast.error('Failed to archive batch: ' + err.message);
+    }
+  };
+
+  const handlePermanentDeleteBatch = async (id) => {
+    try {
+      const res  = await fetch(`/api/batches?id=${id}&permanent=true`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setArchivedBatches(prev => prev.filter(b => b.id !== id));
+      toast.success(data.message || 'Archived batch permanently deleted.');
+    } catch (err) {
+      toast.error('Failed to permanently delete batch: ' + err.message);
     }
   };
 
@@ -342,6 +370,7 @@ export default function BatchesPage() {
         case 'scheduled': return activeBatches.filter(isScheduledBatch);
         case 'released':  return history.filter(b => b.status === 'released');
         case 'rejected':  return history.filter(b => b.status === 'rejected');
+        case 'archived':  return archivedBatches;
         default:          return activeBatches.filter(b => !isScheduledBatch(b));
       }
     })();
@@ -364,15 +393,16 @@ export default function BatchesPage() {
         if (sortOrder === 'stage') return (STAGE_ORDER.indexOf(a.current_stage) - STAGE_ORDER.indexOf(b.current_stage));
         return new Date(b.created_at || b.start_time || 0) - new Date(a.created_at || a.start_time || 0);
       });
-  }, [statusFilter, activeBatches, history, searchTerm, sortOrder]);
+  }, [statusFilter, activeBatches, history, archivedBatches, searchTerm, sortOrder]);
 
-  const isHistoryView = ['released','rejected'].includes(statusFilter);
+  const isHistoryView = ['released','rejected','archived'].includes(statusFilter);
 
   const SECTION_LABELS = {
     active:    'Active & In‑Progress Batches',
     scheduled: 'Scheduled Batches',
     released:  'Released Batches',
     rejected:  'Rejected Batches',
+    archived:  'Archived Batches',
   };
 
   const tabCounts = {
@@ -380,6 +410,7 @@ export default function BatchesPage() {
     scheduled: activeBatches.filter(isScheduledBatch).length,
     released:  history.filter(b => b.status === 'released').length,
     rejected:  history.filter(b => b.status === 'rejected').length,
+    archived:  archivedBatches.length,
   };
 
   // ─── Loading State ────────────────────────────────────────
@@ -435,7 +466,7 @@ export default function BatchesPage() {
 
       {/* Status Filter Tabs */}
       <div className="flex gap-2 flex-wrap mt-6">
-        {['active', 'scheduled', 'released', 'rejected'].map(f => (
+        {['active', 'scheduled', 'released', 'rejected', 'archived'].map(f => (
           <button
             key={f}
             onClick={() => setStatusFilter(f)}
@@ -560,7 +591,7 @@ export default function BatchesPage() {
                         <button
                           onClick={e => { e.preventDefault(); setCancelConfirmId(batch.id); }}
                           className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
-                          title="Cancel Batch"
+                          title="Archive Batch"
                         >
                           <Trash2 className="w-3 h-3"/>
                         </button>
@@ -676,7 +707,7 @@ export default function BatchesPage() {
                   <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recipe</th>
                   <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider">Report</th>
+                  <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -691,14 +722,22 @@ export default function BatchesPage() {
                     </td>
                     <td className="px-6 py-3.5 text-xs font-semibold text-gray-700">{l.formulations?.name || '—'}</td>
                     <td className="px-6 py-3.5">
-                      <span className={`px-2 py-0.5 inline-flex text-[9px] font-black uppercase tracking-wider rounded border ${l.status === 'released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                        {l.status}
+                      <span className={`px-2 py-0.5 inline-flex text-[9px] font-black uppercase tracking-wider rounded border ${statusFilter === 'archived' ? 'bg-slate-50 text-slate-600 border-slate-200' : l.status === 'released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                        {statusFilter === 'archived' ? 'archived' : l.status}
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-xs text-gray-500 font-semibold">
                       {l.start_time ? format(new Date(l.start_time), 'MMM d, yyyy') : '—'}
                     </td>
-                    <td className="px-6 py-3.5 text-right">
+                    <td className="px-6 py-3.5 text-right space-x-3">
+                      {statusFilter === 'archived' && isAdmin ? (
+                        <button
+                          onClick={() => handlePermanentDeleteBatch(l.id)}
+                          className="text-xs font-bold text-red-600 hover:underline"
+                        >
+                          Delete permanently
+                        </button>
+                      ) : null}
                       <Link href={`/batches/${l.id}`} className="text-xs font-bold text-accent hover:underline">
                         View →
                       </Link>
@@ -921,8 +960,8 @@ export default function BatchesPage() {
                   <Trash2 className="w-5 h-5 text-red-500" />
                 </div>
                 <div>
-                  <h3 className="font-black text-gray-900 text-sm">Cancel this batch?</h3>
-                  <p className="text-xs text-gray-500 mt-1">All associated tasks will be deleted. This action cannot be undone.</p>
+                  <h3 className="font-black text-gray-900 text-sm">Archive this batch?</h3>
+                  <p className="text-xs text-gray-500 mt-1">It will be hidden from active lists. Permanent delete is available only from Archived.</p>
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
@@ -936,7 +975,7 @@ export default function BatchesPage() {
                   onClick={() => { const id = cancelConfirmId; setCancelConfirmId(null); handleCancelBatch(id); }}
                   className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
                 >
-                  Yes, Cancel
+                  Archive Batch
                 </button>
               </div>
             </motion.div>

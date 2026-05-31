@@ -1,19 +1,64 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
-import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useToast } from '@/context/ToastContext';
+import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2, UserPlus, UserCog, Sparkles, RefreshCw, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import PERMISSIONS, { ROLE_WEIGHTS } from '@/lib/permissions';
 
-function EmployeeIDCard({ emp, onClose }) {
+// ─── Employee ID Auto-Generation Logic ──────────────────────────────────────
+const COMPANY_PREFIX = 'O2B';
+const DESIGNATION_PRESETS = [
+  { label: 'Chief Executive Officer (CEO)', code: 'CE' },
+  { label: 'Chief Technology Officer (CTO)', code: 'CT' },
+  { label: 'Research Fellow', code: 'RF' },
+  { label: 'Scientist', code: 'SC' },
+  { label: 'Intern', code: 'IN' },
+  { label: 'Custom...', code: '' },
+];
+const ROLE_TO_CODE = {
+  'ceo': 'CE', 'cto': 'CT', 'research_fellow': 'RF', 'scientist': 'SC',
+  'research_intern': 'RI', 'intern': 'IN', 'admin': 'AD', 'staff': 'ST',
+};
+
+function generateEmployeeCode(existingCodes, designationCode) {
+  if (!designationCode || designationCode.trim().length < 1) return '';
+  const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-`;
+  const existing = existingCodes
+    .filter(c => c && c.startsWith(prefix))
+    .map(c => parseInt(c.replace(prefix, ''), 10))
+    .filter(n => !isNaN(n));
+  const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+  return `${prefix}${String(nextNum).padStart(3, '0')}`;
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="relative w-full max-w-sm">
         <button onClick={onClose} className="absolute -top-4 -right-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors">
           <X className="w-5 h-5 text-slate-600"/>
         </button>
+        
+        {isAdmin && (
+          <button onClick={() => { onClose(); onEdit(emp); }} className="absolute -top-4 -left-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-50 transition-colors" title="Edit Employee">
+            <UserCog className="w-5 h-5 text-teal-600"/>
+          </button>
+        )}
         
         {/* Modern ID Card Engine */}
         <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
@@ -75,18 +120,16 @@ function EmployeeIDCard({ emp, onClose }) {
 }
 
 export default function DirectoryClient({ initialEmployees }: { initialEmployees: any[] }) {
-  const { canDo, loading: authLoading } = useAuth() as any;
+  const { canDo, loading: authLoading, isAdmin } = useAuth() as any;
+  const toast = useToast();
   const [employees, setEmployees] = useState(initialEmployees || []);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 24;
+  const [editingEmployee, setEditingEmployee] = useState(null);
   
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-
 
   useEffect(() => {
     if (authLoading) return;
@@ -94,35 +137,25 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
       router.push('/dashboard');
       return;
     }
-    // Skipped fetching on mount since it relies on debounced search effect pulling the initial prop optimally.
+    fetchEmployees(); // We fetch all employees to allow proper grouping
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canDo, authLoading, router]);
 
-  const fetchEmployees = async (pageNum = 0, append = false) => {
-    if (!append) setLoading(true);
+  const fetchEmployees = async () => {
+    setLoading(true);
     try {
-      const start = pageNum * PAGE_SIZE;
-      const end = start + PAGE_SIZE - 1;
-
       let query = supabase
         .from('employees')
-        .select('id, full_name, designation, role, department, photo_url, employee_code, email, phone, blood_group, is_active')
-        .eq('is_active', true)
-        .order('full_name')
-        .range(start, end);
+        .select('*')
+        .order('full_name');
 
-      if (search) {
-        query = query.ilike('full_name', `%${search}%`);
+      if (!isAdmin) {
+          query = query.eq('is_active', true);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-
-      if (append) {
-        setEmployees(prev => [...prev, ...(data || [])]);
-      } else {
-        setEmployees(data || []);
-      }
-      setHasMore(data?.length === PAGE_SIZE);
+      setEmployees(data || []);
     } catch (err) {
       console.error("Directory fetch failed:", err);
     } finally {
@@ -130,38 +163,180 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
     }
   };
 
-  const loadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchEmployees(nextPage, true);
+  const filtered = useMemo(() => {
+    if (!search) return employees;
+    return employees.filter(e => e.full_name?.toLowerCase().includes(search.toLowerCase()) || e.employee_code?.toLowerCase().includes(search.toLowerCase()));
+  }, [employees, search]);
+
+  const groupedEmployees = useMemo(() => {
+      const groups = {};
+      filtered.forEach(emp => {
+          const roleKey = emp.role || 'staff';
+          if (!groups[roleKey]) groups[roleKey] = { role: roleKey, weight: ROLE_WEIGHTS[roleKey] || 0, employees: [] };
+          groups[roleKey].employees.push(emp);
+      });
+      return Object.values(groups).sort((a, b) => b.weight - a.weight);
+  }, [filtered]);
+
+  // Invite Modal logic
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+
+  const { register, handleSubmit, watch, setValue, reset } = useForm({
+    resolver: zodResolver(z.object({
+      full_name: z.string().min(1),
+      email: z.string().email(),
+      password: z.string().min(6),
+      role: z.string(),
+      department: z.string(),
+      designation: z.string().optional(),
+      designation_code: z.string().optional(),
+      custom_code: z.string().max(3).optional(),
+      employee_code: z.string().optional(),
+      joined_date: z.string().optional(),
+      base_salary: z.string().optional()
+    })),
+    defaultValues: { full_name: '', email: '', password: '', role: 'staff', department: 'R&D', designation: '', designation_code: 'RF', custom_code: '', employee_code: '', joined_date: '' }
+  });
+
+  const watchDesigCode = watch('designation_code');
+  const watchCustomCode = watch('custom_code');
+  const watchEmployeeCode = watch('employee_code');
+  const watchRole = watch('role');
+
+  useEffect(() => {
+    if (!watchDesigCode && !watchCustomCode) return;
+    const code = watchDesigCode || watchCustomCode;
+    if (code?.length < 1) return;
+    const existingCodes = employees.filter(e => e.is_active).map(e => e.employee_code);
+    const generated = generateEmployeeCode(existingCodes, code);
+    setValue('employee_code', generated);
+  }, [watchDesigCode, watchCustomCode, watchRole, employees, setValue]);
+
+  const handleInviteSubmit = async (data) => {
+    setInviting(true);
+    setInviteError('');
+    const designationLabel = DESIGNATION_PRESETS.find(d => d.code === data.designation_code)?.label || data.designation;
+
+    try {
+      const res = await fetch('/api/admin/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: data.full_name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          department: data.department,
+          employee_code: data.employee_code,
+          designation: designationLabel || data.designation,
+          joined_date: data.joined_date || new Date().toISOString().split('T')[0],
+          base_salary: parseFloat(data.base_salary || 0)
+        })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to invite user');
+
+      setShowInviteModal(false);
+      reset();
+      fetchEmployees();
+    } catch (err) {
+      setInviteError(err.message);
+    } finally {
+      setInviting(false);
+    }
   };
 
-  // Debounced search reset
-  useEffect(() => {
-    if (authLoading) return;
-    setPage(0);
-    setHasMore(true);
-    const handler = setTimeout(() => {
-        // Optimisation: skip fetching if search is empty and we have our initial payload covering the page 0
-        if (!search && initialEmployees && initialEmployees.length > 0) {
-           setEmployees(initialEmployees);
-           setHasMore(initialEmployees.length === PAGE_SIZE);
-           setLoading(false);
-        } else {
-           fetchEmployees(0, false);
-        }
-    }, 300);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, authLoading, initialEmployees]);
+  // Edit logic
+  const [activeTab, setActiveTab] = useState('details');
+  const [updateLoading, setUpdateLoading] = useState(false);
 
-  const filtered = employees;
+  const [editForm, setEditForm] = useState({});
+  const [customPerms, setCustomPerms] = useState({});
+
+  useEffect(() => {
+    if (editingEmployee) {
+      setEditForm({
+         base_salary: editingEmployee.base_salary || '',
+         role: editingEmployee.role || 'staff',
+         designation: editingEmployee.designation || '',
+         is_active: editingEmployee.is_active
+      });
+      setCustomPerms(editingEmployee.custom_permissions || {});
+    }
+  }, [editingEmployee]);
+
+  const handleUpdateDetails = async () => {
+     setUpdateLoading(true);
+     try {
+         // Update Salary
+         await fetch('/api/admin/update-salary', {
+             method: 'POST', headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ employee_id: editingEmployee.id, base_salary: editForm.base_salary })
+         });
+         
+         // Update Role
+         await fetch('/api/admin/update-role', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                employee_id: editingEmployee.id,
+                new_role: editForm.role,
+                new_designation: editForm.designation,
+                designation_code: ROLE_TO_CODE[editForm.role] || editForm.role.substring(0,2).toUpperCase()
+            })
+         });
+
+         // Deactivate/Activate if changed
+         if (editForm.is_active !== editingEmployee.is_active) {
+            await fetch('/api/admin/deactivate', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: editingEmployee.id, target_status: editForm.is_active })
+            });
+         }
+
+         toast.success("Employee details updated");
+         fetchEmployees();
+     } catch (err) {
+         toast.error(err.message);
+     } finally {
+         setUpdateLoading(false);
+     }
+  };
+
+  const handleUpdatePermissions = async () => {
+      setUpdateLoading(true);
+      try {
+          const res = await fetch('/api/admin/update-permissions', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ employee_id: editingEmployee.id, custom_permissions: customPerms })
+          });
+          if (!res.ok) throw new Error("Failed to update permissions");
+          toast.success("Access management updated");
+          fetchEmployees();
+      } catch (err) {
+          toast.error(err.message);
+      } finally {
+          setUpdateLoading(false);
+      }
+  };
 
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Employee Directory</h1>
-        <p className="text-slate-500 font-medium mt-1">{employees.length} active team members</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Staff Directory</h1>
+          <p className="text-slate-500 font-medium mt-1">{employees.length} team members</p>
+        </div>
+        {isAdmin && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center justify-center px-6 py-3 bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-black rounded-2xl hover:from-teal-400 hover:to-cyan-500 transition-all shadow-lg shadow-teal-500/20 active:scale-95"
+            >
+              <UserPlus className="w-5 h-5 mr-2"/> Add Employee
+            </button>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -169,14 +344,14 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
         <input
           type="text"
-          placeholder="Search by name..."
+          placeholder="Search by name or code..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full pl-12 pr-4 py-4 glass-card rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy placeholder:text-slate-400"
         />
       </div>
 
-      {/* Employee Cards Grid */}
+      {/* Employee Cards Grid Grouped */}
       {loading && employees.length === 0 ? (
         <div className="flex justify-center py-20">
           <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
@@ -187,62 +362,257 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
           <p className="font-bold text-lg">No employees found</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(emp => (
-              <div key={emp.id} className="glass-card rounded-[1.75rem] p-6 flex flex-col gap-4 cursor-pointer" onClick={() => setSelected(emp)}>
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-slate-100 border border-white shadow-sm shrink-0">
-                    {emp.photo_url ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
-                        {(() => {
-                          const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
-                          const parts = emp.full_name?.split(' ') || [];
-                          const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
-                          return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
-                    <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role}</p>
-                    <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
-                  </div>
-                </div>
+        <div className="space-y-12">
+            {groupedEmployees.map(group => (
+                <div key={group.role} className="space-y-4">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2">{group.role.replace('_', ' ')}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {group.employees.map(emp => (
+                        <div key={emp.id} className={`glass-card rounded-[1.75rem] p-6 flex flex-col gap-4 cursor-pointer ${!emp.is_active ? 'opacity-50' : ''}`} onClick={() => setSelected(emp)}>
+                            <div className="flex items-start gap-4">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-slate-100 border border-white shadow-sm shrink-0">
+                                {emp.photo_url ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
+                                ) : (
+                                <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
+                                    {(() => {
+                                    const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
+                                    const parts = emp.full_name?.split(' ') || [];
+                                    const startIdx = (parts.length > 1 && titles.includes(parts[0])) ? 1 : 0;
+                                    return parts.slice(startIdx, startIdx + 2).map(n => n[0]).join('').toUpperCase();
+                                    })()}
+                                </div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
+                                <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role}</p>
+                                <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
+                            </div>
+                            </div>
 
-                <div className="space-y-1.5 text-xs text-slate-500 border-t border-white/40 pt-4">
-                  {emp.employee_code && <div className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-slate-400"/><span className="font-bold">{emp.employee_code}</span></div>}
-                  <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400"/><span className="truncate">{emp.email}</span></div>
-                  {emp.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400"/>{emp.phone}</div>}
-                  {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
-                </div>
+                            <div className="space-y-1.5 text-xs text-slate-500 border-t border-white/40 pt-4">
+                            {emp.employee_code && <div className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-slate-400"/><span className="font-bold">{emp.employee_code}</span></div>}
+                            <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400"/><span className="truncate">{emp.email}</span></div>
+                            {emp.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400"/>{emp.phone}</div>}
+                            {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
+                            </div>
 
-                <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all">
-                  <CreditCard className="w-3.5 h-3.5"/> View ID Card
-                </button>
-              </div>
+                            <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all">
+                                <CreditCard className="w-3.5 h-3.5"/> View ID Card
+                            </button>
+                        </div>
+                        ))}
+                    </div>
+                </div>
             ))}
-          </div>
-          
-          {hasMore && (
-            <div className="pt-4 flex justify-center">
-              <button 
-                onClick={loadMore}
-                disabled={loading}
-                className="px-8 py-3 bg-white border border-teal-100 text-teal-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-teal-100 transition-all flex items-center gap-2"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Load More Teammates'}
-              </button>
-            </div>
-          )}
         </div>
       )}
 
-      {selected && <EmployeeIDCard emp={selected} onClose={() => setSelected(null)}/>}
+      {selected && <EmployeeIDCard emp={selected} onClose={() => setSelected(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin}/>}
+
+      {/* Edit Employee Modal */}
+      {editingEmployee && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <div className="bg-white rounded-[2rem] max-w-2xl w-full p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+                <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
+                <h2 className="text-2xl font-black text-slate-800 mb-2">Edit {editingEmployee.full_name}</h2>
+                <p className="text-sm text-slate-500 mb-6">Manage details and specific access overrides for this user.</p>
+
+                <div className="flex gap-4 border-b border-slate-200 mb-6">
+                    <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'details' ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('details')}>Details & Role</button>
+                    <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'access' ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('access')}>Access Management</button>
+                </div>
+
+                {activeTab === 'details' && (
+                    <div className="space-y-5">
+                        <Field label="System Role">
+                            <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700">
+                                <option value="intern">Intern</option>
+                                <option value="research_intern">Research Intern</option>
+                                <option value="scientist">Scientist</option>
+                                <option value="research_fellow">Research Fellow</option>
+                                <option value="cto">CTO</option>
+                                <option value="ceo">CEO</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </Field>
+                        <Field label="Display Designation">
+                            <input value={editForm.designation} onChange={e => setEditForm({...editForm, designation: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
+                        </Field>
+                        <Field label="Base Salary (₹)">
+                            <input type="number" value={editForm.base_salary} onChange={e => setEditForm({...editForm, base_salary: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
+                        </Field>
+                        <Field label="Account Status">
+                             <select value={editForm.is_active} onChange={e => setEditForm({...editForm, is_active: e.target.value === 'true'})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive / Deactivated</option>
+                            </select>
+                        </Field>
+
+                        <div className="flex justify-end pt-4">
+                            <button onClick={handleUpdateDetails} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
+                                {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Details
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'access' && (
+                    <div className="space-y-6">
+                        <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+                            Overrides the default role permissions. If unchecked, defaults to role permission. If checked, forces access.
+                            This UI modifies the `custom_permissions` JSON.
+                        </p>
+                        
+                        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+                            {Object.keys(PERMISSIONS).map(moduleName => (
+                                <div key={moduleName} className="border border-slate-100 rounded-xl p-4 bg-white shadow-sm">
+                                    <h4 className="font-bold text-sm text-slate-700 capitalize mb-3 border-b border-slate-50 pb-2">{moduleName.replace('_', ' ')}</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {Object.keys(PERMISSIONS[moduleName]).map(actionName => {
+                                            const isEnabled = customPerms[moduleName]?.[actionName] || false;
+                                            return (
+                                                <label key={actionName} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer p-2 rounded-lg hover:bg-slate-50">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={isEnabled}
+                                                        onChange={(e) => {
+                                                            const newPerms = { ...customPerms };
+                                                            if (!newPerms[moduleName]) newPerms[moduleName] = {};
+                                                            newPerms[moduleName][actionName] = e.target.checked;
+                                                            setCustomPerms(newPerms);
+                                                        }}
+                                                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <span className="capitalize">{actionName.replace('_', ' ')}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end pt-4 border-t border-slate-100">
+                            <button onClick={handleUpdatePermissions} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
+                                {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Permissions
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+      )}
+
+      {/* Add Employee Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="glass-panel rounded-[2rem] max-w-lg w-full p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
+            <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all">
+              <X className="w-5 h-5"/>
+            </button>
+            <h2 className="text-2xl font-black text-slate-800 mb-1 tracking-tight">Add Employee</h2>
+            <p className="text-slate-500 text-sm mb-6">System will auto-generate the employee ID code.</p>
+
+            {inviteError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 font-medium">{inviteError}</div>}
+
+            <form onSubmit={handleSubmit(handleInviteSubmit)} className="space-y-5">
+              <div className="grid grid-cols-1 gap-4">
+                <Field label="Full Name">
+                  <input {...register('full_name')} className="input-field" placeholder="Santha Kumari R K"/>
+                </Field>
+                <Field label="Email Address">
+                  <input {...register('email')} className="input-field" placeholder="santha@oxygenbioinnovations.com"/>
+                </Field>
+                <Field label="Temporary Password">
+                  <input {...register('password')} className="input-field" placeholder="Initial login password"/>
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Role">
+                  <select {...register('role')} className="input-field">
+                    <option value="admin">Administrator</option>
+                    <option value="staff">Staff / R&D</option>
+                    <option value="intern">Intern</option>
+                  </select>
+                </Field>
+                <Field label="Department">
+                  <select {...register('department')} className="input-field">
+                    <option value="R&D">R&amp;D</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </Field>
+              </div>
+              <Field label="Date of Joining">
+                <input type="date" {...register('joined_date')} className="input-field"/>
+              </Field>
+
+              <Field label="Base Salary (₹)">
+                <input type="number" step="1000" {...register('base_salary')} className="input-field" placeholder="e.g. 50000"/>
+              </Field>
+
+              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-teal-600"/>
+                  <span className="text-sm font-black text-slate-700 uppercase tracking-wider">Employee ID Auto-Generator</span>
+                </div>
+
+                <Field label="Designation">
+                  <select {...register('designation_code', {
+                    onChange: (e) => {
+                      const preset = DESIGNATION_PRESETS.find(d => d.code === e.target.value);
+                      setValue('designation', preset?.label || '');
+                    }
+                  })} className="input-field">
+                    {DESIGNATION_PRESETS.map(d => (
+                      <option key={d.code} value={d.code}>{d.label} {d.code ? `(${d.code})` : ''}</option>
+                    ))}
+                  </select>
+                </Field>
+
+                {!watchDesigCode && (
+                  <Field label="Custom Designation Code (2-3 letters)">
+                    <input type="text" maxLength={3} {...register('custom_code', {
+                      onChange: (e) => setValue('custom_code', e.target.value.toUpperCase())
+                    })} className="input-field uppercase" placeholder="e.g. QA, BT, HR"/>
+                  </Field>
+                )}
+
+                <div>
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
+                  <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
+                    <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button disabled={inviting} type="submit" className="w-full bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-black py-4 rounded-2xl hover:from-teal-400 hover:to-cyan-500 transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-teal-500/20 active:scale-95">
+                {inviting ? <Loader2 className="w-5 h-5 animate-spin"/> : <UserPlus className="w-5 h-5"/>}
+                {inviting ? 'Creating Account...' : 'Create Employee Account'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .input-field {
+          width: 100%;
+          padding: 0.625rem 1rem;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 0.75rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #334155;
+          outline: none;
+          transition: all 0.2s;
+        }
+        .input-field:focus { ring: 2px; border-color: #14b8a6; background: white; }
+      `}</style>
     </div>
   );
 }
