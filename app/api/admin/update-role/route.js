@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
 
 const COMPANY_PREFIX = 'O2B';
 
@@ -65,7 +66,7 @@ export async function POST(req) {
     });
 
     // Only admin/ceo/cto can change roles
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     const { data: requester } = await supabaseAdmin.from('employees').select('role').eq('id', user.id).single();
     const isAuthorized = isMaster || (['admin', 'ceo', 'cto'].includes(requester?.role));
     if (!isAuthorized) return NextResponse.json({ error: 'Forbidden. Admin only.' }, { status: 403 });

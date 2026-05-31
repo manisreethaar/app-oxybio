@@ -5,7 +5,7 @@ import {
 } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { can, getPermissionsForRole } from '@/lib/permissions';
+import { can, getPermissionsForRole, isMasterAdmin } from '@/lib/permissions';
 
 const AuthContext = createContext({});
 
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       }
 
       if (data?.role) data.role = data.role.toLowerCase();
-      if (email === 'manisreethaar@gmail.com') {
+      if (isMasterAdmin(email)) {
         if (!data) return { email, role: 'admin', full_name: 'Master Admin', is_active: true };
         data.role = 'admin';
       }
@@ -232,7 +232,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
     user,
     employeeProfile,
     role,
-    isAdmin: role === 'admin' || role === 'ceo' || role === 'cto' || user?.email === 'manisreethaar@gmail.com',
+    isAdmin: role === 'admin' || role === 'ceo' || role === 'cto' || isMasterAdmin(user?.email),
     isResearchFellow: role === 'research_fellow',
     isScientist: role === 'scientist',
     isIntern: role === 'intern' || role === 'research_intern',

@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
-import { canAssignTo } from '@/lib/permissions';
+import { canAssignTo, isMasterAdmin } from '@/lib/permissions';
 import { createTaskSchema, ACTION_PAYLOAD_SCHEMAS, patchSchema } from '@/lib/schemas/tasks';
 import { canPatchTaskAction } from '@/lib/tasks/access';
 
@@ -17,7 +17,7 @@ export async function POST(request) {
 
     const body = await request.json();
     // Master Admin Override
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     
     // Support batch inserts for multiple assignees
     const tasks = Array.isArray(body) ? body : [body];
@@ -242,7 +242,7 @@ export async function DELETE(request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
 
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     const { data: task } = await supabase.from('tasks').select('assigned_to, assigned_by').eq('id', id).single();
     const { data: currentUser } = await supabase.from('employees').select('id').eq('email', user.email.toLowerCase()).single();
 
@@ -271,7 +271,7 @@ export async function PUT(request) {
 
     if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
 
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     const { data: task } = await supabase.from('tasks').select('assigned_by').eq('id', id).single();
     const { data: currentUser } = await supabase.from('employees').select('id, role').eq('email', user.email.toLowerCase()).single();
 

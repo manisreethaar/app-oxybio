@@ -114,7 +114,7 @@ const batchSchema = z.object({
 });
 
 export default function BatchesPage() {
-  const { employeeProfile, role, canDo, loading: authLoading } = useAuth();
+  const { employeeProfile, role, isAdmin, canDo, loading: authLoading } = useAuth();
   const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
 
@@ -546,7 +546,7 @@ export default function BatchesPage() {
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
                       <p className="text-xl font-black text-gray-800 tabular-nums">{hours} <span className="text-xs font-bold text-gray-400">HRS</span></p>
-                      {(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') ? (
+                      {isAdmin ? (
                         <button
                           onClick={e => { e.preventDefault(); setCancelConfirmId(batch.id); }}
                           className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"

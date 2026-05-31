@@ -48,7 +48,7 @@ function generateEmployeeCode(existingCodes, designationCode) {
 }
 
 export default function UsersPage() {
-  const { role, employeeProfile, loading: authLoading, refreshProfile } = useAuth();
+  const { role, isAdmin, employeeProfile, loading: authLoading, refreshProfile } = useAuth();
   const toast = useToast();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,9 +97,6 @@ export default function UsersPage() {
     if (authLoading) return;
     
     // Master Admin Override
-    const isMaster = (employeeProfile?.email === 'manisreethaar@gmail.com');
-    const isAdmin = ['admin', 'ceo', 'cto'].includes(role) || isMaster;
-
     if (isAdmin) {
       fetchUsers();
     } else if (role) {
@@ -261,7 +258,7 @@ export default function UsersPage() {
           <p className="text-red-600 font-bold">{fetchError}</p>
           <button onClick={fetchUsers} className="px-4 py-2 bg-teal-700 text-white rounded-xl font-bold text-sm">Retry</button>
         </div>
-      ) : !(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.email === 'manisreethaar@gmail.com') ? (
+      ) : !isAdmin ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
            <ShieldCheck className="w-16 h-16 text-slate-200" />
            <p className="text-slate-500 font-bold">Access Denied: Administrative Clearance Required</p>

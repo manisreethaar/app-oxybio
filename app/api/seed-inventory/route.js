@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
 
 const data = {
   "RAW MATERIALS LIST": [
@@ -160,7 +161,11 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
-        return NextResponse.json({ error: 'Unauthorized to run seed. Please ensure you are logged into the app.' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized to run seed. Please ensure you are logged into the app.' }, { status: 401 });
+    }
+
+    if (!isMasterAdmin(user.email)) {
+      return NextResponse.json({ error: 'Forbidden: Only the master admin can run the seed.' }, { status: 403 });
     }
 
     let results = [];

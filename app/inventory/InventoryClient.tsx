@@ -21,7 +21,7 @@ import {
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
-  const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || user?.email === 'manisreethaar@gmail.com';
+  const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
   const [stock, setStock] = useState(initialStock || []);

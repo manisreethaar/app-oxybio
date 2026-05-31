@@ -1,35 +1,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { can } from '@/lib/permissions';
+import { requireLabAccess } from '@/lib/research/access';
 import { incubationSchema } from './_validation';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
 export const dynamic = 'force-dynamic';
 
-const MASTER_EMAIL = 'manisreethaar@gmail.com';
-
-async function requireLabAccess(supabase, action = 'view') {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) };
-  }
-
-  const { data: employee } = await supabase
-    .from('employees')
-    .select('id, role, full_name')
-    .eq('email', user.email)
-    .single();
-
-  if (!employee && user.email !== MASTER_EMAIL) {
-    return { error: NextResponse.json({ success: false, error: 'Forbidden: Employee not found' }, { status: 403 }) };
-  }
-
-  if (user.email !== MASTER_EMAIL && !can(employee?.role, 'batches', action)) {
-    return { error: NextResponse.json({ success: false, error: 'Permission Denied' }, { status: 403 }) };
-  }
-
-  return { user, employee };
-}
 
 function parsePayload(body) {
   const parsed = incubationSchema.safeParse(body);
