@@ -47,6 +47,113 @@ function Field({ label, children }) {
   );
 }
 
+function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
+  return (
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-teal-500 to-cyan-700"/>
+        
+        <button onClick={onClose} className="absolute top-6 right-6 z-40 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors">
+          <X className="w-5 h-5"/>
+        </button>
+
+        <div className="p-8 pt-12 relative z-10 flex-1 overflow-y-auto">
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="w-28 h-28 rounded-2xl overflow-hidden bg-white border-4 border-white shadow-lg shrink-0">
+              {emp.photo_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                  <User className="w-10 h-10 text-slate-300"/>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 pt-2">
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{emp.full_name}</h2>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${emp.is_active ? 'bg-teal-50 text-teal-600' : 'bg-red-50 text-red-600'}`}>
+                  {emp.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-teal-600 mb-1">{emp.designation || emp.role}</p>
+              <p className="text-xs text-slate-500 font-medium">{emp.department} Department</p>
+              
+              <div className="flex gap-4 mt-4 text-xs font-semibold text-slate-600">
+                {emp.employee_code && <span className="flex items-center gap-1.5"><Hash className="w-4 h-4 text-slate-400"/> {emp.employee_code}</span>}
+                {emp.blood_group && <span className="flex items-center gap-1.5"><Droplets className="w-4 h-4 text-red-400"/> {emp.blood_group}</span>}
+              </div>
+            </div>
+
+            {isAdmin && (
+               <button onClick={() => { onClose(); onEdit(emp); }} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">
+                 <UserCog className="w-4 h-4"/> Edit Profile
+               </button>
+            )}
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Briefcase className="w-4 h-4"/> Contact Details</h3>
+                  <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                      <Mail className="w-4 h-4 text-teal-500 shrink-0"/> {emp.email || '—'}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                      <Phone className="w-4 h-4 text-teal-500 shrink-0"/> {emp.phone || '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4"/> Emergency Info</h3>
+                  <div className="space-y-3 bg-red-50/50 p-4 rounded-2xl border border-red-100/50">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contact Name</p>
+                      <p className="text-sm font-semibold text-slate-700">{emp.emergency_contact_name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone Number</p>
+                      <p className="text-sm font-semibold text-slate-700">{emp.emergency_contact || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Calendar className="w-4 h-4"/> Important Dates</h3>
+                  <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-500">Date of Birth</span>
+                      <span className="text-sm font-semibold text-slate-800">{emp.date_of_birth ? new Date(emp.date_of_birth).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
+                      <span className="text-xs font-bold text-slate-500">Date of Joining</span>
+                      <span className="text-sm font-semibold text-slate-800">{emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><MapPin className="w-4 h-4"/> Residential Address</h3>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 min-h-[5rem]">
+                    <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {emp.address || '—'}
+                    </p>
+                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
   const [showFullProfile, setShowFullProfile] = useState(false);
 
@@ -144,6 +251,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
+  const [viewingProfile, setViewingProfile] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showInactive, setShowInactive] = useState(false);
   
@@ -451,8 +559,11 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             </div>
 
                             <div className="flex gap-2 w-full mt-2">
-                                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all shadow-sm">
-                                    <CreditCard className="w-3.5 h-3.5"/> View ID
+                                <button onClick={(e) => { e.stopPropagation(); setViewingProfile(emp); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-black text-slate-600 border border-slate-200 transition-all shadow-sm">
+                                    <User className="w-3.5 h-3.5"/> Profile
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setSelected(emp); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all shadow-sm">
+                                    <CreditCard className="w-3.5 h-3.5"/> ID Card
                                 </button>
                                 {isAdmin && (
                                     <button 
@@ -474,6 +585,12 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         {/* ID Card Modal */}
       {selected && typeof document !== 'undefined' && createPortal(
         <EmployeeIDCard emp={selected} onClose={() => setSelected(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin}/>,
+        document.body
+      )}
+
+        {/* Profile Modal */}
+      {viewingProfile && typeof document !== 'undefined' && createPortal(
+        <ProfileModal emp={viewingProfile} onClose={() => setViewingProfile(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin}/>,
         document.body
       )}
 
