@@ -641,6 +641,7 @@ export default function GrowthStudyDetailPage() {
             {measurements.length === 0 ? (
               <p className="text-slate-400 text-sm font-medium text-center py-6">No measurements recorded yet.</p>
             ) : (
+              <>
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-xs font-medium">
                   <thead>
@@ -706,6 +707,7 @@ export default function GrowthStudyDetailPage() {
                   </div>
                 ))}
               </div>
+              </>
             )}
           </div>
         </div>

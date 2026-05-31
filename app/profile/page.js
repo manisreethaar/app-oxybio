@@ -464,6 +464,7 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {editing && (
             <div className="mt-6">
               <InfoField 
                 label="Address" 
@@ -474,7 +475,9 @@ export default function ProfilePage() {
                 registerProps={register('address')}
               />
             </div>
+            )}
 
+            {editing && (
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <InfoField 
                 label="Emergency Contact Name" 
@@ -491,6 +494,15 @@ export default function ProfilePage() {
                 registerProps={register('emergency_contact')}
               />
             </div>
+            )}
+            {!editing && (
+              <div className="mt-6 rounded-2xl border border-slate-100 bg-white/40 p-4 flex items-start gap-3">
+                <Lock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                <p className="text-xs font-semibold text-slate-500 leading-relaxed">
+                  Address, date of birth, date of joining, emergency contact, and salary details are hidden in normal view and only appear while editing.
+                </p>
+              </div>
+            )}
           </form>
 
           {editing && (
