@@ -54,28 +54,32 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
       // For individual chats, check if one already exists to avoid duplicates
       if (type === 'individual') {
         const otherId = selectedIds[0];
-        const { data: existingMembers } = await supabase
+
+        // Fetch all individual chats the current user belongs to (no .single() — could be many)
+        const { data: myMemberships } = await supabase
           .from('chat_members')
           .select('chat_id')
           .eq('employee_id', me.id);
 
-        if (existingMembers && existingMembers.length > 0) {
-          const myChats = existingMembers.map(m => m.chat_id);
-          const { data: existingChat } = await supabase
-            .from('chats')
-            .select('*, members:chat_members(employee_id, employees!chat_members_employee_id_fkey(full_name))')
-            .eq('type', 'individual')
-            .in('id', myChats)
-            .single();
+        if (myMemberships && myMemberships.length > 0) {
+          const myChats = myMemberships.map(m => m.chat_id);
 
-          if (existingChat) {
-            // Verify the other person is in this chat
-            const hasOther = existingChat.members?.some(m => m.employee_id === otherId);
-            if (hasOther) {
-              toast.success('Opening existing chat');
-              onSuccess(existingChat);
-              return;
-            }
+          // Fetch all individual chats in that set (returns array, not single)
+          const { data: candidateChats } = await supabase
+            .from('chats')
+            .select('*, members:chat_members(employee_id, employees(full_name))')
+            .eq('type', 'individual')
+            .in('id', myChats);
+
+          // Find the one where the other person is also a member
+          const existing = (candidateChats || []).find(chat =>
+            chat.members?.some(m => m.employee_id === otherId)
+          );
+
+          if (existing) {
+            toast.success('Opening existing chat');
+            onSuccess(existing);
+            return;
           }
         }
       }
