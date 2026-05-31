@@ -6,10 +6,10 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { 
+import {
   Activity, AlertTriangle, MessageSquare, CheckCircle, Loader2,
-  Users, Clock, CheckSquare, FlaskConical, TrendingUp, 
-  CalendarCheck, Zap, Archive, Trash2
+  Users, Clock, CheckSquare, FlaskConical, TrendingUp,
+  CalendarCheck, Zap, Archive, Trash2, Edit2, X, Send
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,6 +38,14 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
   const [error, setError] = useState(null);
   const isMounted = useRef(true);
+  const isAdmin = useMemo(() => ['admin', 'ceo', 'cto'].includes(role), [role]);
+
+  // Edit/Delete request state (staff → admin approval flow)
+  const [editModal, setEditModal] = useState<any>(null); // the activity being edited
+  const [editForm, setEditForm] = useState<any>({});
+  const [requestingDelete, setRequestingDelete] = useState<string | null>(null);
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [myPendingIds, setMyPendingIds] = useState<Set<string>>(new Set());
 
 
   useEffect(() => {
@@ -119,6 +127,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches')
         .select('batch_id, product_name, status')
+        .is('archived_at', null)
         .in('status', ['fermenting', 'in-progress', 'testing', 'inoculation', 'media_prep', 'sterilisation', 'harvest', 'downstream', 'qc_hold'])
         .limit(20);
       const { data: equip } = await supabase.from('equipment').select('id, name, model, status').eq('status', 'Operational');
@@ -182,7 +191,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           supabase.from('attendance_log').select('employee_id').eq('date', today),
           supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
           supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
-          supabase.from('batches').select('batch_id, product_name, status').in('status', ['fermenting', 'in-progress', 'testing']).limit(5)
+          supabase.from('batches').select('batch_id, product_name, status').is('archived_at', null).in('status', ['fermenting', 'in-progress', 'testing']).limit(5)
         ]);
 
         if (!isMounted.current) return;
@@ -298,9 +307,113 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     } catch (err) { toast.error("Failed to save review note: " + err.message); }
   };
 
+  const handleArchiveActivity = async (id) => {
+    try {
+      const res = await fetch(`/api/activity?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to archive activity.');
+      toast.success(data.message || 'Activity archived.');
+      fetchData();
+    } catch (err) {
+      toast.error("Failed to archive activity: " + err.message);
+    }
+  };
+
+  const handlePermanentDeleteActivity = async (id) => {
+    try {
+      const res = await fetch(`/api/activity?id=${id}&permanent=true`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete activity.');
+      setArchivedActivities(prev => prev.filter(a => a.id !== id));
+      toast.success(data.message || 'Archived activity permanently deleted.');
+    } catch (err) {
+      toast.error("Failed to permanently delete activity: " + err.message);
+    }
+  };
+
+  // Fetch which activity_log record IDs already have a pending change request
+  const fetchMyPendingIds = useCallback(async () => {
+    const res = await fetch('/api/edit-request');
+    if (!res.ok) return;
+    const { data } = await res.json();
+    if (!data) return;
+    const ids = new Set<string>(
+      data
+        .filter((r: any) => r.table_name === 'activity_log' && r.status === 'pending')
+        .map((r: any) => r.record_id)
+    );
+    if (isMounted.current) setMyPendingIds(ids);
+  }, []);
+
+  useEffect(() => {
+    if (employeeProfile && !isAdmin) fetchMyPendingIds();
+  }, [employeeProfile, isAdmin, fetchMyPendingIds]);
+
+  const openEditModal = (act: any) => {
+    setEditModal(act);
+    setEditForm({
+      activity_description: act.activity_description || '',
+      start_time: act.start_time || '',
+      end_time: act.end_time || '',
+      issue_observed: act.issue_observed || false,
+      issue_description: act.issue_description || '',
+    });
+  };
+
+  const submitEditRequest = async () => {
+    if (!editModal) return;
+    setSubmittingRequest(true);
+    try {
+      const res = await fetch('/api/edit-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_name: 'activity_log',
+          record_id: editModal.id,
+          change_type: 'edit',
+          proposed_data: editForm,
+          module_label: 'Activity Log',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit request.');
+      toast.success('Edit request submitted — admin will review shortly.');
+      setEditModal(null);
+      fetchMyPendingIds();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
+
+  const submitDeleteRequest = async (id: string) => {
+    setSubmittingRequest(true);
+    try {
+      const res = await fetch('/api/edit-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_name: 'activity_log',
+          record_id: id,
+          change_type: 'delete',
+          module_label: 'Activity Log',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit request.');
+      toast.success('Archive request submitted — admin will review shortly.');
+      setRequestingDelete(null);
+      fetchMyPendingIds();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
+
   if (authLoading) return <div className="p-12"><Skeleton className="h-40 w-full mb-4"/><Skeleton className="h-60 w-full"/></div>;
 
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
   const nowHour = new Date().getHours();
   const greeting = nowHour < 12 ? 'Good morning' : nowHour < 17 ? 'Good afternoon' : 'Good evening';
 
@@ -356,6 +469,17 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {issues.filter(i => !i.founder_comment).length > 0 && (
                 <span className="bg-red-500 text-white py-0.5 px-1.5 rounded-full text-[10px] font-black">
                   {issues.filter(i => !i.founder_comment).length}
+                </span>
+              )}
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={() => setTab('archived')}
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'archived' ? 'border-slate-700 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              <Archive className="w-4 h-4"/> Archived
+              {archivedActivities.length > 0 && (
+                <span className="bg-slate-200 text-slate-700 py-0.5 px-1.5 rounded-full text-[10px] font-black">
+                  {archivedActivities.length}
                 </span>
               )}
             </button>
@@ -723,7 +847,39 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                       </span>
                     )}
                   </div>
-                  {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
+                  <div className="flex items-center gap-2">
+                    {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
+                    {isAdmin ? (
+                      <button
+                        onClick={() => handleArchiveActivity(act.id)}
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50"
+                        title="Archive activity"
+                      >
+                        <Archive className="w-3.5 h-3.5"/>
+                      </button>
+                    ) : act.employee_id === employeeProfile?.id && !act.is_optimistic && (
+                      myPendingIds.has(act.id) ? (
+                        <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Pending Review</span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => openEditModal(act)}
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                            title="Request edit"
+                          >
+                            <Edit2 className="w-3.5 h-3.5"/>
+                          </button>
+                          <button
+                            onClick={() => setRequestingDelete(act.id)}
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                            title="Request archive"
+                          >
+                            <Trash2 className="w-3.5 h-3.5"/>
+                          </button>
+                        </>
+                      )
+                    )}
+                  </div>
                 </div>
                 <p className="text-slate-700 whitespace-pre-wrap text-sm mb-2">{act.activity_description}</p>
                 {act.issue_observed && <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-900"><span className="font-bold">Issue: </span>{act.issue_description}</div>}
@@ -767,6 +923,40 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       )}
 
       {/* ── LOG ACTIVITY FORM ─────────────────────────────────────────── */}
+      {tab === 'archived' && isAdmin && (
+        <div className="space-y-4">
+          {archivedActivities.length === 0 ? (
+            <div className="glass-card p-8 rounded-2xl text-center text-slate-400">
+              <Archive className="w-8 h-8 mx-auto text-slate-300 mb-3"/>
+              <p className="font-medium">No archived activity.</p>
+            </div>
+          ) : (
+            archivedActivities.map(act => (
+              <div key={act.id} className="glass-card rounded-2xl border border-slate-200 p-5 bg-slate-50/40">
+                <div className="flex justify-between items-start gap-3 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-900 text-sm">{act.employees?.full_name}</span>
+                    <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase border bg-slate-100 text-slate-600 border-slate-200">
+                      Archived
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handlePermanentDeleteActivity(act.id)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-100 text-xs font-bold hover:bg-red-100"
+                    title="Permanently delete archived activity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5"/> Delete permanently
+                  </button>
+                </div>
+                <p className="text-slate-700 whitespace-pre-wrap text-sm">{act.activity_description}</p>
+                {act.issue_observed && <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-900"><span className="font-bold">Issue: </span>{act.issue_description}</div>}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {tab === 'log' && (
         <div className="glass-card rounded-2xl p-6 max-w-2xl">
           <h2 className="text-lg font-black text-slate-800 mb-5">Record New Activity</h2>
@@ -836,6 +1026,103 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : isCalOverdue ? 'Locked (Calibration Required)' : 'Save Activity Entry'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* ── DELETE CONFIRMATION (inline, non-admin) ───────────────── */}
+      {requestingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-red-100 max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="font-black text-slate-800 text-base">Request Archive</h3>
+                <p className="text-sm text-slate-500 mt-1">This will send an archive request to admin for approval. The entry stays visible until approved.</p>
+              </div>
+              <button onClick={() => setRequestingDelete(null)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setRequestingDelete(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button
+                onClick={() => submitDeleteRequest(requestingDelete)}
+                disabled={submittingRequest}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-black hover:bg-red-700 disabled:opacity-60"
+              >
+                {submittingRequest ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Send className="w-4 h-4"/> Send Request</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT REQUEST MODAL (non-admin) ────────────────────────── */}
+      {editModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="font-black text-slate-800 text-base">Request Edit</h3>
+                <p className="text-sm text-slate-500 mt-1">Propose your changes below. An admin will review and apply them.</p>
+              </div>
+              <button onClick={() => setEditModal(null)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600"><X className="w-5 h-5"/></button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Activity Description *</label>
+                <textarea
+                  rows={4}
+                  value={editForm.activity_description}
+                  onChange={e => setEditForm(f => ({ ...f, activity_description: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start Time</label>
+                  <input type="time" value={editForm.start_time}
+                    onChange={e => setEditForm(f => ({ ...f, start_time: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">End Time</label>
+                  <input type="time" value={editForm.end_time}
+                    onChange={e => setEditForm(f => ({ ...f, end_time: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="relative flex items-center">
+                    <input type="checkbox" className="peer sr-only"
+                      checked={editForm.issue_observed}
+                      onChange={e => setEditForm(f => ({ ...f, issue_observed: e.target.checked }))}/>
+                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                  </div>
+                  <span className="text-sm font-bold text-slate-700">Issue / Deviation</span>
+                </label>
+              </div>
+              {editForm.issue_observed && (
+                <div>
+                  <label className="block text-xs font-black text-red-600 uppercase tracking-widest mb-1.5">Issue Description</label>
+                  <textarea rows={3}
+                    value={editForm.issue_description}
+                    onChange={e => setEditForm(f => ({ ...f, issue_description: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-red-200 focus:ring-2 focus:ring-red-500 bg-red-50 text-red-900 text-sm"/>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2 border-t border-slate-100">
+              <button onClick={() => setEditModal(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button
+                onClick={submitEditRequest}
+                disabled={submittingRequest || !editForm.activity_description?.trim()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 text-white text-sm font-black hover:bg-teal-800 disabled:opacity-60"
+              >
+                {submittingRequest ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Send className="w-4 h-4"/> Submit for Approval</>}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

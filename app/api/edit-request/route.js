@@ -29,6 +29,7 @@ const ALLOWED_TABLES = {
   batch_fermentation_readings: 'logged_by',
   growth_measurements:         'recorded_by',
   test_results:                'entered_by',
+  activity_log:                'employee_id',
 };
 
 export async function POST(request) {

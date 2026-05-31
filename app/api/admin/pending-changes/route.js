@@ -88,12 +88,21 @@ export async function PATCH(request) {
 
         if (applyErr) throw new Error(`Failed to apply edit to ${change.table_name}: ${applyErr.message}`);
       } else if (change.change_type === 'delete') {
-        const { error: deleteErr } = await supabaseAdmin
-          .from(change.table_name)
-          .delete()
-          .eq('id', change.record_id);
+        if (['batches', 'activity_log'].includes(change.table_name)) {
+          const { error: archiveErr } = await supabaseAdmin
+            .from(change.table_name)
+            .update({ archived_at: now, archived_by: admin.id })
+            .eq('id', change.record_id);
 
-        if (deleteErr) throw new Error(`Failed to delete from ${change.table_name}: ${deleteErr.message}`);
+          if (archiveErr) throw new Error(`Failed to archive ${change.table_name}: ${archiveErr.message}`);
+        } else {
+          const { error: deleteErr } = await supabaseAdmin
+            .from(change.table_name)
+            .delete()
+            .eq('id', change.record_id);
+
+          if (deleteErr) throw new Error(`Failed to delete from ${change.table_name}: ${deleteErr.message}`);
+        }
       }
     }
 
