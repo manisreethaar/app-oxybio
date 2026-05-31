@@ -6,20 +6,44 @@ import {
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
   BookOpen, Users, LogOut, UserCircle, Contact, Menu, X,
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
-  Settings, LayoutGrid, FileCheck, Archive
+  Settings, LayoutGrid, FileCheck, Archive, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 export default function Sidebar() {
   const { employeeProfile, role, canDo, signOut } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [globalUnreadMessages, setGlobalUnreadMessages] = useState(0);
+  const supabase = useMemo(() => createClient(), []);
 
   const isLoading = !employeeProfile;
   const effectiveRole = role || 'intern';
   const effectiveCanDo = isLoading ? () => true : canDo;
+
+  useEffect(() => {
+    if (!employeeProfile?.id) return;
+
+    const fetchGlobalUnread = async () => {
+      const { data, error } = await supabase.rpc('get_global_unread_count');
+      if (!error && data !== null) {
+        setGlobalUnreadMessages(parseInt(data));
+      }
+    };
+
+    fetchGlobalUnread();
+
+    const channel = supabase.channel('global_messages_unread')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        fetchGlobalUnread();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [employeeProfile?.id, supabase]);
 
   const getInitials = (name) => {
     if (!name) return 'OB';
@@ -34,6 +58,7 @@ export default function Sidebar() {
       title: 'OVERVIEW',
       items: [
         { name: 'Dashboard',     href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Messages',      href: '/messages',  icon: MessageSquare,   show: true, badge: globalUnreadMessages },
         { name: 'Activity Feed', href: '/activity',  icon: Activity,        show: effectiveCanDo('activity', 'view') },
         { name: 'My Tasks',      href: '/tasks',     icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
       ]
@@ -108,8 +133,15 @@ export default function Sidebar() {
               : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-transparent"
           )}
         >
-          <Icon className={clsx("w-5 h-5 mr-3 transition-colors", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
-          {item.name}
+          <div className="flex items-center flex-1">
+            <Icon className={clsx("w-5 h-5 mr-3 transition-colors", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
+            {item.name}
+          </div>
+          {item.badge > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-2">
+              {item.badge > 99 ? '99+' : item.badge}
+            </span>
+          )}
         </Link>
       </li>
     );
@@ -182,10 +214,15 @@ export default function Sidebar() {
                             key={item.href} href={item.href}
                             onClick={() => setMobileMenuOpen(false)}
                             className={clsx(
-                              "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all",
+                              "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all relative",
                               isActive ? "bg-blue-50 border-blue-200 text-navy shadow-sm" : "bg-white border-gray-100 text-gray-600 shadow-sm"
                             )}
                           >
+                            {item.badge > 0 && (
+                              <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                                {item.badge > 99 ? '99+' : item.badge}
+                              </span>
+                            )}
                             <Icon className={clsx("w-6 h-6 mb-2", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
                             <span className="text-xs font-bold">{item.name}</span>
                           </Link>

@@ -19,6 +19,8 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [initialPinnedItem, setInitialPinnedItem] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -41,6 +43,9 @@ export default function MessagesPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
         fetchChats();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        fetchUnreadCounts();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_members', filter: `employee_id=eq.${employeeProfile.id}` }, () => {
         fetchChats();
       })
@@ -48,6 +53,41 @@ export default function MessagesPage() {
       
     return () => supabase.removeChannel(channel);
   }, [employeeProfile]);
+
+  useEffect(() => {
+    if (!employeeProfile) return;
+    fetchUnreadCounts();
+
+    const presenceChannel = supabase.channel('messaging_online_status', {
+      config: { presence: { key: employeeProfile.id } }
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const onlineIds = new Set(Object.keys(state));
+        setOnlineUsers(onlineIds);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ user_id: employeeProfile.id, online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => supabase.removeChannel(presenceChannel);
+  }, [employeeProfile]);
+
+  const fetchUnreadCounts = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_unread_message_counts');
+      if (error) throw error;
+      const countsMap = {};
+      data?.forEach(row => { countsMap[row.chat_id] = parseInt(row.unread_count); });
+      setUnreadCounts(countsMap);
+    } catch (err) {
+      console.error('Failed to fetch unread counts', err);
+    }
+  };
 
   const fetchChats = async () => {
     try {
@@ -121,6 +161,8 @@ export default function MessagesPage() {
             employeeProfile={employeeProfile}
             isAdmin={isAdmin}
             loading={loading}
+            unreadCounts={unreadCounts}
+            onlineUsers={onlineUsers}
           />
         </div>
         
