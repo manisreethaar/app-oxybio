@@ -2,8 +2,9 @@
 import { useRef } from 'react';
 import {
   CheckSquare, Timer, Eye, CheckCircle2, Paperclip,
-  Trash2, X, Activity, BarChart2
+  Trash2, X, Activity, BarChart2, MessageSquare
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { formatMinutes } from './utils';
 
 /**
@@ -46,6 +47,7 @@ export default function TaskDetailModal({
   onToggleChecklist,
 }) {
   const fileRef = useRef(null);
+  const router = useRouter();
 
   if (!selectedTask) return null;
 
@@ -59,6 +61,13 @@ export default function TaskDetailModal({
             <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
           </div>
           <div className="flex gap-1 text-gray-400">
+            <button 
+              onClick={() => router.push(`/messages?pin_type=task&pin_id=${selectedTask.id}&pin_title=${encodeURIComponent(selectedTask.title)}`)}
+              className="p-1.5 rounded-md hover:bg-indigo-50 hover:text-indigo-600 transition-colors" 
+              title="Discuss Task"
+            >
+              <MessageSquare className="w-4 h-4"/>
+            </button>
             {(isMaster || (selectedTask?.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
               <button onClick={() => onDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
             )}

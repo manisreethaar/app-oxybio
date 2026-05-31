@@ -11,6 +11,7 @@ import {
   Users, Clock, CheckSquare, FlaskConical, TrendingUp,
   CalendarCheck, Zap, Archive, Trash2, Edit2, X, Send
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const [activityOffset, setActivityOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
 
   const [error, setError] = useState(null);
   const isMounted = useRef(true);
@@ -860,6 +862,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => router.push(`/messages?pin_type=activity&pin_id=${act.id}&pin_title=${encodeURIComponent('Activity: ' + (act.activity_description.length > 20 ? act.activity_description.substring(0, 20) + '...' : act.activity_description))}`)}
+                      className="p-1.5 rounded-lg border border-indigo-200 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50"
+                      title="Discuss activity"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5"/>
+                    </button>
                     {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
                     {isAdmin ? (
                       <button

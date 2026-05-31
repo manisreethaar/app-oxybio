@@ -370,7 +370,8 @@ export default function SampleIncubationPage() {
                                             const p = JSON.parse(record.observation);
                                             if (p?.reads?.length > 0) {
                                               const last = p.reads[p.reads.length - 1];
-                                              return `T+${last.hour}h: ${last.status?.replace(/_/g, ' ')}`;
+                                              const authorStr = last.recorded_by ? ` (Logged by ${last.recorded_by})` : '';
+                                              return `T+${last.hour}h: ${last.status?.replace(/_/g, ' ')}${authorStr}`;
                                             }
                                             return p?.notes || '';
                                           } catch { return record.observation.split(' | ')[0]; }
