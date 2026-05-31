@@ -4,6 +4,12 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
 import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
+'use client';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+
+import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/context/ToastContext';
+import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { differenceInHours } from 'date-fns';
@@ -11,6 +17,7 @@ import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
+const StorageWidget = dynamic(() => import('@/components/StorageWidget'), { ssr: false });
 
 export default function AdminDashboard({ employeeId }) {
   const toast = useToast();
@@ -630,6 +637,9 @@ export default function AdminDashboard({ employeeId }) {
           </div>
         </div>
       )}
+      {/* System Storage Widget */}
+      <StorageWidget />
+
     </div>
   );
 }
