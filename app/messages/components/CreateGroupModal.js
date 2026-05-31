@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, Users, Hash, Loader2 } from 'lucide-react';
+import { X, Users, Hash, Loader2, User } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 
-export default function CreateGroupModal({ onClose, onSuccess }) {
+export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
+  const { employeeProfile } = useAuth();
   const [name, setName] = useState('');
-  const [type, setType] = useState('group'); // 'group' or 'announcement'
+  const [type, setType] = useState('individual'); // 'individual', 'group' or 'announcement'
   const [employees, setEmployees] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
   const toast = useToast();
 
   useEffect(() => {
+    // If user is admin, they might prefer 'group' as default, but let's stick to 'individual' for all as default for consistency
     fetchEmployees();
   }, []);
 
@@ -27,7 +30,8 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
         .order('full_name');
         
       if (error) throw error;
-      setEmployees(data || []);
+      // Filter out self so you don't start a chat with yourself
+      setEmployees((data || []).filter(e => e.id !== employeeProfile?.id));
     } catch (err) {
       toast.error('Failed to load employees');
     } finally {
@@ -37,22 +41,21 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return toast.warn('Group name is required');
+    if (type !== 'individual' && !name.trim()) return toast.warn('Group name is required');
     if (selectedIds.length === 0) return toast.warn('Select at least one member');
+    if (type === 'individual' && selectedIds.length !== 1) return toast.warn('Select exactly one person for individual chat');
     
     setIsSubmitting(true);
     
     try {
-      // 1. Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: me } = await supabase.from('employees').select('id').eq('email', user.email).single();
-      if (!me) throw new Error('User not found');
+      if (!employeeProfile) throw new Error('User not found');
+      const me = employeeProfile;
 
       // 2. Create the chat
       const { data: chatData, error: chatErr } = await supabase
         .from('chats')
         .insert({
-          name: name.trim(),
+          name: type === 'individual' ? null : name.trim(),
           type: type,
           created_by: me.id
         })
@@ -61,7 +64,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
         
       if (chatErr) throw chatErr;
 
-      // 3. Add members (including creator as admin)
+      // 3. Add members (including creator as admin for groups)
       const membersToInsert = selectedIds.map(id => ({
         chat_id: chatData.id,
         employee_id: id,
@@ -73,12 +76,12 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
         membersToInsert.push({
           chat_id: chatData.id,
           employee_id: me.id,
-          role: 'admin'
+          role: type === 'individual' ? 'member' : 'admin'
         });
       } else {
         // Find self and make admin
         const selfMember = membersToInsert.find(m => m.employee_id === me.id);
-        if (selfMember) selfMember.role = 'admin';
+        if (selfMember && type !== 'individual') selfMember.role = 'admin';
       }
 
       const { error: membersErr } = await supabase
@@ -87,12 +90,12 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
         
       if (membersErr) throw membersErr;
 
-      toast.success(`${type === 'announcement' ? 'Announcement group' : 'Group'} created`);
+      toast.success(type === 'individual' ? 'Chat created' : `${type === 'announcement' ? 'Announcement group' : 'Group'} created`);
       onSuccess(chatData);
       
     } catch (err) {
-      console.error('Create group error:', err);
-      toast.error('Failed to create group: ' + err.message);
+      console.error('Create chat error:', err);
+      toast.error('Failed to create chat: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -103,8 +106,8 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
       <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/50">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
-            {type === 'announcement' ? <Hash className="w-5 h-5 text-indigo-600" /> : <Users className="w-5 h-5 text-navy" />}
-            Create {type === 'announcement' ? 'Announcement' : 'Group'}
+            {type === 'individual' ? <User className="w-5 h-5 text-gray-600" /> : (type === 'announcement' ? <Hash className="w-5 h-5 text-indigo-600" /> : <Users className="w-5 h-5 text-navy" />)}
+            New Chat
           </h3>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
             <X className="w-5 h-5" />
@@ -115,59 +118,81 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
           <div className="space-y-4">
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Type</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                 <button
                   type="button"
-                  onClick={() => setType('group')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-colors ${type === 'group' ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                  onClick={() => { setType('individual'); setSelectedIds([]); }}
+                  className={`flex-1 min-w-[30%] py-2 text-[11px] font-bold rounded-lg border transition-colors ${type === 'individual' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
                 >
-                  Group Chat
+                  Direct Message
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setType('announcement')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-colors ${type === 'announcement' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
-                >
-                  Announcement
-                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { setType('group'); setSelectedIds([]); }}
+                      className={`flex-1 min-w-[30%] py-2 text-[11px] font-bold rounded-lg border transition-colors ${type === 'group' ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                    >
+                      Group Chat
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setType('announcement'); setSelectedIds([]); }}
+                      className={`flex-1 min-w-[30%] py-2 text-[11px] font-bold rounded-lg border transition-colors ${type === 'announcement' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                    >
+                      Announcement
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Name *</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. R&D Team, General Announcements"
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-semibold text-gray-700"
-                required
-              />
-            </div>
+            {type !== 'individual' && (
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Group Name *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. R&D Team, General Announcements"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-semibold text-gray-700"
+                  required={type !== 'individual'}
+                />
+              </div>
+            )}
             
             <div>
               <div className="flex justify-between items-end mb-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Select Members *</label>
-                <button 
-                  type="button" 
-                  onClick={() => setSelectedIds(employees.map(e => e.id))}
-                  className="text-[9px] font-bold text-navy hover:underline uppercase"
-                >
-                  Select All
-                </button>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Select {type === 'individual' ? 'User' : 'Members'} *</label>
+                {type !== 'individual' && (
+                  <button 
+                    type="button" 
+                    onClick={() => setSelectedIds(employees.map(e => e.id))}
+                    className="text-[9px] font-bold text-navy hover:underline uppercase"
+                  >
+                    Select All
+                  </button>
+                )}
               </div>
               <div className="max-h-48 overflow-y-auto bg-gray-50 border border-gray-100 rounded-lg p-2 space-y-1">
                 {loading ? (
                   <div className="p-4 text-center text-xs text-gray-400">Loading employees...</div>
+                ) : employees.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-400">No other employees found.</div>
                 ) : (
                   employees.map(e => (
                     <label key={e.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-gray-700">
                       <input 
-                        type="checkbox" 
+                        type={type === 'individual' ? 'radio' : 'checkbox'} 
+                        name="employee_select"
                         checked={selectedIds.includes(e.id)} 
                         onChange={(ev) => {
-                          if (ev.target.checked) setSelectedIds([...selectedIds, e.id]);
-                          else setSelectedIds(selectedIds.filter(id => id !== e.id));
+                          if (type === 'individual') {
+                            setSelectedIds([e.id]);
+                          } else {
+                            if (ev.target.checked) setSelectedIds([...selectedIds, e.id]);
+                            else setSelectedIds(selectedIds.filter(id => id !== e.id));
+                          }
                         }} 
                         className="rounded text-navy focus:ring-navy flex-shrink-0 w-4 h-4" 
                       />
@@ -192,7 +217,7 @@ export default function CreateGroupModal({ onClose, onSuccess }) {
               disabled={isSubmitting} 
               className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60 min-w-[100px] flex justify-center"
             >
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start Chat'}
             </button>
           </div>
         </form>

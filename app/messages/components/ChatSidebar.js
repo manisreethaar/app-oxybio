@@ -20,15 +20,13 @@ export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateG
       <div className="p-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex justify-between items-center mb-3">
           <h2 className="font-bold text-gray-800 text-lg">Chats</h2>
-          {isAdmin && (
-            <button 
-              onClick={onCreateGroup}
-              className="p-1.5 bg-gray-50 hover:bg-gray-100 text-navy rounded-lg transition-colors border border-gray-200"
-              title="Create Group"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          )}
+          <button 
+            onClick={onCreateGroup}
+            className="hidden md:flex p-1.5 bg-gray-50 hover:bg-gray-100 text-navy rounded-lg transition-colors border border-gray-200"
+            title="New Chat"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
