@@ -307,12 +307,12 @@ export default function EquipmentPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-8 py-6 bg-teal-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
               <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">{modalMode === 'edit' ? 'Update Compliance Details' : 'Asset Control - IDMS v2'}</p>
             </div>
-            <form onSubmit={handEquip(onSubmitEquipment)} className="p-8 space-y-5">
+            <form onSubmit={handEquip(onSubmitEquipment)} className="p-8 space-y-5 overflow-y-auto flex-1">
               <div>
                 <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Equipment Name</label>
                 <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
@@ -358,12 +358,12 @@ export default function EquipmentPage() {
 
       {isMaintenanceOpen && activeDevice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
               <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance &amp; Calibration Log</p>
             </div>
-            <form onSubmit={handMaint(onSubmitMaintenance)} className="p-8 space-y-5">
+            <form onSubmit={handMaint(onSubmitMaintenance)} className="p-8 space-y-5 overflow-y-auto flex-1">
               <input type="hidden" {...regMaint('equipment_id')} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
