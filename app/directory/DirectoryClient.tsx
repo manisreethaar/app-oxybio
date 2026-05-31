@@ -47,6 +47,8 @@ function Field({ label, children }) {
 }
 
 function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
+  const [showFullProfile, setShowFullProfile] = useState(false);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="relative w-full max-w-sm">
@@ -102,6 +104,21 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
             {emp.email && <p className="flex items-center"><Mail className="w-3 h-3 mr-2" />{emp.email}</p>}
             {emp.blood_group && <p className="flex items-center"><Droplets className="w-3 h-3 mr-2 text-red-500" />Blood Group: <span className="ml-1 text-red-600 font-bold">{emp.blood_group}</span></p>}
           </div>
+
+          {showFullProfile && (
+            <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-[10px] text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
+                {emp.date_of_birth && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Birth</span> {new Date(emp.date_of_birth).toLocaleDateString('en-IN')}</p>}
+                {emp.joined_date && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Joining</span> {new Date(emp.joined_date).toLocaleDateString('en-IN')}</p>}
+                {emp.address && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Address</span> {emp.address}</p>}
+                {(emp.emergency_contact || emp.emergency_contact_name) && (
+                  <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Emergency Contact</span> {emp.emergency_contact_name} {emp.emergency_contact ? `(${emp.emergency_contact})` : ''}</p>
+                )}
+            </div>
+          )}
+
+          <button onClick={() => setShowFullProfile(!showFullProfile)} className="mt-4 text-[9px] font-black text-teal-600 hover:text-teal-700 transition-colors uppercase tracking-widest">
+            {showFullProfile ? 'Hide Profile' : 'View Full Profile'}
+          </button>
 
           {/* QR Code Section */}
           <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
