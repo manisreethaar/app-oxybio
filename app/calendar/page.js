@@ -152,7 +152,7 @@ export default function RegulatoryCalendarPage() {
       </div>
 
       {showNew && (
-       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
 <div className="flex flex-col sm:animate-slide-left bg-white rounded-none w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-screen overflow-y-auto"> 
             <div className="p-6 pb-28">
               <div className="flex justify-between items-start">

@@ -345,7 +345,7 @@ export default function ConsumerResearchPage() {
 
       {/* Score Logging Modal */}
       {activeSession && (
-       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
 <div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden"> 
             <button
               onClick={closeScoreModal}
@@ -423,7 +423,7 @@ export default function ConsumerResearchPage() {
 
       {/* New Panel Modal */}
       {showNew && (
-       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
 <div className="flex flex-col sm:animate-slide-left bg-white rounded-none w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-screen overflow-y-auto"> 
             <button
               onClick={() => { setShowNew(false); reset(); }}
