@@ -51,50 +51,56 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-teal-500 to-cyan-700"/>
-        
-        <button onClick={onClose} className="absolute top-6 right-6 z-40 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors">
-          <X className="w-5 h-5"/>
-        </button>
 
-        <div className="p-8 pt-12 relative z-10 flex-1 overflow-y-auto">
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
-            <div className="w-28 h-28 rounded-2xl overflow-hidden bg-white border-4 border-white shadow-lg shrink-0">
-              {emp.photo_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-slate-100">
-                  <User className="w-10 h-10 text-slate-300"/>
+        {/* Non-scrolling header — stays pinned above the scroll area */}
+        <div className="relative shrink-0">
+          <div className="w-full h-28 bg-gradient-to-br from-teal-500 to-cyan-700 rounded-t-[2rem]"/>
+          <button onClick={onClose} className="absolute top-5 right-5 z-40 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors">
+            <X className="w-5 h-5"/>
+          </button>
+
+          {/* Hero — avatar + name overlaps the gradient strip */}
+          <div className="px-8 -mt-14 pb-5">
+            <div className="flex flex-col sm:flex-row gap-5 items-start">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white border-4 border-white shadow-lg shrink-0">
+                {emp.photo_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                    <User className="w-10 h-10 text-slate-300"/>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 pt-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{emp.full_name}</h2>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${emp.is_active ? 'bg-teal-50 text-teal-600' : 'bg-red-50 text-red-600'}`}>
+                    {emp.is_active ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
+                <p className="text-sm font-bold text-teal-600 mb-1">{emp.designation || emp.role}</p>
+                <p className="text-xs text-slate-500 font-medium">{emp.department} Department</p>
+
+                <div className="flex gap-4 mt-3 text-xs font-semibold text-slate-600">
+                  {emp.employee_code && <span className="flex items-center gap-1.5"><Hash className="w-4 h-4 text-slate-400"/> {emp.employee_code}</span>}
+                  {emp.blood_group && <span className="flex items-center gap-1.5"><Droplets className="w-4 h-4 text-red-400"/> {emp.blood_group}</span>}
+                </div>
+              </div>
+
+              {isAdmin && (
+                <button onClick={() => { onClose(); onEdit(emp); }} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors self-end sm:self-auto">
+                  <UserCog className="w-4 h-4"/> Edit Profile
+                </button>
               )}
             </div>
-            
-            <div className="flex-1 pt-2">
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{emp.full_name}</h2>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${emp.is_active ? 'bg-teal-50 text-teal-600' : 'bg-red-50 text-red-600'}`}>
-                  {emp.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-              <p className="text-sm font-bold text-teal-600 mb-1">{emp.designation || emp.role}</p>
-              <p className="text-xs text-slate-500 font-medium">{emp.department} Department</p>
-              
-              <div className="flex gap-4 mt-4 text-xs font-semibold text-slate-600">
-                {emp.employee_code && <span className="flex items-center gap-1.5"><Hash className="w-4 h-4 text-slate-400"/> {emp.employee_code}</span>}
-                {emp.blood_group && <span className="flex items-center gap-1.5"><Droplets className="w-4 h-4 text-red-400"/> {emp.blood_group}</span>}
-              </div>
-            </div>
-
-            {isAdmin && (
-               <button onClick={() => { onClose(); onEdit(emp); }} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">
-                 <UserCog className="w-4 h-4"/> Edit Profile
-               </button>
-            )}
           </div>
+        </div>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Scrollable details — only this section scrolls */}
+        <div className="flex-1 overflow-y-auto border-t border-slate-100">
+          <div className="p-8 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Briefcase className="w-4 h-4"/> Contact Details</h3>

@@ -15,7 +15,7 @@ export default async function DirectoryPage() {
   // Pre-fetch initial directory data (first 24 active employees)
   const { data: initialEmployees } = await supabase
     .from('employees')
-    .select('id, full_name, designation, role, department, photo_url, employee_code, email, phone, blood_group, is_active')
+    .select('id, full_name, designation, role, department, photo_url, employee_code, email, phone, blood_group, is_active, date_of_birth, joined_date, address, emergency_contact, emergency_contact_name, base_salary, custom_permissions')
     .eq('is_active', true)
     .order('full_name')
     .range(0, 23);
