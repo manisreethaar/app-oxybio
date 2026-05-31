@@ -222,6 +222,7 @@ export default function GrowthStudyReportPage() {
       {/* 6. Plate Observations */}
       {plate_observations.length > 0 && (
         <Section title="6. Plate Observations &amp; Sterility">
+          <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50">
@@ -249,6 +250,7 @@ export default function GrowthStudyReportPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </Section>
       )}
 

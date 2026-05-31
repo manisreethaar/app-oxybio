@@ -6,10 +6,10 @@ import { ChevronRight, ChevronLeft, Plus, Trash2, FlaskConical } from 'lucide-re
 
 const VESSEL_TYPES = ['test_tube','flask_50ml','flask_125ml','flask_250ml','flask_500ml','flask_1000ml','bioreactor_1L','bioreactor_5L','bioreactor_10L'];
 const SAMPLE_TYPE_OPTIONS = [
-  { value: 'od_ph',      label: 'OD & pH' },
-  { value: 'biochemistry', label: 'Biochemistry (Glucose/Protein)' },
-  { value: 'plate_streak', label: 'Plate Streak / Colony Count' },
-  { value: 'sterility',  label: 'Sterility Check' },
+  { value: 'od_ph',        label: 'OD & pH',        shortLabel: 'OD & pH' },
+  { value: 'biochemistry', label: 'Biochemistry (Glucose/Protein)', shortLabel: 'Biochem' },
+  { value: 'plate_streak', label: 'Plate Streak / Colony Count',    shortLabel: 'Plate' },
+  { value: 'sterility',    label: 'Sterility Check', shortLabel: 'Sterility' },
 ];
 const DEFAULT_SCHEDULE = [0, 2, 4, 6, 8, 12, 18, 24, 36, 48];
 
@@ -329,18 +329,18 @@ export default function NewGrowthStudyPage() {
         {/* ─── Step 3 ─── */}
         {step === 3 && (
           <>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <input
-                className="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium"
+                className="w-24 px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium"
                 type="number" step="0.5" min="0" value={newHour}
                 onChange={e => setNewHour(e.target.value)}
                 placeholder="Hours"
                 onKeyDown={e => e.key === 'Enter' && addTimePoint()}
               />
-              <button onClick={addTimePoint} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-black hover:bg-teal-700 flex items-center gap-1.5">
+              <button onClick={addTimePoint} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-black hover:bg-teal-700 flex items-center gap-1.5 min-h-[38px]">
                 <Plus className="w-3.5 h-3.5" /> Add Point
               </button>
-              <span className="text-xs text-slate-400 font-medium">Press Enter or click Add</span>
+              <span className="text-xs text-slate-400 font-medium hidden sm:inline">Press Enter or click Add</span>
             </div>
 
             <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
@@ -360,8 +360,10 @@ export default function NewGrowthStudyPage() {
                             ? 'bg-teal-600 text-white border-teal-600'
                             : 'bg-white text-slate-500 border-slate-200 hover:border-teal-400'
                         }`}
+                        title={opt.label}
                       >
-                        {opt.label}
+                        <span className="hidden sm:inline">{opt.label}</span>
+                        <span className="sm:hidden">{opt.shortLabel}</span>
                       </button>
                     ))}
                   </div>
