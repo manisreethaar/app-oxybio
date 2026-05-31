@@ -74,7 +74,15 @@ export default function CapaSection() {
     }
   };
 
-  useEffect(() => { fetchAll(); fetchPendingIds();
+  useEffect(() => { 
+    fetchAll(); fetchPendingIds();
+
+    const channel = supabase.channel('capa_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deviations' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'capa_actions' }, () => fetchAll())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

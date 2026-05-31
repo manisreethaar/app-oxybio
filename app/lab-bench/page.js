@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import {
   Plus, Grid3x3, RefreshCw, FlaskConical, Activity,
@@ -211,6 +212,8 @@ export default function LabBenchPage() {
     setRecentLoading(false);
   }, []);
 
+  const supabase = useMemo(() => createClient(), []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -226,11 +229,15 @@ export default function LabBenchPage() {
 
   useEffect(() => { load(); fetchRecent(); fetchPendingIds(); }, [load, fetchRecent, fetchPendingIds]);
 
-  // Auto-refresh queue every 5 minutes
+  // Realtime live-sync replaces old 5-minute polling
   useEffect(() => {
-    const t = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(t);
-  }, [load]);
+    if (!supabase) return;
+    const channel = supabase.channel('lab_bench_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batch_fermentation_readings' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'growth_study_samples' }, () => load())
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [supabase, load]);
 
   const items    = queue?.items || [];
   const summary  = queue?.summary || {};

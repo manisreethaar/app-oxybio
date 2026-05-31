@@ -64,6 +64,13 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         fetchSOPs(); 
       }
     }
+
+    if (!supabase) return;
+    const channel = supabase.channel('sops_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sop_library' }, () => fetchSOPs())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, [employeeProfile, fetchSOPs, initialSops, supabase]);
 
   const [showAckModal, setShowAckModal] = useState<any>(null);
