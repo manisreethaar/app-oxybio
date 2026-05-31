@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
@@ -63,7 +64,7 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
         )}
         
         {/* Modern ID Card Engine */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
+        <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full mx-auto border border-slate-200 flex flex-col items-center relative overflow-y-auto overflow-x-hidden max-h-[85vh]">
           <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-navy to-slate-800"/>
           
           {/* Header */}
@@ -470,10 +471,14 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         </div>
       )}
 
-      {selected && <EmployeeIDCard emp={selected} onClose={() => setSelected(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin}/>}
+        {/* ID Card Modal */}
+      {selected && typeof document !== 'undefined' && createPortal(
+        <EmployeeIDCard emp={selected} onClose={() => setSelected(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin}/>,
+        document.body
+      )}
 
-      {/* Edit Employee Modal */}
-      {editingEmployee && (
+      {/* Admin Quick Edit Profile Modal */}
+      {editingEmployee && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
             <div className="bg-white rounded-[2rem] max-w-2xl w-full p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
                 <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
@@ -592,10 +597,10 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 )}
             </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Add Employee Modal */}
-      {showInviteModal && (
+      {showInviteModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="glass-panel rounded-[2rem] max-w-lg w-full p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
             <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all">
@@ -684,7 +689,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       <style>{`
         .input-field {
