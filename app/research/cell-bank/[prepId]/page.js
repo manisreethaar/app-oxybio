@@ -10,6 +10,7 @@ import {
   ExternalLink, BookOpen
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const STEPS = [
   { key: 'strain_source',   label: 'Strain Source',      icon: Microscope,   desc: 'Confirm strain identity and source documentation' },
@@ -41,6 +42,7 @@ function VialRow({ vial, isAdmin, onAction }) {
   const [logs, setLogs]         = useState(null);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [acting, setActing]     = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const toast = useToast();
 
   const loadLogs = async () => {
@@ -53,17 +55,22 @@ function VialRow({ vial, isAdmin, onAction }) {
     setLoadingLogs(false);
   };
 
-  const handleAction = async (action) => {
-    if (!confirm(`${action === 'discard' ? 'Discard' : action === 'thaw' ? 'Log thaw for' : 'Mark as used'} vial ${vial.vial_code}?`)) return;
+  const handleActionClick = (action) => {
+    setConfirmAction(action);
+  };
+
+  const executeAction = async () => {
+    if (!confirmAction) return;
     setActing(true);
     const res = await fetch(`/api/research/cell-bank/vials/${vial.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action: confirmAction }),
     });
     const json = await res.json();
     if (json.success) { toast.success(`Vial ${vial.vial_code} updated.`); setLogs(null); onAction(); }
     else toast.error(json.error);
     setActing(false);
+    setConfirmAction(null);
   };
 
   const statusBg = vial.status === 'Available' ? 'bg-emerald-50 border-emerald-200' : vial.status === 'Used' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200';
@@ -82,8 +89,8 @@ function VialRow({ vial, isAdmin, onAction }) {
         <div className="flex flex-col items-end gap-1 shrink-0">
           {isAdmin && vial.status === 'Available' && (
             <div className="flex gap-1">
-              <button onClick={() => handleAction('thaw')} disabled={acting} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-200 disabled:opacity-50">Thaw</button>
-              <button onClick={() => handleAction('discard')} disabled={acting} className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-200 disabled:opacity-50">Discard</button>
+              <button onClick={() => handleActionClick('thaw')} disabled={acting} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-200 disabled:opacity-50">Thaw</button>
+              <button onClick={() => handleActionClick('discard')} disabled={acting} className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-200 disabled:opacity-50">Discard</button>
             </div>
           )}
           <button onClick={loadLogs} className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 font-semibold">
@@ -104,6 +111,16 @@ function VialRow({ vial, isAdmin, onAction }) {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={executeAction}
+        title={`${confirmAction === 'discard' ? 'Discard' : confirmAction === 'thaw' ? 'Thaw' : 'Update'} Vial`}
+        message={`Are you sure you want to ${confirmAction === 'discard' ? 'discard' : confirmAction === 'thaw' ? 'log thaw for' : 'mark as used'} vial ${vial.vial_code}?`}
+        confirmText="Confirm"
+        variant={confirmAction === 'discard' ? 'danger' : 'primary'}
+      />
     </div>
   );
 }

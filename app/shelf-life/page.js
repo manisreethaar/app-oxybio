@@ -13,6 +13,7 @@ import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 const ShelfLifeLineChart = dynamic(() => import('@/components/charts/ShelfLifeLineChart'), { ssr: false });
 
 export default function ShelfLifePage() {
@@ -83,8 +84,9 @@ export default function ShelfLifePage() {
     fetchPendingIds();
   }, [fetchData]);
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
   const handleDeleteStudy = async (id) => {
-    if (!confirm('Are you sure you want to delete this study and all its logs?')) return;
     try {
       const res = await fetch(`/api/shelf-life/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete study');
@@ -256,7 +258,7 @@ export default function ShelfLifePage() {
                   </button>
                 )}
                 {isAdmin && (
-                  <button onClick={() => handleDeleteStudy(study.id)} className="px-3 py-2.5 bg-white border border-red-100 text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Delete study">
+                  <button onClick={() => setConfirmDeleteId(study.id)} className="px-3 py-2.5 bg-white border border-red-100 text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Delete study">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -422,6 +424,16 @@ export default function ShelfLifePage() {
           </div>
         </div>
       )}
+      {/* Confirm Delete Modal */}
+      <ConfirmModal 
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => handleDeleteStudy(confirmDeleteId)}
+        title="Delete Study"
+        message="Are you sure you want to delete this stability study and all of its recorded logs? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

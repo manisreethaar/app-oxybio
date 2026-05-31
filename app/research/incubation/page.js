@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import IncubationFormModal from './components/IncubationFormModal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 function sterileChip(status) {
   if (status === 'Sterile')       return 'text-emerald-700 bg-emerald-50 border-emerald-200';
@@ -33,6 +34,7 @@ export default function SampleIncubationPage() {
   const [statusFilter, setStatusFilter]         = useState('all');
   const [searchTerm, setSearchTerm]             = useState('');
   const [deletingId, setDeletingId]             = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId]   = useState(null);
   const [expandedSources, setExpandedSources]   = useState(new Set());
   const [expandedTimepoints, setExpandedTimepoints] = useState(new Set());
 
@@ -132,7 +134,6 @@ export default function SampleIncubationPage() {
   }, [samples]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this incubation record? This cannot be undone.')) return;
     setDeletingId(id);
     try {
       const res  = await fetch(`/api/research/incubation?id=${id}`, { method: 'DELETE' });
@@ -393,7 +394,7 @@ export default function SampleIncubationPage() {
                                       )}
                                       {canDelete && (
                                         <button
-                                          onClick={e => { e.stopPropagation(); handleDelete(record.id); }}
+                                          onClick={e => { e.stopPropagation(); setConfirmDeleteId(record.id); }}
                                           disabled={deletingId === record.id}
                                           className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
                                           title="Delete"
@@ -424,6 +425,15 @@ export default function SampleIncubationPage() {
           onSuccess={() => { setShowModal(false); fetchSamples(); toast.success('Record saved!'); }}
         />
       )}
+      <ConfirmModal 
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => handleDelete(confirmDeleteId)}
+        title="Delete Incubation Record"
+        message="Are you sure you want to delete this incubation record? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, Al
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 export default function LnbEntryPage() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function LnbEntryPage() {
   const [pendingSubmitReview, setPendingSubmitReview] = useState(false);
   const [pendingCountersign, setPendingCountersign] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Form mutable states
   const [title, setTitle] = useState('');
@@ -124,8 +126,12 @@ export default function LnbEntryPage() {
     finally { setSigning(false); }
   };
 
-  const handleDeleteDraft = async () => {
-    if (!confirm('Are you sure you want to delete this draft entry? This cannot be undone.')) return;
+  const handleDeleteDraftClick = () => {
+    setConfirmDelete(true);
+  };
+
+  const executeDeleteDraft = async () => {
+    setConfirmDelete(false);
     setDeleting(true);
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, { method: 'DELETE' });
@@ -217,7 +223,7 @@ export default function LnbEntryPage() {
             </>
           )}
           {canDelete && (
-            <button disabled={saving || deleting} onClick={handleDeleteDraft} className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-100 transition-all shadow-sm border border-red-100">
+            <button disabled={saving || deleting} onClick={handleDeleteDraftClick} className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-100 transition-all shadow-sm border border-red-100">
               {deleting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : 'Delete LNB'}
             </button>
           )}
@@ -289,6 +295,16 @@ export default function LnbEntryPage() {
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={executeDeleteDraft}
+        title="Delete Draft Entry"
+        message="Are you sure you want to delete this draft entry? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
 
       {/* Submit Review Modal */}
       {pendingSubmitReview && (
