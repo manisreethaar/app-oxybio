@@ -76,7 +76,8 @@ export default function GrowthStudyDetailPage() {
   const [deleteErr, setDeleteErr] = useState('');
 
   // Modal state
-  const [modal, setModal] = useState(null); // null | { type: 'measurement' | 'plate', tp }
+  const [modal, setModal] = useState(null); // null | { type: 'measurement' | 'plate' | 'combined', tp }
+  const [modalTab, setModalTab] = useState('measurement'); // 'measurement' | 'plate'
   const [mForm, setMForm] = useState({});
   const [pForm, setPForm] = useState({});
   const [modalErr, setModalErr] = useState('');
@@ -273,13 +274,17 @@ export default function GrowthStudyDetailPage() {
 
   const openMeasurementModal = (tp) => {
     setMForm({ actual_hour: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '' });
-    setModal({ type: 'measurement', tp });
+    setPForm({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1 });
+    setModal({ type: 'combined', tp });
+    setModalTab('measurement');
     setModalErr('');
   };
 
   const openPlateModal = (tp) => {
+    setMForm({ actual_hour: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '' });
     setPForm({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1 });
-    setModal({ type: 'plate', tp });
+    setModal({ type: 'combined', tp });
+    setModalTab('plate');
     setModalErr('');
   };
 
@@ -506,9 +511,15 @@ export default function GrowthStudyDetailPage() {
                       {isDone ? '✓' : isMissed ? '—' : tp.planned_hour}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-black ${isDone ? 'text-teal-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
-                        T + {tp.planned_hour}h
-                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className={`text-xs font-black ${isDone ? 'text-teal-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
+                          T + {tp.planned_hour}h
+                        </p>
+                        {/* 2A: Inline overdue badge */}
+                        {isOverdue && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">OVERDUE</span>
+                        )}
+                      </div>
                       <p className="text-[9px] text-slate-400 font-medium truncate">
                         {tp.sample_types.map(t => t.replace(/_/g, ' ')).join(' · ')}
                       </p>
@@ -684,85 +695,158 @@ export default function GrowthStudyDetailPage() {
         </div>
       </div>
 
-      {/* ── Measurement Modal ── */}
-      {modal?.type === 'measurement' && (
+      {/* 2A: Combined tabbed measurement+plate modal */}
+      {modal?.type === 'combined' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[92vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="font-black text-slate-800">Record Measurement</h3>
-                {modal.tp && <p className="text-xs text-slate-500 mt-0.5">Scheduled: T+{modal.tp.planned_hour}h · {modal.tp.sample_types.join(', ')}</p>}
+                <h3 className="font-black text-slate-800">Record Sample Data</h3>
+                {modal.tp && <p className="text-xs text-slate-500 mt-0.5">T+{modal.tp.planned_hour}h · {modal.tp.sample_types.join(', ')}</p>}
               </div>
               <button onClick={() => setModal(null)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={LabelCls}>Actual Hour *</label>
-                  <input className={InputCls} type="number" step="0.1" value={mForm.actual_hour || ''} onChange={e => setMForm(f => ({ ...f, actual_hour: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>OD@{study.od_wavelength || 600}nm</label>
-                  <input className={InputCls} type="number" step="0.001" value={mForm.od_value || ''} onChange={e => setMForm(f => ({ ...f, od_value: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>pH</label>
-                  <input className={InputCls} type="number" step="0.01" value={mForm.ph_value || ''} onChange={e => setMForm(f => ({ ...f, ph_value: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Temperature (°C)</label>
-                  <input className={InputCls} type="number" step="0.1" value={mForm.temperature_actual_c || ''} onChange={e => setMForm(f => ({ ...f, temperature_actual_c: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Glucose (g/L) — DNS</label>
-                  <input className={InputCls} type="number" step="0.001" value={mForm.glucose_g_l || ''} onChange={e => setMForm(f => ({ ...f, glucose_g_l: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={LabelCls}>Protein (mg/mL)</label>
-                  <input className={InputCls} type="number" step="0.001" value={mForm.protein_mg_ml || ''} onChange={e => setMForm(f => ({ ...f, protein_mg_ml: e.target.value }))} />
-                </div>
-                {isFermentation && (
-                  <div>
-                    <label className={LabelCls}>Dissolved O₂ (%)</label>
-                    <input className={InputCls} type="number" step="0.1" value={mForm.dissolved_oxygen_pct || ''} onChange={e => setMForm(f => ({ ...f, dissolved_oxygen_pct: e.target.value }))} />
-                  </div>
-                )}
-                <div>
-                  <label className={LabelCls}>Culture Turbidity</label>
-                  <select className={InputCls} value={mForm.culture_turbidity || ''} onChange={e => setMForm(f => ({ ...f, culture_turbidity: e.target.value }))}>
-                    <option value="">Select…</option>
-                    {TURBIDITY_OPTIONS.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={LabelCls}>Culture Color</label>
-                  <input className={InputCls} type="text" placeholder="e.g. pale yellow" value={mForm.culture_color || ''} onChange={e => setMForm(f => ({ ...f, culture_color: e.target.value }))} />
-                </div>
-              </div>
+            {/* Tab strip */}
+            <div className="flex border-b border-slate-100">
+              {[['measurement','Measurements'],['plate','Plate Obs']].map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => { setModalTab(key); setModalErr(''); }}
+                  className={`flex-1 py-3 text-xs font-black transition-colors border-b-2 ${
+                    modalTab === key ? 'border-teal-600 text-teal-700 bg-teal-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-              {/* Plate streak entry inline if this time point needs it */}
-              {modal.tp?.sample_types?.some(t => ['plate_streak', 'sterility'].includes(t)) && (
-                <div className="bg-violet-50 rounded-2xl p-4 space-y-3 border border-violet-100">
-                  <p className="text-xs font-black text-violet-700 uppercase tracking-wider">Plate / Sterility at this point</p>
-                  <button
-                    type="button"
-                    onClick={() => { setModal(null); openPlateModal(modal.tp); }}
-                    className="text-xs font-bold text-violet-600 hover:underline"
-                  >
-                    → Open plate entry form
-                  </button>
+            <div className="p-6 space-y-4">
+              {/* Measurements tab */}
+              {modalTab === 'measurement' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={LabelCls}>Actual Hour *</label>
+                      <input className={InputCls} type="number" step="0.1" value={mForm.actual_hour || ''} onChange={e => setMForm(f => ({ ...f, actual_hour: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>OD@{study.od_wavelength || 600}nm</label>
+                      <input className={InputCls} type="number" step="0.001" value={mForm.od_value || ''} onChange={e => setMForm(f => ({ ...f, od_value: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>pH</label>
+                      <input className={InputCls} type="number" step="0.01" value={mForm.ph_value || ''} onChange={e => setMForm(f => ({ ...f, ph_value: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Temperature (°C)</label>
+                      <input className={InputCls} type="number" step="0.1" value={mForm.temperature_actual_c || ''} onChange={e => setMForm(f => ({ ...f, temperature_actual_c: e.target.value }))} />
+                    </div>
+                  </div>
+                  <details className="group">
+                    <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-teal-600 transition-colors list-none flex items-center gap-1">
+                      <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span> More fields
+                    </summary>
+                    <div className="mt-3 grid grid-cols-2 gap-4">
+                      <div>
+                        <label className={LabelCls}>Glucose (g/L) — DNS</label>
+                        <input className={InputCls} type="number" step="0.001" value={mForm.glucose_g_l || ''} onChange={e => setMForm(f => ({ ...f, glucose_g_l: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className={LabelCls}>Protein (mg/mL)</label>
+                        <input className={InputCls} type="number" step="0.001" value={mForm.protein_mg_ml || ''} onChange={e => setMForm(f => ({ ...f, protein_mg_ml: e.target.value }))} />
+                      </div>
+                      {isFermentation && (
+                        <div>
+                          <label className={LabelCls}>Dissolved O₂ (%)</label>
+                          <input className={InputCls} type="number" step="0.1" value={mForm.dissolved_oxygen_pct || ''} onChange={e => setMForm(f => ({ ...f, dissolved_oxygen_pct: e.target.value }))} />
+                        </div>
+                      )}
+                      <div>
+                        <label className={LabelCls}>Culture Turbidity</label>
+                        <select className={InputCls} value={mForm.culture_turbidity || ''} onChange={e => setMForm(f => ({ ...f, culture_turbidity: e.target.value }))}>
+                          <option value="">Select…</option>
+                          {TURBIDITY_OPTIONS.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={LabelCls}>Culture Color</label>
+                        <input className={InputCls} type="text" placeholder="e.g. pale yellow" value={mForm.culture_color || ''} onChange={e => setMForm(f => ({ ...f, culture_color: e.target.value }))} />
+                      </div>
+                    </div>
+                  </details>
+                  <div>
+                    <label className={LabelCls}>Notes</label>
+                    <textarea className={InputCls} rows={2} value={mForm.notes || ''} onChange={e => setMForm(f => ({ ...f, notes: e.target.value }))} />
+                  </div>
                 </div>
               )}
 
-              <div>
-                <label className={LabelCls}>Notes</label>
-                <textarea className={InputCls} rows={2} value={mForm.notes || ''} onChange={e => setMForm(f => ({ ...f, notes: e.target.value }))} />
-              </div>
+              {/* Plate Obs tab */}
+              {modalTab === 'plate' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={LabelCls}>Time Point (hr) *</label>
+                      <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Observation Type</label>
+                      <select className={InputCls} value={pForm.observation_type || ''} onChange={e => setPForm(f => ({ ...f, observation_type: e.target.value }))}>
+                        <option value="colony_count">Colony Count</option>
+                        <option value="sterility">Sterility</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Plate Media</label>
+                      <select className={InputCls} value={pForm.plate_media || ''} onChange={e => setPForm(f => ({ ...f, plate_media: e.target.value }))}>
+                        <option value="">Select…</option>
+                        {PLATE_MEDIA_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Dilution</label>
+                      <select className={InputCls} value={pForm.dilution || ''} onChange={e => setPForm(f => ({ ...f, dilution: e.target.value }))}>
+                        <option value="">Select…</option>
+                        {DILUTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Result</label>
+                      <select className={InputCls} value={pForm.result || ''} onChange={e => setPForm(f => ({ ...f, result: e.target.value }))}>
+                        <option value="pending">Pending</option>
+                        <option value="sterile">Sterile</option>
+                        <option value="contaminated">Contaminated</option>
+                        <option value="normal_growth">Normal Growth</option>
+                        <option value="abnormal_growth">Abnormal Growth</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Colony Count</label>
+                      <input className={InputCls} type="number" value={pForm.colony_count || ''} onChange={e => setPForm(f => ({ ...f, colony_count: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Plate Count</label>
+                      <input className={InputCls} type="number" min="1" value={pForm.plate_count || ''} onChange={e => setPForm(f => ({ ...f, plate_count: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className={LabelCls}>Incubation Temp (°C)</label>
+                      <input className={InputCls} type="number" step="0.1" value={pForm.incubation_temp_c || ''} onChange={e => setPForm(f => ({ ...f, incubation_temp_c: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={LabelCls}>Notes</label>
+                    <textarea className={InputCls} rows={2} value={pForm.notes || ''} onChange={e => setPForm(f => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+              )}
 
               {modalErr && <p className="text-xs text-red-600 font-bold">{modalErr}</p>}
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
-                <button onClick={saveMeasurement} disabled={modalSaving || !mForm.actual_hour}
+                <button
+                  onClick={() => modalTab === 'measurement' ? saveMeasurement() : savePlate()}
+                  disabled={modalSaving || (modalTab === 'measurement' && !mForm.actual_hour) || (modalTab === 'plate' && !pForm.time_point_hours)}
                   className="flex-1 py-3 bg-teal-700 text-white font-black rounded-2xl text-sm hover:bg-teal-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
@@ -773,7 +857,7 @@ export default function GrowthStudyDetailPage() {
         </div>
       )}
 
-      {/* ── Start Study Confirmation Modal ── */}
+      {/* Legacy: keep individual modals for old type='measurement'|'plate' paths (safety fallback) */}
       {startModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">

@@ -86,7 +86,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [od,         setOd]         = useState('');
   const [foam,       setFoam]       = useState('None');
   const [appearance, setAppearance] = useState('Normal');
-  const [platingEnabled, setPlatingEnabled] = useState(false);
+  const [platingIntent, setPlatingIntent] = useState(null); // 'yes'|'no'|'later'|null
   const [platingDone, setPlatingDone] = useState(false);
   const [plateMedia, setPlateMedia] = useState('');
   const [plateDilution, setPlateDilution] = useState('');
@@ -99,6 +99,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [isRetro,    setIsRetro]    = useState(false);
   const [retroReason, setRetroReason] = useState('');
   const [loggedAt,   setLoggedAt]   = useState('');
+  // Pending plating banner — set when last reading has unresolved plating
+  const [pendingPlatingReading, setPendingPlatingReading] = useState(null);
+  const [resolvingPlating, setResolvingPlating] = useState(false);
 
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
@@ -173,6 +176,30 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       .then(({ data }) => setMediaFormulations(data || []));
   }, [supabase]);
 
+  // Restore last supervisor from localStorage for this user
+  useEffect(() => {
+    if (!employeeProfile?.id || !isIntern) return;
+    const stored = localStorage.getItem(`oxybio_last_supervisor_${employeeProfile.id}`);
+    if (stored) setSupervisedBy(stored);
+  }, [employeeProfile?.id, isIntern]);
+
+  // Detect pending-plating reading for this flask whenever readings change
+  useEffect(() => {
+    if (!readings.length || !activeFlask?.id) { setPendingPlatingReading(null); return; }
+    const flaskReadings = readings
+      .filter(r => r.flask_id === activeFlask.id)
+      .sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+    const lastReading = flaskReadings[0];
+    if (
+      lastReading &&
+      lastReading.plating_status === 'pending'
+    ) {
+      setPendingPlatingReading(lastReading);
+    } else {
+      setPendingPlatingReading(null);
+    }
+  }, [readings, activeFlask?.id]);
+
   useEffect(() => {
     // Clear endpoint form whenever the active flask changes
     setEpPh('');
@@ -213,6 +240,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     setSaving(true);
     try {
       const loggedAtIso = isRetro && loggedAt ? new Date(loggedAt).toISOString() : new Date().toISOString();
+      const platingEnabled = platingIntent === 'yes' || platingIntent === 'later';
+      const platingNow = platingIntent === 'yes' && platingDone;
+      const platingStatusVal = platingIntent === 'later' ? 'pending' : (platingIntent === 'no' ? 'na' : null);
       const res = await fetch(`/api/batches/${batch.id}/fermentation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,8 +263,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           supervised_by: supervisedBy || null,
           notes: notes || null,
           logged_by: employeeProfile?.id,
-          plating_done: platingEnabled && platingDone,
-          plating_config: platingEnabled && platingDone ? {
+          plating_done: platingNow,
+          plating_status: platingStatusVal,
+          plating_config: platingNow ? {
             media_type: plateMedia || null,
             dilution: plateDilution || null,
             plate_count: plateCount ? parseInt(plateCount, 10) : null,
@@ -248,7 +279,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       toast.success(json.incubation ? 'Reading logged and incubation activity created.' : 'Reading logged.');
       setPH(''); setTemp(''); setBrix(''); setOd('');
-      setPlatingEnabled(false); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
+      setPlatingIntent(null); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
       setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
     } catch (err) { toast.error(err.message); }
@@ -416,8 +447,40 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Fermentation details.</div>;
 
+  // pH range helpers for inline hint
+  const phNum = parseFloat(pH);
+  const phInAlarmRange = pH && (phNum < 3.8 || phNum > 5.5);
+  const phOutOfTarget = pH && !phInAlarmRange && (phNum < 4.2 || phNum > 4.5);
+
   return (
     <div className="space-y-5">
+      {/* Pending plating banner */}
+      {pendingPlatingReading && !resolvingPlating && (
+        <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-300 rounded-xl">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <p className="text-xs font-bold text-amber-800 flex-1">
+            Previous reading at T+{pendingPlatingReading.elapsed_hours?.toFixed(1)}h still needs plate data.
+          </p>
+          <button
+            onClick={() => setResolvingPlating(true)}
+            className="px-2.5 py-1 bg-amber-600 text-white text-[10px] font-black rounded-lg hover:bg-amber-700 transition-colors whitespace-nowrap"
+          >
+            Add now ▶
+          </button>
+          <button
+            onClick={async () => {
+              await supabase.from('batch_fermentation_readings')
+                .update({ plating_status: 'na' })
+                .eq('id', pendingPlatingReading.id);
+              setPendingPlatingReading(null);
+            }}
+            className="p-1 text-amber-400 hover:text-amber-700 transition-colors"
+            title="Mark N/A"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {/* Header + alarms */}
       <div className="surface p-5 border-l-4 border-l-navy">
         <div className="flex items-center justify-between mb-1">
@@ -496,12 +559,32 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">pH Value <span className="text-red-500">★ CCP</span></label>
                 <input type="number" step="0.01" min="0" max="14" required value={pH} onChange={e=>setPH(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-3xl font-black font-mono tracking-tighter text-gray-800 focus:border-navy outline-none text-center" placeholder="0.00"/>
+                  className={`w-full px-4 py-3 border-2 rounded-xl text-3xl font-black font-mono tracking-tighter text-gray-800 focus:border-navy outline-none text-center transition-colors ${
+                    phInAlarmRange ? 'border-red-400 bg-red-50/30' :
+                    phOutOfTarget  ? 'border-amber-400 bg-amber-50/20' :
+                    'border-gray-200'
+                  }`} placeholder="0.00"/>
+                {/* 3B: Inline target range hint */}
+                <div className={`mt-1 text-[10px] font-semibold flex items-center gap-1 ${
+                  phInAlarmRange ? 'text-red-600' : phOutOfTarget ? 'text-amber-600' : 'text-gray-400'
+                }`}>
+                  {phInAlarmRange
+                    ? '⚠ Outside alarm range (3.8–5.5) — reading will be flagged'
+                    : phOutOfTarget
+                    ? '◈ Outside target endpoint range (4.2–4.5)'
+                    : 'Target endpoint: 4.2–4.5 · Alarm: <3.8 or >5.5'}
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Temp (°C)</label>
                   <input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} placeholder="37.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  {/* 3B: Temp range hint */}
+                  <p className={`text-[9px] mt-0.5 font-semibold ${
+                    temp && (parseFloat(temp) < 36 || parseFloat(temp) > 38) ? 'text-amber-600' : 'text-gray-400'
+                  }`}>
+                    {temp && (parseFloat(temp) < 36 || parseFloat(temp) > 38) ? '⚠ Outside 36–38°C' : 'Range: 36–38°C'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Brix (°Bx)</label>
@@ -521,29 +604,32 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </div>
               </div>
 
+              {/* 1A: Plate this sample? — Yes / No / Later */}
               <div className="bg-teal-50/50 border border-teal-100 p-3 rounded-xl space-y-3">
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="intervalPlating"
-                    checked={platingEnabled}
-                    onChange={e => {
-                      setPlatingEnabled(e.target.checked);
-                      if (!e.target.checked) setPlatingDone(false);
-                    }}
-                    className="mt-1 w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"
-                  />
-                  <div>
-                    <label htmlFor="intervalPlating" className="text-xs font-bold text-gray-800 cursor-pointer">Plating planned for this sample</label>
-                    <p className="text-[10px] text-gray-500 mt-0.5">Record setup now. Plate results stay pending in Sample Incubation until incubation ends.</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-800">Plate this sample?</span>
+                  <div className="flex gap-1.5">
+                    {[['yes','Yes','bg-teal-600 text-white border-teal-600'],['no','No','bg-gray-200 text-gray-700 border-gray-200'],['later','Later','bg-amber-100 text-amber-700 border-amber-300']].map(([val, label, activeClass]) => (
+                      <button
+                        key={val} type="button"
+                        onClick={() => setPlatingIntent(platingIntent === val ? null : val)}
+                        className={`px-3 py-1 text-[11px] font-black rounded-lg border transition-all ${
+                          platingIntent === val ? activeClass : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-
-                {platingEnabled && (
-                  <div className="space-y-3 pl-7">
+                {platingIntent === 'later' && (
+                  <p className="text-[10px] text-amber-700 font-semibold pl-1">⏱ A reminder banner will appear on your next log entry for this flask.</p>
+                )}
+                {platingIntent === 'yes' && (
+                  <div className="space-y-3 pt-1">
                     <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700">
                       <input type="checkbox" checked={platingDone} onChange={e=>setPlatingDone(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"/>
-                      Plating done now - create incubation activity
+                      Plating done now — create incubation activity
                     </label>
                     {platingDone && (
                       <div className="grid grid-cols-2 gap-2">
@@ -559,16 +645,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                           <select value={plateDilution} onChange={e=>setPlateDilution(e.target.value)} className="field-input text-xs bg-white">
                             <option value="">Select...</option>
                             <option value="Direct (No dilution)">Direct (No dilution)</option>
-                            <option value="10^-1">10^-1</option>
-                            <option value="10^-2">10^-2</option>
-                            <option value="10^-3">10^-3</option>
-                            <option value="10^-4">10^-4</option>
-                            <option value="10^-5">10^-5</option>
-                            <option value="10^-6">10^-6</option>
-                            <option value="10^-7">10^-7</option>
-                            <option value="10^-8">10^-8</option>
-                            <option value="10^-9">10^-9</option>
-                            <option value="10^-10">10^-10</option>
+                            {['10^-1','10^-2','10^-3','10^-4','10^-5','10^-6','10^-7','10^-8','10^-9','10^-10'].map(d => <option key={d} value={d}>{d}</option>)}
                           </select>
                         </div>
                         <div>
@@ -576,7 +653,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                           <input type="number" min="1" value={plateCount} onChange={e=>setPlateCount(e.target.value)} className="field-input text-xs" placeholder="2"/>
                         </div>
                         <div>
-                          <label className="field-label">Incubation Temp (C)</label>
+                          <label className="field-label">Incubation Temp (°C)</label>
                           <input type="number" step="0.1" value={plateTemp} onChange={e=>setPlateTemp(e.target.value)} className="field-input text-xs" placeholder="37"/>
                         </div>
                         <div>
@@ -609,7 +686,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               {isIntern && (
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-red-500 mb-1">Supervised By <span className="text-red-500">*Required</span></label>
-                  <select value={supervisedBy} onChange={e=>setSupervisedBy(e.target.value)} required className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-red-400">
+                  <select
+                    value={supervisedBy}
+                    onChange={e => {
+                      setSupervisedBy(e.target.value);
+                      // 1A: Persist supervisor choice in localStorage
+                      if (e.target.value && employeeProfile?.id) {
+                        localStorage.setItem(`oxybio_last_supervisor_${employeeProfile.id}`, e.target.value);
+                      }
+                    }}
+                    required className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-red-400">
                     <option value="">Select supervising scientist...</option>
                     {supervisors.map(s=><option key={s.id} value={s.id}>{s.full_name}</option>)}
                   </select>

@@ -11,6 +11,7 @@ import Skeleton from '../Skeleton';
 const PushManager = dynamic(() => import('../PushManager'), { ssr: false });
 const AIChatbot = dynamic(() => import('../AIChatbot'), { ssr: false });
 const GlobalSearch = dynamic(() => import('../GlobalSearch'), { ssr: false });
+const QuickLogOverlay = dynamic(() => import('../QuickLogOverlay'), { ssr: false });
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -188,6 +189,7 @@ export default function ClientLayout({ children }) {
         </div>
         {shellExtrasReady && <GlobalSearch />}
         {shellExtrasReady && <AIChatbot />}
+        {shellExtrasReady && <QuickLogOverlay />}
       </div>
     </ToastProvider>
   );

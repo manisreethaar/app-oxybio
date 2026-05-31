@@ -206,11 +206,10 @@ export default function Sidebar() {
       {/* Mobile Bottom Dock */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-40 pb-safe shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] px-2">
         {[
-          { name: 'Dash',     href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
-          { name: 'Activity', href: '/activity',  icon: Activity,        show: effectiveCanDo('activity', 'view') },
-          { name: 'Check-In', href: '/attendance', icon: Clock,          show: effectiveCanDo('attendance', 'view') },
-          { name: 'Tasks',    href: '/tasks',     icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
-        ].filter(i => i.show).slice(0, 4).map((item) => {
+          { name: 'Dash',      href: '/dashboard',  icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+          { name: 'Lab Bench', href: '/lab-bench',  icon: LayoutGrid,      show: effectiveCanDo('batches', 'view') },
+          { name: 'Check-In',  href: '/attendance', icon: Clock,           show: effectiveCanDo('attendance', 'view') },
+        ].filter(i => i.show).slice(0, 3).map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
