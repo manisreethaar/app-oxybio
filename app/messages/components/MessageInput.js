@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+'use client';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Image as ImageIcon, Paperclip, X, Loader2, File, CornerDownRight, Edit2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
@@ -19,7 +20,7 @@ export default function MessageInput({
   const [pinnedItem, setPinnedItem] = useState(initialPinnedItem || null);
   const fileInputRef = useRef(null);
   
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, User, Users, Hash, Paperclip, ExternalLink, CheckCheck, MoreVertical, Edit2, Reply, Trash2, File, Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -215,7 +216,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
             <h2 className="text-base font-bold text-gray-900 truncate">{chatName}</h2>
             {isGroup && (
               <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
-                {chat.type} â€¢ {chat.members?.length || 0} Members
+                {chat.type} • {chat.members?.length || 0} Members
               </p>
             )}
           </div>
