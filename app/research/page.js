@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
@@ -9,6 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import { Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical, SlidersHorizontal, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import dynamic from 'next/dynamic';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 const ResearchTrendChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchTrendChart })), { ssr: false });
 const ResearchRadarChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchRadarChart })), { ssr: false });
 
@@ -35,8 +37,9 @@ export default function ConsumerResearchPage() {
   const [activePanelist, setActivePanelist] = useState(0);
   const [scoreSubmitting, setScoreSubmitting] = useState(false);
   const isAdmin = employeeProfile?.role === 'admin';
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  
   const handleDeleteSession = async (id) => {
-    if (!confirm('Are you sure you want to delete this session?')) return;
     try {
       const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete');
@@ -299,7 +302,7 @@ export default function ConsumerResearchPage() {
 
             <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
             {isAdmin && (
-              <button onClick={() => handleDeleteSession(s.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
+              <button onClick={() => setConfirmDeleteId(s.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
             )}
             </div>
             <p className="text-xs font-bold text-navy font-mono mb-1">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
@@ -515,6 +518,16 @@ export default function ConsumerResearchPage() {
           </div>
         </div>
       )}
+      {/* Confirm Modal */}
+      <ConfirmModal 
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => handleDeleteSession(confirmDeleteId)}
+        title="Delete Session"
+        message="Are you sure you want to delete this session? All sensory scores will be permanently deleted."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

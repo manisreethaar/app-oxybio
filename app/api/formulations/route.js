@@ -39,51 +39,6 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const body = await request.json();
-    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml } = body;
-
-    const codeErr = validateCode(code);
-    if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
-    const normCode = code.trim().toUpperCase();
-
-    let nextVersion = 1;
-    if (base_version_id) {
-      const { data: base } = await supabase.from('formulations').select('version').eq('id', base_version_id).single();
-      if (base) nextVersion = base.version + 1;
-    } else {
-      const { data: latest } = await supabase.from('formulations')
-        .select('version')
-        .eq('code', normCode)
-
-export async function GET(request) {
-  try {
-    const supabase = createClient();
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-
-    let query = supabase
-      .from('formulations')
-      .select('*, approver:employees!formulations_approved_by_fkey(full_name)')
-      .neq('status', 'Archived')
-      .order('created_at', { ascending: false });
-
-    if (category) query = query.eq('category', category);
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-export async function POST(request) {
-  try {
     const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();

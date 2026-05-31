@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microscope, ArrowDownToLine } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                   result_unit: 'pH units' },
@@ -66,6 +67,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [creating,   setCreating]   = useState(false);
   const [creatingIncubation, setCreatingIncubation] = useState(false);
   const [deletingIncubationId, setDeletingIncubationId] = useState(null);
+  const [confirmDeleteIncubationId, setConfirmDeleteIncubationId] = useState(null);
   const [pullingResults,       setPullingResults]       = useState(false);
   const [mediaFormulations,    setMediaFormulations]    = useState([]);
   const [regenerating,         setRegenerating]         = useState(false);
@@ -486,7 +488,6 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   };
 
   const handleDeleteIncubation = async (id) => {
-    if (!confirm('Delete this incubation record? This cannot be undone.')) return;
     setDeletingIncubationId(id);
     try {
       const res = await fetch(`/api/research/incubation?id=${id}`, { method: 'DELETE' });
@@ -495,7 +496,10 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       toast.success('Incubation record deleted.');
       fetchQcData();
     } catch (err) { toast.error(err.message); }
-    finally { setDeletingIncubationId(null); }
+    finally {
+      setDeletingIncubationId(null);
+      setConfirmDeleteIncubationId(null);
+    }
   };
 
   const handleSaveExtResult = async () => {
@@ -682,7 +686,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                           <div className="flex items-center gap-1.5">
                             <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-teal-700 hover:underline">Enter Results</a>
                             {isCeo && (
-                              <button onClick={()=>handleDeleteIncubation(record.id)} disabled={deletingIncubationId===record.id}
+                              <button onClick={()=>setConfirmDeleteIncubationId(record.id)} disabled={deletingIncubationId===record.id}
                                 className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40">
                                 <Trash2 className="w-3.5 h-3.5"/>
                               </button>
@@ -847,6 +851,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           )}
         </div>
       )}
+      <ConfirmModal 
+        isOpen={!!confirmDeleteIncubationId}
+        onClose={() => setConfirmDeleteIncubationId(null)}
+        onConfirm={() => handleDeleteIncubation(confirmDeleteIncubationId)}
+        title="Delete Incubation Record"
+        message="Are you sure you want to delete this incubation record? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

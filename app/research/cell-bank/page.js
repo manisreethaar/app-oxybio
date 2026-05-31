@@ -6,6 +6,7 @@ import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
 import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const STATUS_COLOR = {
   'In Progress': 'bg-blue-100 text-blue-700',
@@ -273,6 +274,8 @@ export default function CellBankPage() {
   const [strainBatches, setStrainBatches] = useState({});
   const [expandedStrainId, setExpandedStrainId] = useState(null);
   const [editingStrainId, setEditingStrainId] = useState(null);
+  const [confirmDeleteStrainId, setConfirmDeleteStrainId] = useState(null);
+  const [confirmDeletePrepId, setConfirmDeletePrepId] = useState(null);
   const [lowVialDismissed, setLowVialDismissed] = useState(false);
   const isAdmin    = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
   const canDelete  = ['admin', 'ceo', 'cto'].includes(role);
@@ -363,17 +366,13 @@ export default function CellBankPage() {
   const filteredStrains = strains.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.accession_number?.toLowerCase().includes(search.toLowerCase()));
 
   const handleDeleteStrain = async (id) => {
-    if (!confirm('Delete this strain? All linked preparations will also be removed.')) return;
     const res = await fetch(`/api/research/cell-bank/${id}?target=strain`, { method: 'DELETE' });
     const json = await res.json();
     if (json.success) { toast.success('Strain deleted.'); fetchAll(); }
     else toast.error(json.error);
   };
 
-  const handleDeletePrep = async (e, id) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm('Delete this preparation? This will remove all associated vials.')) return;
+  const handleDeletePrep = async (id) => {
     const res = await fetch(`/api/research/cell-bank/${id}?target=preparation`, { method: 'DELETE' });
     const json = await res.json();
     if (json.success) { toast.success('Preparation deleted.'); fetchAll(); }
@@ -527,7 +526,7 @@ export default function CellBankPage() {
                 </div>
                 {canDelete && (
                   <button 
-                    onClick={(e) => handleDeletePrep(e, p.id)} 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeletePrepId(p.id); }} 
                     className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                     title="Delete Preparation"
                   >
@@ -580,7 +579,7 @@ export default function CellBankPage() {
                           <Pencil className="w-3 h-3"/> Edit
                         </button>
                       )}
-                      {canDelete && <button onClick={() => handleDeleteStrain(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
+                      {canDelete && <button onClick={() => setConfirmDeleteStrainId(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
                     </div>
                   </div>
 
@@ -649,6 +648,32 @@ export default function CellBankPage() {
           </div>
         )
       )}
+
+      <ConfirmModal 
+        isOpen={!!confirmDeleteStrainId}
+        onClose={() => setConfirmDeleteStrainId(null)}
+        onConfirm={() => {
+          handleDeleteStrain(confirmDeleteStrainId);
+          setConfirmDeleteStrainId(null);
+        }}
+        title="Delete Strain"
+        message="Are you sure you want to delete this strain? All linked preparations will also be removed."
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      <ConfirmModal 
+        isOpen={!!confirmDeletePrepId}
+        onClose={() => setConfirmDeletePrepId(null)}
+        onConfirm={() => {
+          handleDeletePrep(confirmDeletePrepId);
+          setConfirmDeletePrepId(null);
+        }}
+        title="Delete Preparation"
+        message="Are you sure you want to delete this preparation? This will remove all associated vials."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
