@@ -139,7 +139,7 @@ export default function QuickLogOverlay() {
         id="quick-log-fab"
         onClick={() => { setOpen(true); setDone(false); }}
         aria-label="Quick Log"
-        className="fixed bottom-24 left-4 md:left-auto md:bottom-6 md:right-24 z-[150] w-12 h-12 bg-navy text-white rounded-full shadow-lg hover:bg-navy-hover transition-all flex items-center justify-center hover:scale-110 active:scale-95"
+        className="fixed bottom-24 left-4 md:left-auto md:bottom-6 md:right-24 z-[1000] w-12 h-12 bg-navy text-white rounded-full shadow-lg hover:bg-navy-hover transition-all flex items-center justify-center hover:scale-110 active:scale-95"
         style={{ boxShadow: '0 4px 20px rgba(30,58,95,0.35)' }}
       >
         <Plus className="w-5 h-5 stroke-[2.5px]" />
@@ -148,7 +148,7 @@ export default function QuickLogOverlay() {
       {/* Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-[500] flex items-end justify-start p-4 md:items-end md:justify-end"
+          className="fixed inset-0 z-[1050] flex items-end justify-start p-4 md:items-end md:justify-end"
           onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-sm animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">

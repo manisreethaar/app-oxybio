@@ -635,7 +635,7 @@ export default function FormulationsPage() {
                         <div className={`grid gap-2 ${isApprover ? 'grid-cols-3' : 'grid-cols-1'}`}>
                           <Link
                             href={`/batches?formula_code=${f.code}`}
-                            className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 ${isApprover ? '' : 'col-span-1'}`}
+                            className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-wide border bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${isApprover ? '' : 'col-span-1'}`}
                           >
                             Launch Batch
                           </Link>
