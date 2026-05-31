@@ -45,7 +45,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="bg-white rounded-[2rem] p-8 md:p-10 shadow-2xl shadow-navy/10 border border-gray-100"
+        className="bg-white rounded-[2rem] p-5 md:p-8 md:p-6 md:p-8 shadow-2xl shadow-navy/10 border border-gray-100"
       >
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 border-l-4 border-navy pl-4">Sign In</h2>

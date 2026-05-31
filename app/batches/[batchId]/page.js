@@ -733,7 +733,7 @@ export default function BatchDetailPage() {
       {/* Transition Modal */}
       {pendingTransition && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Advance Stage</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to advance this batch to <strong className="uppercase">{pendingTransition.replace(/_/g, ' ')}</strong>?</p>
             <div className="flex gap-3">
@@ -758,7 +758,7 @@ export default function BatchDetailPage() {
       {/* Archive Modal */}
       {pendingCancel && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Archive Entire Batch</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">This hides the batch from active lists. Permanent delete is available only from Archived.</p>
             <div className="flex gap-3">
@@ -772,7 +772,7 @@ export default function BatchDetailPage() {
       {/* Flask Advance Confirmation Modal */}
       {pendingFlaskAdvance && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-gray-900 mb-1 text-center">Advance Trial Stage</h3>
             <p className="text-sm text-gray-600 mb-1 text-center">
               Advancing <span className="font-black text-navy">{pendingFlaskAdvance.flaskLabel}</span> to{' '}
@@ -792,7 +792,7 @@ export default function BatchDetailPage() {
       {/* Reject Trial Modal */}
       {pendingFlaskReject && selectedFlask && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Abort & Reject Trial</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to forcibly reject <strong>{selectedFlask.flask_label}</strong> at its current stage? This cannot be undone.</p>
             <div className="flex gap-3">
@@ -813,20 +813,10 @@ export default function BatchDetailPage() {
         </div>
       )}
 
-      {/* Quick Log Floating Button */}
-      {fermentingFlasks.length > 0 && (
-        <button
-          onClick={() => { setShowQuickLog(true); setQuickLogFlaskId(fermentingFlasks[0]?.id || ''); }}
-          className="fixed bottom-24 left-4 md:left-auto md:bottom-24 md:right-20 z-[1000] flex items-center gap-2 px-4 py-3 bg-navy text-white rounded-2xl shadow-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all"
-        >
-          ⚡ Log Reading
-        </button>
-      )}
-
       {/* Quick Log Modal */}
       {showQuickLog && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-black text-gray-900 mb-4">Quick Fermentation Reading</h3>
 
             {/* Flask selector */}

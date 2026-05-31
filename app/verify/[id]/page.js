@@ -34,7 +34,7 @@ export default async function VerifyEmployeePage({ params }) {
   if (error || !emp) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-xl border border-slate-100">
+        <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-slate-100">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <XCircle className="w-10 h-10 text-red-600" />
           </div>
@@ -49,7 +49,7 @@ export default async function VerifyEmployeePage({ params }) {
   if (!emp.is_active) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-xl border border-rose-100">
+        <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-rose-100">
           <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShieldCheck className="w-10 h-10 text-rose-500 opacity-40" />
           </div>

@@ -1044,7 +1044,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       {/* ── DELETE CONFIRMATION (inline, non-admin) ───────────────── */}
       {requestingDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-red-100 max-w-sm w-full p-6 space-y-4">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl border border-red-100 max-w-sm w-full p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-black text-slate-800 text-base">Request Archive</h3>

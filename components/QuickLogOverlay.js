@@ -148,7 +148,7 @@ export default function QuickLogOverlay() {
       {/* Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-[1050] flex items-end justify-start p-4 md:items-end md:justify-end"
+          className="fixed inset-0 z-[1050] flex items-end justify-start p-4 md:items-end md:justify-center p-4"
           onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-sm animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">

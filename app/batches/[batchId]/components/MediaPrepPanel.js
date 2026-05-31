@@ -324,7 +324,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
       {pendingOverride !== null && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Safety Override</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">Ragi moisture check failed. Please ensure you log a Process Deviation before continuing. Proceed anyway?</p>
             <div className="flex gap-3">

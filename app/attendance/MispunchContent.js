@@ -236,7 +236,7 @@ export default function MispunchContent() {
 
       {selfReportLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSelfReport}>
               <div className="p-6 border-b border-gray-100 bg-amber-50">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -282,7 +282,7 @@ export default function MispunchContent() {
 
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSubmit}>
               <div className="p-6 border-b border-gray-100 bg-slate-50/50">
                 <h3 className="text-lg font-bold text-gray-900">Mispunch For {new Date(selectedLog.date).toLocaleDateString()}</h3>

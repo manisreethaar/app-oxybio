@@ -756,7 +756,7 @@ export default function TasksPage() {
       {/* Delete Task Modal */}
       {pendingDeleteTask && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Delete Task</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">
               Are you sure you want to permanently delete this task? This action cannot be undone.
