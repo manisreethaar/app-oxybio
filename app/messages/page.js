@@ -136,11 +136,9 @@ export default function MessagesPage() {
         title="Messages"
         subtitle="Team communication and discussions."
         action={
-          isAdmin && (
-            <button onClick={() => setShowCreateGroup(true)} className="w-10 h-10 rounded-2xl bg-navy text-white flex items-center justify-center shadow-sm" aria-label="Create Group">
-              <Plus className="w-5 h-5" />
-            </button>
-          )
+          <button onClick={() => setShowCreateGroup(true)} className="w-10 h-10 rounded-2xl bg-navy text-white flex items-center justify-center shadow-sm" aria-label="New Chat">
+            <Plus className="w-5 h-5" />
+          </button>
         }
       />
 
@@ -191,6 +189,7 @@ export default function MessagesPage() {
             setActiveChat(newChat);
             setShowCreateGroup(false);
           }}
+          isAdmin={isAdmin}
         />
       )}
     </div>
