@@ -175,11 +175,14 @@ export default function StaffDashboard({ employeeProfile }) {
               ? (now - new Date(lr.logged_at).getTime()) / 3600000
               : null;
             const hasAlarm = lr?.is_ph_alarm || lr?.is_temp_alarm;
+            // No readings yet = amber (needs first log); alarm = red; >6h = red; >3h = amber; else green
             const status =
-              hasAlarm || (hrsSinceLog !== null && hrsSinceLog > 6) ? 'red' :
-              (hrsSinceLog !== null && hrsSinceLog > 3) ? 'amber' : 'green';
+              hasAlarm ? 'red' :
+              hrsSinceLog === null ? 'amber' :
+              hrsSinceLog > 6 ? 'red' :
+              hrsSinceLog > 3 ? 'amber' : 'green';
             return { ...b, lr, hrsSinceLog, hasAlarm, status };
-          }).filter(b => b.lr); // only include batches that have at least one reading
+          }); // show ALL fermenting batches, even those with no readings yet
 
           setActiveFermentations(enriched);
         } else {
@@ -319,7 +322,7 @@ export default function StaffDashboard({ employeeProfile }) {
                     )}
                     {!b.hasAlarm && (
                       <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${statusColors.badge}`}>
-                        {b.status === 'red' ? 'OVERDUE' : b.status === 'amber' ? 'DUE SOON' : 'OK'}
+                        {b.hrsSinceLog === null ? 'LOG NOW' : b.status === 'red' ? 'OVERDUE' : b.status === 'amber' ? 'DUE SOON' : 'OK'}
                       </span>
                     )}
                     <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
