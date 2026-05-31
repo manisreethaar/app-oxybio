@@ -108,7 +108,7 @@ export default function AdminDashboard({ employeeId }) {
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
       const [stockRes, calibRes, capaRes, qcHoldRes, leavesRes] = await Promise.all([
-        // Server-side filter low stock directly ΓÇö no more limit(50) then slice(5)
+        // Server-side filter low stock directly — no more limit(50) then slice(5)
         supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).filter('current_quantity', 'lt', 'min_stock_level').limit(5),
         supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
         supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5),
@@ -201,7 +201,7 @@ export default function AdminDashboard({ employeeId }) {
       <div className="surface p-6 flex justify-between items-center bg-gray-50/50">
         <div>
           <h2 className="text-lg font-bold text-gray-900 tracking-tight">Admin Controller</h2>
-          <p className="text-xs text-gray-500">Live Operational Overview ΓÇö {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <p className="text-xs text-gray-500">Live Operational Overview — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -260,14 +260,14 @@ export default function AdminDashboard({ employeeId }) {
       {/* Live Production Chart */}
       <div className="surface p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-base font-bold text-gray-900 tracking-tight">Production Yield ΓÇö Last 6 Months</h3>
+          <h3 className="text-base font-bold text-gray-900 tracking-tight">Production Yield — Last 6 Months</h3>
           <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-widest">Live Data</span>
         </div>
         <div className="h-72 w-full min-w-0">
           <ProductionYieldChart data={chartData} />
         </div>
         {chartData.every(d => d.Released === 0 && d.Rejected === 0) && (
-          <p className="text-center text-xs text-gray-400 font-medium mt-2">No completed batches yet ΓÇö data will populate as batches are released or rejected.</p>
+          <p className="text-center text-xs text-gray-400 font-medium mt-2">No completed batches yet — data will populate as batches are released or rejected.</p>
         )}
       </div>
 
@@ -331,13 +331,13 @@ export default function AdminDashboard({ employeeId }) {
         </div>
       </div>
 
-      {/* QC Hold ΓÇö Awaiting Release Decision */}
+      {/* QC Hold — Awaiting Release Decision */}
       {qcHoldBatches.length > 0 && !qcHoldDismissed && (
         <div className="surface overflow-hidden">
           <div className="px-6 py-4 border-b border-amber-200 flex justify-between items-center bg-amber-50">
             <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600"/>
-              ΓÜá Awaiting Release Decision
+              ⚠ Awaiting Release Decision
               <span className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black">{qcHoldBatches.length}</span>
             </h2>
             <button onClick={() => setQcHoldDismissed(true)} className="text-amber-400 hover:text-amber-700 transition-colors" aria-label="Dismiss">
@@ -353,7 +353,7 @@ export default function AdminDashboard({ employeeId }) {
                     {b.formulations?.name && <p className="text-[11px] text-amber-700 font-semibold truncate mt-0.5">{b.formulations.name}</p>}
                   </div>
                   <Link href={`/batches/${b.id}`} className="ml-3 shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
-                    Review ΓåÆ
+                    Review →
                   </Link>
                 </div>
               ))}
@@ -375,10 +375,10 @@ export default function AdminDashboard({ employeeId }) {
               {lowStock.map(item => (
                 <Link key={item.id} href={`/inventory?search=${encodeURIComponent(item.item?.name || '')}`} className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
                   <span className="text-xs font-bold text-amber-800 truncate">{item.item?.name}</span>
-                  <span className="text-[10px] font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? 'ΓÇö'} {item.unit}</span>
+                  <span className="text-[10px] font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? '—'} {item.unit}</span>
                 </Link>
               ))}
-              <Link href="/inventory" className="block text-center text-xs font-bold text-amber-600 hover:underline mt-1 pt-1 border-t border-amber-100">View Inventory ΓåÆ</Link>
+              <Link href="/inventory" className="block text-center text-xs font-bold text-amber-600 hover:underline mt-1 pt-1 border-t border-amber-100">View Inventory →</Link>
             </div>
           )}
         </div>
@@ -400,7 +400,7 @@ export default function AdminDashboard({ employeeId }) {
                   </Link>
                 );
               })}
-              <Link href="/equipment" className="block text-center text-xs font-bold text-blue-600 hover:underline mt-1 pt-1 border-t border-gray-100">View Equipment ΓåÆ</Link>
+              <Link href="/equipment" className="block text-center text-xs font-bold text-blue-600 hover:underline mt-1 pt-1 border-t border-gray-100">View Equipment →</Link>
             </div>
           )}
         </div>
@@ -426,7 +426,7 @@ export default function AdminDashboard({ employeeId }) {
                   )}
                 </div>
               ))}
-              <Link href="/capa" className="block text-center text-xs font-bold text-red-600 hover:underline mt-1 pt-1 border-t border-red-100">View CAPA Manager ΓåÆ</Link>
+              <Link href="/capa" className="block text-center text-xs font-bold text-red-600 hover:underline mt-1 pt-1 border-t border-red-100">View CAPA Manager →</Link>
             </div>
           )}
         </div>
@@ -441,7 +441,7 @@ export default function AdminDashboard({ employeeId }) {
               Pending Leave Approvals
               <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-black">{pendingLeaves.length}</span>
             </h2>
-            <Link href="/leave" className="text-xs font-bold text-amber-700 hover:underline">Manage All ΓåÆ</Link>
+            <Link href="/leave" className="text-xs font-bold text-amber-700 hover:underline">Manage All →</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {pendingLeaves.map(l => (
@@ -449,11 +449,11 @@ export default function AdminDashboard({ employeeId }) {
                 <div>
                   <p className="text-sm font-bold text-gray-900">{l.employee?.full_name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {l.leave_type} ┬╖ {new Date(l.start_date).toLocaleDateString('en-IN')} ΓÇô {new Date(l.end_date).toLocaleDateString('en-IN')}
+                    {l.leave_type} · {new Date(l.start_date).toLocaleDateString('en-IN')} – {new Date(l.end_date).toLocaleDateString('en-IN')}
                   </p>
                 </div>
                 <Link href="/leave" className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
-                  Review ΓåÆ
+                  Review →
                 </Link>
               </div>
             ))}
@@ -625,7 +625,7 @@ export default function AdminDashboard({ employeeId }) {
                 disabled={actionLoading}
                 className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
               >
-                {actionLoading ? 'Approving...' : 'Γ£ô Approve'}
+                {actionLoading ? 'Approving...' : '✓ Approve'}
               </button>
             </div>
           </div>

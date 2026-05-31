@@ -77,7 +77,7 @@ export default function AIChatbot() {
         throw new Error(`Server error ${res.status}: ${errText}`);
       }
 
-      // Stream the response ΓÇö backend sends SSE: "data: {json}\n\n"
+      // Stream the response — backend sends SSE: "data: {json}\n\n"
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
