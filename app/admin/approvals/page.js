@@ -206,7 +206,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
 }
 
 export default function ApprovalsPage() {
-  const { role, employeeProfile, loading: authLoading } = useAuth();
+  const { role, isAdmin, loading: authLoading } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -215,8 +215,6 @@ export default function ApprovalsPage() {
   const [changes, setChanges] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const isMaster = employeeProfile?.email === 'manisreethaar@gmail.com';
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(role) || isMaster;
 
   useEffect(() => {
     if (!authLoading) {

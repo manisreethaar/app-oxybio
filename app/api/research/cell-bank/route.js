@@ -1,7 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { syncCellBankStepToLNB } from '@/lib/cellBankLNBSync';
+import { syncCellBankStepToLNB } from '@/lib/lnbSync';
+import { requireResearchAccess } from '@/lib/research/access';
 
 async function generatePrepCode(supabase, type) {
   const yy = String(new Date().getFullYear()).slice(-2);
@@ -23,15 +24,7 @@ async function generatePrepCode(supabase, type) {
 
 export const dynamic = 'force-dynamic';
 
-const MASTER_EMAIL = 'manisreethaar@gmail.com';
 
-async function requireAccess(supabase) {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) };
-  const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-  if (!emp && user.email !== MASTER_EMAIL) return { error: NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 }) };
-  return { user, emp };
-}
 
 const strainSchema = z.object({
   type: z.literal('strain'),
@@ -59,7 +52,7 @@ const prepSchema = z.object({
 export async function GET(request) {
   try {
     const supabase = createClient();
-    const access = await requireAccess(supabase);
+    const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
     const { searchParams } = new URL(request.url);
@@ -100,7 +93,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const access = await requireAccess(supabase);
+    const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
     const body = await request.json();

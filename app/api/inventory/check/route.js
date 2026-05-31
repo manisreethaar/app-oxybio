@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { requireInventoryPermission } from '../_permissions';
+import { requireInventoryPermission } from '@/lib/inventory/access';
 
 export const dynamic = 'force-dynamic';
 

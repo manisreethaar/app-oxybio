@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ async function getAdminEmp(supabase) {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return { authError: 'Unauthorized' };
   const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(emp?.role) || user.email === 'manisreethaar@gmail.com';
+  const isAdmin = ['admin', 'ceo', 'cto'].includes(emp?.role) || isMasterAdmin(user.email);
   return { user, emp, isAdmin };
 }
 

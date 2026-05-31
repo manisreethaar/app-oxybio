@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { isMasterAdmin } from '@/lib/permissions';
 
 const deactivateSchema = z.object({
   id: z.string().uuid('Invalid employee ID'),
@@ -13,7 +14,7 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     const { data: emp, error: empError } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     
     const isAuthorized = isMaster || (emp && ['admin','ceo','cto'].includes(emp.role));

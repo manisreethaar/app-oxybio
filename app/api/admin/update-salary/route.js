@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
 
 export async function POST(req) {
   try {
@@ -18,7 +19,7 @@ export async function POST(req) {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     const { data: requesterProfile } = await supabaseServer
       .from('employees')
       .select('role')

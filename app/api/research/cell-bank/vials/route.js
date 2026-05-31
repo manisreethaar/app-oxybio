@@ -1,24 +1,17 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireResearchAccess } from '@/lib/research/access';
 
 export const dynamic = 'force-dynamic';
 
-const MASTER_EMAIL = 'manisreethaar@gmail.com';
 
-async function requireAccess(supabase) {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) };
-  const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-  if (!emp && user.email !== MASTER_EMAIL) return { error: NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 }) };
-  return { user, emp };
-}
 
 // GET /api/research/cell-bank/vials?status=Available
 // Returns vials with strain + prep context for inoculation dropdown
 export async function GET(request) {
   try {
     const supabase = createClient();
-    const access = await requireAccess(supabase);
+    const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
     const { searchParams } = new URL(request.url);

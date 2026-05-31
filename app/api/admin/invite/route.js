@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { isMasterAdmin } from '@/lib/permissions';
 
 const COMPANY_PREFIX = 'O2B';
 
@@ -48,7 +49,7 @@ export async function POST(req) {
     });
 
     // Master Admin Override
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
 
     // Check if requester is admin using Admin client to bypass RLS quirks matching
     let { data: requesterProfile } = await supabaseAdmin

@@ -25,7 +25,7 @@ const formatMinutes = (mins) => {
 };
 
 export default function TasksPage() {
-  const { role, canDo, employeeProfile, loading: authLoading } = useAuth();
+  const { role, canDo, isAdmin: isMaster, employeeProfile, loading: authLoading } = useAuth();
   const toast = useToast();
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -36,7 +36,6 @@ export default function TasksPage() {
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [viewMode, setViewMode] = useState('grouped'); // 'grouped' or 'individual'
 
-  const isMaster = employeeProfile?.email === 'manisreethaar@gmail.com';
   const isAdmin = canDo('tasks', 'assign') || isMaster;
   const canApprove = canDo('tasks', 'approve') || isMaster;
 

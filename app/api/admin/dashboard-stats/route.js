@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
 
 export async function GET() {
   try {
@@ -8,7 +9,7 @@ export async function GET() {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role, email').eq('email', user.email).single();
-    if (!['admin', 'ceo', 'cto'].includes(emp?.role) && emp?.email !== 'manisreethaar@gmail.com') {
+    if (!['admin', 'ceo', 'cto'].includes(emp?.role) && !isMasterAdmin(emp?.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

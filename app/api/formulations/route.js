@@ -9,7 +9,7 @@ import {
   validateFormulationStatusChange,
 } from '@/lib/formulations/access';
 
-import { validateCode } from '@/lib/schemas/formulations';
+import { validateCode } from '@/lib/formulations/access';
 export { validateCode };
 
 async function getEmployeeForUser(supabase, user) {

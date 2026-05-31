@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { isMasterAdmin } from '@/lib/permissions';
 
 const equipmentSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -32,7 +33,7 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     if (!['admin','ceo','cto','research_fellow','scientist'].includes(emp?.role) && !isMaster) {
       return NextResponse.json({ error: 'Permission Denied: Access restricted' }, { status: 403 });
     }
@@ -66,7 +67,7 @@ export async function PUT(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     if (!['admin','ceo','cto','research_fellow','scientist'].includes(emp?.role) && !isMaster) {
       return NextResponse.json({ error: 'Permission Denied: Access restricted' }, { status: 403 });
     }
@@ -104,7 +105,7 @@ export async function DELETE(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = user.email === 'manisreethaar@gmail.com';
+    const isMaster = isMasterAdmin(user.email);
     if (!['admin','ceo','cto'].includes(emp?.role) && !isMaster) {
       return NextResponse.json({ error: 'Permission Denied' }, { status: 403 });
     }
