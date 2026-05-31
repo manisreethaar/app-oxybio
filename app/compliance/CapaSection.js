@@ -219,7 +219,7 @@ export default function CapaSection() {
 
       {showInvestigate && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handWhy(handleSaveInvestigation)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handWhy(handleSaveInvestigation)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900">5-Why Analysis</h3><button type="button" onClick={() => setShowInvestigate(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
             {['why_1','why_2','why_3','why_4','why_5'].map((k,i) => (
               <div key={k}><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Why {i+1}</label><input {...regWhy(k)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" /></div>
@@ -232,7 +232,7 @@ export default function CapaSection() {
 
       {showAction && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handAction(handleSpawnAction)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handAction(handleSpawnAction)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900">Assign Action</h3><button type="button" onClick={() => setShowAction(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label><select {...regAction('action_type')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regAction('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{actionErrors.title && <p className="text-red-500 text-[10px] mt-1">{actionErrors.title.message}</p>}</div>
@@ -360,7 +360,7 @@ export default function CapaSection() {
 
       {showRaise && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handRaise(handleRaise)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handRaise(handleRaise)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900 flex items-center gap-1"><FileWarning className="w-4 h-4 text-red-600"/> Raise NCR</h3><button type="button" onClick={() => setShowRaise(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.title.message}</p>}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

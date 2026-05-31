@@ -307,7 +307,7 @@ export default function EquipmentPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-teal-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
               <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">{modalMode === 'edit' ? 'Update Compliance Details' : 'Asset Control - IDMS v2'}</p>
@@ -358,7 +358,7 @@ export default function EquipmentPage() {
 
       {isMaintenanceOpen && activeDevice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
               <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance &amp; Calibration Log</p>
@@ -412,7 +412,7 @@ export default function EquipmentPage() {
       {/* Confirmation Modal */}
       {deletingId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl text-center">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>

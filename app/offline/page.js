@@ -4,7 +4,7 @@ import { AlertTriangle, WifiOff } from 'lucide-react';
 export default function OfflinePage() {
   return (
     <div className="min-h-screen bg-[#f5fbfa] flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-3xl max-w-sm w-full text-center shadow-xl shadow-teal-900/5 ring-1 ring-gray-200">
+      <div className="bg-white p-5 md:p-8 rounded-3xl max-w-sm w-full text-center shadow-xl shadow-teal-900/5 ring-1 ring-gray-200">
         <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
           <WifiOff className="w-10 h-10" />
         </div>

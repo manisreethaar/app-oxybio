@@ -42,7 +42,7 @@ export default function GlobalError({ error, reset }) {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6 bg-slate-50">
-      <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-xl border border-red-100 flex flex-col items-center">
+      <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-red-100 flex flex-col items-center">
         <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
           <AlertTriangle className="w-10 h-10 text-red-500 animate-pulse" />
         </div>

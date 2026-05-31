@@ -349,7 +349,7 @@ export default function ShelfLifePage() {
       {/* Log Modal */}
       {activeStudy && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200 overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-gray-900">Log Data for {activeStudy.batches?.batch_id}</h3>
@@ -402,7 +402,7 @@ export default function ShelfLifePage() {
       {/* Conclude Study Modal */}
       {pendingConclude && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Conclude Study</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">
               Are you sure you want to conclude this stability study? It will be marked as Completed.

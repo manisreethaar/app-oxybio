@@ -1054,7 +1054,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {/* Bulk Delete Confirmation Modal */}
       {showBulkConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl text-center">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
@@ -1085,7 +1085,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {/* Confirmation Modal */}
       {deletingId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl text-center">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
@@ -1204,8 +1204,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
       {/* Stock Item Detail Modal (Section 2.4) */}
       {selectedStock && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-end">
-          <div className="w-full max-w-xl bg-white h-screen shadow-2xl flex flex-col animate-slide-left">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="p-5 bg-teal-900 text-white relative">
               <div className="absolute top-6 right-16 flex items-center gap-2">
@@ -1328,7 +1328,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {/* Auto-Load Modal */}
       {pendingSeed && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">
               This will automatically load 115 standard inventory items and common lab equipment into the system. Perfect for initial setup. Proceed?

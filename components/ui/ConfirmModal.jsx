@@ -12,7 +12,7 @@ export default function ConfirmModal({
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-md shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
+      <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-md shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
         <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all">
           <X className="w-5 h-5 text-gray-400"/>
         </button>

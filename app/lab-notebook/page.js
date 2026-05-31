@@ -370,7 +370,7 @@ export default function DigitalLnbPage() {
 
       {showNew && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
             <div className="p-6 pb-0 flex justify-between items-start">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">Create Notebook Entry</h2>

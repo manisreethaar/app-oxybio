@@ -50,7 +50,7 @@ export default function TaskDetailModal({
   if (!selectedTask) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto shadow-xl">
         {/* Header */}
         <div className="p-5 border-b border-gray-100 flex items-start justify-between sticky top-0 bg-white z-10">

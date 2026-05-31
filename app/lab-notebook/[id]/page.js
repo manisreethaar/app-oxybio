@@ -309,7 +309,7 @@ export default function LnbEntryPage() {
       {/* Submit Review Modal */}
       {pendingSubmitReview && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Submit for Review</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">
               Are you sure you want to submit? Once submitted, this notebook entry will be locked for review and you can no longer edit it.
@@ -335,7 +335,7 @@ export default function LnbEntryPage() {
       {/* Countersign Modal */}
       {pendingCountersign && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Countersign Document</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">
               By countersigning, you legally verify this document&apos;s contents and attest to its accuracy. Proceed?

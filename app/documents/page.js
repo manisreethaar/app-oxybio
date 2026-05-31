@@ -237,7 +237,7 @@ export default function DocumentsPage() {
 
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative shadow-2xl">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl max-w-md w-full p-5 md:p-8 relative shadow-2xl">
             <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600">×</button>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Document to Vault</h2>
             <form onSubmit={handleSubmit(handleUploadSubmit)} className="space-y-4">
