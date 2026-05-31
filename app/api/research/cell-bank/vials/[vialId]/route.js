@@ -45,6 +45,8 @@ export async function PATCH(request, { params }) {
         logAction = 'used_in_batch';
         break;
       case 'thaw':
+        vialUpdates.status = 'Used';
+        vialUpdates.used_at = new Date().toISOString();
         logAction = 'thawed';
         break;
       case 'return':
@@ -54,7 +56,7 @@ export async function PATCH(request, { params }) {
         logAction = 'returned';
         break;
       case 'discard':
-        vialUpdates.status = 'Depleted';
+        vialUpdates.status = 'Discarded';
         logAction = 'discarded';
         break;
       default:
