@@ -78,27 +78,34 @@ export default function DocumentsPage() {
   const handleUploadSubmit = async (data) => {
     if (!data.file || data.file.length === 0) { toast.warn("Please select a file."); return; }
     setUploading(true);
-    const fetchWithTimeout = (url, options, timeout = 30000) => {
-      return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
-      ]);
-    };
+    
     try {
-      const formData = new FormData();
-      formData.append('file', data.file[0]);
-      formData.append('folder', 'document_vault');
-      const uploadRes = await fetchWithTimeout('/api/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) throw new Error("File upload failed.");
-      const uploadData = await uploadRes.json();
-      const res = await fetchWithTimeout('/api/documents', {
+      const file = data.file[0];
+      const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+      
+      // Direct client-side upload avoids API route timeouts for large PDFs
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('inventory-docs')
+        .upload(`uploads/${safeName}`, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw new Error("Upload failed: " + uploadError.message);
+
+      const { data: publicUrlData } = supabase.storage
+        .from('inventory-docs')
+        .getPublicUrl(`uploads/${safeName}`);
+
+      const res = await fetch('/api/documents', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: data.title, category: data.category, version: data.version,
-          access_level: data.access_level, file_url: uploadData.url || uploadData.download_url
+          access_level: data.access_level, file_url: publicUrlData.publicUrl
         })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to sync document metadata');
+      
       setShowUploadModal(false);
       reset();
       fetchDocuments();
