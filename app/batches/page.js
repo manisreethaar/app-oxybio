@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -135,7 +136,7 @@ export default function BatchesPage() {
   const [sortOrder,        setSortOrder]        = useState('newest');
   const [pendingIds,       setPendingIds]       = useState(new Set());
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(batchSchema),
     defaultValues: {
       experiment_type:   'F1',
@@ -148,6 +149,23 @@ export default function BatchesPage() {
   const watchExperimentType = watch('experiment_type');
   const watchFormulationId  = watch('formulation_id');
   const [batchIdPreview, setBatchIdPreview] = useState('');
+  // 1B: Combobox state for formulation picker
+  const [formulationSearch,   setFormulationSearch]   = useState('');
+  const [formulationDropOpen, setFormulationDropOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  // 2C: Auto-open from R&D handoff — reads ?prefill= base64 JSON
+  useEffect(() => {
+    const prefill = searchParams?.get('prefill');
+    if (!prefill) return;
+    try {
+      const data = JSON.parse(atob(prefill));
+      if (data.notes) setValue('notes', data.notes);
+      setShowNewBatchModal(true);
+    } catch {
+      // malformed — ignore silently
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!watchFormulationId) { setBatchIdPreview(''); return; }
@@ -802,20 +820,51 @@ export default function BatchesPage() {
                   </div>
                 ) : (
                   <>
-                    {/* ── Row 1: Approved Recipe ────────────────── */}
-                    <div>
+                    {/* ── Row 1: Approved Recipe — Searchable Combobox (1B) ── */}
+                    <div className="relative">
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
                         Approved Formulation <span className="text-emerald-600">✓ Approved Only</span>
                       </label>
-                      <select
-                        {...register('formulation_id')}
-                        className="w-full border border-gray-200 rounded-xl p-3 outline-none bg-white font-semibold text-gray-800 text-sm focus:ring-2 focus:ring-navy/20"
-                      >
-                        <option value="">Select Approved Version...</option>
-                        {formulations.map(f => (
-                          <option key={f.id} value={f.id}>{f.code} — {f.name} (v{f.version})</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search formulation..."
+                          value={formulationSearch}
+                          onFocus={() => setFormulationDropOpen(true)}
+                          onChange={e => { setFormulationSearch(e.target.value); setFormulationDropOpen(true); }}
+                          onBlur={() => setTimeout(() => setFormulationDropOpen(false), 150)}
+                          className="w-full border border-gray-200 rounded-xl p-3 outline-none bg-white font-semibold text-gray-800 text-sm focus:ring-2 focus:ring-navy/20"
+                        />
+                        {formulationDropOpen && (
+                          <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                            {formulations
+                              .filter(f => `${f.code} ${f.name}`.toLowerCase().includes(formulationSearch.toLowerCase()))
+                              .map(f => (
+                                <button
+                                  key={f.id}
+                                  type="button"
+                                  onMouseDown={() => {
+                                    setValue('formulation_id', f.id, { shouldValidate: true });
+                                    setFormulationSearch(`${f.code} — ${f.name} (v${f.version})`);
+                                    setFormulationDropOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-navy/5 transition-colors ${
+                                    watchFormulationId === f.id ? 'bg-navy/5 font-bold text-navy' : 'text-gray-800'
+                                  }`}
+                                >
+                                  <span className="font-mono font-bold text-navy text-xs mr-2">{f.code}</span>
+                                  {f.name} <span className="text-gray-400 text-xs">v{f.version}</span>
+                                </button>
+                              ))
+                            }
+                            {formulations.filter(f => `${f.code} ${f.name}`.toLowerCase().includes(formulationSearch.toLowerCase())).length === 0 && (
+                              <p className="px-4 py-3 text-xs text-gray-400">No matching formulations</p>
+                            )}
+                          </div>
+                        )}
+                        {/* Hidden input registers the value with react-hook-form */}
+                        <input type="hidden" {...register('formulation_id')} />
+                      </div>
                       {errors.formulation_id && <p className="text-xs text-red-600 mt-1 font-semibold">{errors.formulation_id.message}</p>}
                       {batchIdPreview && (
                         <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-100 rounded-lg">

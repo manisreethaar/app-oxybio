@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { CheckSquare, Activity, Bell, Clock, ChevronRight } from 'lucide-react';
+import { CheckSquare, Activity, Bell, Clock, ChevronRight, FlaskConical, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 
@@ -78,12 +78,13 @@ export default function StaffDashboard({ employeeProfile }) {
     earned:  isClOnly ? 0               : (employeeProfile?.earned_leave_balance  ?? 15),
   };
 
-  const [tasks,           setTasks]           = useState([]);
-  const [activeBatches,   setActiveBatches]   = useState([]);
-  const [leaveStats,      setLeaveStats]      = useState({ casual: 0, medical: 0, earned: 0 });
-  const [recentActivity,  setRecentActivity]  = useState([]);
-  const [unreadCount,     setUnreadCount]     = useState(0);
-  const [loading,         setLoading]         = useState(true);
+  const [tasks,                setTasks]                = useState([]);
+  const [activeBatches,        setActiveBatches]        = useState([]);
+  const [activeFermentations,  setActiveFermentations]  = useState([]);
+  const [leaveStats,           setLeaveStats]           = useState({ casual: 0, medical: 0, earned: 0 });
+  const [recentActivity,       setRecentActivity]       = useState([]);
+  const [unreadCount,          setUnreadCount]          = useState(0);
+  const [loading,              setLoading]              = useState(true);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => { fetchStaffData(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -141,6 +142,52 @@ export default function StaffDashboard({ employeeProfile }) {
         if (t.batches && !batchMap.has(t.batches.id)) batchMap.set(t.batches.id, t.batches);
       });
       setActiveBatches([...batchMap.values()].slice(0, 3));
+
+      // 3A: Active Fermentations widget — fetch in-progress fermentation batches with last reading
+      try {
+        const { data: fermBatches } = await supabase
+          .from('batches')
+          .select('id, batch_id, current_stage')
+          .eq('current_stage', 'fermentation')
+          .not('status', 'in', '("released","rejected")')
+          .is('archived_at', null)
+          .limit(10);
+
+        if (fermBatches?.length) {
+          const batchIds = fermBatches.map(b => b.id);
+          // Get latest reading per batch
+          const { data: latestReadings } = await supabase
+            .from('batch_fermentation_readings')
+            .select('batch_id, ph, is_ph_alarm, is_temp_alarm, logged_at, elapsed_hours')
+            .in('batch_id', batchIds)
+            .order('logged_at', { ascending: false });
+
+          // Reduce to one reading per batch (latest)
+          const latestMap = new Map();
+          (latestReadings || []).forEach(r => {
+            if (!latestMap.has(r.batch_id)) latestMap.set(r.batch_id, r);
+          });
+
+          const now = Date.now();
+          const enriched = fermBatches.map(b => {
+            const lr = latestMap.get(b.id);
+            const hrsSinceLog = lr?.logged_at
+              ? (now - new Date(lr.logged_at).getTime()) / 3600000
+              : null;
+            const hasAlarm = lr?.is_ph_alarm || lr?.is_temp_alarm;
+            const status =
+              hasAlarm || (hrsSinceLog !== null && hrsSinceLog > 6) ? 'red' :
+              (hrsSinceLog !== null && hrsSinceLog > 3) ? 'amber' : 'green';
+            return { ...b, lr, hrsSinceLog, hasAlarm, status };
+          }).filter(b => b.lr); // only include batches that have at least one reading
+
+          setActiveFermentations(enriched);
+        } else {
+          setActiveFermentations([]);
+        }
+      } catch (fermErr) {
+        console.error('Fermentation widget fetch error:', fermErr);
+      }
 
       setRecentActivity(activityRes.data || []);
       setUnreadCount(notifRes.count || 0);
@@ -223,6 +270,63 @@ export default function StaffDashboard({ employeeProfile }) {
                 </Link>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* 3A: Active Fermentations Monitoring Widget */}
+        {activeFermentations.length > 0 && (
+          <div className="surface overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="w-4 h-4 text-navy" />
+                <h2 className="text-sm font-black text-gray-900">Active Fermentations</h2>
+                <span className="text-[10px] font-black text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded-full">{activeFermentations.length}</span>
+              </div>
+              <Link href="/batches" className="text-xs font-bold text-gray-500 hover:text-navy transition-colors">View All →</Link>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {activeFermentations.map(b => {
+                const statusColors = {
+                  green: { dot: 'bg-emerald-500', row: '', badge: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+                  amber: { dot: 'bg-amber-400 animate-pulse', row: 'bg-amber-50/30', badge: 'text-amber-700 bg-amber-50 border-amber-200' },
+                  red:   { dot: 'bg-red-500 animate-ping', row: 'bg-red-50/30', badge: 'text-red-700 bg-red-50 border-red-200' },
+                }[b.status];
+
+                const hrsLabel = b.hrsSinceLog !== null
+                  ? b.hrsSinceLog < 1 ? `${Math.round(b.hrsSinceLog * 60)}m ago`
+                    : `${b.hrsSinceLog.toFixed(1)}h ago`
+                  : 'No logs';
+
+                return (
+                  <Link
+                    key={b.id}
+                    href={`/batches/${b.id}`}
+                    className={`flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors ${statusColors.row}`}
+                  >
+                    <div className="relative shrink-0">
+                      <div className={`w-2 h-2 rounded-full ${statusColors.dot}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-gray-900 font-mono">{b.batch_id}</p>
+                      <p className="text-[10px] text-gray-400 font-semibold">
+                        pH {b.lr?.ph?.toFixed(2) ?? '—'} · Last log: {hrsLabel}
+                      </p>
+                    </div>
+                    {b.hasAlarm && (
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${statusColors.badge} flex items-center gap-1`}>
+                        <AlertTriangle className="w-2.5 h-2.5" /> ALARM
+                      </span>
+                    )}
+                    {!b.hasAlarm && (
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${statusColors.badge}`}>
+                        {b.status === 'red' ? 'OVERDUE' : b.status === 'amber' ? 'DUE SOON' : 'OK'}
+                      </span>
+                    )}
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
 

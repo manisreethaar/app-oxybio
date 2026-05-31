@@ -953,10 +953,31 @@ export default function BioprocessDetailPage() {
             <p className="text-xs text-gray-400 mt-1">Response: {experiment.response_variable} {experiment.response_unit && `(${experiment.response_unit})`}</p>
           </div>
         </div>
-        <button onClick={runAnalysis} disabled={analysing} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-60">
-          {analysing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-          {result ? 'Re-run' : 'Analyse'}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* 2C: R&D → Batch handoff — only shown when RSM is complete and has optimal conditions */}
+          {experiment.type === 'rsm' && experiment.status === 'complete' && result?.actualOpt && localFactors.length >= 3 && (() => {
+            const optimalNotes = localFactors.slice(0, 3).map((f, i) =>
+              `${f.variable}: ${result.actualOpt[i]}${f.unit ? ' ' + f.unit : ''}`
+            ).join(' · ');
+            const prefill = btoa(JSON.stringify({
+              notes: `[AUTO] Optimal conditions from ${experiment.title}:\n${optimalNotes}\nPredicted ${experiment.response_variable}: ${result.predictedResponse} ${experiment.response_unit || ''}`,
+              product_name: experiment.title,
+            }));
+            return (
+              <Link
+                href={`/batches?prefill=${prefill}`}
+                className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap"
+              >
+                <FlaskConical className="w-4 h-4" />
+                Create Batch →
+              </Link>
+            );
+          })()}
+          <button onClick={runAnalysis} disabled={analysing} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-60">
+            {analysing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {result ? 'Re-run' : 'Analyse'}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
