@@ -117,7 +117,7 @@ export default function GrowthStudiesPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Active', value: counts.active, icon: Activity, color: 'text-teal-600 bg-teal-50' },
           { label: 'In Setup', value: counts.setup, icon: FlaskConical, color: 'text-slate-600 bg-slate-100' },
@@ -192,7 +192,7 @@ export default function GrowthStudiesPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {filtered.map(study => {
             const isolateName = study.cell_bank_strains?.name || study.cell_bank_preparations?.prep_code || '—';
             const mediaName = study.formulations?.name || '—';

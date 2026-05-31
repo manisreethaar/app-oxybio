@@ -510,7 +510,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 <option value="false">Inactive / Deactivated</option>
                             </select>
                         </Field>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Field label="Date of Birth">
                                 <input type="date" value={editForm.date_of_birth} onChange={e => setEditForm({...editForm, date_of_birth: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
                             </Field>
@@ -521,7 +521,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                         <Field label="Address">
                             <textarea value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700" rows={2}/>
                         </Field>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Field label="Emergency Contact Name">
                                 <input value={editForm.emergency_contact_name} onChange={e => setEditForm({...editForm, emergency_contact_name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
                             </Field>
@@ -549,7 +549,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             {Object.keys(PERMISSIONS).map(moduleName => (
                                 <div key={moduleName} className="border border-slate-100 rounded-xl p-4 bg-white shadow-sm">
                                     <h4 className="font-bold text-sm text-slate-700 capitalize mb-3 border-b border-slate-50 pb-2">{moduleName.replace('_', ' ')}</h4>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {Object.keys(PERMISSIONS[moduleName]).map(actionName => {
                                             const defaultEnabled = PERMISSIONS[moduleName]?.[actionName]?.includes(editingEmployee.role || 'staff') || false;
                                             const customOverride = customPerms[moduleName]?.[actionName];
@@ -619,7 +619,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Role">
                   <select {...register('role')} className="input-field">
                     <option value="admin">Administrator</option>

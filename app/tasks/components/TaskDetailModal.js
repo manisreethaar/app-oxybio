@@ -82,7 +82,7 @@ export default function TaskDetailModal({
           )}
 
           {/* Meta */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex flex-col justify-center">
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-1">Assignees</p>
               <div className="flex flex-wrap gap-1">

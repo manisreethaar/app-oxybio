@@ -487,7 +487,7 @@ export default function ConsumerResearchPage() {
                 {errors.session_title && <p className="text-red-500 text-xs mt-1">{errors.session_title.message}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Panelists</label>
                   <input

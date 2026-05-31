@@ -293,7 +293,7 @@ export default function LeavePage() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Start Date</label>
                     <input type="date" {...register('startDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />

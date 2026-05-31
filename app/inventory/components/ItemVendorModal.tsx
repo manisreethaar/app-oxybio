@@ -37,7 +37,7 @@ export default function ItemVendorModal({
   if (modalType === 'items' || modalType === 'edit_item') {
     return (
       <form onSubmit={modalType === 'items' ? handleAddItem : handleUpdateItem} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Code / SKU</label>
             <input type="text" placeholder="AUTO-GEN" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold font-mono" value={newItem.item_code} onChange={e => setNewItem({...newItem, item_code: e.target.value})} />
@@ -48,7 +48,7 @@ export default function ItemVendorModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Category</label>
             <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value, sub_category: ''})}>
@@ -64,7 +64,7 @@ export default function ItemVendorModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Unit of Measure</label>
             <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})}>
@@ -83,7 +83,7 @@ export default function ItemVendorModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Min Reorder Level</label>
             <input type="number" step="0.1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newItem.min_stock_level} onChange={e => setNewItem({...newItem, min_stock_level: e.target.value})} />
@@ -120,7 +120,7 @@ export default function ItemVendorModal({
         <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Vendor Name</label>
         <input type="text" required placeholder="e.g. Sigma Aldrich" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.name} onChange={e => setNewVendor({...newVendor, name: e.target.value})} />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Contact Person</label>
           <input type="text" placeholder="Full Name" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.contact_person} onChange={e => setNewVendor({...newVendor, contact_person: e.target.value})} />
@@ -130,7 +130,7 @@ export default function ItemVendorModal({
           <input type="email" placeholder="sales@vendor.com" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.email} onChange={e => setNewVendor({...newVendor, email: e.target.value})} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Phone</label>
           <input type="text" placeholder="+12345678" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.phone} onChange={e => setNewVendor({...newVendor, phone: e.target.value})} />

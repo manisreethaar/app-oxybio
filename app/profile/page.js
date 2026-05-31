@@ -93,6 +93,7 @@ export default function ProfilePage() {
   const [fetching, setFetching] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [view, setView] = useState('info'); // 'info' | 'card'
+  const canViewCompensation = isAdminView || ['admin', 'ceo', 'cto'].includes(role);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -409,14 +410,16 @@ export default function ProfilePage() {
                 editing={editing}
                 registerProps={register('employee_code')}
               />
-              <InfoField
-                label="Date of Joining"
-                value={emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-GB') : '—'}
-                icon={Calendar}
-                editing={editing}
-                inputType="date"
-                registerProps={register('joined_date')}
-              />
+              {editing && (
+                <InfoField
+                  label="Date of Joining"
+                  value={emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-GB') : '-'}
+                  icon={Calendar}
+                  editing={editing}
+                  inputType="date"
+                  registerProps={register('joined_date')}
+                />
+              )}
 
               <InfoField 
                 label="Phone Number" 
@@ -432,14 +435,16 @@ export default function ProfilePage() {
                 editing={editing}
                 registerProps={register('designation')}
               />
-              <InfoField 
-                label="Date of Birth" 
-                value={emp.date_of_birth ? new Date(emp.date_of_birth).toLocaleDateString('en-GB') : '—'} 
-                icon={Calendar}
-                editing={editing}
-                inputType="date"
-                registerProps={register('date_of_birth')}
-              />
+              {editing && (
+                <InfoField 
+                  label="Date of Birth" 
+                  value={emp.date_of_birth ? new Date(emp.date_of_birth).toLocaleDateString('en-GB') : '-'} 
+                  icon={Calendar}
+                  editing={editing}
+                  inputType="date"
+                  registerProps={register('date_of_birth')}
+                />
+              )}
               <InfoField 
                 label="Blood Group" 
                 value={emp.blood_group} 
@@ -447,9 +452,9 @@ export default function ProfilePage() {
                 editing={editing}
                 registerProps={register('blood_group')}
               />
-              {(isAdminView || role === 'admin' || role === 'ceo' || role === 'cto') && (
+              {editing && canViewCompensation && (
                 <InfoField 
-                  label="Base Salary (₹)" 
+                  label="Base Salary (Rs)" 
                   value={emp.base_salary ? Number(emp.base_salary).toLocaleString() : '0'} 
                   icon={ShieldCheck}
                   editing={editing}

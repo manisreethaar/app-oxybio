@@ -96,6 +96,7 @@ export default function GridEntryPage() {
 
   const [rows, setRows]               = useState([]);
   const [adHocMode, setAdHocMode]     = useState(false); // true when study has no formal time points
+  const [mobileView, setMobileView]   = useState('table'); // 'table' | 'cards'
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState('');
   const [result, setResult]           = useState(null);
@@ -309,7 +310,7 @@ export default function GridEntryPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
 
         {/* Source type tabs */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
             { value: 'batch',        label: 'Batch — Multi-flask',    icon: FlaskConical },
             { value: 'growth_study', label: 'Growth Study — Multi-timepoint', icon: Activity },
@@ -450,14 +451,28 @@ export default function GridEntryPage() {
 
       {/* ── Grid Table ── */}
       {rows.length > 0 && (
+        <>
+        {/* Mobile view toggle */}
+        <div className="flex md:hidden items-center gap-2 mb-3">
+          <button
+            onClick={() => setMobileView('table')}
+            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'table' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200')}
+          >Table</button>
+          <button
+            onClick={() => setMobileView('cards')}
+            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'cards' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200')}
+          >Cards</button>
+        </div>
+
+        <div className={clsx(mobileView === 'cards' ? 'hidden md:block' : '')}>
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
           {/* Column headers */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="px-3 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-28 sticky left-0 bg-slate-50 z-10">
+                  <th className="px-3 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-20 sm:w-28 sticky left-0 bg-slate-50 z-10">
                     {isBatch ? 'Flask' : 'Timepoint'}
                   </th>
                   <th className="px-2 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider w-16">
@@ -512,6 +527,48 @@ export default function GridEntryPage() {
             </div>
           </div>
         </div>
+        </div>
+
+        {/* Mobile cards view */}
+        <div className={clsx('space-y-3 md:hidden', mobileView !== 'cards' && 'hidden')}>
+          {rows.map((row, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-bold text-sm text-slate-800">{row.flask_label || row.timepoint_label || `Row ${i + 1}`}</span>
+                {row.skipped && <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 font-bold">Skipped</span>}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">pH</label>
+                  <input type="number" step="0.01" value={row.ph} onChange={e => updateRow(i, 'ph', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">OD</label>
+                  <input type="number" step="0.001" value={row.od} onChange={e => updateRow(i, 'od', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Temp °C</label>
+                  <input type="number" step="0.1" value={row.incubator_temp_c || ''} onChange={e => updateRow(i, 'incubator_temp_c', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <select value={row.sterility} onChange={e => updateRow(i, 'sterility', e.target.value)} disabled={row.skipped} className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none disabled:bg-slate-50">
+                  {STERILITY_OPTIONS.map(o => <option key={o} value={o}>{o || 'Sterility...'}</option>)}
+                </select>
+                <button type="button" onClick={() => updateRow(i, 'skipped', !row.skipped)} className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', row.skipped ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-500 border-slate-200')}>
+                  {row.skipped ? 'Skipped' : 'Skip'}
+                </button>
+              </div>
+              {row.skipped && (
+                <select value={row.skip_reason} onChange={e => updateRow(i, 'skip_reason', e.target.value)} className="w-full mt-2 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none">
+                  <option value="">Select reason...</option>
+                  {SKIP_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              )}
+            </div>
+          ))}
+        </div>
+        </>
       )}
 
       {/* ── Error ── */}

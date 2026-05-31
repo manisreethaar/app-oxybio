@@ -196,7 +196,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="field-label">Inoculum Volume (ml)</label>
             <input type="number" step="0.1" value={inVol} onChange={e=>setInVol(e.target.value)} className="field-input" placeholder="12.5"/>
@@ -224,7 +224,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div><label className="field-label">Transfer Method</label>
             <select value={transfer} onChange={e=>setTransfer(e.target.value)} className="field-input bg-white">
               {TRANSFER_METHODS.map(m=><option key={m}>{m}</option>)}
@@ -256,7 +256,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving?'Saving...':'Save Draft'}
           </button>

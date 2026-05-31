@@ -7,12 +7,12 @@ import StaffDashboard from './components/StaffDashboard';
 // FIXED: Skeleton shown instantly while data loads — no blank freeze
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="space-y-4 sm:space-y-6 animate-pulse">
       <div className="mb-8">
         <div className="h-8 w-64 bg-gray-200 rounded-lg mb-2" />
         <div className="h-4 w-80 bg-gray-100 rounded-lg" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
         ))}

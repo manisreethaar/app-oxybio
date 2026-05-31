@@ -472,7 +472,7 @@ export default function BatchDetailPage() {
             )}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
           <div>
             <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Recipe</p>
             <Link href="/formulations" className="font-bold text-gray-800 hover:text-navy hover:underline block">

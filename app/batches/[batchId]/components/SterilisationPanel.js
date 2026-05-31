@@ -150,7 +150,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         </div>
 
         {/* Cycle params */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div><label className="field-label">Cycle Temp (°C) ★ CCP</label><input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} className="field-input" placeholder="121.0"/></div>
           <div><label className="field-label">Cycle Pressure</label><input value={pressure} onChange={e=>setPressure(e.target.value)} className="field-input" placeholder="15 psi / 1 bar"/></div>
           <div>
@@ -196,7 +196,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes (cycle observations, deviations)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">Save Draft</button>
           <button onClick={()=>handleSave(true)} disabled={saving||actionLoading||passFail!=='Pass'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
             {passFail==='Pass'?'Complete → Inoculation':'🔒 Advance Blocked (Fail)'}

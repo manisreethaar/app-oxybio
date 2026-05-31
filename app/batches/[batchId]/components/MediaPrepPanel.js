@@ -223,7 +223,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                      <span className="font-bold text-sm text-indigo-900">{ing.name}</span>
                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-100 px-2 py-1 rounded">Target: {parseFloat(scaledQty)} {ing.unit}</span>
                    </div>
-                   <div className="grid grid-cols-2 gap-3">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                      <div>
                        <label className="field-label">Inventory Lot Selection</label>
                        <select value={usage.lotId} onChange={e => setBomUsage(p=>({...p, [ing.item_id]: {...p[ing.item_id], lotId: e.target.value}}))} className="field-input">
@@ -236,6 +236,24 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                      <div>
                        <label className="field-label">Actual Used Qty ({ing.unit})</label>
                        <input type="number" step="0.01" value={usage.usedQty} onChange={e => setBomUsage(p=>({...p, [ing.item_id]: {...p[ing.item_id], usedQty: e.target.value}}))} className="field-input" placeholder={parseFloat(scaledQty)} />
+                       {(() => {
+                         const target = parseFloat(scaledQty);
+                         const actual = parseFloat(usage.usedQty);
+                         if (!usage.usedQty || isNaN(actual) || target === 0) return null;
+                         const pct = Math.abs((actual - target) / target) * 100;
+                         if (pct > 10) return (
+                           <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1">
+                             <AlertTriangle className="w-3 h-3 shrink-0"/>
+                             {actual > target ? '+' : ''}{(actual - target).toFixed(2)} {ing.unit} deviation ({pct.toFixed(1)}% from target)
+                           </p>
+                         );
+                         if (pct > 0) return (
+                           <p className="text-[10px] font-semibold text-gray-400 mt-1">
+                             ±{pct.toFixed(1)}% from target — within tolerance
+                           </p>
+                         );
+                         return null;
+                       })()}
                      </div>
                    </div>
                    
@@ -256,7 +274,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                      </div>
                    )}
                    {isKavuni && isF2 && (
-                     <div className="mt-4 pt-3 border-t border-indigo-100/50 grid grid-cols-2 gap-3">
+                     <div className="mt-4 pt-3 border-t border-indigo-100/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div><label className="field-label">Pre-cook Temp (°C)</label><input type="number" step="0.1" value={kavuniTemp} onChange={e=>setKavuniTemp(e.target.value)} className="field-input" placeholder="90.0"/></div>
                         <div><label className="field-label">Pre-cook Duration (min)</label><input type="number" value={kavuniMin} onChange={e=>setKavuniMin(e.target.value)} className="field-input" placeholder="30"/></div>
                      </div>
@@ -268,7 +286,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         </div>
 
         <div className="border-t border-gray-100 pt-5">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label">Added Water Volume (ml)</label>
               <input type="number" step="1" value={waterVol} onChange={e=>setWaterVol(e.target.value)} className="field-input" placeholder="0"/>
@@ -294,7 +312,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         )}
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes / observations..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <div className="grid grid-cols-2 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Draft'}
           </button>

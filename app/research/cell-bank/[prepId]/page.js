@@ -162,7 +162,7 @@ function VialRegistrationPanel({ prepId, prep, onRegistered }) {
           <p className="text-amber-700 font-semibold mt-1">⚠ Strain short code not set — codes will use XX. Edit the strain record to set it.</p>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className="field-label">Number of Vials to Register <span className="text-red-500">*</span></label>
           <input type="number" min="1" max="200" value={count} onChange={e => setCount(e.target.value)} className="field-input" placeholder="e.g. 10"/>
@@ -226,7 +226,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
     switch (step.key) {
       case 'strain_source':
         return (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Culture Condition</label>
               <input value={form.culture_condition||''} onChange={e=>set('culture_condition',e.target.value)} className="field-input" placeholder="MRS broth 37°C"/></div>
             <div><label className="field-label">Date Revived</label>
@@ -241,7 +241,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
         return (
           <div className="space-y-3">
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Media Preparation</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="field-label">Broth / Media Recipe</label>
                 {labMediaFormulations?.length > 0 ? (
@@ -281,7 +281,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
                 <input value={form.media_lot_notes||''} onChange={e=>set('media_lot_notes',e.target.value)} className="field-input" placeholder="MRS powder lot #XYZ, expiry MM/YYYY"/></div>
             </div>
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider pt-1">Incubation & OD Check</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Incubation Temp (°C)</label>
                 <input type="number" value={form.incubation_temp||''} onChange={e=>set('incubation_temp',e.target.value)} className="field-input" placeholder="37"/></div>
               <div><label className="field-label">Duration (h)</label>
@@ -304,7 +304,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
         return (
           <div className="space-y-3">
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Agar Preparation</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="field-label">Agar Media Recipe</label>
                 {labMediaFormulations?.length > 0 ? (
@@ -336,7 +336,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
                 <input value={form.agar_batch_notes||''} onChange={e=>set('agar_batch_notes',e.target.value)} className="field-input" placeholder="Lot #, expiry..."/></div>
             </div>
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider pt-1">Plating & Incubation</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Dilution Factor</label>
                 <select value={form.dilution||''} onChange={e=>set('dilution',e.target.value)} className="field-input bg-white">
                   <option value="">Select...</option>
@@ -377,7 +377,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
 
       case 'colony_pick':
         return (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Colony Description</label>
               <input value={form.colony_desc||''} onChange={e=>set('colony_desc',e.target.value)} className="field-input" placeholder="White, convex, smooth"/></div>
             <div><label className="field-label">Pick Date</label>
@@ -389,7 +389,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
 
       case 'glycerol_stock':
         return (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Glycerol % (v/v)</label>
               <input type="number" step="0.5" value={form.glycerol_pct||''} onChange={e=>set('glycerol_pct',e.target.value)} className="field-input" placeholder="15"/></div>
             <div><label className="field-label">Volume per Vial (ml)</label>

@@ -229,7 +229,7 @@ export default function BioprocessPage() {
               {/* Type selector */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Experiment Type</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {Object.entries(TYPE_META).map(([v, m]) => {
                     const Icon = m.icon;
                     return (
@@ -257,7 +257,7 @@ export default function BioprocessPage() {
                 <textarea {...register('description')} rows={2} placeholder="Brief objective or notes" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy resize-none" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Response Variable</label>
                   <input {...register('response_variable')} placeholder="OD600 at 24h" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />

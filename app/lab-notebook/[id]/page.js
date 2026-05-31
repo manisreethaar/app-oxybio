@@ -449,7 +449,7 @@ const FORMULATION_KEYS = new Set(['formulation_id', 'media_formulation_id', 'aga
 function SnapshotRows({ data, formulationMap = {} }) {
   const skip = new Set(['synced_at', 'tests', 'notes']);
   return (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-1.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
       {Object.entries(data)
         .filter(([k, v]) => !skip.has(k) && v != null && v !== '')
         .map(([key, value]) => {

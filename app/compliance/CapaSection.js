@@ -237,7 +237,7 @@ export default function CapaSection() {
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label><select {...regAction('action_type')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regAction('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{actionErrors.title && <p className="text-red-500 text-[10px] mt-1">{actionErrors.title.message}</p>}</div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Description</label><textarea {...regAction('description')} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" /></div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Assign To</label><select {...regAction('assigned_to')} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold"><option value="">Select...</option>{employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}</select>{actionErrors.assigned_to && <p className="text-red-500 text-[10px] mt-1">{actionErrors.assigned_to.message}</p>}</div>
               <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Due</label><input type="date" {...regAction('due_date')} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs" />{actionErrors.due_date && <p className="text-red-500 text-[10px] mt-1">{actionErrors.due_date.message}</p>}</div>
             </div>
@@ -275,7 +275,7 @@ export default function CapaSection() {
         {isAdmin && <button onClick={() => setShowRaise(true)} className="flex items-center gap-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"><BadgeAlert className="w-4 h-4"/> Raise NCR</button>}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[{ label: 'Open NCRs', value: openCount, bg: 'bg-red-50 text-red-600 border-red-100' }, { label: 'Critical', value: criticalCount, bg: 'bg-red-50 text-red-700 border-red-100' }, { label: 'Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, bg: 'bg-amber-50 text-amber-700 border-amber-100' }].map(k => (
           <div key={k.label} className={`surface p-4 border ${k.bg}`}>
             <p className="text-2xl font-black">{k.value}</p>
@@ -363,7 +363,7 @@ export default function CapaSection() {
           <form onSubmit={handRaise(handleRaise)} className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900 flex items-center gap-1"><FileWarning className="w-4 h-4 text-red-600"/> Raise NCR</h3><button type="button" onClick={() => setShowRaise(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.title.message}</p>}</div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Severity</label><select {...regRaise('severity')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SEVERITIES.map(s => <option key={s}>{s}</option>)}</select></div>
               <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Source</label><select {...regRaise('source')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SOURCES.map(s => <option key={s}>{s}</option>)}</select></div>
             </div>

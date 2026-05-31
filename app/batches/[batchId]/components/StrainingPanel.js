@@ -172,7 +172,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
           <Wrench className="w-3 h-3"/>Equipment Used
         </p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <EquipmentPicker label="Centrifuge" value={centEqId} onChange={setCentEqId} equipment={equipment} placeholder="Select centrifuge…"/>
           <EquipmentPicker label="pH Meter" value={phEqId} onChange={setPhEqId} equipment={equipment} placeholder="Select pH meter…"/>
           <EquipmentPicker label="Weighing Scale" value={scaleEqId} onChange={setScaleEqId} equipment={equipment} placeholder="Select scale…"/>
@@ -182,7 +182,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       {/* Centrifuge Run Parameters */}
       <div className="surface p-5 space-y-4">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Centrifuge Run Parameters</p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="field-label">Speed (RPM) *</label>
             <input type="number" value={rpm} onChange={e=>setRpm(e.target.value)} className="field-input" placeholder="e.g. 4000"/>
@@ -201,7 +201,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       {/* Mass Balance */}
       <div className="surface p-5 space-y-4">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mass Balance (g)</p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="field-label">Total Broth Before (g) *</label>
             <input type="number" step="0.01" value={brothBefore} onChange={e=>setBrothBefore(e.target.value)} className="field-input" placeholder="e.g. 480"/>
@@ -230,7 +230,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       {/* Supernatant Quality */}
       <div className="surface p-5 space-y-4">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Supernatant Quality</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="field-label">Colour</label>
             <input value={colour} onChange={e=>setColour(e.target.value)} className="field-input" placeholder="Reddish-purple"/>
@@ -263,7 +263,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <label className="field-label">Notes</label>
           <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input" placeholder="Observed losses, equipment issues, deviations..."/>
         </div>
-        <div className="grid grid-cols-2 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : record ? 'Update Draft' : 'Save Draft'}
           </button>

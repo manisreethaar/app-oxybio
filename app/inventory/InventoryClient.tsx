@@ -830,7 +830,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </div>
                 </div>
 
-                <div className="flex items-center gap-8 lg:text-right">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 lg:text-right">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Available Balance</p>
                     <p className={`text-2xl font-black font-mono tracking-tighter ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-teal-800'}`}>
@@ -845,6 +845,16 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Vendor</p>
                     <p className="text-sm font-black text-gray-800">{s.vendors?.name || 'Approved Local supplier'}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedStock(s);
+                    }}
+                    className="sm:ml-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-teal-50 text-teal-800 border border-teal-100 text-[10px] font-black uppercase tracking-widest hover:bg-teal-100 transition-all"
+                  >
+                    Full Details <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               {batchUsageMap[s.id]?.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pt-3 mt-1 border-t border-gray-50">
@@ -1025,7 +1035,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       <h3 className="text-lg font-black text-teal-950 mb-1">{item.name}</h3>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Unit: {item.unit} {item.hazardous && <span className="ml-2 text-orange-600">âš  HAZARDOUS</span>}</p>
                       
-                      <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-2 gap-4">
+                      <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Stock Level</p>
                           <p className="text-sm font-black text-teal-800 truncate">{item.min_stock_level || '0'} {item.unit}</p>
@@ -1227,7 +1237,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             {/* Content Scrollable */}
             <div className="flex-1 overflow-y-auto p-8 space-y-6">
               {/* Summary Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Available Balance</p>
                   <p className="text-2xl font-black font-mono text-teal-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
