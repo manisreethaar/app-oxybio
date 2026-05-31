@@ -266,7 +266,12 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
          base_salary: editingEmployee.base_salary || '',
          role: editingEmployee.role || 'staff',
          designation: editingEmployee.designation || '',
-         is_active: editingEmployee.is_active
+         is_active: editingEmployee.is_active,
+         address: editingEmployee.address || '',
+         emergency_contact: editingEmployee.emergency_contact || '',
+         emergency_contact_name: editingEmployee.emergency_contact_name || '',
+         date_of_birth: editingEmployee.date_of_birth || '',
+         joined_date: editingEmployee.joined_date || ''
       });
       setCustomPerms(editingEmployee.custom_permissions || {});
     }
@@ -299,6 +304,19 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 body: JSON.stringify({ id: editingEmployee.id, target_status: editForm.is_active })
             });
          }
+
+         // Update Profile Details
+         await fetch('/api/admin/update-profile', {
+             method: 'POST', headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ 
+                 employee_id: editingEmployee.id, 
+                 address: editForm.address,
+                 emergency_contact: editForm.emergency_contact,
+                 emergency_contact_name: editForm.emergency_contact_name,
+                 date_of_birth: editForm.date_of_birth,
+                 joined_date: editForm.joined_date
+             })
+         });
 
          toast.success("Employee details updated");
          setEditingEmployee(null);
@@ -475,6 +493,25 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 <option value="false">Inactive / Deactivated</option>
                             </select>
                         </Field>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="Date of Birth">
+                                <input type="date" value={editForm.date_of_birth} onChange={e => setEditForm({...editForm, date_of_birth: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
+                            </Field>
+                            <Field label="Date of Joining">
+                                <input type="date" value={editForm.joined_date} onChange={e => setEditForm({...editForm, joined_date: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
+                            </Field>
+                        </div>
+                        <Field label="Address">
+                            <textarea value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700" rows={2}/>
+                        </Field>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="Emergency Contact Name">
+                                <input value={editForm.emergency_contact_name} onChange={e => setEditForm({...editForm, emergency_contact_name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
+                            </Field>
+                            <Field label="Emergency Contact Number">
+                                <input value={editForm.emergency_contact} onChange={e => setEditForm({...editForm, emergency_contact: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
+                            </Field>
+                        </div>
 
                         <div className="flex justify-end pt-4">
                             <button onClick={handleUpdateDetails} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
