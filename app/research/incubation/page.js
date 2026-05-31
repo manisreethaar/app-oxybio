@@ -80,7 +80,7 @@ export default function SampleIncubationPage() {
       const tpHour = r.log_hour;
       const tpKey  = tpHour != null ? `h_${tpHour}` : (r.source_stage || '__none__');
       const tpLabel = r.timepoint_label
-        || (tpHour != null ? `T+${Number(tpHour).toFixed(1)}h` : (r.source_stage ? `Stage: ${r.source_stage.replace(/_/g, ' ')}` : 'No timepoint'));
+        || (tpHour != null ? `T+${Number(tpHour).toFixed(1)}h` : (r.source_stage ? `Sampled at: ${r.source_stage.replace(/_/g, ' ')}` : 'No timepoint'));
 
       if (!src.timepoints.has(tpKey)) {
         src.timepoints.set(tpKey, { key: tpKey, label: tpLabel, hour: tpHour, records: [] });
@@ -254,7 +254,7 @@ export default function SampleIncubationPage() {
                             src.batch_status === 'rejected'  ? 'bg-red-50 text-red-700 border-red-200' :
                             src.batch_status === 'fermenting'? 'bg-blue-50 text-blue-700 border-blue-200' :
                             'bg-gray-50 text-gray-500 border-gray-200'
-                          }`}>{src.batch_status}</span>
+                          }`} title="Current batch status">Batch: {src.batch_status}</span>
                         )}
                         {src.batch_id && (
                           <Link
@@ -362,10 +362,19 @@ export default function SampleIncubationPage() {
                                       </p>
                                     )}
 
-                                    {/* Media / observation snippet */}
+                                    {/* Observation / plate reads snippet */}
                                     {record.observation && (
                                       <p className="text-[9px] text-gray-400 truncate mb-1.5">
-                                        {record.observation.split(' | ')[0]}
+                                        {(() => {
+                                          try {
+                                            const p = JSON.parse(record.observation);
+                                            if (p?.reads?.length > 0) {
+                                              const last = p.reads[p.reads.length - 1];
+                                              return `T+${last.hour}h: ${last.status?.replace(/_/g, ' ')}`;
+                                            }
+                                            return p?.notes || '';
+                                          } catch { return record.observation.split(' | ')[0]; }
+                                        })()}
                                       </p>
                                     )}
 
@@ -389,8 +398,8 @@ export default function SampleIncubationPage() {
                                       </div>
                                     )}
 
-                                    {/* Hover actions */}
-                                    <div className="flex justify-end gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {/* Actions */}
+                                    <div className="flex justify-end gap-1 mt-2">
                                       {record.linked_lnb_id && (
                                         <Link
                                           href={`/lab-notebook/${record.linked_lnb_id}`}

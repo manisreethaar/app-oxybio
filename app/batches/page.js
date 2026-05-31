@@ -570,13 +570,14 @@ export default function BatchesPage() {
               const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
               const flasks   = batch.batch_flasks || [];
               const maxEpHrs = batch._maxEpHrs ?? null;
-              // Timer only meaningful from fermentation onwards; pre-fermentation shows 0
               const PRE_FERM_STAGES = ['media_prep', 'sterilisation', 'inoculation'];
+              const isPreFerm = PRE_FERM_STAGES.includes(batch.current_stage) && maxEpHrs === null;
               const hours = maxEpHrs !== null
                 ? maxEpHrs.toFixed(1)
-                : (!PRE_FERM_STAGES.includes(batch.current_stage) && batch.start_time
-                    ? differenceInHours(new Date(), new Date(batch.start_time))
-                    : 0);
+                : batch.start_time
+                  ? ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
+                  : '0.0';
+              const hrsLabel = maxEpHrs !== null ? 'Fermentation' : 'Age';
 
               const isScheduled = isScheduledBatch(batch);
 
@@ -625,7 +626,8 @@ export default function BatchesPage() {
                       </div>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
-                      <p className="text-xl font-black text-gray-800 tabular-nums">{hours} <span className="text-xs font-bold text-gray-400">HRS</span></p>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">{hrsLabel}</p>
+                      <p className="text-xl font-black text-gray-800 tabular-nums">{hours}<span className="text-xs font-bold text-gray-400"> hr</span></p>
                       {isAdmin ? (
                         <button
                           onClick={e => { e.preventDefault(); setCancelConfirmId(batch.id); }}
