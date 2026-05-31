@@ -158,7 +158,7 @@ export default function DigitalLnbPage() {
     <div className="page-container text-gray-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Digital LNB</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Digital LNB</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Official Electronic Lab Notebook & Experiment Records</p>
         </div>
         <button onClick={() => setShowNew(true)} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95 shadow-sm">

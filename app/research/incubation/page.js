@@ -153,8 +153,8 @@ export default function SampleIncubationPage() {
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-            <FlaskConical className="w-6 h-6 text-navy" /> Incubation Hub
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <FlaskConical className="w-7 h-7 text-navy" /> Incubation Hub
           </h1>
           <p className="text-sm font-medium text-gray-500 mt-1">All plated samples, grouped by batch and log-hour timepoint</p>
         </div>

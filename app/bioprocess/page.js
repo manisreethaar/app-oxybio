@@ -120,7 +120,7 @@ export default function BioprocessPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Bioprocess Lab</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Bioprocess Lab</h1>
           <p className="text-sm text-gray-500 mt-1">PBD screening · RSM optimisation · Fermentation kinetics</p>
         </div>
         <button

@@ -200,7 +200,7 @@ export default function ConsumerResearchPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consumer Insights</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Consumer Insights</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Sensory Validation &amp; Taste Panel Data</p>
         </div>
         <button
