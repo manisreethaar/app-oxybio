@@ -110,15 +110,15 @@ export default function BioprocessPage() {
   }, [experiments, typeFilter, searchTerm, sortOrder]);
 
   if (authLoading) return (
-   <div className="flex items-center justify-center h-64">
+    <div className="flex items-center justify-center h-64">
       <Loader2 className="w-8 h-8 text-navy animate-spin" />
     </div>
   );
 
   return (
-   <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
-     <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Bioprocess Lab</h1>
           <p className="text-sm text-gray-500 mt-1">PBD screening · RSM optimisation · Fermentation kinetics</p>
@@ -132,7 +132,7 @@ export default function BioprocessPage() {
       </div>
 
       {/* Type filter */}
-     <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {[['all', 'All'], ['pbd', 'PBD'], ['rsm', 'RSM'], ['kinetics', 'Kinetics']].map(([v, l]) => (
           <button
             key={v}
@@ -144,8 +144,8 @@ export default function BioprocessPage() {
         ))}
       </div>
 
-     <div className="flex flex-col sm:flex-row gap-3 mb-6">
-       <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             value={searchTerm}
@@ -164,17 +164,17 @@ export default function BioprocessPage() {
 
       {/* Experiment Cards */}
       {loading ? (
-       <div className="flex items-center justify-center h-48">
+        <div className="flex items-center justify-center h-48">
           <Loader2 className="w-7 h-7 text-navy animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-       <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <FlaskConical className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-semibold">{experiments.length === 0 ? 'No experiments yet' : 'No matching experiments'}</p>
           <p className="text-sm text-gray-400 mt-1">{experiments.length === 0 ? 'Create your first bioprocess experiment to get started' : 'Adjust search, type, or sort controls'}</p>
         </div>
       ) : (
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(exp => {
             const tm = TYPE_META[exp.type];
             const sm = STATUS_META[exp.status] || STATUS_META.setup;
@@ -186,19 +186,19 @@ export default function BioprocessPage() {
                 onClick={() => router.push(`/bioprocess/${exp.id}`)}
                 className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all p-5 group"
               >
-               <div className="flex items-start justify-between mb-3">
-                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${tm.color}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${tm.color}`}>
                     <Icon className="w-3.5 h-3.5" />
                     {tm.shortLabel}
                   </div>
-                 <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sm.color}`}>
+                  <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sm.color}`}>
                     <StatusIcon className="w-3 h-3" />
                     {sm.label}
                   </div>
                 </div>
                 <h3 className="font-bold text-gray-900 text-sm mb-1 group-hover:text-navy transition-colors line-clamp-2">{exp.title}</h3>
                 {exp.description && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{exp.description}</p>}
-               <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
+                <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
                   <span>{exp.response_variable}</span>
                   <span className="flex items-center gap-1 text-navy font-semibold">
                     Open <ChevronRight className="w-3.5 h-3.5" />
@@ -217,9 +217,9 @@ export default function BioprocessPage() {
 
       {/* Create Modal */}
       {showCreate && (
-       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-stretch justify-end p-0">
-<div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none shadow-2xl w-full max-w-lg"> 
-           <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4">
+          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-lg font-black text-gray-900">New Experiment</h2>
               <button onClick={() => setShowCreate(false)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
                 <X className="w-4 h-4 text-gray-600" />
@@ -229,14 +229,14 @@ export default function BioprocessPage() {
               {/* Type selector */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Experiment Type</label>
-               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {Object.entries(TYPE_META).map(([v, m]) => {
                     const Icon = m.icon;
                     return (
                       <label key={v} className={`cursor-pointer rounded-xl border-2 p-3 transition-all ${watchedType === v ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}>
                         <input type="radio" value={v} {...register('type')} className="sr-only" />
                         <Icon className={`w-5 h-5 mb-1.5 ${watchedType === v ? 'text-navy' : 'text-gray-400'}`} />
-                       <div className={`text-xs font-bold ${watchedType === v ? 'text-navy' : 'text-gray-600'}`}>{m.shortLabel}</div>
+                        <div className={`text-xs font-bold ${watchedType === v ? 'text-navy' : 'text-gray-600'}`}>{m.shortLabel}</div>
                       </label>
                     );
                   })}
@@ -257,7 +257,7 @@ export default function BioprocessPage() {
                 <textarea {...register('description')} rows={2} placeholder="Brief objective or notes" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy resize-none" />
               </div>
 
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Response Variable</label>
                   <input {...register('response_variable')} placeholder="OD600 at 24h" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
@@ -269,7 +269,7 @@ export default function BioprocessPage() {
                 </div>
               </div>
 
-             <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="flex-1 py-2.5 bg-navy text-white rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}

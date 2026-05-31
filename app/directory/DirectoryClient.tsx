@@ -49,32 +49,32 @@ function Field({ label, children }) {
 
 function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
   return (
-   <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-stretch justify-end z-50 p-0" onClick={onClose}>
- <div onClick={e => e.stopPropagation()} className="bg-white rounded-none w-full max-w-2xl shadow-2xl relative h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden animate-in fade-in zoom-in-95 duration-200"> 
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl relative h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
         {/* Non-scrolling header — stays pinned above the scroll area */}
-       <div className="relative shrink-0">
-         <div className="w-full h-28 bg-gradient-to-br from-teal-500 to-cyan-700 rounded-t-[2rem]"/>
+        <div className="relative shrink-0">
+          <div className="w-full h-28 bg-gradient-to-br from-teal-500 to-cyan-700 rounded-t-[2rem]"/>
           <button onClick={onClose} className="absolute top-5 right-5 z-40 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors">
             <X className="w-5 h-5"/>
           </button>
 
           {/* Hero — avatar + name overlaps the gradient strip */}
-         <div className="px-8 -mt-14 pb-5">
-           <div className="flex flex-col sm:flex-row gap-5 items-start">
-             <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white border-4 border-white shadow-lg shrink-0">
+          <div className="px-8 -mt-14 pb-5">
+            <div className="flex flex-col sm:flex-row gap-5 items-start">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white border-4 border-white shadow-lg shrink-0">
                 {emp.photo_url ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                 ) : (
-                 <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                  <div className="w-full h-full flex items-center justify-center bg-slate-100">
                     <User className="w-10 h-10 text-slate-300"/>
                   </div>
                 )}
               </div>
 
-             <div className="flex-1 pt-1">
-               <div className="flex items-center gap-3 mb-1">
+              <div className="flex-1 pt-1">
+                <div className="flex items-center gap-3 mb-1">
                   <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{emp.full_name}</h2>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${emp.is_active ? 'bg-teal-50 text-teal-600' : 'bg-red-50 text-red-600'}`}>
                     {emp.is_active ? 'Active' : 'Inactive'}
@@ -83,7 +83,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
                 <p className="text-sm font-bold text-teal-600 mb-1">{emp.designation || emp.role}</p>
                 <p className="text-xs text-slate-500 font-medium">{emp.department} Department</p>
 
-               <div className="flex gap-4 mt-3 text-xs font-semibold text-slate-600">
+                <div className="flex gap-4 mt-3 text-xs font-semibold text-slate-600">
                   {emp.employee_code && <span className="flex items-center gap-1.5"><Hash className="w-4 h-4 text-slate-400"/> {emp.employee_code}</span>}
                   {emp.blood_group && <span className="flex items-center gap-1.5"><Droplets className="w-4 h-4 text-red-400"/> {emp.blood_group}</span>}
                 </div>
@@ -99,16 +99,16 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
         </div>
 
         {/* Scrollable details — only this section scrolls */}
-       <div className="flex-1 overflow-y-auto border-t border-slate-100">
-         <div className="p-8 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-           <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto border-t border-slate-100">
+          <div className="p-8 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Briefcase className="w-4 h-4"/> Contact Details</h3>
-                 <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                   <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                  <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
                       <Mail className="w-4 h-4 text-teal-500 shrink-0"/> {emp.email || '—'}
                     </div>
-                   <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
                       <Phone className="w-4 h-4 text-teal-500 shrink-0"/> {emp.phone || '—'}
                     </div>
                   </div>
@@ -116,7 +116,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
 
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4"/> Emergency Info</h3>
-                 <div className="space-y-3 bg-red-50/50 p-4 rounded-2xl border border-red-100/50">
+                  <div className="space-y-3 bg-red-50/50 p-4 rounded-2xl border border-red-100/50">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contact Name</p>
                       <p className="text-sm font-semibold text-slate-700">{emp.emergency_contact_name || '—'}</p>
@@ -129,15 +129,15 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
                 </div>
             </div>
 
-           <div className="space-y-6">
+            <div className="space-y-6">
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Calendar className="w-4 h-4"/> Important Dates</h3>
-                 <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                   <div className="flex justify-between items-center">
+                  <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-slate-500">Date of Birth</span>
                       <span className="text-sm font-semibold text-slate-800">{emp.date_of_birth ? new Date(emp.date_of_birth).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
                     </div>
-                   <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
                       <span className="text-xs font-bold text-slate-500">Date of Joining</span>
                       <span className="text-sm font-semibold text-slate-800">{emp.joined_date ? new Date(emp.joined_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
                     </div>
@@ -146,7 +146,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
 
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><MapPin className="w-4 h-4"/> Residential Address</h3>
-                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 min-h-[5rem]">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 min-h-[5rem]">
                     <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
                       {emp.address || '—'}
                     </p>
@@ -156,7 +156,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
                 {isAdmin && (
                   <div>
                     <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4"/> Compensation</h3>
-                   <div className="bg-teal-50/50 p-4 rounded-2xl border border-teal-100/60 flex items-center justify-between">
+                    <div className="bg-teal-50/50 p-4 rounded-2xl border border-teal-100/60 flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-500">Base Salary</span>
                       <span className="text-lg font-black text-teal-700">
                         {emp.base_salary ? `₹${Number(emp.base_salary).toLocaleString('en-IN')}` : '—'}
@@ -176,7 +176,7 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
   const [showFullProfile, setShowFullProfile] = useState(false);
 
   return (
-   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="relative w-full max-w-sm">
         <button onClick={onClose} className="absolute -top-4 -right-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors">
           <X className="w-5 h-5 text-slate-600"/>
@@ -189,16 +189,16 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
         )}
         
         {/* Modern ID Card Engine */}
-       <div className="bg-white rounded-none p-6 shadow-2xl w-full mx-auto border border-slate-200 flex flex-col items-center relative overflow-y-auto overflow-x-hidden max-h-[85vh]">
-         <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-navy to-slate-800"/>
+        <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full mx-auto border border-slate-200 flex flex-col items-center relative overflow-y-auto overflow-x-hidden max-h-[85vh]">
+          <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-navy to-slate-800"/>
           
           {/* Header */}
-         <div className="w-full relative z-10 flex justify-between items-start mb-8">
+          <div className="w-full relative z-10 flex justify-between items-start mb-8">
             <div>
               <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
               <p className="text-teal-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
             </div>
-           <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
+            <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
               emp.is_active ? 'bg-white/20 text-white border-white/30' : 'bg-red-500/40 text-white border-red-300/50'
             }`}>
               <CheckSquare className="w-3 h-3"/> {emp.is_active ? 'Active' : 'Inactive'}
@@ -206,12 +206,12 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           </div>
 
           {/* Profile Core */}
-         <div className="relative z-10 w-28 h-28 rounded-2xl overflow-hidden bg-white border-[3px] border-white shadow-lg mb-4">
+          <div className="relative z-10 w-28 h-28 rounded-2xl overflow-hidden bg-white border-[3px] border-white shadow-lg mb-4">
             {emp.photo_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
             ) : (
-             <div className="w-full h-full flex items-center justify-center bg-slate-100">
+              <div className="w-full h-full flex items-center justify-center bg-slate-100">
                 <User className="w-10 h-10 text-slate-300"/>
               </div>
             )}
@@ -220,19 +220,19 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           <h2 className="text-xl font-black text-slate-800 tracking-tight text-center leading-none mt-2">{emp.full_name}</h2>
           <p className="text-xs font-bold text-navy tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
           
-         <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
+          <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
             <p className="font-mono text-2xl font-black text-slate-800 tracking-widest">{emp.employee_code || 'PENDING'}</p>
           </div>
 
-         <div className="w-full space-y-2 mt-2 px-2 text-[10px] font-semibold text-slate-500">
+          <div className="w-full space-y-2 mt-2 px-2 text-[10px] font-semibold text-slate-500">
             {emp.phone && <p className="flex items-center"><Phone className="w-3 h-3 mr-2" />{emp.phone}</p>}
             {emp.email && <p className="flex items-center"><Mail className="w-3 h-3 mr-2" />{emp.email}</p>}
             {emp.blood_group && <p className="flex items-center"><Droplets className="w-3 h-3 mr-2 text-red-500" />Blood Group: <span className="ml-1 text-red-600 font-bold">{emp.blood_group}</span></p>}
           </div>
 
           {showFullProfile && (
-           <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-[10px] text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
+            <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-[10px] text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
                 {emp.date_of_birth && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Birth</span> {new Date(emp.date_of_birth).toLocaleDateString('en-IN')}</p>}
                 {emp.joined_date && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Joining</span> {new Date(emp.joined_date).toLocaleDateString('en-IN')}</p>}
                 {emp.address && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Address</span> {emp.address}</p>}
@@ -247,12 +247,12 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           </button>
 
           {/* QR Code Section */}
-         <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
-           <div className="text-left pr-4">
+          <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
+            <div className="text-left pr-4">
               <p className="text-[9px] font-black text-navy uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
               <p className="text-[10px] font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
             </div>
-           <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
+            <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
               <QRCodeSVG value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com'}/verify/${emp.id}`} size={64} level="M" />
             </div>
           </div>
@@ -491,9 +491,9 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
   };
 
   return (
-   <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-20">
       {/* Header */}
-     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Staff Directory</h1>
           <p className="text-slate-500 font-medium mt-1">{employees.length} team members</p>
@@ -509,8 +509,8 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
       </div>
 
       {/* Search Bar & Filters */}
-     <div className="flex flex-col sm:flex-row gap-4">
-       <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
           <input
             type="text"
@@ -530,29 +530,29 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Employee Cards Grid Grouped */}
       {loading && employees.length === 0 ? (
-       <div className="flex justify-center py-20">
-         <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
+        <div className="flex justify-center py-20">
+          <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
         </div>
       ) : filtered.length === 0 ? (
-       <div className="text-center py-20 text-slate-400">
+        <div className="text-center py-20 text-slate-400">
           <User className="w-16 h-16 mx-auto mb-4 opacity-30"/>
           <p className="font-bold text-lg">No employees found</p>
         </div>
       ) : (
-       <div className="space-y-12">
+        <div className="space-y-12">
             {groupedEmployees.map(group => (
                 <div key={group.role} className="space-y-4">
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2">{group.role.replace('_', ' ')}</h3>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {group.employees.map(emp => (
                         <div key={emp.id} className={`glass-card rounded-[1.75rem] p-6 flex flex-col gap-4 cursor-pointer ${!emp.is_active ? 'opacity-50' : ''}`} onClick={() => setSelected(emp)}>
-                           <div className="flex items-start gap-4">
-                           <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-slate-100 border border-white shadow-sm shrink-0">
+                            <div className="flex items-start gap-4">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-slate-100 border border-white shadow-sm shrink-0">
                                 {emp.photo_url ? (
                                 /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                                 ) : (
-                               <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
+                                <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
                                     {(() => {
                                     const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
                                     const parts = emp.full_name?.split(' ') || [];
@@ -562,21 +562,21 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 </div>
                                 )}
                             </div>
-                           <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0">
                                 <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
                                 <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role}</p>
                                 <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
                             </div>
                             </div>
 
-                           <div className="space-y-1.5 text-xs text-slate-500 border-t border-white/40 pt-4">
-                            {emp.employee_code &&<div className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-slate-400"/><span className="font-bold">{emp.employee_code}</span></div>}
-                           <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400"/><span className="truncate">{emp.email}</span></div>
-                            {emp.phone &&<div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400"/>{emp.phone}</div>}
-                            {emp.blood_group &&<div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
+                            <div className="space-y-1.5 text-xs text-slate-500 border-t border-white/40 pt-4">
+                            {emp.employee_code && <div className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-slate-400"/><span className="font-bold">{emp.employee_code}</span></div>}
+                            <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400"/><span className="truncate">{emp.email}</span></div>
+                            {emp.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400"/>{emp.phone}</div>}
+                            {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
                             </div>
 
-                           <div className="flex gap-2 w-full mt-2">
+                            <div className="flex gap-2 w-full mt-2">
                                 <button onClick={(e) => { e.stopPropagation(); setViewingProfile(emp); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-black text-slate-600 border border-slate-200 transition-all shadow-sm">
                                     <User className="w-3.5 h-3.5"/> Profile
                                 </button>
@@ -614,19 +614,19 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Admin Quick Edit Profile Modal */}
       {editingEmployee && typeof document !== 'undefined' && createPortal(
-       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-end items-center z-50 p-0">
-<div className="flex flex-col sm:animate-slide-left bg-white rounded-none max-w-2xl w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-screen overflow-y-auto"> 
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+            <div className="flex flex-col bg-white rounded-[2rem] max-w-2xl w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
                 <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
                 <h2 className="text-2xl font-black text-slate-800 mb-2">Edit {editingEmployee.full_name}</h2>
                 <p className="text-sm text-slate-500 mb-6">Manage details and specific access overrides for this user.</p>
 
-               <div className="flex gap-4 border-b border-slate-200 mb-6">
+                <div className="flex gap-4 border-b border-slate-200 mb-6">
                     <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'details' ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('details')}>Details & Role</button>
                     <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'access' ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('access')}>Access Management</button>
                 </div>
 
                 {activeTab === 'details' && (
-                   <div className="space-y-5">
+                    <div className="space-y-5">
                         <Field label="System Role">
                             <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700">
                                 <option value="intern">Intern</option>
@@ -650,7 +650,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 <option value="false">Inactive / Deactivated</option>
                             </select>
                         </Field>
-                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Field label="Date of Birth">
                                 <input type="date" value={editForm.date_of_birth} onChange={e => setEditForm({...editForm, date_of_birth: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
                             </Field>
@@ -661,7 +661,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                         <Field label="Address">
                             <textarea value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700" rows={2}/>
                         </Field>
-                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Field label="Emergency Contact Name">
                                 <input value={editForm.emergency_contact_name} onChange={e => setEditForm({...editForm, emergency_contact_name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700"/>
                             </Field>
@@ -670,7 +670,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             </Field>
                         </div>
 
-                       <div className="flex justify-end pt-4">
+                        <div className="flex justify-end pt-4">
                             <button onClick={handleUpdateDetails} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
                                 {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Details
                             </button>
@@ -679,17 +679,17 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 )}
 
                 {activeTab === 'access' && (
-                   <div className="space-y-6">
+                    <div className="space-y-6">
                         <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
                             Overrides the default role permissions. If unchecked, defaults to role permission. If checked, forces access.
                             This UI modifies the `custom_permissions` JSON.
                         </p>
                         
-                       <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+                        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
                             {Object.keys(PERMISSIONS).map(moduleName => (
                                 <div key={moduleName} className="border border-slate-100 rounded-xl p-4 bg-white shadow-sm">
                                     <h4 className="font-bold text-sm text-slate-700 capitalize mb-3 border-b border-slate-50 pb-2">{moduleName.replace('_', ' ')}</h4>
-                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {Object.keys(PERMISSIONS[moduleName]).map(actionName => {
                                             const defaultEnabled = PERMISSIONS[moduleName]?.[actionName]?.includes(editingEmployee.role || 'staff') || false;
                                             const customOverride = customPerms[moduleName]?.[actionName];
@@ -723,7 +723,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             ))}
                         </div>
 
-                       <div className="flex justify-end pt-4 border-t border-slate-100">
+                        <div className="flex justify-end pt-4 border-t border-slate-100">
                             <button onClick={handleUpdatePermissions} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
                                 {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Permissions
                             </button>
@@ -736,18 +736,18 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Add Employee Modal */}
       {showInviteModal && typeof document !== 'undefined' && createPortal(
-       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-end items-center z-50 p-0">
-<div className="flex flex-col sm:animate-slide-left glass-panel rounded-none max-w-lg w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-screen overflow-y-auto bg-white"> 
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+          <div className="flex flex-col glass-panel rounded-[2rem] max-w-lg w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto bg-white">
             <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all">
               <X className="w-5 h-5"/>
             </button>
             <h2 className="text-2xl font-black text-slate-800 mb-1 tracking-tight">Add Employee</h2>
             <p className="text-slate-500 text-sm mb-6">System will auto-generate the employee ID code.</p>
 
-            {inviteError &&<div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 font-medium">{inviteError}</div>}
+            {inviteError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 font-medium">{inviteError}</div>}
 
             <form onSubmit={handleSubmit(handleInviteSubmit)} className="space-y-5">
-             <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <Field label="Full Name">
                   <input {...register('full_name')} className="input-field" placeholder="Santha Kumari R K"/>
                 </Field>
@@ -759,7 +759,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 </Field>
               </div>
 
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Role">
                   <select {...register('role')} className="input-field">
                     <option value="admin">Administrator</option>
@@ -782,8 +782,8 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 <input type="number" step="1000" {...register('base_salary')} className="input-field" placeholder="e.g. 50000"/>
               </Field>
 
-             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
-               <div className="flex items-center gap-2 mb-1">
+              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
                   <Sparkles className="w-4 h-4 text-teal-600"/>
                   <span className="text-sm font-black text-slate-700 uppercase tracking-wider">Employee ID Auto-Generator</span>
                 </div>
@@ -811,7 +811,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
                 <div>
                   <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
-                 <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
                     <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
                   </div>
                 </div>

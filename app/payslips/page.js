@@ -226,16 +226,16 @@ export default function PayslipsPage() {
 
   if (authLoading || loading) {
     return (
-     <div className="flex items-center justify-center p-20">
+      <div className="flex items-center justify-center p-20">
         <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     );
   }
 
   return (
-   <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20">
       {/* Header */}
-     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">
             {isAdmin ? 'Payroll Management' : 'My Payslips'}
@@ -256,14 +256,14 @@ export default function PayslipsPage() {
 
       {/* Summary Strip for Admins */}
       {isAdmin && payslips.length > 0 && (
-       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
             { label: 'Total Slips Issued', value: payslips.length, icon: <Receipt className="w-5 h-5" />, color: 'teal' },
             { label: 'Total Payroll', value: `₹${payslips.reduce((a, s) => a + parseFloat(s.gross_salary || 0), 0).toLocaleString('en-IN')}`, icon: <Users className="w-5 h-5" />, color: 'blue' },
             { label: 'Auto-Generated', value: payslips.filter(s => s.is_auto_generated).length, icon: <Calculator className="w-5 h-5" />, color: 'purple' }
           ].map(tile => (
             <div key={tile.label} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex items-center gap-4">
-             <div className={`p-3 rounded-xl bg-${tile.color}-50 text-${tile.color}-700`}>{tile.icon}</div>
+              <div className={`p-3 rounded-xl bg-${tile.color}-50 text-${tile.color}-700`}>{tile.icon}</div>
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{tile.label}</p>
                 <p className="text-xl font-black text-gray-800 mt-0.5">{tile.value}</p>
@@ -274,8 +274,8 @@ export default function PayslipsPage() {
       )}
 
       {/* Payslips Table */}
-     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-       <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
@@ -331,10 +331,10 @@ export default function PayslipsPage() {
 
       {/* Generator Modal (Admin only) */}
       {isAdmin && showGenerator && (
-       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
-<div className="flex flex-col sm:animate-slide-left bg-white rounded-none shadow-2xl w-full max-w-lg h-[100dvh] sm:h-screen overflow-y-auto"> 
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-           <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div>
                 <h2 className="text-xl font-black text-slate-800">Generate Payslip</h2>
                 <p className="text-sm text-gray-400 mt-0.5">Auto-calculated from Attendance module</p>
@@ -344,7 +344,7 @@ export default function PayslipsPage() {
               </button>
             </div>
 
-           <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5">
               {/* Employee Select */}
               <div>
                 <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Employee *</label>
@@ -363,7 +363,7 @@ export default function PayslipsPage() {
               </div>
 
               {/* Month & Year */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Month *</label>
                   <select
@@ -386,7 +386,7 @@ export default function PayslipsPage() {
               </div>
 
               {/* Deductions (manual verify) */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">PF Deduction (₹)</label>
                   <input
@@ -409,7 +409,7 @@ export default function PayslipsPage() {
 
               {/* Error */}
               {calcError && (
-               <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
                   <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                   <p className="text-sm font-semibold text-red-700">{calcError}</p>
                 </div>
@@ -429,20 +429,20 @@ export default function PayslipsPage() {
 
               {/* Calculated Result Review */}
               {calcResult && (
-               <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 space-y-4">
-                 <div className="flex items-center gap-2 mb-2">
+                <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="w-5 h-5 text-teal-600" />
                     <span className="font-black text-teal-800 text-sm">Calculation Complete — Review Before Approving</span>
                   </div>
 
                   {calcResult.leave_policy_note && (
-                   <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs font-bold text-amber-700 flex items-center gap-2">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs font-bold text-amber-700 flex items-center gap-2">
                       <span>📋 Leave Policy:</span>
                       <span className="font-medium">{calcResult.leave_policy_note}</span>
                     </div>
                   )}
 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     {[
                       ['Total Working Days', calcResult.total_working_days],
                       ['Days Present', calcResult.present_days],
@@ -462,12 +462,12 @@ export default function PayslipsPage() {
                   </div>
 
                   {/* NET SALARY Highlight */}
-                 <div className="bg-teal-700 rounded-2xl px-5 py-4 flex items-center justify-between">
+                  <div className="bg-teal-700 rounded-2xl px-5 py-4 flex items-center justify-between">
                     <span className="text-white font-black tracking-widest text-sm">NET SALARY</span>
                     <span className="text-white font-black text-xl font-mono">₹{calcResult.net_salary?.toLocaleString('en-IN')}</span>
                   </div>
 
-                 <div className="flex gap-3">
+                  <div className="flex gap-3">
                     <button
                       onClick={() => { setCalcResult(null); setCalcError(''); }}
                       className="flex-1 py-3 bg-gray-100 text-gray-600 font-black rounded-xl text-sm hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
