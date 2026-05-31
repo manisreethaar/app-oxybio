@@ -44,3 +44,7 @@ nul
 .vs/
 app/.vs/
 *.log
+
+# environment files with secrets
+.env.production
+tmp/
