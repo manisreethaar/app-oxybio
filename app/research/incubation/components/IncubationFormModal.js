@@ -169,13 +169,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   ];
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col">
+   <div className="fixed inset-0 z-[1200] flex items-center justify-end bg-slate-900/60 backdrop-blur-sm p-0">
+<div className="h-[100dvh] sm:h-screen bg-white shadow-2xl w-full sm:max-w-lg flex flex-col sm:animate-slide-left"> 
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-navy/10 rounded-xl flex items-center justify-center shrink-0">
+       <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+         <div className="flex items-center gap-3">
+           <div className="w-9 h-9 bg-navy/10 rounded-xl flex items-center justify-center shrink-0">
               <FlaskConical className="w-4.5 h-4.5 text-navy" />
             </div>
             <div>
@@ -196,7 +196,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         </div>
 
         {/* Tab Strip */}
-        <div className="flex border-b border-gray-100 px-5 shrink-0">
+       <div className="flex border-b border-gray-100 px-5 shrink-0">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -215,12 +215,12 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
         {/* Body */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+         <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
             {/* ── Tab: Setup ── */}
             {activeTab === 'setup' && (
               <>
-                <div className="space-y-3">
+               <div className="space-y-3">
                   <p className={labelCls}>Sample Identity</p>
 
                   <div>
@@ -229,7 +229,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     {errors.sample_name && <p className="text-red-500 text-[10px] mt-1">{errors.sample_name.message}</p>}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                 <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Category *</label>
                       <select {...register('sample_category')} className={inputCls}>
@@ -260,10 +260,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   )}
                 </div>
 
-                <div className="space-y-3 pt-3 border-t border-gray-100">
+               <div className="space-y-3 pt-3 border-t border-gray-100">
                   <p className={labelCls}>Incubation Setup</p>
 
-                  <div className="grid grid-cols-2 gap-3">
+                 <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Date *</label>
                       <input type="date" {...register('incubation_date')} className={inputCls} />
@@ -285,11 +285,11 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
             {/* ── Tab: Plate Reads ── */}
             {activeTab === 'reads' && (
-              <div className="space-y-4">
+             <div className="space-y-4">
                 {/* Quick add presets */}
                 <div>
                   <p className={labelCls}>Add Read at Hour</p>
-                  <div className="flex flex-wrap gap-2">
+                 <div className="flex flex-wrap gap-2">
                     {PRESET_HOURS.map(h => {
                       const exists = plateReads.some(r => r.hour === h);
                       return (
@@ -309,7 +309,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                       );
                     })}
                     {/* Custom hour */}
-                    <div className="flex items-center gap-1.5">
+                   <div className="flex items-center gap-1.5">
                       <input
                         type="number"
                         value={customHour}
@@ -332,16 +332,16 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                 {/* Read cards */}
                 {plateReads.length === 0 ? (
-                  <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl">
+                 <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl">
                     <Clock className="w-8 h-8 mx-auto mb-2 text-gray-200" />
                     <p className="text-xs font-bold text-gray-400">No plate reads logged yet.</p>
                     <p className="text-[10px] text-gray-300 mt-1">Use the buttons above to add reads at 12h, 24h, 36h or 48h.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                 <div className="space-y-3">
                     {plateReads.map(read => (
                       <div key={read.hour} className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50/40">
-                        <div className="flex items-center justify-between">
+                       <div className="flex items-center justify-between">
                           <span className="text-sm font-black text-navy font-mono">T+{read.hour}h Read</span>
                           <button
                             type="button"
@@ -355,7 +355,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                         {/* Status chips */}
                         <div>
                           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Plate Status</p>
-                          <div className="flex flex-wrap gap-1.5">
+                         <div className="flex flex-wrap gap-1.5">
                             {READ_STATUSES.map(opt => (
                               <button
                                 key={opt.value}
@@ -373,7 +373,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                       <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[9px] font-black uppercase tracking-wider text-gray-400 mb-1">Colony Count</label>
                             <input
@@ -402,7 +402,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 )}
 
                 {/* Final note */}
-                <div className="pt-3 border-t border-gray-100">
+               <div className="pt-3 border-t border-gray-100">
                   <label className={labelCls}>Final Note / Overall Conclusion</label>
                   <textarea
                     value={finalNote}
@@ -417,11 +417,11 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
             {/* ── Tab: Results ── */}
             {activeTab === 'results' && (
-              <div className="space-y-4">
+             <div className="space-y-4">
                 {/* Sterility status — big buttons */}
                 <div>
                   <p className={labelCls}>Sterility Status</p>
-                  <div className="grid grid-cols-3 gap-2">
+                 <div className="grid grid-cols-3 gap-2">
                     {[
                       { value: 'Pending',      icon: <Clock className="w-4 h-4" />,         cls: 'border-amber-200 bg-amber-50 text-amber-700' },
                       { value: 'Sterile',      icon: <CheckCircle2 className="w-4 h-4" />,  cls: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
@@ -451,7 +451,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 </div>
 
                 {/* Counts */}
-                <div className="grid grid-cols-2 gap-3">
+               <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Colony Count</label>
                     <input type="number" min="0" {...register('colony_count')} placeholder="e.g. 245" className={inputCls} />
@@ -463,7 +463,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 </div>
 
                 {/* OD / pH for broth */}
-                <div className="grid grid-cols-2 gap-3">
+               <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>OD Value</label>
                     <input type="number" step="0.001" {...register('od_value')} placeholder="0.500" className={inputCls} />
@@ -488,7 +488,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 )}
 
                 {/* Staining */}
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
                   <div>
                     <label className={labelCls}>Staining Method</label>
                     <input {...register('staining_method')} placeholder="e.g. Gram Stain" className={inputCls} />
@@ -504,7 +504,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
           </div>
 
           {/* Sticky Footer */}
-          <div className="shrink-0 border-t border-gray-100 px-5 py-4 flex gap-3">
+         <div className="shrink-0 border-t border-gray-100 px-5 py-4 flex gap-3">
             <button
               type="button"
               onClick={onClose}

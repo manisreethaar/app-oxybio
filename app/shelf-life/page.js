@@ -167,12 +167,12 @@ export default function ShelfLifePage() {
   const selectedBatch = batches.find(batch => batch.id === selectedBatchId);
   const selectedFlasks = selectedBatch?.batch_flasks || [];
 
-  if (authLoading) return <div className="page-container space-y-6"><Skeleton width={300} height={40}/><Skeleton className="h-64 w-full rounded-2xl"/></div>;
+  if (authLoading) return<div className="page-container space-y-6"><Skeleton width={300} height={40}/><Skeleton className="h-64 w-full rounded-2xl"/></div>;
   if (!employeeProfile) return null;
 
   return (
-    <div className="page-container text-gray-900">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+   <div className="page-container text-gray-900">
+     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Stability &amp; Shelf-Life</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Time-Series Product Validation</p>
@@ -182,14 +182,14 @@ export default function ShelfLifePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         {loading ? (
-          <div className="col-span-full space-y-4">
+         <div className="col-span-full space-y-4">
             <Skeleton className="h-64 w-full rounded-2xl"/>
             <Skeleton className="h-64 w-full rounded-2xl"/>
           </div>
         ) : studies.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No active stability studies. Select a released batch to begin longevity testing.</div>
+         <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">No active stability studies. Select a released batch to begin longevity testing.</div>
         ) : (
           studies.map((study) => {
             const chartData = (study.shelf_life_logs || []).map(log => ({
@@ -203,7 +203,7 @@ export default function ShelfLifePage() {
 
             return (
               <div key={study.id} className="surface p-6 hover:shadow-md transition-all">
-                <div className="flex justify-between items-start mb-6">
+               <div className="flex justify-between items-start mb-6">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-blue-50 px-2 py-0.5 rounded border border-blue-100 mb-2 inline-block">Study ID: {study.id.slice(0,8).toUpperCase()}</span>
                     {study.batches?.id ? (
@@ -215,7 +215,7 @@ export default function ShelfLifePage() {
                     )}
                     <p className="text-xs font-semibold text-gray-500 mt-1">{study.batches?.variant} | {study.storage_condition}{study.flask_id ? ' | Flask: ' + study.flask_id : ''}</p>
                   </div>
-                  <div className="text-right">
+                 <div className="text-right">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Status</p>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${study.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                       {study.status}
@@ -223,20 +223,20 @@ export default function ShelfLifePage() {
                   </div>
                 </div>
 
-                <div className="h-44 w-full mb-6 bg-slate-50/50 rounded-xl p-3 border border-slate-100">
+               <div className="h-44 w-full mb-6 bg-slate-50/50 rounded-xl p-3 border border-slate-100">
                   <p className="text-[9px] font-black text-gray-400 uppercase mb-3 flex justify-between">
                     Stability Analytics <span>{study.status}</span>
                   </p>
                   <ShelfLifeLineChart data={displayData} />
                 </div>
 
-                <div className="grid grid-cols-6 gap-2 mb-8">
+               <div className="grid grid-cols-6 gap-2 mb-8">
                   {TIMEPOINTS.map((tp) => {
                     const logExists = (study.shelf_life_logs || []).some(l => l.day_number === tp);
                     return (
                       <div key={tp} className="text-center group">
                         <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 group-hover:text-navy">D{tp}</p>
-                        <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${logExists ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                       <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${logExists ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
                           {logExists ? <CheckCircle2 className="w-4 h-4"/> : <Clock className="w-4 h-4"/>}
                         </div>
                       </div>
@@ -246,12 +246,12 @@ export default function ShelfLifePage() {
 
 
               {study.creator && (
-                <div className="flex items-center gap-1.5 mb-3">
+               <div className="flex items-center gap-1.5 mb-3">
                   <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm"/>
                   <span className="text-[10px] text-gray-400 font-medium">by {study.creator.full_name}</span>
                 </div>
               )}
-              <div className="flex gap-2">
+             <div className="flex gap-2">
                 {study.status !== 'Completed' && isAdmin && (
                   <button onClick={() => concludeStudy(study.id)} className="flex-1 py-2.5 bg-white border border-red-100 text-[10px] font-bold uppercase tracking-wider text-red-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all focus:outline-none">
                     Conclude
@@ -287,9 +287,9 @@ export default function ShelfLifePage() {
       </div>
 
       {showNew && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
-          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+<div className="flex flex-col sm:animate-slide-left bg-white rounded-none w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-screen overflow-y-auto"> 
+           <div className="p-6">
               <h2 className="text-lg font-bold text-gray-900 tracking-tight">Stability Protocol</h2>
               <p className="text-xs font-medium text-gray-500 mt-1">Initialize T-Series Data Collection</p>
             </div>
@@ -326,7 +326,7 @@ export default function ShelfLifePage() {
               )}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Storage Condition</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {['Refrigerated (4°C)', 'Ambient (25°C)', 'Accelerated (40°C)'].map(c => (
                     <button key={c} type="button" onClick={() => setValue('storage_condition', c, { shouldValidate: true })} className={`px-3 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${watchedCondition === c ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                       {c.split(' ')[0]}
@@ -334,7 +334,7 @@ export default function ShelfLifePage() {
                   ))}
                 </div>
               </div>
-              <div className="flex gap-3 pt-6">
+             <div className="flex gap-3 pt-6">
                 <button type="button" onClick={() => { setShowNew(false); reset(); }} className="flex-1 py-2.5 bg-gray-100 text-gray-500 font-bold uppercase tracking-wider text-xs rounded-lg hover:bg-gray-200 transition-all">Cancel</button>
                 <button disabled={submitting} type="submit" className="flex-[2] py-2.5 bg-navy text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow-sm hover:bg-navy-hover transition-all flex items-center justify-center gap-2">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Initialize Study'}
@@ -348,9 +348,9 @@ export default function ShelfLifePage() {
       
       {/* Log Modal */}
       {activeStudy && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
-          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+<div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200 overflow-hidden"> 
+           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-gray-900">Log Data for {activeStudy.batches?.batch_id}</h3>
                 <p className="text-xs text-gray-500">Enter test data for a specific timepoint</p>
@@ -358,10 +358,10 @@ export default function ShelfLifePage() {
               <button onClick={() => setActiveStudy(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg">✕</button>
             </div>
             
-            <div className="p-6 space-y-4">
+           <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Timepoint (Day)</label>
-                <div className="flex flex-wrap gap-2">
+               <div className="flex flex-wrap gap-2">
                   {[0, 7, 14, 30, 60, 90].map(d => (
                     <button key={d} onClick={() => selectLogDay(d)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${logForm.day_number === d ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
@@ -374,7 +374,7 @@ export default function ShelfLifePage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 {(activeStudy.test_parameters || []).map(param => (
                   <div key={param}>
                     <label className="block text-xs font-bold text-gray-700 mb-1">{param}</label>
@@ -389,7 +389,7 @@ export default function ShelfLifePage() {
               </div>
             </div>
 
-            <div className="p-6 bg-gray-50 flex gap-3">
+           <div className="p-6 bg-gray-50 flex gap-3">
               <button onClick={() => setActiveStudy(null)} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg hover:bg-gray-100 transition">Cancel</button>
               <button disabled={logSubmitting || !canSaveActiveLog} onClick={handleSaveLog} className="flex-[2] py-2.5 bg-navy text-white text-xs font-bold uppercase rounded-lg shadow hover:bg-navy-hover transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 {logSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Save Log Data'}
@@ -401,13 +401,13 @@ export default function ShelfLifePage() {
 
       {/* Conclude Study Modal */}
       {pendingConclude && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+         <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Conclude Study</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">
               Are you sure you want to conclude this stability study? It will be marked as Completed.
             </p>
-            <div className="flex gap-3">
+           <div className="flex gap-3">
               <button 
                 onClick={() => setPendingConclude(null)}
                 className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
