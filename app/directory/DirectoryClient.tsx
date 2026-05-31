@@ -152,6 +152,18 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
                     </p>
                   </div>
                 </div>
+
+                {isAdmin && (
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4"/> Compensation</h3>
+                    <div className="bg-teal-50/50 p-4 rounded-2xl border border-teal-100/60 flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-500">Base Salary</span>
+                      <span className="text-lg font-black text-teal-700">
+                        {emp.base_salary ? `₹${Number(emp.base_salary).toLocaleString('en-IN')}` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
         </div>
