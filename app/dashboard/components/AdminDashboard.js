@@ -315,7 +315,7 @@ export default function AdminDashboard({ employeeId }) {
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">pH</p>
                           <p className={`font-black text-lg ${latestPh?.is_deviation ? 'text-red-500' : 'text-emerald-600'}`}>
-                            {latestPh?.ph_value || 'ΓÇö'}
+                            {latestPh?.ph_value || '—'}
                           </p>
                         </div>
                         <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm">
