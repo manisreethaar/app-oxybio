@@ -1,7 +1,7 @@
 import { Search, User, Users, Plus, Hash } from 'lucide-react';
 import { useState } from 'react';
 
-export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateGroup, employeeProfile, isAdmin, loading }) {
+export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateGroup, employeeProfile, isAdmin, loading, unreadCounts = {}, onlineUsers = new Set() }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredChats = chats.filter(chat => {
@@ -52,13 +52,18 @@ export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateG
             const isGroup = chat.type === 'group' || chat.type === 'announcement';
             let chatName = chat.name || 'Group Chat';
             let Icon = isGroup ? (chat.type === 'announcement' ? Hash : Users) : User;
-            
+            let isOnline = false;
             if (!isGroup) {
               const otherMember = chat.members?.find(m => m.employee_id !== employeeProfile.id);
               chatName = otherMember?.employees?.full_name || 'Unknown User';
+              // Check if the other person in a 1-1 chat is online
+              if (otherMember && onlineUsers.has(otherMember.employee_id)) {
+                isOnline = true;
+              }
             }
 
             const isActive = activeChat?.id === chat.id;
+            const unreadCount = unreadCounts[chat.id] || 0;
 
             return (
               <button
@@ -68,16 +73,26 @@ export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateG
                   isActive ? 'bg-navy/5 border border-navy/10' : 'hover:bg-gray-50 border border-transparent'
                 }`}
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
-                  isGroup ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                }`}>
-                  <Icon className="w-5 h-5" />
+                <div className="relative">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
+                    isGroup ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  {isOnline && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-0.5">
                     <h3 className={`text-sm font-bold truncate ${isActive ? 'text-navy' : 'text-gray-800'}`}>
                       {chatName}
                     </h3>
+                    {unreadCount > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-2">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </div>
                   {isGroup && (
                     <p className="text-[10px] text-gray-400 truncate uppercase tracking-wider font-bold">
