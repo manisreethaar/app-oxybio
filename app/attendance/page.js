@@ -441,13 +441,13 @@ export default function AttendancePage() {
       </div>
 
       <div className="flex border-b border-slate-200">
-        <button onClick={() => setActiveTab('today')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'today' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('today')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'today' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <Clock className="w-4 h-4" /> Today
         </button>
-        <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'analytics' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'analytics' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <BarChart2 className="w-4 h-4" /> Analytics
         </button>
-        <button onClick={() => setActiveTab('corrections')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'corrections' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('corrections')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'corrections' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <AlertCircle className="w-4 h-4" /> Corrections
         </button>
       </div>
@@ -582,7 +582,7 @@ export default function AttendancePage() {
                 </div>
                 <h3 className="text-2xl font-black text-slate-800 mb-2">Shift Completed</h3>
                 <p className="text-sm text-slate-500 mb-8 font-medium">Great work today.</p>
-                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100">
                   <div>
                     <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Total Hours</span>
                     <span className="text-2xl font-black text-slate-800 tabular-nums">{elapsedHours}h</span>

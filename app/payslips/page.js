@@ -363,7 +363,7 @@ export default function PayslipsPage() {
               </div>
 
               {/* Month & Year */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Month *</label>
                   <select
@@ -386,7 +386,7 @@ export default function PayslipsPage() {
               </div>
 
               {/* Deductions (manual verify) */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">PF Deduction (₹)</label>
                   <input
@@ -442,7 +442,7 @@ export default function PayslipsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     {[
                       ['Total Working Days', calcResult.total_working_days],
                       ['Days Present', calcResult.present_days],

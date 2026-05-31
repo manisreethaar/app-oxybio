@@ -167,7 +167,7 @@ export default function RegulatoryCalendarPage() {
                   <label className="block text-xs font-bold text-gray-700 mb-1">Event Title</label>
                   <input placeholder="e.g. SISFS Phase 2 Submission" {...register('title')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Category</label>
                     <select {...register('category')} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all">

@@ -565,7 +565,7 @@ export default function FormulationsPage() {
                     <div className="mt-auto space-y-2">
                       
                       {/* Compare + Revision row */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button 
                           onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
                           className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
@@ -599,7 +599,7 @@ export default function FormulationsPage() {
 
                       {/* In Review: Approve (approvers only) + Recall/Reject (anyone/approvers) */}
                       {f.status === 'In Review' && (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {isApprover ? (
                             <>
                               <button

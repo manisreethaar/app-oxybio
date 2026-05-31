@@ -44,7 +44,7 @@ export default function RecipeFormModal({
 
         <form onSubmit={onSubmit} className="p-6 pt-0 space-y-4">
           {/* Code / Name / Base Volume */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Code</label>
               <input

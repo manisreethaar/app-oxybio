@@ -234,7 +234,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{sop.category}</span>
             </div>
             <h3 className="text-sm font-bold text-gray-900 mb-2 leading-tight flex-1">{sop.title}</h3>
-            <div className="grid grid-cols-2 gap-2 mb-4 text-[11px] border-t border-gray-100 pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-[11px] border-t border-gray-100 pt-3">
               <div><span className="block font-bold text-gray-400 uppercase">Version</span><span className="font-semibold text-gray-700">{sop.version}</span></div>
               <div><span className="block font-bold text-gray-400 uppercase">Effective</span><span className="font-semibold text-gray-700">{sop.effective_date ? new Date(sop.effective_date).toLocaleDateString() : 'Draft'}</span></div>
             </div>
@@ -337,7 +337,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                 <input type="text" {...regUpload('title')} className="w-full border border-gray-200 rounded-lg p-2 outline-none font-semibold text-sm" />
                 {upErrors.title && <p className="text-red-500 text-xs mt-1">{String(upErrors.title.message)}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 mb-1">Category</label>
                   <select {...regUpload('category')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-sm font-semibold">

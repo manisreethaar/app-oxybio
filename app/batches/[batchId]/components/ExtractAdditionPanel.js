@@ -121,7 +121,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           <h3 className="text-sm font-bold text-gray-900">Decoction / Extract Prep</h3>
         </div>
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Species</label>
               <select value={species} onChange={e=>setSpecies(e.target.value)} className="field-input bg-white text-xs">
                 {SPECIES.map(m=><option key={m}>{m}</option>)}
@@ -134,16 +134,16 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div><label className="field-label">Weight (g)</label><input type="number" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input p-2" placeholder="e.g. 50"/></div>
             <div><label className="field-label">Water used (ml)</label><input type="number" value={water} onChange={e=>setWater(e.target.value)} className="field-input p-2" placeholder="e.g. 500"/></div>
             <div><label className="field-label">Recovered (ml)</label><input type="number" value={exRecovered} onChange={e=>setExRecovered(e.target.value)} className="field-input p-2" placeholder="e.g. 400"/></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Extraction Temp (°C)</label><input type="number" value={exTemp} onChange={e=>setExTemp(e.target.value)} className="field-input p-2" placeholder="e.g. 95"/></div>
             <div><label className="field-label">Duration (min)</label><input type="number" value={exTime} onChange={e=>setExTime(e.target.value)} className="field-input p-2" placeholder="e.g. 120"/></div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Extract initial pH</label><input type="number" step="0.01" value={exPh} onChange={e=>setExPh(e.target.value)} className="field-input p-2" placeholder="e.g. 6.5"/></div>
             <div className="flex flex-col justify-center">
               <label className="flex items-center gap-2 cursor-pointer mt-4">
@@ -165,12 +165,12 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           <h3 className="text-sm font-bold text-gray-900">Integration into Fermentate</h3>
         </div>
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div><label className="field-label">Integration Vol (ml)<span className="text-red-500">*</span></label><input type="number" value={volAdded} onChange={e=>setVolAdded(e.target.value)} className="field-input p-2" placeholder="e.g. 150"/></div>
             <div><label className="field-label">Addition %</label><input type="number" value={addPct} onChange={e=>setAddPct(e.target.value)} className="field-input p-2" placeholder="e.g. 10"/></div>
             <div><label className="field-label">FINAL PRODUCT pH<span className="text-red-500">*</span></label><input type="number" step="0.01" value={finalPh} onChange={e=>setFinalPh(e.target.value)} className="field-input p-2" placeholder="4.35"/></div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Addition Method</label>
               <select value={addMethod} onChange={e=>setAddMethod(e.target.value)} className="field-input bg-white text-xs">
                 {ADD_METHOD.map(m=><option key={m}>{m}</option>)}
@@ -182,7 +182,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Colour Before</label><input value={colBefore} onChange={e=>setColBefore(e.target.value)} className="field-input p-2" placeholder="Yellowish"/></div>
             <div><label className="field-label">Colour After</label><input value={colAfter} onChange={e=>setColAfter(e.target.value)} className="field-input p-2" placeholder="Amber brown"/></div>
           </div>
@@ -196,7 +196,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input p-2" placeholder="Any observed precipitation..."/>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-gray-100">
             <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
               {saving?'Saving...':'Save Draft'}
             </button>

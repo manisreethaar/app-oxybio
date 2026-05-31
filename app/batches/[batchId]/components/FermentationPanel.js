@@ -575,7 +575,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     : 'Target endpoint: 4.2–4.5 · Alarm: <3.8 or >5.5'}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Temp (°C)</label>
                   <input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} placeholder="37.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
@@ -632,7 +632,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                       Plating done now — create incubation activity
                     </label>
                     {platingDone && (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <label className="field-label">Media Type</label>
                           <select value={plateMedia} onChange={e=>setPlateMedia(e.target.value)} className="field-input text-xs bg-white">
@@ -802,7 +802,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             <h3 className="text-sm font-bold text-gray-900">Declare Endpoint for {activeFlask.flask_label}</h3>
           </div>
           <form onSubmit={handleEndpoint} className="p-5 space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Final pH</label>
                 <input type="number" step="0.01" required value={epPh} onChange={e=>setEpPh(e.target.value)}
@@ -831,7 +831,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 })()}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Aroma</label>
                 <select value={aroma} onChange={e=>setAroma(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white">
                   {['Tangy and clean','Mild','Off-odour detected'].map(o=><option key={o}>{o}</option>)}
@@ -843,7 +843,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Colour Description</label>
                 <input value={colourDesc} onChange={e=>setColourDesc(e.target.value)} placeholder="e.g. Reddish-purple" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none"/>
               </div>
@@ -853,7 +853,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[{label:'Sensory Overall',val:sensory,set:setSensory,opts:['PASS','FAIL']}].map(f=>(
                 <div key={f.label}><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{f.label}</label>
                   <div className="flex gap-2">
@@ -936,7 +936,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               <button onClick={() => setEditingReading(null)} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-400"/></button>
             </div>
             <form onSubmit={handleEditSave} className="p-5 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">pH <span className="text-red-500">★ CCP</span></label>
                   <input type="number" step="0.01" min="0" max="14" value={editFields.ph}
@@ -962,7 +962,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Foam</label>
                   <select value={editFields.foam_level} onChange={e => setEditFields(f => ({...f, foam_level: e.target.value}))}

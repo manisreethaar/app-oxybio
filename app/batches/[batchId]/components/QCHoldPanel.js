@@ -535,7 +535,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       {!sample ? (
         <div className="surface p-5 space-y-4">
           <h3 className="text-sm font-bold text-gray-900">Create QC Sample Record for {activeFlask.flask_label}</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Sampling Date</label><input type="date" value={samplingDate} onChange={e=>setSamplingDate(e.target.value)} className="field-input"/></div>
             <div><label className="field-label">Sample Volume (ml)</label><input type="number" step="0.1" value={volPerFlask} onChange={e=>setVolPerFlask(e.target.value)} className="field-input" placeholder="10"/></div>
           </div>
@@ -551,7 +551,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             </div>
           </div>
           {testingLoc === 'NABL external lab' && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">External Lab Name</label><input value={extLab} onChange={e=>setExtLab(e.target.value)} className="field-input" placeholder="Lab name..."/></div>
               <div><label className="field-label">Ref Number</label><input value={extRef} onChange={e=>setExtRef(e.target.value)} className="field-input" placeholder="REF-001"/></div>
               <div><label className="field-label">Date Sent</label><input type="date" value={sentDate} onChange={e=>setSentDate(e.target.value)} className="field-input"/></div>
@@ -606,7 +606,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
             {platingEnabled && (
               <>
-                <div className="grid grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-teal-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-teal-100">
                   <div>
                     <label className="field-label">Media Type (Recipe)</label>
                     <select value={plateMedia} onChange={e=>handleUpdatePlatingConfig('media_type', e.target.value)} className="field-input text-xs bg-white">
@@ -724,7 +724,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               <p className="text-xs font-black text-amber-900 uppercase tracking-wider mb-3">
                 External Lab Results — {sample.external_lab || 'NABL Lab'}
               </p>
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="field-label">Date Results Received</label>
                   <input type="date" value={resultReceivedDate} onChange={e=>setResultReceivedDate(e.target.value)} className="field-input"/>
@@ -836,7 +836,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               )}
               {!isCeo && <p className="text-xs text-gray-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
               {isCeo && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button onClick={()=>onAdvanceFlaskStage('released')} disabled={actionLoading}
                     className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-sm disabled:opacity-50">
                     ✓ Release Trial

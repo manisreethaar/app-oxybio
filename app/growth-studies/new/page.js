@@ -192,7 +192,7 @@ export default function NewGrowthStudyPage() {
             </div>
             <div>
               <label className={LabelCls}>Study Type</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[['growth_curve', 'Growth Curve', 'Isolate characterisation, OD/pH tracking'], ['fermentation', 'Fermentation', 'Process monitoring, product formation']].map(([v, l, d]) => (
                   <button key={v} type="button" onClick={() => setField('study_type', v)}
                     className={`p-4 rounded-2xl border-2 text-left transition-all ${form.study_type === v ? 'border-teal-500 bg-teal-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
@@ -266,7 +266,7 @@ export default function NewGrowthStudyPage() {
         {/* ─── Step 2 ─── */}
         {step === 2 && (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={LabelCls}>Vessel Type</label>
                 <select className={InputCls} value={form.vessel_type} onChange={e => setField('vessel_type', e.target.value)}>
@@ -304,7 +304,7 @@ export default function NewGrowthStudyPage() {
             </div>
             <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
               <p className="text-xs font-black text-slate-600 uppercase tracking-wider">Baseline at T=0 (optional)</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className={LabelCls}>Initial OD</label>
                   <input className={InputCls} type="number" step="0.001" value={form.initial_od} onChange={e => setField('initial_od', e.target.value)} placeholder="0.050" />

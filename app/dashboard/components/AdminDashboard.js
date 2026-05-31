@@ -290,36 +290,71 @@ export default function AdminDashboard({ employeeId }) {
                 const STAGE_LABEL  = { media_prep:'Media Prep', sterilisation:'Sterilisation', inoculation:'Inoculation', fermentation:'Fermentation', qc_hold:'QC Hold', released:'Released' };
                 const STAGE_COLOR  = { media_prep:'bg-indigo-100 text-indigo-700', sterilisation:'bg-blue-100 text-blue-700', inoculation:'bg-violet-100 text-violet-700', fermentation:'bg-teal-100 text-teal-700', qc_hold:'bg-rose-100 text-rose-700', released:'bg-emerald-100 text-emerald-700' };
                 return activeBatches.map(batch => {
-                  const hoursElapsed = differenceInHours(new Date(), new Date(batch.created_at || new Date()));
-                  const latestPh = batch.ph_readings?.[batch.ph_readings.length - 1];
                   const stageIdx = BATCH_STAGES.indexOf(batch.current_stage);
                   const progress = stageIdx >= 0 ? Math.round(((stageIdx + 1) / BATCH_STAGES.length) * 100) : 0;
+
+                  // Last fermentation reading
+                  const ferReadings = batch.batch_fermentation_readings || [];
+                  const lastReading = ferReadings.length > 0
+                    ? ferReadings.reduce((a, b) => new Date(a.logged_at) > new Date(b.logged_at) ? a : b)
+                    : null;
+                  const hoursSinceLog = lastReading
+                    ? differenceInHours(new Date(), new Date(lastReading.logged_at))
+                    : null;
+                  const isFermenting = batch.current_stage === 'fermentation';
+                  const logOverdue = isFermenting && (hoursSinceLog === null || hoursSinceLog > 2);
+                  const phAlarm = lastReading?.is_ph_alarm;
+
+                  // Card border + status pill
+                  const cardBorder = phAlarm
+                    ? 'border-red-300 bg-red-50/30'
+                    : logOverdue
+                    ? 'border-amber-300 bg-amber-50/20'
+                    : 'border-gray-200 bg-white';
+                  const statusPill = phAlarm
+                    ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">⚠ pH Alarm</span>
+                    : logOverdue
+                    ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Log Overdue</span>
+                    : isFermenting
+                    ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">On Track</span>
+                    : null;
+
                   return (
-                    <div key={batch.id} className="border border-gray-200 rounded-xl p-4 flex flex-col hover:border-gray-300 transition-colors bg-white relative">
+                    <div key={batch.id} className={`border rounded-xl p-4 flex flex-col hover:shadow-sm transition-all ${cardBorder}`}>
                       <div className="flex justify-between items-start mb-2">
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-mono text-xs font-bold text-gray-400 mb-1">{batch.batch_id}</p>
-                          <p className="font-bold text-gray-900 tracking-tight text-sm leading-tight">{batch.variant}</p>
+                          <p className="font-bold text-gray-900 tracking-tight text-sm leading-tight truncate">{batch.variant}</p>
                         </div>
-                        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">{hoursElapsed}H</span>
+                        <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${STAGE_COLOR[batch.current_stage] || 'bg-gray-100 text-gray-500'}`}>
+                            {STAGE_LABEL[batch.current_stage] || batch.current_stage || '—'}
+                          </span>
+                          {statusPill}
+                        </div>
                       </div>
                       <div className="mb-3">
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${STAGE_COLOR[batch.current_stage] || 'bg-gray-100 text-gray-500'}`}>
-                          {STAGE_LABEL[batch.current_stage] || batch.current_stage || 'Unknown'}
-                        </span>
-                        <div className="mt-2 w-full bg-gray-100 rounded-full h-1">
+                        <div className="w-full bg-gray-100 rounded-full h-1">
                           <div className="bg-navy rounded-full h-1 transition-all" style={{ width: `${progress}%` }}/>
                         </div>
                       </div>
-                      <div className="flex items-center mt-auto pt-3 border-t border-gray-100 justify-between">
+                      <div className="flex items-center mt-auto pt-3 border-t border-gray-100 justify-between gap-2">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">pH</p>
-                          <p className={`font-black text-lg ${latestPh?.is_deviation ? 'text-red-500' : 'text-emerald-600'}`}>
-                            {latestPh?.ph_value || '—'}
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Last pH</p>
+                          <p className={`font-black text-lg ${phAlarm ? 'text-red-500' : lastReading ? 'text-emerald-600' : 'text-gray-300'}`}>
+                            {lastReading?.ph ?? '—'}
                           </p>
                         </div>
-                        <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm">
-                          Open Batch
+                        {isFermenting && (
+                          <div className="text-center">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Last Log</p>
+                            <p className={`text-sm font-black ${logOverdue ? 'text-amber-600' : 'text-gray-600'}`}>
+                              {hoursSinceLog !== null ? `${hoursSinceLog}h ago` : 'No logs'}
+                            </p>
+                          </div>
+                        )}
+                        <Link href={`/batches/${batch.id}`} className="px-3 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover shadow-sm whitespace-nowrap min-h-[36px] flex items-center">
+                          Open →
                         </Link>
                       </div>
                     </div>

@@ -609,7 +609,7 @@ export default function BatchesPage() {
                   <div className="px-5 py-4 flex justify-between items-start border-b border-gray-100 bg-gray-50/40">
                     <div>
                       <p className="font-mono text-sm font-black text-gray-900 tracking-wider mb-1.5">{batch.batch_id}</p>
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                         {/* SKU badge */}
                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${SKU_COLORS[batch.sku_target] || SKU_COLORS.Unassigned}`}>
                           {batch.sku_target}
@@ -934,7 +934,7 @@ export default function BatchesPage() {
                     </div>
 
                     {/* ── Row 2: Experiment Type + SKU Target ──── */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
                           Experiment Type
@@ -975,7 +975,7 @@ export default function BatchesPage() {
                     )}
 
                     {/* ── Row 3: Volume + Flasks ────────────────── */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
                           Planned Volume (ml)

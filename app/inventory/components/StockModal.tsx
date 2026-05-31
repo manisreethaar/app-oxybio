@@ -69,7 +69,7 @@ export default function StockModal({
               {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">{modalType === 'edit_stock' ? 'Current Quantity' : 'Quantity Recvd'}</label>
               <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
@@ -81,7 +81,7 @@ export default function StockModal({
                 value={newStock.supplier_batch_number} onChange={(e) => setNewStock({...newStock, supplier_batch_number: e.target.value})} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Expiry Date</label>
               <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold"
@@ -93,7 +93,7 @@ export default function StockModal({
                 value={newStock.location} onChange={(e) => setNewStock({...newStock, location: e.target.value})} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PO Number (Optional)</label>
               <input type="text" placeholder="PO-123" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.purchase_order_number} onChange={e => setNewStock({...newStock, purchase_order_number: e.target.value})} />
@@ -113,7 +113,7 @@ export default function StockModal({
               <option value="Rejected">Rejected</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 flex items-center gap-2">
                 CoA Document {uploadingCoA && <Loader2 className="w-3 h-3 animate-spin text-teal-600"/>}
@@ -157,7 +157,7 @@ export default function StockModal({
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Quantity Issued</label>
             <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newIssue.quantity_issued} onChange={e => setNewIssue({...newIssue, quantity_issued: e.target.value})} />

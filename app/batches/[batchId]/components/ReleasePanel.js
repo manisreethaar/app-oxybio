@@ -112,7 +112,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
               {record.release_date ? new Date(record.release_date).toLocaleString('en-IN') : ''}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div className="p-3 bg-gray-50 rounded-xl">
               <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Yield Vol</p>
               <p className="font-black text-gray-800">{record.yield_volume_ml || '—'} ml</p>
@@ -153,7 +153,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
               <p className="text-sm font-bold text-gray-900">Complete release record for {activeFlask.flask_label}:</p>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="field-label">Yield Vol (ml)</label>
                   <input type="number" step="1" value={yieldVol} onChange={e => setYieldVol(e.target.value)} className="field-input" placeholder="e.g. 850"/>

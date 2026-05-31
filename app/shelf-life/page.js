@@ -326,7 +326,7 @@ export default function ShelfLifePage() {
               )}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Storage Condition</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {['Refrigerated (4°C)', 'Ambient (25°C)', 'Accelerated (40°C)'].map(c => (
                     <button key={c} type="button" onClick={() => setValue('storage_condition', c, { shouldValidate: true })} className={`px-3 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${watchedCondition === c ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                       {c.split(' ')[0]}
@@ -374,7 +374,7 @@ export default function ShelfLifePage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 {(activeStudy.test_parameters || []).map(param => (
                   <div key={param}>
                     <label className="block text-xs font-bold text-gray-700 mb-1">{param}</label>

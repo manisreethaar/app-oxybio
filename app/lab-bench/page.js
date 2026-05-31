@@ -373,7 +373,7 @@ export default function LabBenchPage() {
       {!loading && (
         <div className="pt-2 border-t border-slate-100 space-y-2">
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Module Review</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
               { href: '/batches',             icon: FlaskConical,  label: 'Batches' },
               { href: '/growth-studies',      icon: Activity,      label: 'Growth Studies' },

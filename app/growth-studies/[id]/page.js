@@ -641,7 +641,7 @@ export default function GrowthStudyDetailPage() {
             {measurements.length === 0 ? (
               <p className="text-slate-400 text-sm font-medium text-center py-6">No measurements recorded yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-xs font-medium">
                   <thead>
                     <tr className="border-b border-slate-100">
@@ -690,6 +690,22 @@ export default function GrowthStudyDetailPage() {
                   </tbody>
                 </table>
               </div>
+              {/* Mobile card list */}
+              <div className="sm:hidden space-y-2">
+                {measurements.map((m, i) => (
+                  <div key={m.id || i} className="bg-white rounded-xl border border-slate-200 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-500">T+{m.actual_hour}h</span>
+                      <span className="text-[10px] text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
+                      <div><p className="text-[10px] text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
+                      <div><p className="text-[10px] text-slate-400 font-bold">pH</p><p className="text-sm font-bold text-slate-700">{m.ph_value ?? '—'}</p></div>
+                      <div><p className="text-[10px] text-slate-400 font-bold">Temp</p><p className="text-sm font-bold text-slate-700">{m.temperature_actual_c ? `${m.temperature_actual_c}°C` : '—'}</p></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -725,7 +741,7 @@ export default function GrowthStudyDetailPage() {
               {/* Measurements tab */}
               {modalTab === 'measurement' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Actual Hour *</label>
                       <input className={InputCls} type="number" step="0.1" value={mForm.actual_hour || ''} onChange={e => setMForm(f => ({ ...f, actual_hour: e.target.value }))} />
@@ -747,7 +763,7 @@ export default function GrowthStudyDetailPage() {
                     <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-teal-600 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span> More fields
                     </summary>
-                    <div className="mt-3 grid grid-cols-2 gap-4">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className={LabelCls}>Glucose (g/L) — DNS</label>
                         <input className={InputCls} type="number" step="0.001" value={mForm.glucose_g_l || ''} onChange={e => setMForm(f => ({ ...f, glucose_g_l: e.target.value }))} />
@@ -785,7 +801,7 @@ export default function GrowthStudyDetailPage() {
               {/* Plate Obs tab */}
               {modalTab === 'plate' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Time Point (hr) *</label>
                       <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
@@ -999,7 +1015,7 @@ export default function GrowthStudyDetailPage() {
               <button onClick={() => setModal(null)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={LabelCls}>Time Point (h) *</label>
                   <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
@@ -1113,7 +1129,7 @@ export default function GrowthStudyDetailPage() {
                   </div>
                   <div>
                     <label className={LabelCls}>Study Type</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[['growth_curve','Growth Curve'],['fermentation','Fermentation']].map(([v,l]) => (
                         <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
                           className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
@@ -1190,7 +1206,7 @@ export default function GrowthStudyDetailPage() {
                 {/* ── Conditions ── */}
                 <div className="space-y-3">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Vessel Type</label>
                       <select className={InputCls} value={editForm.vessel_type} onChange={e => setEditForm(f => ({ ...f, vessel_type: e.target.value }))}>

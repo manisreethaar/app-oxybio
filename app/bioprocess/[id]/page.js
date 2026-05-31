@@ -279,7 +279,7 @@ export default function BioprocessDetailPage() {
           {kineticConfig.kinetics_model === 'luedeking_piret' && (
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
               <h4 className="text-sm font-bold text-amber-800 mb-4">Simulation Parameters</h4>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {[
                   { key: 'mu_max', label: 'μmax (h⁻¹)', def: '0.30' },
                   { key: 'Ks',     label: 'Ks (g/L)',    def: '2.0' },
@@ -384,7 +384,14 @@ export default function BioprocessDetailPage() {
       )}
 
       <div className="flex justify-end">
-        <button onClick={saveAll} disabled={saving} className="flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
+        <button onClick={() => {
+          const hasResponses = localResponses?.some(r => r.response !== '' && r.response !== null && r.response !== undefined);
+          if (hasResponses) {
+            const confirmed = window.confirm('Changing the setup will reset your response data. Continue?');
+            if (!confirmed) return;
+          }
+          saveAll();
+        }} disabled={saving} className="flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Setup
         </button>
@@ -606,7 +613,7 @@ export default function BioprocessDetailPage() {
       }));
       return (
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-navy/5 rounded-xl p-4 text-center">
               <div className="text-2xl font-black text-navy">{result.results.length}</div>
               <div className="text-xs text-gray-500 mt-1">Factors tested</div>
@@ -715,7 +722,7 @@ export default function BioprocessDetailPage() {
           {localFactors.length >= 3 && (
             <div className="bg-navy/5 border border-navy/10 rounded-xl p-5">
               <h3 className="text-sm font-bold text-navy mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Optimal Conditions</h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {localFactors.slice(0, 3).map((f, i) => (
                   <div key={f.code} className="bg-white rounded-xl p-3 border border-navy/10">
                     <div className="text-[10px] font-bold text-gray-500 uppercase">{f.code} — {f.variable}</div>
@@ -813,7 +820,7 @@ export default function BioprocessDetailPage() {
       // Monod / MM curve
       return (
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div className="bg-navy/5 rounded-xl p-4">
               <div className="text-2xl font-black text-navy">{result.muMax}</div>
               <div className="text-xs text-gray-500 mt-1">{result.modelType === 'monod' ? 'μmax (h⁻¹)' : 'Vmax'}</div>
@@ -920,6 +927,19 @@ export default function BioprocessDetailPage() {
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
             <h4 className="text-sm font-bold text-amber-800 mb-2">Validation Required</h4>
             <p className="text-sm text-amber-700">Run 2–3 confirmation experiments at the predicted optimal conditions and compare the measured response against the predicted value of {result.predictedResponse} {experiment.response_unit}. A good model predicts within ±10% of the actual response.</p>
+          </div>
+        )}
+
+        {(experiment?.status === 'completed' || experiment?.status === 'analysed' || experiment?.status === 'complete') && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+            <p className="text-sm font-bold text-blue-800 mb-1">Ready for production?</p>
+            <p className="text-xs text-blue-600 mb-3">Use the optimised parameters from this experiment to start a batch.</p>
+            <button
+              onClick={() => window.location.href = `/batches?from_experiment=${experiment.id}`}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all min-h-[44px]"
+            >
+              Create Batch from Best Run →
+            </button>
           </div>
         )}
       </div>

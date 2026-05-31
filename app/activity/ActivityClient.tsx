@@ -1088,7 +1088,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start Time</label>
                   <input type="time" value={editForm.start_time}

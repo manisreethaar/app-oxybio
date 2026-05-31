@@ -106,7 +106,7 @@ export default function GrowthStudyReportPage() {
 
       {/* 1. Study Details */}
       <Section title="1. Study Information">
-        <div className="grid grid-cols-2 gap-x-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
           <div>
             <InfoRow label="Study Name" value={study.name} />
             <InfoRow label="Study Type" value={isFermentation ? 'Fermentation Monitoring' : 'Growth Curve'} />
@@ -126,7 +126,7 @@ export default function GrowthStudyReportPage() {
 
       {/* 2. Incubation Parameters */}
       <Section title="2. Incubation Parameters">
-        <div className="grid grid-cols-2 gap-x-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
           <div>
             <InfoRow label="Vessel Type" value={study.vessel_type?.replace(/_/g, ' ')} />
             <InfoRow label="Working Volume (mL)" value={study.volume_ml} />
@@ -157,7 +157,7 @@ export default function GrowthStudyReportPage() {
         </div>
         {measurements.some(m => m.od_value) && (
           <div className="mt-3 bg-slate-50 rounded-xl p-3">
-            <div className="grid grid-cols-2 gap-x-6 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 text-sm">
               <InfoRow label="Max OD recorded" value={Math.max(...measurements.filter(m => m.od_value).map(m => parseFloat(m.od_value))).toFixed(4)} />
               <InfoRow label="Min pH recorded" value={measurements.filter(m => m.ph_value).length ? Math.min(...measurements.filter(m => m.ph_value).map(m => parseFloat(m.ph_value))).toFixed(2) : '—'} />
             </div>
@@ -262,7 +262,7 @@ export default function GrowthStudyReportPage() {
           {measurements.some(m => m.od_value) && (
             <p>Maximum OD recorded: <strong>{Math.max(...measurements.filter(m => m.od_value).map(m => parseFloat(m.od_value))).toFixed(4)}</strong> at T+{measurements.reduce((best, m) => parseFloat(m.od_value || 0) > parseFloat(best.od_value || 0) ? m : best, measurements[0]).actual_hour}h.</p>
           )}
-          <div className="mt-6 pt-4 border-t border-slate-200 grid grid-cols-2 gap-8">
+          <div className="mt-6 pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div>
               <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-8">Conducted by</p>
               <div className="border-b border-slate-400 w-48 mb-1"></div>

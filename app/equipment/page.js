@@ -319,7 +319,7 @@ export default function EquipmentPage() {
                   {...regEquip('name')} placeholder="e.g. Bioreactor 01" />
                 {eqErrors.name && <p className="text-red-500 text-xs mt-1">{eqErrors.name.message}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Model / Brand</label>
                   <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
@@ -365,7 +365,7 @@ export default function EquipmentPage() {
             </div>
             <form onSubmit={handMaint(onSubmitMaintenance)} className="p-8 space-y-5">
               <input type="hidden" {...regMaint('equipment_id')} />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Log Date</label>
                   <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
