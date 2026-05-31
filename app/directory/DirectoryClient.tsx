@@ -301,6 +301,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
          }
 
          toast.success("Employee details updated");
+         setEditingEmployee(null);
          fetchEmployees();
      } catch (err) {
          toast.error(err.message);
@@ -318,6 +319,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
           });
           if (!res.ok) throw new Error("Failed to update permissions");
           toast.success("Access management updated");
+          setEditingEmployee(null);
           fetchEmployees();
       } catch (err) {
           toast.error(err.message);
@@ -495,9 +497,13 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                     <h4 className="font-bold text-sm text-slate-700 capitalize mb-3 border-b border-slate-50 pb-2">{moduleName.replace('_', ' ')}</h4>
                                     <div className="grid grid-cols-2 gap-3">
                                         {Object.keys(PERMISSIONS[moduleName]).map(actionName => {
-                                            const isEnabled = customPerms[moduleName]?.[actionName] || false;
+                                            const defaultEnabled = PERMISSIONS[moduleName]?.[actionName]?.includes(editingEmployee.role || 'staff') || false;
+                                            const customOverride = customPerms[moduleName]?.[actionName];
+                                            const isEnabled = customOverride !== undefined ? customOverride : defaultEnabled;
+                                            const isOverridden = customOverride !== undefined && customOverride !== defaultEnabled;
+
                                             return (
-                                                <label key={actionName} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer p-2 rounded-lg hover:bg-slate-50">
+                                                <label key={actionName} className={`flex items-center gap-2 text-xs font-semibold cursor-pointer p-2 rounded-lg transition-colors ${isOverridden ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-600 hover:bg-slate-50 border border-transparent'}`}>
                                                     <input 
                                                         type="checkbox" 
                                                         checked={isEnabled}
@@ -505,11 +511,16 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                                             const newPerms = { ...customPerms };
                                                             if (!newPerms[moduleName]) newPerms[moduleName] = {};
                                                             newPerms[moduleName][actionName] = e.target.checked;
+                                                            if (e.target.checked === defaultEnabled) {
+                                                                delete newPerms[moduleName][actionName];
+                                                                if (Object.keys(newPerms[moduleName]).length === 0) delete newPerms[moduleName];
+                                                            }
                                                             setCustomPerms(newPerms);
                                                         }}
-                                                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                        className={`rounded focus:ring-2 w-4 h-4 ${isOverridden ? 'text-amber-600 focus:ring-amber-500 border-amber-400' : 'text-teal-600 focus:ring-teal-500 border-slate-300'}`}
                                                     />
                                                     <span className="capitalize">{actionName.replace('_', ' ')}</span>
+                                                    {isOverridden && <span className="text-[9px] font-black uppercase ml-auto bg-amber-200/50 px-1.5 py-0.5 rounded text-amber-800">Override</span>}
                                                 </label>
                                             );
                                         })}

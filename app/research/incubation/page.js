@@ -66,12 +66,13 @@ export default function SampleIncubationPage() {
 
       if (!map.has(srcKey)) {
         map.set(srcKey, {
-          key:         srcKey,
-          label:       srcLabel || 'Other / Manual',
-          batch_id:    r.batch_id    || null,
-          batch_code:  r.batches?.batch_id || null,
-          source_type: r.source_type || null,
-          timepoints:  new Map(),
+          key:          srcKey,
+          label:        srcLabel || 'Other / Manual',
+          batch_id:     r.batch_id    || null,
+          batch_code:   r.batches?.batch_id || null,
+          batch_status: r.batches?.status || null,
+          source_type:  r.source_type || null,
+          timepoints:   new Map(),
         });
       }
 
@@ -79,7 +80,7 @@ export default function SampleIncubationPage() {
       const tpHour = r.log_hour;
       const tpKey  = tpHour != null ? `h_${tpHour}` : (r.source_stage || '__none__');
       const tpLabel = r.timepoint_label
-        || (tpHour != null ? `T+${Number(tpHour).toFixed(1)}h` : (r.source_stage?.replace(/_/g, ' ') || 'No timepoint'));
+        || (tpHour != null ? `T+${Number(tpHour).toFixed(1)}h` : (r.source_stage ? `Stage: ${r.source_stage.replace(/_/g, ' ')}` : 'No timepoint'));
 
       if (!src.timepoints.has(tpKey)) {
         src.timepoints.set(tpKey, { key: tpKey, label: tpLabel, hour: tpHour, records: [] });
@@ -247,6 +248,14 @@ export default function SampleIncubationPage() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-black text-gray-900">{src.label}</span>
+                        {src.batch_status && (
+                          <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                            src.batch_status === 'released'  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            src.batch_status === 'rejected'  ? 'bg-red-50 text-red-700 border-red-200' :
+                            src.batch_status === 'fermenting'? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            'bg-gray-50 text-gray-500 border-gray-200'
+                          }`}>{src.batch_status}</span>
+                        )}
                         {src.batch_id && (
                           <Link
                             href={`/batches/${src.batch_id}`}

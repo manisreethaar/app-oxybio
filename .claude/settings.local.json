@@ -56,7 +56,8 @@
       "Bash(Get-ChildItem -Path E:\\\\OXYBIO -Recurse -Filter \"*.js\" -Include \"*api*\", \"*inventory*\", \"*batch*\", \"*growth-study*\", \"*cell-bank*\")",
       "Bash(Select-Object -First 50 FullName)",
       "Bash(xargs grep -l \"inventory\\\\|deduct\\\\|stock\")",
-      "Bash(mkdir -p \"E:/OXYBIO/app/api/batches/[batchId]/media-deduct\")"
+      "Bash(mkdir -p \"E:/OXYBIO/app/api/batches/[batchId]/media-deduct\")",
+      "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__list_migrations"
     ]
   }
 }
