@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
@@ -213,6 +213,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       controller.abort();
     };
   }, [employeeProfile, initialStock, fetchData, checkTraining]);
+
+  // Realtime: warehouse_stock changes (receipts, issues, adjustments from other users)
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase.channel('inventory_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouse_stock' }, () => {
+        fetchData(page, false);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, () => {
+        fetchData(page, false);
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   // Registry Grouping & Filtering
   const filteredRegistry = useMemo(() => {
