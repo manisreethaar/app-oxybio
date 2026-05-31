@@ -817,7 +817,7 @@ export default function BatchDetailPage() {
       {fermentingFlasks.length > 0 && (
         <button
           onClick={() => { setShowQuickLog(true); setQuickLogFlaskId(fermentingFlasks[0]?.id || ''); }}
-          className="fixed bottom-20 left-4 md:left-auto md:bottom-20 md:right-6 z-40 flex items-center gap-2 px-4 py-3 bg-navy text-white rounded-2xl shadow-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all"
+          className="fixed bottom-24 left-4 md:left-auto md:bottom-24 md:right-20 z-[1000] flex items-center gap-2 px-4 py-3 bg-navy text-white rounded-2xl shadow-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all"
         >
           ⚡ Log Reading
         </button>
@@ -825,7 +825,7 @@ export default function BatchDetailPage() {
 
       {/* Quick Log Modal */}
       {showQuickLog && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-black text-gray-900 mb-4">Quick Fermentation Reading</h3>
 
