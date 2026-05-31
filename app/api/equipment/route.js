@@ -11,13 +11,14 @@ const equipmentSchema = z.object({
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational')
 });
 
-export async function GET() {
+export async function GET(request) {
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('equipment')
-      .select('*, calibration_logs(*)')
-      .order('name');
+    const { searchParams } = new URL(request.url);
+    const includeArchived = searchParams.get('include_archived') === 'true';
+    let q = supabase.from('equipment').select('*, calibration_logs(*)').order('name');
+    if (!includeArchived) q = q.is('archived_at', null);
+    const { data, error } = await q;
 
     if (error) throw error;
     return NextResponse.json({ success: true, data });
@@ -86,16 +87,24 @@ export async function DELETE(request) {
     const supabase = createClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const permanent = searchParams.get('permanent') === 'true';
 
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    const { error: accessError } = await requireAccess(supabase, 'equipment', 'delete');
+    const { error: accessError, employee: emp } = await requireAccess(supabase, 'equipment', 'delete');
     if (accessError) return accessError;
 
-    const { error } = await supabase.from('equipment').delete().eq('id', id);
-    if (error) throw error;
+    if (permanent) {
+      const { error } = await supabase.from('equipment').delete().eq('id', id);
+      if (error) throw error;
+      return NextResponse.json({ success: true, message: 'Equipment permanently deleted.' });
+    }
 
-    return NextResponse.json({ success: true });
+    const { error } = await supabase.from('equipment')
+      .update({ archived_at: new Date().toISOString(), archived_by: emp?.id || null })
+      .eq('id', id);
+    if (error) throw error;
+    return NextResponse.json({ success: true, message: 'Equipment archived.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

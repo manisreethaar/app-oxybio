@@ -24,6 +24,7 @@ export async function GET(request) {
       .from('formulations')
       .select('*, approver:employees!formulations_approved_by_fkey(full_name)')
       .neq('status', 'Archived')
+      .is('archived_at', null)
       .order('created_at', { ascending: false });
 
     if (category) query = query.eq('category', category);
@@ -199,13 +200,23 @@ export async function DELETE(request) {
     // IN REVIEW — only admins/CEO/CTO can delete
     // DRAFT — anyone can delete their own; admins can delete any
     const adminDb = createAdminClient();
-    const { data: deleted, error } = await adminDb.from('formulations').delete().eq('id', id).select();
-    if (error) throw error;
-    if (!deleted || deleted.length === 0) {
-       return NextResponse.json({ error: 'Recipe could not be deleted (it might be linked to existing batches).' }, { status: 400 });
+    const { searchParams: sp } = new URL(request.url);
+    const permanent = sp.get('permanent') === 'true';
+
+    if (permanent) {
+      const { data: deleted, error } = await adminDb.from('formulations').delete().eq('id', id).select();
+      if (error) throw error;
+      if (!deleted || deleted.length === 0)
+        return NextResponse.json({ error: 'Recipe could not be deleted (it might be linked to existing batches).' }, { status: 400 });
+      return NextResponse.json({ success: true, message: 'Formulation permanently deleted.' });
     }
 
-    return NextResponse.json({ success: true });
+    // Soft-delete: archive first
+    const { error } = await adminDb.from('formulations')
+      .update({ archived_at: new Date().toISOString(), archived_by: emp.id })
+      .eq('id', id);
+    if (error) throw error;
+    return NextResponse.json({ success: true, message: 'Formulation archived.' });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

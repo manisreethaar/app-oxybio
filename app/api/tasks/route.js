@@ -225,10 +225,20 @@ export async function DELETE(request) {
        return NextResponse.json({ error: 'Permission Denied: Only the task creator can delete this task.' }, { status: 403 });
     }
 
-    const { error } = await supabase.from('tasks').delete().eq('id', id);
-    if (error) throw error;
+    const { searchParams: sp2 } = new URL(request.url);
+    const permanent = sp2.get('permanent') === 'true';
 
-    return NextResponse.json({ success: true });
+    if (permanent) {
+      const { error } = await supabase.from('tasks').delete().eq('id', id);
+      if (error) throw error;
+      return NextResponse.json({ success: true, message: 'Task permanently deleted.' });
+    }
+
+    const { error } = await supabase.from('tasks')
+      .update({ archived_at: new Date().toISOString(), archived_by: currentUser?.id || null })
+      .eq('id', id);
+    if (error) throw error;
+    return NextResponse.json({ success: true, message: 'Task archived.' });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
