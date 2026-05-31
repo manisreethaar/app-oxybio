@@ -841,7 +841,7 @@ export default function BatchesPage() {
               initial={{ opacity: 0, scale: 0.98, y: 28 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 28 }}
-              className="bg-white rounded-t-3xl md:rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100 overflow-hidden md:my-4 max-h-[92vh] flex flex-col"
+              className="bg-white md:rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100 overflow-hidden md:my-4 flex flex-col"
             >
               {/* Modal Header */}
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">

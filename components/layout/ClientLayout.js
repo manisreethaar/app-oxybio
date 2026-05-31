@@ -192,26 +192,7 @@ export default function ClientLayout({ children }) {
         {shellExtrasReady && <GlobalSearch />}
         {shellExtrasReady && <AIChatbot />}
         {shellExtrasReady && <QuickLogOverlay />}
-        {/* Floating Quick Log Button — lab pages only */}
-        <QuickLogFAB pathname={pathname} />
       </div>
     </ToastProvider>
-  );
-}
-
-function QuickLogFAB({ pathname }) {
-  const labPages = ['/batches', '/lab-bench', '/growth-studies', '/bioprocess', '/shelf-life', '/research'];
-  const isLabPage = labPages.some(p => pathname?.startsWith(p));
-  // Don't show on the log page itself
-  if (!isLabPage || pathname?.startsWith('/lab-bench/log')) return null;
-
-  return (
-    <Link
-      href="/lab-bench/log"
-      className="fixed bottom-24 right-4 md:bottom-8 md:right-6 z-50 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-      title="Quick Log"
-    >
-      <PlusCircle className="w-7 h-7" />
-    </Link>
   );
 }

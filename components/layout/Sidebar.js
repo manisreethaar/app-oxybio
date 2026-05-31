@@ -156,8 +156,8 @@ export default function Sidebar() {
 
       {/* Mobile Slide-Up Full Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="max-h-[90vh] overflow-hidden bg-white/90 backdrop-blur-xl w-full h-[85vh] rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom border-t border-white/50">
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden bg-white/90 backdrop-blur-xl w-full h-[85vh] shadow-2xl flex flex-col animate-in slide-in-from-bottom border-t border-white/50">
             <div className="flex items-center justify-between p-6 border-b border-slate-200/50">
               <span className="text-xl font-black text-slate-800 tracking-tight">OxyOS Hubs</span>
               <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 bg-slate-100 rounded-full flex justify-center items-center text-slate-600 hover:bg-slate-200">

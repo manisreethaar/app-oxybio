@@ -49,8 +49,8 @@ function Field({ label, children }) {
 
 function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl relative h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
         {/* Non-scrolling header — stays pinned above the scroll area */}
         <div className="relative shrink-0">
@@ -614,8 +614,8 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Admin Quick Edit Profile Modal */}
       {editingEmployee && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div className="bg-white rounded-[2rem] max-w-2xl w-full p-5 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+            <div className="flex flex-col bg-white rounded-[2rem] max-w-2xl w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
                 <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
                 <h2 className="text-2xl font-black text-slate-800 mb-2">Edit {editingEmployee.full_name}</h2>
                 <p className="text-sm text-slate-500 mb-6">Manage details and specific access overrides for this user.</p>
@@ -736,8 +736,8 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Add Employee Modal */}
       {showInviteModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="glass-panel rounded-[2rem] max-w-lg w-full p-5 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+          <div className="flex flex-col glass-panel rounded-[2rem] max-w-lg w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto bg-white">
             <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all">
               <X className="w-5 h-5"/>
             </button>

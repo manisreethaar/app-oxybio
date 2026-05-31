@@ -479,7 +479,7 @@ export default function TasksPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-[160] bg-slate-900/40 backdrop-blur-sm md:static md:bg-transparent md:backdrop-blur-0 flex items-end md:block" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }}>
-        <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="surface p-4 md:p-6 animate-in fade-in duration-200 rounded-t-3xl md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
+        <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="surface p-4 md:p-6 animate-in fade-in duration-200 md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
           <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-1.5">
             <ListChecks className="w-5 h-5 text-navy"/> {editingTaskId ? 'Edit Task Details' : (isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder')}
           </h2>
