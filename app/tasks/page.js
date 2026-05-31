@@ -251,12 +251,14 @@ export default function TasksPage() {
     const taskId = pendingDeleteTask;
     setPendingDeleteTask(null);
     try {
-      const res = await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/tasks?id=${taskId}&permanent=true`, { method: 'DELETE' });
+      const result = await res.json();
       if (res.ok) { 
         if (selectedTask?.id === taskId) setSelectedTask(null); 
-        fetchTasks(); 
+        fetchTasks();
+        toast.success('Task deleted.');
       }
-      else toast.error('Delete failed');
+      else toast.error(result?.error || 'Delete failed. You may not have permission.');
     } catch (err) { toast.error('Error: ' + err.message); }
   };
 

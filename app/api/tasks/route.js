@@ -218,11 +218,18 @@ export async function DELETE(request) {
     if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
 
     const isMaster = isMasterAdmin(user.email);
-    const { data: task } = await supabase.from('tasks').select('assigned_to, assigned_by').eq('id', id).single();
+    const { data: task } = await supabase.from('tasks').select('assigned_to, assigned_by, is_personal_reminder').eq('id', id).single();
 
-    // POLICY CHANGE: Only the CREATOR (the one who assigned it) can delete, or Master Admin
-    if (!isMaster && task?.assigned_by !== currentUser?.id) {
-       return NextResponse.json({ error: 'Permission Denied: Only the task creator can delete this task.' }, { status: 403 });
+    // Allowed to delete if:
+    // 1. Master admin
+    // 2. Senior role (admin/ceo/cto/research_fellow) who is the creator
+    // 3. Any user deleting their OWN personal reminder
+    const isCreator = task?.assigned_by === currentUser?.id;
+    const isOwnReminder = task?.is_personal_reminder && task?.assigned_to === currentUser?.id;
+    const isSenior = ['admin', 'ceo', 'cto', 'research_fellow'].includes(currentUser?.role);
+
+    if (!isMaster && !isOwnReminder && !(isSenior && isCreator)) {
+       return NextResponse.json({ error: 'Permission Denied: Only the task creator or an admin can delete this task.' }, { status: 403 });
     }
 
     const { searchParams: sp2 } = new URL(request.url);
