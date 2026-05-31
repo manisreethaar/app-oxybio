@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope } from 'lucide-react';
+import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope, CheckCircle } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
@@ -234,16 +234,21 @@ export default function DigitalLnbPage() {
         // 2. Classify each entry
         const isCellBank = e => !!e.cell_bank_preparations || e.batch_stage === 'cell_bank';
         const isFermentation = e => !!e.batches;
+        const isBatchCompleted = e => ['released', 'rejected'].includes(e.batches?.status);
 
         // 3. Apply group filter
         const grouped = filterGroup === 'cell_bank'
           ? { 'Cell Bank': filtered.filter(isCellBank) }
           : filterGroup === 'fermentation'
-          ? { 'Fermentation / Batch': filtered.filter(isFermentation) }
+          ? {
+              'Active Batches':    filtered.filter(e => isFermentation(e) && !isBatchCompleted(e)),
+              'Completed Batches': filtered.filter(e => isFermentation(e) && isBatchCompleted(e)),
+            }
           : {
-              'Fermentation / Batch': filtered.filter(isFermentation),
-              'Cell Bank':            filtered.filter(isCellBank),
-              'General':              filtered.filter(e => !isCellBank(e) && !isFermentation(e)),
+              'Active Batches':    filtered.filter(e => isFermentation(e) && !isBatchCompleted(e)),
+              'Completed Batches': filtered.filter(e => isFermentation(e) && isBatchCompleted(e)),
+              'Cell Bank':         filtered.filter(isCellBank),
+              'General':           filtered.filter(e => !isCellBank(e) && !isFermentation(e)),
             };
 
         // 4. Sort within each group
@@ -346,8 +351,8 @@ export default function DigitalLnbPage() {
             {Object.entries(grouped).map(([groupName, groupEntries]) => {
               const sorted = sort(groupEntries);
               if (sorted.length === 0) return null;
-              const groupIcon = groupName === 'Cell Bank' ? <Microscope className="w-3.5 h-3.5"/> : groupName === 'Fermentation / Batch' ? <FlaskConical className="w-3.5 h-3.5"/> : <BookOpen className="w-3.5 h-3.5"/>;
-              const groupColor = groupName === 'Cell Bank' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : groupName === 'Fermentation / Batch' ? 'text-indigo-700 bg-indigo-50 border-indigo-200' : 'text-gray-600 bg-gray-50 border-gray-200';
+              const groupIcon = groupName === 'Cell Bank' ? <Microscope className="w-3.5 h-3.5"/> : groupName === 'Active Batches' ? <FlaskConical className="w-3.5 h-3.5"/> : groupName === 'Completed Batches' ? <CheckCircle className="w-3.5 h-3.5"/> : <BookOpen className="w-3.5 h-3.5"/>;
+              const groupColor = groupName === 'Cell Bank' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : groupName === 'Active Batches' ? 'text-indigo-700 bg-indigo-50 border-indigo-200' : groupName === 'Completed Batches' ? 'text-slate-600 bg-slate-50 border-slate-200' : 'text-gray-600 bg-gray-50 border-gray-200';
               return (
                 <div key={groupName}>
                   <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black border mb-3 ${groupColor}`}>

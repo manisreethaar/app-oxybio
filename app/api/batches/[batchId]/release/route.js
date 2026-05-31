@@ -114,6 +114,20 @@ export async function POST(request, { params }) {
         batch_id: batchId, from_stage: 'qc_hold', to_stage: 'released',
         changed_by: emp.id, notes: 'All trials released',
       }).then(() => {}).catch(() => {});
+
+      // Auto-tick all remaining batch checklist items on full release
+      const RELEASE_KEYWORDS = ['inoculation', 'fermentation', 'straining', 'extract', 'qc hold', 'release'];
+      db.from('tasks').select('id, checklist').eq('batch_id', batchId).maybeSingle()
+        .then(({ data: task }) => {
+          if (!task?.checklist?.length) return;
+          const updated = task.checklist.map(item =>
+            RELEASE_KEYWORDS.some(kw => item.text?.toLowerCase().includes(kw))
+              ? { ...item, done: true }
+              : item
+          );
+          return db.from('tasks').update({ checklist: updated }).eq('id', task.id);
+        })
+        .catch(() => {});
     }
 
     // Fetch flask label for auto-creation

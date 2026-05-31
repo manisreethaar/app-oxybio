@@ -19,8 +19,8 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
     const [relRes, epRes] = await Promise.all([
-      supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single()
+      supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle()
     ]);
     if (epRes.data) {
       setSensoryData({
@@ -41,7 +41,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
       setRecord(null);
       setYieldVol(''); setBottles(''); setBotVol(''); setNotes('');
     }
-  }, [activeFlask?.id, supabase]);
+  }, [activeFlask?.id, activeFlask?.current_stage, supabase]);
 
   useEffect(() => { setRecord(null); loadRecord(); }, [loadRecord]);
 
