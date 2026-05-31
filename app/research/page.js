@@ -191,17 +191,17 @@ export default function ConsumerResearchPage() {
   };
 
   if (authLoading) return (
-   <div className="page-container space-y-6">
-     <div className="flex justify-between items-center"><Skeleton width={200} height={32}/> <Skeleton width={150} height={40}/></div>
+    <div className="page-container space-y-6">
+      <div className="flex justify-between items-center"><Skeleton width={200} height={32}/> <Skeleton width={150} height={40}/></div>
       <Skeleton className="h-64 w-full rounded-2xl"/>
     </div>
   );
   if (!employeeProfile) return null;
 
   return (
-   <div className="page-container text-gray-900">
+    <div className="page-container text-gray-900">
       {/* Header */}
-     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Consumer Insights</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Sensory Validation &amp; Taste Panel Data</p>
@@ -216,7 +216,7 @@ export default function ConsumerResearchPage() {
 
       {/* Trend chart — only if ≥2 sessions */}
       {sessions.length >= 2 && (
-       <div className="surface p-6 mb-6 mt-8">
+        <div className="surface p-6 mb-6 mt-8">
           <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-1 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-navy" /> Sensory Score Trend
           </h2>
@@ -237,11 +237,11 @@ export default function ConsumerResearchPage() {
           });
           if (unlinked.length === 0) return null;
           return (
-           <div className="mt-8 mb-2 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="mt-8 mb-2 p-4 bg-amber-50 border border-amber-200 rounded-xl">
               <p className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <FlaskConical className="w-4 h-4"/> Released Batches Awaiting Panel Testing
               </p>
-             <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 {unlinked.map(({ batch, flask }) => (
                   <button
                     key={`${batch.id}-${flask.id || 'batch'}`}
@@ -268,22 +268,22 @@ export default function ConsumerResearchPage() {
       )}
 
       {/* Session cards */}
-     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {loading ? (
-         <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
             <Skeleton className="h-48 w-full rounded-xl"/>
             <Skeleton className="h-48 w-full rounded-xl"/>
             <Skeleton className="h-48 w-full rounded-xl"/>
           </div>
         ) : sessions.length === 0 ? (
-         <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">
+          <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">
             No panel data recorded. Select a released batch above to start a session.
           </div>
         ) : sessions.map(s => (
           <div key={s.id} className="surface p-6 hover:shadow-md transition-all group relative overflow-hidden">
             {/* Batch tag */}
             {s.batches && (
-             <div className="mb-3">
+              <div className="mb-3">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">
                   <FlaskConical className="w-3 h-3"/> {s.batches.batch_id}
                   {s.batches.variant ? ` · ${s.batches.variant}` : ''}
@@ -291,7 +291,7 @@ export default function ConsumerResearchPage() {
               </div>
             )}
 
-           <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
               <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-100 flex items-center gap-1">
                 <Users className="w-3 h-3"/> {s.panelist_count} Panelists
               </span>
@@ -300,7 +300,7 @@ export default function ConsumerResearchPage() {
               </p>
             </div>
 
-           <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
+            <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
             {isAdmin && (
               <button onClick={() => setConfirmDeleteId(s.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
             )}
@@ -309,14 +309,14 @@ export default function ConsumerResearchPage() {
             {sessionIdentity(s) && <p className="text-[10px] font-semibold text-gray-500 mb-5">{sessionIdentity(s)}</p>}
 
             {/* Sensory radar chart */}
-           <div className="h-44 w-full mb-5 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
+            <div className="h-44 w-full mb-5 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
               <ResearchRadarChart session={s} />
             </div>
 
-           <div className="flex items-end justify-between">
+            <div className="flex items-end justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Score</p>
-               <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2">
                   <span className={`text-3xl font-black tracking-tight ${(s.avg_score || 0) >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
                     {s.avg_score || '—'}
                   </span>
@@ -345,8 +345,8 @@ export default function ConsumerResearchPage() {
 
       {/* Score Logging Modal */}
       {activeSession && (
-       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
-<div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden"> 
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
+          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
             <button
               onClick={closeScoreModal}
               className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
@@ -354,7 +354,7 @@ export default function ConsumerResearchPage() {
               <X className="w-5 h-5 text-gray-400"/>
             </button>
 
-           <div className="p-6 border-b border-slate-100">
+            <div className="p-6 border-b border-slate-100">
               <p className="text-[10px] font-bold uppercase tracking-wider text-navy mb-1">Sensory Score Entry</p>
               <h2 className="text-lg font-bold text-gray-900 tracking-tight">{activeSession.session_title}</h2>
               {activeSession.batches && (
@@ -363,7 +363,7 @@ export default function ConsumerResearchPage() {
                 </p>
               )}
               
-             <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
                 {Array.from({ length: activeSession.panelist_count || 1 }).map((_, idx) => (
                   <button key={idx} onClick={() => setActivePanelist(idx)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${activePanelist === idx ? 'bg-navy text-white border-navy' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}>
@@ -373,10 +373,10 @@ export default function ConsumerResearchPage() {
               </div>
             </div>
 
-           <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5">
               {getCriteria(activeSession).map((criterion) => (
                 <div key={criterion} className="space-y-2">
-                 <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{criterion}</label>
                     <input
                       type="number"
@@ -401,7 +401,7 @@ export default function ConsumerResearchPage() {
               ))}
             </div>
 
-           <div className="px-6 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="px-6 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Average</p>
                 <p className={`text-3xl font-black tracking-tight ${scoreAverage >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
@@ -423,8 +423,8 @@ export default function ConsumerResearchPage() {
 
       {/* New Panel Modal */}
       {showNew && (
-       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
-<div className="flex flex-col sm:animate-slide-left bg-white rounded-none w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-screen overflow-y-auto"> 
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => { setShowNew(false); reset(); }}
               className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
@@ -432,7 +432,7 @@ export default function ConsumerResearchPage() {
               <X className="w-5 h-5 text-gray-400"/>
             </button>
 
-           <div className="p-6">
+            <div className="p-6">
               <h2 className="text-lg font-bold text-gray-900 tracking-tight">Panel Setup</h2>
               <p className="text-xs text-gray-500 mt-1">Link a released batch and configure your tasting session.</p>
             </div>
@@ -487,7 +487,7 @@ export default function ConsumerResearchPage() {
                 {errors.session_title && <p className="text-red-500 text-xs mt-1">{errors.session_title.message}</p>}
               </div>
 
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Panelists</label>
                   <input

@@ -25,13 +25,13 @@ export default function RecipeFormModal({
   if (!showNew) return null;
 
   return (
-   <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
-<div className="flex flex-col sm:animate-slide-left bg-white rounded-none w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-screen overflow-y-auto"> 
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
+      <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all">
           <X className="w-5 h-5 text-gray-400"/>
         </button>
 
-       <div className="p-6">
+        <div className="p-6">
           <h2 className="text-lg font-bold text-gray-900 tracking-tight">
             {newForm.id ? 'Edit Formulation Details' : 'New Formulation Version'}
           </h2>
@@ -44,7 +44,7 @@ export default function RecipeFormModal({
 
         <form onSubmit={onSubmit} className="p-6 pt-0 space-y-4">
           {/* Code / Name / Base Volume */}
-         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Code</label>
               <input
@@ -76,22 +76,22 @@ export default function RecipeFormModal({
             </div>
           </div>
 
-          {fetchError &&<div className="p-2 bg-red-50 text-red-600 font-bold text-[10px] rounded-lg border border-red-100">{fetchError}</div>}
+          {fetchError && <div className="p-2 bg-red-50 text-red-600 font-bold text-[10px] rounded-lg border border-red-100">{fetchError}</div>}
 
           {/* BOM */}
-         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Bill of Materials (BOM)</label>
-           <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <select className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedItem} onChange={e => setSelectedItem(e.target.value)}>
                 <option value="">Select Ingredient...</option>
                 {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
               </select>
-             <div className="flex gap-2">
+              <div className="flex gap-2">
                 <input type="number" placeholder="Qty" className="flex-1 sm:w-20 sm:flex-none px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedQty} onChange={e => setSelectedQty(e.target.value)}/>
                 <button type="button" onClick={onAddIngredient} className="shrink-0 px-4 py-2 bg-navy text-white rounded-lg hover:bg-navy-hover transition-all flex items-center gap-1 text-xs font-bold"><Plus className="w-4 h-4"/>Add</button>
               </div>
             </div>
-           <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {newForm.ingredients.map((ing, idx) => (
                 <span key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1 border border-gray-200 rounded-md text-[10px] font-black text-slate-700 shadow-sm">
                   {ing.name}: {ing.quantity}{ing.unit}
@@ -111,7 +111,7 @@ export default function RecipeFormModal({
           {/* Category */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Category</label>
-           <div className="flex gap-2">
+            <div className="flex gap-2">
               {CATEGORIES.map(cat => (
                 <button key={cat} type="button" onClick={() => setNewForm({...newForm, category: cat})}
                   className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${newForm.category === cat ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'}`}>
@@ -124,7 +124,7 @@ export default function RecipeFormModal({
             </p>
           </div>
 
-         <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
             <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5"/>
             <p className="text-[10px] font-bold text-blue-700">Recipe will be saved as <strong>Draft</strong>. Submit for Review → get it Approved → then launch batches.</p>
           </div>

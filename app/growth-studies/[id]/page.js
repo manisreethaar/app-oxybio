@@ -325,8 +325,8 @@ export default function GrowthStudyDetailPage() {
   const InputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500';
   const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1';
 
-  if (loading) return<div className="p-8 text-center text-slate-500">Loading study…</div>;
-  if (!data?.study) return<div className="p-8 text-center text-red-500">Study not found.</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500">Loading study…</div>;
+  if (!data?.study) return <div className="p-8 text-center text-red-500">Study not found.</div>;
 
   const { study, time_points, measurements, plate_observations, inventory_usage } = data;
   const isFermentation = study.study_type === 'fermentation';
@@ -349,11 +349,11 @@ export default function GrowthStudyDetailPage() {
   ];
 
   return (
-   <div className="max-w-7xl mx-auto space-y-8 pb-16">
+    <div className="max-w-7xl mx-auto space-y-8 pb-16">
       {/* Header */}
-     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-         <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <StatusBadge status={study.status} />
             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${isFermentation ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-violet-50 text-violet-700 border-violet-200'}`}>
               {isFermentation ? 'Fermentation' : 'Growth Curve'}
@@ -374,7 +374,7 @@ export default function GrowthStudyDetailPage() {
           {study.objective && <p className="text-sm text-slate-500 mt-1 italic max-w-xl">{study.objective}</p>}
         </div>
 
-       <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           {study.status === 'setup' && (
             <button onClick={openStartModal} disabled={actionLoading}
               className="flex items-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm disabled:opacity-50"
@@ -421,8 +421,8 @@ export default function GrowthStudyDetailPage() {
       </div>
 
       {/* Study Details card */}
-     <div className="glass-card rounded-2xl p-6">
-       <div className="flex items-center justify-between mb-4">
+      <div className="glass-card rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
             <Info className="w-4 h-4 text-slate-500" /> Study Details
           </h3>
@@ -434,7 +434,7 @@ export default function GrowthStudyDetailPage() {
             </button>
           )}
         </div>
-       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-xs">
           {[
             { label: 'Study Code',    value: study.study_code || '—', mono: true },
             { label: 'Type',          value: isFermentation ? 'Fermentation' : 'Growth Curve' },
@@ -460,13 +460,13 @@ export default function GrowthStudyDetailPage() {
           ))}
         </div>
         {study.objective && (
-         <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
             <p className="text-xs font-medium text-slate-600 italic">{study.objective}</p>
           </div>
         )}
         {study.notes && (
-         <div className="mt-3">
+          <div className="mt-3">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Notes</p>
             <p className="text-xs font-medium text-slate-600">{study.notes}</p>
           </div>
@@ -475,7 +475,7 @@ export default function GrowthStudyDetailPage() {
 
       {/* Overdue alerts */}
       {overdueTps.length > 0 && (
-       <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div>
             <p className="font-black text-red-700 text-sm">Overdue Samples</p>
@@ -486,19 +486,19 @@ export default function GrowthStudyDetailPage() {
         </div>
       )}
 
-     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left: Timeline */}
-       <div className="lg:col-span-1 space-y-4">
-         <div className="glass-card rounded-2xl p-5">
+        <div className="lg:col-span-1 space-y-4">
+          <div className="glass-card rounded-2xl p-5">
             <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
               <Clock className="w-4 h-4 text-teal-600" /> Sampling Timeline
               <span className="ml-auto text-slate-400 font-bold text-xs">{tpDone}/{time_points.length}</span>
             </h3>
-           <div className="h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden">
-             <div className="h-full bg-teal-500 rounded-full" style={{ width: `${time_points.length ? (tpDone / time_points.length) * 100 : 0}%` }} />
+            <div className="h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden">
+              <div className="h-full bg-teal-500 rounded-full" style={{ width: `${time_points.length ? (tpDone / time_points.length) * 100 : 0}%` }} />
             </div>
 
-           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {time_points.map(tp => {
                 const isDone = tp.status === 'completed';
                 const isMissed = tp.status === 'missed';
@@ -507,11 +507,11 @@ export default function GrowthStudyDetailPage() {
 
                 return (
                   <div key={tp.id} className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isNext ? 'bg-teal-50 border border-teal-200' : isOverdue ? 'bg-red-50 border border-red-100' : 'bg-white/50 border border-white'}`}>
-                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${isDone ? 'bg-teal-500' : isMissed ? 'bg-slate-300' : isOverdue ? 'bg-red-400' : isNext ? 'bg-teal-200' : 'bg-slate-100'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${isDone ? 'bg-teal-500' : isMissed ? 'bg-slate-300' : isOverdue ? 'bg-red-400' : isNext ? 'bg-teal-200' : 'bg-slate-100'}`}>
                       {isDone ? '✓' : isMissed ? '—' : tp.planned_hour}
                     </div>
-                   <div className="flex-1 min-w-0">
-                     <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <p className={`text-xs font-black ${isDone ? 'text-teal-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
                           T + {tp.planned_hour}h
                         </p>
@@ -543,14 +543,14 @@ export default function GrowthStudyDetailPage() {
 
           {/* Plate observations list */}
           {plate_observations.length > 0 && (
-           <div className="glass-card rounded-2xl p-5">
+            <div className="glass-card rounded-2xl p-5">
               <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <Microscope className="w-4 h-4 text-violet-600" /> Plate Observations
               </h3>
-             <div className="space-y-2">
+              <div className="space-y-2">
                 {plate_observations.map(obs => (
                   <div key={obs.id} className="bg-white/60 border border-white rounded-xl p-3">
-                   <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start">
                       <span className="text-xs font-black text-slate-700">T+{obs.time_point_hours}h — {obs.observation_type === 'sterility' ? 'Sterility' : 'Colony Count'}</span>
                       <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
                         {obs.result || 'pending'}
@@ -576,11 +576,11 @@ export default function GrowthStudyDetailPage() {
 
           {/* Vial used */}
           {study.cell_bank_vials && (
-           <div className="glass-card rounded-2xl p-5">
+            <div className="glass-card rounded-2xl p-5">
               <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <TestTube2 className="w-4 h-4 text-violet-600" /> Vial Used
               </h3>
-             <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 space-y-1">
+              <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 space-y-1">
                 <p className="text-sm font-black text-violet-800 font-mono">{study.cell_bank_vials.vial_code}</p>
                 {study.cell_bank_vials.storage_temp && <p className="text-xs text-violet-600 font-medium">{study.cell_bank_vials.storage_temp}</p>}
                 {study.cell_bank_vials.freezer_id && (
@@ -595,11 +595,11 @@ export default function GrowthStudyDetailPage() {
 
           {/* Inventory usage */}
           {inventory_usage?.length > 0 && (
-           <div className="glass-card rounded-2xl p-5">
+            <div className="glass-card rounded-2xl p-5">
               <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <Package className="w-4 h-4 text-amber-600" /> Materials Used
               </h3>
-             <div className="space-y-1.5">
+              <div className="space-y-1.5">
                 {inventory_usage.map(u => (
                   <div key={u.id} className="flex items-center justify-between text-xs bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                     <span className="font-bold text-slate-700">{u.inventory_stock?.inventory_items?.name || '—'}</span>
@@ -612,14 +612,14 @@ export default function GrowthStudyDetailPage() {
         </div>
 
         {/* Right: Chart + Table */}
-       <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* Chart */}
-         <div className="glass-card rounded-2xl p-6">
-           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-teal-600" /> Growth Curve
               </h3>
-             <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap">
                 {availableLines.map(l => (
                   <button key={l.key} onClick={() => setShowLines(prev => prev.includes(l.key) ? prev.filter(k => k !== l.key) : [...prev, l.key])}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${showLines.includes(l.key) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}
@@ -636,13 +636,13 @@ export default function GrowthStudyDetailPage() {
           </div>
 
           {/* Measurements table */}
-         <div className="glass-card rounded-2xl p-6">
+          <div className="glass-card rounded-2xl p-6">
             <h3 className="font-black text-slate-800 text-sm mb-4">Measurement Log</h3>
             {measurements.length === 0 ? (
               <p className="text-slate-400 text-sm font-medium text-center py-6">No measurements recorded yet.</p>
             ) : (
               <>
-             <div className="hidden sm:block overflow-x-auto">
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-xs font-medium">
                   <thead>
                     <tr className="border-b border-slate-100">
@@ -664,7 +664,7 @@ export default function GrowthStudyDetailPage() {
                         <td className="py-2 pr-4">{m.culture_turbidity ? m.culture_turbidity.replace(/_/g, ' ') : '—'}</td>
                         <td className="py-2 pr-4 max-w-[120px] truncate text-slate-400">{m.notes || '—'}</td>
                         <td className="py-2 pl-1 whitespace-nowrap">
-                         <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5">
                             {m.recorder && <CreatorBadge initials={m.recorder.initials} fullName={m.recorder.full_name} size="sm"/>}
                             {!isAdmin && m.recorded_by === employeeProfile?.id && (
                               <EditRequestButton
@@ -692,14 +692,14 @@ export default function GrowthStudyDetailPage() {
                 </table>
               </div>
               {/* Mobile card list */}
-             <div className="sm:hidden space-y-2">
+              <div className="sm:hidden space-y-2">
                 {measurements.map((m, i) => (
                   <div key={m.id || i} className="bg-white rounded-xl border border-slate-200 p-3">
-                   <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-slate-500">T+{m.actual_hour}h</span>
                       <span className="text-[10px] text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                     </div>
-                   <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-3 gap-2 text-center">
                       <div><p className="text-[10px] text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
                       <div><p className="text-[10px] text-slate-400 font-bold">pH</p><p className="text-sm font-bold text-slate-700">{m.ph_value ?? '—'}</p></div>
                       <div><p className="text-[10px] text-slate-400 font-bold">Temp</p><p className="text-sm font-bold text-slate-700">{m.temperature_actual_c ? `${m.temperature_actual_c}°C` : '—'}</p></div>
@@ -715,9 +715,9 @@ export default function GrowthStudyDetailPage() {
 
       {/* 2A: Combined tabbed measurement+plate modal */}
       {modal?.type === 'combined' && (
-       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-slate-900/70 backdrop-blur-sm">
-<div className="flex flex-col sm:animate-slide-left h-[100dvh] sm:h-screen bg-white rounded-none shadow-2xl w-full max-w-lg overflow-y-auto max-h-[92vh]"> 
-           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[92vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-800">Record Sample Data</h3>
                 {modal.tp && <p className="text-xs text-slate-500 mt-0.5">T+{modal.tp.planned_hour}h · {modal.tp.sample_types.join(', ')}</p>}
@@ -725,7 +725,7 @@ export default function GrowthStudyDetailPage() {
               <button onClick={() => setModal(null)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             {/* Tab strip */}
-           <div className="flex border-b border-slate-100">
+            <div className="flex border-b border-slate-100">
               {[['measurement','Measurements'],['plate','Plate Obs']].map(([key, label]) => (
                 <button
                   key={key}
@@ -739,11 +739,11 @@ export default function GrowthStudyDetailPage() {
               ))}
             </div>
 
-           <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               {/* Measurements tab */}
               {modalTab === 'measurement' && (
-               <div className="space-y-4">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Actual Hour *</label>
                       <input className={InputCls} type="number" step="0.1" value={mForm.actual_hour || ''} onChange={e => setMForm(f => ({ ...f, actual_hour: e.target.value }))} />
@@ -765,7 +765,7 @@ export default function GrowthStudyDetailPage() {
                     <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-teal-600 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span> More fields
                     </summary>
-                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className={LabelCls}>Glucose (g/L) — DNS</label>
                         <input className={InputCls} type="number" step="0.001" value={mForm.glucose_g_l || ''} onChange={e => setMForm(f => ({ ...f, glucose_g_l: e.target.value }))} />
@@ -802,8 +802,8 @@ export default function GrowthStudyDetailPage() {
 
               {/* Plate Obs tab */}
               {modalTab === 'plate' && (
-               <div className="space-y-4">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Time Point (hr) *</label>
                       <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
@@ -860,7 +860,7 @@ export default function GrowthStudyDetailPage() {
               )}
 
               {modalErr && <p className="text-xs text-red-600 font-bold">{modalErr}</p>}
-             <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                 <button
                   onClick={() => modalTab === 'measurement' ? saveMeasurement() : savePlate()}
@@ -877,24 +877,24 @@ export default function GrowthStudyDetailPage() {
 
       {/* Legacy: keep individual modals for old type='measurement'|'plate' paths (safety fallback) */}
       {startModal && (
-       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-slate-900/70 backdrop-blur-sm">
-<div className="flex flex-col sm:animate-slide-left bg-white rounded-none shadow-2xl w-full max-w-lg overflow-y-auto h-[100dvh] sm:h-screen"> 
-           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-800">Confirm Study Start</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Review vial & materials before inoculation.</p>
               </div>
               <button onClick={() => setStartModal(false)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-           <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5">
               {startInfoLoading ? (
-               <div className="flex items-center justify-center py-8 gap-3 text-slate-400">
+                <div className="flex items-center justify-center py-8 gap-3 text-slate-400">
                   <Loader2 className="w-5 h-5 animate-spin" /> Loading study info…
                 </div>
               ) : (
                 <>
                   {/* Study identity */}
-                 <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
+                  <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
                     <p className="text-[10px] font-black text-teal-500 uppercase tracking-wider mb-1">Study</p>
                     <p className="font-black text-slate-800">{study.name}</p>
                     {study.study_code && <p className="text-xs font-mono text-slate-500 mt-0.5">{study.study_code}</p>}
@@ -904,7 +904,7 @@ export default function GrowthStudyDetailPage() {
                   {startInfo?.has_vial && startInfo?.vial ? (
                     <div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Vial to be used</p>
-                     <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 flex items-center gap-3">
+                      <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 flex items-center gap-3">
                         <TestTube2 className="w-4 h-4 text-violet-600 shrink-0" />
                         <div>
                           <p className="text-sm font-black text-violet-800 font-mono">{startInfo.vial.vial_code}</p>
@@ -914,7 +914,7 @@ export default function GrowthStudyDetailPage() {
                       </div>
                     </div>
                   ) : startInfo?.has_vial && !startInfo?.vial ? (
-                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs font-bold text-amber-700">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs font-bold text-amber-700">
                       No vial linked to this study. Vial can only be selected during study creation.
                     </div>
                   ) : null}
@@ -925,10 +925,10 @@ export default function GrowthStudyDetailPage() {
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
                         Media ingredients — scaled to {study.volume_ml} mL
                       </p>
-                     <div className="space-y-3">
+                      <div className="space-y-3">
                         {startInfo.ingredients.map((ing, i) => (
                           <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-                           <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between">
                               <span className="text-xs font-black text-slate-700">{ing.name}</span>
                               <span className="text-xs font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                                 {ing.quantity_needed} {ing.unit}
@@ -964,7 +964,7 @@ export default function GrowthStudyDetailPage() {
                   )}
 
                   {startInfo?.has_formulation === false && (
-                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-500">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-500">
                       No linked formulation — inventory deduction skipped.
                     </div>
                   )}
@@ -988,7 +988,7 @@ export default function GrowthStudyDetailPage() {
 
                   {startErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{startErr}</p>}
 
-                 <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3 pt-2">
                     <button onClick={() => setStartModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">
                       Cancel
                     </button>
@@ -1007,17 +1007,17 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Plate Observation Modal ── */}
       {modal?.type === 'plate' && (
-       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-slate-900/70 backdrop-blur-sm">
-<div className="flex flex-col sm:animate-slide-left bg-white rounded-none shadow-2xl w-full max-w-lg overflow-y-auto h-[100dvh] sm:h-screen"> 
-           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-800">Plate Observation</h3>
                 {modal.tp && <p className="text-xs text-slate-500 mt-0.5">T+{modal.tp.planned_hour}h time point</p>}
               </div>
               <button onClick={() => setModal(null)} className="p-2 rounded-full hover:bg-slate-100"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-           <div className="p-6 space-y-4">
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={LabelCls}>Time Point (h) *</label>
                   <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
@@ -1067,9 +1067,9 @@ export default function GrowthStudyDetailPage() {
                     </div>
                   </>
                 ) : null}
-               <div className="col-span-2">
+                <div className="col-span-2">
                   <label className={LabelCls}>Result</label>
-                 <div className="flex gap-2">
+                  <div className="flex gap-2">
                     {(pForm.observation_type === 'sterility'
                       ? ['sterile', 'contaminated']
                       : ['normal_growth', 'contaminated', 'pending']
@@ -1090,7 +1090,7 @@ export default function GrowthStudyDetailPage() {
                 <textarea className={InputCls} rows={1} value={pForm.notes || ''} onChange={e => setPForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
               {modalErr && <p className="text-xs text-red-600 font-bold">{modalErr}</p>}
-             <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                 <button onClick={savePlate} disabled={modalSaving || !pForm.time_point_hours}
                   className="flex-1 py-3 bg-violet-700 text-white font-black rounded-2xl text-sm hover:bg-violet-800 disabled:opacity-50 flex items-center justify-center gap-2"
@@ -1105,9 +1105,9 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Edit Study Modal ── */}
       {editModal && (
-       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-slate-900/70 backdrop-blur-sm">
-<div className="flex flex-col sm:animate-slide-left h-[100dvh] sm:h-screen bg-white rounded-none shadow-2xl w-full max-w-xl overflow-y-auto max-h-[92vh]"> 
-           <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto max-h-[92vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
                 <h3 className="font-black text-slate-800">Edit Study</h3>
                 <p className="text-xs text-slate-500 mt-0.5 font-mono">{study.study_code}</p>
@@ -1116,14 +1116,14 @@ export default function GrowthStudyDetailPage() {
             </div>
 
             {editMetaLoading ? (
-             <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+              <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
                 <Loader2 className="w-5 h-5 animate-spin" /> Loading…
               </div>
             ) : (
-             <div className="p-6 space-y-5">
+              <div className="p-6 space-y-5">
 
                 {/* ── Identity ── */}
-               <div className="space-y-4">
+                <div className="space-y-4">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Identity</p>
                   <div>
                     <label className={LabelCls}>Study Name *</label>
@@ -1131,7 +1131,7 @@ export default function GrowthStudyDetailPage() {
                   </div>
                   <div>
                     <label className={LabelCls}>Study Type</label>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[['growth_curve','Growth Curve'],['fermentation','Fermentation']].map(([v,l]) => (
                         <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
                           className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
@@ -1148,9 +1148,9 @@ export default function GrowthStudyDetailPage() {
                 <hr className="border-slate-100" />
 
                 {/* ── Isolate ── */}
-               <div className="space-y-3">
+                <div className="space-y-3">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
-                 <div className="flex gap-3">
+                  <div className="flex gap-3">
                     {[['strain','Cell Bank Strain'],['prep','Preparation / Vial']].map(([v,l]) => (
                       <button key={v} type="button"
                         onClick={() => setEditForm(f => ({ ...f, isolate_source: v, cell_bank_strain_id: '', cell_bank_preparation_id: '', vial_id: '' }))}
@@ -1192,7 +1192,7 @@ export default function GrowthStudyDetailPage() {
                 <hr className="border-slate-100" />
 
                 {/* ── Media ── */}
-               <div className="space-y-3">
+                <div className="space-y-3">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
                   <select className={InputCls} value={editForm.formulation_id} onChange={e => setEditForm(f => ({ ...f, formulation_id: e.target.value, media_name: '' }))}>
                     <option value="">Select from Formulation Library…</option>
@@ -1206,9 +1206,9 @@ export default function GrowthStudyDetailPage() {
                 <hr className="border-slate-100" />
 
                 {/* ── Conditions ── */}
-               <div className="space-y-3">
+                <div className="space-y-3">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Vessel Type</label>
                       <select className={InputCls} value={editForm.vessel_type} onChange={e => setEditForm(f => ({ ...f, vessel_type: e.target.value }))}>
@@ -1256,7 +1256,7 @@ export default function GrowthStudyDetailPage() {
 
                 {editErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{editErr}</p>}
 
-               <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-2">
                   <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                   <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
                     className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
@@ -1272,10 +1272,10 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Delete Confirmation ── */}
       {deleteConfirm && (
-       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-         <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                 <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
@@ -1283,12 +1283,12 @@ export default function GrowthStudyDetailPage() {
                 <p className="text-xs text-slate-500 mt-0.5">This will permanently delete all measurements, time points, and plate observations.</p>
               </div>
             </div>
-           <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-xs font-black text-red-700">{study.study_code} — {study.name}</p>
               {study.cell_bank_vials && <p className="text-[10px] text-red-500 mt-0.5">Vial {study.cell_bank_vials.vial_code} will be restored to Available.</p>}
             </div>
             {deleteErr && <p className="text-xs text-red-600 font-bold">{deleteErr}</p>}
-           <div className="flex gap-3">
+            <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
               <button onClick={deleteStudy} disabled={deleteLoading}
                 className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"

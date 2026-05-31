@@ -178,11 +178,11 @@ export default function EquipmentPage() {
   }, [equipment, searchTerm, statusFilter, sortOrder, batchUsageMap]);
 
 
-  if (loading) return<div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
+  if (loading) return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-teal-800" /></div>;
 
   return (
-   <div className="max-w-7xl mx-auto space-y-6 pb-20">
-     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Equipment Master Registry</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
@@ -194,8 +194,8 @@ export default function EquipmentPage() {
         )}
       </div>
 
-     <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
-       <div className="relative flex-1 min-w-[220px]">
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             value={searchTerm}
@@ -217,9 +217,9 @@ export default function EquipmentPage() {
         </select>
       </div>
 
-     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEquipment.length === 0 ? (
-         <div className="md:col-span-2 lg:col-span-3 py-16 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-sm font-bold text-gray-400">
+          <div className="md:col-span-2 lg:col-span-3 py-16 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-sm font-bold text-gray-400">
             No equipment matches the current search.
           </div>
         ) : filteredEquipment.map((device) => {
@@ -227,18 +227,18 @@ export default function EquipmentPage() {
           const isNearDue = device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
 
           return (
-            <div key={device.id} className="bg-white rounded-none border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-teal-950/5 transition-all">
-             <div className={`p-6 ${device.status === 'Operational' ? 'bg-teal-50/50' : 'bg-red-50/50'}`}>
-               <div className="flex justify-between items-start mb-4">
-                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-teal-800 border border-gray-100">
+            <div key={device.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-teal-950/5 transition-all">
+              <div className={`p-6 ${device.status === 'Operational' ? 'bg-teal-50/50' : 'bg-red-50/50'}`}>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-teal-800 border border-gray-100">
                     <Database className="w-6 h-6" />
                   </div>
-                 <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-col items-end gap-2">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${device.status === 'Operational' ? 'bg-teal-700 text-white' : 'bg-red-600 text-white'}`}>
                       {device.status}
                     </span>
                     {isAdmin && (
-                     <div className="flex gap-2">
+                      <div className="flex gap-2">
                         <button 
                           onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}
                           className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest bg-white px-2 py-1 rounded-lg border border-teal-100 shadow-sm transition-all"
@@ -259,9 +259,9 @@ export default function EquipmentPage() {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
               </div>
 
-             <div className="p-6 flex-1 space-y-4">
-               <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
-                 <div className="flex items-center justify-between mb-2">
+              <div className="p-6 flex-1 space-y-4">
+                <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                  <div className="flex items-center justify-between mb-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Calibration Sync</p>
                     {isCalibrationDue ? <AlertTriangle className="w-4 h-4 text-red-600" /> : <Shield className="w-4 h-4 text-teal-600" />}
                   </div>
@@ -272,9 +272,9 @@ export default function EquipmentPage() {
                 </div>
 
                 {batchUsageMap[device.id] && (
-                 <div className="px-4 py-3 bg-navy/5 rounded-2xl border border-navy/10">
+                  <div className="px-4 py-3 bg-navy/5 rounded-2xl border border-navy/10">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Last used in</p>
-                   <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                       <Link href={`/batches/${batchUsageMap[device.id].id}`} className="text-xs font-black text-navy hover:underline font-mono tracking-wider">
                         {batchUsageMap[device.id].batch_id}
                       </Link>
@@ -285,7 +285,7 @@ export default function EquipmentPage() {
                   </div>
                 )}
 
-               <div className="flex gap-2">
+                <div className="flex gap-2">
                   <button
                     disabled={!['admin', 'ceo', 'cto'].includes(role)}
                     onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }}
@@ -306,9 +306,9 @@ export default function EquipmentPage() {
       </div>
 
       {isModalOpen && (
-       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
-<div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-lg shadow-2xl overflow-hidden"> 
-           <div className="px-8 py-6 bg-teal-800 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="px-8 py-6 bg-teal-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
               <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">{modalMode === 'edit' ? 'Update Compliance Details' : 'Asset Control - IDMS v2'}</p>
             </div>
@@ -319,7 +319,7 @@ export default function EquipmentPage() {
                   {...regEquip('name')} placeholder="e.g. Bioreactor 01" />
                 {eqErrors.name && <p className="text-red-500 text-xs mt-1">{eqErrors.name.message}</p>}
               </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Model / Brand</label>
                   <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
@@ -345,7 +345,7 @@ export default function EquipmentPage() {
                   <option value="Under Maintenance">Under Maintenance</option>
                 </select>
               </div>
-             <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setIsModalOpen(false); resetEquip(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isEqSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
                   {isEqSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : modalMode === 'edit' ? 'Save Asset Changes' : 'Register Asset'}
@@ -357,15 +357,15 @@ export default function EquipmentPage() {
       )}
 
       {isMaintenanceOpen && activeDevice && (
-       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
-<div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-lg shadow-2xl overflow-hidden"> 
-           <div className="px-8 py-6 bg-slate-800 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
               <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance &amp; Calibration Log</p>
             </div>
             <form onSubmit={handMaint(onSubmitMaintenance)} className="p-8 space-y-5">
               <input type="hidden" {...regMaint('equipment_id')} />
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Log Date</label>
                   <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
@@ -398,7 +398,7 @@ export default function EquipmentPage() {
                   {...regMaint('result')} placeholder="Maintenance performed..."/>
                 {mxErrors.result && <p className="text-red-500 text-xs mt-1">{mxErrors.result.message}</p>}
               </div>
-             <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setIsMaintenanceOpen(false); setActiveDevice(null); resetMaint(); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isMxSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
                   {isMxSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Log'}
@@ -411,16 +411,16 @@ export default function EquipmentPage() {
 
       {/* Confirmation Modal */}
       {deletingId && (
-       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
-         <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
-           <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
+            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2">Decommission Asset?</h2>
             <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
               This will permanently remove the equipment and all its calibration/maintenance history from the registry.
             </p>
-           <div className="flex gap-3">
+            <div className="flex gap-3">
               <button 
                 onClick={() => setDeletingId(null)}
                 className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
