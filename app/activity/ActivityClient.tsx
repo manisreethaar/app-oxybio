@@ -1068,8 +1068,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── EDIT REQUEST MODAL (non-admin) ────────────────────────── */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 space-y-4 h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-black text-slate-800 text-base">Request Edit</h3>

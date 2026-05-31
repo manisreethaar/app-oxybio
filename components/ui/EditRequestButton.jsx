@@ -121,7 +121,7 @@ export default function EditRequestButton({
 
       {open && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl overflow-y-auto">
             <button
               onClick={() => setOpen(false)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
