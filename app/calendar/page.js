@@ -34,6 +34,12 @@ export default function RegulatoryCalendarPage() {
 
   useEffect(() => {
     fetchMilestones();
+
+    const channel = supabase.channel('calendar_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'regulatory_milestones' }, () => fetchMilestones())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

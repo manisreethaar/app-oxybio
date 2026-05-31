@@ -46,7 +46,14 @@ export default function CompliancePage() {
   }, []);
 
   useEffect(() => {
-    if (employeeProfile) fetchCompliance();
+    if (!employeeProfile) return;
+    fetchCompliance();
+
+    const channel = supabase.channel('compliance_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'compliance_items' }, () => fetchCompliance())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 

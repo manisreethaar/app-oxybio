@@ -252,7 +252,17 @@ export default function BatchesPage() {
     }
   };
 
-  useEffect(() => { fetchBatches(); fetchFormulations(); fetchBatchOptions(); fetchPendingIds(); }, [fetchBatches, fetchFormulations, fetchBatchOptions]);
+  useEffect(() => {
+    fetchBatches(); fetchFormulations(); fetchBatchOptions(); fetchPendingIds();
+
+    // Realtime — batch stage advances, flask updates, new batches appear live
+    const channel = supabase.channel('batches_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' }, () => fetchBatches())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batch_flasks' }, () => fetchBatches())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [fetchBatches, fetchFormulations, fetchBatchOptions]);
 
   // ─── Batch Creation ────────────────────────────────────────
   const handleBatchSubmit = async (data) => {

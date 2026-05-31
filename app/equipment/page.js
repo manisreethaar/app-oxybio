@@ -63,6 +63,13 @@ export default function EquipmentPage() {
 
   useEffect(() => {
     fetchEquipment();
+
+    const channel = supabase.channel('equipment_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment' }, () => fetchEquipment())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calibration_logs' }, () => fetchEquipment())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
