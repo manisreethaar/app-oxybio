@@ -127,6 +127,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [showInactive, setShowInactive] = useState(false);
   
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -164,9 +165,13 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
   };
 
   const filtered = useMemo(() => {
-    if (!search) return employees;
-    return employees.filter(e => e.full_name?.toLowerCase().includes(search.toLowerCase()) || e.employee_code?.toLowerCase().includes(search.toLowerCase()));
-  }, [employees, search]);
+    let result = employees;
+    if (!showInactive) {
+      result = result.filter(e => e.is_active);
+    }
+    if (!search) return result;
+    return result.filter(e => e.full_name?.toLowerCase().includes(search.toLowerCase()) || e.employee_code?.toLowerCase().includes(search.toLowerCase()));
+  }, [employees, search, showInactive]);
 
   const groupedEmployees = useMemo(() => {
       const groups = {};
@@ -339,16 +344,24 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         )}
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
-        <input
-          type="text"
-          placeholder="Search by name or code..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 glass-card rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy placeholder:text-slate-400"
-        />
+      {/* Search Bar & Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
+          <input
+            type="text"
+            placeholder="Search by name or code..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 glass-card rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy placeholder:text-slate-400"
+          />
+        </div>
+        {isAdmin && (
+          <label className="flex items-center gap-2 px-6 py-4 glass-card rounded-2xl cursor-pointer text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors whitespace-nowrap border border-slate-100 shadow-sm">
+            <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4"/>
+            Show Inactive Members
+          </label>
+        )}
       </div>
 
       {/* Employee Cards Grid Grouped */}
@@ -399,9 +412,19 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             {emp.blood_group && <div className="flex items-center gap-2"><Droplets className="w-3.5 h-3.5 text-red-400"/><span className="font-bold text-red-600">{emp.blood_group}</span></div>}
                             </div>
 
-                            <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all">
-                                <CreditCard className="w-3.5 h-3.5"/> View ID Card
-                            </button>
+                            <div className="flex gap-2 w-full mt-2">
+                                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/60 hover:bg-white rounded-xl text-xs font-black text-navy border border-white transition-all shadow-sm">
+                                    <CreditCard className="w-3.5 h-3.5"/> View ID
+                                </button>
+                                {isAdmin && (
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setEditingEmployee(emp); }} 
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-teal-50 hover:bg-teal-100 rounded-xl text-xs font-black text-teal-700 border border-teal-100 transition-all shadow-sm"
+                                    >
+                                        <UserCog className="w-3.5 h-3.5"/> Edit
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         ))}
                     </div>
