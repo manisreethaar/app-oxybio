@@ -201,14 +201,21 @@ export async function DELETE(request, { params }) {
     const deleteAccess = canDeleteLabNotebookEntry(currentEntry, emp, user.email);
     if (!deleteAccess.allowed) return NextResponse.json({ success: false, error: deleteAccess.error }, { status: 403 });
 
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get('permanent') === 'true';
+
+    if (permanent) {
+      const { error } = await supabase.from('lab_notebook_entries').delete().eq('id', id);
+      if (error) throw error;
+      return NextResponse.json({ success: true, message: 'LNB entry permanently deleted.' });
+    }
+
     const { error } = await supabase
       .from('lab_notebook_entries')
-      .delete()
+      .update({ archived_at: new Date().toISOString(), archived_by: emp.id })
       .eq('id', id);
-
     if (error) throw error;
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'LNB entry archived.' });
   } catch (error) {
     console.error('Digital LNB API DELETE [id] Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
