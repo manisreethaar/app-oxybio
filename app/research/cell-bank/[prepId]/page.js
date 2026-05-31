@@ -84,7 +84,7 @@ function VialRow({ vial, isAdmin, onAction }) {
           <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${vial.status === 'Available' ? 'bg-emerald-100 text-emerald-700' : vial.status === 'Used' ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
             {vial.status}
           </span>
-          {vial.used_in_batch_id && <p className="text-[10px] text-amber-700 font-semibold mt-0.5">Used in batch</p>}
+          {vial.used_in_batch_id && <p className="text-[10px] text-amber-700 font-semibold mt-0.5">Used in: <Link href={`/batches/${vial.used_in_batch_id}`} className="hover:underline text-navy font-bold">{vial.batches?.batch_id || 'Batch'}</Link></p>}
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           {isAdmin && vial.status === 'Available' && (
@@ -600,7 +600,10 @@ export default function CellBankDetailPage() {
                   )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {vials.map(v => (
+                  {[...vials].sort((a, b) => {
+                    if (a.status !== b.status) return a.status === 'Available' ? -1 : 1;
+                    return (a.vial_code || '').localeCompare(b.vial_code || '');
+                  }).map(v => (
                     <VialRow key={v.id} vial={v} isAdmin={isAdmin} onAction={fetchPrep}/>
                   ))}
                 </div>

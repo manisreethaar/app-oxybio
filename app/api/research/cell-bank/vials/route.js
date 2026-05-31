@@ -23,6 +23,7 @@ export async function GET(request) {
       .select(`
         id, vial_code, storage_temp, freezer_id, rack, box, position, status,
         used_in_batch_id, used_at, notes, created_at,
+        batches!used_in_batch_id(id, batch_id),
         cell_bank_preparations!preparation_id(
           id, prep_code, type, passage_number,
           cell_bank_strains(id, name, accession_number, strain_short_code)

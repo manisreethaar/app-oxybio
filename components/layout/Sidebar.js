@@ -95,7 +95,7 @@ export default function Sidebar() {
 
   const renderNavItem = (item) => {
     if (!item.show) return null;
-    const isActive = pathname.startsWith(item.href);
+    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
     const Icon = item.icon;
     return (
       <li key={item.name}>
