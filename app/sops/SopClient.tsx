@@ -11,18 +11,25 @@ import { notifyEmployee } from '@/lib/notifyEmployee';
 import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+const FALLBACK_QUIZ = [
+  { q: "What is the primary objective of this SOP?", options: ["General reading", "Strict compliance", "Optional reference"], correct: 1 },
+  { q: "Who is responsible for executing this procedure?", options: ["Any staff", "Trained personnel only", "External contractors"], correct: 1 }
+];
+
 const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  category: z.enum(['Fermentation', 'QC', 'Sanitation', 'Safety']),
+  category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
   file: z.any().refine((files) => files && files.length > 0, "PDF file is required")
 });
+
 
 export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const { role, employeeProfile, loading: authLoading } = useAuth() as any;
   const toast = useToast();
   const [sops, setSops] = useState(initialSops || []);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<string[]>(['Fermentation', 'QC', 'Sanitation', 'Safety']);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -50,11 +57,14 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
 
   useEffect(() => { 
     if (employeeProfile) {
+      // Fetch categories from lookup_categories table
+      supabase.from('lookup_categories').select('name').eq('type', 'sop').order('name')
+        .then(({ data }) => { if (data?.length) setCategories(data.map((c: any) => c.name)); });
       if (!initialSops || initialSops.length === 0) {
         fetchSOPs(); 
       }
     }
-  }, [employeeProfile, fetchSOPs, initialSops]);
+  }, [employeeProfile, fetchSOPs, initialSops, supabase]);
 
   const [showAckModal, setShowAckModal] = useState<any>(null);
   const [signatureText, setSignatureText] = useState("");
@@ -64,19 +74,16 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
 
   const handleQuizSubmit = () => {
-    const questions = showAckModal.quiz_questions || [
-      { q: "What is the primary objective of this procedure?", options: ["Compliance only", "Safety and Quality", "Speed of execution", "Documentation only"], a: 1 },
-      { q: "Which department is responsible for oversight?", options: ["Marketing", "Sales", "Quality Assurance", "Logistics"], a: 2 },
-      { q: "When should deviations be reported?", options: ["End of week", "Immediately", "Never", "Only if noticed by admin"], a: 1 }
-    ];
+    // Use quiz_data from DB, fall back to generic fallback
+    const questions = (showAckModal.quiz_data && showAckModal.quiz_data.length > 0)
+      ? showAckModal.quiz_data
+      : FALLBACK_QUIZ;
 
     let score = 0;
-    userAnswers.forEach((ans, idx) => { if (ans === questions[idx]?.a) score += 1; });
+    userAnswers.forEach((ans, idx) => { if (ans === questions[idx]?.correct) score += 1; });
     const finalPercent = (score / questions.length) * 100;
     setQuizScore(finalPercent);
-    if (finalPercent === 100) {
-      // Success state handled in UI
-    } else {
+    if (finalPercent < 100) {
       toast.warn(`Validation Failure: ${finalPercent}%. A 100% score is required to proceed with digital acknowledgment.`);
     }
   };
@@ -194,7 +201,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         <div className="flex flex-wrap gap-2">
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
             <option value="All">All Categories</option>
-            {['Fermentation', 'QC', 'Sanitation', 'Safety'].map(c => <option key={c} value={c}>{c}</option>)}
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 outline-none">
             <option value="All">All Signatures</option>
@@ -270,11 +277,8 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
 
             {quizStarted && quizScore < 100 && (
               <div className="space-y-6">
-                {(showAckModal.quiz_questions || [
-                  { q: "What is the primary objective of this procedure?", options: ["Compliance only", "Safety and Quality", "Speed of execution", "Documentation only"], a: 1 },
-                  { q: "Which department is responsible for oversight?", options: ["Marketing", "Sales", "Quality Assurance", "Logistics"], a: 2 },
-                  { q: "When should deviations be reported?", options: ["End of week", "Immediately", "Never", "Only if noticed by admin"], a: 1 }
-                ]).map((q: any, qIdx: number) => (
+                {((showAckModal.quiz_data?.length > 0 ? showAckModal.quiz_data : FALLBACK_QUIZ)
+                ).map((q: any, qIdx: number) => (
                   <div key={qIdx} className="space-y-2">
                     <p className="text-xs font-bold text-gray-700">{qIdx + 1}. {q.q}</p>
                     <div className="grid gap-2">
@@ -329,7 +333,9 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 mb-1">Category</label>
-                  <select {...regUpload('category')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-sm font-semibold"><option value="Fermentation">Fermentation</option><option value="QC">QC</option><option value="Sanitation">Sanitation</option><option value="Safety">Safety</option></select>
+                  <select {...regUpload('category')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-sm font-semibold">
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 mb-1">Version</label>

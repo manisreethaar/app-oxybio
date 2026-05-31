@@ -8,9 +8,10 @@ import dynamic from 'next/dynamic';
 const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 const MispunchContent = dynamic(() => import('./MispunchContent'), { ssr: false });
 
-const TARGET_LAT = 12.716065;
-const TARGET_LNG = 77.870016;
-const MAX_RADIUS_METERS = 300;
+// Geofence defaults — overridden by system_config DB row on mount
+const DEFAULT_LAT = 12.716065;
+const DEFAULT_LNG = 77.870016;
+const DEFAULT_RADIUS = 300;
 
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
@@ -42,7 +43,9 @@ export default function AttendancePage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
   const [onLeaveToday, setOnLeaveToday] = useState([]);
-  
+  // Geofence config — fetched from system_config, falls back to defaults
+  const [geofence, setGeofence] = useState({ lat: DEFAULT_LAT, lng: DEFAULT_LNG, radius: DEFAULT_RADIUS });
+
   const [showWebcam, setShowWebcam] = useState(false);
   const [geoData, setGeoData] = useState(null);
   const [checkInError, setCheckInError] = useState('');
@@ -189,13 +192,31 @@ export default function AttendancePage() {
   const onTimeCount = useMemo(() => myHistory.slice(0, 30).filter(l => getShiftStatus(l.check_in_time)?.label === 'On Time').length, [myHistory]);
 
   useEffect(() => {
-    if (employeeProfile) fetchAttendanceData();
+    if (!employeeProfile) return;
+
+    // Fetch geofence config from DB
+    supabase.from('system_config').select('value').eq('key', 'attendance_geofence').maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          setGeofence({ lat: data.value.TARGET_LAT, lng: data.value.TARGET_LNG, radius: data.value.MAX_RADIUS_METERS });
+        }
+      });
+
+    fetchAttendanceData();
+
+    // Realtime: refresh team roster when any attendance log changes
+    const channel = supabase
+      .channel('attendance-roster-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_log' }, () => fetchAttendanceData())
+      .subscribe();
+
     const interval = setInterval(() => {
       if (todayLog && !todayLog.check_out_time) {
-        setTodayLog({ ...todayLog, current_time: new Date() });
+        setTodayLog(prev => prev ? { ...prev, current_time: new Date() } : prev);
       }
     }, 60000);
-    return () => clearInterval(interval);
+
+    return () => { clearInterval(interval); supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile, todayLog?.id]);
 
@@ -238,7 +259,7 @@ export default function AttendancePage() {
     setCheckInError('');
     setActionLoading(true);
     if (overrideLocation) {
-      setGeoData({ lat: TARGET_LAT, lng: TARGET_LNG, in_geofence: true, distance: 0 });
+      setGeoData({ lat: geofence.lat, lng: geofence.lng, in_geofence: true, distance: 0 });
       setShowWebcam(true);
       setActionLoading(false);
       return;
@@ -261,17 +282,17 @@ export default function AttendancePage() {
             setTimeout(tryGetPosition, 8000);
             return;
           }
-          const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
-          if (distance > MAX_RADIUS_METERS) {
+          const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
+          if (distance > geofence.radius) {
             if (accuracy > ACCURACY_THRESHOLD) {
               setCheckInError(`📡 GPS signal too weak (accuracy ±${Math.round(accuracy)}m). Please: (1) Step near a window, (2) Enable WiFi, (3) Wait 30 seconds and tap Check In again.`);
             } else {
-              setCheckInError(`🚫 Location verified: You are ${Math.round(distance)}m from the facility. You must be within ${MAX_RADIUS_METERS}m to check in.`);
+              setCheckInError(`🚫 Location verified: You are ${Math.round(distance)}m from the facility. You must be within ${geofence.radius}m to check in.`);
             }
             setActionLoading(false);
           } else {
             setCheckInError('');
-            setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= MAX_RADIUS_METERS, distance: Math.round(distance) });
+            setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= geofence.radius, distance: Math.round(distance) });
             setShowWebcam(true);
             setActionLoading(false);
           }
@@ -362,12 +383,12 @@ export default function AttendancePage() {
             setTimeout(tryGetPosition, 8000);
             return;
           }
-          const distance = getDistanceFromLatLonInM(latitude, longitude, TARGET_LAT, TARGET_LNG);
-          if (distance > MAX_RADIUS_METERS) {
+          const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
+          if (distance > geofence.radius) {
             if (accuracy > ACCURACY_THRESHOLD) {
               setCheckInError(`📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`);
             } else {
-              setCheckInError(`🚫 You are ${Math.round(distance)}m from the facility. You must be within ${MAX_RADIUS_METERS}m to check out.`);
+              setCheckInError(`🚫 You are ${Math.round(distance)}m from the facility. You must be within ${geofence.radius}m to check out.`);
             }
             setActionLoading(false);
             return;
@@ -679,7 +700,7 @@ export default function AttendancePage() {
               <h3 className="text-xl font-black text-slate-800">Live Face Verification</h3>
               <p className="text-sm text-slate-500 font-medium mt-1">Keep your face in the oval and move slightly.</p>
               <div className="mt-2 text-[10px] font-bold text-teal-700 bg-teal-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
-                <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {MAX_RADIUS_METERS}m)
+                <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {geofence.radius}m)
               </div>
             </div>
             <div className="relative bg-slate-900 aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
