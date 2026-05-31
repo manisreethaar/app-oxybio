@@ -46,7 +46,7 @@ const ROLE_TO_CODE = {
   'cto':             'CT',
   'research_fellow': 'RF',
   'scientist':       'SC',
-  'research_intern': 'RI',
+  'research_intern': 'IN',
   'intern':          'IN',
   'admin':           'AD',
   'staff':           'ST',

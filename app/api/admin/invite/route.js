@@ -80,7 +80,7 @@ export async function POST(req) {
     // Handle employee code: check released codes first, or generate if not provided
     const ROLE_TO_CODE = {
       'ceo': 'CE', 'cto': 'CT', 'research_fellow': 'RF', 'scientist': 'SC',
-      'research_intern': 'RI', 'intern': 'IN', 'admin': 'AD', 'staff': 'ST',
+      'research_intern': 'IN', 'intern': 'IN', 'admin': 'AD', 'staff': 'ST',
     };
     const codePrefix = designation_code || ROLE_TO_CODE[role] || 'ST';
 
