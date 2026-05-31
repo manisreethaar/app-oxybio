@@ -59,7 +59,9 @@
       "Bash(mkdir -p \"E:/OXYBIO/app/api/batches/[batchId]/media-deduct\")",
       "mcp__dfbf0c87-e04d-4406-b1cf-df449ad1e0c0__list_migrations",
       "Read(//mnt/e/**)",
-      "Bash(grep -rn \"status.*Decommission\\\\|Decommissioned\\\\|status.*retired\\\\|status.*cancelled\\\\|status.*Expired\\\\|is_active.*false\" app/api --include=\"*.js\" -l)"
+      "Bash(grep -rn \"status.*Decommission\\\\|Decommissioned\\\\|status.*retired\\\\|status.*cancelled\\\\|status.*Expired\\\\|is_active.*false\" app/api --include=\"*.js\" -l)",
+      "Bash(curl -s -w \"\\\\n\\\\nHTTP Status: %{http_code}\" -X GET \"https://app-oxybio.vercel.app/api/cron/reminders\" -H \"Authorization: Bearer f6051805478bbe684015b3b92c6dbee75fe06fecbdee37c8959cff3bb6f0a4a7\" -H \"Content-Type: application/json\")",
+      "Bash(curl -v -s -X GET \"https://app-oxybio.vercel.app/api/cron/reminders\" -H \"Authorization: Bearer f6051805478bbe684015b3b92c6dbee75fe06fecbdee37c8959cff3bb6f0a4a7\")"
     ]
   }
 }
