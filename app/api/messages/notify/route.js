@@ -7,7 +7,7 @@ export async function POST(req) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -18,6 +18,17 @@ export async function POST(req) {
     }
 
     const supabaseAdmin = createAdminClient();
+
+    // Resolve the auth user's employee record (employees.id !== auth.uid())
+    const { data: senderEmployee, error: senderErr } = await supabaseAdmin
+      .from('employees')
+      .select('id, full_name')
+      .ilike('email', user.email)
+      .single();
+
+    if (senderErr || !senderEmployee) {
+      return NextResponse.json({ error: 'Sender employee record not found' }, { status: 403 });
+    }
 
     // 1. Fetch the message details
     const { data: message, error: msgError } = await supabaseAdmin
@@ -30,26 +41,19 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });
     }
 
-    // Ensure the sender is the one who triggered this
-    if (message.sender_id !== user.id) {
+    // Ensure the authenticated user is actually the sender of this message
+    if (message.sender_id !== senderEmployee.id) {
       return NextResponse.json({ error: 'Unauthorized to notify for this message' }, { status: 403 });
     }
 
-    // Fetch sender's name
-    const { data: sender } = await supabaseAdmin
-      .from('employees')
-      .select('full_name')
-      .eq('id', user.id)
-      .single();
-    
-    const senderName = sender?.full_name?.split(' ')[0] || 'Someone';
+    const senderName = senderEmployee.full_name?.split(' ')[0] || 'Someone';
 
-    // 2. Fetch other chat members
+    // 2. Fetch other chat members (exclude the sender)
     const { data: members, error: membersError } = await supabaseAdmin
       .from('chat_members')
       .select('employee_id')
       .eq('chat_id', message.chat_id)
-      .neq('employee_id', user.id);
+      .neq('employee_id', senderEmployee.id);
 
     if (membersError || !members || members.length === 0) {
       return NextResponse.json({ success: true, message: 'No other members to notify' });
@@ -69,8 +73,8 @@ export async function POST(req) {
     const url = `/messages`;
 
     // 4. Send notifications concurrently
-    const notifyPromises = members.map(member => 
-      sendServerNotification(member.employee_id, title, body, url, 'message')
+    const notifyPromises = members.map(member =>
+      sendServerNotification(member.employee_id, title, body, url, 'info')
     );
 
     await Promise.allSettled(notifyPromises);

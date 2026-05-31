@@ -113,8 +113,13 @@ export default function MessagesPage() {
         .order('created_at', { ascending: false });
         
       if (chatsErr) throw chatsErr;
-      
+
       setChats(chatsData || []);
+      // Keep activeChat in sync with the latest data (e.g. new members added)
+      setActiveChat(prev => {
+        if (!prev) return prev;
+        return chatsData?.find(c => c.id === prev.id) || prev;
+      });
     } catch (err) {
       console.error('Error fetching chats:', err);
       toast.error('Failed to load chats');
