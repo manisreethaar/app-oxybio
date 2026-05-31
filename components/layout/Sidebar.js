@@ -86,7 +86,6 @@ export default function Sidebar() {
     {
       title: 'ADMIN',
       items: [
-        { name: 'User Management', href: '/admin/users',     icon: Users,     show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
         { name: 'Edit Approvals',  href: '/admin/approvals', icon: FileCheck, show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
         { name: 'System Settings', href: '/admin/settings',  icon: Settings,  show: ['admin', 'ceo', 'cto'].includes(effectiveRole) },
       ]
