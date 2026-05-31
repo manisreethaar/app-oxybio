@@ -659,7 +659,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Inventory & Supply Chain</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory & Supply Chain</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
         </div>
         <div className="flex gap-3 relative">

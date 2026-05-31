@@ -385,7 +385,7 @@ export default function CellBankPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-black text-gray-900">Cell Bank</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Cell Bank</h1>
           <p className="text-xs text-gray-500 mt-0.5">Master Cell Bank (MCB) and Working Cell Bank (WCB) management</p>
         </div>
         <div className="flex gap-2">

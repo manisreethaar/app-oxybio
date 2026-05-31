@@ -177,7 +177,7 @@ export default function EquipmentPage() {
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-teal-950 font-mono tracking-tighter">Equipment Master Registry</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Equipment Master Registry</h1>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
         </div>
         {isAdmin && (

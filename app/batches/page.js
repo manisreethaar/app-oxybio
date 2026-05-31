@@ -408,7 +408,7 @@ export default function BatchesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Production Batches</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Production Batches</h1>
           <p className="text-sm text-gray-500 mt-1">
             GMP-grade fermentation documentation — from flask to disposition.
           </p>

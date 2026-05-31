@@ -70,7 +70,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-teal-950 tracking-tight">
+        <h1 className="text-3xl font-black text-slate-800 tracking-tight">
           Good {greeting}, {getNameForGreeting(employeeProfile?.full_name)}
         </h1>
         <p className="text-gray-500 mt-1">

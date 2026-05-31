@@ -198,7 +198,7 @@ export default function LeavePage() {
   return (
     <div className="page-container">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Leave Management</h1>
+        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Leave Management</h1>
         <p className="text-sm text-gray-500 mt-1">Submit submittals and review platform attendance queries.</p>
       </div>
 

@@ -121,7 +121,7 @@ export default function DocumentsPage() {
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">Documents & SOPs</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Documents & SOPs</h1>
           <p className="text-gray-500 mt-1">Secure repository and official lab protocols.</p>
         </div>
         {activeTab === 'vault' && canDo('documents', 'upload') && (

@@ -48,7 +48,15 @@
       "Bash(xargs grep -l \"taste_panels\\\\|scores\\\\|avg_score\")",
       "Bash(mkdir \"E:\\\\OXYBIO\\\\app\\\\api\\\\lab-notebook\\\\[id]\\\\resync\")",
       "Bash(xargs grep -l \"shelf\")",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(npx vercel *)",
+      "Bash(npx next *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(npx vitest *)",
+      "Bash(Get-ChildItem -Path E:\\\\OXYBIO -Recurse -Filter \"*.js\" -Include \"*api*\", \"*inventory*\", \"*batch*\", \"*growth-study*\", \"*cell-bank*\")",
+      "Bash(Select-Object -First 50 FullName)",
+      "Bash(xargs grep -l \"inventory\\\\|deduct\\\\|stock\")",
+      "Bash(mkdir -p \"E:/OXYBIO/app/api/batches/[batchId]/media-deduct\")"
     ]
   }
 }
