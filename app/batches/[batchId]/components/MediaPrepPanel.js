@@ -45,7 +45,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     });
   }, [formulationIngredients]);
 
-  const fetch = useCallback(async () => {
+  const loadData = useCallback(async () => {
     let isCurrent = true;
     const { data: d } = await supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batch.id).single();
     if (!isCurrent) return;
@@ -86,7 +86,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     return () => { isCurrent = false; };
   }, [batch.id, supabase]); // eslint-disable-line
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const getUsageFor = (nameSubstring) => {
     const ing = formulationIngredients.find(i => i.name?.toLowerCase().includes(nameSubstring));
@@ -113,7 +113,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
     if (!entries.length) return;
 
-    const res = await fetch(`/api/batches/${batch.id}/media-deduct`, {
+    const res = await window.fetch(`/api/batches/${batch.id}/media-deduct`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ entries, employee_id: employeeProfile?.id }),
