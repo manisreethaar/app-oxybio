@@ -22,7 +22,8 @@ export async function GET() {
         batches (
           id,
           batch_id,
-          variant
+          variant,
+          status
         ),
         cell_bank_preparations (
           id,
