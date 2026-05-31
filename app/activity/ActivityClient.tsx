@@ -27,6 +27,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const [tab, setTab] = useState('feed'); 
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [equipmentList, setEquipmentList] = useState<any[]>([]);
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [filterEmployee, setFilterEmployee] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [activityOffset, setActivityOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   const [error, setError] = useState(null);
@@ -77,58 +83,88 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
   useEffect(() => {
     if (employeeProfile) {
-      if (!initialLogs || initialLogs.length === 0) {
-        fetchData();
-      }
+      fetchData();
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       setLogValue('start_time', oneHourAgo.toTimeString().slice(0, 5));
       setLogValue('end_time', now.toTimeString().slice(0, 5));
+
+      // Realtime: prepend new activity_log entries as they arrive
+      const isExecUser = ['admin', 'ceo', 'cto'].includes(role);
+      const channel = supabase
+        .channel('activity-log-live')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'activity_log' },
+          (payload) => {
+            if (!isMounted.current) return;
+            // For staff: only show own entries. For admin: show all.
+            if (!isExecUser && payload.new.employee_id !== employeeProfile?.id) return;
+            setActivities(prev => [{ ...payload.new, employees: { full_name: payload.new.employees?.full_name || '...' } }, ...prev]);
+          }
+        )
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (append = false) => {
+    if (!append) setLoading(true);
     setError(null);
 
     try {
-      // Fetch batches for dropdown — include all active statuses, not just fermenting
+      // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches')
         .select('batch_id, product_name, status')
         .in('status', ['fermenting', 'in-progress', 'testing', 'inoculation', 'media_prep', 'sterilisation', 'harvest', 'downstream', 'qc_hold'])
         .limit(20);
-      // Fetch equipment for dropdown
       const { data: equip } = await supabase.from('equipment').select('id, name, model, status').eq('status', 'Operational');
       if (!isMounted.current) return;
       setActiveBatches(batches || []);
       setEquipmentList(equip || []);
 
-      // Fetch activity log
+      // Build activity log query
+      const PAGE_SIZE = 50;
+      const offset = append ? activityOffset : 0;
+      const isExecUser = ['admin', 'ceo', 'cto'].includes(role);
+
       let query = supabase
         .from('activity_log')
-        .select('*, employees(full_name)')
-        .order('created_at', { ascending: false });
-      
-      const isExecUser = ['admin', 'ceo', 'cto'].includes(role);
-      
+        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, employees(full_name)')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1);
+
       if (isExecUser) {
-        query = query.limit(300); // Need more history for 7-day analytics
+        if (filterEmployee) query = query.eq('employee_id', filterEmployee);
+        if (filterDateFrom) query = query.gte('created_at', filterDateFrom);
+        if (filterDateTo)   query = query.lte('created_at', filterDateTo + 'T23:59:59');
       } else {
-        query = query.limit(50).eq('employee_id', employeeProfile?.id);
+        query = query.eq('employee_id', employeeProfile?.id);
       }
+
       const { data: logData } = await query;
       if (!isMounted.current) return;
-      setActivities(logData || []);
-      if (['admin', 'ceo', 'cto'].includes(role)) {
-        setIssues((logData || []).filter((a: any) => a.issue_observed));
+
+      const newLogs = logData || [];
+      setHasMore(newLogs.length === PAGE_SIZE);
+      if (append) {
+        setActivities(prev => [...prev, ...newLogs]);
+        setActivityOffset(offset + newLogs.length);
+      } else {
+        setActivities(newLogs);
+        setActivityOffset(newLogs.length);
       }
 
-      // ── Founder Brief data (admin only) ────────────────────────────────────────
-      if (['admin', 'ceo', 'cto'].includes(role)) {
-        const today = new Date().toISOString().split('T')[0];
+      if (isExecUser) {
+        const allLogs = append ? [...activities, ...newLogs] : newLogs;
+        setIssues(allLogs.filter((a: any) => a.issue_observed));
+      }
 
-        // Parallelize fetching to avoid consecutive await locks
+      // Founder Brief data (admin only)
+      if (isExecUser) {
+        const today = new Date().toISOString().split('T')[0];
         const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
           supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin'),
           supabase.from('attendance_log').select('employee_id').eq('date', today),
@@ -140,6 +176,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         if (!isMounted.current) return;
 
         const allStaff = staffRes.data || [];
+        setAllEmployees(allStaff);
         const todayLogs = logsRes.data || [];
         const overdueTasks = overdueRes.data || [];
         const pendingApprovals = approvalRes.data || [];
@@ -148,26 +185,17 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const checkedInIds = new Set(todayLogs.map((l: any) => l.employee_id));
         const present = allStaff.filter((s: any) => checkedInIds.has(s.id));
         const absent = allStaff.filter((s: any) => !checkedInIds.has(s.id));
+        const openIssues = newLogs.filter((a: any) => a.issue_observed && !a.founder_comment);
 
-        const openIssues = (logData || []).filter((a: any) => a.issue_observed && !a.founder_comment);
-
-        setBrief({
-          presentToday: present,
-          absentToday: absent,
-          overdueTasks,
-          pendingApprovals,
-          activeExperiments: activeExps,
-          openIssues,
-        });
+        setBrief({ presentToday: present, absentToday: absent, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
       }
     } catch (err) {
       console.error("Activity page fetch error:", err);
       if (isMounted.current) setError("Failed to load activity data. Please try again.");
     } finally {
-
       if (isMounted.current) setLoading(false);
     }
-  }, [supabase, role, employeeProfile]);
+  }, [supabase, role, employeeProfile, filterEmployee, filterDateFrom, filterDateTo, activityOffset, activities]);
 
   // High-Level Analytics Processing for CEO Dashboard
   const analyticsData = useMemo(() => {
@@ -323,20 +351,71 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         </nav>
       </div>
 
-      {/* Innovation 1: Priority Toggle */}
-      {tab === 'feed' && isAdmin && (
-        <div className="flex justify-end">
-          <button 
-            onClick={() => setPriorityOnly(!priorityOnly)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
-              priorityOnly 
-              ? 'bg-navy text-white border-navy shadow-lg' 
-              : 'bg-white text-slate-500 border-slate-200 hover:border-navy hover:text-navy text-gray-800'
-            }`}
+      {/* ── Feed Controls: filters + export ───────────────────── */}
+      {tab === 'feed' && (
+        <div className="flex flex-wrap items-end gap-3">
+          {isAdmin && (
+            <select
+              value={filterEmployee}
+              onChange={e => { setFilterEmployee(e.target.value); setActivityOffset(0); }}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-700 font-medium focus:ring-2 focus:ring-teal-500 outline-none"
+            >
+              <option value="">All Staff</option>
+              {allEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+            </select>
+          )}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">From</label>
+            <input type="date" value={filterDateFrom} onChange={e => { setFilterDateFrom(e.target.value); setActivityOffset(0); }}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">To</label>
+            <input type="date" value={filterDateTo} onChange={e => { setFilterDateTo(e.target.value); setActivityOffset(0); }}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" />
+          </div>
+          {(filterEmployee || filterDateFrom || filterDateTo) && (
+            <button onClick={() => { setFilterEmployee(''); setFilterDateFrom(''); setFilterDateTo(''); setActivityOffset(0); }}
+              className="px-3 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50">
+              Clear
+            </button>
+          )}
+          <button
+            onClick={() => {
+              const headers = ['Date', 'Employee', 'Start', 'End', 'Description', 'Issue?', 'Issue Detail'];
+              const rows = activities.map((a: any) => [
+                a.created_at?.split('T')[0] || '',
+                a.employees?.full_name || '',
+                a.start_time || '',
+                a.end_time || '',
+                `"${(a.activity_description || '').replace(/"/g, '""')}"`,
+                a.issue_observed ? 'Yes' : 'No',
+                `"${(a.issue_description || '').replace(/"/g, '""')}"`,
+              ]);
+              const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a'); a.href = url;
+              a.download = `activity_log_${new Date().toISOString().split('T')[0]}.csv`;
+              document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            }}
+            className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            <Zap className={`w-3.5 h-3.5 ${priorityOnly ? 'animate-pulse' : ''}`}/>
-            {priorityOnly ? 'PRIORITY MODE ON' : 'VIEW ALL LOGS'}
+            ↓ Export CSV
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setPriorityOnly(!priorityOnly)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                priorityOnly
+                ? 'bg-navy text-white border-navy shadow-lg'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-navy hover:text-navy text-gray-800'
+              }`}
+            >
+              <Zap className={`w-3.5 h-3.5 ${priorityOnly ? 'animate-pulse' : ''}`}/>
+              {priorityOnly ? 'PRIORITY MODE ON' : 'VIEW ALL LOGS'}
+            </button>
+          )}
         </div>
       )}
 
@@ -506,9 +585,6 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        </p>
                     </div>
                  </div>
-                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-navy rounded-full" style={{ width: '75%' }} />
-                 </div>
               </div>
 
               <div className="surface p-6">
@@ -523,9 +599,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        </p>
                     </div>
                  </div>
-                 <p className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 rotate-45"/> 2% vs last week
-                 </p>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
               </div>
 
               <div className="surface p-6">
@@ -534,11 +608,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <CheckCircle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compliance Health</p>
-                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">98.4%</p>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Issues Logged (7D)</p>
+                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">
+                          {analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0)}
+                       </p>
                     </div>
                  </div>
-                 <p className="text-[10px] font-bold text-teal-600 uppercase">ISO 22000 STANDARD MET</p>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Across all team members</p>
               </div>
            </div>
 
@@ -663,6 +739,17 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 ) : null}
               </div>
             ))
+          )}
+          {/* Load More */}
+          {hasMore && !loading && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => fetchData(true)}
+                className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Load 50 more
+              </button>
+            </div>
           )}
         </div>
       )}

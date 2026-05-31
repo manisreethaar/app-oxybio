@@ -14,7 +14,7 @@ const ProductionYieldChart = dynamic(() => import('@/components/charts/Productio
 
 export default function AdminDashboard({ employeeId }) {
   const toast = useToast();
-  const [stats, setStats] = useState({ batches: 0, leaves: 0, tasks: 0, compliance: 0 });
+  const [stats, setStats] = useState({ batches: 0, leaves: 0, tasks: 0, compliance: 0, mispunches: 0 });
   const [alerts, setAlerts] = useState([]);
   const [activeBatches, setActiveBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +32,7 @@ export default function AdminDashboard({ employeeId }) {
   const [openCapa, setOpenCapa] = useState([]);
   const [qcHoldBatches, setQcHoldBatches] = useState([]);
   const [qcHoldDismissed, setQcHoldDismissed] = useState(false);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
   const supabase = useMemo(() => createClient(), []);
 
   const fetchThresholds = async () => {
@@ -78,10 +79,11 @@ export default function AdminDashboard({ employeeId }) {
         const { stats, leaves, mispunches, activeBatches, chartData } = result.data;
         
         setStats({
-          batches: stats.activeBatches,
-          leaves: stats.pendingLeaves,
-          tasks: stats.urgentTasks,
-          compliance: stats.upcomingCompliance
+          batches:    stats.activeBatches,
+          leaves:     stats.pendingLeaves,
+          tasks:      stats.urgentTasks,
+          compliance: stats.upcomingCompliance,
+          mispunches: mispunches?.length ?? 0,
         });
         setChartData(chartData);
         setActiveBatches(activeBatches);
@@ -90,7 +92,7 @@ export default function AdminDashboard({ employeeId }) {
         
         // Set alerts for unacknowledged deviations
         if (stats.unacknowledgedDeviations > 0) {
-          setAlerts([{ type: 'deviation', count: stats.unacknowledgedDeviations, message: 'Unacknowledged pH deviations need attention' }]);
+          setAlerts([{ type: 'deviation', count: stats.unacknowledgedDeviations, message: 'Unacknowledged pH deviations need attention', link: '/compliance' }]);
         }
       }
     } catch (err) {
@@ -104,17 +106,19 @@ export default function AdminDashboard({ employeeId }) {
     try {
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-      const [stockRes, calibRes, capaRes, qcHoldRes] = await Promise.all([
-        supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).limit(50),
+      const [stockRes, calibRes, capaRes, qcHoldRes, leavesRes] = await Promise.all([
+        // Server-side filter low stock directly — no more limit(50) then slice(5)
+        supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).filter('current_quantity', 'lt', 'min_stock_level').limit(5),
         supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
         supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').order('created_at', { ascending: false }).limit(5),
-        supabase.from('batches').select('id, batch_id, current_stage, status, formulations(name)').eq('current_stage', 'qc_hold').not('status', 'in', '("released","rejected")').order('created_at', { ascending: false })
+        supabase.from('batches').select('id, batch_id, current_stage, status, formulations(name)').eq('current_stage', 'qc_hold').not('status', 'in', '("released","rejected")').order('created_at', { ascending: false }),
+        supabase.from('leave_applications').select('id, leave_type, start_date, end_date, employee:employees(full_name)').eq('status', 'pending').order('created_at', { ascending: true }).limit(5),
       ]);
-      const lowStockItems = (stockRes.data || []).filter(s => (s.current_quantity || 0) < (s.min_stock_level || 0));
-      setLowStock(lowStockItems.slice(0, 5));
+      setLowStock(stockRes.data || []);
       setCalibDue(calibRes.data || []);
       setOpenCapa(capaRes.data || []);
       setQcHoldBatches(qcHoldRes.data || []);
+      setPendingLeaves(leavesRes.data || []);
     } catch (err) { console.error('Operational alerts fetch error:', err); }
   }, [supabase]);
 
@@ -122,7 +126,17 @@ export default function AdminDashboard({ employeeId }) {
     fetchDashboardData(true);
     fetchThresholds();
     fetchOperationalAlerts();
-  }, [fetchOperationalAlerts]);
+
+    // Realtime: re-fetch KPIs when batches, tasks, or leaves change
+    const channel = supabase
+      .channel('admin-dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' },         () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' },           () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_applications' }, () => { fetchDashboardData(); fetchOperationalAlerts(); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchOperationalAlerts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMispunchReview = async (action, selectedMispunch = reviewingMispunch) => {
     if (!selectedMispunch) return;
@@ -416,6 +430,35 @@ export default function AdminDashboard({ employeeId }) {
           )}
         </div>
       </div>
+
+      {/* Pending Leave Approvals */}
+      {pendingLeaves.length > 0 && (
+        <div className="surface overflow-hidden">
+          <div className="px-6 py-4 border-b border-amber-100 flex justify-between items-center bg-amber-50/40">
+            <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-amber-600" />
+              Pending Leave Approvals
+              <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-black">{pendingLeaves.length}</span>
+            </h2>
+            <Link href="/leave" className="text-xs font-bold text-amber-700 hover:underline">Manage All →</Link>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {pendingLeaves.map(l => (
+              <div key={l.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50/50 transition-colors">
+                <div>
+                  <p className="text-sm font-bold text-gray-900">{l.employee?.full_name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {l.leave_type} · {new Date(l.start_date).toLocaleDateString('en-IN')} – {new Date(l.end_date).toLocaleDateString('en-IN')}
+                  </p>
+                </div>
+                <Link href="/leave" className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                  Review →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mispunch Review Section */}
       {pendingMispunches.length > 0 && (
