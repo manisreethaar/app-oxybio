@@ -309,7 +309,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl flex items-center gap-2 text-sm animate-in fade-in">
           <AlertTriangle className="w-4 h-4 text-red-600"/>
           <span className="flex-1">{error}</span>
-          <button onClick={fetchData} className="px-3 py-1 bg-red-100 hover:bg-red-200 rounded-lg font-bold text-xs">Retry</button>
+          <button onClick={() => fetchData()} className="px-3 py-1 bg-red-100 hover:bg-red-200 rounded-lg font-bold text-xs">Retry</button>
         </div>
       )}
 
