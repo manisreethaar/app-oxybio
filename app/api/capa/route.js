@@ -1,8 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireComplianceManager, requireDeviationReporter } from '@/lib/compliance/access';
-
+import { requireAccess } from '@/lib/access';
 const postSchema = z.object({
   action: z.enum(['raise', 'investigate', 'spawn_action']),
   payload: z.any()
@@ -34,23 +33,18 @@ async function hasOpenCapaActions(supabase, deviationId) {
 
 export async function POST(request) {
   try {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: emp } = await supabase.from('employees').select('id, full_name, role').eq('email', user.email).single();
-    if (!emp) return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
-
     const body = await request.json();
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
     const { action, payload } = parsed.data;
 
-    if (action === 'raise') {
-      const access = requireDeviationReporter(emp, user.email);
-      if (!access.allowed) return NextResponse.json({ error: access.error }, { status: 403 });
+    const supabase = createClient();
+    const rbacAction = action === 'raise' ? 'create_ncr' : 'close_capa';
+    const { error: accessError, employee: emp } = await requireAccess(supabase, 'compliance', rbacAction);
+    if (accessError) return accessError;
 
+    if (action === 'raise') {
       const { title, severity, source, description } = payload;
       if (!title) return NextResponse.json({ error: 'Title required' }, { status: 400 });
       
@@ -63,9 +57,6 @@ export async function POST(request) {
     }
 
     if (action === 'investigate') {
-      const access = requireComplianceManager(emp, user.email, 'investigate deviations');
-      if (!access.allowed) return NextResponse.json({ error: access.error }, { status: 403 });
-
       const { deviation_id, investigation_id, why_1, why_2, why_3, why_4, why_5, root_cause_identified } = payload;
       if (!root_cause_identified) return NextResponse.json({ error: 'Root cause required' }, { status: 400 });
 
@@ -86,9 +77,6 @@ export async function POST(request) {
     }
 
     if (action === 'spawn_action') {
-      const access = requireComplianceManager(emp, user.email, 'spawn CAPA actions');
-      if (!access.allowed) return NextResponse.json({ error: access.error }, { status: 403 });
-
       const { deviation_id, investigation_id, action_type, title, description, assigned_to, due_date } = payload;
       
       const { data: task, error: taskErr } = await supabase.from('tasks').insert({
@@ -129,21 +117,15 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-    if (!emp) return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
-
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 400 });
 
     const { action, payload } = parsed.data;
 
-    const access = requireComplianceManager(emp, user.email, action === 'close_deviation' ? 'close deviations' : 'verify CAPA effectiveness');
-    if (!access.allowed) return NextResponse.json({ error: access.error }, { status: 403 });
+    const supabase = createClient();
+    const { error: accessError, employee: emp } = await requireAccess(supabase, 'compliance', 'close_capa');
+    if (accessError) return accessError;
 
     if (action === 'verify_effectiveness') {
       const { action_id } = payload;

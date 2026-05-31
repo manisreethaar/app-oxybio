@@ -6,20 +6,17 @@ import { NextResponse } from 'next/server';
 import { canAssignTo, isMasterAdmin } from '@/lib/permissions';
 import { createTaskSchema, ACTION_PAYLOAD_SCHEMAS, patchSchema } from '@/lib/schemas/tasks';
 import { canPatchTaskAction } from '@/lib/tasks/access';
+import { requireAccess } from '@/lib/access';
 
 export { createTaskSchema, ACTION_PAYLOAD_SCHEMAS };
 
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: accessError, user, employee: creatorInfo } = await requireAccess(supabase, 'tasks', 'create');
+    if (accessError) return accessError;
 
     const body = await request.json();
-    // Master Admin Override
-    const isMaster = isMasterAdmin(user.email);
-    
-    // Support batch inserts for multiple assignees
     const tasks = Array.isArray(body) ? body : [body];
 
     for (const t of tasks) {
@@ -27,24 +24,6 @@ export async function POST(request) {
       if (!parsed.success) {
         return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
       }
-    }
-
-    // Fix: Verify creator exists in employees table before inserting
-    let creatorInfo;
-    const { data: creator, error: creatorErr } = await supabase.from('employees').select('id, role').eq('email', user.email.toLowerCase()).single();
-    
-    if (creatorErr || !creator) {
-      if (isMaster) {
-        // Fallback for Master Admin if not in employees table yet
-        const { data: adminUser } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
-        creatorInfo = { id: adminUser?.id || user.id, role: 'admin' };
-      } else {
-        return NextResponse.json({
-          error: "CRITICAL PROFILE SYNC ERROR: Your user account is authenticated but not registered in the 'employees' table. Please contact an admin to add your ID."
-        }, { status: 403 });
-      }
-    } else {
-      creatorInfo = creator;
     }
 
     // Hierarchical Validation
@@ -84,8 +63,8 @@ export async function POST(request) {
 export async function PATCH(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: accessError, user, employee: currentUser } = await requireAccess(supabase, 'tasks', 'edit_own');
+    if (accessError) return accessError;
 
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
@@ -108,10 +87,6 @@ export async function PATCH(request) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    const { data: currentUser } = await supabase.from('employees')
-      .select('id, role')
-      .eq('email', user.email.toLowerCase())
-      .maybeSingle();
 
     const access = canPatchTaskAction({ action, task, currentUser, userEmail: user.email });
     if (!access.allowed) {
@@ -235,8 +210,8 @@ export async function PATCH(request) {
 export async function DELETE(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: accessError, user, employee: currentUser } = await requireAccess(supabase, 'tasks', 'delete');
+    if (accessError) return accessError;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -244,7 +219,6 @@ export async function DELETE(request) {
 
     const isMaster = isMasterAdmin(user.email);
     const { data: task } = await supabase.from('tasks').select('assigned_to, assigned_by').eq('id', id).single();
-    const { data: currentUser } = await supabase.from('employees').select('id').eq('email', user.email.toLowerCase()).single();
 
     // POLICY CHANGE: Only the CREATOR (the one who assigned it) can delete, or Master Admin
     if (!isMaster && task?.assigned_by !== currentUser?.id) {
@@ -263,8 +237,8 @@ export async function DELETE(request) {
 export async function PUT(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: accessError, user, employee: currentUser } = await requireAccess(supabase, 'tasks', 'edit_own');
+    if (accessError) return accessError;
 
     const body = await request.json();
     const { id, title, description, assigned_to, due_date, priority, checklist, is_personal_reminder } = body;
@@ -273,7 +247,6 @@ export async function PUT(request) {
 
     const isMaster = isMasterAdmin(user.email);
     const { data: task } = await supabase.from('tasks').select('assigned_by').eq('id', id).single();
-    const { data: currentUser } = await supabase.from('employees').select('id, role').eq('email', user.email.toLowerCase()).single();
 
     if (!isMaster && task?.assigned_by !== currentUser?.id) {
        return NextResponse.json({ error: 'Permission Denied: Only the creator can edit this task.' }, { status: 403 });

@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { isMasterAdmin } from '@/lib/permissions';
+import { requireAccess } from '@/lib/access';
 
 const equipmentSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -29,14 +29,8 @@ export async function GET() {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = isMasterAdmin(user.email);
-    if (!['admin','ceo','cto','research_fellow','scientist'].includes(emp?.role) && !isMaster) {
-      return NextResponse.json({ error: 'Permission Denied: Access restricted' }, { status: 403 });
-    }
+    const { error: accessError } = await requireAccess(supabase, 'equipment', 'create');
+    if (accessError) return accessError;
 
     const body = await request.json();
     const parsed = equipmentSchema.safeParse(body);
@@ -63,14 +57,8 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = isMasterAdmin(user.email);
-    if (!['admin','ceo','cto','research_fellow','scientist'].includes(emp?.role) && !isMaster) {
-      return NextResponse.json({ error: 'Permission Denied: Access restricted' }, { status: 403 });
-    }
+    const { error: accessError } = await requireAccess(supabase, 'equipment', 'edit');
+    if (accessError) return accessError;
 
     const body = await request.json();
     const { id, name, model, serial_number, calibration_due_date, status } = body;
@@ -101,14 +89,8 @@ export async function DELETE(request) {
 
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    const isMaster = isMasterAdmin(user.email);
-    if (!['admin','ceo','cto'].includes(emp?.role) && !isMaster) {
-      return NextResponse.json({ error: 'Permission Denied' }, { status: 403 });
-    }
+    const { error: accessError } = await requireAccess(supabase, 'equipment', 'delete');
+    if (accessError) return accessError;
 
     const { error } = await supabase.from('equipment').delete().eq('id', id);
     if (error) throw error;
