@@ -13,6 +13,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('inventory_items')
       .select('*')
+      .is('archived_at', null)
       .order('name');
 
     if (error) throw error;
@@ -118,18 +119,35 @@ export async function DELETE(request) {
     const permission = await requireInventoryPermission(supabase, 'delete');
     if (permission.error) return permission.error;
 
+    const permanent = searchParams.get('permanent') === 'true';
+    const now = new Date().toISOString();
+
+    // Get employee id for archived_by
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: emp } = user ? await supabase.from('employees').select('id').eq('email', user.email).single() : { data: null };
+
     if (ids) {
       const idList = ids.split(',').map(s => s.trim()).filter(Boolean);
       if (!idList.length) return NextResponse.json({ error: 'No valid IDs provided' }, { status: 400 });
-      const { error } = await supabase.from('inventory_items').delete().in('id', idList);
-      if (error) throw error;
+      if (permanent) {
+        const { error } = await supabase.from('inventory_items').delete().in('id', idList);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('inventory_items').update({ archived_at: now, archived_by: emp?.id || null }).in('id', idList);
+        if (error) throw error;
+      }
       return NextResponse.json({ success: true, deleted: idList.length });
     }
 
-    const { error } = await supabase.from('inventory_items').delete().eq('id', id);
-    if (error) throw error;
+    if (permanent) {
+      const { error } = await supabase.from('inventory_items').delete().eq('id', id);
+      if (error) throw error;
+      return NextResponse.json({ success: true, message: 'Item permanently deleted.' });
+    }
 
-    return NextResponse.json({ success: true });
+    const { error } = await supabase.from('inventory_items').update({ archived_at: now, archived_by: emp?.id || null }).eq('id', id);
+    if (error) throw error;
+    return NextResponse.json({ success: true, message: 'Item archived.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
