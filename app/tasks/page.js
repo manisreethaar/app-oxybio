@@ -78,7 +78,22 @@ export default function TasksPage() {
 
 
   useEffect(() => {
-    if (employeeProfile) fetchTasks();
+    if (!employeeProfile) return;
+    fetchTasks();
+
+    // Subscribe to live task changes — catches admin assignments, peer updates, approvals
+    const channel = supabase.channel('tasks_realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'tasks',
+        ...(isAdmin ? {} : { filter: `assigned_to=eq.${employeeProfile.id}` })
+      }, () => {
+        fetchTasks();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile]);
 
