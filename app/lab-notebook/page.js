@@ -369,7 +369,7 @@ export default function DigitalLnbPage() {
       })()}
 
       {showNew && (
-       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
 <div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden"> 
            <div className="p-6 pb-0 flex justify-between items-start">
               <div>

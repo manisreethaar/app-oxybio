@@ -306,7 +306,7 @@ export default function EquipmentPage() {
       </div>
 
       {isModalOpen && (
-       <div className="fixed inset-0 z-50 flex items-center justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
+       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
 <div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-lg shadow-2xl overflow-hidden"> 
            <div className="px-8 py-6 bg-teal-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
@@ -357,7 +357,7 @@ export default function EquipmentPage() {
       )}
 
       {isMaintenanceOpen && activeDevice && (
-       <div className="fixed inset-0 z-50 flex items-center justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
+       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
 <div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none w-full max-w-lg shadow-2xl overflow-hidden"> 
            <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>

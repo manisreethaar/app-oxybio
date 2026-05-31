@@ -217,7 +217,7 @@ export default function BioprocessPage() {
 
       {/* Create Modal */}
       {showCreate && (
-       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-end p-0">
+       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-stretch justify-end p-0">
 <div className="h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden bg-white rounded-none shadow-2xl w-full max-w-lg"> 
            <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-lg font-black text-gray-900">New Experiment</h2>

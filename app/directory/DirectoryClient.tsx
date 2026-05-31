@@ -49,7 +49,7 @@ function Field({ label, children }) {
 
 function ProfileModal({ emp, onClose, isAdmin, onEdit }) {
   return (
-   <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-end z-50 p-0" onClick={onClose}>
+   <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-stretch justify-end z-50 p-0" onClick={onClose}>
  <div onClick={e => e.stopPropagation()} className="bg-white rounded-none w-full max-w-2xl shadow-2xl relative h-[100dvh] sm:h-screen flex flex-col sm:animate-slide-left overflow-hidden animate-in fade-in zoom-in-95 duration-200"> 
 
         {/* Non-scrolling header — stays pinned above the scroll area */}

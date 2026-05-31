@@ -1161,7 +1161,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Unified Modal Shell */}
       {isModalOpen && (
-       <div className="fixed inset-0 z-50 flex items-center justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
+       <div className="fixed inset-0 z-50 flex items-stretch justify-end p-0 bg-teal-950/40 backdrop-blur-sm">
 <div className="bg-white rounded-none w-full max-w-lg shadow-2xl overflow-hidden flex flex-col sm:animate-slide-left h-[100dvh] sm:h-screen md:animate-in fade-in zoom-in duration-200"> 
            <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
               <div>
@@ -1204,7 +1204,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
       {/* Stock Item Detail Modal (Section 2.4) */}
       {selectedStock && (
-       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-end p-0">
+       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-stretch justify-end p-0">
 <div className="w-full max-w-xl rounded-none bg-white h-[100dvh] sm:h-screen shadow-2xl flex flex-col sm:animate-slide-left animate-in slide-in-from-bottom duration-200"> 
             {/* Header */}
            <div className="p-5 bg-teal-900 text-white relative">

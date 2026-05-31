@@ -1068,7 +1068,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── EDIT REQUEST MODAL (non-admin) ────────────────────────── */}
       {editModal && (
-       <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm p-0">
+       <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/40 backdrop-blur-sm p-0">
 <div className="flex flex-col sm:animate-slide-left bg-white rounded-none shadow-2xl border border-slate-100 max-w-lg w-full p-6 space-y-4 h-[100dvh] sm:h-screen overflow-y-auto"> 
            <div className="flex items-start justify-between">
               <div>

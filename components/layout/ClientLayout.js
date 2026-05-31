@@ -183,7 +183,7 @@ export default function ClientLayout({ children }) {
                 </div>
               </div>
             ) : (
-              <div key={pathname} className="animate-page-enter">
+              <div key={pathname}>
                 {children}
               </div>
             )}

@@ -169,7 +169,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   ];
 
   return (
-   <div className="fixed inset-0 z-[1200] flex items-center justify-end bg-slate-900/60 backdrop-blur-sm p-0">
+   <div className="fixed inset-0 z-[1200] flex items-stretch justify-end bg-slate-900/60 backdrop-blur-sm p-0">
 <div className="h-[100dvh] sm:h-screen bg-white shadow-2xl w-full sm:max-w-lg flex flex-col sm:animate-slide-left"> 
 
         {/* Header */}

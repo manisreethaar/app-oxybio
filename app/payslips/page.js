@@ -331,7 +331,7 @@ export default function PayslipsPage() {
 
       {/* Generator Modal (Admin only) */}
       {isAdmin && showGenerator && (
-       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-end p-0">
+       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-stretch justify-end p-0">
 <div className="flex flex-col sm:animate-slide-left bg-white rounded-none shadow-2xl w-full max-w-lg h-[100dvh] sm:h-screen overflow-y-auto"> 
             {/* Modal Header */}
            <div className="flex items-center justify-between p-6 border-b border-gray-100">
