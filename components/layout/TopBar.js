@@ -60,16 +60,49 @@ export default function TopBar() {
           setUnreadCount(prev => prev + 1);
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `employee_id=eq.${employeeProfile.id}` },
+        (payload) => {
+          setNotifications(prev =>
+            prev.map(n => n.id === payload.new.id ? { ...n, is_read: payload.new.is_read } : n)
+          );
+          setUnreadCount(prev =>
+            Math.max(0, prev + (payload.new.is_read && !payload.old?.is_read ? -1 : 0))
+          );
+        }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [employeeProfile?.id, supabase]);
 
   const markAsRead = async (id, link) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    // Optimistic update — mark the item read locally immediately
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
     setNotifOpen(false);
     if (link) window.location.href = link;
+  };
+
+  // Re-fetch when the dropdown opens so stale read-state is always refreshed
+  const handleBellClick = async () => {
+    const opening = !notifOpen;
+    setNotifOpen(opening);
+    setProfileOpen(false);
+    if (opening && employeeProfile?.id) {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id,title,message,is_read,link,created_at')
+        .eq('employee_id', employeeProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (data) {
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.is_read).length);
+      }
+    }
   };
 
   const getInitials = (name) => {
@@ -186,7 +219,7 @@ export default function TopBar() {
 
         <div className="relative">
           <button
-            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
+            onClick={handleBellClick}
             className="relative p-2.5 text-gray-400 hover:text-navy rounded-full hover:bg-gray-100 transition-all duration-200 focus:outline-none"
           >
             <span className="sr-only">View notifications</span>
