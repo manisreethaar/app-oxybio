@@ -10,7 +10,7 @@ import { can, getPermissionsForRole, isMasterAdmin } from '@/lib/permissions';
 const AuthContext = createContext({});
 
 const PROFILE_SELECT =
-  'id,full_name,email,role,department,designation,is_active,photo_url,employee_code,phone,address,blood_group,emergency_contact,emergency_contact_name,joined_date,date_of_birth,casual_leave_balance,medical_leave_balance,earned_leave_balance';
+  'id,full_name,email,role,department,designation,is_active,photo_url,employee_code,phone,address,blood_group,emergency_contact,emergency_contact_name,joined_date,date_of_birth,casual_leave_balance,medical_leave_balance,earned_leave_balance,custom_permissions';
 
 const CACHE_KEY = 'oxyo_profile_v2';
 
@@ -217,13 +217,13 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   const role = employeeProfile?.role;
 
   const canDo = useCallback(
-    (module, action) => can(role, module, action),
-    [role]
+    (module, action) => can(role, module, action, employeeProfile?.custom_permissions),
+    [role, employeeProfile?.custom_permissions]
   );
 
   const permissions = useMemo(
-    () => (role ? getPermissionsForRole(role) : {}),
-    [role]
+    () => (role ? getPermissionsForRole(role, employeeProfile?.custom_permissions) : {}),
+    [role, employeeProfile?.custom_permissions]
   );
 
   const clearSessionExpired = useCallback(() => setSessionExpired(false), []);

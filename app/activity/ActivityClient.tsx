@@ -9,7 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { 
   Activity, AlertTriangle, MessageSquare, CheckCircle, Loader2,
   Users, Clock, CheckSquare, FlaskConical, TrendingUp, 
-  CalendarCheck, Zap
+  CalendarCheck, Zap, Archive, Trash2
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +21,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth() as any;
   const toast = useToast();
   const [activities, setActivities] = useState<any[]>(initialLogs || []);
+  const [archivedActivities, setArchivedActivities] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>(initialLogs ? initialLogs.filter((a: any) => a.issue_observed) : []);
   const [activeBatches, setActiveBatches] = useState(initialBatches || []);
   const [loading, setLoading] = useState(false);
@@ -132,7 +133,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       let query = supabase
         .from('activity_log')
-        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, employees(full_name)')
+        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, archived_at, employees(full_name)')
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
 
@@ -164,6 +166,16 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       // Founder Brief data (admin only)
       if (isExecUser) {
+        const archivedQuery = supabase
+          .from('activity_log')
+          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, archived_at, employees(full_name)')
+          .not('archived_at', 'is', null)
+          .order('archived_at', { ascending: false })
+          .limit(100);
+        const { data: archived } = await archivedQuery;
+        if (!isMounted.current) return;
+        setArchivedActivities(archived || []);
+
         const today = new Date().toISOString().split('T')[0];
         const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
           supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin'),
