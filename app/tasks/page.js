@@ -18,6 +18,8 @@ import { canAssignTo } from '@/lib/permissions';
 import { differenceInDays } from 'date-fns';
 import TaskDetailModal from './components/TaskDetailModal';
 import { formatMinutes } from './components/utils';
+import MobilePageHeader from '@/components/ui/MobilePageHeader';
+import MobileFilterPanel from '@/components/ui/MobileFilterPanel';
 
 export default function TasksPage() {
   const { role, canDo, isAdmin: isMaster, employeeProfile, loading: authLoading } = useAuth();
@@ -30,6 +32,7 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [viewMode, setViewMode] = useState('grouped'); // 'grouped' or 'individual'
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const isAdmin = canDo('tasks', 'assign') || isMaster;
   const canApprove = canDo('tasks', 'approve') || isMaster;
@@ -438,7 +441,23 @@ export default function TasksPage() {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <MobilePageHeader
+        icon={CheckSquare}
+        title="Tasks"
+        subtitle="Prioritize work, reviews, and personal reminders from one mobile queue."
+        stats={[
+          { label: 'Open', value: tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled').length },
+          { label: 'Overdue', value: overdueCount },
+          { label: 'Review', value: pendingApprovals },
+        ]}
+        action={
+          <button onClick={() => setShowCreate(!showCreate)} className="w-10 h-10 rounded-2xl bg-navy text-white flex items-center justify-center shadow-sm" aria-label={isAdmin ? 'Assign task' : 'Add reminder'}>
+            <Plus className="w-5 h-5" />
+          </button>
+        }
+      />
+
+      <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Task Operations</h1>
           <p className="text-sm text-gray-500 mt-1">Assign, track, and complete Node operations.</p>
@@ -459,7 +478,8 @@ export default function TasksPage() {
       </div>
 
       {showCreate && (
-        <form onSubmit={handTask(handleCreateTask)} className="surface p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[160] bg-slate-900/40 backdrop-blur-sm md:static md:bg-transparent md:backdrop-blur-0 flex items-end md:block" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }}>
+        <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="surface p-4 md:p-6 animate-in fade-in duration-200 rounded-t-3xl md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
           <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-1.5">
             <ListChecks className="w-5 h-5 text-navy"/> {editingTaskId ? 'Edit Task Details' : (isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder')}
           </h2>
@@ -527,9 +547,10 @@ export default function TasksPage() {
             <button type="submit" disabled={isTaskSubmitting || actionLoading} className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60">{isTaskSubmitting || actionLoading ? 'Saving...' : (editingTaskId ? 'Save Changes' : 'Create')}</button>
           </div>
         </form>
+        </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+      <div className="surface p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
@@ -539,7 +560,32 @@ export default function TasksPage() {
             className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-semibold text-gray-700 focus:ring-2 focus:ring-accent outline-none"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="md:hidden">
+          <MobileFilterPanel
+            open={filtersOpen}
+            onOpen={() => setFiltersOpen(true)}
+            onClose={() => setFiltersOpen(false)}
+            summary="Sort & filter"
+          >
+            <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
+              <option value="due_asc">Due Soon</option>
+              <option value="due_desc">Due Later</option>
+              <option value="priority">Priority</option>
+              <option value="title">Title A-Z</option>
+            </select>
+            {isAdmin && (
+              <>
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
+                  <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
+                </select>
+                <select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
+                  <option value="All">All Assignees</option>{employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                </select>
+              </>
+            )}
+          </MobileFilterPanel>
+        </div>
+        <div className="hidden md:flex flex-wrap gap-2">
           <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white font-bold text-gray-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="due_asc">Due Soon</option>
             <option value="due_desc">Due Later</option>
@@ -560,13 +606,13 @@ export default function TasksPage() {
       </div>
 
       {viewMode === 'grouped' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           {groupedTasks.map(group => {
             const isOverdue = group.status !== 'done' && group.due_date && differenceInDays(new Date(group.due_date), new Date()) < 0;
             const progress = Math.round((group.completedCount / group.totalCount) * 100);
             
             return (
-              <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`surface p-5 flex flex-col cursor-pointer hover:border-gray-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+              <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`surface p-4 md:p-5 flex flex-col cursor-pointer hover:border-gray-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${progress === 100 ? 'bg-emerald-500' : group.priority === 'urgent' ? 'bg-red-500' : group.priority === 'high' ? 'bg-amber-500' : 'bg-blue-400'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${group.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700'}`}>{group.priority}</span>
@@ -607,7 +653,7 @@ export default function TasksPage() {
       ) : filteredTasks.length === 0 ? (
         <div className="text-center py-16 text-gray-400 font-medium text-sm">No tasks assigned.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           {filteredTasks.map(task => {
             const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && differenceInDays(new Date(task.due_date), new Date()) < 0;
             const checklistTotal = task.checklist?.length || 0;
@@ -617,7 +663,7 @@ export default function TasksPage() {
             const approvalBadge = { 'pending_review': { label: 'Review', cls: 'bg-amber-50 text-amber-700 border-amber-100' }, 'approved': { label: 'Approved âœ“', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' }, 'rejected': { label: 'Returned', cls: 'bg-red-50 text-red-700 border-red-100' } }[task.approval_status];
 
             return (
-              <div key={task.id} onClick={() => setSelectedTask(task)} className={`surface p-5 flex flex-col cursor-pointer hover:border-gray-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+              <div key={task.id} onClick={() => setSelectedTask(task)} className={`surface p-4 md:p-5 flex flex-col cursor-pointer hover:border-gray-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${task.status === 'done' ? 'bg-emerald-500' : task.priority === 'urgent' ? 'bg-red-500' : task.priority === 'high' ? 'bg-amber-500' : task.priority === 'medium' ? 'bg-blue-400' : 'bg-gray-300'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
                   <div className="flex gap-1.5 items-center">

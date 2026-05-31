@@ -12,6 +12,7 @@ import {
   CalendarCheck, Zap, Archive, Trash2, Edit2, X, Send
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
+import MobilePageHeader from '@/components/ui/MobilePageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 const ActivityVelocityChart = dynamic(() => import('@/components/charts/ActivityAnalyticsCharts').then(m => ({ default: m.ActivityVelocityChart })), { ssr: false });
@@ -418,8 +419,19 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const greeting = nowHour < 12 ? 'Good morning' : nowHour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-24">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+    <div className="max-w-7xl mx-auto space-y-5 md:space-y-6 pb-24 px-1 sm:px-0">
+      <MobilePageHeader
+        icon={Activity}
+        title={isAdmin ? 'Ops Center' : 'Activity'}
+        subtitle={isAdmin ? `${greeting}, ${employeeProfile.full_name?.split(' ')[0]}. Today's operational pulse is ready.` : 'Log daily work and flag issues from the floor.'}
+        stats={[
+          { label: 'Logs', value: activities.length },
+          { label: 'Issues', value: issues.length },
+          { label: 'Archived', value: archivedActivities.length },
+        ]}
+      />
+
+      <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">
             {isAdmin ? 'Operations Center' : 'My Activity Log'}
@@ -441,30 +453,30 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-6 overflow-x-auto">
+        <nav className="-mb-px flex gap-2 md:gap-6 overflow-x-auto mobile-scroll-tabs md:mx-0 md:px-0">
           {isAdmin && (
             <button onClick={() => setTab('brief')} 
-              className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Zap className="w-4 h-4"/> Morning Brief
             </button>
           )}
           {isAdmin && (
             <button onClick={() => setTab('analytics')} 
-              className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <TrendingUp className="w-4 h-4"/> Operations Hub
             </button>
           )}
           <button onClick={() => setTab('feed')}
-            className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'feed' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'feed' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
             {isAdmin ? 'Team Activity Feed' : 'Recent Activity'}
           </button>
           <button onClick={() => setTab('log')}
-            className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'log' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'log' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
             + Log Activity
           </button>
           {isAdmin && (
             <button onClick={() => setTab('issues')}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'issues' ? 'border-red-600 text-red-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'issues' ? 'border-red-600 text-red-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               Issue Tracker
               {issues.filter(i => !i.founder_comment).length > 0 && (
                 <span className="bg-red-500 text-white py-0.5 px-1.5 rounded-full text-[10px] font-black">
@@ -475,7 +487,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           )}
           {isAdmin && (
             <button onClick={() => setTab('archived')}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'archived' ? 'border-slate-700 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'archived' ? 'border-slate-700 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Archive className="w-4 h-4"/> Archived
               {archivedActivities.length > 0 && (
                 <span className="bg-slate-200 text-slate-700 py-0.5 px-1.5 rounded-full text-[10px] font-black">
@@ -489,7 +501,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── Feed Controls: filters + export ───────────────────── */}
       {tab === 'feed' && (
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="surface p-3 flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
           {isAdmin && (
             <select
               value={filterEmployee}
