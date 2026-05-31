@@ -121,6 +121,7 @@ export default function StaffDashboard({ employeeProfile }) {
         supabase.from('activity_log')
           .select('id, activity_description, start_time, end_time, created_at, issue_observed')
           .eq('employee_id', employeeId)
+          .is('archived_at', null)
           .gte('created_at', todayStart.toISOString())
           .order('created_at', { ascending: false })
           .limit(5),

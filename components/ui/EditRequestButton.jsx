@@ -114,7 +114,7 @@ export default function EditRequestButton({
             title="Request deletion"
           >
             <Trash2 className="w-3 h-3" />
-            Delete
+            Archive
           </button>
         )}
       </div>
@@ -130,7 +130,7 @@ export default function EditRequestButton({
             </button>
 
             <h2 className="text-lg font-black text-slate-800 mb-0.5">
-              {mode === 'edit' ? 'Request an Edit' : 'Request Deletion'}
+              {mode === 'edit' ? 'Request an Edit' : 'Request Archive'}
             </h2>
             <p className="text-xs text-slate-400 font-medium mb-5">
               {mode === 'edit'
@@ -190,19 +190,19 @@ export default function EditRequestButton({
               <div className="space-y-4">
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4">
                   <p className="text-sm text-red-700 font-semibold">
-                    You are requesting to permanently delete this {moduleLabel} record.
-                    An admin must approve before anything is deleted.
+                    You are requesting to archive this {moduleLabel} record.
+                    Permanent delete is only available from Archived after approval.
                   </p>
                 </div>
                 <div>
                   <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
-                    Reason for deletion
+                    Reason for archive
                   </label>
                   <textarea
                     rows={3}
                     value={deleteReason}
                     onChange={e => setDeleteReason(e.target.value)}
-                    placeholder="Why should this record be deleted?"
+                    placeholder="Why should this record be archived?"
                     className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:border-red-300 resize-none"
                   />
                 </div>
@@ -223,7 +223,7 @@ export default function EditRequestButton({
                 ? 'Submitting...'
                 : mode === 'edit'
                 ? 'Submit for Approval'
-                : 'Request Deletion'}
+                : 'Request Archive'}
             </button>
           </div>
         </div>

@@ -57,6 +57,7 @@ export async function GET() {
         .eq('mispunch_status', 'pending').limit(10),
       // Active batches (limited fields, not full data)
       supabase.from('batches').select('id, batch_id, variant, current_stage, status, created_at, ph_readings(ph_value, is_deviation)')
+        .is('archived_at', null)
         .not('status', 'in', '("released","rejected")').limit(10)
     ]);
 
@@ -66,6 +67,7 @@ export async function GET() {
     
     const { data: batchHistory } = await supabase
       .from('batches').select('status, created_at')
+      .is('archived_at', null)
       .in('status', ['released', 'rejected'])
       .gte('created_at', sixMonthsAgo.toISOString())
       .order('created_at', { ascending: true });
