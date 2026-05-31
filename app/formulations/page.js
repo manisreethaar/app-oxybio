@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
@@ -15,6 +15,8 @@ import CreatorBadge from '@/components/ui/CreatorBadge';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import RecipeFormModal from './components/RecipeFormModal';
+import ConfirmDialogs from './components/ConfirmDialogs';
 
 // Status config
 const STATUS_CONFIG = {
@@ -247,10 +249,10 @@ export default function FormulationsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate recipe code: 1–5 uppercase letters, optionally followed by up to 3 digits (R01, RKU, RKU01)
+    // Validate recipe code: 1â€“5 uppercase letters, optionally followed by up to 3 digits (R01, RKU, RKU01)
     const codeVal = (newForm.code || '').trim().toUpperCase();
     if (!/^[A-Z]{1,5}\d{0,3}$/.test(codeVal)) {
-      toast.warn('Recipe code must be 1–5 uppercase letters optionally followed by up to 3 digits (e.g. R01, RKU, RKU01).'); return;
+      toast.warn('Recipe code must be 1â€“5 uppercase letters optionally followed by up to 3 digits (e.g. R01, RKU, RKU01).'); return;
     }
     if (newForm.ingredients.length === 0) { toast.warn("Add at least one ingredient."); return; }
     if (newForm.base_version_id && !newForm.notes?.trim()) {
@@ -324,7 +326,7 @@ export default function FormulationsPage() {
         </button>
       </div>
 
-      {/* Pending Approval Banner — shown to approvers only */}
+      {/* Pending Approval Banner â€” shown to approvers only */}
       {isApprover && pendingReview.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
@@ -497,7 +499,7 @@ export default function FormulationsPage() {
                           className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors"
                         >
                           <FlaskConical className="w-2.5 h-2.5"/>
-                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} →
+                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} â†’
                         </button>
                       </div>
                     )}
@@ -541,7 +543,7 @@ export default function FormulationsPage() {
                       <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0"/>
                         <p className="text-[10px] font-bold text-emerald-700">
-                          Approved by {f.approver.full_name} · {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
+                          Approved by {f.approver.full_name} Â· {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
                         </p>
                       </div>
                     )}
@@ -581,7 +583,7 @@ export default function FormulationsPage() {
                         </button>
                       </div>
 
-                      {/* ── APPROVAL WORKFLOW BUTTONS ── */}
+                      {/* â”€â”€ APPROVAL WORKFLOW BUTTONS â”€â”€ */}
 
                       {/* Draft: Show "Submit for Review" */}
                       {(f.status === 'Draft' || f.status === 'active') && (
@@ -705,7 +707,7 @@ export default function FormulationsPage() {
                                         {b.status || 'Unknown'}
                                       </span>
                                       <span className="shrink-0 text-[9px] text-gray-400">
-                                        {b.start_time ? new Date(b.start_time).toLocaleDateString() : '—'}
+                                        {b.start_time ? new Date(b.start_time).toLocaleDateString() : 'â€”'}
                                       </span>
                                       <ChevronRight className="w-3 h-3 text-gray-300 group-hover/batch:text-navy shrink-0 transition-colors"/>
                                     </Link>
@@ -725,178 +727,36 @@ export default function FormulationsPage() {
         )}
       </div>
 
-      {/* New Recipe Modal */}
-      {showNew && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setShowNew(false)} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"><X className="w-5 h-5 text-gray-400"/></button>
-            <div className="p-6">
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight">{newForm.id ? 'Edit Formulation Details' : 'New Formulation Version'}</h2>
-              <p className="text-xs font-medium text-gray-500 mt-1">
-                {newForm.base_version_id ? (
-                  <span className="text-emerald-600 font-bold">Iterating from base version — changes saved as new Draft</span>
-                ) : 'New recipe will be saved as Draft for review'}
-              </p>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Code</label>
-                  <input required type="text" placeholder="e.g. R04 / RKU / RKU01" value={newForm.code} onChange={e => setNewForm({...newForm, code: e.target.value.toUpperCase().slice(0,8)})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm font-mono outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                  <p className="text-[10px] text-gray-400 mt-1">1–5 uppercase letters + up to 3 digits (R01, RKU, RKU01)</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Common Name</label>
-                  <input required type="text" placeholder="e.g. Agri-Boost" value={newForm.name} onChange={e => setNewForm({...newForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Base Volume (mL)</label>
-                  <input required type="number" min="1" placeholder="e.g. 1000" value={newForm.base_volume_ml} onChange={e => setNewForm({...newForm, base_volume_ml: parseInt(e.target.value) || ''})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
-                  <p className="text-[10px] text-gray-400 mt-1">Scaling baseline.</p>
-                </div>
-              </div>
+      <RecipeFormModal
+        showNew={showNew}
+        newForm={newForm}
+        setNewForm={setNewForm}
+        items={items}
+        fetchError={fetchError}
+        submitting={submitting}
+        selectedItem={selectedItem}
+        setSelectedItem={setSelectedItem}
+        selectedQty={selectedQty}
+        setSelectedQty={setSelectedQty}
+        onAddIngredient={addIngredient}
+        onSubmit={handleSubmit}
+        onClose={() => setShowNew(false)}
+      />
 
-              {fetchError && <div className="p-2 bg-red-50 text-red-600 font-bold text-[10px] rounded-lg border border-red-100">{fetchError}</div>}
-
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Bill of Materials (BOM)</label>
-                <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                  <select className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedItem} onChange={e => setSelectedItem(e.target.value)}>
-                    <option value="">Select Ingredient...</option>
-                    {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-                  </select>
-                  <div className="flex gap-2">
-                    <input type="number" placeholder="Qty" className="flex-1 sm:w-20 sm:flex-none px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold" value={selectedQty} onChange={e => setSelectedQty(e.target.value)}/>
-                    <button type="button" onClick={addIngredient} className="shrink-0 px-4 py-2 bg-navy text-white rounded-lg hover:bg-navy-hover transition-all flex items-center gap-1 text-xs font-bold"><Plus className="w-4 h-4"/> Add</button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {newForm.ingredients.map((ing, idx) => (
-                    <span key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1 border border-gray-200 rounded-md text-[10px] font-black text-slate-700 shadow-sm">
-                      {ing.name}: {ing.quantity}{ing.unit}
-                      <button type="button" onClick={() => setNewForm(p => ({...p, ingredients: p.ingredients.filter((_, i) => i !== idx)}))} className="text-red-400 hover:text-red-600"><X className="w-3 h-3"/></button>
-                    </span>
-                  ))}
-                  {newForm.ingredients.length === 0 && <p className="text-[10px] text-gray-400 italic">No ingredients added yet.</p>}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Scientific Notes / Rationale</label>
-                <textarea rows="2" placeholder="Reason for this version or iteration..." value={newForm.notes} onChange={e => setNewForm({...newForm, notes: e.target.value})} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all resize-none" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Recipe Category</label>
-                <div className="flex gap-2">
-                  {['Fermentation', 'Lab Media'].map(cat => (
-                    <button key={cat} type="button" onClick={() => setNewForm({...newForm, category: cat})}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${newForm.category === cat ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200'}`}>
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {newForm.category === 'Fermentation' ? 'Product recipe — used to create fermentation batches.' : 'Lab media recipe (MRS broth, LB agar, etc.) — available in Cell Bank module.'}
-                </p>
-              </div>
-
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
-                <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5"/>
-                <p className="text-[10px] font-bold text-blue-700">Recipe will be saved as <strong>Draft</strong>. Submit for Review → get it Approved → then launch batches.</p>
-              </div>
-
-              <button disabled={submitting} type="submit" className="w-full py-2.5 bg-navy text-white font-bold rounded-lg shadow-sm hover:bg-navy-hover transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Save className="w-4 h-4"/> Save as Draft</>}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Rejection Modal */}
-      {rejectingId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Reject Formulation</h3>
-            <p className="text-xs text-gray-500 mb-4">You must provide a reason for sending this recipe back to Draft.</p>
-            
-            <textarea 
-              autoFocus
-              value={rejectionReason} 
-              onChange={e => setRejectionReason(e.target.value)}
-              placeholder="e.g. Yield calculation in Phase 2 seems incorrect..."
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium h-32 outline-none focus:ring-1 focus:ring-red-500 resize-none mb-4"
-            />
-
-            <div className="flex gap-3">
-              <button 
-                onClick={() => { setRejectingId(null); setRejectionReason(''); }}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleStatusChange(rejectingId, 'Draft', rejectionReason)}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700"
-              >
-                Confirm Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {pendingDeleteId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Delete Recipe</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to permanently delete this recipe? This action cannot be undone.</p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setPendingDeleteId(null)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDeleteRecipe(pendingDeleteId)}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full inline-flex items-center justify-center gap-2"
-                disabled={actionLoading === pendingDeleteId}
-              >
-                {actionLoading === pendingDeleteId ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Trash2 className="w-4 h-4"/> Delete</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Archive Modal */}
-      {pendingArchiveId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Archive Formulation</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">
-              Are you sure you want to archive this formulation? It will be hidden and no longer possible to create batches from it.
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setPendingArchiveId(null)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmArchive}
-                className="flex-1 py-2 bg-gray-600 text-white rounded-lg text-sm font-bold hover:bg-gray-700 transition w-full"
-              >
-                Archive
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialogs
+        rejectingId={rejectingId}
+        rejectionReason={rejectionReason}
+        setRejectionReason={setRejectionReason}
+        onConfirmReject={() => handleStatusChange(rejectingId, 'Draft', rejectionReason)}
+        onCancelReject={() => { setRejectingId(null); setRejectionReason(''); }}
+        pendingDeleteId={pendingDeleteId}
+        actionLoading={actionLoading}
+        onConfirmDelete={() => handleDeleteRecipe(pendingDeleteId)}
+        onCancelDelete={() => setPendingDeleteId(null)}
+        pendingArchiveId={pendingArchiveId}
+        onConfirmArchive={confirmArchive}
+        onCancelArchive={() => setPendingArchiveId(null)}
+      />
     </div>
   );
 }
