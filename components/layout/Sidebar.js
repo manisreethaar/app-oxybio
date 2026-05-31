@@ -55,7 +55,7 @@ export default function Sidebar() {
         { name: 'Growth Studies',      href: '/growth-studies',     icon: Activity,   show: effectiveCanDo('batches', 'view') },
         { name: 'Bioprocess Research', href: '/bioprocess',         icon: Microscope, show: effectiveCanDo('batches', 'view') },
         { name: 'Stability Studies',   href: '/shelf-life',         icon: Clock,      show: effectiveCanDo('batches', 'view') },
-        { name: 'Sensory Panels',      href: '/research',           icon: Users,      show: effectiveCanDo('batches', 'view') },
+        { name: 'Sensory Panels',      href: '/research',           icon: Users,      show: effectiveCanDo('batches', 'view'), exact: true },
       ]
     },
     {
@@ -95,7 +95,7 @@ export default function Sidebar() {
 
   const renderNavItem = (item) => {
     if (!item.show) return null;
-    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+    const isActive = item.exact ? pathname === item.href : (pathname === item.href || pathname.startsWith(item.href + '/'));
     const Icon = item.icon;
     return (
       <li key={item.name}>
@@ -176,7 +176,7 @@ export default function Sidebar() {
                     <div className="grid grid-cols-2 gap-2">
                       {visibleItems.map(item => {
                         const Icon = item.icon;
-                        const isActive = pathname.startsWith(item.href);
+                        const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
                         return (
                           <Link
                             key={item.href} href={item.href}
