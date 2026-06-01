@@ -178,7 +178,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       if (advance) {
         await onAdvanceStage('sterilisation');
       } else {
-        fetch();
+        loadData();
         onDataSaved();
       }
     } catch (err) { toast.error(err.message); }
