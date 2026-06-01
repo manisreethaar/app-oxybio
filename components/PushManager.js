@@ -38,13 +38,28 @@ export default function PushManager() {
           if (!isMounted) return;
           if (sub) {
             setSubscribed(true);
-            // Only refresh the server-side subscription once per session to avoid
-            // hammering the API on every page load. If the server clears the
-            // subscription (410), the user will be prompted again on next login.
             const sessionKey = `push_saved_${user.id}`;
             if (!sessionStorage.getItem(sessionKey)) {
               const ok = await saveSubscription(sub, reg);
               if (ok) sessionStorage.setItem(sessionKey, '1');
+            }
+          } else if (Notification.permission === 'granted') {
+            // Permission already granted but no active subscription (e.g. after SW update)
+            // Auto-resubscribe silently — no banner needed
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (vapidKey) {
+              try {
+                const applicationServerKey = urlBase64ToUint8Array(vapidKey);
+                const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+                const ok = await saveSubscription(newSub, reg);
+                if (ok) {
+                  sessionStorage.setItem(`push_saved_${user.id}`, '1');
+                  setSubscribed(true);
+                }
+              } catch (e) {
+                console.warn('[PushManager] Silent resubscribe failed:', e);
+                setShowBanner(true);
+              }
             }
           } else if (Notification.permission !== 'denied') {
             setShowBanner(true);
