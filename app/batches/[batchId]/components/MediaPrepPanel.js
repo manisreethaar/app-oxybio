@@ -37,6 +37,8 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const [supervisedBy, setSupervisedBy] = useState('');
   // G-51: particle size
   const [particleSize, setParticleSize] = useState('');
+  // G-85: substrate photo URL
+  const [substratePhotoUrl, setSubstratePhotoUrl] = useState('');
   // G-53: water activity
   const [awValue, setAwValue] = useState('');
   // G-52: modular pre-treatment steps [{type, target_temp, duration_min, notes}]
@@ -65,6 +67,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setInitPH(d.initial_ph||''); setNotes(d.notes||'');
       setSupervisedBy(d.supervised_by||'');
       setParticleSize(d.particle_size_mesh||'');
+      setSubstratePhotoUrl(d.substrate_photo_url||'');
       setAwValue(d.aw_value||'');
       setPretreatSteps(d.pre_treatment_steps||[]);
 
@@ -169,6 +172,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         particle_size_mesh:  particleSize || null,
         aw_value:            awValue ? parseFloat(awValue) : null,
         pre_treatment_steps: pretreatSteps,
+        substrate_photo_url: substratePhotoUrl || null,
       }, { onConflict: 'batch_id' });
       if (error) throw error;
 
@@ -354,6 +358,12 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               <input type="number" step="0.01" min="0" max="1" value={awValue} onChange={e=>setAwValue(e.target.value)} className="field-input" placeholder="0.95"/>
               {awValue && parseFloat(awValue) > 0.97 && <p className="text-[10px] text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
             </div>
+          </div>
+          {/* G-85: Substrate photo URL */}
+          <div>
+            <label className="field-label">Substrate Photo URL <span className="text-gray-400 text-[9px]">optional — colour/texture traceability</span></label>
+            <input type="url" value={substratePhotoUrl} onChange={e=>setSubstratePhotoUrl(e.target.value)} className="field-input" placeholder="https://... (link to substrate photo)"/>
+            {substratePhotoUrl && <a href={substratePhotoUrl} target="_blank" rel="noreferrer" className="text-[10px] text-navy underline font-bold mt-0.5 inline-block">View photo →</a>}
           </div>
         </div>
 

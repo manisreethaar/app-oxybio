@@ -808,7 +808,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 {/* Counts */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Colony Count</label>
+                    <label className={labelCls}>Colony Count <span className="text-gray-400 font-normal normal-case text-[8px]">(G-89: manual count — use colony counter tool and enter result)</span></label>
                     <input type="number" min="0" {...register('colony_count')} placeholder="e.g. 245" className={inputCls} />
                   </div>
                   <div>
