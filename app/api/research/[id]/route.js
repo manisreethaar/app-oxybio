@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const patchSchema = z.object({
-  avg_score: z.preprocess((val) => Number(val), z.number().min(0).max(10)),
-  scores: z.array(z.record(z.string(), z.preprocess((val) => Number(val), z.number().min(0).max(10)))).min(1),
+  avg_score:          z.preprocess((val) => Number(val), z.number().min(0).max(10)),
+  scores:             z.array(z.record(z.string(), z.preprocess((val) => Number(val), z.number().min(0).max(10)))).min(1),
+  attribute_comments: z.record(z.string(), z.array(z.string())).optional().nullable(),
 });
 
 export async function PATCH(request, { params }) {
@@ -34,13 +35,18 @@ export async function PATCH(request, { params }) {
       ? [...existingHistory, { scored_at: new Date().toISOString(), scores: current.scores, avg_score: current.avg_score }]
       : existingHistory;
 
+    const updatePayload = {
+      avg_score:      parsed.data.avg_score,
+      scores:         parsed.data.scores,
+      scores_history: newHistory,
+    };
+    if (parsed.data.attribute_comments != null) {
+      updatePayload.attribute_comments = parsed.data.attribute_comments;
+    }
+
     const { data, error } = await supabase
       .from('taste_panels')
-      .update({
-        avg_score:      parsed.data.avg_score,
-        scores:         parsed.data.scores,
-        scores_history: newHistory,
-      })
+      .update(updatePayload)
       .eq('id', params.id)
       .select()
       .single();

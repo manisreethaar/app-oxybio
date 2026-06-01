@@ -28,16 +28,119 @@ const formSchema = z.object({
   microscopic_morphology: z.string().optional(),
   colony_morphology: z.string().optional(),
   sterility_status: z.enum(['Pending', 'Sterile', 'Contaminated']).default('Pending'),
+  dilution_factor: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).optional()),
+  volume_plated_ml: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).optional()),
+  replicate_label: z.string().optional(),
+  media_used: z.string().optional(),
+  media_lot: z.string().optional(),
 });
 
 const READ_STATUSES = [
-  { value: 'no_growth',   label: 'No Growth',    cls: 'border-gray-300 bg-gray-100 text-gray-700' },
-  { value: 'growing',     label: 'Growing',       cls: 'border-emerald-300 bg-emerald-50 text-emerald-700' },
-  { value: 'contaminated',label: 'Contaminated',  cls: 'border-red-300 bg-red-50 text-red-700' },
-  { value: 'tntc',        label: 'TNTC',          cls: 'border-amber-300 bg-amber-50 text-amber-700' },
+  { value: 'no_growth',    label: 'No Growth',    cls: 'border-gray-300 bg-gray-100 text-gray-700' },
+  { value: 'growing',      label: 'Growing',       cls: 'border-emerald-300 bg-emerald-50 text-emerald-700' },
+  { value: 'contaminated', label: 'Contaminated',  cls: 'border-red-300 bg-red-50 text-red-700' },
+  { value: 'tntc',         label: 'TNTC',          cls: 'border-amber-300 bg-amber-50 text-amber-700' },
 ];
 
 const PRESET_HOURS = [12, 24, 36, 48];
+
+// Colony morphology options
+const MORPHOLOGY_OPTIONS = {
+  shape:     { label: 'Shape',     choices: ['Circular', 'Irregular', 'Rhizoid', 'Punctiform'] },
+  margin:    { label: 'Margin',    choices: ['Entire', 'Undulate', 'Lobate', 'Serrate'] },
+  elevation: { label: 'Elevation', choices: ['Flat', 'Raised', 'Convex', 'Umbonate'] },
+  color:     { label: 'Color',     choices: ['White', 'Cream', 'Yellow', 'Orange', 'Pink', 'Brown', 'Black'] },
+  surface:   { label: 'Surface',   choices: ['Smooth', 'Rough', 'Wrinkled', 'Mucoid'] },
+};
+
+const CHIP_COLORS = {
+  shape:     'bg-blue-50 text-blue-700 border-blue-200',
+  margin:    'bg-purple-50 text-purple-700 border-purple-200',
+  elevation: 'bg-teal-50 text-teal-700 border-teal-200',
+  color:     'bg-orange-50 text-orange-700 border-orange-200',
+  surface:   'bg-pink-50 text-pink-700 border-pink-200',
+};
+
+function parseMorphology(raw) {
+  if (!raw) return {};
+  try {
+    const p = JSON.parse(raw);
+    if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+  } catch {}
+  return {};
+}
+
+function MorphologyPicker({ value, onChange }) {
+  const selected = parseMorphology(value);
+
+  const toggle = (trait, choice) => {
+    const next = { ...selected };
+    if (next[trait] === choice) {
+      delete next[trait];
+    } else {
+      next[trait] = choice;
+    }
+    onChange(Object.keys(next).length > 0 ? JSON.stringify(next) : '');
+  };
+
+  return (
+    <div className="space-y-3">
+      {Object.entries(MORPHOLOGY_OPTIONS).map(([trait, { label, choices }]) => (
+        <div key={trait}>
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">{label}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {choices.map(choice => {
+              const isSelected = selected[trait] === choice;
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  onClick={() => toggle(trait, choice)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${
+                    isSelected
+                      ? CHIP_COLORS[trait]
+                      : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
+                  }`}
+                >
+                  {choice}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {/* Display selected chips summary */}
+      {Object.keys(selected).length > 0 && (
+        <div className="pt-2 border-t border-gray-100">
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Selected</p>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(selected).map(([trait, choice]) => (
+              <span key={trait} className={`px-2.5 py-1 rounded-lg text-[10px] font-black border ${CHIP_COLORS[trait]}`}>
+                {MORPHOLOGY_OPTIONS[trait].label}: {choice}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MorphologyChips({ raw }) {
+  const parsed = parseMorphology(raw);
+  if (Object.keys(parsed).length === 0) {
+    return <span className="text-sm text-gray-500">{raw || '--'}</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {Object.entries(parsed).map(([trait, choice]) => (
+        <span key={trait} className={`px-2.5 py-1 rounded-lg text-[10px] font-black border ${CHIP_COLORS[trait] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+          {MORPHOLOGY_OPTIONS[trait]?.label || trait}: {choice}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function parseObservation(obs) {
   if (!obs) return { reads: [], notes: '' };
@@ -74,6 +177,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       incubation_date: initialData.incubation_date || new Date().toISOString().split('T')[0],
       start_time: initialData.start_time ? new Date(initialData.start_time).toISOString().slice(0, 16) : '',
       end_time:   initialData.end_time   ? new Date(initialData.end_time).toISOString().slice(0, 16)   : '',
+      dilution_factor:  initialData.dilution_factor  ?? '',
+      volume_plated_ml: initialData.volume_plated_ml ?? '',
+      replicate_label:  initialData.replicate_label  || 'None',
+      media_lot:        initialData.media_lot        || '',
     } : {
       incubation_date:   new Date().toISOString().split('T')[0],
       sample_category:   'Fermentation IPC',
@@ -84,12 +191,51 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       start_time:        new Date().toISOString().slice(0, 16),
       od_value:          '',
       ph_value:          '',
+      dilution_factor:   '',
+      volume_plated_ml:  '',
+      replicate_label:   'None',
+      media_lot:         '',
     },
   });
 
-  const category   = watch('sample_category');
-  const sampleType = watch('sample_type');
-  const sterility  = watch('sterility_status');
+  const category       = watch('sample_category');
+  const sampleType     = watch('sample_type');
+  const sterility      = watch('sterility_status');
+  const colonyCount    = watch('colony_count');
+  const dilutionFactor = watch('dilution_factor');
+  const volPlated      = watch('volume_plated_ml');
+  const colonyMorph    = watch('colony_morphology');
+
+  // Auto-calculate CFU/mL when inputs are available
+  const autoCfu = useMemo(() => {
+    const cc  = Number(colonyCount);
+    const df  = Number(dilutionFactor);
+    const vol = Number(volPlated);
+    if (cc > 0 && df > 0 && vol > 0) {
+      return cc / (df * vol);
+    }
+    return null;
+  }, [colonyCount, dilutionFactor, volPlated]);
+
+  useEffect(() => {
+    if (autoCfu !== null) {
+      setValue('cfu_per_ml', autoCfu);
+    }
+  }, [autoCfu, setValue]);
+
+  // CFU preview for dilution series (live update from plateReads)
+  const cfuPreview = useMemo(() => {
+    const df  = Number(dilutionFactor);
+    const vol = Number(volPlated);
+    if (df > 0 && vol > 0) {
+      const latestRead = [...plateReads].reverse().find(r => r.colony_count !== '' && r.colony_count != null);
+      const count = latestRead ? Number(latestRead.colony_count) : (Number(colonyCount) || null);
+      if (count !== null && count > 0) {
+        return count / (df * vol);
+      }
+    }
+    return null;
+  }, [dilutionFactor, volPlated, plateReads, colonyCount]);
 
   useEffect(() => {
     supabase.from('batches').select('id, batch_id').order('created_at', { ascending: false }).limit(20)
@@ -144,6 +290,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         ph_value:               data.ph_value ?? null,
         colony_count:           data.colony_count ?? null,
         cfu_per_ml:             data.cfu_per_ml ?? null,
+        dilution_factor:        data.dilution_factor ?? null,
+        volume_plated_ml:       data.volume_plated_ml ?? null,
+        replicate_label:        data.replicate_label === 'None' ? null : (data.replicate_label || null),
+        media_lot:              data.media_lot || null,
         observation,
       };
 
@@ -219,7 +369,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-            {/* ── Tab: Setup ── */}
+            {/* Tab: Setup */}
             {activeTab === 'setup' && (
               <>
                 <div className="space-y-3">
@@ -255,7 +405,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     <div>
                       <label className={labelCls}>Link to Batch</label>
                       <select {...register('batch_id')} className={inputCls}>
-                        <option value="">— No Batch —</option>
+                        <option value="">-- No Batch --</option>
                         {batches.map(b => <option key={b.id} value={b.id}>{b.batch_id}</option>)}
                       </select>
                     </div>
@@ -271,7 +421,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                       <input type="date" {...register('incubation_date')} className={inputCls} />
                     </div>
                     <div>
-                      <label className={labelCls}>Temp (°C) *</label>
+                      <label className={labelCls}>Temp (deg C) *</label>
                       <input type="number" step="0.1" {...register('incubation_temp_c')} className={inputCls} />
                     </div>
                   </div>
@@ -281,11 +431,92 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     <input type="datetime-local" {...register('start_time')} className={inputCls} />
                     {errors.start_time && <p className="text-red-500 text-[10px] mt-1">{errors.start_time.message}</p>}
                   </div>
+
+                  {/* Media Used + Media Lot */}
+                  <div>
+                    <label className={labelCls}>Media Used</label>
+                    <input {...register('media_used')} className={inputCls} placeholder="e.g. TSA, LB Agar" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Media Lot / Batch No</label>
+                    <input {...register('media_lot')} className={inputCls} placeholder="e.g. LOT-2024-0053" />
+                  </div>
                 </div>
+
+                {/* Dilution Series section - Agar Plate only */}
+                {sampleType === 'Agar Plate' && (
+                  <div className="space-y-3 pt-3 border-t border-gray-100">
+                    <p className={labelCls}>Dilution Series</p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Dilution Factor</label>
+                        <input
+                          type="number"
+                          step="any"
+                          {...register('dilution_factor')}
+                          placeholder="e.g. 0.001"
+                          className={inputCls}
+                        />
+                        <p className="text-[9px] text-gray-400 mt-1">0.001 = 10^-3</p>
+                      </div>
+                      <div>
+                        <label className={labelCls}>Volume Plated (mL)</label>
+                        <input
+                          type="number"
+                          step="any"
+                          {...register('volume_plated_ml')}
+                          placeholder="e.g. 0.1"
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Replicate</label>
+                      <select {...register('replicate_label')} className={inputCls}>
+                        <option value="None">None</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                      </select>
+                    </div>
+
+                    {/* CFU/mL preview */}
+                    {cfuPreview !== null && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">
+                          CFU/mL Preview
+                        </p>
+                        <p className="text-sm font-black text-amber-800 font-mono">
+                          {cfuPreview.toExponential(2)} CFU/mL
+                        </p>
+                        <p className="text-[9px] text-amber-600 mt-1">
+                          = colony_count / (dilution_factor x volume_plated_ml)
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Show formula hint even when no values yet */}
+                    {cfuPreview === null && (
+                      <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">
+                          CFU/mL Formula
+                        </p>
+                        <p className="text-[10px] text-gray-500 font-mono">
+                          CFU/mL = colony_count / (dilution_factor x volume_plated_ml)
+                        </p>
+                        <p className="text-[9px] text-gray-400 mt-1">
+                          Fill in dilution factor, volume, and colony count to see the preview.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
 
-            {/* ── Tab: Plate Reads ── */}
+            {/* Tab: Plate Reads */}
             {activeTab === 'reads' && (
               <div className="space-y-4">
                 {/* Quick add presets */}
@@ -306,7 +537,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                               : 'bg-white text-gray-600 border-gray-200 hover:border-navy hover:text-navy hover:bg-navy/5'
                           }`}
                         >
-                          {exists ? '✓' : '+'}{h}h
+                          {exists ? '+' : '+'}{h}h
                         </button>
                       );
                     })}
@@ -331,6 +562,21 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     </div>
                   </div>
                 </div>
+
+                {/* CFU preview in reads tab */}
+                {cfuPreview !== null && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">
+                      Auto-calculated CFU/mL
+                    </p>
+                    <p className="text-sm font-black text-amber-800 font-mono">
+                      {cfuPreview.toExponential(2)} CFU/mL
+                    </p>
+                    <p className="text-[9px] text-amber-500 mt-0.5">
+                      Based on latest colony count in reads + dilution settings from Setup tab.
+                    </p>
+                  </div>
+                )}
 
                 {/* Read cards */}
                 {plateReads.length === 0 ? (
@@ -400,7 +646,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                               type="text"
                               value={read.notes}
                               onChange={e => updateRead(read.hour, 'notes', e.target.value)}
-                              placeholder="Observations…"
+                              placeholder="Observations..."
                               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
                             />
                           </div>
@@ -424,10 +670,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
               </div>
             )}
 
-            {/* ── Tab: Results ── */}
+            {/* Tab: Results */}
             {activeTab === 'results' && (
               <div className="space-y-4">
-                {/* Sterility status — big buttons */}
+                {/* Sterility status - big buttons */}
                 <div>
                   <p className={labelCls}>Sterility Status</p>
                   <div className="grid grid-cols-3 gap-2">
@@ -471,6 +717,21 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   </div>
                 </div>
 
+                {/* Auto CFU info box */}
+                {autoCfu !== null && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">
+                      Auto-calculated
+                    </p>
+                    <p className="text-sm font-black text-amber-800 font-mono">
+                      {autoCfu.toExponential(2)} CFU/mL
+                    </p>
+                    <p className="text-[9px] text-amber-500 mt-0.5">
+                      Auto-filled from colony count, dilution factor, and volume plated.
+                    </p>
+                  </div>
+                )}
+
                 {/* OD / pH for broth */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -483,16 +744,22 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   </div>
                 </div>
 
-                {/* Colony Morphology */}
+                {/* Colony Morphology - structured picker for Agar Plate */}
                 {sampleType === 'Agar Plate' && (
                   <div>
                     <label className={labelCls}>Colony Morphology</label>
-                    <textarea
-                      {...register('colony_morphology')}
-                      rows={2}
-                      placeholder="Describe colonies…"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy transition resize-none bg-white"
-                    />
+                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/40">
+                      <MorphologyPicker
+                        value={colonyMorph}
+                        onChange={(val) => setValue('colony_morphology', val)}
+                      />
+                    </div>
+                    {colonyMorph && (
+                      <div className="mt-2">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Stored as JSON</p>
+                        <p className="text-[9px] font-mono text-gray-400 break-all">{colonyMorph}</p>
+                      </div>
+                    )}
                   </div>
                 )}
 

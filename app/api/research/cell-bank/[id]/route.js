@@ -17,10 +17,11 @@ export async function GET(request, { params }) {
       .select(`
         *,
         linked_formulation:formulations(id, code, name, version, category, status),
-        cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, linked_formulation:formulations(id, code, name, version, category, status)),
+        cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, characterization, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type, step_data, formulation_id),
         employees(full_name),
-        cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status, used_in_batch_id, used_at, notes)
+        qc_released_employee:qc_released_by(full_name),
+        cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status, expires_at, used_in_batch_id, used_at, notes)
       `)
       .eq('id', params.id)
       .single();
@@ -58,7 +59,19 @@ export async function PATCH(request, { params }) {
 
     const body = await request.json();
 
-    // ── Edit strain ────────────────────────────────────────────────────────
+    // -- QC Release action ------------------------------------------------
+    if (body.action === 'qc_release') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
+      const { data, error } = await supabase.from('cell_bank_preparations')
+        .update({ qc_released: true, qc_released_by: emp?.id || access.emp?.id, qc_released_at: new Date().toISOString() })
+        .eq('id', params.id).select().single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ data });
+    }
+
+    // -- Edit strain -------------------------------------------------------
     if (body.target === 'strain') {
       const n = (v) => (v === '' || v === undefined ? null : v);
       const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -85,6 +98,12 @@ export async function PATCH(request, { params }) {
         formulation_id:    n(body.formulation_id),
         updated_at:        new Date().toISOString(),
       };
+
+      // Accept characterization updates
+      if (body.characterization !== undefined) {
+        updates.characterization = body.characterization || {};
+      }
+
       const { data, error } = await supabase
         .from('cell_bank_strains')
         .update(updates)
@@ -100,9 +119,9 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ success: true, data });
     }
 
-    // ── Register vials action ──────────────────────────────────────────────
+    // -- Register vials action ---------------------------------------------
     if (body.action === 'register_vials') {
-      const { count, storage_temp, freezer_id, rack, box } = body;
+      const { count, storage_temp, freezer_id, rack, box, expires_at, vial_expiries } = body;
       if (!count || count < 1) return NextResponse.json({ success: false, error: 'count must be >= 1' }, { status: 400 });
 
       // Fetch prep + strain for code generation
@@ -117,15 +136,20 @@ export async function PATCH(request, { params }) {
       const short = (prep.cell_bank_strains?.strain_short_code || 'XX').toUpperCase();
       const baseCode = `${prep.type}-${year}-${short}`;
 
-      const vialRows = Array.from({ length: count }, (_, i) => ({
-        preparation_id: params.id,
-        vial_code: `${baseCode}-${String(i + 1).padStart(3, '0')}`,
-        storage_temp: storage_temp || '-20°C',
-        freezer_id: freezer_id || null,
-        rack: rack || null,
-        box: box || null,
-        status: 'Available',
-      }));
+      const vialRows = Array.from({ length: count }, (_, i) => {
+        // vial_expiries is an array of per-vial expiry dates; falls back to global expires_at
+        const vialExpiry = vial_expiries?.[i] || expires_at || null;
+        return {
+          preparation_id: params.id,
+          vial_code: `${baseCode}-${String(i + 1).padStart(3, '0')}`,
+          storage_temp: storage_temp || '-20degC',
+          freezer_id: freezer_id || null,
+          rack: rack || null,
+          box: box || null,
+          status: 'Available',
+          expires_at: vialExpiry || null,
+        };
+      });
 
       const { data: vials, error: vialErr } = await supabase.from('cell_bank_vials').insert(vialRows).select();
       if (vialErr) throw vialErr;
@@ -147,7 +171,7 @@ export async function PATCH(request, { params }) {
         'vial_storage',
         {
           count,
-          storage_temp: storage_temp || '-20°C',
+          storage_temp: storage_temp || '-20degC',
           freezer_id: freezer_id || null,
           rack: rack || null,
           box: box || null,
@@ -160,7 +184,7 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ success: true, vials });
     }
 
-    // ── Standard step_data / status update ────────────────────────────────
+    // -- Standard step_data / status update --------------------------------
     const { step_key, step_data_patch, status, vial_count, notes, formulation_id } = body;
 
     const { data: current, error: fetchErr } = await supabase
@@ -176,6 +200,14 @@ export async function PATCH(request, { params }) {
       updates.step_data = {
         ...(current.step_data || {}),
         [step_key]: { ...(current.step_data?.[step_key] || {}), ...step_data_patch },
+      };
+    }
+
+    // Support direct step_data override (used for stability_tests etc.)
+    if (body.step_data && !step_key) {
+      updates.step_data = {
+        ...(current.step_data || {}),
+        ...body.step_data,
       };
     }
 
@@ -196,7 +228,7 @@ export async function PATCH(request, { params }) {
       .single();
     if (error) throw error;
 
-    // Sync step to LNB — fire and forget
+    // Sync step to LNB -- fire and forget
     if (status === 'Completed') {
       await syncCellBankStepToLNB(
         supabase,
@@ -235,7 +267,7 @@ export async function PATCH(request, { params }) {
           const plateCount = Math.min(20, Math.max(1, parseInt(step_data_patch.plates_poured, 10)));
           const sourceLabel = data.prep_code || params.id;
           const strainName = data.cell_bank_strains?.name || null;
-          const baseLabel = [sourceLabel, strainName].filter(Boolean).join(' — ');
+          const baseLabel = [sourceLabel, strainName].filter(Boolean).join(' -- ');
           const loggedAt = new Date().toISOString();
           const observation = [
             step_data_patch.agar_media  ? `Media: ${step_data_patch.agar_media}` : null,
@@ -244,7 +276,7 @@ export async function PATCH(request, { params }) {
           ].filter(Boolean).join(' | ') || null;
 
           const incRows = Array.from({ length: plateCount }, (_, i) => ({
-            sample_name:             plateCount > 1 ? `${baseLabel} — Plate ${i + 1}/${plateCount}` : `${baseLabel} — Plate`,
+            sample_name:             plateCount > 1 ? `${baseLabel} -- Plate ${i + 1}/${plateCount}` : `${baseLabel} -- Plate`,
             sample_category:         'Cell Bank',
             sample_type:             'Agar Plate',
             cell_bank_preparation_id: params.id,

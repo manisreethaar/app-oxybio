@@ -1,5 +1,5 @@
 'use client';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, RadarChart, Radar, PolarGrid, PolarAngleAxis, Legend } from 'recharts';
 
 export function ResearchTrendChart({ sessions }) {
   const data = [...sessions].reverse().map((s, i) => ({
@@ -34,6 +34,43 @@ export function ResearchTrendChart({ sessions }) {
           )}
         />
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+const ATTRS = ['Taste', 'Texture', 'Smell', 'Appearance'];
+
+export function CompareRadarChart({ sessions = [], colors = [] }) {
+  const data = ATTRS.map(attr => {
+    const point = { subject: attr };
+    sessions.forEach((s, i) => {
+      const rawScores = s.scores || [];
+      const avg = rawScores.length > 0
+        ? rawScores.reduce((acc, curr) => acc + (curr[attr] || 0), 0) / rawScores.length
+        : (s.avg_score || 0);
+      point[`s${i}`] = parseFloat(avg.toFixed(1));
+    });
+    return point;
+  });
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <RadarChart cx="50%" cy="50%" outerRadius="65%" data={data}>
+        <PolarGrid stroke="#e2e8f0"/>
+        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}/>
+        <Legend iconSize={8} wrapperStyle={{ fontSize: 10, fontWeight: 700 }}/>
+        {sessions.map((s, i) => (
+          <Radar
+            key={s.id}
+            name={s.session_title}
+            dataKey={`s${i}`}
+            stroke={colors[i] || '#1F3A5F'}
+            fill={colors[i] || '#1F3A5F'}
+            fillOpacity={0.15}
+            strokeWidth={2}
+          />
+        ))}
+      </RadarChart>
     </ResponsiveContainer>
   );
 }
