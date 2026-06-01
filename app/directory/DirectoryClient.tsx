@@ -385,13 +385,15 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         })
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to invite user');
+      if (!res.ok) throw new Error(result.error || 'Failed to create employee');
 
+      toast.success(`${data.full_name} has been added successfully! 🎉`);
       setShowInviteModal(false);
       reset();
       fetchEmployees();
     } catch (err) {
       setInviteError(err.message);
+      toast.error('Failed to add employee: ' + err.message);
     } finally {
       setInviting(false);
     }
