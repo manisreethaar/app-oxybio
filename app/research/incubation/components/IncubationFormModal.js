@@ -11,31 +11,34 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
+// null-safe string: DB returns null for empty fields, z.string().optional() rejects null
+const nullStr = z.preprocess((v) => v ?? '', z.string());
+const nullStrOpt = z.preprocess((v) => v == null ? undefined : String(v), z.string().optional());
+
 const formSchema = z.object({
   sample_name: z.string().min(1, 'Sample name is required'),
-  batch_id: z.string().optional(),
+  batch_id: nullStrOpt,
   sample_category: z.enum(['Fermentation IPC', 'Cell Bank', 'Passage', 'Subculture', 'Other']),
   sample_type: z.enum(['Agar Plate', 'Broth']),
   incubation_date: z.string().min(1, 'Date is required'),
   incubation_temp_c: z.preprocess((v) => Number(v), z.number().min(0).max(100)),
   start_time: z.string().min(1, 'Start time is required'),
-  end_time: z.string().optional(),
-  od_value: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).max(10).optional()),
-  ph_value: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).max(14).optional()),
-  colony_count: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().int().min(0).optional()),
-  cfu_per_ml: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).optional()),
-  staining_method: z.string().optional(),
-  microscopic_morphology: z.string().optional(),
-  colony_morphology: z.string().optional(),
-  sterility_status: z.enum(['Pending', 'Sterile', 'Contaminated']).default('Pending'),
-  dilution_factor: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).optional()),
-  volume_plated_ml: z.preprocess((v) => v === '' ? undefined : Number(v), z.number().min(0).optional()),
-  replicate_label: z.string().optional(),
-  media_used: z.string().optional(),
-  media_lot: z.string().optional(),
-  // G-72: plate image; G-73: duplicate flag
-  plate_image_url: z.string().optional(),
-  is_duplicate: z.boolean().optional().default(false),
+  end_time: nullStrOpt,
+  od_value: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().min(0).max(10).optional()),
+  ph_value: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().min(0).max(14).optional()),
+  colony_count: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().int().min(0).optional()),
+  cfu_per_ml: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().min(0).optional()),
+  staining_method: nullStrOpt,
+  microscopic_morphology: nullStrOpt,
+  colony_morphology: nullStrOpt,
+  sterility_status: z.preprocess((v) => v ?? 'Pending', z.enum(['Pending', 'Sterile', 'Contaminated'])).default('Pending'),
+  dilution_factor: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().min(0).optional()),
+  volume_plated_ml: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().min(0).optional()),
+  replicate_label: nullStrOpt,
+  media_used: nullStrOpt,
+  media_lot: nullStrOpt,
+  plate_image_url: nullStrOpt,
+  is_duplicate: z.preprocess((v) => v ?? false, z.boolean()).default(false),
 });
 
 const READ_STATUSES = [
