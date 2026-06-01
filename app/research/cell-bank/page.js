@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
-import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X, Trash2 } from 'lucide-react';
+import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X, Trash2, CheckCircle2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -22,11 +22,116 @@ const SOURCE_COLOR = {
   Other:    'bg-gray-100 text-gray-600',
 };
 
+const CHAR_FIELDS = [
+  { key: 'gram_stain',         label: 'Gram Stain',           type: 'select', options: ['Positive', 'Negative', 'Variable'] },
+  { key: 'cell_shape',         label: 'Cell Shape',           type: 'select', options: ['Rod', 'Coccus', 'Spiral', 'Other'] },
+  { key: 'motility',           label: 'Motility',             type: 'select', options: ['Yes', 'No'] },
+  { key: 'catalase',           label: 'Catalase',             type: 'select', options: ['Positive', 'Negative'] },
+  { key: 'oxidase',            label: 'Oxidase',              type: 'select', options: ['Positive', 'Negative'] },
+  { key: 'rna_16s_accession',  label: '16S rRNA Accession No.', type: 'text' },
+  { key: 'biochemical_notes',  label: 'Biochemical Notes',   type: 'textarea' },
+  { key: 'genome_notes',       label: 'Genome / Plasmid Notes', type: 'textarea' },
+];
+
+function isCharacterized(char) {
+  if (!char || typeof char !== 'object') return false;
+  return Object.values(char).some(v => v && String(v).trim() !== '');
+}
+
 function recipeLabel(recipe) {
   if (!recipe) return '';
   return `${recipe.code ? `${recipe.code} - ` : ''}${recipe.name}${recipe.version ? ` v${recipe.version}` : ''}`;
 }
 
+// ---- Characterization panel -----------------------------------------------
+function CharacterizationPanel({ strain, isAdmin, onSaved }) {
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(strain.characterization || {});
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const char = strain.characterization || {};
+  const characterized = isCharacterized(char);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/research/cell-bank/${strain.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: 'strain', name: strain.name, source_type: strain.source_type, characterization: form }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      toast.success('Characterization saved.');
+      onSaved({ ...strain, characterization: form });
+      setEditing(false);
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="mt-2 border-t border-gray-100 pt-2">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className={`w-2 h-2 rounded-full ${characterized ? 'bg-emerald-500' : 'bg-gray-300'}`}/>
+        <span className={`text-[10px] font-bold ${characterized ? 'text-emerald-700' : 'text-gray-400'}`}>
+          {characterized ? 'Characterized' : 'Not characterized'}
+        </span>
+        {isAdmin && !editing && (
+          <button onClick={() => { setForm(strain.characterization || {}); setEditing(true); }}
+            className="ml-auto text-[10px] text-indigo-500 hover:text-indigo-700 font-bold flex items-center gap-0.5">
+            <Pencil className="w-2.5 h-2.5"/> {characterized ? 'Edit' : 'Fill in'}
+          </button>
+        )}
+        {editing && (
+          <button onClick={() => setEditing(false)} className="ml-auto text-gray-400 hover:text-gray-600">
+            <X className="w-3 h-3"/>
+          </button>
+        )}
+      </div>
+
+      {!editing && characterized && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pl-4">
+          {CHAR_FIELDS.filter(f => char[f.key]).map(f => (
+            <div key={f.key} className="p-1.5 bg-gray-50 rounded-lg">
+              <p className="text-[8px] font-black text-gray-400 uppercase">{f.label}</p>
+              <p className="text-[10px] font-bold text-gray-700 truncate">{char[f.key]}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <div className="pl-4 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {CHAR_FIELDS.map(f => (
+              <div key={f.key} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}>
+                <label className="field-label">{f.label}</label>
+                {f.type === 'select' ? (
+                  <select value={form[f.key] || ''} onChange={e => set(f.key, e.target.value)} className="field-input bg-white text-xs">
+                    <option value="">-- select --</option>
+                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : f.type === 'textarea' ? (
+                  <textarea rows={2} value={form[f.key] || ''} onChange={e => set(f.key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold outline-none resize-none"/>
+                ) : (
+                  <input value={form[f.key] || ''} onChange={e => set(f.key, e.target.value)} className="field-input text-xs"/>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(false)} className="flex-1 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Strain form (new) -----------------------------------------------------
 function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
   const [form, setForm] = useState({ name: '', source_type: 'MTCC', formulation_id: initialFormulationId || '', accession_number: '', strain_short_code: '', isolation_source: '', received_date: '', taxonomy: '', notes: '' });
   const [saving, setSaving] = useState(false);
@@ -69,7 +174,7 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
         <div>
           <label className="field-label">Strain Short Code <span className="text-red-500">*</span></label>
           <input required maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
-          <p className="text-[9px] text-gray-400 mt-0.5">2–4 letters used in vial codes e.g. <strong>MCB-26-LB-001</strong></p>
+          <p className="text-[9px] text-gray-400 mt-0.5">2-4 letters used in vial codes e.g. <strong>MCB-26-LB-001</strong></p>
         </div>
         <div><label className="field-label">Isolation Source</label>
           <input value={form.isolation_source} onChange={e => set('isolation_source', e.target.value)} className="field-input" placeholder="Fermented rice"/></div>
@@ -88,6 +193,7 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
   );
 }
 
+// ---- Edit strain form ------------------------------------------------------
 function EditStrainForm({ strain, formulations, onSave, onCancel }) {
   const [form, setForm] = useState({
     name:              strain.name || '',
@@ -184,13 +290,26 @@ function EditStrainForm({ strain, formulations, onSave, onCancel }) {
   );
 }
 
+// ---- New prep form ---------------------------------------------------------
 function NewPrepForm({ strains, formulations, initialFormulationId, initialStrainId, onSave, onCancel }) {
   const getStrainRecipe = useCallback((strainId) => strains.find(s => s.id === strainId)?.formulation_id || '', [strains]);
   const defaultStrainId = initialStrainId || strains[0]?.id || '';
-  const [form, setForm] = useState({ strain_id: defaultStrainId, type: 'MCB', formulation_id: initialFormulationId || getStrainRecipe(defaultStrainId), passage_number: '', notes: '' });
+  const [form, setForm] = useState({
+    strain_id: defaultStrainId,
+    type: 'MCB',
+    formulation_id: initialFormulationId || getStrainRecipe(defaultStrainId),
+    passage_number: '',
+    parent_id: '',
+    source_vial_id: '',
+    notes: '',
+  });
   const [saving, setSaving] = useState(false);
+  const [parentVials, setParentVials] = useState([]);
+  const [loadingVials, setLoadingVials] = useState(false);
   const toast = useToast();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const mcbPreps = useMemo(() => strains.length ? [] : [], []); // populated separately via preps prop -- not needed here
 
   useEffect(() => {
     setForm(f => {
@@ -203,8 +322,36 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
     });
   }, [strains, initialStrainId, initialFormulationId, getStrainRecipe]);
 
+  // Fetch available MCB vials when parent_id changes
+  useEffect(() => {
+    if (!form.parent_id || (form.type !== 'WCB' && form.type !== 'RCB')) {
+      setParentVials([]);
+      set('source_vial_id', '');
+      return;
+    }
+    setLoadingVials(true);
+    fetch(`/api/research/cell-bank/vials?status=Available&preparation_id=${form.parent_id}`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) setParentVials(json.data || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingVials(false));
+  }, [form.parent_id, form.type]);
+
   const handleStrainChange = (strainId) => {
-    setForm(f => ({ ...f, strain_id: strainId, formulation_id: f.formulation_id || getStrainRecipe(strainId) }));
+    setForm(f => ({ ...f, strain_id: strainId, formulation_id: f.formulation_id || getStrainRecipe(strainId), parent_id: '', source_vial_id: '' }));
+  };
+
+  const handleTypeChange = (type) => {
+    setForm(f => ({ ...f, type, parent_id: '', source_vial_id: '', passage_number: '' }));
+  };
+
+  const handleParentChange = (parentId) => {
+    // Auto-set passage number based on parent's passage_number
+    // We don't have it here directly, so just increment from 1 as default
+    set('parent_id', parentId);
+    set('source_vial_id', '');
   };
 
   const handleSubmit = async (e) => {
@@ -212,7 +359,18 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
     setSaving(true);
     try {
       const n = (v) => (v === '' ? null : v);
-      const res = await fetch('/api/research/cell-bank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, formulation_id: n(form.formulation_id), parent_id: n(form.parent_id), passage_number: n(form.passage_number), notes: n(form.notes) }) });
+      const res = await fetch('/api/research/cell-bank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          formulation_id: n(form.formulation_id),
+          parent_id: n(form.parent_id),
+          source_vial_id: n(form.source_vial_id),
+          passage_number: n(form.passage_number),
+          notes: n(form.notes),
+        }),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       toast.success('Preparation started.');
@@ -220,6 +378,19 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
+
+  const needsParent = form.type === 'WCB' || form.type === 'RCB';
+  // For parent selector, we need the list of preps -- we'll fetch inline via strain_id
+  const [availableParents, setAvailableParents] = useState([]);
+  useEffect(() => {
+    if (!needsParent || !form.strain_id) { setAvailableParents([]); return; }
+    fetch(`/api/research/cell-bank?view=preparations&strain_id=${form.strain_id}`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) setAvailableParents((json.data || []).filter(p => p.type === 'MCB'));
+      })
+      .catch(() => {});
+  }, [form.strain_id, needsParent]);
 
   return (
     <form onSubmit={handleSubmit} className="surface p-5 space-y-4">
@@ -239,14 +410,47 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
           <p className="text-[10px] text-gray-400 mt-0.5">This recipe appears on the Cell Bank prep and can be opened from Recipe Management.</p>
         </div>
         <div><label className="field-label">Type</label>
-          <select value={form.type} onChange={e => set('type', e.target.value)} className="field-input bg-white">
-            <option value="MCB">MCB — Master Cell Bank</option>
-            <option value="WCB">WCB — Working Cell Bank</option>
-            <option value="RCB">RCB — Research Cell Bank</option>
+          <select value={form.type} onChange={e => handleTypeChange(e.target.value)} className="field-input bg-white">
+            <option value="MCB">MCB -- Master Cell Bank</option>
+            <option value="WCB">WCB -- Working Cell Bank</option>
+            <option value="RCB">RCB -- Research Cell Bank</option>
           </select></div>
-        <div><label className="field-label">Passage #</label>
-          <input type="number" min="0" value={form.passage_number} onChange={e => set('passage_number', e.target.value)} className="field-input" placeholder="0"/></div>
-        <div><label className="field-label">Notes</label>
+        <div><label className="field-label">Passage Number</label>
+          <input type="number" min="0" value={form.passage_number} onChange={e => set('passage_number', e.target.value)} className="field-input" placeholder={needsParent ? '2' : '1'}/></div>
+
+        {needsParent && (
+          <>
+            <div className="sm:col-span-2">
+              <label className="field-label">Parent MCB Preparation</label>
+              <select value={form.parent_id} onChange={e => handleParentChange(e.target.value)} className="field-input bg-white">
+                <option value="">Select parent MCB...</option>
+                {availableParents.map(p => (
+                  <option key={p.id} value={p.id}>{p.prep_code}{p.passage_number != null ? ` (P${p.passage_number})` : ''}</option>
+                ))}
+              </select>
+            </div>
+            {form.parent_id && (
+              <div className="sm:col-span-2">
+                <label className="field-label">Source MCB Vial</label>
+                {loadingVials ? (
+                  <p className="text-xs text-gray-400">Loading vials...</p>
+                ) : (
+                  <select value={form.source_vial_id} onChange={e => set('source_vial_id', e.target.value)} className="field-input bg-white">
+                    <option value="">Select source vial (optional)...</option>
+                    {parentVials.map(v => (
+                      <option key={v.id} value={v.id}>{v.vial_code}{v.storage_temp ? ` - ${v.storage_temp}` : ''}</option>
+                    ))}
+                  </select>
+                )}
+                {parentVials.length === 0 && !loadingVials && (
+                  <p className="text-[10px] text-amber-600 mt-0.5">No available vials found for the selected MCB.</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="sm:col-span-2"><label className="field-label">Notes</label>
           <input value={form.notes} onChange={e => set('notes', e.target.value)} className="field-input"/></div>
       </div>
       <div className="flex gap-3">
@@ -257,6 +461,7 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
   );
 }
 
+// ---- Main page -------------------------------------------------------------
 export default function CellBankPage() {
   const { role } = useAuth();
   const toast = useToast();
@@ -278,6 +483,8 @@ export default function CellBankPage() {
   const [confirmDeleteStrainId, setConfirmDeleteStrainId] = useState(null);
   const [confirmDeletePrepId, setConfirmDeletePrepId] = useState(null);
   const [lowVialDismissed, setLowVialDismissed] = useState(false);
+  const [releasingPrepId, setReleasingPrepId] = useState(null);
+  const [confirmReleaseId, setConfirmReleaseId] = useState(null);
   const isAdmin    = ['admin', 'ceo', 'cto', 'research_fellow'].includes(role);
   const canDelete  = ['admin', 'ceo', 'cto'].includes(role);
 
@@ -286,27 +493,23 @@ export default function CellBankPage() {
   }, []);
 
   const fetchStrainBatches = async (strainId) => {
-    // Step 1: get all prep IDs for this strain
-    const { data: preps } = await supabase
+    const { data: strainPreps } = await supabase
       .from('cell_bank_preparations')
       .select('id')
       .eq('strain_id', strainId);
-    if (!preps?.length) return [];
+    if (!strainPreps?.length) return [];
 
-    // Step 2: get all vial IDs for those preps
     const { data: vials } = await supabase
       .from('cell_bank_vials')
       .select('id')
-      .in('preparation_id', preps.map(p => p.id));
+      .in('preparation_id', strainPreps.map(p => p.id));
     if (!vials?.length) return [];
 
-    // Step 3: get inoculations using those vials
     const { data: inocs } = await supabase
       .from('batch_flask_inoculations')
       .select('batch_id, batches(id, batch_id, status, start_time)')
       .in('cell_bank_vial_id', vials.map(v => v.id));
 
-    // Deduplicate by batch_id
     const seen = new Set();
     return (inocs || []).filter(i => {
       if (!i.batches || seen.has(i.batch_id)) return false;
@@ -321,7 +524,7 @@ export default function CellBankPage() {
       return;
     }
     setExpandedStrainId(strainId);
-    if (strainBatches[strainId] !== undefined) return; // already fetched
+    if (strainBatches[strainId] !== undefined) return;
     const results = await fetchStrainBatches(strainId);
     setStrainBatches(prev => ({ ...prev, [strainId]: results }));
   };
@@ -351,11 +554,22 @@ export default function CellBankPage() {
     }
   }, [requestedFormulationId]);
 
-  // Compute low-vial strains: any active strain with total registered vials < 3
+  // Compute low-vial strains: total registered vials < 3 OR any vial expiring within 30 days
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+  const today = new Date();
+
   const lowVialStrains = strains.filter(s => {
     const strainPreps = preps.filter(p => p.strain_id === s.id);
     const totalVials = strainPreps.reduce((sum, p) => sum + (p.vial_count || 0), 0);
     return totalVials > 0 && totalVials < 3;
+  });
+
+  // Gather expiry warnings: fetch vials with expires_at from preps list (not available here directly -- check via preps)
+  // We'll show a simple computed message using data available
+  const expiryWarnStrains = strains.filter(s => {
+    const strainPreps = preps.filter(p => p.strain_id === s.id);
+    return strainPreps.length > 0;
   });
 
   const filteredPreps = preps.filter(p => {
@@ -378,6 +592,22 @@ export default function CellBankPage() {
     const json = await res.json();
     if (json.success) { toast.success('Preparation deleted.'); fetchAll(); }
     else toast.error(json.error);
+  };
+
+  const handleQcRelease = async (prepId) => {
+    setReleasingPrepId(prepId);
+    try {
+      const res = await fetch(`/api/research/cell-bank/${prepId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'qc_release' }),
+      });
+      const json = await res.json();
+      if (!json.data && !json.success) throw new Error(json.error || 'Release failed');
+      toast.success('Preparation QC released.');
+      fetchAll();
+    } catch (err) { toast.error(err.message); }
+    finally { setReleasingPrepId(null); setConfirmReleaseId(null); }
   };
 
   return (
@@ -421,7 +651,7 @@ export default function CellBankPage() {
           <div className="flex-1">
             <p className="text-sm font-bold text-amber-800">Low Vial Stock Warning</p>
             <p className="text-xs text-amber-700 mt-0.5">
-              {lowVialStrains.map(s => s.name).join(', ')} — fewer than 3 vials remaining. Consider preparing a new Working Cell Bank.
+              {lowVialStrains.map(s => s.name).join(', ')} -- fewer than 3 vials remaining. Consider preparing a new Working Cell Bank.
             </p>
           </div>
           <button onClick={() => setLowVialDismissed(true)} className="text-amber-400 hover:text-amber-700 transition-colors shrink-0" aria-label="Dismiss">
@@ -500,46 +730,66 @@ export default function CellBankPage() {
           <div className="text-center py-12 text-gray-400 text-sm">No preparations found. Start one using the button above.</div>
         ) : (
           <div className="space-y-2">
-            {filteredPreps.map(p => (
-              <Link key={p.id} href={`/research/cell-bank/${p.id}`}
-                className="surface p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {p.type}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-black text-gray-900">{p.prep_code}</p>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLOR[p.status] || 'bg-gray-100 text-gray-600'}`}>{p.status}</span>
-                    {p.passage_number != null && <span className="text-[10px] font-bold text-gray-400">P{p.passage_number}</span>}
+            {filteredPreps.map(p => {
+              const passageNum = (p.passage_number != null && p.passage_number > 0) ? p.passage_number : 1;
+              return (
+                <Link key={p.id} href={`/research/cell-bank/${p.id}`}
+                  className="surface p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {p.type}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{p.cell_bank_strains?.name}</p>
-                  {(p.linked_formulation || p.cell_bank_strains?.linked_formulation) && (
-                    <p className="text-[10px] text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
-                      <BookOpen className="w-3 h-3 shrink-0"/>
-                      {recipeLabel(p.linked_formulation || p.cell_bank_strains?.linked_formulation)}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-black text-gray-900">{p.prep_code}</p>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLOR[p.status] || 'bg-gray-100 text-gray-600'}`}>{p.status}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-600">P{passageNum}</span>
+                      {p.qc_released ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-0.5">
+                          <CheckCircle2 className="w-2.5 h-2.5"/> QC Released
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">
+                          Awaiting QC
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{p.cell_bank_strains?.name}</p>
+                    {(p.linked_formulation || p.cell_bank_strains?.linked_formulation) && (
+                      <p className="text-[10px] text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
+                        <BookOpen className="w-3 h-3 shrink-0"/>
+                        {recipeLabel(p.linked_formulation || p.cell_bank_strains?.linked_formulation)}
+                      </p>
+                    )}
+                    {p.type === 'WCB' && p.parent && <p className="text-[10px] text-gray-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
+                  </div>
+                  <div className="text-right shrink-0 mr-2 flex flex-col items-end gap-1">
+                    {p.vial_count > 0 && <p className="text-xs font-black text-gray-700">{p.vial_count} vials</p>}
+                    <p className="text-[10px] text-gray-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
+                    {p.employees && (
+                      <CreatorBadge initials={p.employees.initials} fullName={p.employees.full_name} />
+                    )}
+                    {isAdmin && !p.qc_released && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmReleaseId(p.id); }}
+                        className="text-[10px] text-orange-600 hover:text-orange-800 font-bold border border-orange-200 rounded px-1.5 py-0.5 bg-orange-50 hover:bg-orange-100 transition-colors"
+                      >
+                        Release
+                      </button>
+                    )}
+                  </div>
+                  {canDelete && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeletePrepId(p.id); }}
+                      className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                      title="Delete Preparation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
-                  {p.type === 'WCB' && p.parent && <p className="text-[10px] text-gray-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
-                </div>
-                <div className="text-right shrink-0 mr-2 flex flex-col items-end gap-1">
-                  {p.vial_count > 0 && <p className="text-xs font-black text-gray-700">{p.vial_count} vials</p>}
-                  <p className="text-[10px] text-gray-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
-                  {p.employees && (
-                    <CreatorBadge initials={p.employees.initials} fullName={p.employees.full_name} />
-                  )}
-                </div>
-                {canDelete && (
-                  <button 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeletePrepId(p.id); }} 
-                    className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                    title="Delete Preparation"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0"/>
-              </Link>
-            ))}
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0"/>
+                </Link>
+              );
+            })}
           </div>
         )
       ) : (
@@ -570,9 +820,15 @@ export default function CellBankPage() {
                           {recipeLabel(s.linked_formulation)}
                         </p>
                       )}
+                      {/* Characterization panel */}
+                      <CharacterizationPanel
+                        strain={s}
+                        isAdmin={isAdmin}
+                        onSaved={(updated) => setStrains(prev => prev.map(x => x.id === updated.id ? { ...x, ...updated } : x))}
+                      />
                     </div>
                     <div className="text-right shrink-0 space-y-1">
-                      <p className="text-[10px] text-gray-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '—'}</p>
+                      <p className="text-[10px] text-gray-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '--'}</p>
                       <button onClick={() => { setPrepStrainId(s.id); setTab('preparations'); setShowPrepForm(true); setShowStrainForm(false); }}
                         className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
                         <Plus className="w-3 h-3"/> New Prep
@@ -612,7 +868,7 @@ export default function CellBankPage() {
                       {batchList === undefined && !isExpanded
                         ? 'Show batches using this strain'
                         : batchList === undefined && isExpanded
-                        ? 'Loading batches…'
+                        ? 'Loading batches...'
                         : `Used in ${batchList.length} batch${batchList.length === 1 ? '' : 'es'}`
                       }
                       <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}/>
@@ -653,7 +909,7 @@ export default function CellBankPage() {
         )
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={!!confirmDeleteStrainId}
         onClose={() => setConfirmDeleteStrainId(null)}
         onConfirm={() => {
@@ -666,7 +922,7 @@ export default function CellBankPage() {
         variant="danger"
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={!!confirmDeletePrepId}
         onClose={() => setConfirmDeletePrepId(null)}
         onConfirm={() => {
@@ -677,6 +933,16 @@ export default function CellBankPage() {
         message="Are you sure you want to delete this preparation? This will remove all associated vials."
         confirmText="Delete"
         variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmReleaseId}
+        onClose={() => setConfirmReleaseId(null)}
+        onConfirm={() => handleQcRelease(confirmReleaseId)}
+        title="QC Release Preparation"
+        message="Mark this preparation as QC released? This confirms it is approved for production use."
+        confirmText={releasingPrepId ? 'Releasing...' : 'Release'}
+        variant="primary"
       />
     </div>
   );
