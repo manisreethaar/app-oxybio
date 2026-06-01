@@ -66,7 +66,7 @@ export async function DELETE(request, { params }) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
-    if (!emp || emp.role !== 'admin') {
+    if (!emp || !['admin', 'ceo', 'cto'].includes(emp.role)) {
       return NextResponse.json({ error: 'Permission denied. Admins only.' }, { status: 403 });
     }
 

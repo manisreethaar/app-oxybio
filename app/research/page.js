@@ -109,7 +109,7 @@ function exportCSV(session) {
 export default function ConsumerResearchPage() {
   const { employeeProfile, loading: authLoading } = useAuth();
   const toast    = useToast();
-  const isAdmin  = employeeProfile?.role === 'admin';
+  const isAdmin  = ['admin', 'ceo', 'cto'].includes(employeeProfile?.role);
 
   // Data
   const [sessions,  setSessions]  = useState([]);
@@ -222,12 +222,13 @@ export default function ConsumerResearchPage() {
   // Delete
   // -------------------------------------------------------------------------
   const handleDeleteSession = async (id) => {
-    try {
-      const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete');
-      toast.success('Session deleted');
-      fetchData();
-    } catch (err) { toast.error(err.message); }
+    const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to delete');
+    }
+    toast.success('Session deleted');
+    setSessions(prev => prev.filter(s => s.id !== id));
   };
 
   // -------------------------------------------------------------------------
