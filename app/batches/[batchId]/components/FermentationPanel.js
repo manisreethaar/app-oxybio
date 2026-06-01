@@ -130,6 +130,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [od,         setOd]         = useState('');
   // G-30: Titratable Acidity
   const [ta,         setTa]         = useState('');
+  // G-82: CO₂ / gas lock observation
+  const [co2Observed, setCo2Observed] = useState('');
+  // G-83: Ethanol % (for mixed cultures)
+  const [ethanolPct,  setEthanolPct]  = useState('');
   const [foam,       setFoam]       = useState('None');
   const [appearance, setAppearance] = useState('Normal');
   const [platingIntent, setPlatingIntent] = useState(null); // 'yes'|'no'|'later'|null
@@ -341,6 +345,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           optical_density: od ? parseFloat(od) : null,
           titratable_acidity_pct: ta ? parseFloat(ta) : null,
           incubator_equipment_id: incubatorId || null,
+          co2_observed:  co2Observed || null,
+          ethanol_pct:   ethanolPct ? parseFloat(ethanolPct) : null,
           foam_level: foam,
           visual_appearance: appearance,
           elapsed_hours: elapsed ? parseFloat(elapsed.toFixed(2)) : null,
@@ -365,7 +371,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (!json.success) throw new Error(json.error || 'Failed to log reading');
 
       toast.success(json.incubation ? 'Reading logged and incubation activity created.' : 'Reading logged.');
-      setPH(''); setTemp(''); setBrix(''); setOd(''); setTa('');
+      setPH(''); setTemp(''); setBrix(''); setOd(''); setTa(''); setCo2Observed(''); setEthanolPct('');
       setPlatingIntent(null); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
       setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
@@ -687,6 +693,24 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   <p className="text-[9px] text-gray-400 mt-0.5">Titratable acidity</p>
                 </div>
               </div>
+              {/* G-82: CO₂ gas lock observation */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">CO₂ / Gas Production</label>
+                <div className="flex gap-2">
+                  {['Active bubbling','Slow evolution','Trace','None observed'].map(o=>(
+                    <button key={o} type="button" onClick={()=>setCo2Observed(co2Observed===o?'':o)}
+                      className={`flex-1 py-1 text-[9px] font-black rounded-lg border transition-all ${co2Observed===o?'bg-navy text-white border-navy':'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* G-83: Ethanol measurement (for mixed cultures) */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Ethanol (%) <span className="text-gray-300 font-normal normal-case">— mixed cultures</span></label>
+                <input type="number" step="0.01" value={ethanolPct} onChange={e=>setEthanolPct(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+              </div>
+
               {/* G-31: Incubator equipment picker */}
               {incubators.length > 0 && (
                 <div>

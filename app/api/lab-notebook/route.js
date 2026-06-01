@@ -67,7 +67,8 @@ export async function POST(request) {
     }
 
     const { title, batch_id, flask_id, batch_stage, attachment_url, cell_bank_preparation_id,
-            sop_references, previous_version_id, entry_version } = await request.json();
+            sop_references, previous_version_id, entry_version,
+            objective, observations } = await request.json();
 
     if (!title) {
       return NextResponse.json({ success: false, error: 'Experiment title is required' }, { status: 400 });
@@ -95,6 +96,8 @@ export async function POST(request) {
         sop_references:      sop_references || [],
         previous_version_id: previous_version_id || null,
         entry_version:       entry_version || 1,
+        objective:           objective    || null,
+        observations:        observations || null,
         created_by: emp.id,
         status: 'Draft'
       })

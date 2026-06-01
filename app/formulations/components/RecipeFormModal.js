@@ -124,6 +124,46 @@ export default function RecipeFormModal({
             </p>
           </div>
 
+          {/* G-79: Yield prediction */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Predicted Yield (ml) <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input type="number" step="10" placeholder="e.g. 900"
+              value={newForm.yield_predicted_ml || ''}
+              onChange={e => setNewForm({...newForm, yield_predicted_ml: e.target.value ? parseFloat(e.target.value) : ''})}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
+            <p className="text-[10px] text-gray-400 mt-0.5">Expected product yield from base volume</p>
+          </div>
+
+          {/* G-78: Nutritional info (per 100g) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Nutritional Composition (per 100g) <span className="text-gray-400 font-normal">(optional)</span></label>
+            <div className="grid grid-cols-2 gap-2">
+              {[['energy_kcal','Energy (kcal)'],['protein_g','Protein (g)'],['carbohydrate_g','Carbs (g)'],['fat_g','Fat (g)'],['fibre_g','Fibre (g)'],['sodium_mg','Sodium (mg)']].map(([key,label])=>(
+                <div key={key}>
+                  <label className="block text-[9px] font-bold text-gray-500 uppercase mb-0.5">{label}</label>
+                  <input type="number" step="0.1" placeholder="0"
+                    value={(newForm.nutritional_info||{})[key] || ''}
+                    onChange={e=>setNewForm(p=>({...p, nutritional_info: {...(p.nutritional_info||{}), [key]: e.target.value?parseFloat(e.target.value):undefined}}))}
+                    className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg font-semibold text-xs outline-none focus:border-navy transition-all"/>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* G-80: Regulatory claims */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Regulatory / Label Claims <span className="text-gray-400 font-normal">(optional)</span></label>
+            <div className="flex flex-wrap gap-2">
+              {['Probiotic','Contains Live Cultures ≥10⁶/ml','Gluten-Free','Organic','FSSAI Compliant','Export Grade'].map(claim=>(
+                <button key={claim} type="button"
+                  onClick={()=>setNewForm(p=>({...p, regulatory_claims: (p.regulatory_claims||[]).includes(claim) ? (p.regulatory_claims||[]).filter(c=>c!==claim) : [...(p.regulatory_claims||[]),claim]}))}
+                  className={`px-2.5 py-1 text-[9px] font-black rounded-lg border transition-all ${(newForm.regulatory_claims||[]).includes(claim)?'bg-emerald-600 text-white border-emerald-600':'bg-white text-gray-500 border-gray-200 hover:border-emerald-300'}`}>
+                  {claim}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
             <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5"/>
             <p className="text-[10px] font-bold text-blue-700">Recipe will be saved as <strong>Draft</strong>. Submit for Review → get it Approved → then launch batches.</p>

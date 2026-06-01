@@ -40,7 +40,8 @@ export default function FormulationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // id of recipe being actioned
   const [items, setItems] = useState([]);
-  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000 });
+  const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000,
+    nutritional_info: {}, yield_predicted_ml: '', regulatory_claims: [] });
   
   const [selectedItem, setSelectedItem] = useState('');
   const [selectedQty, setSelectedQty] = useState('');
@@ -273,7 +274,7 @@ export default function FormulationsPage() {
       });
       if (res.ok) {
         setShowNew(false);
-        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000 });
+        setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000, nutritional_info: {}, yield_predicted_ml: '', regulatory_claims: [] });
         fetchFormulations();
       } else { 
         const errData = await res.json();
