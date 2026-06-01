@@ -44,6 +44,8 @@ export default function DigitalLnbPage() {
   const [versionSourceEntry, setVersionSourceEntry] = useState(null);
   // G-26: SOP references in create form
   const [sopRefs,          setSopRefs]          = useState('');
+  // G-90: sketch/diagram URL
+  const [sketchUrl,        setSketchUrl]        = useState('');
 
   const fileRef = useRef(null);
   const supabase = useMemo(() => createClient(), []);
@@ -138,6 +140,8 @@ export default function DigitalLnbPage() {
           // G-77: hypothesis; G-76: direct observations
           objective: data.hypothesis || null,
           observations: data.direct_observations || null,
+          // G-90: sketch URL
+          sketch_url: sketchUrl || null,
         })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create entry');
@@ -148,6 +152,7 @@ export default function DigitalLnbPage() {
       setSelectedStage('');
       setBatchFlasks([]);
       setSopRefs('');
+      setSketchUrl('');
       setVersionSourceEntry(null);
       fetchData();
     } catch (err) { toast.error(err.message); }
@@ -510,6 +515,14 @@ export default function DigitalLnbPage() {
                 <input type="text" value={sopRefs} onChange={e=>setSopRefs(e.target.value)} placeholder="e.g. SOP-FERM-001, SOP-QC-003"
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
                 <p className="text-[10px] text-gray-400 mt-1">Link to standard operating procedures that govern this experiment</p>
+              </div>
+
+              {/* G-90: Sketch / Diagram attachment URL */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Sketch / Diagram URL <span className="text-gray-400 font-normal">(Optional)</span></label>
+                <input type="url" value={sketchUrl} onChange={e=>setSketchUrl(e.target.value)} placeholder="https://... (link to sketch, diagram, or annotated image)"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
+                <p className="text-[10px] text-gray-400 mt-1">Upload sketch to cloud storage (Drive, Supabase) and paste the link here</p>
               </div>
 
               {/* G-25: version source indicator */}

@@ -72,6 +72,78 @@ function PhChart({ readings }) {
   );
 }
 
+// G-87: OD trend chart
+function OdChart({ readings }) {
+  const valid = readings.filter(r => r.optical_density != null && r.elapsed_hours != null);
+  if (!valid.length) return null;
+  const W = 400, H = 90, PAD = { t: 8, r: 16, b: 18, l: 32 };
+  const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+  const maxH = Math.max(...valid.map(r => r.elapsed_hours), 1);
+  const allOd = valid.map(r => r.optical_density);
+  const minOd = Math.max(0, Math.min(...allOd) - 0.05);
+  const maxOd = Math.max(...allOd) + 0.05;
+  const xS = h => PAD.l + (h / maxH) * cW;
+  const yS = v => PAD.t + cH - ((v - minOd) / (maxOd - minOd)) * cH;
+  const byFlask = {};
+  valid.forEach(r => { const k = r.flask_label || 'All'; (byFlask[k] = byFlask[k] || []).push(r); });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+      {Object.entries(byFlask).map(([label, pts], i) => {
+        const sorted = [...pts].sort((a,b) => a.elapsed_hours - b.elapsed_hours);
+        const d = sorted.map((p,j) => `${j===0?'M':'L'}${xS(p.elapsed_hours).toFixed(1)},${yS(p.optical_density).toFixed(1)}`).join(' ');
+        const col = FLASK_COLORS[i % FLASK_COLORS.length];
+        return (
+          <g key={label}>
+            <path d={d} stroke={col} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2,3"/>
+            {sorted.map((p,j) => <circle key={j} cx={xS(p.elapsed_hours)} cy={yS(p.optical_density)} r={2} fill={col} stroke="white" strokeWidth={0.8}/>)}
+          </g>
+        );
+      })}
+      {[minOd, (minOd+maxOd)/2, maxOd].map(v => <text key={v} x={PAD.l-4} y={yS(v)} textAnchor="end" dominantBaseline="middle" fontSize={7} fill="#9ca3af">{v.toFixed(2)}</text>)}
+      {[0, Math.round(maxH/2), Math.round(maxH)].map(h => <text key={h} x={xS(h)} y={H-1} textAnchor="middle" fontSize={7} fill="#9ca3af">T+{h}h</text>)}
+      <text x={W-PAD.r} y={PAD.t+4} textAnchor="end" fontSize={7} fill="#6b7280">OD</text>
+    </svg>
+  );
+}
+
+// G-88: Temperature trend chart
+function TempChart({ readings }) {
+  const valid = readings.filter(r => r.incubator_temp_c != null && r.elapsed_hours != null);
+  if (!valid.length) return null;
+  const W = 400, H = 90, PAD = { t: 8, r: 16, b: 18, l: 32 };
+  const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+  const maxH = Math.max(...valid.map(r => r.elapsed_hours), 1);
+  const temps = valid.map(r => r.incubator_temp_c);
+  const minT = Math.max(34, Math.min(...temps) - 0.5);
+  const maxT = Math.min(42, Math.max(...temps) + 0.5);
+  const xS = h => PAD.l + (h / maxH) * cW;
+  const yS = v => PAD.t + cH - ((v - minT) / (maxT - minT)) * cH;
+  const byFlask = {};
+  valid.forEach(r => { const k = r.flask_label || 'All'; (byFlask[k] = byFlask[k] || []).push(r); });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+      {/* Target range band 36-38°C */}
+      <rect x={PAD.l} y={yS(38)} width={cW} height={Math.max(0,yS(36)-yS(38))} fill="#f59e0b" fillOpacity={0.1}/>
+      <line x1={PAD.l} x2={W-PAD.r} y1={yS(38)} y2={yS(38)} stroke="#f59e0b" strokeWidth={0.5} strokeDasharray="2,2"/>
+      <line x1={PAD.l} x2={W-PAD.r} y1={yS(36)} y2={yS(36)} stroke="#f59e0b" strokeWidth={0.5} strokeDasharray="2,2"/>
+      {Object.entries(byFlask).map(([label, pts], i) => {
+        const sorted = [...pts].sort((a,b) => a.elapsed_hours - b.elapsed_hours);
+        const d = sorted.map((p,j) => `${j===0?'M':'L'}${xS(p.elapsed_hours).toFixed(1)},${yS(p.incubator_temp_c).toFixed(1)}`).join(' ');
+        const col = FLASK_COLORS[i % FLASK_COLORS.length];
+        return (
+          <g key={label}>
+            <path d={d} stroke={col} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            {sorted.map((p,j) => <circle key={j} cx={xS(p.elapsed_hours)} cy={yS(p.incubator_temp_c)} r={2.5} fill={p.is_temp_alarm?'#ef4444':col} stroke="white" strokeWidth={0.8}/>)}
+          </g>
+        );
+      })}
+      {[minT, (minT+maxT)/2, maxT].filter(v=>!isNaN(v)).map(v => <text key={v} x={PAD.l-4} y={yS(v)} textAnchor="end" dominantBaseline="middle" fontSize={7} fill="#9ca3af">{v.toFixed(0)}°C</text>)}
+      {[0, Math.round(maxH/2), Math.round(maxH)].map(h => <text key={h} x={xS(h)} y={H-1} textAnchor="middle" fontSize={7} fill="#9ca3af">T+{h}h</text>)}
+      <text x={W-PAD.r} y={PAD.t+4} textAnchor="end" fontSize={7} fill="#f59e0b">36–38°C</text>
+    </svg>
+  );
+}
+
 // G-33: Brix trend chart
 function BrixChart({ readings }) {
   const valid = readings.filter(r => r.brix != null && r.elapsed_hours != null);
@@ -847,6 +919,20 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               <div>
                 <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Sugar Consumption (Brix °Bx)</p>
                 <BrixChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
+              </div>
+            )}
+            {/* G-87: OD trend chart */}
+            {readings.some(r => r.optical_density != null) && (
+              <div>
+                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Biomass Growth (OD 600nm)</p>
+                <OdChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
+              </div>
+            )}
+            {/* G-88: Temperature trend chart */}
+            {readings.some(r => r.incubator_temp_c != null) && (
+              <div>
+                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Temperature Profile (°C)</p>
+                <TempChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
               </div>
             )}
             {/* G-34: Sampling plan indicator */}
