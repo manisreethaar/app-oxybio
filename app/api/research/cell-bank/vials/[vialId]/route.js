@@ -7,12 +7,14 @@ export const dynamic = 'force-dynamic';
 
 // PATCH /api/research/cell-bank/vials/[vialId]
 // body: {
-//   action: 'use'|'thaw'|'return'|'discard',
-//   batch_id?,         — batch this vial is being used in
-//   flask_id?,         — specific flask
-//   study_id?,         — growth study this vial is being used in
-//   cell_bank_prep_id? — cell bank preparation this vial seeds
-//   volume_used_ml?,   — how much volume was taken from this vial
+//   action: 'use'|'thaw'|'return'|'discard'|'ship',
+//   batch_id?,         -- batch this vial is being used in
+//   flask_id?,         -- specific flask
+//   study_id?,         -- growth study this vial is being used in
+//   cell_bank_prep_id? -- cell bank preparation this vial seeds
+//   volume_used_ml?,   -- how much volume was taken from this vial
+//   recovery_pct?,     -- post-thaw viability/recovery percentage (for use/thaw)
+//   destination?,      -- for ship: destination lab or organization
 //   notes?
 // }
 export async function PATCH(request, { params }) {
@@ -29,10 +31,33 @@ export async function PATCH(request, { params }) {
       study_id,
       cell_bank_prep_id,
       volume_used_ml,
+      recovery_pct,
+      destination,
       notes,
     } = body;
 
     if (!action) return NextResponse.json({ success: false, error: 'action is required' }, { status: 400 });
+
+    // -- Ship action -------------------------------------------------------
+    if (action === 'ship') {
+      await supabase.from('cell_bank_vials').update({ status: 'Shipped' }).eq('id', params.vialId);
+      await supabase.from('cell_bank_vial_logs').insert({
+        vial_id: params.vialId,
+        action: 'shipped',
+        destination: destination || null,
+        operator_id: access.emp?.id || null,
+        notes: notes || null,
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
+
+      const { data, error } = await supabase
+        .from('cell_bank_vials')
+        .select('*')
+        .eq('id', params.vialId)
+        .single();
+      if (error) throw error;
+      return NextResponse.json({ success: true, data });
+    }
 
     const vialUpdates = {};
     let logAction;
@@ -72,22 +97,25 @@ export async function PATCH(request, { params }) {
       if (updateErr) throw updateErr;
     }
 
-    // Enriched log entry — now includes study_id, cell_bank_prep_id, volume_used_ml
+    // Enriched log entry -- includes study_id, cell_bank_prep_id, volume_used_ml, recovery_pct
     await supabase.from('cell_bank_vial_logs').insert({
       vial_id:          params.vialId,
       action:           logAction,
-      batch_id:         batch_id         || null,
-      flask_id:         flask_id         || null,
-      study_id:         study_id         || null,
+      batch_id:         batch_id          || null,
+      flask_id:         flask_id          || null,
+      study_id:         study_id          || null,
       cell_bank_prep_id: cell_bank_prep_id || null,
-      volume_used_ml:   volume_used_ml   || null,
-      operator_id:      access.emp?.id   || null,
-      notes:            notes            || null,
+      volume_used_ml:   volume_used_ml    || null,
+      recovery_pct:     (recovery_pct !== undefined && recovery_pct !== '' && recovery_pct !== null)
+                          ? parseFloat(recovery_pct)
+                          : null,
+      operator_id:      access.emp?.id    || null,
+      notes:            notes             || null,
     }).catch(() => {});
 
-    // ── Inventory usage record for vial consumption ──────────────────────
+    // -- Inventory usage record for vial consumption ----------------------
     // Created whenever a vial is actually consumed (use / discard).
-    // stock_id is null here — vials are cell bank assets, not raw material lots.
+    // stock_id is null here -- vials are cell bank assets, not raw material lots.
     if (['use', 'discard'].includes(action)) {
       await supabase.from('inventory_usage').insert({
         vial_id:          params.vialId,
@@ -114,7 +142,7 @@ export async function PATCH(request, { params }) {
   }
 }
 
-// GET /api/research/cell-bank/vials/[vialId] — fetch single vial with log
+// GET /api/research/cell-bank/vials/[vialId] -- fetch single vial with log
 export async function GET(request, { params }) {
   try {
     const supabase = createClient();
@@ -124,7 +152,7 @@ export async function GET(request, { params }) {
     const [{ data: vial, error }, { data: logs }] = await Promise.all([
       supabase.from('cell_bank_vials').select('*').eq('id', params.vialId).single(),
       supabase.from('cell_bank_vial_logs')
-        .select('id, action, batch_id, flask_id, notes, created_at, employees(full_name), batches(batch_id)')
+        .select('id, action, batch_id, flask_id, notes, recovery_pct, destination, created_at, employees(full_name), batches(batch_id)')
         .eq('vial_id', params.vialId)
         .order('created_at', { ascending: true }),
     ]);

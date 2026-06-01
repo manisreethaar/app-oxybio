@@ -43,6 +43,7 @@ const prepSchema = z.object({
   type: z.enum(['MCB', 'WCB', 'RCB']),
   strain_id: z.string().uuid(),
   parent_id: z.string().uuid().optional().nullable(),
+  source_vial_id: z.string().uuid().optional().nullable(),
   formulation_id: z.string().uuid().optional().nullable(),
   prep_code: z.string().optional().nullable(),
   passage_number: z.coerce.number().int().min(0).optional().nullable(),
@@ -62,7 +63,7 @@ export async function GET(request) {
     if (view === 'strains') {
       const { data, error } = await supabase
         .from('cell_bank_strains')
-        .select('*, employees(full_name, initials), linked_formulation:formulations(id, code, name, version, category, status)')
+        .select('*, characterization, employees(full_name, initials), linked_formulation:formulations(id, code, name, version, category, status)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ success: true, data });
@@ -71,7 +72,9 @@ export async function GET(request) {
     let query = supabase
       .from('cell_bank_preparations')
       .select(`
-        id, type, prep_code, status, passage_number, vial_count, notes,
+        id, type, prep_code, status, passage_number, source_vial_id,
+        qc_released, qc_released_by, qc_released_at,
+        vial_count, notes,
         formulation_id, created_at, completed_at,
         linked_formulation:formulations(id, code, name, version, category, status),
         cell_bank_strains(id, name, source_type, accession_number, formulation_id, linked_formulation:formulations(id, code, name, version, category, status)),
@@ -98,11 +101,12 @@ export async function POST(request) {
 
     const body = await request.json();
 
-    // Normalize empty strings → null for optional UUID / date fields
+    // Normalize empty strings -> null for optional UUID / date fields
     // (HTML selects send "" when nothing is chosen; Zod's .uuid() rejects empty strings)
     const emptyToNull = (v) => (v === '' || v === undefined) ? null : v;
     body.formulation_id  = emptyToNull(body.formulation_id);
     body.parent_id       = emptyToNull(body.parent_id);
+    body.source_vial_id  = emptyToNull(body.source_vial_id);
     body.received_date   = emptyToNull(body.received_date);
     body.accession_number  = emptyToNull(body.accession_number);
     body.isolation_source  = emptyToNull(body.isolation_source);
