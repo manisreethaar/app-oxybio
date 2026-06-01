@@ -499,7 +499,7 @@ export default function FormulationsPage() {
                           className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors"
                         >
                           <FlaskConical className="w-2.5 h-2.5"/>
-                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} â†’
+                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? ‘es’ : ‘’} →
                         </button>
                       </div>
                     )}
@@ -543,7 +543,7 @@ export default function FormulationsPage() {
                       <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0"/>
                         <p className="text-[10px] font-bold text-emerald-700">
-                          Approved by {f.approver.full_name} Â· {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
+                          Approved by {f.approver.full_name} · {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
                         </p>
                       </div>
                     )}
