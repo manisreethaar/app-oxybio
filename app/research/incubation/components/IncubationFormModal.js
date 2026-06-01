@@ -39,6 +39,9 @@ const formSchema = z.object({
   media_lot: nullStrOpt,
   plate_image_url: nullStrOpt,
   is_duplicate: z.preprocess((v) => v ?? false, z.boolean()).default(false),
+  formulation_id: nullStrOpt,
+  media_inventory_item_id: nullStrOpt,
+  media_volume_used_ml: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().min(0).optional()),
 });
 
 const READ_STATUSES = [
@@ -263,10 +266,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
           return [...prev.filter(p => !ids.has(p.id)), ...data];
         });
       });
-    supabase.from('inventory_items').select('id, name, unit').eq('category', 'Media')
+    supabase.from('inventory_items').select('id, name, unit').in('category', ['Microbiological Media', 'Lab Consumables'])
       .order('name').then(({ data }) => setMediaItems(data || []));
     supabase.from('formulations').select('id, code, name, version, ingredients')
-      .eq('status', 'Approved').eq('category', 'Media')
+      .eq('status', 'Approved').eq('category', 'Lab Media')
       .order('name').then(({ data }) => setMediaRecipes(data || []));
   }, [supabase]);
 
@@ -473,7 +476,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                   {/* Media Used + Media Lot */}
                   <div>
-                    <label className={labelCls}>Media Used</label>
+                    <label className={labelCls}>Media Used (free text)</label>
                     <input {...register('media_used')} className={inputCls} placeholder="e.g. TSA, LB Agar" />
                   </div>
                   <div>
