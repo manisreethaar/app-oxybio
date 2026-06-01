@@ -72,6 +72,46 @@ function PhChart({ readings }) {
   );
 }
 
+// G-33: Brix trend chart
+function BrixChart({ readings }) {
+  const valid = readings.filter(r => r.brix != null && r.elapsed_hours != null);
+  if (!valid.length) return (
+    <div className="h-20 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl">No Brix readings yet</div>
+  );
+  const W = 400, H = 100, PAD = { t: 10, r: 16, b: 20, l: 32 };
+  const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+  const maxH = Math.max(...valid.map(r => r.elapsed_hours), 1);
+  const allBrix = valid.map(r => r.brix);
+  const minB = Math.max(0, Math.min(...allBrix) - 1);
+  const maxB = Math.max(...allBrix) + 1;
+  const xS = h  => PAD.l + (h / maxH) * cW;
+  const yS = b  => PAD.t + cH - ((b - minB) / (maxB - minB)) * cH;
+  const byFlask = {};
+  valid.forEach(r => { const k = r.flask_label || 'All'; (byFlask[k] = byFlask[k] || []).push(r); });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+      {Object.entries(byFlask).map(([label, pts], i) => {
+        const sorted = [...pts].sort((a,b) => a.elapsed_hours - b.elapsed_hours);
+        const d = sorted.map((p,j) => `${j===0?'M':'L'}${xS(p.elapsed_hours).toFixed(1)},${yS(p.brix).toFixed(1)}`).join(' ');
+        const col = FLASK_COLORS[i % FLASK_COLORS.length];
+        return (
+          <g key={label}>
+            <path d={d} stroke={col} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4,2"/>
+            {sorted.map((p,j) => <circle key={j} cx={xS(p.elapsed_hours)} cy={yS(p.brix)} r={2.5} fill={col} stroke="white" strokeWidth={1}/>)}
+          </g>
+        );
+      })}
+      {[minB, Math.round((minB+maxB)/2), maxB].filter(v=>!isNaN(v)).map(b => (
+        <text key={b} x={PAD.l-4} y={yS(b)} textAnchor="end" dominantBaseline="middle" fontSize={7} fill="#9ca3af">{b.toFixed(0)}</text>
+      ))}
+      {[0, Math.round(maxH/2), Math.round(maxH)].map(h => (
+        <text key={h} x={xS(h)} y={H-2} textAnchor="middle" fontSize={7} fill="#9ca3af">T+{h}h</text>
+      ))}
+      <text x={W-PAD.r} y={PAD.t+4} textAnchor="end" fontSize={7} fill="#6b7280">°Bx</text>
+    </svg>
+  );
+}
+
 export default function FermentationPanel({ batch, flasks, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
   const [readings,  setReadings]  = useState([]);
@@ -79,11 +119,17 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [endpoint,  setEndpoint]  = useState(null);
   const [saving,    setSaving]    = useState(false);
 
+  // G-31: Incubator equipment list
+  const [incubators,    setIncubators]    = useState([]);
+  const [incubatorId,   setIncubatorId]   = useState('');
+
   // Reading form
   const [pH,         setPH]         = useState('');
   const [temp,       setTemp]       = useState('');
   const [brix,       setBrix]       = useState('');
   const [od,         setOd]         = useState('');
+  // G-30: Titratable Acidity
+  const [ta,         setTa]         = useState('');
   const [foam,       setFoam]       = useState('None');
   const [appearance, setAppearance] = useState('Normal');
   const [platingIntent, setPlatingIntent] = useState(null); // 'yes'|'no'|'later'|null
@@ -112,6 +158,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [texture,    setTexture]    = useState('Normal slurry');
   const [sensory,    setSensory]    = useState('PASS');
   const [gramStain,  setGramStain]  = useState('Not done');
+  const [gramStainImg, setGramStainImg] = useState('');
+  // G-30: TA at endpoint
+  const [epTa,       setEpTa]       = useState('');
   const [colourDesc, setColourDesc] = useState('');
   const [epNotes,    setEpNotes]    = useState('');
   const [savingEp,   setSavingEp]   = useState(false);
@@ -167,8 +216,18 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   useEffect(() => {
     setReadings([]); setInocu(null); setEndpoint(null);
     setExceededNotifSent(false);
+    setTa(''); setEpTa(''); setGramStainImg('');
     fetchData(); fetchPendingIds();
   }, [fetchData]);
+
+  // G-31: Fetch incubator equipment once
+  useEffect(() => {
+    supabase.from('equipment')
+      .select('id, name, status')
+      .ilike('name', '%incubat%')
+      .order('name')
+      .then(({ data }) => setIncubators(data || []));
+  }, [supabase]);
 
   useEffect(() => {
     supabase.from('formulations')
@@ -210,6 +269,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     setTexture('Normal slurry');
     setSensory('PASS');
     setGramStain('Not done');
+    setGramStainImg('');
+    setEpTa('');
     setColourDesc('');
     setEpNotes('');
     setShowEndpoint(false);
@@ -278,6 +339,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           incubator_temp_c: temp ? parseFloat(temp) : null,
           brix: brix ? parseFloat(brix) : null,
           optical_density: od ? parseFloat(od) : null,
+          titratable_acidity_pct: ta ? parseFloat(ta) : null,
+          incubator_equipment_id: incubatorId || null,
           foam_level: foam,
           visual_appearance: appearance,
           elapsed_hours: elapsed ? parseFloat(elapsed.toFixed(2)) : null,
@@ -302,7 +365,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (!json.success) throw new Error(json.error || 'Failed to log reading');
 
       toast.success(json.incubation ? 'Reading logged and incubation activity created.' : 'Reading logged.');
-      setPH(''); setTemp(''); setBrix(''); setOd('');
+      setPH(''); setTemp(''); setBrix(''); setOd(''); setTa('');
       setPlatingIntent(null); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
       setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
@@ -361,6 +424,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           texture,
           sensory_overall: sensory,
           gram_stain: gramStain,
+          gram_stain_image_url: gramStainImg || null,
+          titratable_acidity_pct: epTa ? parseFloat(epTa) : null,
           notes: epNotes,
           declared_by: employeeProfile?.id,
         }),
@@ -599,15 +664,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     : 'Target endpoint: 4.2–4.5 · Alarm: <3.8 or >5.5'}
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Temp (°C)</label>
                   <input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} placeholder="37.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-                  {/* 3B: Temp range hint */}
-                  <p className={`text-[9px] mt-0.5 font-semibold ${
-                    temp && (parseFloat(temp) < 36 || parseFloat(temp) > 38) ? 'text-amber-600' : 'text-gray-400'
-                  }`}>
-                    {temp && (parseFloat(temp) < 36 || parseFloat(temp) > 38) ? '⚠ Outside 36–38°C' : 'Range: 36–38°C'}
+                  <p className={`text-[9px] mt-0.5 font-semibold ${temp && (parseFloat(temp)<36||parseFloat(temp)>38)?'text-amber-600':'text-gray-400'}`}>
+                    {temp && (parseFloat(temp)<36||parseFloat(temp)>38)?'⚠ Outside 36–38°C':'Range: 36–38°C'}
                   </p>
                 </div>
                 <div>
@@ -618,7 +680,23 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">OD (600nm)</label>
                   <input type="number" step="0.001" value={od} onChange={e=>setOd(e.target.value)} placeholder="0.500" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
+                {/* G-30: Titratable Acidity */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">TA (%)</label>
+                  <input type="number" step="0.01" value={ta} onChange={e=>setTa(e.target.value)} placeholder="0.75" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <p className="text-[9px] text-gray-400 mt-0.5">Titratable acidity</p>
+                </div>
               </div>
+              {/* G-31: Incubator equipment picker */}
+              {incubators.length > 0 && (
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Incubator Used</label>
+                  <select value={incubatorId} onChange={e=>setIncubatorId(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white focus:border-navy">
+                    <option value="">Select incubator...</option>
+                    {incubators.map(eq => <option key={eq.id} value={eq.id}>{eq.name} ({eq.status})</option>)}
+                  </select>
+                </div>
+              )}
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Foam</label>
@@ -738,8 +816,32 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
             <h3 className="text-sm font-bold text-gray-900">Trial Trends</h3>
           </div>
-          <div className="p-4">
+          <div className="p-4 space-y-3">
             <PhChart readings={readings}/>
+            {/* G-33: Brix trend chart */}
+            {readings.some(r => r.brix != null) && (
+              <div>
+                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Sugar Consumption (Brix °Bx)</p>
+                <BrixChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
+              </div>
+            )}
+            {/* G-34: Sampling plan indicator */}
+            {inocu?.sampling_plan_hrs?.length > 0 && (
+              <div className="p-3 bg-navy/5 rounded-xl border border-navy/10">
+                <p className="text-[9px] font-black uppercase text-navy/70 mb-1.5">Sampling Schedule</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {inocu.sampling_plan_hrs.map(hr => {
+                    const logged = readings.filter(r => r.flask_id === activeFlask?.id)
+                      .some(r => Math.abs((r.elapsed_hours || 0) - parseFloat(hr)) <= 1.5);
+                    return (
+                      <span key={hr} className={`px-2 py-0.5 text-[9px] font-black rounded border ${logged ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-white text-gray-500 border-gray-200'}`}>
+                        {logged ? '✓' : '○'} T+{hr}h
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <div className="border-t border-gray-100 overflow-x-auto">
             <table className="w-full min-w-[480px] divide-y divide-gray-100">
@@ -871,10 +973,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Colour Description</label>
                 <input value={colourDesc} onChange={e=>setColourDesc(e.target.value)} placeholder="e.g. Reddish-purple" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none"/>
               </div>
-              <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gram Stain</label>
-                <select value={gramStain} onChange={e=>setGramStain(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white">
-                  {['Gram-positive rods dominant','Mixed','Gram-negative dominant','Not done'].map(o=><option key={o}>{o}</option>)}
-                </select>
+              <div className="space-y-2">
+                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gram Stain Result</label>
+                  <select value={gramStain} onChange={e=>setGramStain(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white">
+                    {['Gram-positive rods dominant','Mixed','Gram-negative dominant','Not done'].map(o=><option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                {/* G-32: Gram stain image URL */}
+                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gram Stain Photo URL <span className="text-gray-300 font-normal normal-case">(optional)</span></label>
+                  <input type="url" value={gramStainImg} onChange={e=>setGramStainImg(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -885,6 +993,11 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   </div>
                 </div>
               ))}
+            </div>
+            {/* G-30: TA% at endpoint */}
+            <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Titratable Acidity at Endpoint (%)</label>
+              <input type="number" step="0.01" value={epTa} onChange={e=>setEpTa(e.target.value)} placeholder="e.g. 0.85" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+              <p className="text-[9px] text-gray-400 mt-0.5">Typical LAB endpoint: 0.6–1.0% TA</p>
             </div>
             <textarea value={epNotes} onChange={e=>setEpNotes(e.target.value)} rows={2} placeholder="Endpoint notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
             <div className="grid grid-cols-1 gap-3">

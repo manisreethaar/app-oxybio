@@ -35,6 +35,16 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
   const [colAfter,    setColAfter]    = useState('');
   const [lafUsed,     setLafUsed]     = useState(true);
   const [notes,       setNotes]       = useState('');
+  // G-36: mixing parameters
+  const [mixingTimeMin,   setMixingTimeMin]   = useState('');
+  const [mixingSpeedRpm,  setMixingSpeedRpm]  = useState('');
+  // G-35: post-mixing checks
+  const [postMixingPh,    setPostMixingPh]    = useState('');
+  const [postMixingBrix,  setPostMixingBrix]  = useState('');
+  // G-37: blend homogeneity
+  const [blendHomogeneity, setBlendHomogeneity] = useState('');
+  // G-38: actual addition temp
+  const [addTempActual,   setAddTempActual]   = useState('');
   // G-06: allergen declaration
   const [allergens,   setAllergens]   = useState([]);
   const [noneAllergens, setNoneAllergens] = useState(false);
@@ -57,6 +67,9 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       setFinalPh(data.final_product_ph||''); setAddTemp(data.addition_temp||ADD_TEMP[0]);
       setAddMethod(data.addition_method||ADD_METHOD[0]); setColBefore(data.colour_before||'');
       setColAfter(data.colour_after||''); setLafUsed(data.laf_used??true); setNotes(data.notes||'');
+      setMixingTimeMin(data.mixing_time_min||''); setMixingSpeedRpm(data.mixing_speed_rpm||'');
+      setPostMixingPh(data.post_mixing_ph_check||''); setPostMixingBrix(data.post_mixing_brix||'');
+      setBlendHomogeneity(data.blend_homogeneity_check||''); setAddTempActual(data.addition_temp_actual_c||'');
       const savedAllergens = data.allergen_declaration || [];
       if (savedAllergens.includes('None')) { setNoneAllergens(true); setAllergens([]); }
       else { setAllergens(savedAllergens); setNoneAllergens(false); }
@@ -95,6 +108,12 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         colour_before: colBefore, colour_after: colAfter,
         laf_used: lafUsed, notes, operator_id: employeeProfile?.id,
         allergen_declaration: noneAllergens ? ['None'] : allergens,
+        mixing_time_min:         mixingTimeMin   ? parseFloat(mixingTimeMin)   : null,
+        mixing_speed_rpm:        mixingSpeedRpm  ? parseFloat(mixingSpeedRpm)  : null,
+        post_mixing_ph_check:    postMixingPh    ? parseFloat(postMixingPh)    : null,
+        post_mixing_brix:        postMixingBrix  ? parseFloat(postMixingBrix)  : null,
+        blend_homogeneity_check: blendHomogeneity || null,
+        addition_temp_actual_c:  addTempActual   ? parseFloat(addTempActual)   : null,
       };
 
       const { error } = await supabase.from('batch_flask_extract_addition').upsert(payload, { onConflict: 'flask_id' });
@@ -143,7 +162,14 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             <div><label className="field-label">Extract Lot</label>
               <select value={lotId} onChange={e=>setLotId(e.target.value)} className="field-input bg-white text-xs">
                 <option value="">N/A (Fresh Prep)</option>
-                {mshStock.map(s=><option key={s.id} value={s.id}>{s.inventory_items?.name} (Lot: {s.lot_number})</option>)}
+                {mshStock.map(s => {
+                  const isExpired = s.expiry_date && new Date(s.expiry_date) < new Date();
+                  return (
+                    <option key={s.id} value={s.id} disabled={isExpired}>
+                      {s.inventory_items?.name} (Lot: {s.lot_number || s.supplier_batch_number || 'UN-LOT'}) {isExpired ? '(EXPIRED)' : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -207,6 +233,43 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           </div>
           <div><label className="field-label">Notes</label>
             <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input p-2" placeholder="Any observed precipitation..."/>
+          </div>
+
+          {/* G-36: Mixing parameters */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+            <p className="text-[11px] font-black uppercase text-gray-500 tracking-wider">Mixing & Integration Parameters</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="field-label">Mixing Time (min)</label>
+                <input type="number" step="0.5" value={mixingTimeMin} onChange={e=>setMixingTimeMin(e.target.value)} className="field-input p-2" placeholder="e.g. 10"/>
+              </div>
+              <div><label className="field-label">Mixing Speed (rpm)</label>
+                <input type="number" step="10" value={mixingSpeedRpm} onChange={e=>setMixingSpeedRpm(e.target.value)} className="field-input p-2" placeholder="e.g. 150"/>
+              </div>
+            </div>
+            {/* G-38: Actual addition temperature */}
+            <div><label className="field-label">Actual Addition Temp (°C) <span className="text-gray-400 font-normal text-[9px]">(measured)</span></label>
+              <input type="number" step="0.1" value={addTempActual} onChange={e=>setAddTempActual(e.target.value)} className="field-input p-2" placeholder="e.g. 24.5"/>
+            </div>
+            {/* G-37: Blend homogeneity */}
+            <div><label className="field-label">Blend Homogeneity Check</label>
+              <div className="flex gap-2">
+                {['Homogeneous','Slight separation','Phase separation observed'].map(o=>(
+                  <button key={o} type="button" onClick={()=>setBlendHomogeneity(o)}
+                    className={`flex-1 py-1.5 text-[9px] font-black rounded-lg border transition-all ${blendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
+                    {o}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* G-35: Post-mixing QC checks */}
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="field-label">Post-mixing pH</label>
+                <input type="number" step="0.01" value={postMixingPh} onChange={e=>setPostMixingPh(e.target.value)} className="field-input p-2" placeholder="e.g. 4.30"/>
+              </div>
+              <div><label className="field-label">Post-mixing Brix (°Bx)</label>
+                <input type="number" step="0.1" value={postMixingBrix} onChange={e=>setPostMixingBrix(e.target.value)} className="field-input p-2" placeholder="e.g. 8.5"/>
+              </div>
+            </div>
           </div>
 
           {/* G-06: Allergen Declaration */}
