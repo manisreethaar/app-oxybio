@@ -39,6 +39,12 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [preInocuPh, setPreInocuPh] = useState('');
   // G-34: sampling plan
   const [samplingPlanHrs, setSamplingPlanHrs] = useState('');
+  // G-55: flask temperature
+  const [flaskTempC, setFlaskTempC] = useState('');
+  // G-56: back-slop ratio
+  const [backSlopPct, setBackSlopPct] = useState('');
+  // G-57: co-starters [{source_type, source, vol_ml}]
+  const [coStarters, setCoStarters] = useState([]);
   // G-04: CAPA linkage for contamination
   const [capaDevId, setCapaDevId] = useState(null);
   const [raisingCapa, setRaisingCapa] = useState(false);
@@ -72,6 +78,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setCapaDevId(d.capa_deviation_id||null);
           setPreInocuPh(d.pre_inocu_ph||'');
           setSamplingPlanHrs((d.sampling_plan_hrs||[]).join(', '));
+          setFlaskTempC(d.flask_temp_c||'');
+          setBackSlopPct(d.back_slop_ratio_pct||'');
+          setCoStarters(d.co_starters||[]);
         } else {
           setSourceType('other'); setSource(''); setVialId(''); setInVol(''); setPlannedHr('');
           setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
@@ -142,6 +151,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         contamination_notes: contCheck === 'Suspected' ? contNotes : null,
         capa_deviation_id: devId || null,
         pre_inocu_ph: preInocuPh ? parseFloat(preInocuPh) : null,
+        flask_temp_c: flaskTempC ? parseFloat(flaskTempC) : null,
+        back_slop_ratio_pct: backSlopPct ? parseFloat(backSlopPct) : null,
+        co_starters: coStarters,
         sampling_plan_hrs: samplingPlanHrs.trim()
           ? samplingPlanHrs.split(',').map(s=>s.trim()).filter(Boolean)
           : [],
@@ -268,6 +280,53 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
             }} className="field-input" placeholder="e.g. 12"/>
             <p className="text-[9px] text-gray-400 mt-1">User-defined threshold for alerting</p>
           </div>
+        </div>
+
+        {/* G-55: Flask temperature at inoculation */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="field-label">Flask Temp at Inoculation (°C) <span className="text-gray-400 text-[9px]">must be &lt;40°C for LAB</span></label>
+            <input type="number" step="0.5" value={flaskTempC} onChange={e=>setFlaskTempC(e.target.value)} className="field-input" placeholder="e.g. 35.0"/>
+            {flaskTempC && parseFloat(flaskTempC) > 42 && <p className="text-[10px] text-red-600 font-bold mt-0.5">⚠ Temperature exceeds 42°C — LAB may not survive inoculation</p>}
+          </div>
+          {/* G-54: Inoculation rate auto-calc */}
+          <div>
+            <label className="field-label">Inoculation Rate (% v/v) <span className="text-gray-400 text-[9px]">auto-calculated</span></label>
+            <div className="field-input bg-gray-50 font-black text-navy text-sm">
+              {inVol && batch.planned_volume_ml
+                ? `${((parseFloat(inVol) / (batch.planned_volume_ml)) * 100).toFixed(2)}%`
+                : '—'}
+            </div>
+            <p className="text-[9px] text-gray-400 mt-0.5">= vol_inocu / vol_flask × 100</p>
+          </div>
+        </div>
+
+        {/* G-56: Back-slop ratio */}
+        {sourceType === 'back_slop' && (
+          <div>
+            <label className="field-label">Back-Slop Ratio (% v/v of previous batch)</label>
+            <input type="number" step="0.5" min="0" max="100" value={backSlopPct} onChange={e=>setBackSlopPct(e.target.value)} className="field-input" placeholder="e.g. 10"/>
+            <p className="text-[9px] text-gray-400 mt-0.5">Typical back-slop ratio: 3–15% v/v</p>
+          </div>
+        )}
+
+        {/* G-57: Multi-starter / co-culture */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="field-label mb-0">Co-Culture / Additional Starters</label>
+            <button type="button" onClick={()=>setCoStarters(p=>[...p,{source_type:'other',source:'',vol_ml:''}])}
+              className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-black rounded-lg uppercase hover:bg-indigo-100">
+              + Add Organism
+            </button>
+          </div>
+          {coStarters.map((cs, idx) => (
+            <div key={idx} className="p-3 bg-indigo-50/30 border border-indigo-100 rounded-xl grid grid-cols-3 gap-2">
+              <input value={cs.source} onChange={e=>setCoStarters(p=>p.map((s,i)=>i===idx?{...s,source:e.target.value}:s))} placeholder="e.g. Saccharomyces cerevisiae" className="field-input text-xs col-span-2 p-1.5"/>
+              <input type="number" value={cs.vol_ml} onChange={e=>setCoStarters(p=>p.map((s,i)=>i===idx?{...s,vol_ml:e.target.value}:s))} placeholder="ml" className="field-input text-xs p-1.5"/>
+              <button type="button" onClick={()=>setCoStarters(p=>p.filter((_,i)=>i!==idx))} className="col-span-3 text-right text-[9px] text-red-400 hover:text-red-600 font-black">✕ Remove</button>
+            </div>
+          ))}
+          {coStarters.length === 0 && <p className="text-[10px] text-gray-400 italic">No co-cultures. Single-starter inoculation.</p>}
         </div>
 
         {/* G-34: Sampling plan */}
