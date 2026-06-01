@@ -18,7 +18,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('bioprocess_experiments')
-    .select('*, creator:employees!created_by(full_name, employee_code)')
+    .select('*, creator:employees!created_by(full_name, employee_code, initials)')
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

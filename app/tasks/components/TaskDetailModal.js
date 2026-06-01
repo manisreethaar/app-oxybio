@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatMinutes } from './utils';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 /**
  * TaskDetailModal — slide-up modal showing full task detail, progress,
@@ -96,7 +97,8 @@ export default function TaskDetailModal({
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-1">Assignees</p>
               <div className="flex flex-wrap gap-1">
                 {groupedTasks.find(g => g.title === selectedTask.title && g.description === selectedTask.description)?.assignees.map((a, idx) => (
-                  <span key={idx} className="bg-white px-1.5 py-0.5 rounded border border-gray-200 font-bold text-gray-700 text-[10px]">
+                  <span key={idx} className="bg-white px-1.5 py-0.5 rounded border border-gray-200 font-bold text-gray-700 text-[10px] flex items-center gap-1">
+                    <CreatorBadge initials={a.assigned_user?.initials} fullName={a.assigned_user?.full_name} />
                     {a.assigned_user?.full_name?.split(' ')[0] || 'Staff'}
                   </span>
                 ))}

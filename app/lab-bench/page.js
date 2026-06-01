@@ -10,6 +10,7 @@ import {
 import clsx from 'clsx';
 import { useAuth } from '@/context/AuthContext';
 import EditRequestButton from '@/components/ui/EditRequestButton';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 // ── Urgency config ─────────────────────────────────────────────────────────
 const URGENCY = {
@@ -408,11 +409,14 @@ export default function LabBenchPage() {
           {recentEntries.map(sample => (
             <div key={sample.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
               <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100">
-                <p className="text-xs font-black text-slate-700 truncate">
-                  {sample.source_label || sample.sample_label}
-                  {sample.flask_label && <span className="text-slate-400 font-medium"> · {sample.flask_label}</span>}
-                  {sample.timepoint_label && <span className="text-teal-600 font-medium"> {sample.timepoint_label}</span>}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-black text-slate-700 truncate">
+                    {sample.source_label || sample.sample_label}
+                    {sample.flask_label && <span className="text-slate-400 font-medium"> · {sample.flask_label}</span>}
+                    {sample.timepoint_label && <span className="text-teal-600 font-medium"> {sample.timepoint_label}</span>}
+                  </p>
+                  <CreatorBadge initials={employeeProfile?.initials} fullName={employeeProfile?.full_name} />
+                </div>
                 <p className="text-[10px] font-bold text-slate-400 mt-0.5">
                   {new Date(sample.collected_at).toLocaleString()}
                 </p>

@@ -10,6 +10,7 @@ import {
 import Skeleton from '@/components/Skeleton';
 import IncubationFormModal from './components/IncubationFormModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 function sterileChip(status) {
   if (status === 'Sterile')       return 'text-emerald-700 bg-emerald-50 border-emerald-200';
@@ -384,11 +385,16 @@ export default function SampleIncubationPage() {
                                       <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${sterileChip(record.sterility_status || 'Pending')}`}>
                                         {record.sterility_status || 'Pending'}
                                       </span>
-                                      {record.end_time && record.duration_hours != null && (
-                                        <span className="text-[9px] font-mono text-gray-400">
-                                          {Number(record.duration_hours).toFixed(0)}h
-                                        </span>
-                                      )}
+                                      <div className="flex items-center gap-1.5">
+                                        {record.employees && (
+                                          <CreatorBadge initials={record.employees.initials} fullName={record.employees.full_name} />
+                                        )}
+                                        {record.end_time && record.duration_hours != null && (
+                                          <span className="text-[9px] font-mono text-gray-400">
+                                            {Number(record.duration_hours).toFixed(0)}h
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {/* Results */}

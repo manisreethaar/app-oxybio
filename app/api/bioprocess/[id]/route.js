@@ -10,7 +10,7 @@ export async function GET(req, { params }) {
 
   const [expRes, factorsRes, responsesRes, kineticsRes] = await Promise.all([
     supabase.from('bioprocess_experiments')
-      .select('*, creator:employees!created_by(full_name, employee_code)')
+      .select('*, creator:employees!created_by(full_name, employee_code, initials)')
       .eq('id', id).single(),
     supabase.from('bioprocess_factors')
       .select('*').eq('experiment_id', id).order('position'),
