@@ -25,12 +25,15 @@ async function claimReleasedCode(supabaseAdmin, prefix) {
 function generateEmployeeCode(existingCodes, designationCode) {
   if (!designationCode || designationCode.trim().length < 1) return '';
   const prefix = `${COMPANY_PREFIX}-${designationCode.toUpperCase()}-`;
-  const existing = existingCodes
-    .filter(c => c && c.startsWith(prefix))
-    .map(c => parseInt(c.replace(prefix, ''), 10))
-    .filter(n => !isNaN(n));
-  const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-  return `${prefix}${String(nextNum).padStart(3, '0')}`;
+  const taken = new Set(
+    existingCodes
+      .filter(c => c && c.startsWith(prefix))
+      .map(c => parseInt(c.replace(prefix, ''), 10))
+      .filter(n => !isNaN(n))
+  );
+  let num = 1;
+  while (taken.has(num)) num++;
+  return `${prefix}${String(num).padStart(3, '0')}`;
 }
 
 export async function POST(req) {
@@ -99,12 +102,11 @@ export async function POST(req) {
       if (releasedCode) {
         employee_code = releasedCode;
       } else {
-        // Generate new code based on active employees
-        const { data: activeEmps } = await supabaseAdmin
+        // Generate new code checking ALL employees (active + inactive) to avoid gaps/conflicts
+        const { data: allEmps } = await supabaseAdmin
           .from('employees')
-          .select('employee_code')
-          .eq('is_active', true);
-        const existingCodes = (activeEmps || []).map(e => e.employee_code).filter(Boolean);
+          .select('employee_code');
+        const existingCodes = (allEmps || []).map(e => e.employee_code).filter(Boolean);
         employee_code = generateEmployeeCode(existingCodes, codePrefix);
       }
     }
