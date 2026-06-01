@@ -9,8 +9,10 @@ export async function GET(req) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    const type = searchParams.get('type');
+    const status   = searchParams.get('status');
+    const type     = searchParams.get('type');
+    const strainId = searchParams.get('strain_id');
+    const limit    = searchParams.get('limit');
 
     let query = supabase
       .from('growth_studies')
@@ -25,8 +27,10 @@ export async function GET(req) {
       `)
       .order('created_at', { ascending: false });
 
-    if (status) query = query.eq('status', status);
-    if (type) query = query.eq('study_type', type);
+    if (status)   query = query.eq('status', status);
+    if (type)     query = query.eq('study_type', type);
+    if (strainId) query = query.eq('cell_bank_strain_id', strainId);
+    if (limit)    query = query.limit(parseInt(limit, 10));
 
     const { data, error } = await query;
     if (error) throw error;
