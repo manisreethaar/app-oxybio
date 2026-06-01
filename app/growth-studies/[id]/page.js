@@ -87,6 +87,9 @@ export default function GrowthStudyDetailPage() {
   const [showLines, setShowLines] = useState(['od', 'ph']);
   const [logScale, setLogScale] = useState(false);
 
+  // G-43: strain comparison — other studies for same strain
+  const [comparisonStudies, setComparisonStudies] = useState([]);
+
   // Start Study confirmation modal
   const [startModal, setStartModal] = useState(false);
   const [startInfo, setStartInfo] = useState(null);
@@ -111,6 +114,15 @@ export default function GrowthStudyDetailPage() {
   };
 
   useEffect(() => { load(); fetchPendingIds(); }, [load]);
+
+  // G-43: Fetch other studies for same strain for comparison
+  useEffect(() => {
+    if (!data?.study?.cell_bank_strain_id) return;
+    fetch(`/api/growth-studies?strain_id=${data.study.cell_bank_strain_id}&limit=5`)
+      .then(r => r.json())
+      .then(d => setComparisonStudies((d.data || []).filter(s => s.id !== id)))
+      .catch(() => {});
+  }, [data?.study?.cell_bank_strain_id, id]);
 
   useEffect(() => {
     if (!data?.study?.inoculation_time) return;
@@ -347,6 +359,36 @@ export default function GrowthStudyDetailPage() {
     { key: 'protein', label: 'Protein' },
     ...(isFermentation ? [{ key: 'do2', label: 'DO%' }] : []),
   ];
+
+  // G-40, G-41, G-42: Kinetics calculations from OD time-series
+  const kinetics = (() => {
+    const pts = measurements
+      .filter(m => m.od_value != null && m.actual_hour != null)
+      .sort((a, b) => a.actual_hour - b.actual_hour);
+    if (pts.length < 2) return null;
+
+    // Calculate µ for each consecutive pair: µ = (ln OD₂ - ln OD₁) / (t₂ - t₁)
+    const rates = [];
+    for (let i = 1; i < pts.length; i++) {
+      const od1 = parseFloat(pts[i-1].od_value);
+      const od2 = parseFloat(pts[i].od_value);
+      const dt  = parseFloat(pts[i].actual_hour) - parseFloat(pts[i-1].actual_hour);
+      if (od1 > 0 && od2 > 0 && dt > 0) {
+        rates.push((Math.log(od2) - Math.log(od1)) / dt);
+      }
+    }
+    if (!rates.length) return null;
+    const muMax = Math.max(...rates);
+    const doublingTime = muMax > 0 ? (Math.LN2 / muMax) : null;
+    const peakOD = Math.max(...pts.map(p => parseFloat(p.od_value)));
+    return {
+      muMax: muMax.toFixed(4),
+      doublingTime: doublingTime ? doublingTime.toFixed(2) : '—',
+      generationTime: doublingTime ? doublingTime.toFixed(2) : '—',
+      peakOD: peakOD.toFixed(4),
+      dataPoints: pts.length,
+    };
+  })();
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
@@ -634,6 +676,70 @@ export default function GrowthStudyDetailPage() {
               <GrowthCurveChart data={measurements} wavelength={study.od_wavelength || 600} showLines={showLines} logScale={logScale} />
             </div>
           </div>
+
+          {/* G-40, G-41, G-42: Kinetics Analysis card */}
+          {kinetics && (
+            <div className="glass-card rounded-2xl p-6">
+              <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-indigo-600"/> Kinetics Analysis
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: 'µmax (h⁻¹)', value: kinetics.muMax, desc: 'Max specific growth rate', color: 'teal' },
+                  { label: 'Doubling Time', value: `${kinetics.doublingTime} h`, desc: 'Td = ln2 / µmax', color: 'indigo' },
+                  { label: 'Generation Time', value: `${kinetics.generationTime} h`, desc: 'G = Td (bacteria)', color: 'violet' },
+                  { label: 'Peak OD', value: kinetics.peakOD, desc: `OD${study.od_wavelength || 600} maximum`, color: 'emerald' },
+                ].map(({ label, value, desc, color }) => (
+                  <div key={label} className={`p-4 bg-${color}-50 border border-${color}-100 rounded-xl`}>
+                    <p className={`text-[9px] font-black uppercase tracking-wider text-${color}-500 mb-1`}>{label}</p>
+                    <p className={`text-xl font-black text-${color}-800 tabular-nums`}>{value}</p>
+                    <p className={`text-[9px] text-${color}-400 font-semibold mt-0.5`}>{desc}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9px] text-slate-400 font-semibold mt-3">
+                Calculated from {kinetics.dataPoints} OD data points · µ = (ln OD₂ − ln OD₁) / (t₂ − t₁) per interval
+              </p>
+            </div>
+          )}
+
+          {/* G-43: Strain Comparison — other studies for same strain */}
+          {comparisonStudies.length > 0 && (
+            <div className="glass-card rounded-2xl p-6">
+              <h3 className="font-black text-slate-800 text-sm mb-4">
+                Strain Comparison — Other studies with <span className="text-teal-700">{isolateName}</span>
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      {['Study', 'Status', 'Media', 'Temp', 'Date', ''].map(h => (
+                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-[9px]">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonStudies.map(s => (
+                      <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                        <td className="py-2 pr-4 font-bold text-slate-800">{s.study_code || s.name}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`px-1.5 py-0.5 text-[9px] font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {s.status}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 text-slate-500">{s.formulations?.name || s.media_name || '—'}</td>
+                        <td className="py-2 pr-4 text-slate-500">{s.temperature_c ? `${s.temperature_c}°C` : '—'}</td>
+                        <td className="py-2 pr-4 text-slate-400">{s.created_at ? new Date(s.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '—'}</td>
+                        <td className="py-2">
+                          <a href={`/growth-studies/${s.id}`} className="text-[9px] font-black text-teal-600 hover:underline">View →</a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Measurements table */}
           <div className="glass-card rounded-2xl p-6">
