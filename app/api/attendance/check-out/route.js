@@ -2,16 +2,21 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+// Facility Geometry — coordinates set via Vercel env vars (exact Hosur lab location)
+const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065;
+const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016;
+const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300;
+
 // Haversine formula (Server-side Source of Truth)
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
-  const dLat = (lat2 - lat1) * (Math.PI / 180);  
-  const dLon = (lon2 - lon1) * (Math.PI / 180); 
-  const a = 
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-    Math.sin(dLon / 2) * Math.sin(dLon / 2); 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
 
@@ -42,13 +47,6 @@ export async function POST(request) {
         if (!lat || !lng) {
             return NextResponse.json({ error: 'Location Required: GPS coordinates must be sent for geofenced checkout.' }, { status: 400 });
         }
-        // Read facility coordinates from DB (same source as client)
-        const { data: geoConfig } = await supabase
-          .from('system_config').select('value').eq('key', 'attendance_geofence').maybeSingle();
-        const TARGET_LAT = geoConfig?.value?.TARGET_LAT ?? 13.0827;
-        const TARGET_LNG = geoConfig?.value?.TARGET_LNG ?? 80.2707;
-        const MAX_RADIUS_METERS = geoConfig?.value?.MAX_RADIUS_METERS ?? 200;
-
         const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
         if (distance > MAX_RADIUS_METERS) {
             return NextResponse.json({ 
