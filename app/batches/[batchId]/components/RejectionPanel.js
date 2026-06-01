@@ -68,6 +68,25 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
 
       await supabase.from('batch_flasks').update({ status: 'rejected' }).eq('id', activeFlask.id);
 
+      // G-29: Auto-close sibling flasks still in qc_hold (to prevent orphaned quarantine state)
+      const { data: siblings } = await supabase.from('batch_flasks')
+        .select('id, flask_label, current_stage, status')
+        .eq('batch_id', batch.id)
+        .neq('id', activeFlask.id)
+        .eq('current_stage', 'qc_hold')
+        .neq('status', 'released')
+        .neq('status', 'rejected');
+      if (siblings?.length) {
+        // Only auto-close if ALL non-rejected flasks are rejected (full batch rejection scenario)
+        const allFlasks = await supabase.from('batch_flasks').select('id,status').eq('batch_id', batch.id);
+        const remaining = (allFlasks.data||[]).filter(f => f.id !== activeFlask.id && !['released','rejected'].includes(f.status));
+        if (remaining.length === 0) {
+          // All flasks are rejected — update batch status
+          await supabase.from('batches').update({ status: 'rejected', current_stage: 'rejected' }).eq('id', batch.id);
+          toast.warn('All trials rejected — batch marked as rejected.');
+        }
+      }
+
       // Always raise a deviation on flask rejection
       await supabase.from('deviations').insert({
         batch_id:    batch.id,

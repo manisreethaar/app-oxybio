@@ -176,6 +176,11 @@ export default function QuickLogPage() {
   const [error, setError]           = useState('');
   const [success, setSuccess]       = useState(null);
 
+  // G-20: LAF cabinet usage; G-21: contamination incident; G-23: media lot per plate analysis
+  const [lafUsed,              setLafUsed]              = useState(false);
+  const [contaminationIncident, setContaminationIncident] = useState(false);
+  const [contaminationDetails, setContaminationDetails] = useState('');
+
   // ── Load active sources, then apply URL pre-fill ─────────────
   // Deep-link format (from Active Queue "Log Now"):
   //   ?source_type=batch&source_id=OXY-B-26-001&flask_id=uuid
@@ -257,6 +262,7 @@ export default function QuickLogPage() {
     setTimePointId(''); setLogHour(''); setNotes('');
     setTests(defaultTests());
     setCollectedAt(new Date().toISOString().slice(0, 16));
+    setLafUsed(false); setContaminationIncident(false); setContaminationDetails('');
     setError('');
   };
 
@@ -327,13 +333,17 @@ export default function QuickLogPage() {
       flask_id:         sourceType === 'batch' ? flaskId : null,
       flask_label:      sourceType === 'batch' ? flaskLabel : null,
       log_hour:         Number(logHour),
-      source_label:     buildSourceLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep),
-      timepoint_label:  buildTimepointLabel(logHour),
-      sample_label:     autoSampleLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep, flaskLabel, logHour),
-      collected_at:     new Date(collectedAt).toISOString(),
-      notes:            notes || null,
-      tests:            testPayload,
-      time_point_id:    sourceType === 'growth_study' ? (timePointId || null) : null,
+      source_label:          buildSourceLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep),
+      timepoint_label:       buildTimepointLabel(logHour),
+      sample_label:          autoSampleLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep, flaskLabel, logHour),
+      collected_at:          new Date(collectedAt).toISOString(),
+      notes:                 notes || null,
+      tests:                 testPayload,
+      time_point_id:         sourceType === 'growth_study' ? (timePointId || null) : null,
+      // G-20, G-21, G-23
+      laf_cabinet_used:      lafUsed,
+      contamination_incident: contaminationIncident,
+      contamination_details: contaminationIncident ? (contaminationDetails || null) : null,
     };
 
     setSaving(true);
@@ -899,6 +909,35 @@ export default function QuickLogPage() {
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
+        </div>
+
+        {/* G-20 + G-21 + G-22: Lab safety & contamination flags */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Lab Safety & Traceability</p>
+          {/* G-22: batch linkage already shown via source selector above */}
+          {sourceType === 'batch' && sourceId && (
+            <p className="text-xs font-bold text-teal-700 flex items-center gap-1">
+              <Activity className="w-3.5 h-3.5"/>Work Order linked to: <span className="font-black">{sourceId}</span>
+            </p>
+          )}
+          {/* G-20: LAF cabinet */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={lafUsed} onChange={e=>setLafUsed(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+            <span className="text-sm font-bold text-slate-700">LAF Cabinet Used during sample preparation</span>
+          </label>
+          {/* G-21: contamination incident */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={contaminationIncident} onChange={e=>setContaminationIncident(e.target.checked)} className="w-4 h-4 rounded border-red-300"/>
+            <span className="text-sm font-bold text-red-700">Contamination incident observed</span>
+          </label>
+          {contaminationIncident && (
+            <textarea
+              className={InputCls + ' min-h-[60px] resize-none border-red-200'}
+              placeholder="Describe contamination details (source, visual signs, timing)…"
+              value={contaminationDetails}
+              onChange={e=>setContaminationDetails(e.target.value)}
+            />
+          )}
         </div>
 
         {/* ── Error ── */}

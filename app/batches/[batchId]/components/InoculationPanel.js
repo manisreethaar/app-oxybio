@@ -35,6 +35,8 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [lafUsed,   setLafUsed]   = useState(false);
   const [contCheck, setContCheck] = useState('Clear');
   const [contNotes, setContNotes] = useState('');
+  // G-19: pre-inoculation pH
+  const [preInocuPh, setPreInocuPh] = useState('');
   // G-04: CAPA linkage for contamination
   const [capaDevId, setCapaDevId] = useState(null);
   const [raisingCapa, setRaisingCapa] = useState(false);
@@ -66,6 +68,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setContCheck(d.contamination_check||'Clear');
           setContNotes(d.contamination_notes||'');
           setCapaDevId(d.capa_deviation_id||null);
+          setPreInocuPh(d.pre_inocu_ph||'');
         } else {
           setSourceType('other'); setSource(''); setVialId(''); setInVol(''); setPlannedHr('');
           setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
@@ -135,6 +138,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         contamination_check: contCheck,
         contamination_notes: contCheck === 'Suspected' ? contNotes : null,
         capa_deviation_id: devId || null,
+        pre_inocu_ph: preInocuPh ? parseFloat(preInocuPh) : null,
         operator_id: employeeProfile?.id,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
@@ -249,6 +253,22 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
             <input type="number" step="0.1" value={plannedHr} onChange={e=>setPlannedHr(e.target.value)} className="field-input" placeholder="e.g. 12"/>
             <p className="text-[9px] text-gray-400 mt-1">User-defined threshold for alerting</p>
           </div>
+        </div>
+
+        {/* G-19: Pre-inoculation pH check */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+          <label className="block text-[11px] font-black uppercase tracking-wider text-amber-900">
+            Pre-Inoculation Substrate pH <span className="text-amber-500">(check before adding starter)</span>
+          </label>
+          <input type="number" step="0.01" value={preInocuPh} onChange={e=>setPreInocuPh(e.target.value)}
+            className="w-full px-4 py-2 border-2 border-amber-200 rounded-xl text-lg font-black font-mono text-center text-amber-900 bg-white outline-none focus:border-amber-400"
+            placeholder="e.g. 6.50"/>
+          {preInocuPh && (parseFloat(preInocuPh) < 5.5 || parseFloat(preInocuPh) > 7.0) && (
+            <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>Substrate pH is outside typical pre-inoculation range (5.5–7.0). Verify before proceeding.</p>
+          )}
+          {preInocuPh && parseFloat(preInocuPh) >= 5.5 && parseFloat(preInocuPh) <= 7.0 && (
+            <p className="text-xs text-emerald-700 font-bold">✓ pH in acceptable pre-inoculation range</p>
+          )}
         </div>
 
         {/* T=0 */}

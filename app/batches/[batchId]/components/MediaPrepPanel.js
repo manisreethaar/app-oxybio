@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Beaker, AlertTriangle } from 'lucide-react';
+import { Beaker, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
 export default function MediaPrepPanel({ batch, employees, availableStock, employeeProfile, role, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
@@ -24,6 +24,8 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const scaleFactor = targetVol / baseVol;
 
   const [bomUsage, setBomUsage] = useState({});
+  // G-17: BOM report modal
+  const [showBomReport, setShowBomReport] = useState(false);
 
   const [ragiMoist,  setRagiMoist]  = useState('');
   const [kavuniTemp, setKavuniTemp] = useState('');
@@ -191,7 +193,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         <Beaker className="w-5 h-5 text-indigo-600"/>
         <div><h2 className="text-base font-bold text-gray-900">Media Preparation & BOM</h2>
           <p className="text-xs text-gray-500">Record all raw material BOM fulfillment and substrate setup.</p></div>
-        {data?.is_complete && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Complete</span>}
+        <div className="ml-auto flex items-center gap-2">
+          {/* G-17: BOM Report */}
+          <button onClick={()=>setShowBomReport(true)} className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-black rounded-lg uppercase flex items-center gap-1">
+            <ClipboardList className="w-3 h-3"/>BOM Report
+          </button>
+          {data?.is_complete && <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Complete</span>}
+        </div>
       </div>
 
       <div className="surface p-5 space-y-5">
@@ -225,7 +233,16 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                    </div>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                      <div>
-                       <label className="field-label">Inventory Lot Selection</label>
+                       <div className="flex items-center justify-between mb-1">
+                         <label className="field-label mb-0">Inventory Lot Selection</label>
+                         {/* G-18: Clear lot selection */}
+                         {usage.lotId && (
+                           <button type="button" onClick={() => setBomUsage(p=>({...p, [ing.item_id]: {lotId:'', usedQty:''}}))}
+                             className="text-[9px] text-amber-600 font-black uppercase hover:underline flex items-center gap-0.5">
+                             <X className="w-2.5 h-2.5"/>Clear Lot
+                           </button>
+                         )}
+                       </div>
                        <select value={usage.lotId} onChange={e => setBomUsage(p=>({...p, [ing.item_id]: {...p[ing.item_id], lotId: e.target.value}}))} className="field-input">
                          <option value="">Select lot...</option>
                          {matchStock.length > 0 && <option disabled>── Matching Lots ──</option>}
@@ -321,6 +338,59 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           </button>
         </div>
       </div>
+
+      {/* G-17: BOM Batch Traceability Report */}
+      {showBomReport && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-indigo-600"/>
+                <h3 className="text-base font-black text-gray-900">BOM Traceability Report</h3>
+              </div>
+              <button onClick={() => setShowBomReport(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4 text-gray-400"/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-gray-500 font-semibold">Batch: <span className="font-black text-gray-800">{batch.batch_id}</span> · Recipe: <span className="font-black text-navy">{batch.formulations?.name}</span></p>
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-indigo-50">
+                    <th className="border border-indigo-100 px-3 py-2 text-left font-black text-indigo-800">Ingredient</th>
+                    <th className="border border-indigo-100 px-3 py-2 text-right font-black text-indigo-800">Target</th>
+                    <th className="border border-indigo-100 px-3 py-2 font-black text-indigo-800">Lot Selected</th>
+                    <th className="border border-indigo-100 px-3 py-2 text-right font-black text-indigo-800">Actual</th>
+                    <th className="border border-indigo-100 px-3 py-2 text-right font-black text-indigo-800">Dev %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formulationIngredients.map(ing => {
+                    const target = ((parseFloat(ing.quantity)||0) * scaleFactor).toFixed(2);
+                    const usage = bomUsage[ing.item_id] || {};
+                    const actual = parseFloat(usage.usedQty);
+                    const dev = (!isNaN(actual) && parseFloat(target)>0) ? ((actual - parseFloat(target)) / parseFloat(target) * 100).toFixed(1) : '—';
+                    const devNum = parseFloat(dev);
+                    const lot = availableStock.find(s=>s.id===usage.lotId);
+                    return (
+                      <tr key={ing.item_id} className={Math.abs(devNum)>10 ? 'bg-amber-50' : ''}>
+                        <td className="border border-gray-100 px-3 py-1.5 font-semibold text-gray-800">{ing.name}</td>
+                        <td className="border border-gray-100 px-3 py-1.5 text-right text-gray-600">{parseFloat(target)} {ing.unit}</td>
+                        <td className="border border-gray-100 px-3 py-1.5 font-mono text-[10px] text-gray-700">{lot?.supplier_batch_number || (usage.lotId ? '—' : 'Not selected')}</td>
+                        <td className="border border-gray-100 px-3 py-1.5 text-right font-bold text-gray-900">{isNaN(actual) ? '—' : `${actual} ${ing.unit}`}</td>
+                        <td className={`border border-gray-100 px-3 py-1.5 text-right font-black ${Math.abs(devNum)>10 ? 'text-amber-700' : 'text-gray-500'}`}>{dev === '—' ? '—' : `${devNum > 0 ? '+' : ''}${dev}%`}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {formulationIngredients.some(ing => {
+                const target = ((parseFloat(ing.quantity)||0)*scaleFactor);
+                const actual = parseFloat((bomUsage[ing.item_id]||{}).usedQty);
+                return !isNaN(actual) && target>0 && Math.abs((actual-target)/target*100)>10;
+              }) && <p className="text-xs font-bold text-amber-700 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>One or more ingredients deviate &gt;10% from target — log deviation if not already done.</p>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {pendingOverride !== null && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
