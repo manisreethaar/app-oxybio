@@ -8,12 +8,14 @@ import Link from 'next/link';
 import {
   ArrowLeft, BarChart2, Activity, Beaker, Loader2, Save,
   Play, Plus, Trash2, CheckCircle, AlertTriangle, Info,
-  ChevronUp, ChevronDown, FlaskConical, TrendingUp, Settings
+  ChevronUp, ChevronDown, FlaskConical, TrendingUp, Settings,
+  Link2, Download, X,
 } from 'lucide-react';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Scatter, ScatterChart, ReferenceLine, Legend
+  LineChart, Line, Scatter, ScatterChart, ReferenceLine, Legend,
+  ComposedChart,
 } from 'recharts';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -124,6 +126,8 @@ export default function BioprocessDetailPage() {
   const [localResponses, setLocalResponses] = useState([]);
   const [localKinetics, setLocalKinetics] = useState([]);
   const [kineticConfig, setKineticConfig] = useState({});
+  const [batches, setBatches] = useState([]);
+  const [creatingRSM, setCreatingRSM] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -151,6 +155,18 @@ export default function BioprocessDetailPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const fetchBatches = useCallback(async () => {
+    try {
+      const res = await fetch('/api/batches');
+      const json = await res.json();
+      if (res.ok) setBatches(json.data || []);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (experiment?.type === 'kinetics') fetchBatches();
+  }, [experiment?.type, fetchBatches]);
+
   // ── Factor Helpers ────────────────────────────────────────────────────────
   const addFactor = () => {
     const pos = localFactors.length + 1;
@@ -173,11 +189,109 @@ export default function BioprocessDetailPage() {
 
   // ── Response Helpers ──────────────────────────────────────────────────────
   const updateResponse = (runNum, val) => setLocalResponses(r => r.map(x => x.run_number === runNum ? { ...x, response: val === '' ? null : +val } : x));
+  const updateResponseNotes = (runNum, val) => setLocalResponses(r => r.map(x => x.run_number === runNum ? { ...x, notes: val } : x));
 
   // ── Kinetics Data Helpers ─────────────────────────────────────────────────
   const addKineticRow = () => setLocalKinetics(k => [...k, { substrate: '', rate: '', time_h: '', biomass: '', product: '' }]);
   const removeKineticRow = (idx) => setLocalKinetics(k => k.filter((_, i) => i !== idx));
   const updateKineticRow = (idx, field, val) => setLocalKinetics(k => k.map((x, i) => i === idx ? { ...x, [field]: val === '' ? null : +val } : x));
+
+  // ── Delete experiment ─────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!window.confirm(`Permanently delete "${experiment.title}"? All data will be lost.`)) return;
+    try {
+      const res = await fetch(`/api/bioprocess/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      toast.success('Experiment deleted');
+      router.push('/bioprocess');
+    } catch (e) { toast.error(e.message); }
+  };
+
+  // ── Create RSM from PBD significant factors ───────────────────────────────
+  const handleCreateRSM = async (sigFactors) => {
+    setCreatingRSM(true);
+    try {
+      const res = await fetch('/api/bioprocess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${experiment.title} -- RSM`,
+          description: `RSM follow-up from PBD screening: ${experiment.title}`,
+          type: 'rsm',
+          response_variable: experiment.response_variable,
+          response_unit: experiment.response_unit || '',
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      const top3 = sigFactors.slice(0, 3);
+      if (top3.length > 0) {
+        const factors = top3.map((f, i) => {
+          const orig = localFactors.find(lf => lf.code === f.code);
+          const lo = orig ? +orig.low_value : 0;
+          const hi = orig ? +orig.high_value : 0;
+          return {
+            position: i + 1, code: ['A','B','C'][i],
+            variable: f.variable, unit: orig?.unit || '',
+            low_value: lo, center_value: +((lo + hi) / 2).toFixed(3), high_value: hi,
+          };
+        });
+        await fetch(`/api/bioprocess/${json.data.id}/runs`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ factors, responses: [] }),
+        });
+      }
+      toast.success('RSM experiment created with significant factors pre-filled');
+      router.push(`/bioprocess/${json.data.id}`);
+    } catch (e) { toast.error(e.message); }
+    finally { setCreatingRSM(false); }
+  };
+
+  // ── Link batch to kinetics experiment ─────────────────────────────────────
+  const handleLinkBatch = async (batchId) => {
+    try {
+      const res = await fetch(`/api/bioprocess/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_id: batchId || null }),
+      });
+      if (!res.ok) throw new Error('Failed to update batch link');
+      toast.success(batchId ? 'Batch linked -- fermentation data will sync automatically' : 'Batch unlinked');
+      await fetchData();
+    } catch (e) { toast.error(e.message); }
+  };
+
+  // ── Export design matrix as CSV ───────────────────────────────────────────
+  const exportDesignCSV = () => {
+    const design = experiment.type === 'pbd' ? PBD_DESIGN : BBD_DESIGN;
+    const nRuns = experiment.type === 'pbd' ? 12 : 15;
+    const fHeaders = localFactors.map(f => `${f.code}_${f.variable}${f.unit ? '_'+f.unit : ''}`);
+    const header = ['Run', ...fHeaders, `Y_${experiment.response_variable}`, 'Notes'];
+    const rows = Array.from({ length: nRuns }, (_, ri) => {
+      const row = design[ri];
+      const resp = localResponses.find(r => r.run_number === ri + 1);
+      const isCenter = experiment.type === 'rsm' && ri >= 12;
+      return [
+        ri + 1,
+        ...localFactors.map((f, fi) => {
+          const level = row[fi];
+          if (isCenter) return f.center_value ?? '';
+          return level === 1 ? f.high_value : f.low_value;
+        }),
+        resp?.response ?? '',
+        resp?.notes ? `"${resp.notes.replace(/"/g, '""')}"` : '',
+      ];
+    });
+    const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${experiment.title.replace(/[^\w]/g, '_')}_design.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const saveAll = async () => {
@@ -277,9 +391,36 @@ export default function BioprocessDetailPage() {
             ))}
           </div>
 
+          {/* Batch link — Unified Process Bus */}
+          <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-navy" /> Link to Batch (Unified Process Bus)
+            </h3>
+            <p className="text-xs text-gray-500">When linked, fermentation readings (OD, pH, Brix) sync automatically from the batch run — manual data entry is disabled.</p>
+            <div className="flex items-center gap-3">
+              <select
+                defaultValue={experiment.batch_id || ''}
+                onChange={e => handleLinkBatch(e.target.value || null)}
+                className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+              >
+                <option value="">None -- manual data entry</option>
+                {batches.map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.batch_id}{b.formulations?.name ? ` -- ${b.formulations.name}` : ''}
+                  </option>
+                ))}
+              </select>
+              {experiment.batch_id && (
+                <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1 shrink-0">
+                  <CheckCircle className="w-3.5 h-3.5" /> Linked
+                </span>
+              )}
+            </div>
+          </div>
+
           {kineticConfig.kinetics_model === 'luedeking_piret' && (
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
-              <h4 className="text-sm font-bold text-amber-800 mb-4">Simulation Parameters</h4>
+              <h4 className="text-sm font-bold text-amber-800 mb-4">Initial Conditions &amp; Simulation Parameters</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {[
                   { key: 'mu_max', label: 'μmax (h⁻¹)', def: '0.30' },
@@ -518,9 +659,14 @@ export default function BioprocessDetailPage() {
               <div className="bg-navy rounded-full h-2 transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
-          <button onClick={saveAll} disabled={saving} className="flex items-center gap-2 bg-navy text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Responses
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={exportDesignCSV} className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 bg-gray-100 px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+            <button onClick={saveAll} disabled={saving} className="flex items-center gap-2 bg-navy text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Responses
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-gray-200">
@@ -538,6 +684,7 @@ export default function BioprocessDetailPage() {
                 <th className="px-3 py-3 text-center font-bold text-emerald-700 min-w-[100px]">
                   Y ({experiment.response_variable})
                 </th>
+                <th className="px-3 py-3 text-left font-bold text-gray-500 min-w-[120px]">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -575,6 +722,15 @@ export default function BioprocessDetailPage() {
                         onChange={e => updateResponse(ri + 1, e.target.value)}
                         placeholder="—"
                         className={`w-24 border rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-300 ${resp?.response != null ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200'}`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={resp?.notes ?? ''}
+                        onChange={e => updateResponseNotes(ri + 1, e.target.value)}
+                        placeholder="observations..."
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-navy/30 min-w-[110px]"
                       />
                     </td>
                   </tr>
@@ -633,24 +789,54 @@ export default function BioprocessDetailPage() {
             </div>
           </div>
 
+          {/* Pareto chart of standardized effects */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-bold text-gray-700 mb-4">Factor Effect Sizes</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" domain={['auto','auto']} tickFormatter={v => v.toFixed(2)} />
-                <YAxis type="category" dataKey="name" width={32} tick={{ fontSize: 11, fontWeight: 700, fill: '#1e3a8a' }} />
-                <Tooltip formatter={(v, n, p) => [v.toFixed(4), 'Effect']} labelFormatter={l => chartData.find(d => d.name === l)?.variable || l} />
-                <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1.5} />
-                <Bar dataKey="effect" radius={[0, 4, 4, 0]}
-                  fill="#1e3a8a"
-                  label={false}
-                  isAnimationActive
-                  cell={chartData.map((d, i) => ({ key: i, fill: d.significant ? (d.effect > 0 ? '#16a34a' : '#dc2626') : '#94a3b8' }))}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-            <p className="text-[11px] text-gray-400 text-center mt-2">Green = significant &amp; beneficial at high level · Red = significant &amp; beneficial at low level · Grey = not significant</p>
+            <h3 className="text-sm font-bold text-gray-700 mb-1">Pareto Chart of Standardized Effects</h3>
+            <p className="text-xs text-gray-400 mb-4">Absolute t-statistic per factor — bars crossing the red line are significant at p&lt;0.05</p>
+            {(() => {
+              const paretoData = [...result.results]
+                .sort((a, b) => Math.abs(b.t) - Math.abs(a.t))
+                .map(r => ({ name: r.code, variable: r.variable, absT: Math.abs(r.t), significant: r.significant }));
+              return (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={paretoData} margin={{ left: 8, right: 40, top: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: '#1e3a8a' }} />
+                    <YAxis label={{ value: '|t|', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#6b7280' }} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={v => [v.toFixed(3), '|Standardized Effect|']} labelFormatter={l => paretoData.find(d => d.name === l)?.variable || l} />
+                    <ReferenceLine y={2.0} stroke="#dc2626" strokeDasharray="5 3" label={{ value: 'p=0.05', position: 'right', fontSize: 10, fill: '#dc2626' }} />
+                    <Bar dataKey="absT" radius={[4, 4, 0, 0]}
+                      cell={paretoData.map((d, i) => ({ key: i, fill: d.significant ? '#1e3a8a' : '#cbd5e1' }))}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+
+          {/* Effect direction chart */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Effect Directions</h3>
+            {(() => {
+              const chartData = [...result.results]
+                .sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect))
+                .map(r => ({ name: r.code, variable: r.variable, effect: r.effect, significant: r.significant }));
+              return (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" domain={['auto','auto']} tickFormatter={v => v.toFixed(2)} />
+                    <YAxis type="category" dataKey="name" width={32} tick={{ fontSize: 11, fontWeight: 700, fill: '#1e3a8a' }} />
+                    <Tooltip formatter={(v, n, p) => [v.toFixed(4), 'Effect']} labelFormatter={l => chartData.find(d => d.name === l)?.variable || l} />
+                    <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1.5} />
+                    <Bar dataKey="effect" radius={[0, 4, 4, 0]}
+                      cell={chartData.map((d, i) => ({ key: i, fill: d.significant ? (d.effect > 0 ? '#16a34a' : '#dc2626') : '#94a3b8' }))}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              );
+            })()}
+            <p className="text-[11px] text-gray-400 text-center mt-2">Green = significant, high level benefits response · Red = significant, low level benefits response · Grey = not significant</p>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-gray-200">
@@ -683,8 +869,8 @@ export default function BioprocessDetailPage() {
           </div>
 
           {result.significant.length > 0 && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <h4 className="text-sm font-bold text-emerald-800 mb-2">Carry Forward to RSM</h4>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
+              <h4 className="text-sm font-bold text-emerald-800">Carry Forward to RSM</h4>
               <div className="flex flex-wrap gap-2">
                 {result.significant.map(f => (
                   <span key={f.code} className="px-3 py-1 bg-emerald-100 border border-emerald-300 rounded-full text-xs font-bold text-emerald-800">
@@ -692,6 +878,19 @@ export default function BioprocessDetailPage() {
                   </span>
                 ))}
               </div>
+              {result.significant.length > 3 && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                  Only the top 3 factors will be used in the RSM (BBD limit). The rest are carried as fixed at their optimal levels.
+                </p>
+              )}
+              <button
+                onClick={() => handleCreateRSM(result.significant)}
+                disabled={creatingRSM}
+                className="flex items-center gap-2 bg-navy text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60"
+              >
+                {creatingRSM ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create RSM Experiment from these factors
+              </button>
             </div>
           )}
         </div>
@@ -745,6 +944,66 @@ export default function BioprocessDetailPage() {
             <RSMHeatmap heatmap={result.heatmap} factors={localFactors} />
           </div>
 
+          {/* ANOVA Table */}
+          {result.anova && (
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 className="text-sm font-bold text-gray-700">ANOVA Table</h3>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50/60">
+                  <tr>
+                    {['Source','SS','df','MS','F','p-value'].map(h => (
+                      <th key={h} className={`px-4 py-2.5 text-xs font-bold text-gray-600 ${h === 'Source' ? 'text-left' : 'text-right'}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr className="bg-navy/5">
+                    <td className="px-4 py-2.5 font-bold text-navy text-sm">Model</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm">{result.anova.model.SS}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm">{result.anova.model.df}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm">{result.anova.model.MS}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm">{result.anova.model.F}</td>
+                    <td className="px-4 py-2.5 text-right">{pValue(result.anova.model.p)}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-600 pl-8 text-xs">Residual</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.residual.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.residual.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.residual.MS}</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-xs">--</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-xs">--</td>
+                  </tr>
+                  <tr className="bg-amber-50/40">
+                    <td className="px-4 py-2 text-gray-600 pl-12 text-[11px]">Lack of Fit</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.MS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.F}</td>
+                    <td className="px-4 py-2 text-right text-[11px]">{pValue(result.anova.lof.p)}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-600 pl-12 text-[11px]">Pure Error</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.MS}</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-[11px]">--</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-[11px]">--</td>
+                  </tr>
+                  <tr className="bg-gray-50 font-bold">
+                    <td className="px-4 py-2.5 text-gray-700">Total (Corrected)</td>
+                    <td className="px-4 py-2.5 text-right font-mono">{result.anova.total.SS}</td>
+                    <td className="px-4 py-2.5 text-right font-mono">{result.anova.total.df}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-400">--</td>
+                    <td className="px-4 py-2.5 text-right text-gray-400">--</td>
+                    <td className="px-4 py-2.5 text-right text-gray-400">--</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {/* Coefficient table */}
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
@@ -752,7 +1011,7 @@ export default function BioprocessDetailPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Term</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Description</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">Coefficient β</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">Coefficient beta</th>
                   <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">Std. Error</th>
                   <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">t</th>
                   <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">p-value</th>
@@ -772,6 +1031,47 @@ export default function BioprocessDetailPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Predicted vs Actual diagnostic */}
+          {result.diagnostics && (() => {
+            const allVals = result.diagnostics.flatMap(d => [d.actual, d.fitted]);
+            const mn = Math.min(...allVals), mx = Math.max(...allVals);
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-bold text-gray-700 mb-1">Predicted vs Actual</h3>
+                <p className="text-xs text-gray-400 mb-4">Points close to the diagonal indicate good model fit</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <ScatterChart margin={{ left: 10, right: 10, top: 4, bottom: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="fitted" name="Predicted" type="number" domain={['auto','auto']} label={{ value: 'Predicted', position: 'insideBottom', offset: -8, fontSize: 11 }} tick={{ fontSize: 10 }} />
+                    <YAxis dataKey="actual" name="Actual" type="number" domain={['auto','auto']} label={{ value: 'Actual', angle: -90, position: 'insideLeft', fontSize: 11 }} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(v, n) => [v.toFixed(4), n]} />
+                    <ReferenceLine segment={[{ x: mn, y: mn }, { x: mx, y: mx }]} stroke="#94a3b8" strokeDasharray="5 3" />
+                    <Scatter data={result.diagnostics} fill="#1e3a8a" />
+                  </ScatterChart>
+                </ResponsiveContainer>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="bg-gray-50">
+                      {['Run','Actual','Predicted','Residual'].map(h => (
+                        <th key={h} className="px-3 py-2 text-right first:text-left font-bold text-gray-600">{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {result.diagnostics.map(d => (
+                        <tr key={d.run} className={Math.abs(d.residual) > 2 * Math.sqrt(result.MSE || 1) ? 'bg-red-50' : ''}>
+                          <td className="px-3 py-1.5 font-bold text-gray-700">{d.run}</td>
+                          <td className="px-3 py-1.5 text-right font-mono">{d.actual}</td>
+                          <td className="px-3 py-1.5 text-right font-mono text-navy">{d.fitted}</td>
+                          <td className={`px-3 py-1.5 text-right font-mono ${Math.abs(d.residual) > 2 * Math.sqrt(result.MSE || 1) ? 'text-red-600 font-bold' : 'text-gray-500'}`}>{d.residual >= 0 ? '+' : ''}{d.residual}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       );
     }
@@ -781,17 +1081,29 @@ export default function BioprocessDetailPage() {
       if (result.modelType === 'luedeking_piret') {
         const sim = result.simulation;
         const stride = Math.max(1, Math.floor(sim.times.length / 80));
-        const chartData = sim.times.filter((_, i) => i % stride === 0).map((t, i) => ({
+        const simData = sim.times.filter((_, i) => i % stride === 0).map((t, i) => ({
           t, X: sim.X[i * stride], S: sim.S[i * stride], P: sim.P[i * stride],
         }));
+        const hasExpData = result.expPts?.length > 0;
         return (
           <div className="space-y-6">
-            <div className={`rounded-xl p-4 border text-center ${result.dominant === 'growth-associated' ? 'bg-blue-50 border-blue-200' : result.dominant === 'non-growth-associated' ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200'}`}>
-              <div className="text-lg font-black capitalize">{result.dominant} product</div>
-              <div className="text-xs text-gray-500 mt-1">Luedeking-Piret classification</div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className={`flex-1 rounded-xl p-4 border text-center ${result.dominant === 'growth-associated' ? 'bg-blue-50 border-blue-200' : result.dominant === 'non-growth-associated' ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200'}`}>
+                <div className="text-lg font-black capitalize">{result.dominant} product</div>
+                <div className="text-xs text-gray-500 mt-1">Luedeking-Piret classification</div>
+              </div>
+              {result.fittedFromData ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" /> Parameters fitted from experimental data
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs font-semibold text-amber-700">
+                  Using manual parameters -- add time-course data to fit automatically
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center text-sm">
-              {[['μmax', result.muMax + ' h⁻¹'], ['Ks', result.Ks + ' g/L'], ['Yx/s', result.Yxs], ['α', result.alpha], ['β', result.beta]].map(([l, v]) => (
+              {[['mumax', result.muMax + ' h-1'], ['Ks', result.Ks + ' g/L'], ['Yx/s', result.Yxs], ['alpha', result.alpha], ['beta', result.beta]].map(([l, v]) => (
                 <div key={l} className="bg-gray-50 rounded-xl p-3">
                   <div className="font-mono text-xs text-gray-500">{l}</div>
                   <div className="font-black text-navy mt-1">{v}</div>
@@ -799,23 +1111,28 @@ export default function BioprocessDetailPage() {
               ))}
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-bold text-gray-700 mb-4">Batch Simulation — X(t) / S(t) / P(t)</h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={chartData}>
+              <h3 className="text-sm font-bold text-gray-700 mb-1">Batch Simulation vs Experimental Data</h3>
+              <p className="text-xs text-gray-400 mb-4">Lines = ODE simulation · Dots = measured data points</p>
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart margin={{ left: 4, right: 8, bottom: 16 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="t" label={{ value: 'Time (h)', position: 'insideBottom', offset: -4, fontSize: 11 }} />
+                  <XAxis dataKey="t" type="number" domain={['auto','auto']} label={{ value: 'Time (h)', position: 'insideBottom', offset: -10, fontSize: 11 }} allowDuplicatedCategory={false} />
                   <YAxis label={{ value: 'g/L', angle: -90, position: 'insideLeft', fontSize: 11 }} />
-                  <Tooltip formatter={v => v.toFixed(3)} />
-                  <Legend />
-                  <Line type="monotone" dataKey="X" stroke="#1e3a8a" strokeWidth={2} dot={false} name="Biomass X" />
-                  <Line type="monotone" dataKey="S" stroke="#16a34a" strokeWidth={2} dot={false} name="Substrate S" strokeDasharray="5 5" />
-                  <Line type="monotone" dataKey="P" stroke="#dc2626" strokeWidth={2} dot={false} name="Product P" />
-                </LineChart>
+                  <Tooltip formatter={v => typeof v === 'number' ? v.toFixed(3) : v} />
+                  <Legend verticalAlign="top" />
+                  <Line data={simData} type="monotone" dataKey="X" stroke="#1e3a8a" strokeWidth={2} dot={false} name="Biomass X (sim)" />
+                  <Line data={simData} type="monotone" dataKey="S" stroke="#16a34a" strokeWidth={2} dot={false} name="Substrate S (sim)" strokeDasharray="5 5" />
+                  <Line data={simData} type="monotone" dataKey="P" stroke="#dc2626" strokeWidth={2} dot={false} name="Product P (sim)" />
+                  {hasExpData && (
+                    <>
+                      <Scatter data={result.expPts.filter(p => p.X != null).map(p => ({ t: p.t, X: p.X }))} dataKey="X" fill="#1e3a8a" name="Biomass X (exp)" />
+                      <Scatter data={result.expPts.filter(p => p.S != null).map(p => ({ t: p.t, S: p.S }))} dataKey="S" fill="#16a34a" name="Substrate S (exp)" />
+                      <Scatter data={result.expPts.filter(p => p.P != null).map(p => ({ t: p.t, P: p.P }))} dataKey="P" fill="#dc2626" name="Product P (exp)" />
+                    </>
+                  )}
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
-            {result.expPts?.length > 0 && (
-              <p className="text-xs text-gray-500 text-center">Compare simulation curves with your experimental time-course points plotted below.</p>
-            )}
           </div>
         );
       }
@@ -933,16 +1250,10 @@ export default function BioprocessDetailPage() {
           </div>
         )}
 
-        {(experiment?.status === 'completed' || experiment?.status === 'analysed' || experiment?.status === 'complete') && (
+        {experiment?.type === 'rsm' && (experiment?.status === 'complete' || experiment?.status === 'completed') && (
           <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
             <p className="text-sm font-bold text-blue-800 mb-1">Ready for production?</p>
-            <p className="text-xs text-blue-600 mb-3">Use the optimised parameters from this experiment to start a batch.</p>
-            <button
-              onClick={() => window.location.href = `/batches?from_experiment=${experiment.id}`}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all min-h-[44px]"
-            >
-              Create Batch from Best Run →
-            </button>
+            <p className="text-xs text-blue-600 mb-3">Use the predicted optimal conditions to start a production batch. The "Create Batch" button in the top-right pre-fills the batch notes with optimal factor values.</p>
           </div>
         )}
       </div>
@@ -1005,6 +1316,9 @@ export default function BioprocessDetailPage() {
           <button onClick={runAnalysis} disabled={analysing} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-60">
             {analysing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             {result ? 'Re-run' : 'Analyse'}
+          </button>
+          <button onClick={handleDelete} className="flex items-center gap-1.5 border border-red-200 text-red-500 px-3 py-2 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors">
+            <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
       </div>

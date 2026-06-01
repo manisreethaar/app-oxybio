@@ -61,7 +61,7 @@ export async function PATCH(req, { params }) {
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ['title', 'description', 'status', 'response_variable', 'response_unit', 'config', 'analysis_result'];
+  const allowed = ['title', 'description', 'status', 'response_variable', 'response_unit', 'config', 'analysis_result', 'batch_id'];
   const update = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
   update.updated_at = new Date().toISOString();
 

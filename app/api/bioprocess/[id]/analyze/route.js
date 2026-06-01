@@ -246,7 +246,7 @@ function analyzeRSM(factors, responses) {
       })
     : xClamped;
 
-  // Surface heatmap (20×20 grid, x3 held at 0)
+  // Surface heatmap (20x20 grid, x3 held at 0)
   const G = 20;
   const heatmap = Array.from({ length: G }, (_, i) =>
     Array.from({ length: G }, (_, j) => {
@@ -255,11 +255,31 @@ function analyzeRSM(factors, responses) {
                + beta[5]*x2*x2 + beta[7]*x1*x2).toFixed(4);
     }));
 
+  // ANOVA table
+  const SSModel = SST - SSE;
+  const dfModel = p - 1;
+  const dfResidual = n - p;
+  const MSModel = SSModel / dfModel;
+  const FModel = MSE > 1e-14 ? MSModel / MSE : 0;
+  const pModel = +fPValue(FModel, dfModel, dfResidual).toFixed(5);
+  const diagnostics = Array.from({ length: n }, (_, i) => ({
+    run: i + 1, actual: +Y[i].toFixed(4),
+    fitted: +fitted[i].toFixed(4), residual: +(Y[i] - fitted[i]).toFixed(4),
+  }));
+
   return {
     type: 'rsm', coefs, r2, adjR2, MSE: +MSE.toFixed(5),
     lackOfFit: { F: +FLOF.toFixed(4), p: pLOF, adequate: pLOF > 0.05 },
     stationary: { coded: xOpt.map(v => +v.toFixed(4)), clamped: xClamped.map(v => +v.toFixed(4)) },
     actualOpt, predictedResponse: +predOpt.toFixed(4), heatmap,
+    anova: {
+      model:    { SS: +SSModel.toFixed(4), df: dfModel,    MS: +MSModel.toFixed(4), F: +FModel.toFixed(4), p: pModel },
+      residual: { SS: +SSE.toFixed(4),     df: dfResidual, MS: +MSE.toFixed(5) },
+      lof:      { SS: +SSLOF.toFixed(4),   df: dfLOF,      MS: +MSLOF.toFixed(4), F: +FLOF.toFixed(4),   p: pLOF },
+      pureErr:  { SS: +SSPE.toFixed(4),    df: 2,          MS: +MSPE.toFixed(4) },
+      total:    { SS: +SST.toFixed(4),     df: n - 1 },
+    },
+    diagnostics,
   };
 }
 
@@ -338,15 +358,95 @@ function analyzeKinetics(config, kineticData) {
 
   if (modelType === 'luedeking_piret') {
     const cfg = config || {};
-    const muMax = +(cfg.mu_max || 0.3), Ks = +(cfg.Ks || 2),
-          Yxs = +(cfg.Yxs || 0.45), alpha = +(cfg.alpha || 0.15), beta = +(cfg.beta_lp || 0.05);
-    const X0 = +(cfg.X0 || 0.05), S0 = +(cfg.S0 || 20), P0 = +(cfg.P0 || 0);
-    const tend = +(cfg.tend || 30), dt = 0.1;
-    const sim = simulateBatch(0, tend, dt, X0, S0, P0, muMax, Ks, Yxs, alpha, beta);
-    // Classify kinetics
+    const timePts = kineticData
+      .filter(d => d.time_h != null && d.biomass != null && d.biomass > 0)
+      .sort((a, b) => a.time_h - b.time_h);
+
+    let muMax, Ks, Yxs, alpha, beta, fittedFromData = false;
+
+    if (timePts.length >= 4) {
+      // Numerical derivatives via central differences
+      const nPts = timePts.length;
+      const dXdt = timePts.map((pt, i) => {
+        if (i === 0) return (timePts[1].biomass - pt.biomass) / Math.max(timePts[1].time_h - pt.time_h, 1e-9);
+        if (i === nPts - 1) return (pt.biomass - timePts[nPts - 2].biomass) / Math.max(pt.time_h - timePts[nPts - 2].time_h, 1e-9);
+        return (timePts[i + 1].biomass - timePts[i - 1].biomass) / Math.max(timePts[i + 1].time_h - timePts[i - 1].time_h, 1e-9);
+      });
+
+      // Specific growth rate mu(t) = dX/dt / X
+      const mu = timePts.map((pt, i) => Math.max(0, dXdt[i] / pt.biomass));
+      muMax = Math.max(...mu.filter(v => isFinite(v)), 0.01);
+
+      // Fit Monod to substrate data if available
+      const subPts = timePts.filter(d => d.substrate != null && d.substrate > 0);
+      if (subPts.length >= 3) {
+        const subS = subPts.map(d => d.substrate);
+        const subMu = subPts.map(d => mu[timePts.indexOf(d)]).filter(v => isFinite(v) && v > 0);
+        if (subMu.length >= 3) {
+          try {
+            const fit = fitHyperbola(subS.slice(0, subMu.length), subMu, muMax, subS[Math.floor(subS.length / 2)]);
+            muMax = fit.params[0];
+            Ks = fit.params[1];
+          } catch { Ks = +(cfg.Ks || 2); }
+        } else { Ks = +(cfg.Ks || 2); }
+
+        // Yield Yx/s from overall delta X / delta S
+        const dX = timePts[nPts - 1].biomass - timePts[0].biomass;
+        const s0 = subPts[0].substrate, sF = subPts[subPts.length - 1].substrate;
+        const dS = s0 - sF;
+        Yxs = dS > 0.01 ? Math.min(2, +(dX / dS).toFixed(4)) : +(cfg.Yxs || 0.45);
+      } else {
+        Ks = +(cfg.Ks || 2);
+        Yxs = +(cfg.Yxs || 0.45);
+      }
+
+      // Fit alpha (growth-assoc.) and beta (non-growth-assoc.) from product data via OLS
+      // Model: dP/dt = alpha * dX/dt + beta * X
+      const prodPts = timePts.filter(d => d.product != null);
+      if (prodPts.length >= 4) {
+        const pN = prodPts.length;
+        const dPdt = prodPts.map((pt, i) => {
+          if (i === 0) return (prodPts[1].product - pt.product) / Math.max(prodPts[1].time_h - pt.time_h, 1e-9);
+          if (i === pN - 1) return (pt.product - prodPts[pN - 2].product) / Math.max(pt.time_h - prodPts[pN - 2].time_h, 1e-9);
+          return (prodPts[i + 1].product - prodPts[i - 1].product) / Math.max(prodPts[i + 1].time_h - prodPts[i - 1].time_h, 1e-9);
+        });
+        const u = prodPts.map(pt => dXdt[timePts.indexOf(pt)] || 0); // dX/dt
+        const v = prodPts.map(pt => pt.biomass);                      // X
+        const y = dPdt;
+        const Suu = u.reduce((s, ui) => s + ui * ui, 0);
+        const Suv = u.reduce((s, ui, i) => s + ui * v[i], 0);
+        const Svv = v.reduce((s, vi) => s + vi * vi, 0);
+        const Suy = u.reduce((s, ui, i) => s + ui * y[i], 0);
+        const Svy = v.reduce((s, vi, i) => s + vi * y[i], 0);
+        const det = Suu * Svv - Suv * Suv;
+        if (Math.abs(det) > 1e-14) {
+          alpha = Math.max(0, (Svv * Suy - Suv * Svy) / det);
+          beta  = Math.max(0, (Suu * Svy - Suv * Suy) / det);
+          fittedFromData = true;
+        } else {
+          alpha = +(cfg.alpha || 0.15); beta = +(cfg.beta_lp || 0.05);
+        }
+      } else {
+        alpha = +(cfg.alpha || 0.15); beta = +(cfg.beta_lp || 0.05);
+      }
+    } else {
+      muMax = +(cfg.mu_max || 0.3); Ks = +(cfg.Ks || 2);
+      Yxs = +(cfg.Yxs || 0.45); alpha = +(cfg.alpha || 0.15); beta = +(cfg.beta_lp || 0.05);
+    }
+
+    const X0 = +(cfg.X0 || (timePts[0]?.biomass   || 0.05));
+    const S0 = +(cfg.S0 || (timePts[0]?.substrate  || 20));
+    const P0 = +(cfg.P0 || (timePts[0]?.product    || 0));
+    const tend = +(cfg.tend || (timePts[timePts.length - 1]?.time_h || 30));
+    const sim = simulateBatch(0, tend, 0.1, X0, S0, P0, muMax, Ks, Yxs, alpha, beta);
     const dominant = alpha > 5 * beta ? 'growth-associated' : beta > 5 * alpha ? 'non-growth-associated' : 'mixed';
-    const expPts = kineticData.map(d => ({ t: d.time_h, X: d.biomass, S: d.substrate, P: d.product })).filter(d => d.t != null);
-    return { type: 'kinetics', modelType, muMax, Ks, Yxs, alpha, beta: beta, dominant, simulation: sim, expPts };
+    const expPts = timePts.map(d => ({ t: d.time_h, X: d.biomass, S: d.substrate, P: d.product }));
+    return {
+      type: 'kinetics', modelType,
+      muMax: +muMax.toFixed(4), Ks: +Ks.toFixed(4), Yxs: +Yxs.toFixed(4),
+      alpha: +alpha.toFixed(4), beta: +beta.toFixed(4),
+      dominant, simulation: sim, expPts, fittedFromData,
+    };
   }
 
   throw new Error('Unknown kinetics model type');
