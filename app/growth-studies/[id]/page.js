@@ -841,8 +841,8 @@ export default function GrowthStudyDetailPage() {
 
       {/* 2A: Combined tabbed measurement+plate modal */}
       {modal?.type === 'combined' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[92vh]">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[92vh]">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-800">Record Sample Data</h3>
@@ -1003,8 +1003,8 @@ export default function GrowthStudyDetailPage() {
 
       {/* Legacy: keep individual modals for old type='measurement'|'plate' paths (safety fallback) */}
       {startModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-800">Confirm Study Start</h3>
@@ -1133,8 +1133,8 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Plate Observation Modal ── */}
       {modal?.type === 'plate' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-800">Plate Observation</h3>
@@ -1231,8 +1231,8 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Edit Study Modal ── */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto max-h-[92vh]">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="flex flex-col h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto max-h-[92vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
                 <h3 className="font-black text-slate-800">Edit Study</h3>
