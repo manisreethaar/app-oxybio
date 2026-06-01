@@ -9,6 +9,7 @@ import {
   ChevronDown, Thermometer, Save
 } from 'lucide-react';
 import clsx from 'clsx';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const STERILITY_OPTIONS = ['', 'Pass', 'Fail', 'Pending'];
@@ -580,6 +581,12 @@ export default function GridEntryPage() {
       )}
 
       {/* ── Submit ── */}
+      {rows.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-slate-500 font-medium">Logging as</span>
+          <CreatorBadge initials={employeeProfile?.initials} fullName={employeeProfile?.full_name} />
+        </div>
+      )}
       {rows.length > 0 && (
         <button
           type="button"
