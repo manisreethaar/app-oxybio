@@ -118,7 +118,7 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
+      let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
       let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
 
       if (!isAdmin) {
