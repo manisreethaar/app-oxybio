@@ -1,4 +1,6 @@
-import { X, AlertTriangle } from 'lucide-react';
+'use client';
+import { useState } from 'react';
+import { X, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function ConfirmModal({ 
   isOpen, 
@@ -9,11 +11,31 @@ export default function ConfirmModal({
   confirmText = 'Confirm', 
   variant = 'danger' 
 }) {
+  const [confirming, setConfirming] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleConfirm = async () => {
+    try {
+      setConfirming(true);
+      await onConfirm();
+      onClose();
+    } catch (err) {
+      // onConfirm already handles errors via toast in the parent
+      console.error('[ConfirmModal] onConfirm error:', err);
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-md shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden">
-        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all">
+      <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-md shadow-xl relative animate-in fade-in zoom-in duration-200">
+        <button
+          onClick={onClose}
+          disabled={confirming}
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all disabled:opacity-50"
+        >
           <X className="w-5 h-5 text-gray-400"/>
         </button>
         <div className="p-6 pb-0 flex items-start gap-4">
@@ -27,16 +49,20 @@ export default function ConfirmModal({
         </div>
         <div className="p-6 flex flex-col sm:flex-row gap-3 justify-end mt-2">
           <button 
-            onClick={onClose} 
-            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg text-sm hover:bg-gray-50 transition-all"
+            onClick={onClose}
+            disabled={confirming}
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
           >
             Cancel
           </button>
           <button 
-            onClick={() => { onConfirm(); onClose(); }} 
-            className={`px-4 py-2 text-white font-bold rounded-lg text-sm shadow-sm transition-all ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-navy hover:bg-navy-hover'}`}
+            onClick={handleConfirm}
+            disabled={confirming}
+            className={`px-4 py-2 text-white font-bold rounded-lg text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-navy hover:bg-navy-hover'}`}
           >
-            {confirmText}
+            {confirming ? (
+              <><Loader2 className="w-4 h-4 animate-spin"/> Deleting...</>
+            ) : confirmText}
           </button>
         </div>
       </div>
