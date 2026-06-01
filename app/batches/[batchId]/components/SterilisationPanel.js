@@ -1,11 +1,20 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { ShieldCheck, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ExternalLink, FlaskConical } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
 const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Filter','Chemical','Other'];
 const TAPE_RES = ['Positive','Negative'];
+const BI_RESULTS = ['Pass','Fail','Not Used'];
+
+// F₀ = hold_time_min × 10^((temp_c - 121.1) / 10)
+function calcF0(tempC, holdMin) {
+  const t = parseFloat(tempC);
+  const h = parseFloat(holdMin);
+  if (!t || !h || isNaN(t) || isNaN(h)) return null;
+  return parseFloat((h * Math.pow(10, (t - 121.1) / 10)).toFixed(2));
+}
 
 export default function SterilisationPanel({ batch, employees, employeeProfile, role, availableStock, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
   const toast = useToast();
@@ -24,7 +33,16 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   const [passFail,  setPassFail]  = useState('Pending');
   const [notes,     setNotes]     = useState('');
 
-  const fetch = useCallback(async () => {
+  // G-01: Biological Indicator fields
+  const [biUsed,     setBiUsed]     = useState(false);
+  const [biResult,   setBiResult]   = useState('Not Used');
+  const [biIncDate,  setBiIncDate]  = useState('');
+
+  // G-03: CAPA linkage
+  const [capaDevId,  setCapaDevId]  = useState(null);
+  const [raisingCapa, setRaisingCapa] = useState(false);
+
+  const fetchRecord = useCallback(async () => {
     let isCurrent = true;
     const [dRes, eqRes] = await Promise.all([
       supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
@@ -40,21 +58,58 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setCycleEnd(d.cycle_end ? (() => { const d1 = new Date(d.cycle_end); d1.setMinutes(d1.getMinutes() - d1.getTimezoneOffset()); return d1.toISOString().slice(0,16); })() : '');
       setTape(d.autoclave_tape||'Positive'); setPassFail(d.pass_fail||'Pending');
       setNotes(d.notes||'');
+      setBiUsed(d.bi_used||false);
+      setBiResult(d.bi_result||'Not Used');
+      setBiIncDate(d.bi_incubation_date||'');
+      setCapaDevId(d.capa_deviation_id||null);
     }
     if (eqRes.data) setEquipment(eqRes.data);
     return () => { isCurrent = false; };
   }, [batch.id, supabase]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchRecord(); }, [fetchRecord]);
 
   const selectedEquip = equipment.find(e => e.id === equipId);
   const isCalibExpired = selectedEquip?.calibration_due_date ? new Date(selectedEquip.calibration_due_date) < new Date() : false;
-  const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
   const isEquipBad     = selectedEquip && (selectedEquip.status !== 'Operational' || isCalibExpired);
 
   const holdTime = cycleStart && cycleEnd
     ? ((new Date(cycleEnd) - new Date(cycleStart)) / 60000).toFixed(0)
     : holdMin;
+
+  // G-02: F₀ auto-calculation
+  const f0 = calcF0(temp, holdTime);
+
+  // G-03: Auto-raise CAPA when Fail is saved
+  const autoRaiseCapa = async () => {
+    if (capaDevId) return capaDevId; // already raised
+    setRaisingCapa(true);
+    try {
+      const res = await fetch('/api/capa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'raise',
+          payload: {
+            title: `Sterilisation Fail — Batch ${batch.batch_id}`,
+            severity: 'Major',
+            source: 'Sterilisation',
+            description: `Sterilisation stage failed for batch ${batch.batch_id}. Method: ${method}. Tape: ${tape}. Autoclave tape result did not confirm adequate sterilisation. Immediate investigation required.`,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.id) {
+        setCapaDevId(json.data.id);
+        return json.data.id;
+      }
+    } catch {
+      // non-blocking — CAPA raise failure should not block save
+    } finally {
+      setRaisingCapa(false);
+    }
+    return null;
+  };
 
   const handleSave = async (advance = false) => {
     if (advance && passFail !== 'Pass') {
@@ -63,17 +118,29 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
     }
     setSaving(true);
     try {
+      let devId = capaDevId;
+      // G-03: auto-raise CAPA on Fail save
+      if (passFail === 'Fail' && !capaDevId) {
+        devId = await autoRaiseCapa();
+        if (devId) toast.warn('CAPA deviation auto-raised for sterilisation failure. Review in Compliance module.');
+      }
+
       const { error } = await supabase.from('batch_stage_sterilisation').upsert({
         batch_id: batch.id, method, equipment_id: equipId || null,
         cycle_temp_c: temp ? parseFloat(temp) : null, cycle_pressure_bar: pressure ? parseFloat(pressure) : null,
         hold_time_min: holdTime ? parseFloat(holdTime) : null,
+        f0_value: f0,
         cycle_start: cycleStart ? new Date(cycleStart).toISOString() : null,
         cycle_end: cycleEnd ? new Date(cycleEnd).toISOString() : null,
         autoclave_tape: tape, pass_fail: passFail,
+        bi_used: biUsed,
+        bi_result: biUsed ? biResult : 'Not Used',
+        bi_incubation_date: biUsed && biIncDate ? biIncDate : null,
+        capa_deviation_id: devId || null,
         operator_id: employeeProfile?.id, notes: notes || null,
       }, { onConflict: 'batch_id' });
       if (error) throw error;
-      // Log equipment usage for traceability
+
       if (equipId) {
         supabase.from('calibration_logs').insert({
           equipment_id: equipId,
@@ -83,6 +150,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           performed_by: employeeProfile?.id || null,
         }).then(() => {}).catch(() => {});
       }
+
       toast.success(advance ? 'Sterilisation complete.' : 'Draft saved.');
       syncStageToLNB(supabase, batch.id, 'sterilisation', {
         method,
@@ -90,13 +158,15 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         cycle_temp_c: temp ? parseFloat(temp) : null,
         cycle_pressure_bar: pressure ? parseFloat(pressure) : null,
         hold_time_min: holdTime ? parseFloat(holdTime) : null,
+        f0_value: f0,
         autoclave_tape: tape,
         pass_fail: passFail,
+        bi_result: biUsed ? biResult : 'Not Used',
       });
       if (advance) {
         await onAdvanceStage('inoculation');
       } else {
-        fetch();
+        fetchRecord();
         onDataSaved();
       }
     } catch (err) { toast.error(err.message); }
@@ -112,13 +182,16 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         <span className={`ml-auto px-2 py-1 text-[10px] font-black rounded-lg border uppercase ${passFail==='Pass'?'bg-emerald-50 text-emerald-700 border-emerald-200':passFail==='Fail'?'bg-red-50 text-red-700 border-red-200':'bg-gray-100 text-gray-500 border-gray-200'}`}>{passFail}</span>
       </div>
 
-      {/* Fail warning */}
       {passFail === 'Fail' && (
         <div className="surface p-4 border-red-300 bg-red-50 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5"/>
-          <div>
+          <div className="flex-1">
             <p className="text-sm font-bold text-red-800">Sterilisation Failed — Advance Blocked</p>
-            <p className="text-xs text-red-700 mt-0.5">Raise a CAPA or move batch to Rejected before proceeding.</p>
+            <p className="text-xs text-red-700 mt-0.5">
+              {capaDevId
+                ? <>CAPA deviation raised. <a href="/compliance" className="underline font-bold">Review in Compliance →</a></>
+                : 'Save to auto-raise a CAPA deviation record, then investigate before proceeding.'}
+            </p>
           </div>
         </div>
       )}
@@ -165,6 +238,16 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         {holdTime && <p className="text-xs text-navy font-bold">Hold time: {holdTime} min</p>}
         {!cycleStart && <div><label className="field-label">Hold Time (min) ★ CCP</label><input type="number" value={holdMin} onChange={e=>setHoldMin(e.target.value)} className="field-input" placeholder="15"/></div>}
 
+        {/* G-02: F₀ display */}
+        {f0 !== null && (
+          <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${f0 >= 12 ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+            <FlaskConical className="w-4 h-4 shrink-0"/>
+            <span>F₀ (calculated lethality): <span className="font-black">{f0} min</span></span>
+            {f0 < 12 && <span className="ml-1 text-amber-700">⚠ Below recommended F₀ ≥12 for sterilisation validation</span>}
+            {f0 >= 12 && <span className="text-emerald-700">✓ Meets F₀ ≥12 lethality target</span>}
+          </div>
+        )}
+
         {/* Autoclave tape */}
         <div>
           <label className="field-label">Autoclave Tape Result</label>
@@ -177,6 +260,42 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             ))}
           </div>
           <p className="text-[10px] text-gray-400 mt-1">Positive = colour change confirmed = sterilisation indicator passed</p>
+        </div>
+
+        {/* G-01: Biological Indicator */}
+        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-3">
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={biUsed} onChange={e=>setBiUsed(e.target.checked)} className="w-4 h-4 rounded border-indigo-300"/>
+              <span className="text-xs font-black text-indigo-900">Biological Indicator (BI) used in this cycle</span>
+            </label>
+            <span className="text-[10px] text-indigo-500 font-semibold ml-1">Geobacillus stearothermophilus spore strip</span>
+          </div>
+          {biUsed && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="field-label text-indigo-800">BI Result</label>
+                <div className="flex gap-2">
+                  {BI_RESULTS.map(o=>(
+                    <button key={o} type="button" onClick={()=>setBiResult(o)}
+                      className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${biResult===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-500 border-gray-200'}`}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="field-label text-indigo-800">BI Strip Incubation Date</label>
+                <input type="date" value={biIncDate} onChange={e=>setBiIncDate(e.target.value)} className="field-input"/>
+                <p className="text-[9px] text-indigo-400 mt-0.5">Incubate at 55–60°C for 48 hrs — record result date</p>
+              </div>
+            </div>
+          )}
+          {biUsed && biResult === 'Fail' && (
+            <p className="text-xs text-red-700 font-bold flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5"/>BI Fail — autoclave validation compromised. Do not use sterilised media.
+            </p>
+          )}
         </div>
 
         {/* Pass / Fail — gate */}
@@ -192,12 +311,17 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
               </button>
             ))}
           </div>
+          {passFail === 'Fail' && !capaDevId && (
+            <p className="text-[10px] text-red-600 font-bold mt-2">Saving will auto-raise a CAPA deviation record.</p>
+          )}
         </div>
 
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes (cycle observations, deviations)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">Save Draft</button>
+          <button onClick={()=>handleSave(false)} disabled={saving||raisingCapa} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+            {saving ? 'Saving...' : raisingCapa ? 'Raising CAPA...' : 'Save Draft'}
+          </button>
           <button onClick={()=>handleSave(true)} disabled={saving||actionLoading||passFail!=='Pass'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
             {passFail==='Pass'?'Complete → Inoculation':'🔒 Advance Blocked (Fail)'}
           </button>

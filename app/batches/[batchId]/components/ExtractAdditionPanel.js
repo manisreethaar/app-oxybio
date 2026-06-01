@@ -6,6 +6,8 @@ import { Leaf, CheckCircle2 } from 'lucide-react';
 const SPECIES = ['Cordyceps militaris', 'Hericium erinaceus', 'Ganoderma lucidum', 'Inonotus obliquus', 'Tremella fuciformis'];
 const ADD_TEMP = ['Ambient (22-26°C)', 'Chilled (≤8°C)'];
 const ADD_METHOD = ['Aseptic pouring', 'Sterile pipette', 'Peristaltic pump'];
+// G-06: allergen options per FSSAI major allergen list
+const ALLERGEN_OPTIONS = ['Milk / Dairy','Gluten / Wheat','Soy','Tree Nuts','Peanuts','Sesame','Eggs','Fish / Shellfish'];
 
 export default function ExtractAdditionPanel({ batch, activeFlask, employees, availableStock, employeeProfile, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
@@ -33,6 +35,9 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
   const [colAfter,    setColAfter]    = useState('');
   const [lafUsed,     setLafUsed]     = useState(true);
   const [notes,       setNotes]       = useState('');
+  // G-06: allergen declaration
+  const [allergens,   setAllergens]   = useState([]);
+  const [noneAllergens, setNoneAllergens] = useState(false);
 
   const mshStock = availableStock.filter(s => s.inventory_items?.category === 'mushroom_extract' || s.inventory_items?.category === 'raw_material');
 
@@ -52,6 +57,9 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       setFinalPh(data.final_product_ph||''); setAddTemp(data.addition_temp||ADD_TEMP[0]);
       setAddMethod(data.addition_method||ADD_METHOD[0]); setColBefore(data.colour_before||'');
       setColAfter(data.colour_after||''); setLafUsed(data.laf_used??true); setNotes(data.notes||'');
+      const savedAllergens = data.allergen_declaration || [];
+      if (savedAllergens.includes('None')) { setNoneAllergens(true); setAllergens([]); }
+      else { setAllergens(savedAllergens); setNoneAllergens(false); }
     } else { setRecord(null); }
     return () => { isCurrent = false; };
   }, [activeFlask?.id, supabase]);
@@ -62,6 +70,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
     if (!activeFlask) return;
     if (advance && (!volAdded || !finalPh)) {
       toast.warn('Volume added and Final pH are required to advance.'); return;
+    }
+    // G-06: allergen declaration is mandatory before advance
+    if (advance && !noneAllergens && allergens.length === 0) {
+      toast.warn('Allergen declaration is required. Select all applicable allergens or tick "None".'); return;
     }
     
     setSaving(true);
@@ -82,6 +94,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         addition_temp: addTemp, addition_method: addMethod,
         colour_before: colBefore, colour_after: colAfter,
         laf_used: lafUsed, notes, operator_id: employeeProfile?.id,
+        allergen_declaration: noneAllergens ? ['None'] : allergens,
       };
 
       const { error } = await supabase.from('batch_flask_extract_addition').upsert(payload, { onConflict: 'flask_id' });
@@ -194,6 +207,35 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           </div>
           <div><label className="field-label">Notes</label>
             <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input p-2" placeholder="Any observed precipitation..."/>
+          </div>
+
+          {/* G-06: Allergen Declaration */}
+          <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-amber-900">⚠ Allergen Declaration</span>
+              <span className="text-[10px] text-amber-600 font-semibold">Mandatory before advance — FSSAI requirement</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {ALLERGEN_OPTIONS.map(al => (
+                <button key={al} type="button"
+                  disabled={noneAllergens}
+                  onClick={() => setAllergens(prev => prev.includes(al) ? prev.filter(a=>a!==al) : [...prev,al])}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all disabled:opacity-40 ${allergens.includes(al) ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}>
+                  {al}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer border-t border-amber-200 pt-2">
+              <input type="checkbox" checked={noneAllergens}
+                onChange={e => { setNoneAllergens(e.target.checked); if (e.target.checked) setAllergens([]); }}
+                className="w-4 h-4 rounded border-amber-300"/>
+              <span className="text-xs font-bold text-amber-900">None of the above allergens present in this batch</span>
+            </label>
+            {(noneAllergens || allergens.length > 0) && (
+              <p className="text-[10px] text-amber-700 font-semibold">
+                Declared: <strong>{noneAllergens ? 'None' : allergens.join(', ')}</strong>
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-gray-100">
