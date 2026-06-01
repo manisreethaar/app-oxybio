@@ -13,6 +13,8 @@ const DEFAULT_LAT = 12.716065;
 const DEFAULT_LNG = 77.870016;
 const DEFAULT_RADIUS = 300;
 
+const fmtDist = (m) => m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${Math.round(m)}m`;
+
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
   const dLat = (lat2 - lat1) * (Math.PI / 180);  
@@ -287,7 +289,7 @@ export default function AttendancePage() {
             if (accuracy > ACCURACY_THRESHOLD) {
               setCheckInError(`📡 GPS signal too weak (accuracy ±${Math.round(accuracy)}m). Please: (1) Step near a window, (2) Enable WiFi, (3) Wait 30 seconds and tap Check In again.`);
             } else {
-              setCheckInError(`🚫 Location verified: You are ${Math.round(distance)}m from the facility. You must be within ${geofence.radius}m to check in.`);
+              setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check in from the premises.`);
             }
             setActionLoading(false);
           } else {
@@ -388,7 +390,7 @@ export default function AttendancePage() {
             if (accuracy > ACCURACY_THRESHOLD) {
               setCheckInError(`📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`);
             } else {
-              setCheckInError(`🚫 You are ${Math.round(distance)}m from the facility. You must be within ${geofence.radius}m to check out.`);
+              setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check out from the premises.`);
             }
             setActionLoading(false);
             return;
