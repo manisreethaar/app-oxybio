@@ -10,6 +10,7 @@ export function markdownToHtml(text) {
     esc(s)
       .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-800">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/==(.+?)==/g, '<mark class="bg-yellow-100 text-yellow-800 px-0.5 rounded">$1</mark>')
       .replace(
         /`([^`]+)`/g,
         '<code class="bg-gray-100 text-blue-700 px-1.5 py-0.5 rounded text-[13px] font-mono">$1</code>'

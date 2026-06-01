@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { markdownToHtml } from '@/utils/markdown';
 
 export default function LnbEntryPage() {
   const params = useParams();
@@ -361,27 +362,100 @@ export default function LnbEntryPage() {
   );
 }
 
+const TOOLBAR_TOOLS = [
+  { label: 'B',  title: 'Bold',          cls: 'font-black',  wrap: ['**', '**'] },
+  { label: 'I',  title: 'Italic',         cls: 'italic',      wrap: ['*', '*'] },
+  { label: '`',  title: 'Inline code',    cls: 'font-mono',   wrap: ['`', '`'] },
+  { label: '==', title: 'Highlight',      cls: '',            wrap: ['==', '=='] },
+  { sep: true },
+  { label: 'H2', title: 'Heading 2',      cls: 'font-bold',   line: '## ' },
+  { label: 'H3', title: 'Heading 3',      cls: 'font-bold',   line: '### ' },
+  { sep: true },
+  { label: '•',  title: 'Bullet list',    cls: '',            line: '- ' },
+  { label: '1.', title: 'Numbered list',  cls: '',            line: '1. ' },
+  { label: '❝',  title: 'Blockquote',     cls: '',            line: '> ' },
+  { sep: true },
+  { label: '—',  title: 'Divider',        cls: '',            block: '---' },
+];
+
+function RichToolbar({ taRef, value, onChange }) {
+  const apply = (tool) => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+
+    if (tool.wrap) {
+      const [before, after] = tool.wrap;
+      const sel = value.slice(start, end) || 'text';
+      const next = value.slice(0, start) + before + sel + after + value.slice(end);
+      onChange(next);
+      setTimeout(() => { ta.focus(); ta.setSelectionRange(start + before.length, start + before.length + sel.length); }, 0);
+    } else if (tool.line) {
+      const before = value.slice(0, start);
+      const lineStart = before.lastIndexOf('\n') + 1;
+      const next = value.slice(0, lineStart) + tool.line + value.slice(lineStart);
+      onChange(next);
+      setTimeout(() => { ta.focus(); ta.setSelectionRange(lineStart + tool.line.length, lineStart + tool.line.length); }, 0);
+    } else if (tool.block) {
+      const nl = start === 0 || value[start - 1] === '\n' ? '' : '\n';
+      const next = value.slice(0, start) + nl + tool.block + '\n' + value.slice(end);
+      onChange(next);
+      setTimeout(() => ta.focus(), 0);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-0.5 px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex-wrap">
+      {TOOLBAR_TOOLS.map((t, i) =>
+        t.sep ? (
+          <div key={i} className="w-px h-3.5 bg-gray-200 mx-1 shrink-0" />
+        ) : (
+          <button
+            key={i}
+            type="button"
+            title={t.title}
+            onMouseDown={(e) => { e.preventDefault(); apply(t); }}
+            className={`px-2 py-1 rounded text-[11px] text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors select-none ${t.cls}`}
+          >
+            {t.label}
+          </button>
+        )
+      )}
+      <span className="ml-auto text-[9px] font-bold text-gray-300 uppercase tracking-widest hidden sm:block">Markdown</span>
+    </div>
+  );
+}
+
 function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarge }) {
+  const taRef = useRef(null);
+  const html  = value ? markdownToHtml(value) : '';
+
   return (
     <div className="surface p-0 overflow-hidden border border-gray-200 shadow-sm rounded-2xl bg-white">
-       <div className="bg-gray-50/50 px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-          <div className="text-navy">{icon}</div>
-          <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">{title}</h3>
-       </div>
-       <div className="p-1">
-         {canEdit ? (
-           <textarea 
-             value={value} 
-             onChange={(e) => onChange(e.target.value)}
-             className={`w-full p-4 bg-transparent outline-none resize-none text-sm font-medium text-gray-700 leading-relaxed ${isLarge ? 'h-64' : 'h-32'}`}
-             placeholder={placeholder}
-           />
-         ) : (
-           <div className={`w-full p-4 text-sm font-medium text-gray-700 leading-relaxed overflow-y-auto whitespace-pre-wrap ${isLarge ? 'min-h-[16rem]' : 'min-h-[8rem]'}`}>
-             {value || <span className="text-gray-400 italic">No {title.toLowerCase()} recorded.</span>}
-           </div>
-         )}
-       </div>
+      <div className="bg-gray-50/50 px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+        <div className="text-navy">{icon}</div>
+        <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">{title}</h3>
+      </div>
+      {canEdit && <RichToolbar taRef={taRef} value={value} onChange={onChange} />}
+      <div className="p-1">
+        {canEdit ? (
+          <textarea
+            ref={taRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className={`w-full p-4 bg-transparent outline-none resize-none text-sm font-medium text-gray-700 leading-relaxed font-mono ${isLarge ? 'min-h-[14rem]' : 'min-h-[8rem]'}`}
+            placeholder={placeholder}
+          />
+        ) : (
+          <div className={`w-full px-5 py-4 overflow-y-auto prose prose-sm max-w-none ${isLarge ? 'min-h-[10rem]' : 'min-h-[5rem]'}`}>
+            {html
+              ? <div dangerouslySetInnerHTML={{ __html: html }} />
+              : <span className="text-gray-400 italic text-sm">No {title.toLowerCase()} recorded.</span>
+            }
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -449,33 +523,32 @@ const FORMULATION_KEYS = new Set(['formulation_id', 'media_formulation_id', 'aga
 function SnapshotRows({ data, formulationMap = {} }) {
   const skip = new Set(['synced_at', 'tests', 'notes']);
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
+    <div className="space-y-1.5">
       {Object.entries(data)
         .filter(([k, v]) => !skip.has(k) && v != null && v !== '')
         .map(([key, value]) => {
-          // Resolve formulation UUIDs to human-readable codes
           const display = FORMULATION_KEYS.has(key) && typeof value === 'string' && formulationMap[value]
             ? formulationMap[value]
             : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
           return (
-            <div key={key} className="flex items-baseline justify-between gap-2 min-w-0">
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-wide shrink-0">
+            <div key={key} className="flex items-start justify-between gap-3 min-w-0">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 min-w-[80px]">
                 {FIELD_LABELS[key] || key.replace(/_/g, ' ')}
               </span>
-              <span className="text-xs font-bold text-gray-700 text-right truncate">
+              <span className="text-xs font-bold text-gray-700 text-right break-words min-w-0 flex-1">
                 {display}
               </span>
             </div>
           );
         })}
       {data.tests && (
-        <div className="col-span-2 mt-2 space-y-1">
+        <div className="mt-2 space-y-1">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-wide mb-1">QC Test Results</p>
           {data.tests.map((t, i) => (
-            <div key={i} className="flex justify-between text-xs py-0.5 border-b border-gray-50 last:border-0">
-              <span className="text-gray-600 truncate">{t.test}</span>
-              <span className={`font-black ml-4 shrink-0 ${t.pass_fail === 'Pass' ? 'text-emerald-600' : t.pass_fail === 'Fail' ? 'text-red-600' : 'text-gray-400'}`}>
-                {t.result ? `${t.result}  ` : ''}{t.pass_fail}
+            <div key={i} className="flex items-start justify-between gap-2 text-xs py-0.5 border-b border-gray-50 last:border-0">
+              <span className="text-gray-600 break-words flex-1">{t.test}</span>
+              <span className={`font-black ml-2 shrink-0 ${t.pass_fail === 'Pass' ? 'text-emerald-600' : t.pass_fail === 'Fail' ? 'text-red-600' : 'text-gray-400'}`}>
+                {t.result ? `${t.result} ` : ''}{t.pass_fail}
               </span>
             </div>
           ))}
