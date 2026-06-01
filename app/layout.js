@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ClientLayout from "@/components/layout/ClientLayout";
+import Script from "next/script";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -66,6 +67,21 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en">
+      {/* Service Worker registered as early as possible so push works even when logged out */}
+      <Script
+        id="sw-register"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                  .catch(function(err) { console.warn('SW registration failed:', err); });
+              });
+            }
+          `
+        }}
+      />
       {/* No manual <head> needed — Next.js generates viewport meta from the export above */}
       <body className={geistSans.className}>
         <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
