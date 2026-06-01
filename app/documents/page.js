@@ -61,7 +61,7 @@ export default function DocumentsPage() {
   const fetchDocuments = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('documents').select('*, employees(full_name)');
+      let query = supabase.from('documents').select('*, employees(full_name, initials)');
       if (category !== 'All') { query = query.eq('category', category); }
       if (!['admin', 'ceo', 'cto'].includes(role)) { query = query.eq('access_level', 'all-staff'); }
       const { data, error } = await query.order('created_at', { ascending: false });
