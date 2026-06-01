@@ -33,6 +33,9 @@ const formSchema = z.object({
   replicate_label: z.string().optional(),
   media_used: z.string().optional(),
   media_lot: z.string().optional(),
+  // G-72: plate image; G-73: duplicate flag
+  plate_image_url: z.string().optional(),
+  is_duplicate: z.boolean().optional().default(false),
 });
 
 const READ_STATUSES = [
@@ -164,6 +167,11 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
   const [customHour, setCustomHour] = useState('');
+  const [mediaItems, setMediaItems] = useState([]);
+  const [mediaStocks, setMediaStocks] = useState([]);
+  const [selectedMediaItemId, setSelectedMediaItemId] = useState(initialData?.media_inventory_item_id || '');
+  const [selectedStockId, setSelectedStockId] = useState('');
+  const [mediaVolumeUsed, setMediaVolumeUsed] = useState(initialData?.media_volume_used_ml ?? '');
   const supabase = useMemo(() => createClient(), []);
 
   const { reads: initReads, notes: initNotes } = parseObservation(initialData?.observation);
@@ -246,7 +254,20 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
           return [...prev.filter(p => !ids.has(p.id)), ...data];
         });
       });
+    supabase.from('inventory_items').select('id, name, unit').eq('category', 'Media')
+      .order('name').then(({ data }) => setMediaItems(data || []));
   }, [supabase]);
+
+  useEffect(() => {
+    if (!selectedMediaItemId) { setMediaStocks([]); return; }
+    supabase.from('inventory_stock')
+      .select('id, supplier_batch_number, current_quantity, expiry_date, location')
+      .eq('item_id', selectedMediaItemId)
+      .eq('status', 'Available')
+      .gt('current_quantity', 0)
+      .order('expiry_date', { ascending: true })
+      .then(({ data }) => setMediaStocks(data || []));
+  }, [selectedMediaItemId, supabase]);
 
   const addRead = (h) => {
     const hour = Number(h);
@@ -278,6 +299,9 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       const payload = {
         ...data,
         batch_id:               data.sample_category === 'Fermentation IPC' ? data.batch_id || null : null,
+        media_inventory_item_id: selectedMediaItemId || null,
+        media_volume_used_ml:   mediaVolumeUsed !== '' ? Number(mediaVolumeUsed) : null,
+        _stock_id:              selectedStockId || null,
         flask_id:               initialData?.flask_id || null,
         qc_sample_id:           initialData?.qc_sample_id || null,
         fermentation_reading_id:initialData?.fermentation_reading_id || null,
@@ -294,6 +318,8 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         volume_plated_ml:       data.volume_plated_ml ?? null,
         replicate_label:        data.replicate_label === 'None' ? null : (data.replicate_label || null),
         media_lot:              data.media_lot || null,
+        plate_image_url:        data.plate_image_url || null,
+        is_duplicate:           data.is_duplicate || false,
         observation,
       };
 
@@ -440,6 +466,63 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   <div>
                     <label className={labelCls}>Media Lot / Batch No</label>
                     <input {...register('media_lot')} className={inputCls} placeholder="e.g. LOT-2024-0053" />
+                  </div>
+
+                  {/* Inventory deduction */}
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2.5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-600">Deduct from Inventory</p>
+                    <div>
+                      <label className={labelCls}>Media Item (Inventory)</label>
+                      <select
+                        value={selectedMediaItemId}
+                        onChange={e => { setSelectedMediaItemId(e.target.value); setSelectedStockId(''); }}
+                        className={inputCls}
+                      >
+                        <option value="">-- Skip / not in inventory --</option>
+                        {mediaItems.map(m => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedMediaItemId && (
+                      <>
+                        <div>
+                          <label className={labelCls}>Stock Lot</label>
+                          <select
+                            value={selectedStockId}
+                            onChange={e => setSelectedStockId(e.target.value)}
+                            className={inputCls}
+                          >
+                            <option value="">-- Select lot --</option>
+                            {mediaStocks.map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.supplier_batch_number || 'No lot'} — {s.current_quantity} avail
+                                {s.expiry_date ? ` · exp ${s.expiry_date}` : ''}
+                                {s.location ? ` · ${s.location}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          {mediaStocks.length === 0 && (
+                            <p className="text-[9px] text-red-500 mt-1">No available stock for this item.</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className={labelCls}>Volume / Weight Used</label>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            value={mediaVolumeUsed}
+                            onChange={e => setMediaVolumeUsed(e.target.value)}
+                            placeholder="e.g. 25"
+                            className={inputCls}
+                          />
+                          <p className="text-[9px] text-gray-400 mt-1">
+                            {mediaItems.find(m => m.id === selectedMediaItemId)?.unit || 'units'} — will be deducted from selected lot on save
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
