@@ -154,13 +154,34 @@ export async function GET(request) {
   }
 }
 
+async function deductMediaStock(supabase, stockId, quantityUsed, incubationId, employeeId) {
+  if (!stockId || !quantityUsed || quantityUsed <= 0) return;
+  const { data: stock } = await supabase
+    .from('inventory_stock')
+    .select('current_quantity, item_id')
+    .eq('id', stockId)
+    .maybeSingle();
+  if (!stock) return;
+
+  const newQty = Math.max(0, stock.current_quantity - quantityUsed);
+  await supabase.from('inventory_stock').update({ current_quantity: newQty }).eq('id', stockId);
+  await supabase.from('inventory_usage').insert({
+    stock_id: stockId,
+    quantity_used: quantityUsed,
+    logged_by: employeeId || null,
+    notes: `Media used for incubation record ${incubationId}`,
+  });
+}
+
 export async function POST(request) {
   try {
     const supabase = createClient();
     const access = await requireLabAccess(supabase, 'edit');
     if (access.error) return access.error;
 
-    const parsed = parsePayload(await request.json());
+    const body = await request.json();
+    const { _stock_id, ...rest } = body;
+    const parsed = parsePayload(rest);
     if (parsed.error) return parsed.error;
 
     const { id, ...payload } = parsed.data;
@@ -172,6 +193,7 @@ export async function POST(request) {
       .single();
 
     if (error) throw error;
+    await deductMediaStock(supabase, _stock_id, payload.media_volume_used_ml, data.id, access.employee?.id);
     await syncLinkedFermentationReading(supabase, data);
     await syncIncubationToLNB(supabase, data);
     return NextResponse.json({ success: true, data });
@@ -220,7 +242,9 @@ export async function PUT(request) {
     const access = await requireLabAccess(supabase, 'edit');
     if (access.error) return access.error;
 
-    const parsed = parsePayload(await request.json());
+    const body = await request.json();
+    const { _stock_id, ...rest } = body;
+    const parsed = parsePayload(rest);
     if (parsed.error) return parsed.error;
 
     const { id, ...updates } = parsed.data;
@@ -236,6 +260,10 @@ export async function PUT(request) {
       .single();
 
     if (error) throw error;
+    // Only deduct stock if a new stock lot + volume is explicitly selected on this edit
+    if (_stock_id && updates.media_volume_used_ml) {
+      await deductMediaStock(supabase, _stock_id, updates.media_volume_used_ml, data.id, access.employee?.id);
+    }
     await syncLinkedFermentationReading(supabase, data);
     await syncIncubationToLNB(supabase, data);
     return NextResponse.json({ success: true, data });

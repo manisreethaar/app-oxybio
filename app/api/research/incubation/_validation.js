@@ -32,7 +32,14 @@ export const incubationSchema = z.object({
   microscopic_morphology: z.string().trim().max(500).nullable().optional(),
   colony_morphology: z.string().trim().max(1000).nullable().optional(),
   sterility_status: z.enum(['Pending', 'Sterile', 'Contaminated']).default('Pending'),
-  observation: z.string().trim().max(2000).nullable().optional()
+  observation: z.string().trim().max(8000).nullable().optional(),
+  dilution_factor: z.coerce.number().min(0).nullable().optional(),
+  volume_plated_ml: z.coerce.number().min(0).nullable().optional(),
+  replicate_label: z.string().trim().max(10).nullable().optional(),
+  media_used: z.string().trim().max(120).nullable().optional(),
+  media_lot: z.string().trim().max(120).nullable().optional(),
+  media_inventory_item_id: z.string().uuid().nullable().optional(),
+  media_volume_used_ml: z.coerce.number().min(0).nullable().optional(),
 }).refine((data) => {
   if (!data.end_time) return true;
   return new Date(data.end_time).getTime() >= new Date(data.start_time).getTime();
