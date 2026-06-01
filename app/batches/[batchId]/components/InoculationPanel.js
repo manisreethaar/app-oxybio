@@ -37,6 +37,8 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [contNotes, setContNotes] = useState('');
   // G-19: pre-inoculation pH
   const [preInocuPh, setPreInocuPh] = useState('');
+  // G-34: sampling plan
+  const [samplingPlanHrs, setSamplingPlanHrs] = useState('');
   // G-04: CAPA linkage for contamination
   const [capaDevId, setCapaDevId] = useState(null);
   const [raisingCapa, setRaisingCapa] = useState(false);
@@ -69,6 +71,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setContNotes(d.contamination_notes||'');
           setCapaDevId(d.capa_deviation_id||null);
           setPreInocuPh(d.pre_inocu_ph||'');
+          setSamplingPlanHrs((d.sampling_plan_hrs||[]).join(', '));
         } else {
           setSourceType('other'); setSource(''); setVialId(''); setInVol(''); setPlannedHr('');
           setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
@@ -139,6 +142,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         contamination_notes: contCheck === 'Suspected' ? contNotes : null,
         capa_deviation_id: devId || null,
         pre_inocu_ph: preInocuPh ? parseFloat(preInocuPh) : null,
+        sampling_plan_hrs: samplingPlanHrs.trim()
+          ? samplingPlanHrs.split(',').map(s=>s.trim()).filter(Boolean)
+          : [],
         operator_id: employeeProfile?.id,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
@@ -250,9 +256,35 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           </div>
           <div>
             <label className="field-label">Planned Fermentation Time (hr)</label>
-            <input type="number" step="0.1" value={plannedHr} onChange={e=>setPlannedHr(e.target.value)} className="field-input" placeholder="e.g. 12"/>
+            <input type="number" step="0.1" value={plannedHr} onChange={e=>{
+              setPlannedHr(e.target.value);
+              // G-34: auto-suggest sampling plan (4 evenly spaced points)
+              const hrs = parseFloat(e.target.value);
+              if (hrs > 0 && !samplingPlanHrs) {
+                const interval = hrs / 4;
+                const suggested = [1,2,3,4].map(i => Math.round(interval*i)).join(', ');
+                setSamplingPlanHrs(suggested);
+              }
+            }} className="field-input" placeholder="e.g. 12"/>
             <p className="text-[9px] text-gray-400 mt-1">User-defined threshold for alerting</p>
           </div>
+        </div>
+
+        {/* G-34: Sampling plan */}
+        <div className="p-3 bg-navy/5 border border-navy/15 rounded-xl">
+          <label className="block text-[11px] font-black uppercase tracking-wider text-navy/80 mb-1.5">
+            Fermentation Sampling Schedule <span className="text-gray-400 font-normal normal-case text-[10px]">(comma-separated hours)</span>
+          </label>
+          <input value={samplingPlanHrs} onChange={e=>setSamplingPlanHrs(e.target.value)}
+            className="w-full px-3 py-2 border border-navy/20 rounded-xl text-xs font-semibold outline-none bg-white focus:border-navy"
+            placeholder="e.g. 6, 12, 18, 24"/>
+          {samplingPlanHrs && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {samplingPlanHrs.split(',').map(h=>h.trim()).filter(Boolean).map(hr => (
+                <span key={hr} className="px-2 py-0.5 bg-navy/10 text-navy text-[9px] font-black rounded border border-navy/15">T+{hr}h</span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* G-19: Pre-inoculation pH check */}
