@@ -37,20 +37,30 @@ export async function PATCH(request) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized or Auth Timeout' }, { status: 401 });
-    } 
+    }
+
     const body = await request.json();
-    
-    // Authorization Check for Admin View Updates
-    const isTargetingOther = body.id && body.id !== user.id;
-    let targetEmail = user.email;
-    let targetId = null;
+
+    // Always fetch the logged-in user's employee record to get their employee ID and role
+    const { data: callerRecord, error: callerErr } = await supabase
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+
+    if (callerErr || !callerRecord) {
+      return NextResponse.json({ error: 'Caller employee record not found' }, { status: 403 });
+    }
+
+    // Determine which employee record to update
+    // body.id is the target employee's UUID (employees.id)
+    const targetId = body.id || callerRecord.id;
+    const isTargetingOther = targetId !== callerRecord.id;
 
     if (isTargetingOther) {
-      const { data: adminRecord } = await supabase.from('employees').select('role').eq('id', user.id).single();
-      if (!adminRecord || !['admin', 'ceo', 'cto'].includes(adminRecord.role)) {
+      if (!['admin', 'ceo', 'cto'].includes(callerRecord.role)) {
         return NextResponse.json({ error: 'Forbidden: Admin access required to edit other profiles' }, { status: 403 });
       }
-      targetId = body.id;
     }
 
     const { id, ...rest } = body;
@@ -67,14 +77,11 @@ export async function PATCH(request) {
     }
     if (updateData.initials) updateData.initials = updateData.initials.toUpperCase().slice(0, 3);
 
-    let query = supabase.from('employees').update(updateData);
-    if (targetId) {
-      query = query.eq('id', targetId);
-    } else {
-      query = query.eq('id', user.id);
-    }
+    const { error } = await supabase
+      .from('employees')
+      .update(updateData)
+      .eq('id', targetId);
 
-    const { error } = await query;
     if (error) throw error;
     
     return NextResponse.json({ success: true });
@@ -82,3 +89,4 @@ export async function PATCH(request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
