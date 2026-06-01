@@ -38,6 +38,12 @@ export default function DigitalLnbPage() {
   const [sortOrder,        setSortOrder]        = useState('newest'); // newest, oldest, status
   const [filterGroup,      setFilterGroup]      = useState('all'); // all, cell_bank, fermentation
   const [pendingIds,       setPendingIds]       = useState(new Set());
+  // G-24: countersign
+  const [countersigning,   setCountersigning]   = useState(null); // entry id
+  // G-25: new version prefill
+  const [versionSourceEntry, setVersionSourceEntry] = useState(null);
+  // G-26: SOP references in create form
+  const [sopRefs,          setSopRefs]          = useState('');
 
   const fileRef = useRef(null);
   const supabase = useMemo(() => createClient(), []);
@@ -119,9 +125,14 @@ export default function DigitalLnbPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
-          flask_id:    selectedFlaskId || null,
-          batch_stage: selectedStage   || null,
-          attachment_url
+          flask_id:             selectedFlaskId || null,
+          batch_stage:          selectedStage   || null,
+          attachment_url,
+          // G-26: SOP references
+          sop_references: sopRefs.trim() ? sopRefs.split(',').map(s => s.trim()).filter(Boolean) : [],
+          // G-25: version linkage
+          previous_version_id: versionSourceEntry?.id || null,
+          entry_version: versionSourceEntry ? (versionSourceEntry.entry_version || 1) + 1 : 1,
         })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create entry');
@@ -131,9 +142,38 @@ export default function DigitalLnbPage() {
       setSelectedFlaskId('');
       setSelectedStage('');
       setBatchFlasks([]);
+      setSopRefs('');
+      setVersionSourceEntry(null);
       fetchData();
     } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); setUploadProgress(''); }
+  };
+
+  // G-24: Countersign an entry (supervisor/CEO only)
+  const isApprover = ['ceo','admin','cto','research_fellow','scientist'].includes(employeeProfile?.role);
+
+  const handleCountersign = async (entryId) => {
+    if (!isApprover || countersigning) return;
+    setCountersigning(entryId);
+    try {
+      const { error } = await supabase.from('lab_notebook_entries').update({
+        countersigned_by: employeeProfile.id,
+        countersigned_at: new Date().toISOString(),
+        status: 'Countersigned',
+      }).eq('id', entryId);
+      if (error) throw error;
+      toast.success('Entry countersigned successfully.');
+      fetchData();
+    } catch (err) { toast.error(err.message); }
+    finally { setCountersigning(null); }
+  };
+
+  // G-25: Start a new version from an existing entry
+  const handleNewVersion = (entry) => {
+    setVersionSourceEntry(entry);
+    setSopRefs(entry.sop_references?.join(', ') || '');
+    reset({ title: `${entry.title} (v${(entry.entry_version||1)+1})`, batch_id: entry.batch_id || '' });
+    setShowNew(true);
   };
 
   const getStatusBadge = (status) => {
@@ -320,6 +360,32 @@ export default function DigitalLnbPage() {
                   {entry.author && (
                     <CreatorBadge initials={entry.author.initials} fullName={entry.author.full_name} size="sm"/>
                   )}
+                  {/* G-25: Version badge */}
+                  {(entry.entry_version > 1 || entry.previous_version_id) && (
+                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-black rounded border border-indigo-100 uppercase">
+                      v{entry.entry_version || 1}
+                    </span>
+                  )}
+                  {/* G-24: Countersign button for submitted entries */}
+                  {entry.status === 'Submitted' && isApprover && entry.created_by !== employeeProfile?.id && (
+                    <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                      <button
+                        onClick={() => handleCountersign(entry.id)}
+                        disabled={countersigning === entry.id}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] rounded-lg uppercase tracking-wider disabled:opacity-50">
+                        {countersigning === entry.id ? '...' : '✓ Countersign'}
+                      </button>
+                    </div>
+                  )}
+                  {/* G-25: New version button */}
+                  {entry.status !== 'Draft' && entry.created_by === employeeProfile?.id && (
+                    <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                      <button onClick={() => handleNewVersion(entry)}
+                        className="flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-indigo-50 text-gray-500 hover:text-indigo-700 border border-gray-200 hover:border-indigo-200 font-bold text-[9px] rounded-lg uppercase">
+                        <History className="w-3 h-3"/>New Ver
+                      </button>
+                    </div>
+                  )}
                   {entry.status === 'Draft' && entry.created_by === employeeProfile?.id && (
                     <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
                       <EditRequestButton
@@ -417,6 +483,23 @@ export default function DigitalLnbPage() {
                       {Object.entries(STAGE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </div>
+                </div>
+              )}
+
+              {/* G-26: SOP References */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">SOP References <span className="text-gray-400 font-normal">(Optional — comma-separated)</span></label>
+                <input type="text" value={sopRefs} onChange={e=>setSopRefs(e.target.value)} placeholder="e.g. SOP-FERM-001, SOP-QC-003"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
+                <p className="text-[10px] text-gray-400 mt-1">Link to standard operating procedures that govern this experiment</p>
+              </div>
+
+              {/* G-25: version source indicator */}
+              {versionSourceEntry && (
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-semibold text-indigo-800 flex items-center gap-2">
+                  <History className="w-4 h-4 shrink-0"/>
+                  Creating Version {(versionSourceEntry.entry_version||1)+1} from: <span className="font-black">"{versionSourceEntry.title}"</span>
+                  <button type="button" onClick={()=>setVersionSourceEntry(null)} className="ml-auto text-indigo-400 hover:text-indigo-700"><X className="w-3.5 h-3.5"/></button>
                 </div>
               )}
 

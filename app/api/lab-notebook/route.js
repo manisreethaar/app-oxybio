@@ -66,7 +66,8 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, batch_id, flask_id, batch_stage, attachment_url, cell_bank_preparation_id } = await request.json();
+    const { title, batch_id, flask_id, batch_stage, attachment_url, cell_bank_preparation_id,
+            sop_references, previous_version_id, entry_version } = await request.json();
 
     if (!title) {
       return NextResponse.json({ success: false, error: 'Experiment title is required' }, { status: 400 });
@@ -89,8 +90,11 @@ export async function POST(request) {
         batch_id:    batch_id    || null,
         flask_id:    flask_id    || null,
         cell_bank_preparation_id: cell_bank_preparation_id || null,
-        batch_stage: batch_stage || null,
-        attachment_url: attachment_url || null,
+        batch_stage:         batch_stage || null,
+        attachment_url:      attachment_url || null,
+        sop_references:      sop_references || [],
+        previous_version_id: previous_version_id || null,
+        entry_version:       entry_version || 1,
         created_by: emp.id,
         status: 'Draft'
       })

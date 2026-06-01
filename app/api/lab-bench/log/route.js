@@ -35,18 +35,22 @@ export async function POST(request) {
 
     const body = await request.json();
     const {
-      source_type,      // 'batch' | 'growth_study' | 'cell_bank'
-      source_id,        // batch UUID string or growth_study UUID
-      flask_id,         // UUID — batch only
-      flask_label,      // text — batch only
-      log_hour,         // number
-      sample_label,     // human label, e.g. "Flask A — T+24h"
-      source_label,     // e.g. "Batch OXY-B-001" or "Growth Study GS-007"
-      timepoint_label,  // e.g. "T+24h", "Day 3", "Passage P2"
-      collected_at,     // ISO string (defaults to now)
-      notes,            // overall notes for this log entry
-      tests,            // array of test objects (see shape below)
-      time_point_id,    // UUID — growth_study only, marks time point complete
+      source_type,           // 'batch' | 'growth_study' | 'cell_bank'
+      source_id,             // batch UUID string or growth_study UUID
+      flask_id,              // UUID — batch only
+      flask_label,           // text — batch only
+      log_hour,              // number
+      sample_label,          // human label, e.g. "Flask A — T+24h"
+      source_label,          // e.g. "Batch OXY-B-001" or "Growth Study GS-007"
+      timepoint_label,       // e.g. "T+24h", "Day 3", "Passage P2"
+      collected_at,          // ISO string (defaults to now)
+      notes,                 // overall notes for this log entry
+      tests,                 // array of test objects (see shape below)
+      time_point_id,         // UUID — growth_study only, marks time point complete
+      // G-20, G-21
+      laf_cabinet_used,
+      contamination_incident,
+      contamination_details,
     } = body;
 
     // ── Validation ──────────────────────────────────────────────
@@ -80,10 +84,14 @@ export async function POST(request) {
         sample_label:     sample_label     || `${source_type === 'batch' ? source_id : 'Study'} T+${log_hour ?? 0}h`,
         source_label:     source_label     || null,
         timepoint_label:  timepoint_label  || null,
-        collected_by:     employee?.id     || null,
-        collected_at:     loggedAt,
-        status:           'pending',
-        notes:            notes            || null,
+        collected_by:          employee?.id     || null,
+        collected_at:          loggedAt,
+        status:                'pending',
+        notes:                 notes            || null,
+        // G-20, G-21
+        laf_cabinet_used:      laf_cabinet_used      ?? false,
+        contamination_incident: contamination_incident ?? false,
+        contamination_details: contamination_incident ? (contamination_details || null) : null,
       })
       .select()
       .single();
