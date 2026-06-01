@@ -10,6 +10,7 @@ import {
   Play, Plus, Trash2, CheckCircle, AlertTriangle, Info,
   ChevronUp, ChevronDown, FlaskConical, TrendingUp, Settings
 } from 'lucide-react';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Scatter, ScatterChart, ReferenceLine, Legend
@@ -973,6 +974,12 @@ export default function BioprocessDetailPage() {
             <h1 className="text-xl font-black text-gray-900">{experiment.title}</h1>
             {experiment.description && <p className="text-sm text-gray-500 mt-0.5">{experiment.description}</p>}
             <p className="text-xs text-gray-400 mt-1">Response: {experiment.response_variable} {experiment.response_unit && `(${experiment.response_unit})`}</p>
+            {experiment.creator && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <CreatorBadge initials={experiment.creator.initials} fullName={experiment.creator.full_name} />
+                <span className="text-[11px] text-gray-400">{experiment.creator.full_name}</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">

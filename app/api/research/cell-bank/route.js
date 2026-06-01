@@ -62,7 +62,7 @@ export async function GET(request) {
     if (view === 'strains') {
       const { data, error } = await supabase
         .from('cell_bank_strains')
-        .select('*, employees(full_name), linked_formulation:formulations(id, code, name, version, category, status)')
+        .select('*, employees(full_name, initials), linked_formulation:formulations(id, code, name, version, category, status)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ success: true, data });
@@ -76,7 +76,7 @@ export async function GET(request) {
         linked_formulation:formulations(id, code, name, version, category, status),
         cell_bank_strains(id, name, source_type, accession_number, formulation_id, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type),
-        employees(full_name)
+        employees(full_name, initials)
       `)
       .order('created_at', { ascending: false });
 

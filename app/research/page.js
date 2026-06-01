@@ -11,6 +11,7 @@ import { Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical, SlidersH
 import Skeleton from '@/components/Skeleton';
 import dynamic from 'next/dynamic';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 const ResearchTrendChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchTrendChart })), { ssr: false });
 const ResearchRadarChart = dynamic(() => import('@/components/charts/ResearchCharts').then(m => ({ default: m.ResearchRadarChart })), { ssr: false });
 
@@ -62,7 +63,7 @@ export default function ConsumerResearchPage() {
       const [{ data: panelData, error: panelErr }, { data: batchData }] = await Promise.all([
         supabase
           .from('taste_panels')
-          .select('*, batches(id, batch_id, variant, experiment_type)')
+          .select('*, batches(id, batch_id, variant, experiment_type), creator:employees!created_by(id, full_name, initials)')
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')
@@ -295,9 +296,14 @@ export default function ConsumerResearchPage() {
               <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-100 flex items-center gap-1">
                 <Users className="w-3 h-3"/> {s.panelist_count} Panelists
               </span>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                {new Date(s.created_at).toLocaleDateString()}
-              </p>
+              <div className="flex items-center gap-2">
+                {s.creator && (
+                  <CreatorBadge initials={s.creator.initials} fullName={s.creator.full_name} />
+                )}
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  {new Date(s.created_at).toLocaleDateString()}
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-between items-start"><h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>

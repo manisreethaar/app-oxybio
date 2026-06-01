@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const TURBIDITY_OPTIONS = ['clear', 'slightly_turbid', 'turbid', 'very_turbid'];
@@ -909,6 +910,12 @@ export default function QuickLogPage() {
         )}
 
         {/* ── Submit ── */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-slate-500 font-medium">Logging as</span>
+            <CreatorBadge initials={employeeProfile?.initials} fullName={employeeProfile?.full_name} />
+          </div>
+        </div>
         <button
           type="submit"
           disabled={saving}

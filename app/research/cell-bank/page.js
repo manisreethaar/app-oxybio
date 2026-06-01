@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Plus, Dna, ChevronRight, Search, ExternalLink, ChevronDown, Beaker, AlertTriangle, BookOpen, Pencil, X, Trash2 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const STATUS_COLOR = {
   'In Progress': 'bg-blue-100 text-blue-700',
@@ -520,9 +521,12 @@ export default function CellBankPage() {
                   )}
                   {p.type === 'WCB' && p.parent && <p className="text-[10px] text-gray-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
                 </div>
-                <div className="text-right shrink-0 mr-2">
+                <div className="text-right shrink-0 mr-2 flex flex-col items-end gap-1">
                   {p.vial_count > 0 && <p className="text-xs font-black text-gray-700">{p.vial_count} vials</p>}
                   <p className="text-[10px] text-gray-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
+                  {p.employees && (
+                    <CreatorBadge initials={p.employees.initials} fullName={p.employees.full_name} />
+                  )}
                 </div>
                 {canDelete && (
                   <button 
