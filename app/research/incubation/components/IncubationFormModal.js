@@ -350,8 +350,8 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   ];
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="h-[calc(100dvh-68px)] sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[1200] flex items-start sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
+      <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
