@@ -607,32 +607,65 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
       {expanded && (
         <div onClick={e => e.stopPropagation()}>
           <ExpandedPlateDetail record={record} />
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onEdit(record); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black bg-navy text-white hover:bg-navy/90 transition-colors"
+            >
+              Log Read / Edit
+            </button>
+            <div className="flex items-center gap-1">
+              {record.linked_lnb_id && (
+                <Link
+                  href={`/lab-notebook/${record.linked_lnb_id}`}
+                  onClick={e => e.stopPropagation()}
+                  className="p-1 text-gray-400 hover:text-emerald-600 rounded"
+                  title="View Lab Notebook"
+                >
+                  <BookOpen className="w-3 h-3" />
+                </Link>
+              )}
+              {canDelete && (
+                <button
+                  onClick={e => { e.stopPropagation(); setConfirmDeleteId(record.id); }}
+                  disabled={deletingId === record.id}
+                  className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-end gap-1 mt-2">
-        {record.linked_lnb_id && (
-          <Link
-            href={`/lab-notebook/${record.linked_lnb_id}`}
-            onClick={e => e.stopPropagation()}
-            className="p-1 text-gray-400 hover:text-emerald-600 rounded"
-            title="View Lab Notebook"
-          >
-            <BookOpen className="w-3 h-3" />
-          </Link>
-        )}
-        {canDelete && (
-          <button
-            onClick={e => { e.stopPropagation(); setConfirmDeleteId(record.id); }}
-            disabled={deletingId === record.id}
-            className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
-            title="Delete"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        )}
-      </div>
+      {/* Actions row (collapsed) */}
+      {!expanded && (
+        <div className="flex justify-end gap-1 mt-2">
+          {record.linked_lnb_id && (
+            <Link
+              href={`/lab-notebook/${record.linked_lnb_id}`}
+              onClick={e => e.stopPropagation()}
+              className="p-1 text-gray-400 hover:text-emerald-600 rounded"
+              title="View Lab Notebook"
+            >
+              <BookOpen className="w-3 h-3" />
+            </Link>
+          )}
+          {canDelete && (
+            <button
+              onClick={e => { e.stopPropagation(); setConfirmDeleteId(record.id); }}
+              disabled={deletingId === record.id}
+              className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
+              title="Delete"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1006,7 +1039,8 @@ export default function SampleIncubationPage() {
 
                           {/* Plate tiles grid */}
                           {isTpOpen && (
-                            <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                            <div className="px-5 pb-5 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                               {replicateGroups.map((item, idx) => {
                                 if (item.type === 'group') {
                                   return (
@@ -1032,6 +1066,33 @@ export default function SampleIncubationPage() {
                                   />
                                 );
                               })}
+                            </div>
+                            {/* Quick: add another plate for this timepoint */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const firstRecord = tp.records[0];
+                                  setEditData({
+                                    ...firstRecord,
+                                    id: undefined,
+                                    replicate_label: '',
+                                    sterility_status: 'Pending',
+                                    colony_count: null,
+                                    cfu_per_ml: null,
+                                    observation: null,
+                                    end_time: null,
+                                  });
+                                  setShowModal(true);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black border border-dashed border-navy/30 text-navy hover:bg-navy/5 transition-colors"
+                              >
+                                <Plus className="w-3 h-3" /> Add plate for this timepoint
+                              </button>
+                              <span className="text-[9px] text-gray-400">
+                                Use Replicate A / B / C to group plates from the same sample
+                              </span>
+                            </div>
                             </div>
                           )}
                         </div>
