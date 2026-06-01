@@ -394,8 +394,8 @@ export default function EquipmentPage() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-teal-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
               <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">{modalMode === 'edit' ? 'Update Compliance Details' : 'Asset Control - IDMS v2'}</p>
@@ -476,8 +476,8 @@ export default function EquipmentPage() {
       )}
 
       {isMaintenanceOpen && activeDevice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
               <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">Maintenance &amp; Calibration Log</p>
@@ -537,8 +537,8 @@ export default function EquipmentPage() {
 
       {/* Confirmation Modal */}
       {isTicketOpen && activeDevice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
-          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-red-600 text-white flex items-center gap-4">
               <AlertTriangle className="w-8 h-8 text-red-200" />
               <div>

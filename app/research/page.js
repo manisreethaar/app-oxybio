@@ -674,8 +674,8 @@ export default function ConsumerResearchPage() {
       {/* Score Logging Modal                                                  */}
       {/* ------------------------------------------------------------------ */}
       {activeSession && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
-          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+          <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200">
             <button
               onClick={closeScoreModal}
               className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
@@ -793,8 +793,8 @@ export default function ConsumerResearchPage() {
       {/* New Panel Modal                                                      */}
       {/* ------------------------------------------------------------------ */}
       {showNew && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
-          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+          <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => { setShowNew(false); reset(); }}
               className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
