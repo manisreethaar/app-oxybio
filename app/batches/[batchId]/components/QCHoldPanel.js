@@ -6,14 +6,18 @@ import { syncStageToLNB } from '@/lib/lnbSync';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const DEFAULT_TESTS = [
-  { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                   result_unit: 'pH units' },
-  { test_name: 'CFU count (Viable count)',          target_spec: '≥10⁶ CFU/ml',               result_unit: 'CFU/ml' },
+  { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                    result_unit: 'pH units' },
+  { test_name: 'CFU count (Viable count)',          target_spec: '≥10⁶ CFU/ml',                result_unit: 'CFU/ml' },
   { test_name: 'Gram stain',                        target_spec: 'Gram-positive rods dominant', result_unit: '' },
-  { test_name: 'Sensory — Aroma',                   target_spec: 'Tangy, clean, no off-odour', result_unit: '' },
-  { test_name: 'Sensory — Colour',                  target_spec: 'Consistent with SKU target', result_unit: '' },
-  { test_name: 'Sensory — Taste',                   target_spec: 'Acceptable per panel',       result_unit: '' },
-  { test_name: 'Sensory — Overall',                 target_spec: 'PASS ≥7/10',                result_unit: 'score' },
-  { test_name: 'Microbial (Yeast + Mould)',          target_spec: 'Defer to Phase 1',          result_unit: 'CFU/ml' },
+  { test_name: 'Sensory — Aroma',                   target_spec: 'Tangy, clean, no off-odour',  result_unit: '' },
+  { test_name: 'Sensory — Colour',                  target_spec: 'Consistent with SKU target',  result_unit: '' },
+  { test_name: 'Sensory — Taste',                   target_spec: 'Acceptable per panel',        result_unit: '' },
+  { test_name: 'Sensory — Overall',                 target_spec: 'PASS ≥7/10',                  result_unit: 'score' },
+  { test_name: 'Microbial (Yeast + Mould)',          target_spec: '<100 CFU/ml',                 result_unit: 'CFU/ml' },
+  // G-07: Pathogen safety tests (FSSAI mandatory)
+  { test_name: 'Salmonella spp. (absence test)',    target_spec: 'Absent in 25 g',              result_unit: 'per 25 g' },
+  { test_name: 'Listeria monocytogenes',            target_spec: 'Absent in 25 g',              result_unit: 'per 25 g' },
+  { test_name: 'E. coli / Coliforms',               target_spec: '<10 CFU/g',                   result_unit: 'CFU/g' },
 ];
 
 const DEFAULT_TEST_ORDER = new Map(DEFAULT_TESTS.map((test, index) => [test.test_name, index]));
@@ -86,6 +90,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [resultReceivedDate, setResultReceivedDate] = useState('');
   const [coaUrl,             setCoaUrl]             = useState('');
   const [savingExtResult,    setSavingExtResult]     = useState(false);
+
+  // G-08: OOS (Out-of-Spec) investigation modal
+  const [oosModal,    setOosModal]    = useState(null); // { testId, testName }
+  const [oosDesc,     setOosDesc]     = useState('');
+  const [raisingOos,  setRaisingOos]  = useState(false);
+  // track which tests already have an OOS raised (keyed by testId)
+  const [oosRaised,   setOosRaised]   = useState(new Set());
 
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
@@ -299,12 +310,45 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }, activeFlask.flask_label);
     }
 
+    // G-08: trigger OOS modal on Fail
     if (field === 'pass_fail' && value === 'Fail') {
       const failedTest = tests.find(t => t.id === testId);
-      toast.warn(
-        `⚠ QC FAIL: "${failedTest?.test_name || 'Test'}". Consider raising a CAPA in the Compliance module before releasing.`,
-        { duration: 6000 }
-      );
+      if (!oosRaised.has(testId)) {
+        setOosDesc('');
+        setOosModal({ testId, testName: failedTest?.test_name || 'Test' });
+      }
+    }
+  };
+
+  const handleRaiseOos = async () => {
+    if (!oosModal) return;
+    setRaisingOos(true);
+    try {
+      const res = await fetch('/api/capa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'raise',
+          payload: {
+            title: `OOS: ${oosModal.testName} — Sample ${sample?.sample_id || ''} (${batch.batch_id})`,
+            severity: 'Major',
+            source: 'QC Hold',
+            description: oosDesc || `Out-of-Spec result for test "${oosModal.testName}" on QC sample ${sample?.sample_id}. Batch: ${batch.batch_id}. Formal OOS investigation required before batch disposition.`,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setOosRaised(prev => new Set([...prev, oosModal.testId]));
+        toast.success('OOS investigation record raised in Compliance module.');
+      } else {
+        toast.error('Failed to raise OOS: ' + (json.error || 'Unknown error'));
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setRaisingOos(false);
+      setOosModal(null);
     }
   };
 
@@ -526,6 +570,37 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   return (
     <div className="space-y-5">
+      {/* G-08: OOS Investigation Modal */}
+      {oosModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 text-red-600"/>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-gray-900">Out-of-Spec Result Detected</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Test: <span className="font-bold text-red-700">{oosModal.testName}</span></p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-700">A formal OOS (Out-of-Spec) investigation record is required for any failed QC test under GMP. This will be raised as a CAPA deviation in the Compliance module.</p>
+            <div>
+              <label className="field-label">Brief description of the failure (optional)</label>
+              <textarea value={oosDesc} onChange={e=>setOosDesc(e.target.value)} rows={3} placeholder={`e.g. ${oosModal.testName} result exceeded spec — possible cause: ...`}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold outline-none resize-none"/>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={()=>setOosModal(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs uppercase tracking-wider">
+                Skip for now
+              </button>
+              <button onClick={handleRaiseOos} disabled={raisingOos} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+                {raisingOos ? 'Raising...' : 'Raise OOS Record'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-rose-500">
         <Clock className="w-5 h-5 text-rose-600"/>
         <div><h2 className="text-base font-bold text-gray-900">QC Hold: <span className="text-rose-600">{activeFlask.flask_label}</span></h2>
@@ -787,7 +862,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   <tbody className="divide-y divide-gray-50">
                     {tests.map(t => (
                     <tr key={t.id} className={t.pass_fail==='Fail'?'bg-red-50':t.pass_fail==='Pass'?'bg-emerald-50/50':'hover:bg-gray-50/30'}>
-                      <td className="px-4 py-3 text-xs font-bold text-gray-800">{t.test_name}</td>
+                      <td className="px-4 py-3 text-xs font-bold text-gray-800">
+                        {t.test_name}
+                        {/* G-08: OOS badge */}
+                        {oosRaised.has(t.id) && (
+                          <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-[8px] font-black rounded uppercase">OOS Raised</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-xs text-gray-500">{t.target_spec}</td>
                       <td className="px-4 py-3">
                         <input value={t.result_value||''} onChange={e=>handleUpdateTest(t.id,'result_value',e.target.value)}

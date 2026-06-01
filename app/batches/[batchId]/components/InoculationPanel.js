@@ -35,6 +35,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [lafUsed,   setLafUsed]   = useState(false);
   const [contCheck, setContCheck] = useState('Clear');
   const [contNotes, setContNotes] = useState('');
+  // G-04: CAPA linkage for contamination
+  const [capaDevId, setCapaDevId] = useState(null);
+  const [raisingCapa, setRaisingCapa] = useState(false);
 
   // Load available cell bank vials when source type switches to cell_bank
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setLafUsed(d.laf_used||false);
           setContCheck(d.contamination_check||'Clear');
           setContNotes(d.contamination_notes||'');
+          setCapaDevId(d.capa_deviation_id||null);
         } else {
           setSourceType('other'); setSource(''); setVialId(''); setInVol(''); setPlannedHr('');
           setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
@@ -74,6 +78,37 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
   const selectedVial = availVials.find(v => v.id === vialId);
 
+  // G-04: auto-raise CAPA when contamination is suspected
+  const autoRaiseContaminationCapa = async () => {
+    if (capaDevId) return capaDevId;
+    setRaisingCapa(true);
+    try {
+      const res = await fetch('/api/capa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'raise',
+          payload: {
+            title: `Suspected Contamination at Inoculation — ${activeFlask.flask_label} (${batch.batch_id})`,
+            severity: 'Major',
+            source: 'Inoculation',
+            description: `Contamination suspected during inoculation of trial ${activeFlask.flask_label} in batch ${batch.batch_id}. Notes: ${contNotes || 'No details provided'}. Investigate source and scope before proceeding.`,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.id) {
+        setCapaDevId(json.data.id);
+        return json.data.id;
+      }
+    } catch {
+      // non-blocking
+    } finally {
+      setRaisingCapa(false);
+    }
+    return null;
+  };
+
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
     if (advance && !tZero) { toast.warn('T=0 inoculation time is required to advance.'); return; }
@@ -81,6 +116,13 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
     setSaving(true);
     try {
+      let devId = capaDevId;
+      // G-04: auto-raise CAPA when contamination is suspected
+      if (contCheck === 'Suspected' && !capaDevId) {
+        devId = await autoRaiseContaminationCapa();
+        if (devId) toast.warn('CAPA deviation raised for suspected contamination. Review in Compliance module.');
+      }
+
       const { error } = await supabase.from('batch_flask_inoculations').upsert({
         flask_id: activeFlask.id, batch_id: batch.id,
         inoculum_source_type: sourceType,
@@ -92,6 +134,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         transfer_method: transfer, laf_used: lafUsed,
         contamination_check: contCheck,
         contamination_notes: contCheck === 'Suspected' ? contNotes : null,
+        capa_deviation_id: devId || null,
         operator_id: employeeProfile?.id,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
@@ -250,8 +293,12 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
             ))}
           </div>
           {contCheck === 'Suspected' && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-              <textarea value={contNotes} onChange={e=>setContNotes(e.target.value)} rows={2} placeholder="Describe suspected contamination..." className="w-full px-3 py-2 border border-red-200 rounded-lg text-xs font-semibold outline-none resize-none bg-white"/>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
+              <textarea value={contNotes} onChange={e=>setContNotes(e.target.value)} rows={2} placeholder="Describe suspected contamination (visual signs, odour, timing)..." className="w-full px-3 py-2 border border-red-200 rounded-lg text-xs font-semibold outline-none resize-none bg-white"/>
+              {capaDevId
+                ? <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>CAPA raised. <a href="/compliance" className="underline">Review in Compliance →</a></p>
+                : <p className="text-[10px] text-red-600 font-bold">Saving will auto-raise a CAPA deviation for this contamination event.</p>
+              }
             </div>
           )}
         </div>

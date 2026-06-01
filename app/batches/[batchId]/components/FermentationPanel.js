@@ -102,6 +102,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   // Pending plating banner — set when last reading has unresolved plating
   const [pendingPlatingReading, setPendingPlatingReading] = useState(null);
   const [resolvingPlating, setResolvingPlating] = useState(false);
+  // G-05: track whether fermentation-exceeded push has been sent for this flask
+  const [exceededNotifSent, setExceededNotifSent] = useState(false);
 
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
@@ -164,6 +166,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   useEffect(() => {
     setReadings([]); setInocu(null); setEndpoint(null);
+    setExceededNotifSent(false);
     fetchData(); fetchPendingIds();
   }, [fetchData]);
 
@@ -218,6 +221,27 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const tZero     = inocu?.t_zero_time ? new Date(inocu.t_zero_time) : null;
   const elapsedHr = tZero ? ((new Date() - tZero) / 3600000) : null;
   const maxExceeded = elapsedHr != null && elapsedHr > (inocu?.planned_fermentation_hrs || 24);
+
+  // G-05: send push notification to all lab supervisors when fermentation time is exceeded
+  useEffect(() => {
+    if (!maxExceeded || exceededNotifSent || endpoint || !activeFlask) return;
+    setExceededNotifSent(true);
+    const supervisors = employees.filter(e =>
+      ['ceo','admin','cto','research_fellow','scientist'].includes(e.role) && e.id !== employeeProfile?.id
+    );
+    supervisors.forEach(sup => {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assigned_to: sup.id,
+          title: `Fermentation Time Exceeded — ${activeFlask.flask_label}`,
+          body: `Batch ${batch.batch_id} / Trial ${activeFlask.flask_label} has exceeded its planned fermentation duration of ${inocu?.planned_fermentation_hrs}h. Endpoint declaration required.`,
+          url: `/batches/${batch.id}`,
+        }),
+      }).catch(() => {});
+    });
+  }, [maxExceeded, exceededNotifSent, endpoint, activeFlask]); // eslint-disable-line react-hooks/exhaustive-deps
   const latestAlarm = readings.filter(r => r.flask_id === activeFlask?.id).some(r => r.is_ph_alarm || r.is_temp_alarm);
 
   const handleLogReading = async (e) => {
