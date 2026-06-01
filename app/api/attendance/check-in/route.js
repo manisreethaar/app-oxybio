@@ -1,11 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
-// Facility Geometry
-const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065; 
-const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016; 
-const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300;
-
 // Haversine formula (Server-side Source of Truth)
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
@@ -39,10 +34,16 @@ export async function POST(request) {
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
 
-    // 2. Geofence Verification (Server-side with Fallback)
+    // 2. Geofence Verification — read facility coordinates from DB (same source as client)
+    const { data: geoConfig } = await supabase
+      .from('system_config').select('value').eq('key', 'attendance_geofence').maybeSingle();
+    const TARGET_LAT = geoConfig?.value?.TARGET_LAT ?? 13.0827;
+    const TARGET_LNG = geoConfig?.value?.TARGET_LNG ?? 80.2707;
+    const MAX_RADIUS_METERS = geoConfig?.value?.MAX_RADIUS_METERS ?? 200;
+
     const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
     const inGeofence = distance <= MAX_RADIUS_METERS;
-    const isNearby = distance <= 350; // Buffer for indoor accuracy degradation
+    const isNearby = distance <= MAX_RADIUS_METERS + 150; // Buffer for indoor GPS drift
 
     // Protocol: Strict Geofence Enforcement (Prevent remote check-ins)
     if (!inGeofence && !override) {

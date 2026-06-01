@@ -2,11 +2,6 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-// Facility Geometry
-const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065; 
-const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016; 
-const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300; // Use the 350m strict buffer
-
 // Haversine formula (Server-side Source of Truth)
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3;
@@ -47,6 +42,13 @@ export async function POST(request) {
         if (!lat || !lng) {
             return NextResponse.json({ error: 'Location Required: GPS coordinates must be sent for geofenced checkout.' }, { status: 400 });
         }
+        // Read facility coordinates from DB (same source as client)
+        const { data: geoConfig } = await supabase
+          .from('system_config').select('value').eq('key', 'attendance_geofence').maybeSingle();
+        const TARGET_LAT = geoConfig?.value?.TARGET_LAT ?? 13.0827;
+        const TARGET_LNG = geoConfig?.value?.TARGET_LNG ?? 80.2707;
+        const MAX_RADIUS_METERS = geoConfig?.value?.MAX_RADIUS_METERS ?? 200;
+
         const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
         if (distance > MAX_RADIUS_METERS) {
             return NextResponse.json({ 
