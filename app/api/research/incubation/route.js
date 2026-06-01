@@ -158,19 +158,56 @@ async function deductMediaStock(supabase, stockId, quantityUsed, incubationId, e
   if (!stockId || !quantityUsed || quantityUsed <= 0) return;
   const { data: stock } = await supabase
     .from('inventory_stock')
-    .select('current_quantity, item_id')
+    .select('current_quantity, item_id, inventory_items(name, unit, min_stock_level)')
     .eq('id', stockId)
     .maybeSingle();
   if (!stock) return;
 
   const newQty = Math.max(0, stock.current_quantity - quantityUsed);
-  await supabase.from('inventory_stock').update({ current_quantity: newQty }).eq('id', stockId);
+  const deductQty = parseFloat(quantityUsed);
+  const itemName = stock.inventory_items?.name || 'Unknown Media';
+  const unit = stock.inventory_items?.unit || 'units';
+
+  // 1. Deduct from inventory_stock
+  await supabase.from('inventory_stock').update({
+    current_quantity: newQty,
+    ...(newQty <= 0 ? { status: 'Out of Stock' } : {}),
+  }).eq('id', stockId);
+
+  // 2. Cross-module usage
   await supabase.from('inventory_usage').insert({
     stock_id: stockId,
-    quantity_used: quantityUsed,
+    quantity_used: deductQty,
     logged_by: employeeId || null,
+    stage: 'incubation',
     notes: `Media used for incubation record ${incubationId}`,
   });
+
+  // 3. Financial ledger
+  await supabase.from('inventory_movements').insert({
+    stock_id: stockId,
+    type: 'Batch Deduction',
+    quantity: deductQty,
+    purpose: 'Research/QC',
+    issued_by: employeeId || null,
+    notes: `Incubation deduction: ${itemName} for record ${incubationId}`,
+  });
+
+  // 4. Auto-create Restock Task
+  const minLevel = parseFloat(stock.inventory_items?.min_stock_level || 0);
+  if (minLevel > 0 && newQty < minLevel) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    await supabase.from('tasks').insert({
+      title: `Restock: ${itemName} — below minimum`,
+      description: `Incubation record ${incubationId} used ${deductQty}${unit}. `
+        + `Remaining: ${newQty.toFixed(1)} (min: ${minLevel}). Please reorder.`,
+      priority: 'high',
+      status: 'todo',
+      assigned_by: employeeId || null,
+      due_date: tomorrow.toISOString().slice(0, 10),
+    }).catch(() => {});
+  }
 }
 
 export async function POST(request) {
