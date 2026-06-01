@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
@@ -249,10 +249,10 @@ export default function FormulationsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate recipe code: 1â€“5 uppercase letters, optionally followed by up to 3 digits (R01, RKU, RKU01)
+    // Validate recipe code: 1?????"5 uppercase letters, optionally followed by up to 3 digits (R01, RKU, RKU01)
     const codeVal = (newForm.code || '').trim().toUpperCase();
     if (!/^[A-Z]{1,5}\d{0,3}$/.test(codeVal)) {
-      toast.warn('Recipe code must be 1â€“5 uppercase letters optionally followed by up to 3 digits (e.g. R01, RKU, RKU01).'); return;
+      toast.warn('Recipe code must be 1?????"5 uppercase letters optionally followed by up to 3 digits (e.g. R01, RKU, RKU01).'); return;
     }
     if (newForm.ingredients.length === 0) { toast.warn("Add at least one ingredient."); return; }
     if (newForm.base_version_id && !newForm.notes?.trim()) {
@@ -326,7 +326,7 @@ export default function FormulationsPage() {
         </button>
       </div>
 
-      {/* Pending Approval Banner â€” shown to approvers only */}
+      {/* Pending Approval Banner ?????" shown to approvers only */}
       {isApprover && pendingReview.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
@@ -499,7 +499,7 @@ export default function FormulationsPage() {
                           className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors"
                         >
                           <FlaskConical className="w-2.5 h-2.5"/>
-                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? ‘es’ : ‘’} →
+                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} {'>'}
                         </button>
                       </div>
                     )}
@@ -543,7 +543,7 @@ export default function FormulationsPage() {
                       <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0"/>
                         <p className="text-[10px] font-bold text-emerald-700">
-                          Approved by {f.approver.full_name} · {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
+                          Approved by {f.approver.full_name} ?? {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
                         </p>
                       </div>
                     )}
@@ -583,7 +583,7 @@ export default function FormulationsPage() {
                         </button>
                       </div>
 
-                      {/* â”€â”€ APPROVAL WORKFLOW BUTTONS â”€â”€ */}
+                      {/* ??"?????"??? APPROVAL WORKFLOW BUTTONS ??"?????"??? */}
 
                       {/* Draft: Show "Submit for Review" */}
                       {(f.status === 'Draft' || f.status === 'active') && (
@@ -707,7 +707,7 @@ export default function FormulationsPage() {
                                         {b.status || 'Unknown'}
                                       </span>
                                       <span className="shrink-0 text-[9px] text-gray-400">
-                                        {b.start_time ? new Date(b.start_time).toLocaleDateString() : 'â€”'}
+                                        {b.start_time ? new Date(b.start_time).toLocaleDateString() : '?????"'}
                                       </span>
                                       <ChevronRight className="w-3 h-3 text-gray-300 group-hover/batch:text-navy shrink-0 transition-colors"/>
                                     </Link>
