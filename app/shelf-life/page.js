@@ -85,6 +85,11 @@ export default function ShelfLifePage() {
   }, [fetchData]);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  // G-46: study type + ASLT fields (outside RHF to avoid schema complexity)
+  const [studyType,    setStudyType]    = useState('Realtime');
+  const [tempC,        setTempC]        = useState('4');
+  const [accelTempC,   setAccelTempC]   = useState('40');
+  const [q10Factor,    setQ10Factor]    = useState('2.0');
 
   const handleDeleteStudy = async (id) => {
     try {
@@ -137,7 +142,13 @@ export default function ShelfLifePage() {
     try {
       const res = await fetch('/api/shelf-life', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          ...data,
+          study_type:    studyType,
+          temperature_c: tempC   ? parseFloat(tempC)      : null,
+          accel_temp_c:  accelTempC ? parseFloat(accelTempC) : null,
+          q10_factor:    q10Factor ? parseFloat(q10Factor)   : 2.0,
+        })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create study');
       setShowNew(false); reset(); fetchData();
@@ -166,6 +177,41 @@ export default function ShelfLifePage() {
   const TIMEPOINTS = [0, 7, 14, 30, 60, 90];
   const selectedBatch = batches.find(batch => batch.id === selectedBatchId);
   const selectedFlasks = selectedBatch?.batch_flasks || [];
+
+  // G-47, G-48: helpers for timepoint due-date tracking
+  const getTimepointDate = (study, dayN) => {
+    if (!study.start_date) return null;
+    const d = new Date(study.start_date);
+    d.setDate(d.getDate() + dayN);
+    return d;
+  };
+  const timepointStatus = (study, dayN) => {
+    const tpDate = getTimepointDate(study, dayN);
+    if (!tpDate) return 'unknown';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const due   = new Date(tpDate); due.setHours(0,0,0,0);
+    const logged = (study.shelf_life_logs || []).some(l => l.day_number === dayN);
+    if (logged) return 'done';
+    const diff = Math.floor((due - today) / 86400000);
+    if (diff < -2) return 'overdue';
+    if (diff <= 1) return 'due';
+    return 'upcoming';
+  };
+
+  // G-45: Q10-based shelf life prediction for ASLT studies
+  const predictShelfLife = (study) => {
+    if (study.study_type !== 'ASLT') return null;
+    const q10 = study.q10_factor || 2.0;
+    const tReal  = study.temperature_c  || 4;
+    const tAccel = study.accel_temp_c   || 40;
+    const doneTimepoints = (study.shelf_life_logs || [])
+      .filter(l => l.day_number > 0)
+      .map(l => l.day_number);
+    if (!doneTimepoints.length) return null;
+    const testDays = Math.max(...doneTimepoints);
+    const ratio = Math.pow(q10, (tAccel - tReal) / 10);
+    return Math.round(testDays * ratio);
+  };
 
   if (authLoading) return <div className="page-container space-y-6"><Skeleton width={300} height={40}/><Skeleton className="h-64 w-full rounded-2xl"/></div>;
   if (!employeeProfile) return null;
@@ -230,19 +276,52 @@ export default function ShelfLifePage() {
                   <ShelfLifeLineChart data={displayData} />
                 </div>
 
-                <div className="grid grid-cols-6 gap-2 mb-8">
+                {/* G-47 + G-48: Timepoints with calendar dates + due alerts */}
+                <div className="grid grid-cols-6 gap-2 mb-4">
                   {TIMEPOINTS.map((tp) => {
-                    const logExists = (study.shelf_life_logs || []).some(l => l.day_number === tp);
+                    const status = timepointStatus(study, tp);
+                    const tpDate = getTimepointDate(study, tp);
+                    const dateStr = tpDate ? tpDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
                     return (
-                      <div key={tp} className="text-center group">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 group-hover:text-navy">D{tp}</p>
-                        <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${logExists ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
-                          {logExists ? <CheckCircle2 className="w-4 h-4"/> : <Clock className="w-4 h-4"/>}
+                      <div key={tp} className="text-center">
+                        <p className={`text-[9px] font-black uppercase mb-1 ${status==='overdue'?'text-red-500':status==='due'?'text-amber-600':'text-gray-400'}`}>D{tp}</p>
+                        <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${
+                          status==='done'    ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                          status==='overdue' ? 'bg-red-50 border-red-200 text-red-500' :
+                          status==='due'     ? 'bg-amber-50 border-amber-200 text-amber-600' :
+                          'bg-slate-50 border-slate-100 text-slate-300'
+                        }`}>
+                          {status==='done' ? <CheckCircle2 className="w-4 h-4"/> : status==='overdue' ? <AlertCircle className="w-4 h-4"/> : <Clock className="w-4 h-4"/>}
                         </div>
+                        <p className="text-[8px] text-gray-400 mt-0.5 leading-tight">{dateStr}</p>
                       </div>
                     );
                   })}
                 </div>
+                {/* G-48: Due/overdue alerts */}
+                {TIMEPOINTS.some(tp => timepointStatus(study, tp) === 'overdue') && (
+                  <div className="mb-4 flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0"/>
+                    Overdue timepoint(s) — log stability data immediately
+                  </div>
+                )}
+                {!TIMEPOINTS.some(tp => timepointStatus(study, tp) === 'overdue') && TIMEPOINTS.some(tp => timepointStatus(study, tp) === 'due') && (
+                  <div className="mb-4 flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-700">
+                    <Clock className="w-3.5 h-3.5 shrink-0"/>
+                    Stability test due — log data for the highlighted timepoint
+                  </div>
+                )}
+                {/* G-45: ASLT Arrhenius/Q10 shelf life prediction */}
+                {(() => {
+                  const predicted = predictShelfLife(study);
+                  return predicted ? (
+                    <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs">
+                      <p className="font-black text-indigo-800 mb-0.5">ASLT Shelf Life Prediction (Q10 = {study.q10_factor})</p>
+                      <p className="text-indigo-700">Based on {study.accel_temp_c}°C accelerated data → predicted real shelf life at {study.temperature_c}°C: <span className="font-black text-indigo-900">{predicted} days</span></p>
+                      <p className="text-[9px] text-indigo-400 mt-0.5">Formula: Real SL = Accel test days × Q10^((T_acc − T_real)/10)</p>
+                    </div>
+                  ) : null;
+                })()}
 
 
               {study.creator && (
@@ -324,8 +403,41 @@ export default function ShelfLifePage() {
                   <input type="text" {...register('flask_id')} placeholder="e.g. F1, F2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all" />
                 </div>
               )}
+              {/* G-46: Study type */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Storage Condition</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Study Type</label>
+                <div className="flex gap-2">
+                  {['Realtime','ASLT'].map(t => (
+                    <button key={t} type="button" onClick={()=>setStudyType(t)}
+                      className={`flex-1 py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all ${studyType===t?'bg-navy text-white border-navy':'bg-white text-gray-500 border-gray-200'}`}>
+                      {t === 'ASLT' ? 'ASLT (Accelerated)' : 'Realtime'}
+                    </button>
+                  ))}
+                </div>
+                {studyType === 'ASLT' && <p className="text-[9px] text-indigo-600 font-semibold mt-1">Accelerated Shelf Life Testing — uses elevated temperature to extrapolate real shelf life</p>}
+              </div>
+              {/* G-46: Temperature conditions */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Storage Temp (°C)</label>
+                  <input type="number" step="0.5" value={tempC} onChange={e=>setTempC(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy" placeholder="4"/>
+                </div>
+                {studyType === 'ASLT' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Accel Temp (°C)</label>
+                      <input type="number" step="0.5" value={accelTempC} onChange={e=>setAccelTempC(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy" placeholder="40"/>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Q10 Factor</label>
+                      <input type="number" step="0.5" min="1" max="5" value={q10Factor} onChange={e=>setQ10Factor(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy" placeholder="2.0"/>
+                      <p className="text-[9px] text-gray-400 mt-0.5">Default 2.0 (reaction rate doubles per 10°C)</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Storage Condition Label</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {['Refrigerated (4°C)', 'Ambient (25°C)', 'Accelerated (40°C)'].map(c => (
                     <button key={c} type="button" onClick={() => setValue('storage_condition', c, { shouldValidate: true })} className={`px-3 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${watchedCondition === c ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>

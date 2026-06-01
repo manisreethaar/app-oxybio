@@ -7,7 +7,12 @@ const postSchema = z.object({
   flask_id: z.string().optional(),
   storage_condition: z.string().min(1),
   test_parameters: z.array(z.string()).min(1),
-  start_date: z.string().min(1)
+  start_date: z.string().min(1),
+  // G-46: Study type + ASLT parameters
+  study_type:    z.enum(['Realtime','ASLT']).optional().default('Realtime'),
+  temperature_c: z.number().optional().nullable(),
+  accel_temp_c:  z.number().optional().nullable(),
+  q10_factor:    z.number().optional().default(2.0),
 });
 
 export async function POST(request) {
