@@ -174,12 +174,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   const [activeTab, setActiveTab] = useState('setup');
   const [customHour, setCustomHour] = useState('');
   const [mediaItems, setMediaItems] = useState([]);
-  const [mediaStocks, setMediaStocks] = useState([]);
-  const [selectedMediaItemId, setSelectedMediaItemId] = useState(initialData?.media_inventory_item_id || '');
-  const [selectedStockId, setSelectedStockId] = useState('');
   const [mediaVolumeUsed, setMediaVolumeUsed] = useState(initialData?.media_volume_used_ml ?? '');
   const [mediaRecipes, setMediaRecipes] = useState([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState(initialData?.formulation_id || '');
+  const [selectedMediaItemId, setSelectedMediaItemId] = useState(initialData?.media_inventory_item_id || '');
   const supabase = useMemo(() => createClient(), []);
 
   const { reads: initReads, notes: initNotes } = parseObservation(initialData?.observation);
@@ -273,16 +271,6 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       .order('name').then(({ data }) => setMediaRecipes(data || []));
   }, [supabase]);
 
-  useEffect(() => {
-    if (!selectedMediaItemId) { setMediaStocks([]); return; }
-    supabase.from('inventory_stock')
-      .select('id, supplier_batch_number, current_quantity, expiry_date, location')
-      .eq('item_id', selectedMediaItemId)
-      .eq('status', 'Available')
-      .gt('current_quantity', 0)
-      .order('expiry_date', { ascending: true })
-      .then(({ data }) => setMediaStocks(data || []));
-  }, [selectedMediaItemId, supabase]);
 
   const addRead = (h) => {
     const hour = Number(h);
@@ -317,7 +305,6 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         media_inventory_item_id: selectedMediaItemId || null,
         media_volume_used_ml:   mediaVolumeUsed !== '' ? Number(mediaVolumeUsed) : null,
         formulation_id:         selectedRecipeId || null,
-        _stock_id:              selectedStockId || null,
         flask_id:               initialData?.flask_id || null,
         qc_sample_id:           initialData?.qc_sample_id || null,
         fermentation_reading_id:initialData?.fermentation_reading_id || null,
@@ -364,7 +351,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
   return (
     <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col overflow-hidden">
+      <div className="h-[calc(100dvh-68px)] sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
@@ -474,116 +461,75 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     {errors.start_time && <p className="text-red-500 text-[10px] mt-1">{errors.start_time.message}</p>}
                   </div>
 
-                  {/* Media Used + Media Lot */}
-                  <div>
-                    <label className={labelCls}>Media Used (free text)</label>
-                    <input {...register('media_used')} className={inputCls} placeholder="e.g. TSA, LB Agar" />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Media Lot / Batch No</label>
-                    <input {...register('media_lot')} className={inputCls} placeholder="e.g. LOT-2024-0053" />
-                  </div>
+                </div>
 
-                  {/* Approved Media Recipe */}
-                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 space-y-2.5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Approved Media Recipe</p>
-                    <div>
-                      <label className={labelCls}>Link Recipe (optional)</label>
-                      <select
-                        value={selectedRecipeId}
-                        onChange={e => {
-                          setSelectedRecipeId(e.target.value);
-                          const recipe = mediaRecipes.find(r => r.id === e.target.value);
-                          if (recipe) setValue('media_used', recipe.name);
-                        }}
-                        className={inputCls}
-                      >
-                        <option value="">-- No recipe linked --</option>
-                        {mediaRecipes.map(r => (
-                          <option key={r.id} value={r.id}>{r.name} v{r.version} ({r.code})</option>
-                        ))}
-                      </select>
-                      {mediaRecipes.length === 0 && (
-                        <p className="text-[9px] text-gray-400 mt-1">No approved media recipes found. Add them in Recipe Management with category = Media.</p>
-                      )}
-                    </div>
-                    {selectedRecipeId && (() => {
-                      const recipe = mediaRecipes.find(r => r.id === selectedRecipeId);
-                      if (!recipe?.ingredients) return null;
-                      let ingredients = [];
-                      try { ingredients = typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients; } catch {}
-                      if (!Array.isArray(ingredients) || ingredients.length === 0) return null;
-                      return (
-                        <div>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-1.5">Ingredients</p>
-                          <div className="space-y-1">
-                            {ingredients.map((ing, i) => (
-                              <div key={i} className="flex items-center justify-between text-[10px] font-mono bg-white rounded-lg px-2.5 py-1.5 border border-emerald-100">
-                                <span className="text-gray-700 font-semibold">{ing.name || ing.item_name || '—'}</span>
-                                <span className="text-emerald-700 font-black">{ing.quantity ?? ing.qty ?? ''} {ing.unit || ''}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                {/* Media */}
+                <div className="space-y-3 pt-3 border-t border-gray-100">
+                  <p className={labelCls}>Media</p>
 
-                  {/* Inventory deduction */}
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2.5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-600">Deduct from Inventory</p>
-                    <div>
-                      <label className={labelCls}>Media Item (Inventory)</label>
-                      <select
-                        value={selectedMediaItemId}
-                        onChange={e => { setSelectedMediaItemId(e.target.value); setSelectedStockId(''); }}
-                        className={inputCls}
-                      >
-                        <option value="">-- Skip / not in inventory --</option>
-                        {mediaItems.map(m => (
-                          <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
-                        ))}
-                      </select>
-                    </div>
-                    {selectedMediaItemId && (
-                      <>
-                        <div>
-                          <label className={labelCls}>Stock Lot</label>
-                          <select
-                            value={selectedStockId}
-                            onChange={e => setSelectedStockId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">-- Select lot --</option>
-                            {mediaStocks.map(s => (
-                              <option key={s.id} value={s.id}>
-                                {s.supplier_batch_number || 'No lot'} — {s.current_quantity} avail
-                                {s.expiry_date ? ` · exp ${s.expiry_date}` : ''}
-                                {s.location ? ` · ${s.location}` : ''}
-                              </option>
-                            ))}
-                          </select>
-                          {mediaStocks.length === 0 && (
-                            <p className="text-[9px] text-red-500 mt-1">No available stock for this item.</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className={labelCls}>Volume / Weight Used</label>
-                          <input
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={mediaVolumeUsed}
-                            onChange={e => setMediaVolumeUsed(e.target.value)}
-                            placeholder="e.g. 25"
-                            className={inputCls}
-                          />
-                          <p className="text-[9px] text-gray-400 mt-1">
-                            {mediaItems.find(m => m.id === selectedMediaItemId)?.unit || 'units'} — will be deducted from selected lot on save
-                          </p>
-                        </div>
-                      </>
+                  <div>
+                    <label className={labelCls}>Approved Recipe</label>
+                    <select
+                      value={selectedRecipeId}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setSelectedRecipeId(id);
+                        if (id) {
+                          const recipe = mediaRecipes.find(r => r.id === id);
+                          if (recipe) {
+                            setValue('media_used', recipe.name);
+                            const rName = recipe.name.toLowerCase();
+                            const match = mediaItems.find(m =>
+                              m.name.toLowerCase().includes(rName) || rName.includes(m.name.toLowerCase())
+                            );
+                            setSelectedMediaItemId(match?.id || '');
+                          }
+                        } else {
+                          setValue('media_used', '');
+                          setSelectedMediaItemId('');
+                        }
+                      }}
+                      className={inputCls}
+                    >
+                      <option value="">-- No approved recipe --</option>
+                      {mediaRecipes.map(r => (
+                        <option key={r.id} value={r.id}>{r.code ? `${r.code} — ` : ''}{r.name}</option>
+                      ))}
+                    </select>
+                    {mediaRecipes.length === 0 && (
+                      <p className="text-[9px] text-amber-500 mt-1">No approved recipes. Add in Formulations with category "Lab Media".</p>
                     )}
+                  </div>
+
+                  {selectedRecipeId ? (
+                    <div className={`rounded-lg px-3 py-2 flex items-center gap-2 text-[10px] font-semibold ${selectedMediaItemId ? 'bg-emerald-50 border border-emerald-100 text-emerald-700' : 'bg-amber-50 border border-amber-100 text-amber-700'}`}>
+                      {selectedMediaItemId
+                        ? <><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Will deduct from inventory: {mediaItems.find(m => m.id === selectedMediaItemId)?.name}</>
+                        : <><AlertCircle className="w-3.5 h-3.5 shrink-0" /> No matching inventory item found — stock won't be deducted</>
+                      }
+                    </div>
+                  ) : (
+                    <div>
+                      <label className={labelCls}>Media Name</label>
+                      <input {...register('media_used')} className={inputCls} placeholder="e.g. MRS Broth, TSA" />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Volume Used (mL)</label>
+                      <input
+                        type="number" step="any" min="0"
+                        value={mediaVolumeUsed}
+                        onChange={e => setMediaVolumeUsed(e.target.value)}
+                        placeholder="e.g. 250"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Lot / Batch No</label>
+                      <input {...register('media_lot')} className={inputCls} placeholder="LOT-2024-0053" />
+                    </div>
                   </div>
                 </div>
 
