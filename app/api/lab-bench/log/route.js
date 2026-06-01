@@ -54,7 +54,6 @@ export async function POST(request) {
     } = body;
 
     const { reagents_used, cold_storage_temp_c } = body; // G-74, G-75 — destructure separately to avoid overwriting
-    } = body;
 
     // ── Validation ──────────────────────────────────────────────
     if (!source_type || !['batch', 'growth_study', 'cell_bank'].includes(source_type)) {

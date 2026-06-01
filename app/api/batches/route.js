@@ -308,6 +308,14 @@ export async function DELETE(request) {
     const permanent = searchParams.get('permanent') === 'true';
     if (!id) return NextResponse.json({ error: 'Missing batch ID' }, { status: 400 });
 
+    let archive_reason = null;
+    try {
+      const body = await request.json();
+      archive_reason = body.archive_reason;
+    } catch (e) {
+      // Ignored
+    }
+
     const { data: currentUser } = await supabase
       .from('employees')
       .select('id, role')
@@ -341,6 +349,7 @@ export async function DELETE(request) {
         .update({
           archived_at: new Date().toISOString(),
           archived_by: currentUser.id,
+          archive_reason: archive_reason,
         })
         .eq('id', id);
       if (archiveErr) throw archiveErr;

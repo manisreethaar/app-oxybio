@@ -87,3 +87,29 @@ export async function notifyAdmins(title, message, url = '/notifications', type 
     await Promise.allSettled(promises);
   }
 }
+
+/**
+ * Sends a notification to department managers (admins/seniors in same department + CEO/CTO)
+ */
+export async function notifyDepartmentManagers(department, title, message, url = '/notifications', type = 'info') {
+  const supabaseAdmin = createAdminClient();
+  let query = supabaseAdmin.from('employees').select('id, role, department');
+  
+  const { data: employees } = await query;
+  if (!employees) return;
+
+  const managers = employees.filter(emp => {
+    // CEO and CTO always get notified
+    if (['ceo', 'cto'].includes(emp.role)) return true;
+    // Admins or Research Fellows in the same department
+    if (department && emp.department === department && ['admin', 'research_fellow'].includes(emp.role)) return true;
+    // If no department specified, fallback to all admins
+    if (!department && emp.role === 'admin') return true;
+    return false;
+  });
+
+  if (managers.length > 0) {
+    const promises = managers.map(mgr => sendServerNotification(mgr.id, title, message, url, type));
+    await Promise.allSettled(promises);
+  }
+}

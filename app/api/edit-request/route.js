@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { notifyAdmins } from '@/utils/serverNotify';
+import { notifyDepartmentManagers } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -125,7 +125,8 @@ export async function POST(request) {
       ? `wants to DELETE a ${module_label || table_name} record`
       : `submitted an EDIT request for a ${module_label || table_name} record`;
 
-    await notifyAdmins(
+    await notifyDepartmentManagers(
+      emp.department,
       `✏️ Edit Request — ${module_label || table_name}`,
       `${emp.full_name || user.email} ${changeDesc}. Tap to review.`,
       '/admin/approvals'

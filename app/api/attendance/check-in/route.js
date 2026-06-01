@@ -33,7 +33,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized or Auth Timeout' }, { status: 401 });
     }
 
-    const { lat, lng, photo_url, override } = await request.json();
+    const { lat, lng, photo_url, override, liveness_score, face_match_score } = await request.json();
 
     // 1. Authorization check
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
@@ -82,7 +82,9 @@ export async function POST(request) {
         location_lat: lat,
         location_lng: lng,
         in_geofence: inGeofence,
-        photo_url: photo_url
+        photo_url: photo_url,
+        liveness_score: liveness_score || null,
+        face_match_score: face_match_score || null
     }).select().single();
 
     if (dbError) throw dbError;

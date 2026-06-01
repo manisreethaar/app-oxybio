@@ -57,11 +57,30 @@ export async function POST(request) {
 
     const { leave_type, start_date, end_date, reason } = await request.json();
 
-    // 1. Calculate days requested
+    // 1. Calculate days requested excluding weekends and holidays
     const start = new Date(start_date);
     const end = new Date(end_date);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    if (days <= 0) return NextResponse.json({ error: 'Invalid date range selected' }, { status: 400 });
+    
+    // Fetch holidays
+    const { data: holidays } = await supabase.from('hr_holidays')
+      .select('holiday_date')
+      .gte('holiday_date', start_date)
+      .lte('holiday_date', end_date);
+    
+    const holidayDates = (holidays || []).map(h => h.holiday_date);
+    
+    let days = 0;
+    let curr = new Date(start);
+    while(curr <= end) {
+      const dayOfWeek = curr.getDay();
+      const isoDate = curr.toISOString().split('T')[0];
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.includes(isoDate)) {
+        days++;
+      }
+      curr.setDate(curr.getDate() + 1);
+    }
+
+    if (days <= 0) return NextResponse.json({ error: 'Invalid date range or only non-business days selected' }, { status: 400 });
 
     // 2. Fetch Employee Profile
     const { data: emp } = await supabase
@@ -122,11 +141,10 @@ export async function POST(request) {
       remainingBalance = remainingBalance - usedDays;
     }
 
-    // 5. Balance check
+    // 5. Balance check & LOP calculation
+    let lop_days = 0;
     if (days > remainingBalance) {
-      return NextResponse.json({
-        error: `Insufficient Balance: You have ${Math.max(0, remainingBalance)} day(s) available. This request is for ${days} day(s).`
-      }, { status: 400 });
+      lop_days = days - Math.max(0, remainingBalance);
     }
 
     // 6. Check for overlapping leaves
@@ -148,6 +166,7 @@ export async function POST(request) {
       start_date,
       end_date,
       total_days: days,
+      lop_days,
       reason,
       status: 'pending'
     }).select().single();

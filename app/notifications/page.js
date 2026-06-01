@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { BellRing, CheckSquare, AlertTriangle, FileWarning, Bell, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { differenceInDays, formatDistanceToNow } from 'date-fns';
+import PushNotificationToggle from '@/components/ui/PushNotificationToggle';
 
 export default function NotificationsPage() {
   const { employeeProfile, role } = useAuth();
@@ -137,11 +138,14 @@ export default function NotificationsPage() {
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Activity & Alerts</h1>
           <p className="text-slate-500 mt-1 font-medium">Pending tasks, system warnings, and direct notifications.</p>
         </div>
-        {unreadCount > 0 && (
-          <button onClick={markAllRead} className="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-sm font-semibold hover:bg-teal-100 transition-colors">
-            <Check className="w-4 h-4" /> Mark all read ({unreadCount})
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <PushNotificationToggle />
+          {unreadCount > 0 && (
+            <button onClick={markAllRead} className="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-sm font-semibold hover:bg-teal-100 transition-colors">
+              <Check className="w-4 h-4" /> Mark all read ({unreadCount})
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (

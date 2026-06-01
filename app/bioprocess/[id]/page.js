@@ -12,6 +12,7 @@ import {
   Link2, Download, X,
 } from 'lucide-react';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import { downloadCsvWithHash } from '@/utils/exportUtils';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Scatter, ScatterChart, ReferenceLine, Legend,
@@ -284,13 +285,7 @@ export default function BioprocessDetailPage() {
       ];
     });
     const csv = [header, ...rows].map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${experiment.title.replace(/[^\w]/g, '_')}_design.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsvWithHash(csv, `${experiment.title.replace(/[^\w]/g, '_')}_design.csv`);
   };
 
   // ── Save ──────────────────────────────────────────────────────────────────

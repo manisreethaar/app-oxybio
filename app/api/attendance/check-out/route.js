@@ -55,21 +55,41 @@ export async function POST(request) {
         }
     }
 
-    // Fetch check_in_time to calculate total_hours
+    // Fetch check_in_time and employee shift to calculate total_hours and overtime
     const { data: logRow } = await supabase.from('attendance_log')
       .select('check_in_time')
       .eq('id', parsed.data.id)
       .eq('employee_id', emp.id)
       .single();
 
+    const { data: empDetails } = await supabase.from('employees').select('shift_id').eq('id', emp.id).single();
+    let shiftHours = 9; // Default 9 hours shift
+    if (empDetails?.shift_id) {
+        const { data: shift } = await supabase.from('hr_shifts').select('start_time, end_time').eq('id', empDetails.shift_id).single();
+        if (shift) {
+            // Simplified shift duration calculation
+            const startParts = shift.start_time.split(':');
+            const endParts = shift.end_time.split(':');
+            let start = parseInt(startParts[0]) + parseInt(startParts[1])/60;
+            let end = parseInt(endParts[0]) + parseInt(endParts[1])/60;
+            if (end < start) end += 24; // Night shift
+            shiftHours = end - start;
+        }
+    }
+
     const checkOutTime = new Date();
     const totalHours = logRow?.check_in_time
       ? parseFloat(((checkOutTime - new Date(logRow.check_in_time)) / (1000 * 60 * 60)).toFixed(2))
       : null;
 
+    let overtimeHours = 0;
+    if (totalHours && totalHours > shiftHours) {
+        overtimeHours = parseFloat((totalHours - shiftHours).toFixed(2));
+    }
+
     const { data, error } = await supabase.from('attendance_log').update({
       check_out_time: checkOutTime.toISOString(),
-      ...(totalHours !== null ? { total_hours: totalHours } : {}),
+      ...(totalHours !== null ? { total_hours: totalHours, overtime_hours: overtimeHours } : {}),
     }).eq('id', parsed.data.id).eq('employee_id', emp.id).select().single();
 
     if (error) throw error;

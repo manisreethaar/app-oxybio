@@ -49,8 +49,11 @@ export async function GET(request) {
     });
 
     const csv = [header, ...rows].join('\n');
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(csv).digest('hex');
+    const finalCsv = `${csv}\n\n# Cryptographic Hash (SHA-256): ${hash}`;
 
-    return new Response(csv, {
+    return new Response(finalCsv, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv',

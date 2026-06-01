@@ -116,9 +116,19 @@ export default function ItemVendorModal({
   // Vendor Add / Edit
   return (
     <form onSubmit={modalType === 'edit_vendor' ? handleUpdateVendor : handleAddVendor} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
-      <div>
-        <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Vendor Name</label>
-        <input type="text" required placeholder="e.g. Sigma Aldrich" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.name} onChange={e => setNewVendor({...newVendor, name: e.target.value})} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Vendor Name</label>
+          <input type="text" required placeholder="e.g. Sigma Aldrich" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.name} onChange={e => setNewVendor({...newVendor, name: e.target.value})} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Qualification Status</label>
+          <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newVendor.status || 'Approved'} onChange={e => setNewVendor({...newVendor, status: e.target.value})}>
+            <option value="Approved">Approved</option>
+            <option value="Conditional">Conditional</option>
+            <option value="Blacklisted">Blacklisted</option>
+          </select>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>

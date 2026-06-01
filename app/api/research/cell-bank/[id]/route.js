@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { syncCellBankStepToLNB } from '@/lib/lnbSync';
 import { requireResearchAccess } from '@/lib/research/access';
+import { deductFormulationFIFO } from '@/lib/inventory/bomUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -253,6 +254,29 @@ export async function PATCH(request, { params }) {
         step_data_patch,
         access.emp?.id
       ).catch(() => {});
+      
+      // Auto-deduct inventory if formulations are provided and it's the first time saving them as completed
+      if (!current.step_data?.[step_key]?.completed && step_data_patch.completed) {
+        let formId = null;
+        let vol = 0;
+        if (step_key.startsWith('broth_culture') && step_data_patch.media_formulation_id && step_data_patch.media_formulation_id !== 'custom') {
+          formId = step_data_patch.media_formulation_id;
+          vol = parseFloat(step_data_patch.volume_ml) || 0;
+        } else if (step_key === 'plating' && step_data_patch.agar_formulation_id && step_data_patch.agar_formulation_id !== 'custom') {
+          formId = step_data_patch.agar_formulation_id;
+          vol = (parseFloat(step_data_patch.plates_poured) || 0) * 20; // assume 20ml per plate
+        }
+        
+        if (formId && vol > 0) {
+          deductFormulationFIFO(
+            supabase, formId, vol, 
+            `cell_bank_${step_key}`, 
+            params.id, 
+            access.emp?.id, 
+            `Cell Bank Prep ${data.prep_code}`
+          ).catch(e => console.error('[cell-bank] Auto-deduct failed:', e));
+        }
+      }
     }
 
     // Auto-create incubation record(s) when plating step is saved with plates_poured

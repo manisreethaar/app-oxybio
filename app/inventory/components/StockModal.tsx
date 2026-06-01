@@ -103,15 +103,25 @@ export default function StockModal({
               <input type="text" placeholder="INV-456" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.invoice_ref} onChange={e => setNewStock({...newStock, invoice_ref: e.target.value})} />
             </div>
           </div>
-          <div>
-            <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Condition on Arrival</label>
-            <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.condition_on_arrival} onChange={e => setNewStock({...newStock, condition_on_arrival: e.target.value})}>
-              <option value="Good Condition">Good Condition</option>
-              <option value="Minor Damage">Minor Damage</option>
-              <option value="Temperature Deviation">Temperature Deviation</option>
-              <option value="Incorrect Labelling">Incorrect Labelling</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Condition on Arrival</label>
+              <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.condition_on_arrival} onChange={e => setNewStock({...newStock, condition_on_arrival: e.target.value})}>
+                <option value="Good Condition">Good Condition</option>
+                <option value="Minor Damage">Minor Damage</option>
+                <option value="Temperature Deviation">Temperature Deviation</option>
+                <option value="Incorrect Labelling">Incorrect Labelling</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Initial Status</label>
+              <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.status || 'Available'} onChange={e => setNewStock({...newStock, status: e.target.value})}>
+                <option value="Available">Available (Ready to Use)</option>
+                <option value="Quarantined">Quarantined (Pending QC)</option>
+                <option value="Out of Stock">Out of Stock</option>
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -119,14 +129,24 @@ export default function StockModal({
                 CoA Document {uploadingCoA && <Loader2 className="w-3 h-3 animate-spin text-teal-600"/>}
               </label>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleFileChange(e, 'coa')} className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer" />
-              {newStock.coa_url && <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1"><FileText className="w-3 h-3"/> Uploaded</span>}
+              {newStock.coa_url && (
+                <div className="mt-2">
+                  <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><FileText className="w-3 h-3"/> Uploaded</span>
+                  <input type="date" className="mt-2 w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.coa_expiry_date || ''} onChange={e => setNewStock({...newStock, coa_expiry_date: e.target.value})} title="CoA Expiry Date" />
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 flex items-center gap-2">
                 SDS Document {uploadingSDS && <Loader2 className="w-3 h-3 animate-spin text-amber-600"/>}
               </label>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleFileChange(e, 'sds')} className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer" />
-              {newStock.sds_url && <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1"><FileText className="w-3 h-3"/> Uploaded</span>}
+              {newStock.sds_url && (
+                <div className="mt-2">
+                  <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><FileText className="w-3 h-3"/> Uploaded</span>
+                  <input type="date" className="mt-2 w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newStock.sds_expiry_date || ''} onChange={e => setNewStock({...newStock, sds_expiry_date: e.target.value})} title="SDS Expiry Date" />
+                </div>
+              )}
             </div>
           </div>
           <div>

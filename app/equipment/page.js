@@ -16,16 +16,27 @@ const equipSchema = z.object({
   model: z.string().optional(),
   serial_number: z.string().optional(),
   calibration_due_date: z.string().optional().or(z.literal('')),
-  status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational')
+  status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational'),
+  iq_doc_url: z.string().optional().or(z.literal('')),
+  oq_doc_url: z.string().optional().or(z.literal('')),
+  pq_doc_url: z.string().optional().or(z.literal('')),
 });
 
 const maintSchema = z.object({
   equipment_id: z.string().uuid(),
   calibration_date: z.string().min(1, "Calibration date is required"),
   next_due_date: z.string().optional().or(z.literal('')),
+  log_type: z.enum(['Calibration', 'Maintenance', 'Cleaning', 'Usage']).default('Calibration'),
   result: z.string().min(1, "Notes are required"),
   buffer_values_used: z.string().optional(),
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance'])
+});
+
+const ticketSchema = z.object({
+  equipment_id: z.string().uuid(),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  severity: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium')
 });
 
 export default function EquipmentPage() {
@@ -41,6 +52,9 @@ export default function EquipmentPage() {
   const [activeDevice, setActiveDevice] = useState(null);
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
   
+  // Ticket Modal State
+  const [isTicketOpen, setIsTicketOpen] = useState(false);
+  
   const [deletingId, setDeletingId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [batchUsageMap, setBatchUsageMap] = useState({});
@@ -51,12 +65,17 @@ export default function EquipmentPage() {
   // REACT HOOK FORM SETUPS
   const { register: regEquip, handleSubmit: handEquip, formState: { errors: eqErrors, isSubmitting: isEqSubmitting }, reset: resetEquip } = useForm({
     resolver: zodResolver(equipSchema),
-    defaultValues: { name: '', model: '', serial_number: '', calibration_due_date: '', status: 'Operational' }
+    defaultValues: { name: '', model: '', serial_number: '', calibration_due_date: '', status: 'Operational', iq_doc_url: '', oq_doc_url: '', pq_doc_url: '' }
   });
 
   const { register: regMaint, handleSubmit: handMaint, formState: { errors: mxErrors, isSubmitting: isMxSubmitting }, reset: resetMaint, setValue: setMaintValue } = useForm({
     resolver: zodResolver(maintSchema),
-    defaultValues: { calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', result: '', buffer_values_used: '', status: 'Operational' }
+    defaultValues: { calibration_date: new Date().toISOString().split('T')[0], next_due_date: '', log_type: 'Calibration', result: '', buffer_values_used: '', status: 'Operational' }
+  });
+
+  const { register: regTicket, handleSubmit: handTicket, formState: { errors: tktErrors, isSubmitting: isTktSubmitting }, reset: resetTicket, setValue: setTicketValue } = useForm({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: { title: '', description: '', severity: 'Medium' }
   });
 
   const supabase = useMemo(() => createClient(), []);
@@ -126,18 +145,35 @@ export default function EquipmentPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      const resData = await res.json();
       if (res.ok) {
+        toast.success("Maintenance logged.");
         setIsMaintenanceOpen(false);
-        setActiveDevice(null);
         resetMaint();
-        await fetchEquipment();
+        fetchEquipment();
       } else {
-        toast.error("Database error saving log: " + resData.error);
+        const d = await res.json();
+        toast.error(d.error || 'Failed to log maintenance');
       }
-    } catch (err) {
-      toast.error("Database error saving log: " + err.message);
-    }
+    } catch (e) { toast.error("Error logging maintenance."); }
+  };
+
+  const onSubmitTicket = async (data) => {
+    try {
+      const res = await fetch('/api/equipment/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        toast.success("Issue reported successfully.");
+        setIsTicketOpen(false);
+        resetTicket();
+        fetchEquipment();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Failed to report issue');
+      }
+    } catch (e) { toast.error("Error reporting issue."); }
   };
 
   const handleDeleteEquipment = async () => {
@@ -270,15 +306,31 @@ export default function EquipmentPage() {
               </div>
 
               <div className="p-6 flex-1 space-y-4">
-                <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Calibration Sync</p>
-                    {isCalibrationDue ? <AlertTriangle className="w-4 h-4 text-red-600" /> : <Shield className="w-4 h-4 text-teal-600" />}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Calib. Due</p>
+                      {isCalibrationDue ? <AlertTriangle className="w-4 h-4 text-red-600" /> : <Shield className="w-4 h-4 text-teal-600" />}
+                    </div>
+                    <p className={`text-sm font-black font-mono tracking-tighter ${isCalibrationDue ? 'text-red-700' : 'text-teal-900'}`}>
+                      {device.calibration_due_date ? new Date(device.calibration_due_date).toLocaleDateString() : 'N/A'}
+                    </p>
                   </div>
-                  <p className={`text-lg font-black font-mono tracking-tighter ${isCalibrationDue ? 'text-red-700' : 'text-teal-900'}`}>
-                    {device.calibration_due_date ? new Date(device.calibration_due_date).toLocaleDateString() : 'NO SCHEDULE'}
-                  </p>
-                  <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase">ISO Compliance Deadline</p>
+                  
+                  {(() => {
+                    const isPmDue = device.next_pm_date && (new Date(device.next_pm_date) < new Date());
+                    return (
+                      <div className={`p-4 rounded-2xl border ${isPmDue ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">PM Due</p>
+                          {isPmDue && <AlertTriangle className="w-4 h-4 text-red-600" />}
+                        </div>
+                        <p className={`text-sm font-black font-mono tracking-tighter ${isPmDue ? 'text-red-700' : 'text-teal-900'}`}>
+                          {device.next_pm_date ? new Date(device.next_pm_date).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {batchUsageMap[device.id] && (
@@ -292,6 +344,27 @@ export default function EquipmentPage() {
                         <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full uppercase">Active</span>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Qualification Docs */}
+                {(device.iq_doc_url || device.oq_doc_url || device.pq_doc_url) && (
+                  <div className="flex flex-wrap gap-2">
+                    {device.iq_doc_url && (
+                      <a href={device.iq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-gray-100 border border-gray-100 transition-all flex items-center justify-center gap-1">
+                        IQ Doc
+                      </a>
+                    )}
+                    {device.oq_doc_url && (
+                      <a href={device.oq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-gray-100 border border-gray-100 transition-all flex items-center justify-center gap-1">
+                        OQ Doc
+                      </a>
+                    )}
+                    {device.pq_doc_url && (
+                      <a href={device.pq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-gray-100 border border-gray-100 transition-all flex items-center justify-center gap-1">
+                        PQ Doc
+                      </a>
+                    )}
                   </div>
                 )}
 
@@ -309,6 +382,11 @@ export default function EquipmentPage() {
                       Calibrate Now
                   </button>
                 </div>
+                <button 
+                  onClick={() => { setActiveDevice(device); setTicketValue('equipment_id', device.id); setIsTicketOpen(true); }} 
+                  className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Report Issue
+                </button>
               </div>
             </div>
           );
@@ -341,19 +419,50 @@ export default function EquipmentPage() {
                     {...regEquip('serial_number')} />
                 </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Calibration Due</label>
-                <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                  {...regEquip('calibration_due_date')} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Calibration Due</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    {...regEquip('calibration_due_date')} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next PM Due Date</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    {...regEquip('next_pm_date')} />
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Initial Status</label>
-                <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                  {...regEquip('status')}>
-                  <option value="Operational">Operational</option>
-                  <option value="Out of Service">Out of Service</option>
-                  <option value="Under Maintenance">Under Maintenance</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PM Frequency (Days)</label>
+                  <input type="number" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    {...regEquip('pm_frequency_days', { valueAsNumber: true })} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Initial Status</label>
+                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    {...regEquip('status')}>
+                    <option value="Operational">Operational</option>
+                    <option value="Out of Service">Out of Service</option>
+                    <option value="Under Maintenance">Under Maintenance</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">IQ Document URL</label>
+                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-xs font-bold" 
+                    {...regEquip('iq_doc_url')} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">OQ Document URL</label>
+                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-xs font-bold" 
+                    {...regEquip('oq_doc_url')} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PQ Document URL</label>
+                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-xs font-bold" 
+                    {...regEquip('pq_doc_url')} />
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setIsModalOpen(false); resetEquip(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
@@ -388,30 +497,37 @@ export default function EquipmentPage() {
                     {...regMaint('next_due_date')} />
                 </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Equipment Status</label>
-                <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                  {...regMaint('status')}>
-                  <option value="Operational">Operational</option>
-                  <option value="Out of Service">Out of Service</option>
-                  <option value="Under Maintenance">Under Maintenance</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Log Type</label>
+                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    {...regMaint('log_type')}>
+                    <option value="Calibration">Calibration</option>
+                    <option value="Maintenance">Preventive Maintenance</option>
+                    <option value="Cleaning">Cleaning</option>
+                    <option value="Usage">Usage</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Equipment Status</label>
+                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                    {...regMaint('status')}>
+                    <option value="Operational">Operational</option>
+                    <option value="Out of Service">Out of Service</option>
+                    <option value="Under Maintenance">Under Maintenance</option>
+                  </select>
+                </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Buffer Values Used (pH Meters only)</label>
-                <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
-                  {...regMaint('buffer_values_used')} placeholder="e.g. 4.01, 7.00, 10.01"/>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes &amp; Results</label>
-                <textarea rows="3" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold resize-none" 
-                  {...regMaint('result')} placeholder="Maintenance performed..."/>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes / Results</label>
+                <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold min-h-[100px]" 
+                  {...regMaint('result')} placeholder="Enter findings or notes..." />
                 {mxErrors.result && <p className="text-red-500 text-xs mt-1">{mxErrors.result.message}</p>}
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setIsMaintenanceOpen(false); setActiveDevice(null); resetMaint(); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
-                <button type="submit" disabled={isMxSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
-                  {isMxSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Log'}
+                <button type="button" onClick={() => { setIsMaintenanceOpen(false); resetMaint(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="submit" disabled={isMxSubmitting} className="flex-2 py-4 px-8 bg-teal-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-teal-900 shadow-xl shadow-teal-950/20 transition-all active:scale-95 flex items-center justify-center">
+                  {isMxSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Log Entry'}
                 </button>
               </div>
             </form>
@@ -420,6 +536,50 @@ export default function EquipmentPage() {
       )}
 
       {/* Confirmation Modal */}
+      {isTicketOpen && activeDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+          <div className="h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="px-8 py-6 bg-red-600 text-white flex items-center gap-4">
+              <AlertTriangle className="w-8 h-8 text-red-200" />
+              <div>
+                <h2 className="text-xl font-black tracking-tight">Report Issue: {activeDevice.name}</h2>
+                <p className="text-red-200 text-[10px] font-bold uppercase tracking-widest mt-1">Breakdown Ticketing System</p>
+              </div>
+            </div>
+            <form onSubmit={handTicket(onSubmitTicket)} className="p-8 space-y-5">
+              <input type="hidden" {...regTicket('equipment_id')} />
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Issue Title</label>
+                <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                  {...regTicket('title')} placeholder="e.g. Temperature fluctuating widely" />
+                {tktErrors.title && <p className="text-red-500 text-xs mt-1">{tktErrors.title.message}</p>}
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Severity</label>
+                <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold" 
+                  {...regTicket('severity')}>
+                  <option value="Low">Low (Operational, minor issue)</option>
+                  <option value="Medium">Medium (Operational but needs attention)</option>
+                  <option value="High">High (Partially degraded)</option>
+                  <option value="Critical">Critical (Out of Service)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Description</label>
+                <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-teal-100 text-sm font-bold min-h-[100px]" 
+                  {...regTicket('description')} placeholder="Provide details..." />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setIsTicketOpen(false); resetTicket(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="submit" disabled={isTktSubmitting} className="flex-2 py-4 px-8 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-950/20 transition-all active:scale-95 flex items-center justify-center">
+                  {isTktSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Ticket'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {deletingId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">

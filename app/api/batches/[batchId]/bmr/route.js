@@ -146,6 +146,9 @@ export async function GET(request, { params }) {
 
     // 9. If ?download=true — stream the PDF directly
     const url = new URL(request.url);
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
+
     if (url.searchParams.get('download') === 'true') {
       return new Response(pdfBuffer, {
         status: 200,
@@ -153,6 +156,7 @@ export async function GET(request, { params }) {
           'Content-Type':        'application/pdf',
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Content-Length':      String(pdfBuffer.byteLength),
+          'X-File-Hash':         hash,
         },
       });
     }
@@ -163,6 +167,7 @@ export async function GET(request, { params }) {
       signed_url:   signedUrl,
       generated_by: emp.full_name,
       generated_at: bmrData.generatedAt,
+      file_hash:    hash,
     });
 
   } catch (err) {
