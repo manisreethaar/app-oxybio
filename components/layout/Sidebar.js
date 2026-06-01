@@ -6,7 +6,7 @@ import {
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
   BookOpen, Users, LogOut, UserCircle, Contact, Menu, X,
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
-  Settings, LayoutGrid, FileCheck, Archive, MessageSquare
+  Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -106,6 +106,7 @@ export default function Sidebar() {
         { name: 'Payslips',        href: '/payslips',   icon: Receipt,     show: effectiveCanDo('payslips', 'view_own') },
         { name: 'My Profile',      href: '/profile',    icon: UserCircle,  show: effectiveCanDo('dashboard', 'view') },
         { name: 'Staff Directory', href: '/directory',  icon: Contact,     show: effectiveCanDo('directory', 'view') },
+        { name: 'Help & Manual',   href: '/help',       icon: HelpCircle,  show: true },
       ]
     },
     {
