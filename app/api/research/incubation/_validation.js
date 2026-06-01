@@ -40,6 +40,8 @@ export const incubationSchema = z.object({
   media_lot: z.string().trim().max(120).nullable().optional(),
   media_inventory_item_id: z.string().uuid().nullable().optional(),
   media_volume_used_ml: z.coerce.number().min(0).nullable().optional(),
+  formulation_id: z.string().uuid().nullable().optional(),
+  manual_entry_no: z.string().trim().max(30).nullable().optional(),
 }).refine((data) => {
   if (!data.end_time) return true;
   return new Date(data.end_time).getTime() >= new Date(data.start_time).getTime();
