@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X, Search } from 'lucide-react';
 import Link from 'next/link';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const equipSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -77,7 +78,7 @@ export default function EquipmentPage() {
     setLoading(true);
     try {
       const [{ data: eqData, error: eqErr }, { data: sterilData }] = await Promise.all([
-        supabase.from('equipment').select('*, calibration_logs(*)').order('name'),
+        supabase.from('equipment').select('*, calibration_logs(*, employees:logged_by(full_name, initials))').order('name'),
         supabase.from('batch_stage_sterilisation').select('equipment_id, batches(id, batch_id, status)').order('created_at', { ascending: false }).limit(300)
       ]);
       if (eqErr) throw eqErr;
@@ -256,7 +257,16 @@ export default function EquipmentPage() {
                   </div>
                 </div>
                 <h3 className="text-xl font-black text-teal-950 mb-1 leading-tight">{device.name}</h3>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
+                  {(() => {
+                    const logs = device.calibration_logs || [];
+                    const latest = logs.sort((a, b) => new Date(b.calibration_date || 0) - new Date(a.calibration_date || 0))[0];
+                    return latest?.employees ? (
+                      <CreatorBadge initials={latest.employees.initials} fullName={latest.employees.full_name} />
+                    ) : null;
+                  })()}
+                </div>
               </div>
 
               <div className="p-6 flex-1 space-y-4">

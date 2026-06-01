@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const SopClient = dynamic(() => import('@/app/sops/SopClient'), { ssr: false });
 
@@ -209,7 +210,13 @@ export default function DocumentsPage() {
                         <div className="text-sm text-gray-500 space-y-1 mb-6 mt-2 flex-1">
                           <p>Version <span className="font-semibold text-gray-700">{doc.version || '1.0'}</span></p>
                           <p>Effective: {doc.effective_date ? new Date(doc.effective_date).toLocaleDateString() : 'N/A'}</p>
-                          <p className="text-[10px] text-teal-600 font-bold uppercase tracking-wider mt-2">Uploaded By: <span className="text-gray-700">{doc.employees?.full_name || 'System / Admin'}</span></p>
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <span className="text-[10px] text-teal-600 font-bold uppercase tracking-wider">Uploaded By:</span>
+                            {doc.employees && (
+                              <CreatorBadge initials={doc.employees.initials} fullName={doc.employees.full_name} />
+                            )}
+                            <span className="text-[10px] text-gray-700">{doc.employees?.full_name || 'System / Admin'}</span>
+                          </div>
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                           <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>

@@ -20,6 +20,7 @@ import TaskDetailModal from './components/TaskDetailModal';
 import { formatMinutes } from './components/utils';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
 import MobileFilterPanel from '@/components/ui/MobileFilterPanel';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 export default function TasksPage() {
   const { role, canDo, isAdmin: isMaster, employeeProfile, loading: authLoading } = useAuth();
@@ -705,9 +706,12 @@ export default function TasksPage() {
                   </div>
                 )}
 
-                <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] font-bold text-gray-400">
-                  <span>{task.assigned_user?.full_name || 'Staff'}</span>
-                  <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'â€”'}</span>
+                <div className=”mt-auto pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] font-bold text-gray-400”>
+                  <div className=”flex items-center gap-1.5”>
+                    <CreatorBadge initials={task.assigned_user?.initials} fullName={task.assigned_user?.full_name} />
+                    <span>{task.assigned_user?.full_name || 'Staff'}</span>
+                  </div>
+                  <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className=”w-3 h-3”/>{task.due_date ? new Date(task.due_date).toLocaleDateString() : '—'}</span>
                 </div>
                 {approvalBadge && <div className={`mt-2 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border text-center ${approvalBadge.cls}`}>{approvalBadge.label}</div>}
                 {task.status !== 'done' && task.status !== 'cancelled' && (

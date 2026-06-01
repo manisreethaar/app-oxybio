@@ -11,6 +11,7 @@ import {
   FlaskConical, Plus, BarChart2, Activity, Beaker,
   ChevronRight, Loader2, X, Clock, CheckCircle, Settings, Search
 } from 'lucide-react';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const TYPE_META = {
   pbd: { label: 'Plackett-Burman Design', shortLabel: 'PBD', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: BarChart2, runs: 12, desc: 'Screen up to 11 factors in 12 runs to identify significant variables' },
@@ -205,9 +206,12 @@ export default function BioprocessPage() {
                   </span>
                 </div>
                 {exp.creator && (
-                  <p className="text-[11px] text-gray-400 mt-2 border-t border-gray-50 pt-2">
-                    {exp.creator.full_name} · {new Date(exp.created_at).toLocaleDateString('en-IN')}
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-2 border-t border-gray-50 pt-2">
+                    <CreatorBadge initials={exp.creator.initials} fullName={exp.creator.full_name} />
+                    <p className="text-[11px] text-gray-400">
+                      {exp.creator.full_name} · {new Date(exp.created_at).toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
                 )}
               </button>
             );
