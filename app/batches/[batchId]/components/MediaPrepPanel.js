@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { Beaker, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
@@ -12,12 +12,12 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const isIntern = ['intern','research_intern'].includes(role);
   const isF2 = batch.experiment_type === 'F2';
 
-  const formulationIngredients = (() => {
+  const formulationIngredients = useMemo(() => {
     try {
       const raw = batch.formulations?.ingredients;
       return Array.isArray(raw) ? raw : (raw ? JSON.parse(raw) : []);
     } catch { return []; }
-  })();
+  }, [batch.formulations]);
 
   const baseVol = batch.formulations?.base_volume_ml || 1000;
   const targetVol = (batch.planned_volume_ml || 0) * (batch.num_flasks || 1) || baseVol;
