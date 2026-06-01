@@ -64,6 +64,22 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const [ph,            setPh]            = useState('');
   const [notes,         setNotes]         = useState('');
   const [supervisedBy,  setSupervisedBy]  = useState('');
+  // G-65: rotor radius for RCF
+  const [rotorRadius,    setRotorRadius]    = useState('');
+  // G-66: second pass
+  const [showPass2,      setShowPass2]      = useState(false);
+  const [pass2Rpm,       setPass2Rpm]       = useState('');
+  const [pass2Duration,  setPass2Duration]  = useState('');
+  const [pass2Temp,      setPass2Temp]      = useState('');
+  // G-67: method selection (default Centrifugation but allow Filtration)
+  const [method,         setMethod]         = useState('Centrifugation');
+  // G-68: turbidity NTU
+  const [turbidityNtu,   setTurbidityNtu]   = useState('');
+  // G-69: volume after (already in DB as post_straining_vol_ml)
+  const [volAfterMl,     setVolAfterMl]     = useState('');
+  // G-70: pellet resuspension
+  const [resuspBuffer,   setResuspBuffer]   = useState('');
+  const [resuspVol,      setResuspVol]      = useState('');
 
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
@@ -90,6 +106,13 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       setPh(data.filtrate_ph ?? '');
       setNotes(data.notes || '');
       setSupervisedBy(data.supervised_by || '');
+      setRotorRadius(data.rotor_radius_cm||'');
+      setMethod(data.method||'Centrifugation');
+      setTurbidityNtu(data.turbidity_ntu||'');
+      setVolAfterMl(data.post_straining_vol_ml||'');
+      setResuspBuffer(data.pellet_resuspension_buffer||'');
+      setResuspVol(data.pellet_resuspension_vol_ml||'');
+      if (data.pass2_rpm) { setShowPass2(true); setPass2Rpm(data.pass2_rpm||''); setPass2Duration(data.pass2_duration_min||''); setPass2Temp(data.pass2_temp_c||''); }
     } else { setRecord(null); }
     return () => { isCurrent = false; };
   }, [activeFlask?.id, supabase]);
@@ -107,11 +130,25 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
     }
     if (isIntern && advance && !supervisedBy) { toast.warn('Select a supervisor before advancing.'); return; }
 
+    const checkEquip = (id) => {
+      const e = equipment.find(eq => eq.id === id);
+      return e && e.calibration_due_date && new Date(e.calibration_due_date) < new Date();
+    };
+    if (checkEquip(centEqId) || checkEquip(phEqId) || checkEquip(scaleEqId)) {
+      toast.error('Cannot save — One or more selected equipment items have expired calibration.');
+      return;
+    }
+
     setSaving(true);
     try {
+      // G-65: RCF = 1.118 × r × (RPM/1000)²
+      const rcf = rotorRadius && rpm
+        ? parseFloat((1.118 * parseFloat(rotorRadius) * Math.pow(parseFloat(rpm)/1000, 2)).toFixed(0))
+        : null;
+
       const payload = {
         flask_id: activeFlask.id, batch_id: batch.id,
-        method: 'Centrifugation',
+        method,  // G-67: method now selectable
         centrifuge_rpm:            rpm       ? parseFloat(rpm)      : null,
         centrifuge_temp_c:         centTemp  ? parseFloat(centTemp) : null,
         centrifuge_duration_min:   duration  ? parseFloat(duration) : null,
@@ -128,6 +165,14 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         notes,
         operator_id:   employeeProfile?.id,
         supervised_by: supervisedBy || null,
+        rotor_radius_cm:             rotorRadius  ? parseFloat(rotorRadius)  : null,
+        turbidity_ntu:               turbidityNtu ? parseFloat(turbidityNtu) : null,
+        post_straining_vol_ml:       volAfterMl   ? parseFloat(volAfterMl)   : null,
+        pellet_resuspension_buffer:  resuspBuffer  || null,
+        pellet_resuspension_vol_ml:  resuspVol    ? parseFloat(resuspVol)    : null,
+        pass2_rpm:                   showPass2 && pass2Rpm      ? parseFloat(pass2Rpm)      : null,
+        pass2_duration_min:          showPass2 && pass2Duration ? parseFloat(pass2Duration) : null,
+        pass2_temp_c:                showPass2 && pass2Temp     ? parseFloat(pass2Temp)     : null,
       };
 
       const { error } = await supabase.from('batch_flask_straining').upsert(payload, { onConflict: 'flask_id' });
@@ -179,12 +224,27 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         </div>
       </div>
 
+      {/* G-67: Method selection */}
+      <div className="surface p-5 space-y-3">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Separation Method</p>
+        <div className="flex gap-2">
+          {['Centrifugation','Membrane Filtration','Gravity Filtration','Depth Filtration'].map(m=>(
+            <button key={m} type="button" onClick={()=>setMethod(m)}
+              className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${method===m?'bg-amber-600 text-white border-amber-600':'bg-white text-gray-600 border-gray-200 hover:border-amber-300'}`}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Centrifuge Run Parameters */}
       <div className="surface p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Centrifuge Run Parameters</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+          {method === 'Centrifugation' ? 'Centrifuge Run Parameters' : 'Filtration Parameters'}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="field-label">Speed (RPM) *</label>
+            <label className="field-label">{method==='Centrifugation' ? 'Speed (RPM) *' : 'Pressure / Flow'}</label>
             <input type="number" value={rpm} onChange={e=>setRpm(e.target.value)} className="field-input" placeholder="e.g. 4000"/>
           </div>
           <div>
@@ -195,6 +255,37 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
             <label className="field-label">Duration (min) *</label>
             <input type="number" value={duration} onChange={e=>setDuration(e.target.value)} className="field-input" placeholder="e.g. 15"/>
           </div>
+          {/* G-65: Rotor radius for RCF */}
+          {method==='Centrifugation' && (
+            <div>
+              <label className="field-label">Rotor Radius (cm)</label>
+              <input type="number" step="0.1" value={rotorRadius} onChange={e=>setRotorRadius(e.target.value)} className="field-input" placeholder="e.g. 10.5"/>
+            </div>
+          )}
+        </div>
+        {/* G-65: RCF auto-display */}
+        {method==='Centrifugation' && rotorRadius && rpm && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800">
+            RCF (Relative Centrifugal Force): <span className="font-black text-amber-900">
+              {Math.round(1.118 * parseFloat(rotorRadius) * Math.pow(parseFloat(rpm)/1000, 2))} × g
+            </span>
+            <span className="ml-2 text-amber-500 font-normal text-[9px]">= 1.118 × r × (RPM/1000)²</span>
+          </div>
+        )}
+        {/* G-66: Second pass */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <button type="button" onClick={()=>setShowPass2(p=>!p)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-xs font-black text-gray-700 transition-colors">
+            <span>Second Centrifuge Pass (optional)</span>
+            <span className={`text-lg ${showPass2?'text-amber-600':'text-gray-300'}`}>{showPass2?'▼':'▶'}</span>
+          </button>
+          {showPass2 && (
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div><label className="field-label">Pass 2 RPM</label><input type="number" value={pass2Rpm} onChange={e=>setPass2Rpm(e.target.value)} className="field-input" placeholder="e.g. 6000"/></div>
+              <div><label className="field-label">Pass 2 Duration (min)</label><input type="number" value={pass2Duration} onChange={e=>setPass2Duration(e.target.value)} className="field-input" placeholder="e.g. 10"/></div>
+              <div><label className="field-label">Pass 2 Temp (°C)</label><input type="number" step="0.1" value={pass2Temp} onChange={e=>setPass2Temp(e.target.value)} className="field-input" placeholder="e.g. 4"/></div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -227,10 +318,10 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         )}
       </div>
 
-      {/* Supernatant Quality */}
+      {/* Supernatant Quality + Volume */}
       <div className="surface p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Supernatant Quality</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Supernatant / Filtrate Quality</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="field-label">Colour</label>
             <input value={colour} onChange={e=>setColour(e.target.value)} className="field-input" placeholder="Reddish-purple"/>
@@ -245,7 +336,33 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
             <label className="field-label">pH *</label>
             <input type="number" step="0.01" value={ph} onChange={e=>setPh(e.target.value)} className="field-input" placeholder="4.35"/>
           </div>
+          {/* G-68: Turbidity NTU */}
+          <div>
+            <label className="field-label">Turbidity (NTU)</label>
+            <input type="number" step="0.1" value={turbidityNtu} onChange={e=>setTurbidityNtu(e.target.value)} className="field-input" placeholder="e.g. 5.2"/>
+            <p className="text-[9px] text-gray-400 mt-0.5">Objective clarity measurement</p>
+          </div>
         </div>
+        {/* G-69: Volume after */}
+        <div>
+          <label className="field-label">Volume After Separation (ml)</label>
+          <input type="number" step="0.1" value={volAfterMl} onChange={e=>setVolAfterMl(e.target.value)} className="field-input" placeholder="e.g. 400"/>
+          <p className="text-[9px] text-gray-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
+        </div>
+        {/* G-70: Pellet resuspension */}
+        {pelletWt && (
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+            <p className="text-[10px] font-black text-gray-500 uppercase">Pellet Resuspension (if applicable)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><label className="field-label">Resuspension Buffer</label>
+                <input value={resuspBuffer} onChange={e=>setResuspBuffer(e.target.value)} className="field-input" placeholder="e.g. PBS, distilled water, media"/>
+              </div>
+              <div><label className="field-label">Resuspension Volume (ml)</label>
+                <input type="number" step="0.1" value={resuspVol} onChange={e=>setResuspVol(e.target.value)} className="field-input" placeholder="e.g. 50"/>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Supervisor + Notes */}

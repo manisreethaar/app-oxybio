@@ -189,6 +189,8 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       volume_plated_ml: initialData.volume_plated_ml ?? '',
       replicate_label:  initialData.replicate_label  || 'None',
       media_lot:        initialData.media_lot        || '',
+      plate_image_url:  initialData.plate_image_url  || '',
+      is_duplicate:     initialData.is_duplicate     || false,
     } : {
       incubation_date:   new Date().toISOString().split('T')[0],
       sample_category:   'Fermentation IPC',
@@ -203,6 +205,8 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       volume_plated_ml:  '',
       replicate_label:   'None',
       media_lot:         '',
+      plate_image_url:   '',
+      is_duplicate:      false,
     },
   });
 
@@ -565,6 +569,17 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                         <option value="D">D</option>
                         <option value="E">E</option>
                       </select>
+                    </div>
+
+                    {/* G-72: Plate image URL */}
+                    <div>
+                      <label className={labelCls}>Plate Photo URL <span className="text-gray-400 font-normal normal-case">(G-72 — optional)</span></label>
+                      <input type="url" {...register('plate_image_url')} className={inputCls} placeholder="https://... (link to plate photo)"/>
+                    </div>
+                    {/* G-73: Duplicate flag */}
+                    <div className="flex items-center gap-3">
+                      <input type="checkbox" id="is_dup" {...register('is_duplicate')} className="w-4 h-4 rounded border-gray-300"/>
+                      <label htmlFor="is_dup" className="text-xs font-bold text-gray-700">Mark as Duplicate Plate (triplicate / QC check)</label>
                     </div>
 
                     {/* CFU/mL preview */}
