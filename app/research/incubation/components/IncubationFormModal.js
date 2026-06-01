@@ -175,6 +175,8 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   const [selectedMediaItemId, setSelectedMediaItemId] = useState(initialData?.media_inventory_item_id || '');
   const [selectedStockId, setSelectedStockId] = useState('');
   const [mediaVolumeUsed, setMediaVolumeUsed] = useState(initialData?.media_volume_used_ml ?? '');
+  const [mediaRecipes, setMediaRecipes] = useState([]);
+  const [selectedRecipeId, setSelectedRecipeId] = useState(initialData?.formulation_id || '');
   const supabase = useMemo(() => createClient(), []);
 
   const { reads: initReads, notes: initNotes } = parseObservation(initialData?.observation);
@@ -263,6 +265,9 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       });
     supabase.from('inventory_items').select('id, name, unit').eq('category', 'Media')
       .order('name').then(({ data }) => setMediaItems(data || []));
+    supabase.from('formulations').select('id, code, name, version, ingredients')
+      .eq('status', 'Approved').eq('category', 'Media')
+      .order('name').then(({ data }) => setMediaRecipes(data || []));
   }, [supabase]);
 
   useEffect(() => {
@@ -308,6 +313,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         batch_id:               data.sample_category === 'Fermentation IPC' ? data.batch_id || null : null,
         media_inventory_item_id: selectedMediaItemId || null,
         media_volume_used_ml:   mediaVolumeUsed !== '' ? Number(mediaVolumeUsed) : null,
+        formulation_id:         selectedRecipeId || null,
         _stock_id:              selectedStockId || null,
         flask_id:               initialData?.flask_id || null,
         qc_sample_id:           initialData?.qc_sample_id || null,
@@ -473,6 +479,51 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   <div>
                     <label className={labelCls}>Media Lot / Batch No</label>
                     <input {...register('media_lot')} className={inputCls} placeholder="e.g. LOT-2024-0053" />
+                  </div>
+
+                  {/* Approved Media Recipe */}
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 space-y-2.5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Approved Media Recipe</p>
+                    <div>
+                      <label className={labelCls}>Link Recipe (optional)</label>
+                      <select
+                        value={selectedRecipeId}
+                        onChange={e => {
+                          setSelectedRecipeId(e.target.value);
+                          const recipe = mediaRecipes.find(r => r.id === e.target.value);
+                          if (recipe) setValue('media_used', recipe.name);
+                        }}
+                        className={inputCls}
+                      >
+                        <option value="">-- No recipe linked --</option>
+                        {mediaRecipes.map(r => (
+                          <option key={r.id} value={r.id}>{r.name} v{r.version} ({r.code})</option>
+                        ))}
+                      </select>
+                      {mediaRecipes.length === 0 && (
+                        <p className="text-[9px] text-gray-400 mt-1">No approved media recipes found. Add them in Recipe Management with category = Media.</p>
+                      )}
+                    </div>
+                    {selectedRecipeId && (() => {
+                      const recipe = mediaRecipes.find(r => r.id === selectedRecipeId);
+                      if (!recipe?.ingredients) return null;
+                      let ingredients = [];
+                      try { ingredients = typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients; } catch {}
+                      if (!Array.isArray(ingredients) || ingredients.length === 0) return null;
+                      return (
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-1.5">Ingredients</p>
+                          <div className="space-y-1">
+                            {ingredients.map((ing, i) => (
+                              <div key={i} className="flex items-center justify-between text-[10px] font-mono bg-white rounded-lg px-2.5 py-1.5 border border-emerald-100">
+                                <span className="text-gray-700 font-semibold">{ing.name || ing.item_name || '—'}</span>
+                                <span className="text-emerald-700 font-black">{ing.quantity ?? ing.qty ?? ''} {ing.unit || ''}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Inventory deduction */}

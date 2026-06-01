@@ -536,11 +536,16 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
         <div className="flex items-center gap-1.5 min-w-0">
           <Beaker className="w-3.5 h-3.5 text-orange-400 shrink-0" />
           <span className="text-xs font-black text-gray-800 truncate">
-            {record.plate_label || (record.plate_total ? `Plate ${record.plate_index || 1}/${record.plate_total}` : 'Plate')}
+            {record.plate_label || record.sample_name || (record.plate_total ? `Plate ${record.plate_index || 1}/${record.plate_total}` : 'Plate')}
           </span>
         </div>
         <PlateStatusIcon record={record} />
       </div>
+
+      {/* Manual entry number */}
+      {record.manual_entry_no && (
+        <p className="text-[9px] font-mono text-navy/60 mb-1">{record.manual_entry_no}</p>
+      )}
 
       {/* Flask */}
       {record.batch_flasks?.flask_label && (

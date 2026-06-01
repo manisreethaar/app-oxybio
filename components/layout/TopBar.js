@@ -130,11 +130,13 @@ export default function TopBar() {
   };
 
   const getPageTitle = () => {
-    const path = pathname.split('/')[1];
-    if (!path) return 'Dashboard';
+    const parts = pathname.split('/').filter(Boolean);
+    const path = parts[0] || '';
+    const sub  = parts[1] || '';
+
     switch (path) {
       case 'dashboard':    return 'Dashboard';
-      case 'batches':      return 'Batch Manager';
+      case 'batches':      return sub ? 'Batch Details' : 'Batch Manager';
       case 'activity':     return 'Lab Activity Feed';
       case 'leave':        return 'Leave Management';
       case 'attendance':   return 'Attendance & Corrections';
@@ -147,10 +149,24 @@ export default function TopBar() {
       case 'capa':         return 'CAPA Tracker';
       case 'formulations': return 'Recipe Management';
       case 'shelf-life':   return 'Shelf-Life Studies';
-      case 'research':     return 'Consumer Panels';
+      case 'research': {
+        const subTitles = {
+          incubation: 'Incubation Lab',
+          'cell-bank': 'Cell Bank',
+          'growth-studies': 'Growth Studies',
+          'bioprocess': 'Bioprocess Lab',
+        };
+        return subTitles[sub] || 'Research';
+      }
+      case 'bioprocess':    return 'Bioprocess Lab';
+      case 'lab-bench':     return 'Lab Bench';
+      case 'lab-notebook':  return 'Lab Notebook';
+      case 'inventory':     return 'Inventory';
+      case 'equipment':     return 'Equipment';
+      case 'notifications': return 'Notifications';
       case 'calendar':     return 'Regulatory Calendar';
       case 'admin':        return 'User Management';
-      default:             return path.charAt(0).toUpperCase() + path.slice(1);
+      default:             return path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
     }
   };
 
