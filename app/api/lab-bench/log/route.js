@@ -53,6 +53,9 @@ export async function POST(request) {
       contamination_details,
     } = body;
 
+    const { reagents_used, cold_storage_temp_c } = body; // G-74, G-75 — destructure separately to avoid overwriting
+    } = body;
+
     // ── Validation ──────────────────────────────────────────────
     if (!source_type || !['batch', 'growth_study', 'cell_bank'].includes(source_type)) {
       return NextResponse.json(
@@ -92,6 +95,9 @@ export async function POST(request) {
         laf_cabinet_used:      laf_cabinet_used      ?? false,
         contamination_incident: contamination_incident ?? false,
         contamination_details: contamination_incident ? (contamination_details || null) : null,
+        // G-74, G-75
+        reagents_used:         reagents_used          || [],
+        cold_storage_temp_c:   cold_storage_temp_c    ?? null,
       })
       .select()
       .single();

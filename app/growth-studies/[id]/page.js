@@ -741,6 +741,23 @@ export default function GrowthStudyDetailPage() {
             </div>
           )}
 
+          {/* G-81: CSV Export */}
+          {measurements.length > 0 && (
+            <div className="flex justify-end">
+              <button onClick={() => {
+                const headers = ['Hour','OD','pH','Temp (°C)','Glucose (g/L)','Protein (mg/mL)','DO (%)','Turbidity','Notes'];
+                const rows = measurements.map(m => [m.actual_hour, m.od_value??'', m.ph_value??'', m.temperature_actual_c??'', m.glucose_g_l??'', m.protein_mg_ml??'', m.dissolved_oxygen_pct??'', m.culture_turbidity??'', (m.notes||'').replace(/,/g,' ')]);
+                const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+                a.download = `${study.study_code||study.id}_measurements.csv`;
+                a.click();
+              }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-200 flex items-center gap-1.5 transition-colors">
+                ↓ Export CSV
+              </button>
+            </div>
+          )}
+
           {/* Measurements table */}
           <div className="glass-card rounded-2xl p-6">
             <h3 className="font-black text-slate-800 text-sm mb-4">Measurement Log</h3>

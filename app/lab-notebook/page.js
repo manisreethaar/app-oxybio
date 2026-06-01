@@ -50,10 +50,12 @@ export default function DigitalLnbPage() {
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(z.object({
-      title:    z.string().min(3, 'Experiment title is required'),
-      batch_id: z.string().optional()
+      title:               z.string().min(3, 'Experiment title is required'),
+      batch_id:            z.string().optional(),
+      hypothesis:          z.string().optional(),
+      direct_observations: z.string().optional(),
     })),
-    defaultValues: { title: '', batch_id: '' }
+    defaultValues: { title: '', batch_id: '', hypothesis: '', direct_observations: '' }
   });
 
   const watchedBatchId = watch('batch_id');
@@ -133,6 +135,9 @@ export default function DigitalLnbPage() {
           // G-25: version linkage
           previous_version_id: versionSourceEntry?.id || null,
           entry_version: versionSourceEntry ? (versionSourceEntry.entry_version || 1) + 1 : 1,
+          // G-77: hypothesis; G-76: direct observations
+          objective: data.hypothesis || null,
+          observations: data.direct_observations || null,
         })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create entry');
@@ -485,6 +490,19 @@ export default function DigitalLnbPage() {
                   </div>
                 </div>
               )}
+
+              {/* G-77: Hypothesis / Objective freeform section */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Hypothesis / Objective <span className="text-gray-400 font-normal">(Optional)</span></label>
+                <textarea {...register('hypothesis')} rows={2} placeholder="e.g. Increasing inoculum % from 5% to 10% v/v will reduce fermentation time by 20%..."
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy resize-none transition-all"/>
+              </div>
+              {/* G-76: Freeform observations field (direct entry, not just panel-synced) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Direct Observations / Notes <span className="text-gray-400 font-normal">(Freeform)</span></label>
+                <textarea {...register('direct_observations')} rows={3} placeholder="Record any real-time observations, deviations, unexpected results, or procedure modifications directly..."
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy resize-none transition-all"/>
+              </div>
 
               {/* G-26: SOP References */}
               <div>

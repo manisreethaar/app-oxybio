@@ -153,6 +153,8 @@ export async function POST(request, { params }) {
           optical_density:        data.optical_density || null,
           titratable_acidity_pct: data.titratable_acidity_pct ?? null,
           incubator_equipment_id: data.incubator_equipment_id || null,
+          co2_observed:           data.co2_observed           || null,
+          ethanol_pct:            data.ethanol_pct            ?? null,
           plating_result:         data.plating_result || null,
           plating_done:      platingDone,
           plating_status:    platingDone ? 'done_incubating' : 'not_done',

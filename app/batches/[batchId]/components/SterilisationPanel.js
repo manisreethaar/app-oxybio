@@ -41,6 +41,9 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   // G-03: CAPA linkage
   const [capaDevId,  setCapaDevId]  = useState(null);
   const [raisingCapa, setRaisingCapa] = useState(false);
+  // G-84: steam quality + condensate
+  const [steamQuality,  setSteamQuality]  = useState('');
+  const [condensateCheck, setCondensateCheck] = useState('');
   // G-59: cooling time
   const [coolingMin, setCoolingMin] = useState('');
   // G-58: cycle 2
@@ -72,6 +75,8 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setBiIncDate(d.bi_incubation_date||'');
       setCapaDevId(d.capa_deviation_id||null);
       setCoolingMin(d.cooling_time_min||'');
+      setSteamQuality(d.steam_quality_check||'');
+      setCondensateCheck(d.condensate_check||'');
       if (d.cycle2_temp_c) { setShowCycle2(true); setCycle2Temp(d.cycle2_temp_c||''); setCycle2Hold(d.cycle2_hold_min||''); setCycle2Tape(d.cycle2_tape||'Positive'); }
       if (d.cycle2_start) setCycle2Start((() => { const dt = new Date(d.cycle2_start); dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
       if (d.cycle2_end)   setCycle2End  ((() => { const dt = new Date(d.cycle2_end);   dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
@@ -154,6 +159,8 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         bi_result: biUsed ? biResult : 'Not Used',
         bi_incubation_date: biUsed && biIncDate ? biIncDate : null,
         capa_deviation_id: devId || null,
+        steam_quality_check: steamQuality || null,
+        condensate_check:    condensateCheck || null,
         cooling_time_min: coolingMin ? parseFloat(coolingMin) : null,
         cycle2_temp_c:   showCycle2 && cycle2Temp  ? parseFloat(cycle2Temp)  : null,
         cycle2_hold_min: showCycle2 && cycle2Hold  ? parseFloat(cycle2Hold)  : null,
@@ -319,6 +326,32 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
               <AlertTriangle className="w-3.5 h-3.5"/>BI Fail — autoclave validation compromised. Do not use sterilised media.
             </p>
           )}
+        </div>
+
+        {/* G-84: Steam quality + condensate checks */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="field-label">Steam Quality Check</label>
+            <div className="flex gap-2">
+              {['Dry saturated','Wet steam','Not checked'].map(o=>(
+                <button key={o} type="button" onClick={()=>setSteamQuality(steamQuality===o?'':o)}
+                  className={`flex-1 py-1.5 text-[9px] font-black rounded-xl border transition-all ${steamQuality===o?'bg-navy text-white border-navy':'bg-white text-gray-500 border-gray-200'}`}>
+                  {o}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="field-label">Condensate Check</label>
+            <div className="flex gap-2">
+              {['Pass','Fail','N/A'].map(o=>(
+                <button key={o} type="button" onClick={()=>setCondensateCheck(condensateCheck===o?'':o)}
+                  className={`flex-1 py-1.5 text-[9px] font-black rounded-xl border transition-all ${condensateCheck===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-500 border-gray-200'}`}>
+                  {o}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* G-59: Cooling time */}

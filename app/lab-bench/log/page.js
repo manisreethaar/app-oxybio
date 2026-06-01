@@ -176,10 +176,14 @@ export default function QuickLogPage() {
   const [error, setError]           = useState('');
   const [success, setSuccess]       = useState(null);
 
-  // G-20: LAF cabinet usage; G-21: contamination incident; G-23: media lot per plate analysis
+  // G-20: LAF cabinet usage; G-21: contamination incident
   const [lafUsed,              setLafUsed]              = useState(false);
   const [contaminationIncident, setContaminationIncident] = useState(false);
   const [contaminationDetails, setContaminationDetails] = useState('');
+  // G-74: reagents/consumables used in session
+  const [reagentsUsed,  setReagentsUsed]  = useState('');
+  // G-75: cold storage temperature for bench-top cold items
+  const [coldTempC,     setColdTempC]     = useState('');
 
   // ── Load active sources, then apply URL pre-fill ─────────────
   // Deep-link format (from Active Queue "Log Now"):
@@ -263,6 +267,7 @@ export default function QuickLogPage() {
     setTests(defaultTests());
     setCollectedAt(new Date().toISOString().slice(0, 16));
     setLafUsed(false); setContaminationIncident(false); setContaminationDetails('');
+    setReagentsUsed(''); setColdTempC('');
     setError('');
   };
 
@@ -340,10 +345,15 @@ export default function QuickLogPage() {
       notes:                 notes || null,
       tests:                 testPayload,
       time_point_id:         sourceType === 'growth_study' ? (timePointId || null) : null,
-      // G-20, G-21, G-23
+      // G-20, G-21
       laf_cabinet_used:      lafUsed,
       contamination_incident: contaminationIncident,
       contamination_details: contaminationIncident ? (contaminationDetails || null) : null,
+      // G-74, G-75
+      reagents_used:         reagentsUsed.trim()
+        ? reagentsUsed.split(',').map(s=>s.trim()).filter(Boolean).map(r=>({name:r}))
+        : [],
+      cold_storage_temp_c:   coldTempC ? parseFloat(coldTempC) : null,
     };
 
     setSaving(true);
@@ -938,6 +948,19 @@ export default function QuickLogPage() {
               onChange={e=>setContaminationDetails(e.target.value)}
             />
           )}
+          {/* G-74: Reagents/consumables used */}
+          <div>
+            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Reagents / Consumables Used <span className="font-normal normal-case">(comma-separated)</span></label>
+            <input type="text" value={reagentsUsed} onChange={e=>setReagentsUsed(e.target.value)}
+              className={InputCls} placeholder="e.g. MRS Broth, Tryptone, Loop, Pipette tips"/>
+          </div>
+          {/* G-75: Cold storage temperature */}
+          <div>
+            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cold Item Storage Temp (°C)</label>
+            <input type="number" step="0.5" value={coldTempC} onChange={e=>setColdTempC(e.target.value)}
+              className={InputCls} placeholder="e.g. 4.2"/>
+            <p className="text-[9px] text-slate-400 mt-0.5">Temperature of bench-top cold items (media, reagents) at time of use</p>
+          </div>
         </div>
 
         {/* ── Error ── */}
