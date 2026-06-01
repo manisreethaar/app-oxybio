@@ -22,6 +22,13 @@ const DEFAULT_TESTS = [
   { test_name: 'Water Activity (aW)',               target_spec: '<0.97',                       result_unit: 'aW' },
   // G-12: Moisture content
   { test_name: 'Moisture Content',                  target_spec: '<15%',                        result_unit: '%' },
+  // G-60: Heavy metals (FSSAI/export)
+  { test_name: 'Heavy Metals (Lead + Cadmium)',     target_spec: 'Pb <0.1 ppm, Cd <0.05 ppm',  result_unit: 'ppm' },
+  // G-61: Pesticide residue
+  { test_name: 'Pesticide Residue',                 target_spec: '<0.01 mg/kg (MRL)',           result_unit: 'mg/kg' },
+  // G-62: Nutritional — protein + carbs
+  { test_name: 'Protein Content',                   target_spec: 'As per label claim',          result_unit: 'g/100g' },
+  { test_name: 'Total Carbohydrates',               target_spec: 'As per label claim',          result_unit: 'g/100g' },
 ];
 
 const DEFAULT_TEST_ORDER = new Map(DEFAULT_TESTS.map((test, index) => [test.test_name, index]));
@@ -104,6 +111,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   // G-09: COA modal
   const [showCoa,     setShowCoa]     = useState(false);
+
+  // G-63: custom test add
+  const [showCustomTest,   setShowCustomTest]   = useState(false);
+  const [customTestName,   setCustomTestName]   = useState('');
+  const [customTestSpec,   setCustomTestSpec]   = useState('');
+  const [customTestUnit,   setCustomTestUnit]   = useState('');
+  const [savingCustomTest, setSavingCustomTest] = useState(false);
 
   // G-10: re-test tracking
   const [creatingRetest, setCreatingRetest] = useState(null); // testId being retested
@@ -594,6 +608,28 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     }
   };
 
+  // G-63: Add a custom (non-standard) QC test
+  const handleAddCustomTest = async () => {
+    if (!sample || !customTestName.trim() || savingCustomTest) return;
+    setSavingCustomTest(true);
+    try {
+      const { error } = await supabase.from('batch_flask_qc_tests').insert({
+        sample_id: sample.id,
+        flask_id: activeFlask.id,
+        test_name: customTestName.trim(),
+        target_spec: customTestSpec.trim() || null,
+        result_unit: customTestUnit.trim() || null,
+        pass_fail: 'Pending',
+      });
+      if (error) throw error;
+      setCustomTestName(''); setCustomTestSpec(''); setCustomTestUnit('');
+      setShowCustomTest(false);
+      toast.success(`Custom test "${customTestName}" added.`);
+      fetchQcData();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingCustomTest(false); }
+  };
+
   const allDone     = tests.length > 0 && tests.every(t => t.pass_fail !== 'Pending');
   const anyFail     = tests.some(t => t.pass_fail === 'Fail');
   const passCount   = tests.filter(t => t.pass_fail === 'Pass').length;
@@ -967,6 +1003,32 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               >
                 {regenerating ? 'Regenerating...' : 'Regenerate Standard Tests'}
               </button>
+            </div>
+          )}
+
+          {/* G-63: Custom test add */}
+          {sample && (
+            <div className="surface p-4">
+              {showCustomTest ? (
+                <div className="space-y-3">
+                  <p className="text-xs font-black text-gray-700">Add Custom Test</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input value={customTestName} onChange={e=>setCustomTestName(e.target.value)} placeholder="Test name (required)" className="field-input text-xs p-2"/>
+                    <input value={customTestSpec} onChange={e=>setCustomTestSpec(e.target.value)} placeholder="Target spec (optional)" className="field-input text-xs p-2"/>
+                    <input value={customTestUnit} onChange={e=>setCustomTestUnit(e.target.value)} placeholder="Unit (optional)" className="field-input text-xs p-2"/>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleAddCustomTest} disabled={!customTestName.trim()||savingCustomTest} className="px-4 py-2 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50">
+                      {savingCustomTest ? 'Adding...' : 'Add Test'}
+                    </button>
+                    <button onClick={()=>{setShowCustomTest(false);setCustomTestName('');setCustomTestSpec('');setCustomTestUnit('');}} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={()=>setShowCustomTest(true)} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all">
+                  <Plus className="w-3.5 h-3.5"/>Add Custom Test
+                </button>
+              )}
             </div>
           )}
 

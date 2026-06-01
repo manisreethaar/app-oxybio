@@ -35,6 +35,12 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const [initPH,     setInitPH]     = useState('');
   const [notes,      setNotes]      = useState('');
   const [supervisedBy, setSupervisedBy] = useState('');
+  // G-51: particle size
+  const [particleSize, setParticleSize] = useState('');
+  // G-53: water activity
+  const [awValue, setAwValue] = useState('');
+  // G-52: modular pre-treatment steps [{type, target_temp, duration_min, notes}]
+  const [pretreatSteps, setPretreatSteps] = useState([]);
 
   // Initialize BOM usage state from ingredients
   useEffect(() => {
@@ -58,6 +64,9 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setWaterVol(d.water_volume_ml||''); setTotalVol(d.total_volume_ml||'');
       setInitPH(d.initial_ph||''); setNotes(d.notes||'');
       setSupervisedBy(d.supervised_by||'');
+      setParticleSize(d.particle_size_mesh||'');
+      setAwValue(d.aw_value||'');
+      setPretreatSteps(d.pre_treatment_steps||[]);
 
       // Recover legacy usage state from db if available
       setBomUsage(prev => {
@@ -157,6 +166,9 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         initial_ph: initPH ? parseFloat(initPH) : null,
         is_complete: advance, operator_id: employeeProfile?.id,
         supervised_by: supervisedBy || null, notes: notes || null,
+        particle_size_mesh:  particleSize || null,
+        aw_value:            awValue ? parseFloat(awValue) : null,
+        pre_treatment_steps: pretreatSteps,
       }, { onConflict: 'batch_id' });
       if (error) throw error;
 
@@ -165,6 +177,26 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       }
 
       toast.success(advance ? 'Media Prep complete. BOM Inventory deducted.' : 'Draft saved.');
+      // G-50: Notify supervisors if any ingredient >10% deviation
+      const deviations = formulationIngredients.filter(ing => {
+        const target = ((parseFloat(ing.quantity)||0) * scaleFactor);
+        const actual = parseFloat((bomUsage[ing.item_id]||{}).usedQty);
+        return !isNaN(actual) && target > 0 && Math.abs((actual-target)/target*100) > 10;
+      });
+      if (deviations.length > 0 && supervisors.length > 0) {
+        supervisors.forEach(sup => {
+          fetch('/api/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              assigned_to: sup.id,
+              title: `Media Prep Deviation — Batch ${batch.batch_id}`,
+              body: `${deviations.length} ingredient(s) deviate >10% from BOM target: ${deviations.map(i=>i.name).join(', ')}. Review and log deviation if required.`,
+              url: `/batches/${batch.id}`,
+            }),
+          }).catch(() => {});
+        });
+      }
       syncStageToLNB(supabase, batch.id, 'media_prep', {
         ragi_lot_id: ragiU.lot,
         ragi_weight_g: ragiU.wt,
@@ -246,7 +278,14 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                        <select value={usage.lotId} onChange={e => setBomUsage(p=>({...p, [ing.item_id]: {...p[ing.item_id], lotId: e.target.value}}))} className="field-input">
                          <option value="">Select lot...</option>
                          {matchStock.length > 0 && <option disabled>── Matching Lots ──</option>}
-                         {matchStock.map(s => <option key={s.id} value={s.id}>{s.supplier_batch_number || 'UN-LOT'} | {parseFloat(s.current_quantity).toFixed(1)}{s.inventory_items?.unit}</option>)}
+                         {matchStock.map(s => {
+                           const isExpired = s.expiry_date && new Date(s.expiry_date) < new Date();
+                           return (
+                             <option key={s.id} value={s.id} disabled={isExpired}>
+                               {s.supplier_batch_number || 'UN-LOT'} | {parseFloat(s.current_quantity).toFixed(1)}{s.inventory_items?.unit} {isExpired ? '(EXPIRED)' : ''}
+                             </option>
+                           );
+                         })}
                          {matchStock.length === 0 && <option disabled>No matching lots available</option>}
                        </select>
                      </div>
@@ -300,6 +339,44 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                );
             })}
           </div>
+        </div>
+
+        {/* G-51: Substrate particle size / mesh */}
+        <div className="border-t border-gray-100 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Substrate Particle Size / Mesh #</label>
+              <input value={particleSize} onChange={e=>setParticleSize(e.target.value)} className="field-input" placeholder="e.g. 60 mesh / 250 µm"/>
+            </div>
+            {/* G-53: Water Activity */}
+            <div>
+              <label className="field-label">Water Activity (aW) <span className="text-gray-400 text-[9px]">substrate</span></label>
+              <input type="number" step="0.01" min="0" max="1" value={awValue} onChange={e=>setAwValue(e.target.value)} className="field-input" placeholder="0.95"/>
+              {awValue && parseFloat(awValue) > 0.97 && <p className="text-[10px] text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* G-52: Modular pre-treatment steps */}
+        <div className="border-t border-gray-100 pt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="field-label mb-0">Pre-treatment Steps</label>
+            <button type="button" onClick={()=>setPretreatSteps(p=>[...p,{type:'Heat',target_temp:'',duration_min:'',notes:''}])}
+              className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-black rounded-lg uppercase hover:bg-indigo-100">
+              + Add Step
+            </button>
+          </div>
+          {pretreatSteps.map((step, idx) => (
+            <div key={idx} className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-xl grid grid-cols-4 gap-2 items-center">
+              <select value={step.type} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,type:e.target.value}:s))} className="field-input text-xs col-span-1 bg-white p-1.5">
+                {['Heat','Steam','Chemical','Enzymatic','Mechanical','Other'].map(t=><option key={t}>{t}</option>)}
+              </select>
+              <input type="number" value={step.target_temp} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,target_temp:e.target.value}:s))} placeholder="Temp °C" className="field-input text-xs p-1.5"/>
+              <input type="number" value={step.duration_min} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,duration_min:e.target.value}:s))} placeholder="Min" className="field-input text-xs p-1.5"/>
+              <button type="button" onClick={()=>setPretreatSteps(p=>p.filter((_,i)=>i!==idx))} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
+            </div>
+          ))}
+          {pretreatSteps.length === 0 && <p className="text-[10px] text-gray-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
         </div>
 
         <div className="border-t border-gray-100 pt-5">

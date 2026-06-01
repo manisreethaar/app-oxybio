@@ -41,6 +41,15 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   // G-03: CAPA linkage
   const [capaDevId,  setCapaDevId]  = useState(null);
   const [raisingCapa, setRaisingCapa] = useState(false);
+  // G-59: cooling time
+  const [coolingMin, setCoolingMin] = useState('');
+  // G-58: cycle 2
+  const [showCycle2,  setShowCycle2]  = useState(false);
+  const [cycle2Temp,  setCycle2Temp]  = useState('');
+  const [cycle2Hold,  setCycle2Hold]  = useState('');
+  const [cycle2Start, setCycle2Start] = useState('');
+  const [cycle2End,   setCycle2End]   = useState('');
+  const [cycle2Tape,  setCycle2Tape]  = useState('Positive');
 
   const fetchRecord = useCallback(async () => {
     let isCurrent = true;
@@ -62,6 +71,10 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setBiResult(d.bi_result||'Not Used');
       setBiIncDate(d.bi_incubation_date||'');
       setCapaDevId(d.capa_deviation_id||null);
+      setCoolingMin(d.cooling_time_min||'');
+      if (d.cycle2_temp_c) { setShowCycle2(true); setCycle2Temp(d.cycle2_temp_c||''); setCycle2Hold(d.cycle2_hold_min||''); setCycle2Tape(d.cycle2_tape||'Positive'); }
+      if (d.cycle2_start) setCycle2Start((() => { const dt = new Date(d.cycle2_start); dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
+      if (d.cycle2_end)   setCycle2End  ((() => { const dt = new Date(d.cycle2_end);   dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
     }
     if (eqRes.data) setEquipment(eqRes.data);
     return () => { isCurrent = false; };
@@ -116,6 +129,10 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       toast.error('Cannot advance — sterilisation must Pass before proceeding to Inoculation.');
       return;
     }
+    if (isEquipBad) {
+      toast.error('Cannot save — Equipment is not operational or calibration is expired.');
+      return;
+    }
     setSaving(true);
     try {
       let devId = capaDevId;
@@ -137,6 +154,12 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         bi_result: biUsed ? biResult : 'Not Used',
         bi_incubation_date: biUsed && biIncDate ? biIncDate : null,
         capa_deviation_id: devId || null,
+        cooling_time_min: coolingMin ? parseFloat(coolingMin) : null,
+        cycle2_temp_c:   showCycle2 && cycle2Temp  ? parseFloat(cycle2Temp)  : null,
+        cycle2_hold_min: showCycle2 && cycle2Hold  ? parseFloat(cycle2Hold)  : null,
+        cycle2_start:    showCycle2 && cycle2Start ? new Date(cycle2Start).toISOString() : null,
+        cycle2_end:      showCycle2 && cycle2End   ? new Date(cycle2End).toISOString()   : null,
+        cycle2_tape:     showCycle2 ? cycle2Tape   : null,
         operator_id: employeeProfile?.id, notes: notes || null,
       }, { onConflict: 'batch_id' });
       if (error) throw error;
@@ -295,6 +318,44 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             <p className="text-xs text-red-700 font-bold flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5"/>BI Fail — autoclave validation compromised. Do not use sterilised media.
             </p>
+          )}
+        </div>
+
+        {/* G-59: Cooling time */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="field-label">Cooling Time (min) <span className="text-gray-400 text-[9px]">autoclave end → LAF transfer</span></label>
+            <input type="number" step="1" value={coolingMin} onChange={e=>setCoolingMin(e.target.value)} className="field-input" placeholder="e.g. 30"/>
+          </div>
+        </div>
+
+        {/* G-58: Second sterilisation cycle */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <button type="button" onClick={()=>setShowCycle2(p=>!p)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-xs font-black text-gray-700 transition-colors">
+            <span>Second Sterilisation Cycle (optional)</span>
+            <span className={`text-lg ${showCycle2?'text-navy':'text-gray-300'}`}>{showCycle2?'▼':'▶'}</span>
+          </button>
+          {showCycle2 && (
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className="field-label">Cycle 2 Temp (°C)</label><input type="number" step="0.1" value={cycle2Temp} onChange={e=>setCycle2Temp(e.target.value)} className="field-input" placeholder="121.0"/></div>
+                <div><label className="field-label">Cycle 2 Hold (min)</label><input type="number" value={cycle2Hold} onChange={e=>setCycle2Hold(e.target.value)} className="field-input" placeholder="15"/></div>
+                <div><label className="field-label">Cycle 2 Start</label><input type="datetime-local" value={cycle2Start} onChange={e=>setCycle2Start(e.target.value)} className="field-input"/></div>
+                <div><label className="field-label">Cycle 2 End</label><input type="datetime-local" value={cycle2End} onChange={e=>setCycle2End(e.target.value)} className="field-input"/></div>
+              </div>
+              <div>
+                <label className="field-label">Cycle 2 Tape Result</label>
+                <div className="flex gap-2">
+                  {TAPE_RES.map(o=>(
+                    <button key={o} type="button" onClick={()=>setCycle2Tape(o)}
+                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${cycle2Tape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-gray-500 border-gray-200'}`}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

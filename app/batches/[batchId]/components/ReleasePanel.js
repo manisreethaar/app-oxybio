@@ -307,6 +307,20 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"
               />
 
+              {/* G-64: Yield calculation vs planned */}
+              {yieldVol && batch.planned_volume_ml && (
+                <div className={`p-3 rounded-xl border text-xs font-semibold ${
+                  (parseFloat(yieldVol) / (batch.planned_volume_ml * (batch.num_flasks||1)) * 100) >= 85
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}>
+                  <p className="font-black mb-0.5">Yield Analysis</p>
+                  <p>Planned: <strong>{batch.planned_volume_ml * (batch.num_flasks||1)} ml</strong> · Actual: <strong>{yieldVol} ml</strong></p>
+                  <p>Yield efficiency: <strong>{((parseFloat(yieldVol) / (batch.planned_volume_ml * (batch.num_flasks||1))) * 100).toFixed(1)}%</strong>
+                    {((parseFloat(yieldVol) / (batch.planned_volume_ml * (batch.num_flasks||1))) * 100) < 85 && ' ⚠ Below 85% target'}
+                  </p>
+                </div>
+              )}
               {(() => {
                 const exp = new Date();
                 exp.setDate(exp.getDate() + 90);
