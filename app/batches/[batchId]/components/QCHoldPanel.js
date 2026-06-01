@@ -18,6 +18,10 @@ const DEFAULT_TESTS = [
   { test_name: 'Salmonella spp. (absence test)',    target_spec: 'Absent in 25 g',              result_unit: 'per 25 g' },
   { test_name: 'Listeria monocytogenes',            target_spec: 'Absent in 25 g',              result_unit: 'per 25 g' },
   { test_name: 'E. coli / Coliforms',               target_spec: '<10 CFU/g',                   result_unit: 'CFU/g' },
+  // G-11: Water activity
+  { test_name: 'Water Activity (aW)',               target_spec: '<0.97',                       result_unit: 'aW' },
+  // G-12: Moisture content
+  { test_name: 'Moisture Content',                  target_spec: '<15%',                        result_unit: '%' },
 ];
 
 const DEFAULT_TEST_ORDER = new Map(DEFAULT_TESTS.map((test, index) => [test.test_name, index]));
@@ -97,6 +101,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [raisingOos,  setRaisingOos]  = useState(false);
   // track which tests already have an OOS raised (keyed by testId)
   const [oosRaised,   setOosRaised]   = useState(new Set());
+
+  // G-09: COA modal
+  const [showCoa,     setShowCoa]     = useState(false);
+
+  // G-10: re-test tracking
+  const [creatingRetest, setCreatingRetest] = useState(null); // testId being retested
 
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
@@ -560,6 +570,30 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     finally { setSavingExtResult(false); }
   };
 
+  // G-10: create a re-test row linked to the original failed test
+  const handleRetest = async (failedTest) => {
+    if (!sample || creatingRetest) return;
+    setCreatingRetest(failedTest.id);
+    try {
+      const { data, error } = await supabase.from('batch_flask_qc_tests').insert({
+        sample_id: sample.id,
+        flask_id: activeFlask.id,
+        test_name: `${failedTest.test_name} (Re-test)`,
+        target_spec: failedTest.target_spec,
+        result_unit: failedTest.result_unit,
+        pass_fail: 'Pending',
+        retest_of: failedTest.id,
+      }).select().single();
+      if (error) throw error;
+      toast.success(`Re-test row created for "${failedTest.test_name}".`);
+      fetchQcData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCreatingRetest(null);
+    }
+  };
+
   const allDone     = tests.length > 0 && tests.every(t => t.pass_fail !== 'Pending');
   const anyFail     = tests.some(t => t.pass_fail === 'Fail');
   const passCount   = tests.filter(t => t.pass_fail === 'Pass').length;
@@ -570,6 +604,95 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   return (
     <div className="space-y-5">
+      {/* G-09: Certificate of Analysis (COA) Print Modal */}
+      {showCoa && sample && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4 print:shadow-none print:rounded-none print:my-0">
+            {/* Print-only: hide controls */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 print:hidden">
+              <h3 className="text-base font-black text-gray-900">Certificate of Analysis — Preview</h3>
+              <div className="flex gap-2">
+                <button onClick={() => window.print()} className="px-4 py-2 bg-navy text-white font-bold rounded-xl text-xs uppercase tracking-wider">Print / Save PDF</button>
+                <button onClick={() => setShowCoa(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs uppercase tracking-wider">Close</button>
+              </div>
+            </div>
+            <div className="p-8 space-y-6" id="coa-print-area">
+              {/* COA Header */}
+              <div className="text-center border-b-2 border-gray-900 pb-4">
+                <p className="text-2xl font-black text-gray-900 uppercase tracking-widest">OXYGEN BIOINNOVATIONS</p>
+                <p className="text-sm font-bold text-gray-500 mt-0.5">Internal Quality Control Certificate</p>
+                <p className="text-xs text-gray-400 mt-0.5">Probiotic Fermentation Products · Chennai, India</p>
+              </div>
+              {/* Title */}
+              <div className="text-center">
+                <p className="text-lg font-black uppercase tracking-widest text-gray-900 border-2 border-gray-900 inline-block px-6 py-2">CERTIFICATE OF ANALYSIS</p>
+              </div>
+              {/* Batch Info Grid */}
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border border-gray-200 rounded-xl p-4">
+                {[
+                  ['Batch ID', batch.batch_id || batch.id],
+                  ['Trial / Flask', activeFlask.flask_label],
+                  ['QC Sample ID', sample.sample_id],
+                  ['Sampling Date', sample.sampling_date],
+                  ['Testing Location', sample.testing_location],
+                  ['COA Generated', new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })],
+                ].map(([label, val]) => (
+                  <div key={label} className="flex gap-2">
+                    <span className="font-black text-gray-500 w-36 shrink-0 text-xs uppercase">{label}:</span>
+                    <span className="font-bold text-gray-900 text-xs">{val || '—'}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Test Results Table */}
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-gray-600 mb-2">Test Results</p>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Test Parameter</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Specification</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Result</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Unit</th>
+                      <th className="border border-gray-300 px-3 py-2 text-center font-black text-gray-700">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tests.filter(t => !t.retest_of).map(t => (
+                      <tr key={t.id} className={t.pass_fail === 'Fail' ? 'bg-red-50' : t.pass_fail === 'Pass' ? 'bg-emerald-50/50' : ''}>
+                        <td className="border border-gray-200 px-3 py-1.5 font-semibold text-gray-800">{t.test_name}</td>
+                        <td className="border border-gray-200 px-3 py-1.5 text-gray-600">{t.target_spec || '—'}</td>
+                        <td className="border border-gray-200 px-3 py-1.5 font-bold text-gray-900">{t.result_value || '—'}</td>
+                        <td className="border border-gray-200 px-3 py-1.5 text-gray-500">{t.result_unit || '—'}</td>
+                        <td className={`border border-gray-200 px-3 py-1.5 text-center font-black ${t.pass_fail === 'Pass' ? 'text-emerald-700' : t.pass_fail === 'Fail' ? 'text-red-700' : 'text-gray-500'}`}>{t.pass_fail}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Overall Status */}
+              <div className={`p-4 rounded-xl border-2 text-center ${anyFail ? 'border-red-500 bg-red-50' : 'border-emerald-500 bg-emerald-50'}`}>
+                <p className={`text-lg font-black uppercase tracking-widest ${anyFail ? 'text-red-800' : 'text-emerald-800'}`}>
+                  Overall QC Status: {anyFail ? 'FAIL' : 'PASS'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{tests.filter(t=>t.pass_fail==='Pass').length} Pass · {tests.filter(t=>t.pass_fail==='Fail').length} Fail · {tests.filter(t=>t.pass_fail==='Pending').length} Pending</p>
+              </div>
+              {/* Signatures */}
+              <div className="grid grid-cols-2 gap-8 pt-4 border-t border-gray-200 text-xs">
+                <div className="space-y-6">
+                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">QC Analyst</p></div>
+                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">Date</p></div>
+                </div>
+                <div className="space-y-6">
+                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">Authorised by (QA Head)</p></div>
+                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">Date</p></div>
+                </div>
+              </div>
+              <p className="text-[9px] text-gray-300 text-center">This document is generated by OxyOS — Oxygen Bioinnovations Internal Lab Management System. For internal use only.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* G-08: OOS Investigation Modal */}
       {oosModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -888,6 +1011,16 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                             </button>
                           ))}
                         </div>
+                        {/* G-10: Re-test button on Fail rows (only for original tests, not re-tests) */}
+                        {t.pass_fail === 'Fail' && !t.retest_of && !tests.some(r => r.retest_of === t.id) && (
+                          <button onClick={() => handleRetest(t)} disabled={creatingRetest === t.id}
+                            className="mt-1 w-full py-0.5 text-[9px] font-black rounded border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 disabled:opacity-50">
+                            {creatingRetest === t.id ? '...' : '↺ Re-test'}
+                          </button>
+                        )}
+                        {t.retest_of && (
+                          <span className="block mt-1 text-center text-[8px] font-bold text-amber-600 bg-amber-50 rounded px-1 py-0.5 border border-amber-200">RE-TEST</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -915,6 +1048,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   <CheckCircle2 className="w-4 h-4 text-emerald-600"/>All tests passed — trial eligible for release.
                 </div>
               )}
+              {/* G-09: COA download button */}
+              <button onClick={() => setShowCoa(true)}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                <ArrowDownToLine className="w-3.5 h-3.5"/>Generate Certificate of Analysis (COA)
+              </button>
               {!isCeo && <p className="text-xs text-gray-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
               {isCeo && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

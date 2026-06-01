@@ -22,7 +22,8 @@ export async function POST(request, { params }) {
 
     const { batchId } = params;
     const body = await request.json();
-    const { flask_id, yield_volume_ml, bottles_produced, bottle_volume_ml, release_notes } = body;
+    const { flask_id, yield_volume_ml, bottles_produced, bottle_volume_ml, release_notes,
+            formulation_id, sku_name, esig_confirmed_at } = body;
 
     if (!flask_id) return NextResponse.json({ error: 'flask_id is required' }, { status: 400 });
     if (!batchId)  return NextResponse.json({ error: 'batchId is required' },  { status: 400 });
@@ -48,16 +49,22 @@ export async function POST(request, { params }) {
     const isSchemaErr = (e) => e && (e.code === 'PGRST204' || e.message?.includes('schema cache'));
 
     const payloads = [
-      // Full — all fields
+      // Full — all fields including Phase 2 additions
+      { flask_id, released_by: emp.id, release_date: new Date().toISOString(),
+        yield_volume_ml: yield_volume_ml ?? null, bottles_produced: bottles_produced ?? null,
+        bottle_volume_ml: bottle_volume_ml ?? null, release_notes: release_notes ?? null,
+        formulation_id: formulation_id ?? null, sku_name: sku_name ?? null,
+        esig_confirmed_at: esig_confirmed_at ?? null },
+      // Without Phase 2 columns (pre-migration)
       { flask_id, released_by: emp.id, release_date: new Date().toISOString(),
         yield_volume_ml: yield_volume_ml ?? null, bottles_produced: bottles_produced ?? null,
         bottle_volume_ml: bottle_volume_ml ?? null, release_notes: release_notes ?? null },
-      // No yield/bottle columns (pre-migration)
+      // No yield/bottle columns
       { flask_id, released_by: emp.id, release_date: new Date().toISOString(),
         release_notes: release_notes ?? null },
       // No release_date either
       { flask_id, released_by: emp.id, release_notes: release_notes ?? null },
-      // Absolute minimum — just mark the flask
+      // Absolute minimum
       { flask_id },
     ];
 
