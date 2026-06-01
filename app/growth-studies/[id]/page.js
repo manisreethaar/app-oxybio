@@ -697,7 +697,10 @@ export default function GrowthStudyDetailPage() {
                   <div key={m.id || i} className="bg-white rounded-xl border border-slate-200 p-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-slate-500">T+{m.actual_hour}h</span>
-                      <span className="text-[10px] text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                      <div className="flex items-center gap-1.5">
+                        {m.recorder && <CreatorBadge initials={m.recorder.initials} fullName={m.recorder.full_name} size="sm"/>}
+                        <span className="text-[10px] text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                      </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div><p className="text-[10px] text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
