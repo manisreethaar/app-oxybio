@@ -9,16 +9,22 @@ export default function ConfirmModal({
   title = 'Confirm Action', 
   message = 'Are you sure you want to proceed? This cannot be undone.', 
   confirmText = 'Confirm', 
-  variant = 'danger' 
+  variant = 'danger',
+  requireInput = false,
+  inputPlaceholder = 'Reason...',
+  inputLabel = 'Please provide a reason:'
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
+    if (requireInput && !inputValue.trim()) return;
     try {
       setConfirming(true);
-      await onConfirm();
+      await onConfirm(inputValue);
+      setInputValue('');
       onClose();
     } catch (err) {
       // onConfirm already handles errors via toast in the parent
@@ -47,6 +53,18 @@ export default function ConfirmModal({
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">{message}</p>
           </div>
         </div>
+        {requireInput && (
+          <div className="px-6 mt-4">
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">{inputLabel}</label>
+            <input 
+              type="text" 
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={inputPlaceholder}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy focus:ring-1 focus:ring-navy"
+            />
+          </div>
+        )}
         <div className="p-6 flex flex-col sm:flex-row gap-3 justify-end mt-2">
           <button 
             onClick={onClose}
@@ -57,7 +75,7 @@ export default function ConfirmModal({
           </button>
           <button 
             onClick={handleConfirm}
-            disabled={confirming}
+            disabled={confirming || (requireInput && !inputValue.trim())}
             className={`px-4 py-2 text-white font-bold rounded-lg text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-navy hover:bg-navy-hover'}`}
           >
             {confirming ? (

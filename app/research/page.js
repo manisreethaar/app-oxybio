@@ -7,9 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
   Users, Plus, Loader2, Award, Zap, TrendingUp, X, FlaskConical,
-  SlidersHorizontal, Trash2, Download, CheckCircle2, XCircle,
+  Search, SlidersHorizontal, Settings, FileText, Share2, Filter, AlertTriangle, ArrowRight, Save,
+  Trash2, Download, CheckCircle2, XCircle,
   GitCompareArrows,
 } from 'lucide-react';
+import { downloadCsvWithHash } from '@/utils/exportUtils';
 import Skeleton from '@/components/Skeleton';
 import dynamic from 'next/dynamic';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -94,13 +96,7 @@ function exportCSV(session) {
     statRow('Pass/Fail',     st => st.pass === null ? '' : st.pass ? 'Pass' : 'Fail'),
   ].join('\n');
 
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `${session.session_title.replace(/[^a-z0-9]/gi, '_')}_scores.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCsvWithHash(csv, `${session.session_title.replace(/[^a-z0-9]/gi, '_')}_scores.csv`);
 }
 
 // ---------------------------------------------------------------------------

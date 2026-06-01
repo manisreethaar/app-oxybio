@@ -33,6 +33,7 @@ export default function CapaSection() {
 
   const [deviations, setDeviations] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [sops, setSops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [investigation, setInvestigation] = useState(null);
@@ -45,16 +46,25 @@ export default function CapaSection() {
   const [pendingIds, setPendingIds] = useState(new Set());
   const [showRaise, setShowRaise] = useState(false);
   const [raising, setRaising] = useState(false);
-  const { register: regRaise, handleSubmit: handRaise, formState: { errors: raiseErrors }, reset: resetRaise } = useForm({
-    resolver: zodResolver(z.object({ title: z.string().min(1), severity: z.enum(['Minor', 'Major', 'Critical']), source: z.string(), description: z.string().min(1) })),
-    defaultValues: { title: '', severity: 'Major', source: 'Internal Audit', description: '' }
+  const { register: regRaise, handleSubmit: handRaise, formState: { errors: raiseErrors }, reset: resetRaise, watch: watchRaise } = useForm({
+    resolver: zodResolver(z.object({ 
+      title: z.string().min(1), severity: z.enum(['Minor', 'Major', 'Critical']), source: z.string(), description: z.string().min(1),
+      fmea_severity: z.coerce.number().min(1).max(10).optional(), fmea_occurrence: z.coerce.number().min(1).max(10).optional(), fmea_detection: z.coerce.number().min(1).max(10).optional()
+    })),
+    defaultValues: { title: '', severity: 'Major', source: 'Internal Audit', description: '', fmea_severity: 1, fmea_occurrence: 1, fmea_detection: 1 }
   });
 
   const [showInvestigate, setShowInvestigate] = useState(false);
   const [investigating, setInvestigating] = useState(false);
+  const [analysisMethod, setAnalysisMethod] = useState('5why'); // '5why' | 'ishikawa'
   const { register: regWhy, handleSubmit: handWhy, formState: { errors: whyErrors }, reset: resetWhy, setValue: setWhyValue } = useForm({
-    resolver: zodResolver(z.object({ why_1: z.string().optional(), why_2: z.string().optional(), why_3: z.string().optional(), why_4: z.string().optional(), why_5: z.string().optional(), root_cause_identified: z.string().min(1) })),
-    defaultValues: { why_1: '', why_2: '', why_3: '', why_4: '', why_5: '', root_cause_identified: '' }
+    resolver: zodResolver(z.object({
+      why_1: z.string().optional(), why_2: z.string().optional(), why_3: z.string().optional(), why_4: z.string().optional(), why_5: z.string().optional(),
+      root_cause_identified: z.string().min(1),
+      ishikawa_data: z.object({ man: z.string().optional(), machine: z.string().optional(), material: z.string().optional(), method: z.string().optional(), measurement: z.string().optional(), environment: z.string().optional() }).optional(),
+      affected_sops: z.array(z.string()).optional()
+    })),
+    defaultValues: { why_1: '', why_2: '', why_3: '', why_4: '', why_5: '', root_cause_identified: '', ishikawa_data: { man: '', machine: '', material: '', method: '', measurement: '', environment: '' }, affected_sops: [] }
   });
 
   const [showAction, setShowAction] = useState(false);
@@ -89,11 +99,12 @@ export default function CapaSection() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [{ data: devs }, { data: emps }] = await Promise.all([
+      const [{ data: devs }, { data: emps }, { data: sopsData }] = await Promise.all([
         supabase.from('deviations').select('*, reported_by, created_by, reporter:employees!deviations_reported_by_fkey(full_name), creator:employees!deviations_created_by_fkey(id, full_name, initials), batches(id, batch_id)').order('created_at', { ascending: false }),
-        supabase.from('employees').select('id, full_name').eq('is_active', true)
+        supabase.from('employees').select('id, full_name').eq('is_active', true),
+        supabase.from('sop_library').select('id, title, version').order('title')
       ]);
-      setDeviations(devs || []); setEmployees(emps || []);
+      setDeviations(devs || []); setEmployees(emps || []); setSops(sopsData || []);
     } catch (err) { console.error('CAPA fetch error:', err); }
     finally { setLoading(false); }
   };
@@ -107,8 +118,16 @@ export default function CapaSection() {
     setInvestigation(inv || null); setCapaActions(actions || []);
     if (inv) {
       ['why_1','why_2','why_3','why_4','why_5','root_cause_identified'].forEach(k => setWhyValue(k, inv[k] || ''));
+      setWhyValue('affected_sops', dev.affected_sops || []);
+      if (inv.ishikawa_data) {
+        ['man','machine','material','method','measurement','environment'].forEach(k => setWhyValue(`ishikawa_data.${k}`, inv.ishikawa_data[k] || ''));
+        if (Object.values(inv.ishikawa_data).some(v => v)) setAnalysisMethod('ishikawa');
+      } else {
+        setAnalysisMethod('5why');
+      }
     } else {
       resetWhy();
+      setAnalysisMethod('5why');
     }
   };
 
@@ -182,10 +201,31 @@ export default function CapaSection() {
           {isAdmin && selected.status !== 'Closed' && <button onClick={() => setShowInvestigate(true)} className="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold rounded-lg text-xs hover:bg-indigo-100">{investigation ? 'Update' : 'Investigate'}</button>}
         </div>
         {investigation ? (
-          <div className="space-y-2">
-            {['why_1','why_2','why_3','why_4','why_5'].map((k, i) => investigation[k] && (
-              <div key={k} className="flex gap-2 items-start text-xs text-gray-700 font-medium"><span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-black text-[10px] flex items-center justify-center shrink-0">{i+1}</span><p className="pt-0.5">{investigation[k]}</p></div>
-            ))}
+          <div className="space-y-4">
+            {/* 5-Why Display */}
+            {['why_1','why_2','why_3','why_4','why_5'].some(k => investigation[k]) && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">5-Why Analysis</h3>
+                {['why_1','why_2','why_3','why_4','why_5'].map((k, i) => investigation[k] && (
+                  <div key={k} className="flex gap-2 items-start text-xs text-gray-700 font-medium"><span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-black text-[10px] flex items-center justify-center shrink-0">{i+1}</span><p className="pt-0.5">{investigation[k]}</p></div>
+                ))}
+              </div>
+            )}
+            {/* Ishikawa Display */}
+            {investigation.ishikawa_data && Object.values(investigation.ishikawa_data).some(v => v) && (
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ishikawa (Fishbone) Analysis</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {['man','machine','material','method','measurement','environment'].map(cat => investigation.ishikawa_data[cat] && (
+                    <div key={cat} className="p-2 border border-gray-100 bg-gray-50 rounded-lg">
+                      <p className="text-[10px] font-bold text-indigo-700 uppercase mb-1">{cat}</p>
+                      <p className="text-xs text-gray-700">{investigation.ishikawa_data[cat]}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {investigation.root_cause_identified && <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-100"><p className="text-[9px] font-black text-amber-700 uppercase mb-0.5">Root Cause</p><p className="text-xs text-amber-900 font-bold">{investigation.root_cause_identified}</p></div>}
           </div>
         ) : <p className="text-xs text-gray-400 font-medium text-center py-4">No analysis recorded.</p>}
@@ -219,13 +259,44 @@ export default function CapaSection() {
 
       {showInvestigate && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handWhy(handleSaveInvestigation)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
-            <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900">5-Why Analysis</h3><button type="button" onClick={() => setShowInvestigate(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
-            {['why_1','why_2','why_3','why_4','why_5'].map((k,i) => (
-              <div key={k}><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Why {i+1}</label><input {...regWhy(k)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" /></div>
-            ))}
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Root Cause *</label><textarea {...regWhy('root_cause_identified')} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" placeholder="Statement..." />{whyErrors.root_cause_identified && <p className="text-red-500 text-[10px]">{whyErrors.root_cause_identified.message}</p>}</div>
-            <button type="submit" disabled={investigating} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1"><Microscope className="w-4 h-4"/> Save Analysis</button>
+          <form onSubmit={handWhy(handleSaveInvestigation)} className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900">Root Cause Analysis</h3><button type="button" onClick={() => setShowInvestigate(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
+            
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button type="button" onClick={() => setAnalysisMethod('5why')} className={`flex-1 text-xs font-bold py-1.5 rounded-md transition-all ${analysisMethod === '5why' ? 'bg-white shadow text-navy' : 'text-gray-500 hover:text-gray-700'}`}>5-Why</button>
+              <button type="button" onClick={() => setAnalysisMethod('ishikawa')} className={`flex-1 text-xs font-bold py-1.5 rounded-md transition-all ${analysisMethod === 'ishikawa' ? 'bg-white shadow text-navy' : 'text-gray-500 hover:text-gray-700'}`}>Ishikawa (Fishbone)</button>
+            </div>
+
+            {analysisMethod === '5why' && (
+              <div className="space-y-3">
+                {['why_1','why_2','why_3','why_4','why_5'].map((k,i) => (
+                  <div key={k}><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Why {i+1}</label><input {...regWhy(k)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-indigo-300" /></div>
+                ))}
+              </div>
+            )}
+
+            {analysisMethod === 'ishikawa' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                {['man','machine','material','method','measurement','environment'].map((cat) => (
+                  <div key={cat}>
+                    <label className="block text-[10px] font-bold text-indigo-700 uppercase mb-1">{cat}</label>
+                    <input {...regWhy(`ishikawa_data.${cat}`)} placeholder={`Issues related to ${cat}...`} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-indigo-300" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Identified Root Cause *</label><textarea {...regWhy('root_cause_identified')} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none focus:border-indigo-300" placeholder="Final statement..." />{whyErrors.root_cause_identified && <p className="text-red-500 text-[10px] mt-1">{whyErrors.root_cause_identified.message}</p>}</div>
+            
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Affected SOPs (Triggers Retraining)</label>
+              <select multiple {...regWhy('affected_sops')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-indigo-300" size={4}>
+                {sops.map(sop => <option key={sop.id} value={sop.id}>{sop.title} v{sop.version}</option>)}
+              </select>
+              <p className="text-[9px] text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple. Selected SOPs will require retraining on CAPA closure.</p>
+            </div>
+
+            <button type="submit" disabled={investigating} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1 mt-2">{investigating ? <Loader2 className="w-4 h-4 animate-spin"/> : <Microscope className="w-4 h-4"/>} Save Analysis</button>
           </form>
         </div>
       )}
@@ -360,7 +431,7 @@ export default function CapaSection() {
 
       {showRaise && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handRaise(handleRaise)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
+          <form onSubmit={handRaise(handleRaise)} className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-xl p-6 w-full max-w-md shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-gray-900 flex items-center gap-1"><FileWarning className="w-4 h-4 text-red-600"/> Raise NCR</h3><button type="button" onClick={() => setShowRaise(false)}><X className="w-4 h-4 text-gray-400"/></button></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.title.message}</p>}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -368,6 +439,17 @@ export default function CapaSection() {
               <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Source</label><select {...regRaise('source')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold">{SOURCES.map(s => <option key={s}>{s}</option>)}</select></div>
             </div>
             <div><label className="block text-[10px] font-bold text-gray-400 mb-1">Description *</label><textarea {...regRaise('description')} rows="3" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold resize-none" />{raiseErrors.description && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.description.message}</p>}</div>
+            
+            <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 space-y-2">
+              <h4 className="text-[10px] font-bold text-gray-600 uppercase">FMEA Risk Assessment (1-10)</h4>
+              <div className="grid grid-cols-3 gap-2">
+                <div><label className="block text-[9px] font-bold text-gray-400 mb-1">Severity (S)</label><input type="number" min="1" max="10" {...regRaise('fmea_severity')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
+                <div><label className="block text-[9px] font-bold text-gray-400 mb-1">Occurrence (O)</label><input type="number" min="1" max="10" {...regRaise('fmea_occurrence')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
+                <div><label className="block text-[9px] font-bold text-gray-400 mb-1">Detection (D)</label><input type="number" min="1" max="10" {...regRaise('fmea_detection')} className="w-full px-2 py-1.5 border border-gray-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
+              </div>
+              <div className="text-[10px] font-bold text-gray-500 text-right">Calculated RPN: <span className="text-navy">{Number(watchRaise('fmea_severity')||1) * Number(watchRaise('fmea_occurrence')||1) * Number(watchRaise('fmea_detection')||1)}</span></div>
+            </div>
+
             <button type="submit" disabled={raising} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs uppercase shadow-sm">Submit NCR</button>
           </form>
         </div>

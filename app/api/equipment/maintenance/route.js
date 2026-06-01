@@ -6,6 +6,7 @@ const maintenanceSchema = z.object({
   equipment_id: z.string().uuid(),
   calibration_date: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   next_due_date: z.string().optional().or(z.literal('')),
+  log_type: z.enum(['Calibration', 'Maintenance', 'Cleaning', 'Usage']).default('Calibration'),
   result: z.string().min(1, "Result notes are required"),
   buffer_values_used: z.string().optional(),
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance'])
@@ -28,22 +29,24 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { equipment_id, calibration_date, next_due_date, result, buffer_values_used, status } = parsed.data;
+    const { equipment_id, calibration_date, next_due_date, log_type, result, buffer_values_used, status } = parsed.data;
 
     // 1. Insert log
     const { error: logErr } = await supabase.from('calibration_logs').insert({
       equipment_id,
       calibration_date,
       next_due_date: next_due_date || null,
+      log_type,
       result,
       buffer_values_used: buffer_values_used || null,
       logged_by: emp.id
     });
     if (logErr) throw logErr;
 
-    // 2. Update equipment status and due date
+    // 2. Update equipment status and due date based on type
     const updates = { status };
-    if (next_due_date) updates.calibration_due_date = next_due_date;
+    if (log_type === 'Calibration' && next_due_date) updates.calibration_due_date = next_due_date;
+    if (log_type === 'Maintenance' && next_due_date) updates.next_pm_date = next_due_date;
     
     const { error: updateErr } = await supabase.from('equipment').update(updates).eq('id', equipment_id);
     if (updateErr) throw updateErr;

@@ -45,11 +45,15 @@ export async function POST(request) {
     if (accessError) return accessError;
 
     if (action === 'raise') {
-      const { title, severity, source, description } = payload;
+      const { title, severity, source, description, fmea_severity, fmea_occurrence, fmea_detection } = payload;
       if (!title) return NextResponse.json({ error: 'Title required' }, { status: 400 });
       
       const { data, error } = await supabase.from('deviations').insert({
-        title, severity, source, description, reported_by: emp.id, created_by: emp.id, status: 'Open'
+        title, severity, source, description,
+        fmea_severity: fmea_severity || 1,
+        fmea_occurrence: fmea_occurrence || 1,
+        fmea_detection: fmea_detection || 1,
+        reported_by: emp.id, created_by: emp.id, status: 'Open'
       }).select().single();
       
       if (error) throw error;
@@ -57,10 +61,10 @@ export async function POST(request) {
     }
 
     if (action === 'investigate') {
-      const { deviation_id, investigation_id, why_1, why_2, why_3, why_4, why_5, root_cause_identified } = payload;
+      const { deviation_id, investigation_id, why_1, why_2, why_3, why_4, why_5, ishikawa_data, root_cause_identified, affected_sops } = payload;
       if (!root_cause_identified) return NextResponse.json({ error: 'Root cause required' }, { status: 400 });
 
-      const updates = { why_1, why_2, why_3, why_4, why_5, root_cause_identified, investigator_id: emp.id };
+      const updates = { why_1, why_2, why_3, why_4, why_5, ishikawa_data, root_cause_identified, investigator_id: emp.id };
       let returnData;
 
       if (investigation_id) {
@@ -72,7 +76,10 @@ export async function POST(request) {
         returnData = data;
       }
 
-      await supabase.from('deviations').update({ status: 'Investigating' }).eq('id', deviation_id);
+      await supabase.from('deviations').update({ 
+        status: 'Investigating', 
+        affected_sops: Array.isArray(affected_sops) ? affected_sops : [] 
+      }).eq('id', deviation_id);
       return NextResponse.json({ success: true, data: returnData });
     }
 
@@ -141,6 +148,32 @@ export async function PATCH(request) {
       }
       const { data, error } = await supabase.from('deviations').update({ status: 'Closed' }).eq('id', deviation_id).select().single();
       if (error) throw error;
+
+      // Auto-schedule 30/60/90-day Effectiveness Checks (EC)
+      const now = new Date();
+      const ecTasks = [30, 60, 90].map(days => {
+        const dueDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+        return {
+          title: `[EC-${days}D] Effectiveness Check for NCR: ${data.title}`,
+          description: `Verify that the corrective/preventive actions for NCR "${data.title}" remain effective after ${days} days.`,
+          assigned_to: emp.id,
+          assigned_by: emp.id,
+          due_date: dueDate.toISOString().split('T')[0],
+          priority: 'medium',
+          status: 'open',
+          approval_status: 'not_required',
+          checklist: [],
+          logged_minutes: 0,
+          is_personal_reminder: false
+        };
+      });
+      await supabase.from('tasks').insert(ecTasks);
+
+      // Trigger retraining for affected SOPs
+      if (data.affected_sops && Array.isArray(data.affected_sops) && data.affected_sops.length > 0) {
+        await supabase.from('sop_acknowledgements').delete().in('sop_id', data.affected_sops);
+      }
+
       return NextResponse.json({ success: true, data });
     }
 

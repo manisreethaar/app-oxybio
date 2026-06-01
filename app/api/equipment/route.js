@@ -8,7 +8,12 @@ const equipmentSchema = z.object({
   model: z.string().optional(),
   serial_number: z.string().optional(),
   calibration_due_date: z.string().optional().or(z.literal('')),
-  status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational')
+  status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational'),
+  iq_doc_url: z.string().optional().or(z.literal('')),
+  oq_doc_url: z.string().optional().or(z.literal('')),
+  pq_doc_url: z.string().optional().or(z.literal('')),
+  pm_frequency_days: z.number().int().optional().nullable(),
+  next_pm_date: z.string().optional().or(z.literal('')),
 });
 
 export async function GET(request) {
@@ -40,11 +45,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { name, model, serial_number, calibration_due_date, status } = parsed.data;
+    const { name, model, serial_number, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = parsed.data;
 
     const { data, error } = await supabase
       .from('equipment')
-      .insert({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status })
+      .insert({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
       .select()
       .single();
 
@@ -62,7 +67,7 @@ export async function PUT(request) {
     if (accessError) return accessError;
 
     const body = await request.json();
-    const { id, name, model, serial_number, calibration_due_date, status } = body;
+    const { id, name, model, serial_number, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = body;
 
     if (!id || !name) {
       return NextResponse.json({ error: 'Validation failed: ID and Name required' }, { status: 400 });
@@ -70,7 +75,7 @@ export async function PUT(request) {
 
     const { data, error } = await supabase
       .from('equipment')
-      .update({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status })
+      .update({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
       .eq('id', id)
       .select()
       .single();

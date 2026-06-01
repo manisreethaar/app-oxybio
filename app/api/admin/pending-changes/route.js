@@ -6,10 +6,10 @@ import { NextResponse } from 'next/server';
 async function requireAdmin(supabase, user) {
   const { data: emp } = await supabase
     .from('employees')
-    .select('id, role, full_name')
+    .select('id, role, full_name, department')
     .eq('email', user.email)
     .single();
-  if (!emp || !['admin', 'ceo', 'cto'].includes(emp.role)) return null;
+  if (!emp || !['admin', 'ceo', 'cto', 'research_fellow'].includes(emp.role)) return null;
   return emp;
 }
 
@@ -27,15 +27,25 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'pending';
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('pending_changes')
       .select(`
         *,
-        requester:requested_by ( id, full_name, initials, role ),
+        requester:requested_by!inner ( id, full_name, initials, role, department ),
         reviewer:reviewed_by   ( id, full_name, initials )
       `)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+      .eq('status', status);
+
+    if (!['ceo', 'cto'].includes(admin.role)) {
+      if (admin.department) {
+        query = query.eq('requester.department', admin.department);
+      } else if (admin.role !== 'admin') {
+        // If not global admin, and no department set, they see nothing
+        query = query.eq('requested_by', '00000000-0000-0000-0000-000000000000');
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
     return NextResponse.json({ data });
@@ -67,13 +77,21 @@ export async function PATCH(request) {
     // Fetch the pending change
     const { data: change, error: fetchErr } = await supabaseAdmin
       .from('pending_changes')
-      .select('*')
+      .select('*, requester:requested_by ( department )')
       .eq('id', id)
       .single();
 
     if (fetchErr || !change) return NextResponse.json({ error: 'Pending change not found.' }, { status: 404 });
     if (change.status !== 'pending') {
       return NextResponse.json({ error: 'This request has already been reviewed.' }, { status: 400 });
+    }
+
+    if (!['ceo', 'cto'].includes(admin.role)) {
+      if (admin.role !== 'admin' || (admin.role === 'admin' && admin.department)) {
+         if (change.requester?.department !== admin.department) {
+           return NextResponse.json({ error: 'Forbidden: You can only approve requests from your department.' }, { status: 403 });
+         }
+      }
     }
 
     const now = new Date().toISOString();

@@ -28,6 +28,14 @@ export async function POST(request) {
     }
 
     const { title, category, version, document_url } = parsed.data;
+
+    // Invalidate previous active versions of this SOP (Gap 38: SOP Version Expiration)
+    await supabase
+      .from('sop_library')
+      .update({ is_active: false })
+      .eq('title', title)
+      .eq('is_active', true);
+
     const sop_id = `SOP-${Date.now().toString(36).toUpperCase().slice(-4)}`;
 
     const { data, error } = await supabase

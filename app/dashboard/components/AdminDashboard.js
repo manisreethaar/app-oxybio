@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { differenceInHours } from 'date-fns';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import MyPendingActionsWidget from './MyPendingActionsWidget';
 
 const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
 const StorageWidget = dynamic(() => import('@/components/StorageWidget'), { ssr: false });
@@ -396,6 +397,11 @@ export default function AdminDashboard({ employeeId }) {
           </div>
         </div>
       )}
+
+      {/* Unified My Pending Actions Widget */}
+      <div className="grid grid-cols-1 gap-6">
+        <MyPendingActionsWidget />
+      </div>
 
       {/* Operational Alerts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

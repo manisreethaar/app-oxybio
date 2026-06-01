@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS inventory_stock (
   received_quantity NUMERIC NOT NULL,
   current_quantity NUMERIC NOT NULL,
   expiry_date DATE,
+  coa_expiry_date DATE,
+  sds_expiry_date DATE,
   location TEXT,
   status TEXT DEFAULT 'Available', 
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -98,7 +100,9 @@ CREATE TABLE IF NOT EXISTS inventory_stock (
 CREATE TABLE IF NOT EXISTS inventory_usage (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   stock_id UUID REFERENCES inventory_stock(id) ON DELETE CASCADE,
-  batch_id UUID REFERENCES batches(id) ON DELETE CASCADE,
+  batch_id UUID REFERENCES batches(id) ON DELETE CASCADE, -- Made optional for equipment maintenance
+  equipment_id UUID, -- For maintenance parts
+  ticket_id UUID, -- For maintenance parts
   quantity_used NUMERIC NOT NULL,
   logged_by UUID REFERENCES employees(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -111,19 +115,39 @@ CREATE TABLE IF NOT EXISTS equipment (
   model TEXT,
   serial_number TEXT UNIQUE,
   calibration_due_date DATE,
-  status TEXT DEFAULT 'Operational', 
+  status TEXT DEFAULT 'Operational',
+  iq_doc_url TEXT,
+  oq_doc_url TEXT,
+  pq_doc_url TEXT,
+  pm_frequency_days INTEGER,
+  next_pm_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS calibration_logs (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   equipment_id UUID REFERENCES equipment(id) ON DELETE CASCADE,
+  log_type TEXT DEFAULT 'Calibration',
   calibration_date DATE DEFAULT CURRENT_DATE,
   next_due_date DATE,
   result TEXT, 
   certificate_url TEXT,
   logged_by UUID REFERENCES employees(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS equipment_tickets (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  equipment_id UUID REFERENCES equipment(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  severity TEXT DEFAULT 'Medium',
+  status TEXT DEFAULT 'Open',
+  reported_by UUID REFERENCES employees(id),
+  resolved_by UUID REFERENCES employees(id),
+  resolution_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  resolved_at TIMESTAMP WITH TIME ZONE
 );
 
 -- RLS POLICIES FOR NEW TABLES
@@ -133,6 +157,7 @@ ALTER TABLE inventory_stock ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE equipment ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calibration_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment_tickets ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow read vendors" ON vendors FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));
 CREATE POLICY "Allow read items" ON inventory_items FOR SELECT USING (EXISTS (SELECT 1 FROM employees WHERE id = auth.uid()));

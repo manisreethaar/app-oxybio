@@ -19,6 +19,8 @@ export type StockEntry = {
   item_id?: string;
   current_quantity?: string | number | null;
   expiry_date?: string | null;
+  coa_expiry_date?: string | null;
+  sds_expiry_date?: string | null;
   inventory_items?: InventoryItem | null;
 };
 
@@ -36,15 +38,23 @@ export function daysUntilExpiry(expiryDate?: string | null, now = new Date()) {
 
 export function getStockRisk(stock: StockEntry, now = new Date()) {
   const daysLeft = daysUntilExpiry(stock.expiry_date, now);
+  const coaDaysLeft = daysUntilExpiry(stock.coa_expiry_date, now);
+  const sdsDaysLeft = daysUntilExpiry(stock.sds_expiry_date, now);
+  
   const quantity = toNumber(stock.current_quantity);
   const minLevel = toNumber(stock.inventory_items?.min_stock_level);
+
+  const isExpired = (daysLeft != null && daysLeft < 0) || (coaDaysLeft != null && coaDaysLeft < 0) || (sdsDaysLeft != null && sdsDaysLeft < 0);
+  const isExpiring = !isExpired && ((daysLeft != null && daysLeft < 30) || (coaDaysLeft != null && coaDaysLeft < 30) || (sdsDaysLeft != null && sdsDaysLeft < 30));
 
   return {
     quantity,
     minLevel,
     daysLeft,
-    isExpired: daysLeft != null && daysLeft < 0,
-    isExpiring: daysLeft != null && daysLeft >= 0 && daysLeft < 30,
+    coaDaysLeft,
+    sdsDaysLeft,
+    isExpired,
+    isExpiring,
     isLow: quantity <= minLevel,
     isOut: quantity <= 0,
   };

@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3 } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
@@ -12,6 +13,8 @@ import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import StockModal from './components/StockModal';
 import ItemVendorModal from './components/ItemVendorModal';
+import PurchaseRequestsTab from './components/PurchaseRequestsTab';
+import TraceabilityTab from './components/TraceabilityTab';
 import {
   filterStock,
   getItemStats,
@@ -43,7 +46,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [showOptions, setShowOptions] = useState(false);
   
   const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '' });
-  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
+  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
   
   const [modalType, setModalType] = useState('stock'); // 'stock' | 'items' | 'vendors'
   const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
@@ -62,6 +65,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   };
 
   const [selectedStock, setSelectedStock] = useState<any>(null);
+  const [showQR, setShowQR] = useState(false);
   const [movements, setMovements] = useState<any[]>([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [uploadingCoA, setUploadingCoA] = useState(false);
@@ -466,7 +470,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       const { error } = await supabase.from('vendors').update(newVendor as any).eq('id', (newVendor as any).id);
       if (!error) {
         setIsModalOpen(false);
-        setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
+        setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
         fetchData(0, false);
       } else { toast.error(error.message || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
@@ -507,7 +511,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       const { data, error } = await (supabase.from('vendors').insert([newVendor] as any) as any).select().single();
       if (!error) {
         setIsModalOpen(false);
-        setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '' });
+        setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
         fetchData(0, false);
       } else { toast.error(error.message || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
@@ -757,19 +761,37 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
         <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
         <button onClick={() => setActiveTab('vendors')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
+        <button onClick={() => setActiveTab('pr')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
+        <button onClick={() => setActiveTab('traceability')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
+      <div className="relative flex gap-2">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by item name or lot number..."
+            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Search by item name or lot number..."
-          className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <button 
+          onClick={() => {
+            const code = prompt('Scan QR Code (or type ID manually):');
+            if (code) {
+              const id = code.replace('OXY-STOCK-', '');
+              const s = stock.find(x => x.id === id);
+              if (s) setSelectedStock(s);
+              else toast.error('Stock item not found from QR code');
+            }
+          }}
+          className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg"
+        >
+          <QrCode className="w-5 h-5" /> Scan
+        </button>
       </div>
 
       {activeTab === 'stock' && (
@@ -1152,10 +1174,30 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
               <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
                 <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><ExternalLink className="w-3 h-3"/> {vendor.email || 'No email'}</p>
-                <div className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded inline-block">Approved Supplier</div>
+                <div className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded inline-block ${
+                  vendor.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
+                  vendor.status === 'Conditional' ? 'bg-amber-50 text-amber-700' :
+                  vendor.status === 'Blacklisted' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700'
+                }`}>
+                  {vendor.status || 'Approved'} Supplier
+                </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Purchase Requests Tab */}
+      {activeTab === 'pr' && (
+        <div className="mt-6">
+          <PurchaseRequestsTab canApprove={canEditItems} />
+        </div>
+      )}
+
+      {/* Traceability Tab */}
+      {activeTab === 'traceability' && (
+        <div className="mt-6">
+          <TraceabilityTab />
         </div>
       )}
 
@@ -1247,6 +1289,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
               </div>
 
+              {/* Storage Deviation Alerts */}
+              {selectedStock.condition_on_arrival === 'Temperature Deviation' && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                  <div className="p-2 bg-red-100 text-red-600 rounded-xl">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-red-900 uppercase tracking-widest">Temperature Deviation Alert</h4>
+                    <p className="text-xs font-bold text-red-700 mt-1">This lot was received with a temperature deviation. Ensure QC re-testing is completed before issuing.</p>
+                  </div>
+                </div>
+              )}
+
               {/* Advanced Specs */}
               <div className="space-y-3">
                 <h4 className="text-xs font-black uppercase text-slate-800 tracking-widest">Storage & Location</h4>
@@ -1254,6 +1309,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <div className="flex justify-between py-2 text-sm">
                     <span className="font-bold text-slate-400">Warehouse Location</span>
                     <span className="font-black text-slate-800">{selectedStock.location || 'Central Store'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 text-sm">
+                    <span className="font-bold text-slate-400">Condition on Arrival</span>
+                    <span className="font-black text-slate-800">{selectedStock.condition_on_arrival || 'Good'}</span>
                   </div>
                   <div className="flex justify-between py-2 text-sm">
                     <span className="font-bold text-slate-400">Preferred Supplier</span>
@@ -1309,18 +1368,61 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </a>
                 )}
               </div>
-              <button 
-                onClick={() => {
-                  setNewIssue({ stock_id: selectedStock.id, quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
-                  setModalType('issue');
-                  setIsModalOpen(true);
-                  setSelectedStock(null);
-                }} 
-                className="flex-1 py-4 bg-teal-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-teal-900 transition-all text-center"
-              >
-                Issue Stock Out
-              </button>
+              <div className="flex gap-2 w-full">
+                <button 
+                  onClick={() => setShowQR(true)} 
+                  className="flex-1 py-4 bg-gray-100 text-gray-700 font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-sm hover:bg-gray-200 transition-all text-center flex items-center justify-center gap-2"
+                >
+                  <QrCode className="w-4 h-4" /> View QR
+                </button>
+                {selectedStock.status === 'Quarantined' ? (
+                  <button 
+                    onClick={async () => {
+                       const { error } = await supabase.from('inventory_stock').update({ status: 'Available' }).eq('id', selectedStock.id);
+                       if (!error) { 
+                         toast.success('Stock Released from QC Quarantine'); 
+                         setSelectedStock({...selectedStock, status: 'Available'}); 
+                         fetchData(0, false); 
+                       } else {
+                         toast.error(error.message);
+                       }
+                    }} 
+                    className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
+                  >
+                    Release from Quarantine
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      setNewIssue({ stock_id: selectedStock.id, quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
+                      setModalType('issue');
+                      setIsModalOpen(true);
+                      setSelectedStock(null);
+                    }} 
+                    className="flex-[2] py-4 bg-teal-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-teal-900 transition-all text-center"
+                  >
+                    Issue Stock Out
+                  </button>
+                )}
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {showQR && selectedStock && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowQR(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-black text-slate-800 mb-2 text-center">Stock QR Code</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 text-center">{selectedStock.inventory_items?.name}</p>
+            <div className="bg-white p-4 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.05)] border border-slate-100 mb-6">
+              <QRCodeSVG value={`OXY-STOCK-${selectedStock.id}`} size={200} level="M" />
+            </div>
+            <p className="text-xs font-mono font-medium text-slate-400">ID: {selectedStock.id}</p>
           </div>
         </div>
       )}

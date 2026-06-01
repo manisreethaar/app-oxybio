@@ -11,9 +11,11 @@ import {
   Users, Clock, CheckSquare, FlaskConical, TrendingUp,
   CalendarCheck, Zap, Archive, Trash2, Edit2, X, Send
 } from 'lucide-react';
+import { downloadCsvWithHash } from '@/utils/exportUtils';
 import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 const ActivityVelocityChart = dynamic(() => import('@/components/charts/ActivityAnalyticsCharts').then(m => ({ default: m.ActivityVelocityChart })), { ssr: false });
@@ -45,8 +47,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
   // Edit/Delete request state (staff → admin approval flow)
   const [editModal, setEditModal] = useState<any>(null); // the activity being edited
-  const [editForm, setEditForm] = useState<any>({});
-  const [requestingDelete, setRequestingDelete] = useState<string | null>(null);
+  const [showAdminEditModal, setShowAdminEditModal] = useState(false);
+  const [adminEditPayload, setAdminEditPayload] = useState<{ id: string, action: string, updates: any } | null>(null);
+  const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [myPendingIds, setMyPendingIds] = useState<Set<string>>(new Set());
 
@@ -310,12 +313,19 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     } catch (err) { toast.error("Failed to save review note: " + err.message); }
   };
 
-  const handleArchiveActivity = async (id) => {
+  const handleArchiveActivity = async (reason: string) => {
+    if (!archiveConfirmId) return;
+    const id = archiveConfirmId;
     try {
-      const res = await fetch(`/api/activity?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/activity?id=${id}`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archive_reason: reason })
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to archive activity.');
       toast.success(data.message || 'Activity archived.');
+      setArchiveConfirmId(null);
       fetchData();
     } catch (err) {
       toast.error("Failed to archive activity: " + err.message);
@@ -543,11 +553,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 `"${(a.issue_description || '').replace(/"/g, '""')}"`,
               ]);
               const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-              const blob = new Blob([csv], { type: 'text/csv' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a'); a.href = url;
-              a.download = `activity_log_${new Date().toISOString().split('T')[0]}.csv`;
-              document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+              downloadCsvWithHash(csv, `activity_log_${new Date().toISOString().split('T')[0]}.csv`);
             }}
             className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
           >
@@ -872,7 +878,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
                     {isAdmin ? (
                       <button
-                        onClick={() => handleArchiveActivity(act.id)}
+                        onClick={() => setArchiveConfirmId(act.id)}
                         className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50"
                         title="Archive activity"
                       >
@@ -1199,6 +1205,18 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           )}
         </div>
       )}
+      <ConfirmModal
+        isOpen={!!archiveConfirmId}
+        onClose={() => setArchiveConfirmId(null)}
+        onConfirm={handleArchiveActivity}
+        title="Archive Activity"
+        message="This activity will be hidden from the active log."
+        confirmText="Archive Activity"
+        variant="danger"
+        requireInput={true}
+        inputPlaceholder="Reason for archiving..."
+        inputLabel="Please provide a reason for archiving:"
+      />
     </div>
   );
 }

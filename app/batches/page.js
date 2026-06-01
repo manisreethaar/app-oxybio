@@ -132,6 +132,7 @@ export default function BatchesPage() {
   const [creatingBatch,    setCreatingBatch]    = useState(false);
   const [batchError,       setBatchError]       = useState(null); // { message, warnings }
   const [cancelConfirmId,  setCancelConfirmId]  = useState(null);
+  const [archiveReason,    setArchiveReason]    = useState('');
   const [statusFilter,     setStatusFilter]     = useState('active');
   const [searchTerm,       setSearchTerm]       = useState('');
   const [sortOrder,        setSortOrder]        = useState('newest');
@@ -340,9 +341,13 @@ export default function BatchesPage() {
   };
 
   // ─── Cancel Batch ──────────────────────────────────────────
-  const handleCancelBatch = async (id) => {
+  const handleCancelBatch = async (id, reason) => {
     try {
-      const res  = await fetch(`/api/batches?id=${id}`, { method: 'DELETE' });
+      const res  = await fetch(`/api/batches?id=${id}`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archive_reason: reason })
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setActiveBatches(prev => prev.filter(b => b.id !== id));
@@ -630,7 +635,7 @@ export default function BatchesPage() {
                       <p className="text-xl font-black text-gray-800 tabular-nums">{hours}<span className="text-xs font-bold text-gray-400"> hr</span></p>
                       {isAdmin ? (
                         <button
-                          onClick={e => { e.preventDefault(); setCancelConfirmId(batch.id); }}
+                          onClick={e => { e.preventDefault(); setArchiveReason(''); setCancelConfirmId(batch.id); }}
                           className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
                           title="Archive Batch"
                         >
@@ -1074,6 +1079,16 @@ export default function BatchesPage() {
                   <p className="text-xs text-gray-500 mt-1">It will be hidden from active lists. Permanent delete is available only from Archived.</p>
                 </div>
               </div>
+              <div className="mb-4">
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">Reason for Archiving</label>
+                <input
+                  type="text"
+                  placeholder="Required..."
+                  value={archiveReason}
+                  onChange={(e) => setArchiveReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-red-500"
+                />
+              </div>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setCancelConfirmId(null)}
@@ -1082,8 +1097,9 @@ export default function BatchesPage() {
                   Keep Batch
                 </button>
                 <button
-                  onClick={() => { const id = cancelConfirmId; setCancelConfirmId(null); handleCancelBatch(id); }}
-                  className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
+                  disabled={!archiveReason.trim()}
+                  onClick={() => { const id = cancelConfirmId; setCancelConfirmId(null); handleCancelBatch(id, archiveReason); }}
+                  className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors disabled:opacity-50"
                 >
                   Archive Batch
                 </button>

@@ -86,6 +86,7 @@ export default function BatchDetailPage() {
   const [bmrUrl,         setBmrUrl]         = useState(null);
   const [pendingTransition, setPendingTransition] = useState(null);
   const [pendingCancel,     setPendingCancel]     = useState(false);
+  const [archiveReason, setArchiveReason] = useState('');
   const [pendingFlaskReject,  setPendingFlaskReject]  = useState(false);
   const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null);
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
@@ -320,13 +321,22 @@ export default function BatchDetailPage() {
   }, [actionLoading, batchId, fetchAll, toast]);
 
   const handleCancelBatch = useCallback(async () => {
+    setArchiveReason('');
     setPendingCancel(true);
   }, []);
 
   const confirmCancelBatch = async () => {
+    if (!archiveReason.trim()) {
+      toast.error('Please provide a reason for archiving.');
+      return;
+    }
     setPendingCancel(false);
     try {
-      const res  = await fetch(`/api/batches?id=${batchId}`, { method: 'DELETE' });
+      const res  = await fetch(`/api/batches?id=${batchId}`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archive_reason: archiveReason })
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast.success(data.message || 'Batch archived.');
@@ -770,9 +780,19 @@ export default function BatchDetailPage() {
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Archive Entire Batch</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">This hides the batch from active lists. Permanent delete is available only from Archived.</p>
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Reason for Archiving</label>
+              <input
+                type="text"
+                placeholder="Required..."
+                value={archiveReason}
+                onChange={(e) => setArchiveReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-red-500"
+              />
+            </div>
             <div className="flex gap-3">
               <button onClick={() => setPendingCancel(false)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold">Nevermind</button>
-              <button onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm">Archive Batch</button>
+              <button disabled={!archiveReason.trim()} onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-bold shadow-sm">Archive Batch</button>
             </div>
           </div>
         </div>
