@@ -266,8 +266,8 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       });
     supabase.from('inventory_items').select('id, name, unit').in('category', ['Microbiological Media', 'Lab Consumables'])
       .order('name').then(({ data }) => setMediaItems(data || []));
-    supabase.from('formulations').select('id, code, name, version, ingredients')
-      .eq('status', 'Approved').eq('category', 'Lab Media')
+    supabase.from('formulations').select('id, code, name, version, ingredients, category')
+      .eq('status', 'Approved')
       .order('name').then(({ data }) => setMediaRecipes(data || []));
   }, [supabase]);
 
@@ -493,11 +493,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     >
                       <option value="">-- No approved recipe --</option>
                       {mediaRecipes.map(r => (
-                        <option key={r.id} value={r.id}>{r.code ? `${r.code} — ` : ''}{r.name}</option>
+                        <option key={r.id} value={r.id}>
+                          {r.code ? `${r.code} — ` : ''}{r.name} v{r.version}{r.category ? ` (${r.category})` : ''}
+                        </option>
                       ))}
                     </select>
                     {mediaRecipes.length === 0 && (
-                      <p className="text-[9px] text-amber-500 mt-1">No approved recipes. Add in Formulations with category "Lab Media".</p>
+                      <p className="text-[9px] text-amber-500 mt-1">No approved recipes found. Go to Recipe Management and approve a formulation.</p>
                     )}
                   </div>
 
