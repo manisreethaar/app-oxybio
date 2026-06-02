@@ -488,28 +488,29 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
         <div onClick={e => e.stopPropagation()}>
           <ExpandedPlateDetail record={first} />
           {/* Edit first replicate */}
-          <div className="flex justify-end gap-1 mt-2">
+          <div className="flex justify-end gap-2 mt-2 flex-wrap">
             {sorted.map(r => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={e => { e.stopPropagation(); onEdit(r); }}
-                className="px-2.5 py-1 rounded-lg text-[9px] font-black bg-navy/10 text-navy border border-navy/20 hover:bg-navy/20 transition-colors"
-              >
-                Edit {r.replicate_label}
-              </button>
+              <div key={r.id} className="flex items-center gap-1 border border-navy/20 bg-navy/5 rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); onEdit(r); }}
+                  className="px-2 py-1 rounded-md text-[9px] font-black text-navy hover:bg-navy/10 transition-colors"
+                >
+                  Edit {r.replicate_label}
+                </button>
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); setConfirmDeleteId(r.id); }}
+                    disabled={deletingId === r.id}
+                    className="p-1 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-50 disabled:opacity-40"
+                    title={`Delete replicate ${r.replicate_label}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             ))}
-            {canDelete && (
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); setConfirmDeleteId(first.id); }}
-                disabled={deletingId === first.id}
-                className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
-                title="Delete"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            )}
           </div>
         </div>
       )}
