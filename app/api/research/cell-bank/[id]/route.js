@@ -343,9 +343,57 @@ export async function DELETE(request, { params }) {
     const target = searchParams.get('target') || 'preparation';
 
     if (target === 'strain') {
+      // Guard: block if strain has any preparations
+      const { count: prepCount } = await supabase
+        .from('cell_bank_preparations')
+        .select('id', { count: 'exact', head: true })
+        .eq('strain_id', params.id);
+
+      if (prepCount > 0) {
+        return NextResponse.json({
+          success: false,
+          error: `Cannot delete strain — it has ${prepCount} preparation(s) linked to it. Delete or discard all preparations first.`,
+          blocked: true,
+        }, { status: 409 });
+      }
+
       const { error } = await supabase.from('cell_bank_strains').delete().eq('id', params.id);
       if (error) throw error;
+
     } else {
+      // Guard: block if preparation has any registered vials
+      const { data: prep } = await supabase
+        .from('cell_bank_preparations')
+        .select('prep_code, vial_count, status')
+        .eq('id', params.id)
+        .single();
+
+      if (!prep) return NextResponse.json({ success: false, error: 'Preparation not found' }, { status: 404 });
+
+      // Count actual vials in the vials table (source of truth, not just vial_count column)
+      const { count: vialCount } = await supabase
+        .from('cell_bank_vials')
+        .select('id', { count: 'exact', head: true })
+        .eq('preparation_id', params.id);
+
+      if (vialCount > 0) {
+        return NextResponse.json({
+          success: false,
+          error: `Cannot delete ${prep.prep_code} — it has ${vialCount} registered vial(s). Vial data would be permanently lost. Use "Discard" to mark it as inactive instead.`,
+          blocked: true,
+          vial_count: vialCount,
+        }, { status: 409 });
+      }
+
+      // Also block if preparation is Completed (extra safety)
+      if (prep.status === 'Completed') {
+        return NextResponse.json({
+          success: false,
+          error: `Cannot delete ${prep.prep_code} — status is Completed. Use "Discard" to mark it as inactive if it is no longer needed.`,
+          blocked: true,
+        }, { status: 409 });
+      }
+
       const { error } = await supabase.from('cell_bank_preparations').delete().eq('id', params.id);
       if (error) throw error;
     }

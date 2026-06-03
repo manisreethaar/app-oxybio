@@ -580,18 +580,42 @@ export default function CellBankPage() {
 
   const filteredStrains = strains.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.accession_number?.toLowerCase().includes(search.toLowerCase()));
 
+  const handleDeletePrep = async (id) => {
+    const res = await fetch(`/api/research/cell-bank/${id}?target=preparation`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) {
+      toast.success('Preparation deleted.');
+      fetchAll();
+    } else if (json.blocked) {
+      // Offer Discard as safe alternative when deletion is blocked
+      toast.error(json.error);
+      const shouldDiscard = window.confirm(
+        `Delete is blocked.\n\n${json.error}\n\nClick OK to DISCARD this preparation instead (marks it as inactive, keeps all data).`
+      );
+      if (shouldDiscard) {
+        const discardRes = await fetch(`/api/research/cell-bank/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Discarded' }),
+        });
+        const discardJson = await discardRes.json();
+        if (discardJson.success) { toast.success('Preparation marked as Discarded.'); fetchAll(); }
+        else toast.error(discardJson.error || 'Discard failed.');
+      }
+    } else {
+      toast.error(json.error);
+    }
+  };
+
   const handleDeleteStrain = async (id) => {
     const res = await fetch(`/api/research/cell-bank/${id}?target=strain`, { method: 'DELETE' });
     const json = await res.json();
     if (json.success) { toast.success('Strain deleted.'); fetchAll(); }
-    else toast.error(json.error);
-  };
-
-  const handleDeletePrep = async (id) => {
-    const res = await fetch(`/api/research/cell-bank/${id}?target=preparation`, { method: 'DELETE' });
-    const json = await res.json();
-    if (json.success) { toast.success('Preparation deleted.'); fetchAll(); }
-    else toast.error(json.error);
+    else if (json.blocked) {
+      toast.error(json.error);
+    } else {
+      toast.error(json.error);
+    }
   };
 
   const handleQcRelease = async (prepId) => {
