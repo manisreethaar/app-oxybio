@@ -53,7 +53,7 @@ export async function GET() {
       supabase.from('employees').select('id', { count: 'exact', head: true })
         .eq('is_active', true),
       // Pending mispunches
-      supabase.from('attendance_log').select('id, employees(full_name)', { count: 'exact' })
+      supabase.from('attendance_log').select('id, date, mispunch_requested_hours, mispunch_reason, employees(full_name)', { count: 'exact' })
         .eq('mispunch_status', 'pending').limit(10),
       // Active batches with last fermentation reading timestamp
       supabase.from('batches').select('id, batch_id, variant, current_stage, status, created_at, ph_readings(ph_value, is_deviation), batch_fermentation_readings(ph, is_ph_alarm, logged_at)')

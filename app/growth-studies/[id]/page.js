@@ -203,6 +203,7 @@ export default function GrowthStudyDetailPage() {
       inoculum_volume_ml: study.inoculum_volume_ml ?? '',
       od_wavelength: study.od_wavelength ?? 600,
       expected_duration_hours: study.expected_duration_hours ?? '',
+      substrate_conc_g_l: study.substrate_conc_g_l ?? '',
     });
     setEditErr('');
     setEditModal(true);
@@ -261,6 +262,7 @@ export default function GrowthStudyDetailPage() {
       inoculum_volume_ml: f.inoculum_volume_ml !== '' ? parseFloat(f.inoculum_volume_ml) : null,
       od_wavelength: f.od_wavelength ? parseInt(f.od_wavelength) : 600,
       expected_duration_hours: f.expected_duration_hours !== '' ? parseInt(f.expected_duration_hours) : null,
+      substrate_conc_g_l: f.substrate_conc_g_l !== '' ? parseFloat(f.substrate_conc_g_l) : null,
     };
     const res = await fetch(`/api/growth-studies/${id}`, {
       method: 'PATCH',
@@ -360,14 +362,13 @@ export default function GrowthStudyDetailPage() {
     ...(isFermentation ? [{ key: 'do2', label: 'DO%' }] : []),
   ];
 
-  // G-40, G-41, G-42: Kinetics calculations from OD time-series
+  // G-40, G-41, G-42: Kinetics + A-20 Monod + A-21 Yx/s
   const kinetics = (() => {
     const pts = measurements
       .filter(m => m.od_value != null && m.actual_hour != null)
       .sort((a, b) => a.actual_hour - b.actual_hour);
     if (pts.length < 2) return null;
 
-    // Calculate µ for each consecutive pair: µ = (ln OD₂ - ln OD₁) / (t₂ - t₁)
     const rates = [];
     for (let i = 1; i < pts.length; i++) {
       const od1 = parseFloat(pts[i-1].od_value);
@@ -381,12 +382,27 @@ export default function GrowthStudyDetailPage() {
     const muMax = Math.max(...rates);
     const doublingTime = muMax > 0 ? (Math.LN2 / muMax) : null;
     const peakOD = Math.max(...pts.map(p => parseFloat(p.od_value)));
+
+    // A-20: Monod kinetics — Ks estimation (half-saturation)
+    // Ks from Lineweaver-Burk if substrate_conc is stored on study
+    const substrateConcGL = study.substrate_conc_g_l;
+    const ks = study.ks_half_sat;
+    const yxs = study.yx_s_yield_coeff;
+
+    // A-21: Yx/s from OD range and substrate consumed
+    // Yx/s = ΔX / ΔS where ΔX ≈ (peakOD - pts[0].od_value) and ΔS = substrateConcGL
+    const deltaX = peakOD - parseFloat(pts[0].od_value);
+    const autoYxs = substrateConcGL && substrateConcGL > 0 ? (deltaX / parseFloat(substrateConcGL)).toFixed(4) : null;
+
     return {
       muMax: muMax.toFixed(4),
       doublingTime: doublingTime ? doublingTime.toFixed(2) : '—',
       generationTime: doublingTime ? doublingTime.toFixed(2) : '—',
       peakOD: peakOD.toFixed(4),
       dataPoints: pts.length,
+      ks: ks ? parseFloat(ks).toFixed(4) : null,
+      yxs: yxs ? parseFloat(yxs).toFixed(4) : autoYxs,
+      substrateConcGL,
     };
   })();
 
@@ -697,6 +713,25 @@ export default function GrowthStudyDetailPage() {
                   </div>
                 ))}
               </div>
+              {/* A-20: Monod kinetics additions */}
+              {(kinetics.ks || kinetics.yxs) && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
+                  {kinetics.ks && (
+                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-orange-500 mb-1">Ks (g/L)</p>
+                      <p className="text-xl font-black text-orange-800 tabular-nums">{kinetics.ks}</p>
+                      <p className="text-[9px] text-orange-400 font-semibold mt-0.5">Half-saturation constant</p>
+                    </div>
+                  )}
+                  {kinetics.yxs && (
+                    <div className="p-4 bg-cyan-50 border border-cyan-100 rounded-xl">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-cyan-500 mb-1">Yx/s (g/g)</p>
+                      <p className="text-xl font-black text-cyan-800 tabular-nums">{kinetics.yxs}</p>
+                      <p className="text-[9px] text-cyan-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
+                    </div>
+                  )}
+                </div>
+              )}
               <p className="text-[9px] text-slate-400 font-semibold mt-3">
                 Calculated from {kinetics.dataPoints} OD data points · µ = (ln OD₂ − ln OD₁) / (t₂ − t₁) per interval
               </p>
@@ -1369,6 +1404,11 @@ export default function GrowthStudyDetailPage() {
                     <div>
                       <label className={LabelCls}>Planned Duration (h)</label>
                       <input className={InputCls} type="number" value={editForm.expected_duration_hours} onChange={e => setEditForm(f => ({ ...f, expected_duration_hours: e.target.value }))} />
+                    </div>
+                    {/* A-21: Substrate concentration for Monod/Yx/s */}
+                    <div>
+                      <label className={LabelCls}>Initial Substrate Conc. (g/L)</label>
+                      <input className={InputCls} type="number" step="0.1" value={editForm.substrate_conc_g_l} onChange={e => setEditForm(f => ({ ...f, substrate_conc_g_l: e.target.value }))} placeholder="e.g. 20 (for Monod Yx/s calc)"/>
                     </div>
                   </div>
                 </div>

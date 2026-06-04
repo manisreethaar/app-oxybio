@@ -61,9 +61,12 @@ function isExpired(dateStr) {
 // ---- Ship Vial Modal -------------------------------------------------------
 function ShipVialModal({ vial, onClose, onShipped }) {
   const toast = useToast();
-  const [destination, setDestination] = useState('');
-  const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [destination,    setDestination]    = useState('');
+  const [notes,          setNotes]          = useState('');
+  const [saving,         setSaving]         = useState(false);
+  const [carrier,        setCarrier]        = useState('');
+  const [transitTempC,   setTransitTempC]   = useState('');
+  const [transitDays,    setTransitDays]    = useState('1');
 
   const handleShip = async () => {
     if (!destination.trim()) { toast.error('Destination is required.'); return; }
@@ -72,7 +75,7 @@ function ShipVialModal({ vial, onClose, onShipped }) {
       const res = await fetch(`/api/research/cell-bank/vials/${vial.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ship', destination: destination.trim(), notes: notes.trim() || null }),
+        body: JSON.stringify({ action: 'ship', destination: destination.trim(), notes: notes.trim() || null, carrier: carrier || null, transit_temp_c: transitTempC ? parseFloat(transitTempC) : null, transit_days: transitDays ? parseInt(transitDays) : null }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -96,6 +99,18 @@ function ShipVialModal({ vial, onClose, onShipped }) {
           <label className="field-label">Notes</label>
           <input value={notes} onChange={e => setNotes(e.target.value)} className="field-input" placeholder="Optional shipping notes"/>
         </div>
+        {/* A-51: Cold chain shipment record */}
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-blue-900">Cold Chain Details</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div><label className="field-label text-xs">Carrier</label><input value={carrier} onChange={e=>setCarrier(e.target.value)} className="field-input text-xs" placeholder="e.g. FedEx"/></div>
+            <div><label className="field-label text-xs">Transit Temp (°C)</label><input type="number" step="0.1" value={transitTempC} onChange={e=>setTransitTempC(e.target.value)} className="field-input text-xs" placeholder="2–8"/></div>
+            <div><label className="field-label text-xs">Transit Days</label><input type="number" value={transitDays} onChange={e=>setTransitDays(e.target.value)} className="field-input text-xs" placeholder="1"/></div>
+          </div>
+          {transitTempC && (parseFloat(transitTempC) > 8 || parseFloat(transitTempC) < -100) && (
+            <p className="text-[10px] text-amber-700 font-bold">⚠ Temp outside typical cell bank range (−80°C dry ice or 2–8°C). Verify cold chain.</p>
+          )}
+        </div>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">Cancel</button>
           <button onClick={handleShip} disabled={saving} className="flex-1 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">{saving ? 'Shipping...' : 'Confirm Ship'}</button>
@@ -106,13 +121,16 @@ function ShipVialModal({ vial, onClose, onShipped }) {
 }
 
 // ---- Vial Row with movement log -------------------------------------------
-function VialRow({ vial, isAdmin, onAction }) {
+function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
   const [expanded, setExpanded]       = useState(false);
   const [logs, setLogs]               = useState(null);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [acting, setActing]           = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-  const [recoveryPct, setRecoveryPct] = useState('');
+  const [recoveryPct,    setRecoveryPct]    = useState('');
+  const [thawTempC,      setThawTempC]      = useState('37');
+  const [thawDurationMin, setThawDurationMin] = useState('2');
+  const [thawMedia,      setThawMedia]      = useState('MRS broth');
   const [showShipModal, setShowShipModal] = useState(false);
   const toast = useToast();
 
@@ -127,6 +145,13 @@ function VialRow({ vial, isAdmin, onAction }) {
   };
 
   const handleActionClick = (action) => {
+    // A-35: Reserve vial policy — warn when using/discarding the last available vial
+    if ((action === 'use' || action === 'discard') && availableCount <= 1 && vial.status === 'Available') {
+      const proceed = window.confirm(
+        `⚠ RESERVE VIAL POLICY\n\nThis is the LAST available vial in this preparation.\n\nUsing or discarding it will leave zero available vials — no future production batches can use this strain from this bank.\n\nProceed only if you have admin authorisation and a new preparation is planned.\n\nContinue?`
+      );
+      if (!proceed) return;
+    }
     setConfirmAction(action);
     setRecoveryPct('');
   };
@@ -137,6 +162,11 @@ function VialRow({ vial, isAdmin, onAction }) {
     const payload = { action: confirmAction };
     if ((confirmAction === 'thaw' || confirmAction === 'use') && recoveryPct !== '') {
       payload.recovery_pct = parseFloat(recoveryPct);
+    }
+    if (confirmAction === 'thaw') {
+      payload.thaw_temp_c = thawTempC ? parseFloat(thawTempC) : null;
+      payload.thaw_duration_min = thawDurationMin ? parseFloat(thawDurationMin) : null;
+      payload.thaw_media = thawMedia || null;
     }
     const res = await fetch(`/api/research/cell-bank/vials/${vial.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -223,14 +253,19 @@ function VialRow({ vial, isAdmin, onAction }) {
             <p className="text-xs text-gray-500">Vial: <span className="font-mono font-bold">{vial.vial_code}</span></p>
             <div>
               <label className="field-label">Recovery / Viability (%) <span className="text-gray-400 font-normal">optional</span></label>
-              <input
-                type="number" min="0" max="100" step="0.1"
-                value={recoveryPct}
-                onChange={e => setRecoveryPct(e.target.value)}
-                className="field-input"
-                placeholder="e.g. 85"
-              />
+              <input type="number" min="0" max="100" step="0.1" value={recoveryPct} onChange={e => setRecoveryPct(e.target.value)} className="field-input" placeholder="e.g. 85"/>
             </div>
+            {confirmAction === 'thaw' && (
+              <div className="space-y-2 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-xs font-black text-blue-900">Thaw Protocol (A-50)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className="field-label text-xs">Thaw Temp (°C)</label><input type="number" step="0.1" value={thawTempC} onChange={e=>setThawTempC(e.target.value)} className="field-input text-xs" placeholder="37"/></div>
+                  <div><label className="field-label text-xs">Duration (min)</label><input type="number" step="0.5" value={thawDurationMin} onChange={e=>setThawDurationMin(e.target.value)} className="field-input text-xs" placeholder="2"/></div>
+                </div>
+                <div><label className="field-label text-xs">Recovery Media</label><input value={thawMedia} onChange={e=>setThawMedia(e.target.value)} className="field-input text-xs" placeholder="e.g. MRS broth"/></div>
+                <p className="text-[9px] text-blue-600 font-semibold">Standard: 37°C water bath, 2 min, transfer to MRS broth immediately</p>
+              </div>
+            )}
             <div className="flex gap-3">
               <button onClick={() => setConfirmAction(null)} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">Cancel</button>
               <button onClick={executeAction} disabled={acting} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">{acting ? 'Saving...' : 'Confirm'}</button>
@@ -475,10 +510,26 @@ function StabilitySection({ prep, prepId, isAdmin, onSaved }) {
             </table>
           </div>
           {isAdmin && (
-            <button onClick={handleSave} disabled={saving}
-              className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">
-              {saving ? 'Saving...' : 'Save Stability Tests'}
-            </button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button onClick={handleSave} disabled={saving}
+                className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Stability Tests'}
+              </button>
+              {/* A-22: Update next stability test date */}
+              <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold">
+                <span>Next test:</span>
+                <input type="date" defaultValue={prep?.next_stability_test_date || ''}
+                  onChange={async (e) => {
+                    const res = await fetch(`/api/research/cell-bank/${prepId}`, {
+                      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ next_stability_test_date: e.target.value, last_stability_test_date: prep?.last_stability_test_date }),
+                    });
+                    const json = await res.json();
+                    if (json.success) onSaved();
+                  }}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-teal-400"/>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -534,6 +585,16 @@ function CoaModal({ prep, onClose }) {
             <div><span className="font-black text-gray-500 uppercase text-[10px]">Completed</span><p className="font-bold">{prep?.completed_at ? new Date(prep.completed_at).toLocaleDateString('en-IN') : 'In Progress'}</p></div>
             <div><span className="font-black text-gray-500 uppercase text-[10px]">Vial Count</span><p className="font-bold">{prep?.vial_count ?? '--'}</p></div>
             <div><span className="font-black text-gray-500 uppercase text-[10px]">Storage Temp</span><p className="font-bold">{prep?.cell_bank_vials?.[0]?.storage_temp || '--'}</p></div>
+            {/* A-22: Stability schedule */}
+            {prep?.next_stability_test_date && (
+              <div className={`col-span-2 p-2 rounded-lg border text-xs ${new Date(prep.next_stability_test_date) < new Date() ? 'bg-red-50 border-red-300' : new Date(prep.next_stability_test_date) < new Date(Date.now()+30*86400000) ? 'bg-amber-50 border-amber-300' : 'bg-blue-50 border-blue-200'}`}>
+                <span className="font-black uppercase text-[10px]">Next Stability Test</span>
+                <p className={`font-bold ${new Date(prep.next_stability_test_date) < new Date() ? 'text-red-700' : 'text-amber-700'}`}>
+                  {new Date(prep.next_stability_test_date).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})}
+                  {new Date(prep.next_stability_test_date) < new Date() ? ' — OVERDUE' : ''}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* QC Release */}
@@ -1085,12 +1146,15 @@ export default function CellBankDetailPage() {
                   )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {[...vials].sort((a, b) => {
-                    if (a.status !== b.status) return a.status === 'Available' ? -1 : 1;
-                    return (a.vial_code || '').localeCompare(b.vial_code || '');
-                  }).map(v => (
-                    <VialRow key={v.id} vial={v} isAdmin={isAdmin} onAction={fetchPrep}/>
-                  ))}
+                  {(() => {
+                    const availableCount = vials.filter(v => v.status === 'Available').length;
+                    return [...vials].sort((a, b) => {
+                      if (a.status !== b.status) return a.status === 'Available' ? -1 : 1;
+                      return (a.vial_code || '').localeCompare(b.vial_code || '');
+                    }).map(v => (
+                      <VialRow key={v.id} vial={v} isAdmin={isAdmin} onAction={fetchPrep} availableCount={availableCount}/>
+                    ));
+                  })()}
                 </div>
                 {isAdmin && (
                   <VialRegistrationPanel prepId={prepId} prep={prep} onRegistered={fetchPrep}/>

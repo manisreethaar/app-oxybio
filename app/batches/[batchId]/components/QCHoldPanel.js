@@ -1152,6 +1152,32 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 )}
               </div>
 
+              {/* A-55: Shelf-life viability gate */}
+              {(() => {
+                const cfuTest = tests.find(t => t.test_name.toLowerCase().includes('cfu') && t.result_value && t.pass_fail === 'Pass');
+                if (!cfuTest) return null;
+                // Parse CFU value (handles "10^6", "1000000", "1e6" etc)
+                const cfuStr = cfuTest.result_value.replace(/[^\d.e]/gi,'');
+                const cfuVal = parseFloat(cfuStr) || 0;
+                const targetCfu = 1e5; // minimum at EoSL: 10^5 CFU/g (standard probiotic claim)
+                // Simple D-value estimate: assume 1 log reduction in 30 days at 4°C for LAB
+                const dValueDays = 30;
+                const survivalAt90Days = cfuVal * Math.pow(10, -90/dValueDays);
+                const meetsEoSL = survivalAt90Days >= targetCfu;
+                return (
+                  <div className={`p-3 rounded-xl border text-xs ${meetsEoSL ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className={`font-black text-[10px] uppercase mb-1 ${meetsEoSL ? 'text-emerald-800' : 'text-red-800'}`}>A-55 Shelf-Life Viability Gate (estimated)</p>
+                    <p className={`font-semibold ${meetsEoSL ? 'text-emerald-700' : 'text-red-700'}`}>
+                      Initial CFU: {cfuVal.toExponential(1)} · Projected EoSL (90d, 4°C): ~{survivalAt90Days.toExponential(1)} CFU/g
+                    </p>
+                    <p className={`font-black mt-0.5 ${meetsEoSL ? 'text-emerald-800' : 'text-red-800'}`}>
+                      {meetsEoSL ? '✓ Projected to meet ≥10⁵ CFU/g at 90 days' : '⚠ MAY NOT meet ≥10⁵ CFU/g at 90 days — verify shelf-life study'}
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5">Based on 1-log/30d D-value estimate at 4°C. Confirm with actual stability study.</p>
+                  </div>
+                );
+              })()}
+
               {/* G-09: COA download button */}
               <button onClick={() => setShowCoa(true)}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">

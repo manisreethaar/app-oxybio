@@ -36,7 +36,16 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [contCheck, setContCheck] = useState('Clear');
   const [contNotes, setContNotes] = useState('');
   // G-19: pre-inoculation pH
-  const [preInocuPh, setPreInocuPh] = useState('');
+  const [preInocuPh,          setPreInocuPh]          = useState('');
+  // A-26: inoculum viability at point of use
+  const [inoculumViabilityPct,    setInoculumViabilityPct]    = useState('');
+  const [inoculumViabilityMethod, setInoculumViabilityMethod] = useState('Not checked');
+  // A-27: post-inoculation pH at 15 min
+  const [postInocuPh15min,    setPostInocuPh15min]    = useState('');
+  // A-49: back-slop prep log
+  const [backSlopSourceBatch, setBackSlopSourceBatch] = useState('');
+  const [backSlopFinalPh,     setBackSlopFinalPh]     = useState('');
+  const [backSlopFinalTa,     setBackSlopFinalTa]     = useState('');
   // G-34: sampling plan
   const [samplingPlanHrs, setSamplingPlanHrs] = useState('');
   // G-55: flask temperature
@@ -77,6 +86,12 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setContNotes(d.contamination_notes||'');
           setCapaDevId(d.capa_deviation_id||null);
           setPreInocuPh(d.pre_inocu_ph||'');
+          setInoculumViabilityPct(d.inoculum_viability_pct||'');
+          setInoculumViabilityMethod(d.inoculum_viability_method||'Not checked');
+          setPostInocuPh15min(d.post_inocu_ph_15min||'');
+          setBackSlopSourceBatch(d.back_slop_source_batch_id||'');
+          setBackSlopFinalPh(d.back_slop_final_ph||'');
+          setBackSlopFinalTa(d.back_slop_final_ta_pct||'');
           setSamplingPlanHrs((d.sampling_plan_hrs||[]).join(', '));
           setFlaskTempC(d.flask_temp_c||'');
           setBackSlopPct(d.back_slop_ratio_pct||'');
@@ -157,6 +172,12 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         sampling_plan_hrs: samplingPlanHrs.trim()
           ? samplingPlanHrs.split(',').map(s=>s.trim()).filter(Boolean)
           : [],
+        inoculum_viability_pct: inoculumViabilityPct ? parseFloat(inoculumViabilityPct) : null,
+        inoculum_viability_method: inoculumViabilityMethod !== 'Not checked' ? inoculumViabilityMethod : null,
+        post_inocu_ph_15min: postInocuPh15min ? parseFloat(postInocuPh15min) : null,
+        back_slop_source_batch_id: sourceType === 'back_slop' ? (backSlopSourceBatch || null) : null,
+        back_slop_final_ph: sourceType === 'back_slop' && backSlopFinalPh ? parseFloat(backSlopFinalPh) : null,
+        back_slop_final_ta_pct: sourceType === 'back_slop' && backSlopFinalTa ? parseFloat(backSlopFinalTa) : null,
         operator_id: employeeProfile?.id,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
@@ -235,7 +256,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
                   const prep = v.cell_bank_preparations;
                   return (
                     <option key={v.id} value={v.id}>
-                      {v.vial_code} — {strain?.name || 'Unknown strain'} ({prep?.type} {prep?.prep_code}) · {v.storage_temp}
+                      {v.vial_code} — {strain?.name || 'Unknown strain'} ({prep?.type} {prep?.prep_code}{prep?.passage_number != null ? ` P${prep.passage_number}` : ''}) · {v.storage_temp}
                     </option>
                   );
                 })}
@@ -245,7 +266,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
               <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs space-y-1">
                 <p className="font-black text-indigo-800">{selectedVial.vial_code}</p>
                 <p className="text-indigo-700 font-semibold">{selectedVial.cell_bank_preparations?.cell_bank_strains?.name}</p>
-                <p className="text-indigo-600">{selectedVial.cell_bank_preparations?.type} · {selectedVial.cell_bank_preparations?.prep_code} · Stored at {selectedVial.storage_temp}</p>
+                <p className="text-indigo-600">{selectedVial.cell_bank_preparations?.type} · {selectedVial.cell_bank_preparations?.prep_code}{selectedVial.cell_bank_preparations?.passage_number != null ? ` · Passage P${selectedVial.cell_bank_preparations.passage_number}` : ''} · Stored at {selectedVial.storage_temp}</p>
                 {selectedVial.freezer_id && <p className="text-indigo-500">Freezer: {selectedVial.freezer_id} / Rack {selectedVial.rack} / Box {selectedVial.box}</p>}
               </div>
             )}
@@ -359,6 +380,49 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           )}
           {preInocuPh && parseFloat(preInocuPh) >= 5.5 && parseFloat(preInocuPh) <= 7.0 && (
             <p className="text-xs text-emerald-700 font-bold">✓ pH in acceptable pre-inoculation range</p>
+          )}
+        </div>
+
+        {/* A-26: Inoculum viability at point of use */}
+        <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-teal-900">Inoculum Viability at Point of Use <span className="text-teal-500 font-semibold text-[10px]">(A-26)</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label text-teal-800">Viability (%)</label>
+              <input type="number" step="0.1" min="0" max="100" value={inoculumViabilityPct} onChange={e=>setInoculumViabilityPct(e.target.value)} className="field-input" placeholder="e.g. 92"/>
+            </div>
+            <div>
+              <label className="field-label text-teal-800">Method</label>
+              <select value={inoculumViabilityMethod} onChange={e=>setInoculumViabilityMethod(e.target.value)} className="field-input bg-white text-xs">
+                {['Not checked','Methylene Blue','Live/Dead stain','Plate count','OD reading'].map(m=><option key={m}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+          {inoculumViabilityPct && parseFloat(inoculumViabilityPct) < 80 && (
+            <p className="text-[10px] text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low inoculum viability — extended lag phase expected</p>
+          )}
+        </div>
+
+        {/* A-49: Back-slop prep log */}
+        {sourceType === 'back_slop' && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+            <p className="text-xs font-black text-amber-900">Back-Slop Preparation Record <span className="text-amber-500 font-semibold text-[10px]">(A-49)</span></p>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label className="field-label">Source Batch ID</label><input value={backSlopSourceBatch} onChange={e=>setBackSlopSourceBatch(e.target.value)} className="field-input text-xs" placeholder="e.g. OXY-2026-001"/></div>
+              <div><label className="field-label">Source Final pH</label><input type="number" step="0.01" value={backSlopFinalPh} onChange={e=>setBackSlopFinalPh(e.target.value)} className="field-input text-xs" placeholder="4.2"/></div>
+              <div><label className="field-label">Source Final TA%</label><input type="number" step="0.01" value={backSlopFinalTa} onChange={e=>setBackSlopFinalTa(e.target.value)} className="field-input text-xs" placeholder="0.85"/></div>
+            </div>
+          </div>
+        )}
+
+        {/* A-27: Post-inoculation pH at 15 min */}
+        <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+          <label className="block text-xs font-black text-green-900 mb-1">Post-Inoculation pH at 15 min <span className="text-green-500 font-semibold text-[10px]">(A-27)</span></label>
+          <input type="number" step="0.01" value={postInocuPh15min} onChange={e=>setPostInocuPh15min(e.target.value)} className="field-input" placeholder="Measure pH 15 min after adding starter to confirm activity"/>
+          {postInocuPh15min && preInocuPh && (
+            <p className="text-[10px] text-green-700 font-semibold mt-1">
+              ΔpH = {(parseFloat(postInocuPh15min) - parseFloat(preInocuPh)).toFixed(2)} {parseFloat(postInocuPh15min) < parseFloat(preInocuPh) ? '✓ Starter is active' : '⚠ No acidification — check starter viability'}
+            </p>
           )}
         </div>
 

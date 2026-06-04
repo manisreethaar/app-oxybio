@@ -438,6 +438,7 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
           <Beaker className="w-3.5 h-3.5 text-orange-400 shrink-0" />
           <span className="text-xs font-black text-gray-800 truncate">
             {first.plate_label || first.sample_name || 'Plate'}
+            {first.dilution_factor != null ? ` (Dil: ${first.dilution_factor})` : ''}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -988,8 +989,8 @@ export default function SampleIncubationPage() {
                             singles.push(r);
                             continue;
                           }
-                          // Key: batch_id + log_hour + sample_name
-                          const gKey = `${r.batch_id || ''}|${r.log_hour}|${r.sample_name}`;
+                          // Key: batch_id + log_hour + sample_name + dilution_factor
+                          const gKey = `${r.batch_id || ''}|${r.log_hour}|${r.sample_name}|${r.dilution_factor || ''}`;
                           if (!groups.has(gKey)) groups.set(gKey, []);
                           groups.get(gKey).push(r);
                         }

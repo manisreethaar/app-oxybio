@@ -212,6 +212,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [od,         setOd]         = useState('');
   // G-30: Titratable Acidity
   const [ta,         setTa]         = useState('');
+  // A-60: Dissolved Oxygen
+  const [doPercent,  setDoPercent]  = useState('');
+  // A-61: Headspace CO₂ pressure
+  const [co2Pressure, setCo2Pressure] = useState('');
   // G-82: CO₂ / gas lock observation
   const [co2Observed, setCo2Observed] = useState('');
   // G-83: Ethanol % (for mixed cultures)
@@ -464,6 +468,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           brix: brix ? parseFloat(brix) : null,
           optical_density: od ? parseFloat(od) : null,
           titratable_acidity_pct: ta ? parseFloat(ta) : null,
+          do_percent: doPercent ? parseFloat(doPercent) : null,
+          co2_pressure_kpa: co2Pressure ? parseFloat(co2Pressure) : null,
           incubator_equipment_id: incubatorId || null,
           co2_observed:  co2Observed || null,
           ethanol_pct:   ethanolPct ? parseFloat(ethanolPct) : null,
@@ -491,7 +497,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (!json.success) throw new Error(json.error || 'Failed to log reading');
 
       toast.success(json.incubation ? 'Reading logged and incubation activity created.' : 'Reading logged.');
-      setPH(''); setTemp(''); setBrix(''); setOd(''); setTa(''); setCo2Observed(''); setEthanolPct('');
+      setPH(''); setTemp(''); setBrix(''); setOd(''); setTa(''); setDoPercent(''); setCo2Pressure(''); setCo2Observed(''); setEthanolPct('');
       setPlatingIntent(null); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
       setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
@@ -831,6 +837,19 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <input type="number" step="0.01" value={ethanolPct} onChange={e=>setEthanolPct(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
               </div>
 
+              {/* A-60, A-61: DO + headspace CO₂ */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">DO (%)</label>
+                  <input type="number" step="0.1" min="0" max="100" value={doPercent} onChange={e=>setDoPercent(e.target.value)} placeholder="e.g. 5.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <p className="text-[9px] text-gray-400 mt-0.5">Dissolved oxygen %</p>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Headspace CO₂ (kPa)</label>
+                  <input type="number" step="0.1" value={co2Pressure} onChange={e=>setCo2Pressure(e.target.value)} placeholder="e.g. 1.5" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                </div>
+              </div>
+
               {/* G-31: Incubator equipment picker */}
               {incubators.length > 0 && (
                 <div>
@@ -983,6 +1002,34 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <TempChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
               </div>
             )}
+            {/* A-31 + A-32: TA production rate and acid curve */}
+            {(() => {
+              const flaskReadings = readings.filter(r => r.flask_id === activeFlask?.id && r.titratable_acidity_pct != null && r.elapsed_hours != null).sort((a,b)=>a.elapsed_hours-b.elapsed_hours);
+              if (flaskReadings.length < 2) return null;
+              // Calculate ΔTA/Δt for each interval
+              const rates = [];
+              for (let i=1; i<flaskReadings.length; i++) {
+                const dTA = parseFloat(flaskReadings[i].titratable_acidity_pct) - parseFloat(flaskReadings[i-1].titratable_acidity_pct);
+                const dt = parseFloat(flaskReadings[i].elapsed_hours) - parseFloat(flaskReadings[i-1].elapsed_hours);
+                if (dt > 0) rates.push(dTA/dt);
+              }
+              const maxRate = Math.max(...rates);
+              const finalTA = parseFloat(flaskReadings[flaskReadings.length-1].titratable_acidity_pct);
+              const totalHrs = parseFloat(flaskReadings[flaskReadings.length-1].elapsed_hours);
+              // A-64: lactic acid productivity ≈ (TA% × 10 g/L) / hours [rough estimate]
+              const productivity = totalHrs > 0 ? ((finalTA * 10) / totalHrs).toFixed(3) : null;
+              return (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
+                  <p className="text-[9px] font-black uppercase text-rose-800">Acid Production Analytics (from TA% readings)</p>
+                  <div className="grid grid-cols-3 gap-3 text-xs">
+                    <div><p className="text-rose-600 font-black text-[9px] uppercase">Max ΔTA/Δt</p><p className="font-black text-rose-900">{maxRate.toFixed(4)} %/h</p></div>
+                    <div><p className="text-rose-600 font-black text-[9px] uppercase">Final TA%</p><p className="font-black text-rose-900">{finalTA.toFixed(2)}%</p></div>
+                    {productivity && <div><p className="text-rose-600 font-black text-[9px] uppercase">A-64 Productivity</p><p className="font-black text-rose-900">~{productivity} g/L/h</p><p className="text-[8px] text-rose-400">lactic acid est.</p></div>}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* G-34: Sampling plan indicator */}
             {inocu?.sampling_plan_hrs?.length > 0 && (
               <div className="p-3 bg-navy/5 rounded-xl border border-navy/10">

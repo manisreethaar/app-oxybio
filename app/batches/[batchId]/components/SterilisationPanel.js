@@ -43,6 +43,10 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   const [raisingCapa, setRaisingCapa] = useState(false);
   // G-84: steam quality + condensate
   const [steamQuality,  setSteamQuality]  = useState('');
+  // A-28: Autoclave load configuration
+  const [loadDesc,      setLoadDesc]      = useState('');
+  const [loadTotalVol,  setLoadTotalVol]  = useState('');
+  const [flaskSizes,    setFlaskSizes]    = useState('');
   const [condensateCheck, setCondensateCheck] = useState('');
   // G-59: cooling time
   const [coolingMin, setCoolingMin] = useState('');
@@ -76,6 +80,9 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       setCapaDevId(d.capa_deviation_id||null);
       setCoolingMin(d.cooling_time_min||'');
       setSteamQuality(d.steam_quality_check||'');
+      setLoadDesc(d.load_description||'');
+      setLoadTotalVol(d.load_total_volume_ml||'');
+      setFlaskSizes((d.flask_sizes||[]).join(', '));
       setCondensateCheck(d.condensate_check||'');
       if (d.cycle2_temp_c) { setShowCycle2(true); setCycle2Temp(d.cycle2_temp_c||''); setCycle2Hold(d.cycle2_hold_min||''); setCycle2Tape(d.cycle2_tape||'Positive'); }
       if (d.cycle2_start) setCycle2Start((() => { const dt = new Date(d.cycle2_start); dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
@@ -159,8 +166,11 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         bi_result: biUsed ? biResult : 'Not Used',
         bi_incubation_date: biUsed && biIncDate ? biIncDate : null,
         capa_deviation_id: devId || null,
-        steam_quality_check: steamQuality || null,
-        condensate_check:    condensateCheck || null,
+        steam_quality_check:  steamQuality || null,
+        condensate_check:     condensateCheck || null,
+        load_description:     loadDesc || null,
+        load_total_volume_ml: loadTotalVol ? parseFloat(loadTotalVol) : null,
+        flask_sizes:          flaskSizes.trim() ? flaskSizes.split(',').map(s=>s.trim()).filter(Boolean) : [],
         cooling_time_min: coolingMin ? parseFloat(coolingMin) : null,
         cycle2_temp_c:   showCycle2 && cycle2Temp  ? parseFloat(cycle2Temp)  : null,
         cycle2_hold_min: showCycle2 && cycle2Hold  ? parseFloat(cycle2Hold)  : null,
@@ -408,6 +418,34 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           {passFail === 'Fail' && !capaDevId && (
             <p className="text-[10px] text-red-600 font-bold mt-2">Saving will auto-raise a CAPA deviation record.</p>
           )}
+        </div>
+
+        {/* A-48: IQ/OQ/PQ validation document linkage */}
+        {selectedEquip && (
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs">
+            <p className="font-black text-gray-700 uppercase text-[10px] mb-1">Equipment Validation Status (A-48)</p>
+            <div className="flex flex-wrap gap-3">
+              {[['IQ','iq_doc_url'],['OQ','oq_doc_url'],['PQ','pq_doc_url']].map(([label, field]) => (
+                <span key={label} className={`px-2 py-1 rounded-lg border text-[10px] font-black ${selectedEquip[field] ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>
+                  {label}: {selectedEquip[field] ? '✓' : 'Missing'}
+                  {selectedEquip[field] && <a href={selectedEquip[field]} target="_blank" rel="noreferrer" className="ml-1 underline">View</a>}
+                </span>
+              ))}
+            </div>
+            {!selectedEquip.iq_doc_url && !selectedEquip.oq_doc_url && !selectedEquip.pq_doc_url && (
+              <p className="text-amber-600 font-bold mt-1">⚠ No IQ/OQ/PQ docs linked — add them in Equipment module</p>
+            )}
+          </div>
+        )}
+
+        {/* A-28: Autoclave load configuration */}
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-slate-700">Load Configuration <span className="text-slate-400 font-semibold text-[10px]">(A-28 — affects heat penetration)</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="field-label">Total Load Volume (ml)</label><input type="number" value={loadTotalVol} onChange={e=>setLoadTotalVol(e.target.value)} className="field-input" placeholder="e.g. 750"/></div>
+            <div><label className="field-label">Flask Sizes (comma-separated)</label><input value={flaskSizes} onChange={e=>setFlaskSizes(e.target.value)} className="field-input" placeholder="e.g. 250ml, 500ml, 100ml"/></div>
+          </div>
+          <div><label className="field-label">Load Description</label><input value={loadDesc} onChange={e=>setLoadDesc(e.target.value)} className="field-input" placeholder="e.g. 3 × 250ml media + 2 × 500ml broth in stainless rack"/></div>
         </div>
 
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes (cycle observations, deviations)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
