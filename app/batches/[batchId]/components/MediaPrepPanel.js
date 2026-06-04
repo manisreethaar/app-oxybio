@@ -37,6 +37,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const [supervisedBy, setSupervisedBy] = useState('');
   // G-51: particle size
   const [particleSize, setParticleSize] = useState('');
+  // A-25: starch gelatinization
+  const [starchGelTemp,  setStarchGelTemp]  = useState('');
+  const [starchGelConfirm, setStarchGelConfirm] = useState(false);
+  // A-58: buffer capacity
+  const [bufferCapacity, setBufferCapacity] = useState('');
+  // A-59: viscosity
+  const [viscosityCp,   setViscosityCp]   = useState('');
   // G-85: substrate photo URL
   const [substratePhotoUrl, setSubstratePhotoUrl] = useState('');
   // G-53: water activity
@@ -67,6 +74,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setInitPH(d.initial_ph||''); setNotes(d.notes||'');
       setSupervisedBy(d.supervised_by||'');
       setParticleSize(d.particle_size_mesh||'');
+      setStarchGelTemp(d.starch_gelat_temp_c||'');
+      setStarchGelConfirm(d.starch_gelat_confirmed||false);
+      setBufferCapacity(d.buffer_capacity_mmol_l||'');
+      setViscosityCp(d.viscosity_cP||'');
       setSubstratePhotoUrl(d.substrate_photo_url||'');
       setAwValue(d.aw_value||'');
       setPretreatSteps(d.pre_treatment_steps||[]);
@@ -170,6 +181,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         is_complete: advance, operator_id: employeeProfile?.id,
         supervised_by: supervisedBy || null, notes: notes || null,
         particle_size_mesh:  particleSize || null,
+        starch_gelat_temp_c: starchGelTemp ? parseFloat(starchGelTemp) : null,
+        starch_gelat_confirmed: starchGelConfirm,
+        buffer_capacity_mmol_l: bufferCapacity ? parseFloat(bufferCapacity) : null,
+        viscosity_cP: viscosityCp ? parseFloat(viscosityCp) : null,
         aw_value:            awValue ? parseFloat(awValue) : null,
         pre_treatment_steps: pretreatSteps,
         substrate_photo_url: substratePhotoUrl || null,
@@ -357,6 +372,29 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               <label className="field-label">Water Activity (aW) <span className="text-gray-400 text-[9px]">substrate</span></label>
               <input type="number" step="0.01" min="0" max="1" value={awValue} onChange={e=>setAwValue(e.target.value)} className="field-input" placeholder="0.95"/>
               {awValue && parseFloat(awValue) > 0.97 && <p className="text-[10px] text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
+            </div>
+            {/* A-25: Starch Gelatinization */}
+            <div>
+              <label className="field-label">Starch Gelatinization Temp (°C) <span className="text-gray-400 text-[9px]">A-25</span></label>
+              <input type="number" step="0.1" value={starchGelTemp} onChange={e=>setStarchGelTemp(e.target.value)} className="field-input" placeholder="65–70°C (grain substrates)"/>
+            </div>
+            <div className="flex flex-col justify-end pb-0.5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={starchGelConfirm} onChange={e=>setStarchGelConfirm(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
+                <span className="text-xs font-bold text-gray-700">Gelatinization confirmed (iodine test / viscosity change)</span>
+              </label>
+            </div>
+            {/* A-58: Buffer Capacity */}
+            <div>
+              <label className="field-label">Buffer Capacity (mmol/L) <span className="text-gray-400 text-[9px]">A-58</span></label>
+              <input type="number" step="0.1" value={bufferCapacity} onChange={e=>setBufferCapacity(e.target.value)} className="field-input" placeholder="e.g. 25"/>
+              <p className="text-[9px] text-gray-400 mt-0.5">Resistance to pH change — affects fermentation rate variability</p>
+            </div>
+            {/* A-59: Viscosity */}
+            <div>
+              <label className="field-label">Substrate Viscosity (cP) <span className="text-gray-400 text-[9px]">A-59</span></label>
+              <input type="number" step="0.1" value={viscosityCp} onChange={e=>setViscosityCp(e.target.value)} className="field-input" placeholder="e.g. 120"/>
+              <p className="text-[9px] text-gray-400 mt-0.5">Affects mixing efficiency and mass transfer</p>
             </div>
           </div>
           {/* G-85: Substrate photo URL */}

@@ -33,8 +33,12 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
   const [addMethod,   setAddMethod]   = useState(ADD_METHOD[0]);
   const [colBefore,   setColBefore]   = useState('');
   const [colAfter,    setColAfter]    = useState('');
-  const [lafUsed,     setLafUsed]     = useState(true);
-  const [notes,       setNotes]       = useState('');
+  const [lafUsed,        setLafUsed]        = useState(true);
+  const [notes,          setNotes]          = useState('');
+  // A-36, A-54: Bioactive marker content
+  const [polyphenolMgG,  setPolyphenolMgG]  = useState('');
+  const [betaGlucanPct,  setBetaGlucanPct]  = useState('');
+  const [extractBioSpec, setExtractBioSpec] = useState('');
   // G-36: mixing parameters
   const [mixingTimeMin,   setMixingTimeMin]   = useState('');
   const [mixingSpeedRpm,  setMixingSpeedRpm]  = useState('');
@@ -184,6 +188,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Extract initial pH</label><input type="number" step="0.01" value={exPh} onChange={e=>setExPh(e.target.value)} className="field-input p-2" placeholder="e.g. 6.5"/></div>
+          {/* A-36, A-54: Bioactive markers */}
+          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-gray-400 text-[9px]">A-36</span></label><input type="number" step="0.1" value={polyphenolMgG} onChange={e=>setPolyphenolMgG(e.target.value)} className="field-input p-2" placeholder="e.g. 12.5"/></div>
+          <div><label className="field-label">β-Glucan Content (%) <span className="text-gray-400 text-[9px]">A-54</span></label><input type="number" step="0.01" value={betaGlucanPct} onChange={e=>setBetaGlucanPct(e.target.value)} className="field-input p-2" placeholder="e.g. 0.35"/></div>
+          <div><label className="field-label">Bioactive Specification</label><input value={extractBioSpec} onChange={e=>setExtractBioSpec(e.target.value)} className="field-input p-2" placeholder="e.g. ≥10mg/g polyphenols"/></div>
             <div className="flex flex-col justify-center">
               <label className="flex items-center gap-2 cursor-pointer mt-4">
                 <input type="checkbox" checked={phAdjDone} onChange={e=>setPhAdjDone(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>

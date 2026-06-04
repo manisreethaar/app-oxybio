@@ -24,6 +24,9 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
   const [viabilityMethod,  setViabilityMethod]  = useState('Not done');
   const [coolingTimeMins,  setCoolingTimeMins]  = useState('');
   const [holdTempC,        setHoldTempC]        = useState('');
+  // A-52: cooling rate tracking
+  const [tempAt30Min,      setTempAt30Min]      = useState('');
+  const [tempAt60Min,      setTempAt60Min]      = useState('');
   const [notes,            setNotes]            = useState('');
 
   const toLocal = (iso) => {
@@ -54,6 +57,8 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
       setViabilityMethod(data.viability_method || 'Not done');
       setCoolingTimeMins(data.cooling_time_mins || '');
       setHoldTempC(data.hold_temp_c || '');
+      setTempAt30Min(data.temp_at_30min || '');
+      setTempAt60Min(data.temp_at_60min || '');
       setNotes(data.notes || '');
     }
   }, [activeFlask?.id, supabase]);
@@ -84,6 +89,8 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         viability_method: viabilityMethod,
         cooling_time_mins: coolingTimeMins ? parseFloat(coolingTimeMins) : null,
         hold_temp_c: holdTempC ? parseFloat(holdTempC) : null,
+        temp_at_30min: tempAt30Min ? parseFloat(tempAt30Min) : null,
+        temp_at_60min: tempAt60Min ? parseFloat(tempAt60Min) : null,
         operator_id: employeeProfile?.id,
         notes: notes || null,
       };
@@ -154,6 +161,15 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
               {coolingTimeMins && parseFloat(coolingTimeMins) > 120 && (
                 <p className="text-[10px] text-red-600 font-bold mt-1">Exceeds 2-hour cold-chain target</p>
               )}
+            </div>
+            {/* A-52: Cooling rate checkpoints */}
+            <div>
+              <label className="field-label">Temp at 30 min (°C)</label>
+              <input type="number" step="0.1" value={tempAt30Min} onChange={e => setTempAt30Min(e.target.value)} className="field-input" placeholder="e.g. 20"/>
+            </div>
+            <div>
+              <label className="field-label">Temp at 60 min (°C)</label>
+              <input type="number" step="0.1" value={tempAt60Min} onChange={e => setTempAt60Min(e.target.value)} className="field-input" placeholder="e.g. 12"/>
             </div>
           </div>
         </div>

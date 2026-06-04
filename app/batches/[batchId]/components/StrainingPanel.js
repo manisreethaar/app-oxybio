@@ -80,6 +80,15 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   // G-70: pellet resuspension
   const [resuspBuffer,   setResuspBuffer]   = useState('');
   const [resuspVol,      setResuspVol]      = useState('');
+  // A-53: hold time before centrifuge
+  const [holdTimeBefore, setHoldTimeBefore] = useState('');
+  // A-29: cell wash step
+  const [washSteps,      setWashSteps]      = useState('');
+  const [washBuffer,     setWashBuffer]     = useState('');
+  const [washVolMl,      setWashVolMl]      = useState('');
+  // A-30: post-centrifuge viability
+  const [postCentVia,    setPostCentVia]    = useState('');
+  const [postCentViaMethod, setPostCentViaMethod] = useState('');
 
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
@@ -112,6 +121,12 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       setVolAfterMl(data.post_straining_vol_ml||'');
       setResuspBuffer(data.pellet_resuspension_buffer||'');
       setResuspVol(data.pellet_resuspension_vol_ml||'');
+      setHoldTimeBefore(data.hold_time_before_centrifuge_min||'');
+      setWashSteps(data.wash_steps||'');
+      setWashBuffer(data.wash_buffer||'');
+      setWashVolMl(data.wash_volume_ml||'');
+      setPostCentVia(data.post_centrifuge_viability_pct||'');
+      setPostCentViaMethod(data.viability_method||'');
       if (data.pass2_rpm) { setShowPass2(true); setPass2Rpm(data.pass2_rpm||''); setPass2Duration(data.pass2_duration_min||''); setPass2Temp(data.pass2_temp_c||''); }
     } else { setRecord(null); }
     return () => { isCurrent = false; };
@@ -170,6 +185,12 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         post_straining_vol_ml:       volAfterMl   ? parseFloat(volAfterMl)   : null,
         pellet_resuspension_buffer:  resuspBuffer  || null,
         pellet_resuspension_vol_ml:  resuspVol    ? parseFloat(resuspVol)    : null,
+        hold_time_before_centrifuge_min: holdTimeBefore ? parseFloat(holdTimeBefore) : null,
+        wash_steps:               washSteps ? parseInt(washSteps) : null,
+        wash_buffer:              washBuffer || null,
+        wash_volume_ml:           washVolMl ? parseFloat(washVolMl) : null,
+        post_centrifuge_viability_pct: postCentVia ? parseFloat(postCentVia) : null,
+        viability_method:         postCentViaMethod || null,
         pass2_rpm:                   showPass2 && pass2Rpm      ? parseFloat(pass2Rpm)      : null,
         pass2_duration_min:          showPass2 && pass2Duration ? parseFloat(pass2Duration) : null,
         pass2_temp_c:                showPass2 && pass2Temp     ? parseFloat(pass2Temp)     : null,
@@ -349,6 +370,36 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <input type="number" step="0.1" value={volAfterMl} onChange={e=>setVolAfterMl(e.target.value)} className="field-input" placeholder="e.g. 400"/>
           <p className="text-[9px] text-gray-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
         </div>
+        {/* A-53: Hold time before centrifuge */}
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <label className="block text-xs font-black text-blue-900 mb-1">Hold Time Before Centrifuge (min) <span className="text-blue-400 text-[10px]">(A-53 — time between fermentation end and centrifuge start)</span></label>
+          <input type="number" step="1" value={holdTimeBefore} onChange={e=>setHoldTimeBefore(e.target.value)} className="field-input" placeholder="e.g. 30"/>
+          {holdTimeBefore && parseFloat(holdTimeBefore) > 120 && <p className="text-[10px] text-amber-700 font-bold mt-1">⚠ Hold &gt;2h at room temp — risk of culture quality degradation</p>}
+        </div>
+
+        {/* A-29: Cell wash step */}
+        <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-teal-900">Cell Wash Steps <span className="text-teal-400 text-[10px]">(A-29)</span></p>
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className="field-label">Number of Washes</label><input type="number" min="0" max="5" value={washSteps} onChange={e=>setWashSteps(e.target.value)} className="field-input" placeholder="0"/></div>
+            <div><label className="field-label">Wash Buffer</label><input value={washBuffer} onChange={e=>setWashBuffer(e.target.value)} className="field-input" placeholder="e.g. 0.9% saline"/></div>
+            <div><label className="field-label">Wash Volume (ml)</label><input type="number" step="0.1" value={washVolMl} onChange={e=>setWashVolMl(e.target.value)} className="field-input" placeholder="e.g. 50"/></div>
+          </div>
+        </div>
+
+        {/* A-30: Post-centrifuge viability */}
+        <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-indigo-900">Post-Centrifuge Cell Viability <span className="text-indigo-400 text-[10px]">(A-30)</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="field-label text-indigo-800">Viability (%)</label><input type="number" step="0.1" min="0" max="100" value={postCentVia} onChange={e=>setPostCentVia(e.target.value)} className="field-input" placeholder="e.g. 85"/></div>
+            <div><label className="field-label text-indigo-800">Method</label>
+              <select value={postCentViaMethod} onChange={e=>setPostCentViaMethod(e.target.value)} className="field-input bg-white text-xs">
+                {['','Methylene Blue','Live/Dead stain','Plate count','Flow Cytometry'].map(m=><option key={m}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* G-70: Pellet resuspension */}
         {pelletWt && (
           <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-3">

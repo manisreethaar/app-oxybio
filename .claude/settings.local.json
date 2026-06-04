@@ -62,7 +62,14 @@
       "Bash(grep -rn \"status.*Decommission\\\\|Decommissioned\\\\|status.*retired\\\\|status.*cancelled\\\\|status.*Expired\\\\|is_active.*false\" app/api --include=\"*.js\" -l)",
       "Bash(curl -s -w \"\\\\n\\\\nHTTP Status: %{http_code}\" -X GET \"https://app-oxybio.vercel.app/api/cron/reminders\" -H \"Authorization: Bearer f6051805478bbe684015b3b92c6dbee75fe06fecbdee37c8959cff3bb6f0a4a7\" -H \"Content-Type: application/json\")",
       "Bash(curl -v -s -X GET \"https://app-oxybio.vercel.app/api/cron/reminders\" -H \"Authorization: Bearer f6051805478bbe684015b3b92c6dbee75fe06fecbdee37c8959cff3bb6f0a4a7\")",
-      "Bash(grep -n '\\\\\\\\\\\\`' E:/OXYBIO/utils/exportUtils.js E:/OXYBIO/components/ui/PushNotificationToggle.jsx E:/OXYBIO/app/api/capa/route.js)"
+      "Bash(grep -n '\\\\\\\\\\\\`' E:/OXYBIO/utils/exportUtils.js E:/OXYBIO/components/ui/PushNotificationToggle.jsx E:/OXYBIO/app/api/capa/route.js)",
+      "Bash(cat .eslintrc.json)",
+      "Bash(cat .eslintrc.js)",
+      "Bash(cat .eslintrc)",
+      "Bash(git show *)",
+      "Bash(gh run *)",
+      "Bash(gh api *)",
+      "Bash(git commit -m 'fix\\(build\\): add force-dynamic to environmental-monitoring page *)"
     ]
   }
 }

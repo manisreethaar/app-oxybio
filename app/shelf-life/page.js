@@ -315,13 +315,57 @@ export default function ShelfLifePage() {
                 {(() => {
                   const predicted = predictShelfLife(study);
                   return predicted ? (
-                    <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs">
+                    <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs">
                       <p className="font-black text-indigo-800 mb-0.5">ASLT Shelf Life Prediction (Q10 = {study.q10_factor})</p>
                       <p className="text-indigo-700">Based on {study.accel_temp_c}°C accelerated data → predicted real shelf life at {study.temperature_c}°C: <span className="font-black text-indigo-900">{predicted} days</span></p>
                       <p className="text-[9px] text-indigo-400 mt-0.5">Formula: Real SL = Accel test days × Q10^((T_acc − T_real)/10)</p>
                     </div>
                   ) : null;
                 })()}
+
+                {/* A-37: Probiotic viability prediction at EoSL */}
+                {(() => {
+                  const d0Log = study.shelf_life_logs?.find(l => l.day_number === 0);
+                  const cfuD0 = d0Log?.test_data?.CFU || d0Log?.test_data?.cfu;
+                  if (!cfuD0) return null;
+                  const cfuVal = parseFloat(cfuD0) || 0;
+                  if (cfuVal <= 0) return null;
+                  const dValueDays = 30; // 1 log reduction per 30 days at 4°C (LAB typical)
+                  const cfuAt90 = cfuVal * Math.pow(10, -90/dValueDays);
+                  const meetsSpec = cfuAt90 >= 1e5;
+                  return (
+                    <div className={`mb-3 p-3 rounded-xl border text-xs ${meetsSpec ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                      <p className={`font-black text-[10px] uppercase mb-1 ${meetsSpec ? 'text-emerald-800' : 'text-red-800'}`}>A-37 Viability Prediction at 90d EoSL</p>
+                      <p className={`font-semibold ${meetsSpec ? 'text-emerald-700' : 'text-red-700'}`}>
+                        D0 CFU: {cfuVal.toExponential(1)} → Est. Day 90: ~{cfuAt90.toExponential(1)} CFU/g
+                      </p>
+                      <p className={`font-black mt-0.5 ${meetsSpec ? 'text-emerald-900' : 'text-red-900'}`}>
+                        {meetsSpec ? '✓ Projects to meet ≥10⁵ CFU/g at EoSL' : '⚠ May fall below ≥10⁵ CFU/g — review storage conditions or shorten shelf life claim'}
+                      </p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">Assumes D-value = 30 days at {study.temperature_c || 4}°C. Validate with actual timepoint data.</p>
+                    </div>
+                  );
+                })()}
+
+                {/* A-44: Temperature excursion impact */}
+                {study.temperature_c && study.q10_factor && (
+                  <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs">
+                    <p className="font-black text-[10px] uppercase text-amber-800 mb-1">A-44 Temperature Excursion Calculator</p>
+                    <p className="text-amber-700 font-semibold">If product exposed to 25°C for 1 day (cold chain break):</p>
+                    {(() => {
+                      const q10 = parseFloat(study.q10_factor) || 2.0;
+                      const tReal = parseFloat(study.temperature_c) || 4;
+                      const excursionFactor = Math.pow(q10, (25 - tReal) / 10);
+                      const equivalentDaysLost = (1 * excursionFactor).toFixed(1);
+                      return (
+                        <p className="font-black text-amber-900 mt-1">
+                          = {equivalentDaysLost} days of equivalent aging at {tReal}°C storage
+                        </p>
+                      );
+                    })()}
+                    <p className="text-[9px] text-amber-500 mt-0.5">Formula: equivalent_days = excursion_days × Q10^((T_excursion − T_storage)/10)</p>
+                  </div>
+                )}
 
 
               {study.creator && (

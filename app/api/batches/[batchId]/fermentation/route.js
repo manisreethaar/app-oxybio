@@ -152,6 +152,8 @@ export async function POST(request, { params }) {
           brix:                   data.brix || null,
           optical_density:        data.optical_density || null,
           titratable_acidity_pct: data.titratable_acidity_pct ?? null,
+          do_percent:             data.do_percent ?? null,
+          co2_pressure_kpa:       data.co2_pressure_kpa ?? null,
           incubator_equipment_id: data.incubator_equipment_id || null,
           co2_observed:           data.co2_observed           || null,
           ethanol_pct:            data.ethanol_pct            ?? null,
