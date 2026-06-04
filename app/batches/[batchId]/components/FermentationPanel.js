@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer } from 'lucide-react';
+import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer, Droplet } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import {
@@ -191,6 +191,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [endpoint,  setEndpoint]  = useState(null);
   const [saving,    setSaving]    = useState(false);
 
+  // Feed log (pH correction / nutrient addition)
+  const [feeds,         setFeeds]         = useState([]);
+  const [showFeedForm,  setShowFeedForm]  = useState(false);
+  const [feedType,      setFeedType]      = useState('pH Correction');
+  const [feedVolMl,     setFeedVolMl]     = useState('');
+  const [feedPhBefore,  setFeedPhBefore]  = useState('');
+  const [feedPhAfter,   setFeedPhAfter]   = useState('');
+  const [feedReason,    setFeedReason]    = useState('');
+  const [savingFeed,    setSavingFeed]    = useState(false);
+
   // G-31: Incubator equipment list
   const [incubators,    setIncubators]    = useState([]);
   const [incubatorId,   setIncubatorId]   = useState('');
@@ -289,12 +299,50 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     }
   };
 
+  const fetchFeeds = useCallback(async () => {
+    if (!activeFlask?.id) return;
+    const { data } = await supabase.from('batch_fermentation_feeds')
+      .select('*, employees(full_name, initials)')
+      .eq('flask_id', activeFlask.id)
+      .order('logged_at', { ascending: false });
+    setFeeds(data || []);
+  }, [activeFlask?.id, supabase]);
+
   useEffect(() => {
     setReadings([]); setInocu(null); setEndpoint(null);
     setExceededNotifSent(false);
     setTa(''); setEpTa(''); setGramStainImg('');
-    fetchData(); fetchPendingIds();
-  }, [fetchData]);
+    setFeeds([]);
+    fetchData(); fetchPendingIds(); fetchFeeds();
+  }, [fetchData, fetchFeeds]);
+
+  const handleLogFeed = async () => {
+    if (!activeFlask?.id || !feedVolMl || !feedReason) {
+      toast.warn('Volume and reason are required for a feed log entry.');
+      return;
+    }
+    setSavingFeed(true);
+    try {
+      const { error } = await supabase.from('batch_fermentation_feeds').insert({
+        batch_id: batch.id,
+        flask_id: activeFlask.id,
+        flask_label: activeFlask.flask_label,
+        feed_type: feedType,
+        volume_ml: parseFloat(feedVolMl),
+        ph_before: feedPhBefore ? parseFloat(feedPhBefore) : null,
+        ph_after: feedPhAfter ? parseFloat(feedPhAfter) : null,
+        reason: feedReason,
+        logged_by: employeeProfile?.id,
+        logged_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      toast.success('Feed/correction logged.');
+      setFeedVolMl(''); setFeedPhBefore(''); setFeedPhAfter(''); setFeedReason('');
+      setShowFeedForm(false);
+      fetchFeeds();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingFeed(false); }
+  };
 
   // G-31: Fetch incubator equipment once
   useEffect(() => {
@@ -1116,6 +1164,69 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Feed / pH Correction Log */}
+      {tZero && (
+        <div className="surface overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Droplet className="w-4 h-4 text-blue-600"/>
+              <h3 className="text-sm font-bold text-gray-900">Feed / pH Correction Log</h3>
+              {feeds.length > 0 && <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">{feeds.length}</span>}
+            </div>
+            {!endpoint && (
+              <button onClick={() => setShowFeedForm(v => !v)} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1">
+                <Plus className="w-3 h-3"/>{showFeedForm ? 'Cancel' : 'Log Feed'}
+              </button>
+            )}
+          </div>
+          {showFeedForm && (
+            <div className="p-4 border-b border-gray-100 bg-blue-50/30 space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="field-label">Type</label>
+                  <select value={feedType} onChange={e => setFeedType(e.target.value)} className="field-input bg-white text-xs">
+                    {['pH Correction','Nutrient Addition','Buffer Addition','Anti-foam','Water'].map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">Volume (ml)</label>
+                  <input type="number" step="0.1" value={feedVolMl} onChange={e => setFeedVolMl(e.target.value)} className="field-input" placeholder="e.g. 2.5"/>
+                </div>
+                <div>
+                  <label className="field-label">pH Before</label>
+                  <input type="number" step="0.01" value={feedPhBefore} onChange={e => setFeedPhBefore(e.target.value)} className="field-input" placeholder="3.2"/>
+                </div>
+                <div>
+                  <label className="field-label">pH After</label>
+                  <input type="number" step="0.01" value={feedPhAfter} onChange={e => setFeedPhAfter(e.target.value)} className="field-input" placeholder="4.1"/>
+                </div>
+              </div>
+              <input value={feedReason} onChange={e => setFeedReason(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none" placeholder="Reason / agent used (e.g. 0.5ml 1M NaOH to correct pH overshoot) *"/>
+              <button onClick={handleLogFeed} disabled={savingFeed} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider disabled:opacity-50">
+                {savingFeed ? 'Logging...' : 'Log Entry'}
+              </button>
+            </div>
+          )}
+          {feeds.length === 0 ? (
+            <div className="px-5 py-4 text-xs text-gray-400 font-semibold">No feed / correction entries yet.</div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {feeds.map(f => (
+                <div key={f.id} className="px-5 py-3 flex items-center gap-3 text-xs">
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded text-[9px] uppercase">{f.feed_type}</span>
+                  <span className="font-black text-gray-800">{f.volume_ml} ml</span>
+                  {f.ph_before && f.ph_after && (
+                    <span className="text-gray-500 font-semibold">pH {f.ph_before} → {f.ph_after}</span>
+                  )}
+                  <span className="text-gray-500 flex-1 truncate">{f.reason}</span>
+                  <span className="text-gray-400 whitespace-nowrap">{new Date(f.logged_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
