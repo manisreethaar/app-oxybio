@@ -226,11 +226,12 @@ export default function AttendancePage() {
     if (!employeeProfile || !employeeProfile.id) return;
     setLoading(true);
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const { data: today } = await supabase.from('attendance_log')
-        .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle();
-      setTodayLog(today || null);
+    // Use IST date (UTC+5:30) to match what the check-in API stores in the DB
+    const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const { data: today } = await supabase.from('attendance_log')
+      .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    setTodayLog(today || null);
 
       const { data: history } = await supabase.from('attendance_log')
         .select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).limit(30);
