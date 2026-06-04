@@ -53,6 +53,30 @@ export async function GET(request) {
       employees: () => db.from('employees')
         .select('id, full_name, role, designation, employee_code, email, department, joined_date, created_at')
         .eq('is_active', false).order('created_at', { ascending: false }),
+
+      shelf_life: () => db.from('shelf_life_studies')
+        .select('id, storage_condition, study_type, status, start_date, archived_at, created_at, batches(batch_id), creator:employees!shelf_life_studies_created_by_fkey(full_name)')
+        .not('archived_at', 'is', null).order('archived_at', { ascending: false }),
+
+      deviations: () => db.from('deviations')
+        .select('id, title, severity, source, status, archived_at, created_at, batches(batch_id), reporter:employees!deviations_reported_by_fkey(full_name)')
+        .not('archived_at', 'is', null).order('archived_at', { ascending: false }),
+
+      capa: () => db.from('capa_actions')
+        .select('id, action_type, title, status, archived_at, created_at, assignee:employees!capa_actions_assigned_to_fkey(full_name)')
+        .not('archived_at', 'is', null).order('archived_at', { ascending: false }),
+
+      growth_studies: () => db.from('growth_studies')
+        .select('id, title, status, archived_at, created_at, creator:employees!growth_studies_created_by_fkey(full_name)')
+        .not('archived_at', 'is', null).order('archived_at', { ascending: false }),
+
+      research: () => db.from('taste_panels')
+        .select('id, session_title, panelist_count, status, archived_at, created_at, batches(batch_id), creator:employees!created_by(full_name)')
+        .not('archived_at', 'is', null).order('archived_at', { ascending: false }),
+
+      samples: () => db.from('samples')
+        .select('id, sample_label, source_type, source_label, archived_at, created_at, batches(batch_id)')
+        .not('archived_at', 'is', null).order('archived_at', { ascending: false }),
     };
 
     if (tab && queries[tab]) {
@@ -88,7 +112,10 @@ export async function PATCH(request) {
     const { table, id, action } = await request.json();
     if (!table || !id || action !== 'restore') return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 
-    const RESTORABLE = ['batches', 'activity_log', 'formulations', 'equipment', 'tasks', 'lab_notebook_entries', 'inventory_items'];
+    const RESTORABLE = [
+      'batches', 'activity_log', 'formulations', 'equipment', 'tasks', 'lab_notebook_entries', 'inventory_items',
+      'shelf_life_studies', 'deviations', 'capa_actions', 'growth_studies', 'taste_panels', 'samples',
+    ];
     if (!RESTORABLE.includes(table)) return NextResponse.json({ error: 'Table not restorable' }, { status: 400 });
 
     const { error } = await db.from(table)
@@ -116,7 +143,10 @@ export async function DELETE(request) {
     const table = searchParams.get('table');
     const id    = searchParams.get('id');
 
-    const DELETABLE = ['batches', 'activity_log', 'formulations', 'equipment', 'tasks', 'lab_notebook_entries', 'inventory_items'];
+    const DELETABLE = [
+      'batches', 'activity_log', 'formulations', 'equipment', 'tasks', 'lab_notebook_entries', 'inventory_items',
+      'shelf_life_studies', 'deviations', 'capa_actions', 'growth_studies', 'taste_panels', 'samples',
+    ];
     if (!table || !id || !DELETABLE.includes(table)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 
     const { error } = await db.from(table).delete().eq('id', id);
