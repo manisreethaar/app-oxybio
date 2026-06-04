@@ -64,7 +64,7 @@ function DigitalIDCard({ emp }) {
         <div className="text-left pr-4">
           <p className="text-[9px] font-black text-teal-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
           <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
-            Scan to securely verify identity & log compliance checkpoint access.
+            Scan to securely verify identity &amp; log compliance checkpoint access.
           </p>
         </div>
         <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 hover:scale-105 transition-transform origin-bottom-right">
@@ -97,7 +97,6 @@ export default function ProfilePage() {
 
   const supabase = useMemo(() => createClient(), []);
 
-
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(z.object({
       full_name: z.string().min(1, "Name is required"),
@@ -121,33 +120,6 @@ export default function ProfilePage() {
   const fileRef = useRef();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      // 1. If not admin view, just use the logged in user
-      if (!isAdminView || !adminViewId) {
-        if (employeeProfile) {
-          populateForm(employeeProfile);
-        }
-        return;
-      }
-
-      // 2. Admin View: Fetch specific user
-      setFetching(true);
-      try {
-        const { data, error } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('id', adminViewId)
-          .single();
-        
-        if (error) throw error;
-        populateForm(data);
-      } catch (err) {
-        console.error('Fetch error:', err);
-      } finally {
-        setFetching(false);
-      }
-    };
-
     const populateForm = (profileData) => {
       setEmp(profileData);
       reset({
@@ -163,6 +135,80 @@ export default function ProfilePage() {
         emergency_contact: profileData.emergency_contact || '',
         joined_date: profileData.joined_date ? new Date(profileData.joined_date).toISOString().split('T')[0] : '',
         base_salary: profileData.base_salary || 0
+      });
+    };
+
+    const fetchProfile = async () => {
+      // 1. If not admin view, just use the logged in user
+      if (!isAdminView || !adminViewId) {
+        if (employeeProfile) populateForm(employeeProfile);
+        return;
+      }
+      // 2. Admin View: Fetch specific user
+      setFetching(true);
+      try {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('id', adminViewId)
+          .single();
+        if (error) throw error;
+        populateForm(data);
+      } catch (err) {
+        console.error('Fetch error:', err);
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchProfile();
+  }, [employeeProfile, adminViewId, isAdminView, reset, supabase]);
+
+  const handleSaveSubmit = async (data) => {
+    setSaving(true);
+    const fetchWithTimeout = (url, options, timeout = 20000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
+      ]);
+    };
+    try {
+      const payload = { ...data, id: emp.id };
+      const res = await fetchWithTimeout('/api/profile', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
+
+      // Re-fetch the actual saved record from DB so UI always reflects persisted values
+      // (fixes stale auth context overwriting initials etc.)
+      const { data: freshData, error: fetchErr } = await supabase
+        .from('employees').select('*').eq('id', emp.id).single();
+      if (!fetchErr && freshData) {
+        setEmp(freshData);
+        reset({
+          full_name: freshData.full_name || '',
+          initials: freshData.initials || '',
+          employee_code: freshData.employee_code || '',
+          phone: freshData.phone || '',
+          designation: freshData.designation || '',
+          date_of_birth: freshData.date_of_birth ? new Date(freshData.date_of_birth).toISOString().split('T')[0] : '',
+          address: freshData.address || '',
+          blood_group: freshData.blood_group || '',
+          emergency_contact_name: freshData.emergency_contact_name || '',
+          emergency_contact: freshData.emergency_contact || '',
+          joined_date: freshData.joined_date ? new Date(freshData.joined_date).toISOString().split('T')[0] : '',
+          base_salary: freshData.base_salary || 0
+        });
+      } else {
+        setEmp({ ...emp, ...data });
+        reset(data);
+      }
+      setEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (err) { toast.error('Error: ' + err.message); }
+    finally { setSaving(false); }
+  };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -174,14 +220,12 @@ export default function ProfilePage() {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
       ]);
     };
-
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('folder', 'employee_photos');
       const res = await fetchWithTimeout('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error("Network response was not OK");
-      
       const data = await res.json();
       if (data.url) {
         const patchRes = await fetchWithTimeout('/api/profile', {
@@ -211,7 +255,6 @@ export default function ProfilePage() {
     } catch (err) { toast.error('Error: ' + err.message); }
     finally { setPasswordLoading(false); }
   };
-
 
   if (!emp) {
     return (
@@ -381,7 +424,6 @@ export default function ProfilePage() {
                   registerProps={register('joined_date')}
                 />
               )}
-
               <InfoField 
                 label="Phone Number" 
                 value={emp.phone} 
