@@ -9,7 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import {
   Activity, AlertTriangle, MessageSquare, CheckCircle, Loader2,
   Users, Clock, CheckSquare, FlaskConical, TrendingUp,
-  CalendarCheck, Zap, Archive, Trash2, Edit2, X, Send
+  CalendarCheck, Zap, Archive, Trash2, Edit2, X, Send, LogOut
 } from 'lucide-react';
 import { downloadCsvWithHash } from '@/utils/exportUtils';
 import { useRouter } from 'next/navigation';
@@ -91,8 +91,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
   // Founder Brief State
   const [brief, setBrief] = useState({
-    presentToday: [],      // checked-in today
+    presentToday: [],      // checked-in today, not checked out
     absentToday: [],       // NOT checked in yet
+    checkedOutToday: [],   // checked in and checked out
     overdueTasks: [],
     pendingApprovals: [],
     openIssues: [],
@@ -202,7 +203,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const today = new Date().toISOString().split('T')[0];
         const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
           supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin'),
-          supabase.from('attendance_log').select('employee_id').eq('date', today),
+          supabase.from('attendance_log').select('employee_id, check_out_time').eq('date', today),
           supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
           supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
           supabase.from('batches').select('batch_id, product_name, status').is('archived_at', null).in('status', ['fermenting', 'in-progress', 'testing']).limit(5)
@@ -217,12 +218,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const pendingApprovals = approvalRes.data || [];
         const activeExps = expRes.data || [];
 
-        const checkedInIds = new Set(todayLogs.map((l: any) => l.employee_id));
-        const present = allStaff.filter((s: any) => checkedInIds.has(s.id));
-        const absent = allStaff.filter((s: any) => !checkedInIds.has(s.id));
+        const logMap = new Map(todayLogs.map((l: any) => [l.employee_id, l]));
+        const present = allStaff.filter((s: any) => logMap.has(s.id) && !logMap.get(s.id).check_out_time);
+        const checkedOut = allStaff.filter((s: any) => logMap.has(s.id) && logMap.get(s.id).check_out_time);
+        const absent = allStaff.filter((s: any) => !logMap.has(s.id));
         const openIssues = newLogs.filter((a: any) => a.issue_observed && !a.founder_comment);
 
-        setBrief({ presentToday: present, absentToday: absent, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
+        setBrief({ presentToday: present, absentToday: absent, checkedOutToday: checkedOut, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
       }
     } catch (err) {
       console.error("Activity page fetch error:", err);
@@ -624,6 +626,20 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     </div>
                   ))}
                 </div>
+              )}
+              
+              {brief.checkedOutToday && brief.checkedOutToday.length > 0 && (
+                <>
+                  <div className="border-t border-slate-100 mt-3 pt-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><LogOut className="w-3 h-3 text-slate-400"/> Checked out</p>
+                    {brief.checkedOutToday.map(s => (
+                      <div key={s.id} className="flex items-center gap-2 text-sm mb-1.5 opacity-60">
+                        <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
+                        <span className="font-medium text-slate-500 line-through">{s.full_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
               
               {brief.absentToday.length > 0 && (
