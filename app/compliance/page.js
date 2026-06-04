@@ -6,9 +6,10 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock, Search } from 'lucide-react';
+import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock, Search, MessageSquare, ClipboardList, Flag, ArrowRight, Loader2 } from 'lucide-react';
 import { differenceInDays, format, addMonths, addYears, addWeeks } from 'date-fns';
 import dynamic from 'next/dynamic';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const CapaSection = dynamic(() => import('./CapaSection'), { ssr: false });
 
@@ -24,6 +25,24 @@ export default function CompliancePage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [activeTab, setActiveTab] = useState('calendar');
+
+  // A-11: Customer Complaints
+  const [complaints,       setComplaints]       = useState([]);
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [complaintForm,    setComplaintForm]    = useState({ customer_name: '', complaint_details: '', status: 'Open' });
+  const [savingComplaint,  setSavingComplaint]  = useState(false);
+
+  // A-12: Internal Audits
+  const [audits,        setAudits]        = useState([]);
+  const [showAuditForm, setShowAuditForm] = useState(false);
+  const [auditForm,     setAuditForm]     = useState({ audit_title: '', audit_date: new Date().toISOString().slice(0,10), status: 'Planned', findings: '' });
+  const [savingAudit,   setSavingAudit]   = useState(false);
+
+  // A-13: Regulatory Milestones
+  const [milestones,       setMilestones]       = useState([]);
+  const [showMilestoneForm, setShowMilestoneForm] = useState(false);
+  const [milestoneForm,    setMilestoneForm]    = useState({ title: '', category: 'FSSAI', deadline: '', status: 'Pending', priority: 'Medium', description: '' });
+  const [savingMilestone,  setSavingMilestone]  = useState(false);
   
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm({
     resolver: zodResolver(z.object({
@@ -86,6 +105,83 @@ export default function CompliancePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchComplaints = async () => {
+    const { data } = await supabase.from('customer_complaints').select('*, batches(batch_id)').order('created_at', { ascending: false });
+    setComplaints(data || []);
+  };
+
+  const fetchAudits = async () => {
+    const { data } = await supabase.from('internal_audits').select('*, employees!internal_audits_auditor_id_fkey(full_name, initials)').order('audit_date', { ascending: false });
+    setAudits(data || []);
+  };
+
+  const fetchMilestones = async () => {
+    const { data } = await supabase.from('regulatory_milestones').select('*, creator:employees!regulatory_milestones_created_by_fkey(full_name)').order('deadline', { ascending: true });
+    setMilestones(data || []);
+  };
+
+  useEffect(() => {
+    if (!employeeProfile) return;
+    fetchComplaints();
+    fetchAudits();
+    fetchMilestones();
+  }, [employeeProfile]); // eslint-disable-line
+
+  const handleSaveComplaint = async () => {
+    if (!complaintForm.customer_name || !complaintForm.complaint_details) { toast.warn('Customer name and details required.'); return; }
+    setSavingComplaint(true);
+    try {
+      const { error } = await supabase.from('customer_complaints').insert({
+        customer_name: complaintForm.customer_name,
+        complaint_details: complaintForm.complaint_details,
+        status: complaintForm.status,
+      });
+      if (error) throw error;
+      toast.success('Complaint logged.');
+      setShowComplaintForm(false);
+      setComplaintForm({ customer_name: '', complaint_details: '', status: 'Open' });
+      fetchComplaints();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingComplaint(false); }
+  };
+
+  const handleSaveAudit = async () => {
+    if (!auditForm.audit_title || !auditForm.audit_date) { toast.warn('Title and date required.'); return; }
+    setSavingAudit(true);
+    try {
+      const { error } = await supabase.from('internal_audits').insert({
+        audit_title: auditForm.audit_title,
+        auditor_id: employeeProfile?.id,
+        audit_date: auditForm.audit_date,
+        status: auditForm.status,
+        findings: auditForm.findings || null,
+      });
+      if (error) throw error;
+      toast.success('Audit record created.');
+      setShowAuditForm(false);
+      setAuditForm({ audit_title: '', audit_date: new Date().toISOString().slice(0,10), status: 'Planned', findings: '' });
+      fetchAudits();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingAudit(false); }
+  };
+
+  const handleSaveMilestone = async () => {
+    if (!milestoneForm.title || !milestoneForm.deadline) { toast.warn('Title and deadline required.'); return; }
+    setSavingMilestone(true);
+    try {
+      const { error } = await supabase.from('regulatory_milestones').insert({
+        ...milestoneForm,
+        created_by: employeeProfile?.id,
+      });
+      if (error) throw error;
+      toast.success('Regulatory milestone added.');
+      setShowMilestoneForm(false);
+      setMilestoneForm({ title: '', category: 'FSSAI', deadline: '', status: 'Pending', priority: 'Medium', description: '' });
+      fetchMilestones();
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingMilestone(false); }
   };
 
   const handleCreate = async (data) => {
@@ -156,13 +252,23 @@ export default function CompliancePage() {
         >
           <CalendarDays className="w-4 h-4" /> Regulatory Calendar
         </button>
-        <button
-          onClick={() => setActiveTab('capa')}
-          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'capa' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
+        <button onClick={() => setActiveTab('capa')}
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'capa' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <AlertTriangle className="w-4 h-4" /> CAPA Tracker
+        </button>
+        <button onClick={() => setActiveTab('audits')}
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'audits' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          <ClipboardList className="w-4 h-4" /> Internal Audits
+          {audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length > 0 && <span className="text-[9px] bg-amber-100 text-amber-700 font-black px-1.5 py-0.5 rounded-full">{audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length}</span>}
+        </button>
+        <button onClick={() => setActiveTab('complaints')}
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'complaints' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          <MessageSquare className="w-4 h-4" /> Complaints
+          {complaints.filter(c=>c.status==='Open').length > 0 && <span className="text-[9px] bg-red-100 text-red-700 font-black px-1.5 py-0.5 rounded-full">{complaints.filter(c=>c.status==='Open').length}</span>}
+        </button>
+        <button onClick={() => setActiveTab('milestones')}
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'milestones' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          <Flag className="w-4 h-4" /> Regulatory Milestones
         </button>
       </div>
 
@@ -306,6 +412,180 @@ export default function CompliancePage() {
       )}
 
       {activeTab === 'capa' && <CapaSection />}
+
+      {/* A-12: Internal Audits */}
+      {activeTab === 'audits' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-700">{audits.length} audit records</p>
+            {['admin','ceo','cto'].includes(role) && (
+              <button onClick={() => setShowAuditForm(v=>!v)} className="flex items-center gap-1.5 px-4 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase tracking-wider hover:bg-navy-hover">
+                <Plus className="w-3.5 h-3.5"/>New Audit
+              </button>
+            )}
+          </div>
+          {showAuditForm && (
+            <div className="surface p-5 space-y-3 border-l-4 border-l-indigo-500">
+              <h3 className="text-sm font-black text-gray-900">Log Internal Audit</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className="field-label">Audit Title *</label><input value={auditForm.audit_title} onChange={e=>setAuditForm(p=>({...p,audit_title:e.target.value}))} className="field-input" placeholder="e.g. Production Area GMP Audit Q2"/></div>
+                <div><label className="field-label">Audit Date *</label><input type="date" value={auditForm.audit_date} onChange={e=>setAuditForm(p=>({...p,audit_date:e.target.value}))} className="field-input"/></div>
+                <div><label className="field-label">Status</label>
+                  <select value={auditForm.status} onChange={e=>setAuditForm(p=>({...p,status:e.target.value}))} className="field-input bg-white">
+                    {['Planned','In Progress','Completed','Closed'].map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div><label className="field-label">Findings / Observations</label>
+                <textarea value={auditForm.findings} onChange={e=>setAuditForm(p=>({...p,findings:e.target.value}))} rows={3} placeholder="Summarise key findings, non-conformances observed..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={handleSaveAudit} disabled={savingAudit} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{savingAudit?'Saving...':'Save Audit'}</button>
+                <button onClick={()=>setShowAuditForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
+              </div>
+            </div>
+          )}
+          {audits.length === 0 ? (
+            <div className="surface p-12 text-center text-gray-400"><ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No internal audit records yet.</p></div>
+          ) : (
+            <div className="space-y-3">
+              {audits.map(a => (
+                <div key={a.id} className="surface p-4 flex items-start gap-4">
+                  <div className="flex-1">
+                    <p className="font-black text-gray-900 text-sm">{a.audit_title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{a.audit_date} · Auditor: {a.employees?.full_name || '—'}</p>
+                    {a.findings && <p className="text-xs text-gray-600 mt-2 border-t border-gray-100 pt-2">{a.findings}</p>}
+                  </div>
+                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase ${a.status==='Completed'||a.status==='Closed'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{a.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* A-11: Customer Complaints */}
+      {activeTab === 'complaints' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-700">{complaints.length} complaints · {complaints.filter(c=>c.status==='Open').length} open</p>
+            <button onClick={()=>setShowComplaintForm(v=>!v)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white font-bold rounded-lg text-xs uppercase tracking-wider hover:bg-red-700">
+              <Plus className="w-3.5 h-3.5"/>Log Complaint
+            </button>
+          </div>
+          {showComplaintForm && (
+            <div className="surface p-5 space-y-3 border-l-4 border-l-red-500">
+              <h3 className="text-sm font-black text-gray-900">Log Customer Complaint</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className="field-label">Customer Name *</label><input value={complaintForm.customer_name} onChange={e=>setComplaintForm(p=>({...p,customer_name:e.target.value}))} className="field-input" placeholder="Customer / distributor name"/></div>
+                <div><label className="field-label">Status</label>
+                  <select value={complaintForm.status} onChange={e=>setComplaintForm(p=>({...p,status:e.target.value}))} className="field-input bg-white">
+                    {['Open','Investigating','Resolved','Closed'].map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div><label className="field-label">Complaint Details *</label>
+                <textarea value={complaintForm.complaint_details} onChange={e=>setComplaintForm(p=>({...p,complaint_details:e.target.value}))} rows={3} placeholder="Describe the complaint — product issue, packaging, labelling, efficacy concern..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={handleSaveComplaint} disabled={savingComplaint} className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{savingComplaint?'Saving...':'Log Complaint'}</button>
+                <button onClick={()=>setShowComplaintForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
+              </div>
+            </div>
+          )}
+          {complaints.length === 0 ? (
+            <div className="surface p-12 text-center text-gray-400"><MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No customer complaints logged.</p></div>
+          ) : (
+            <div className="space-y-3">
+              {complaints.map(c => (
+                <div key={c.id} className={`surface p-4 border-l-4 ${c.status==='Open'?'border-l-red-500':c.status==='Resolved'||c.status==='Closed'?'border-l-emerald-500':'border-l-amber-400'}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-black text-gray-900 text-sm">{c.customer_name}</p>
+                      <p className="text-xs text-gray-600 mt-1">{c.complaint_details}</p>
+                      {c.batches && <p className="text-[10px] text-gray-400 mt-1">Batch: {c.batches.batch_id}</p>}
+                      <p className="text-[10px] text-gray-400 mt-1">{new Date(c.created_at).toLocaleDateString('en-IN')}</p>
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase shrink-0 ${c.status==='Open'?'bg-red-50 text-red-700 border-red-200':c.status==='Resolved'||c.status==='Closed'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{c.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* A-13: Regulatory Milestones */}
+      {activeTab === 'milestones' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-700">{milestones.length} milestones</p>
+            {['admin','ceo','cto'].includes(role) && (
+              <button onClick={()=>setShowMilestoneForm(v=>!v)} className="flex items-center gap-1.5 px-4 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase tracking-wider hover:bg-navy-hover">
+                <Plus className="w-3.5 h-3.5"/>Add Milestone
+              </button>
+            )}
+          </div>
+          {showMilestoneForm && (
+            <div className="surface p-5 space-y-3 border-l-4 border-l-blue-500">
+              <h3 className="text-sm font-black text-gray-900">Add Regulatory Milestone</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className="field-label">Milestone Title *</label><input value={milestoneForm.title} onChange={e=>setMilestoneForm(p=>({...p,title:e.target.value}))} className="field-input" placeholder="e.g. FSSAI Licence Renewal"/></div>
+                <div><label className="field-label">Category</label>
+                  <select value={milestoneForm.category} onChange={e=>setMilestoneForm(p=>({...p,category:e.target.value}))} className="field-input bg-white">
+                    {['FSSAI','ISO 22000','GMP','NABL','MSME','Legal','Other'].map(c=><option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div><label className="field-label">Deadline *</label><input type="date" value={milestoneForm.deadline} onChange={e=>setMilestoneForm(p=>({...p,deadline:e.target.value}))} className="field-input"/></div>
+                <div><label className="field-label">Priority</label>
+                  <select value={milestoneForm.priority} onChange={e=>setMilestoneForm(p=>({...p,priority:e.target.value}))} className="field-input bg-white">
+                    {['Low','Medium','High','Critical'].map(p=><option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div><label className="field-label">Status</label>
+                  <select value={milestoneForm.status} onChange={e=>setMilestoneForm(p=>({...p,status:e.target.value}))} className="field-input bg-white">
+                    {['Pending','In Progress','Completed','Overdue'].map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div><label className="field-label">Description</label>
+                <textarea value={milestoneForm.description} onChange={e=>setMilestoneForm(p=>({...p,description:e.target.value}))} rows={2} placeholder="What needs to be done, who's responsible, documents needed..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={handleSaveMilestone} disabled={savingMilestone} className="px-5 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{savingMilestone?'Saving...':'Save Milestone'}</button>
+                <button onClick={()=>setShowMilestoneForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
+              </div>
+            </div>
+          )}
+          {milestones.length === 0 ? (
+            <div className="surface p-12 text-center text-gray-400"><Flag className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No regulatory milestones tracked yet.</p></div>
+          ) : (
+            <div className="space-y-3">
+              {milestones.map(m => {
+                const daysLeft = m.deadline ? differenceInDays(new Date(m.deadline), new Date()) : null;
+                const isOverdue = daysLeft !== null && daysLeft < 0 && m.status !== 'Completed';
+                return (
+                  <div key={m.id} className={`surface p-4 flex items-start gap-4 ${isOverdue?'border-l-4 border-l-red-500':daysLeft !== null && daysLeft <= 30 && m.status!=='Completed'?'border-l-4 border-l-amber-400':''}`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-100 text-blue-700 uppercase">{m.category}</span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${m.priority==='Critical'?'bg-red-100 text-red-700':m.priority==='High'?'bg-amber-100 text-amber-700':'bg-gray-100 text-gray-500'}`}>{m.priority}</span>
+                      </div>
+                      <p className="font-black text-gray-900 text-sm">{m.title}</p>
+                      {m.description && <p className="text-xs text-gray-600 mt-1">{m.description}</p>}
+                      <p className={`text-xs font-bold mt-1 ${isOverdue?'text-red-600':daysLeft!==null&&daysLeft<=30?'text-amber-600':'text-gray-400'}`}>
+                        {m.deadline ? `Deadline: ${new Date(m.deadline).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}` : '—'}
+                        {daysLeft !== null && m.status !== 'Completed' && ` (${isOverdue?`${Math.abs(daysLeft)}d overdue`:`${daysLeft}d left`})`}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase shrink-0 ${m.status==='Completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':isOverdue?'bg-red-50 text-red-700 border-red-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{m.status}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

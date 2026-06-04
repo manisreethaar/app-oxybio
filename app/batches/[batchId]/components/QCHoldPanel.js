@@ -120,7 +120,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [savingCustomTest, setSavingCustomTest] = useState(false);
 
   // G-10: re-test tracking
-  const [creatingRetest, setCreatingRetest] = useState(null); // testId being retested
+  const [creatingRetest, setCreatingRetest] = useState(null);
+
+  // A-18: Post-packaging QC
+  const [showPostPack,    setShowPostPack]    = useState(false);
+  const [ppPackType,      setPpPackType]      = useState('');
+  const [ppPh,            setPpPh]            = useState('');
+  const [ppCfu,           setPpCfu]           = useState('');
+  const [savingPostPack,  setSavingPostPack]  = useState(false);
 
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
@@ -1110,6 +1117,41 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   <CheckCircle2 className="w-4 h-4 text-emerald-600"/>All tests passed — trial eligible for release.
                 </div>
               )}
+              {/* A-18: Post-packaging QC */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-blue-900">Post-Packaging QC Check</p>
+                  <button onClick={() => setShowPostPack(v=>!v)} className="text-[10px] font-bold text-blue-700 underline">{showPostPack?'Hide':'Add'}</button>
+                </div>
+                {sample?.post_packaging_tested && (
+                  <p className="text-xs text-emerald-700 font-bold">✓ Post-pack: pH {sample.post_packaging_ph || '—'} · CFU: {sample.post_packaging_cfu || '—'} · Pack: {sample.packaging_type || '—'}</p>
+                )}
+                {showPostPack && (
+                  <div className="space-y-2 mt-1">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div><label className="field-label">Packaging</label><input value={ppPackType} onChange={e=>setPpPackType(e.target.value)} className="field-input text-xs" placeholder="e.g. Glass 200ml"/></div>
+                      <div><label className="field-label">pH</label><input type="number" step="0.01" value={ppPh} onChange={e=>setPpPh(e.target.value)} className="field-input text-xs" placeholder="4.35"/></div>
+                      <div><label className="field-label">CFU/ml</label><input value={ppCfu} onChange={e=>setPpCfu(e.target.value)} className="field-input text-xs" placeholder="≥10⁶"/></div>
+                    </div>
+                    <button disabled={savingPostPack} onClick={async () => {
+                      if (!sample) return;
+                      setSavingPostPack(true);
+                      await supabase.from('batch_flask_qc_samples').update({
+                        post_packaging_tested: true,
+                        post_packaging_ph: ppPh ? parseFloat(ppPh) : null,
+                        post_packaging_cfu: ppCfu || null,
+                        packaging_type: ppPackType || null,
+                      }).eq('id', sample.id);
+                      setSavingPostPack(false);
+                      setShowPostPack(false);
+                      fetchQcData();
+                    }} className="px-4 py-1.5 bg-blue-600 text-white font-bold rounded-lg text-xs disabled:opacity-50">
+                      {savingPostPack ? 'Saving...' : 'Save Post-Pack QC'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* G-09: COA download button */}
               <button onClick={() => setShowCoa(true)}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
