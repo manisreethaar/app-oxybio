@@ -18,7 +18,7 @@ function derivedInitials(name = '') {
   return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() || '').filter(Boolean).slice(0, 2).join('');
 }
 
-export default function CreatorBadge({ initials, fullName, size = 'sm' }) {
+export default function CreatorBadge({ initials, fullName, size = 'sm', showTooltip = true }) {
   const display = initials || (fullName ? derivedInitials(fullName) : null);
   if (!display) return null;
 
@@ -33,7 +33,7 @@ export default function CreatorBadge({ initials, fullName, size = 'sm' }) {
       >
         {display}
       </span>
-      {fullName && (
+      {fullName && showTooltip && (
         <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
           {fullName}
           <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-slate-800" />
