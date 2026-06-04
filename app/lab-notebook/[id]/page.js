@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import EditRequestButton from '@/components/ui/EditRequestButton';
 import { markdownToHtml } from '@/utils/markdown';
 
 export default function LnbEntryPage() {
@@ -26,6 +27,7 @@ export default function LnbEntryPage() {
   const [pendingCountersign, setPendingCountersign] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pendingIds, setPendingIds] = useState(new Set());
 
   // Form mutable states
   const [title, setTitle] = useState('');
@@ -67,6 +69,12 @@ export default function LnbEntryPage() {
   useEffect(() => {
     if (id) fetchEntry();
   }, [id, fetchEntry]);
+
+  useEffect(() => {
+    fetch('/api/edit-request').then(res => res.ok ? res.json() : null).then(d => {
+      if (d?.data) setPendingIds(new Set(d.data.filter(r => r.status === 'pending').map(r => r.record_id)));
+    });
+  }, [id]);
 
   // Load formulations lookup once to resolve UUIDs in stage snapshots
   useEffect(() => {
@@ -223,10 +231,26 @@ export default function LnbEntryPage() {
               </button>
             </>
           )}
-          {canDelete && (
+          {isAdmin && canDelete && (
             <button disabled={saving || deleting} onClick={handleDeleteDraftClick} className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-100 transition-all shadow-sm border border-red-100">
               {deleting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : 'Delete LNB'}
             </button>
+          )}
+          {!isAdmin && canEdit && (
+            <EditRequestButton
+              tableName="lab_notebook_entries"
+              recordId={entry.id}
+              moduleLabel="Lab Notebook"
+              fields={[
+                { key: 'title', label: 'Title' },
+                { key: 'objective', label: 'Objective', type: 'textarea' },
+                { key: 'methodology', label: 'Methodology', type: 'textarea' },
+              ]}
+              currentData={{ title, objective, methodology }}
+              hasPending={pendingIds.has(entry.id)}
+              allowDelete
+              onSuccess={fetchEntry}
+            />
           )}
           {canCountersign && (
             <button disabled={signing} onClick={handleCountersign} className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-sm">

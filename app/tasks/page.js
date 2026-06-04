@@ -69,6 +69,7 @@ export default function TasksPage() {
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [pendingDeleteTask, setPendingDeleteTask] = useState(null);
   const [capaTaskBatchMap, setCapaTaskBatchMap] = useState({});
+  const [pendingIds, setPendingIds] = useState(new Set());
 
   useEffect(() => {
     if (selectedTask) {
@@ -81,9 +82,18 @@ export default function TasksPage() {
   const supabase = useMemo(() => createClient(), []);
 
 
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
   useEffect(() => {
     if (!employeeProfile) return;
     fetchTasks();
+    fetchPendingIds();
 
     // Subscribe to live task changes \u2014 catches admin assignments, peer updates, approvals
     const channel = supabase.channel('tasks_realtime')
@@ -754,6 +764,8 @@ export default function TasksPage() {
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
         onToggleChecklist={toggleChecklistItem}
+        pendingIds={pendingIds}
+        onSuccess={() => { fetchTasks(); fetchPendingIds(); }}
       />
 
 

@@ -7,6 +7,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { formatMinutes } from './utils';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import EditRequestButton from '@/components/ui/EditRequestButton';
 
 /**
  * TaskDetailModal — slide-up modal showing full task detail, progress,
@@ -46,6 +47,8 @@ export default function TaskDetailModal({
   onEditTask,
   onDeleteTask,
   onToggleChecklist,
+  pendingIds,
+  onSuccess,
 }) {
   const fileRef = useRef(null);
   const router = useRouter();
@@ -61,20 +64,41 @@ export default function TaskDetailModal({
             <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700'}`}>{selectedTask.priority}</span>
             <h3 className="text-base font-bold text-gray-900 mt-1">{selectedTask.title}</h3>
           </div>
-          <div className="flex gap-1 text-gray-400">
-            <button 
+          <div className="flex gap-1 text-gray-400 items-center">
+            <button
               onClick={() => router.push(`/messages?pin_type=task&pin_id=${selectedTask.id}&pin_title=${encodeURIComponent(selectedTask.title)}`)}
-              className="p-1.5 rounded-md hover:bg-indigo-50 hover:text-indigo-600 transition-colors" 
+              className="p-1.5 rounded-md hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
               title="Discuss Task"
             >
               <MessageSquare className="w-4 h-4"/>
             </button>
-            {(isMaster || (selectedTask?.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
-              <button onClick={() => onDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
-            )}
-            {(isMaster || (selectedTask?.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id))) && (
-              <button onClick={() => onEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 hover:text-navy" title="Edit Task Settings"><Timer className="w-4 h-4 rotate-45"/></button>
-            )}
+            {isMaster ? (
+              <>
+                <button onClick={() => onDeleteTask(selectedTask.id)} className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600" title="Delete Task"><Trash2 className="w-4 h-4"/></button>
+                <button onClick={() => onEditTask(selectedTask)} className="p-1.5 rounded-md hover:bg-gray-50 hover:text-navy" title="Edit Task Settings"><Timer className="w-4 h-4 rotate-45"/></button>
+              </>
+            ) : (selectedTask?.assigned_by && String(selectedTask.assigned_by) === String(employeeProfile?.id)) ? (
+              <EditRequestButton
+                tableName="tasks"
+                recordId={selectedTask.id}
+                moduleLabel="Tasks"
+                fields={[
+                  { key: 'title', label: 'Title' },
+                  { key: 'description', label: 'Description', type: 'textarea' },
+                  { key: 'priority', label: 'Priority', type: 'select', options: [
+                    { value: 'low', label: 'Low' },
+                    { value: 'medium', label: 'Medium' },
+                    { value: 'high', label: 'High' },
+                    { value: 'urgent', label: 'Urgent' },
+                  ]},
+                  { key: 'due_date', label: 'Due Date', type: 'date' },
+                ]}
+                currentData={selectedTask}
+                hasPending={pendingIds?.has(selectedTask.id)}
+                allowDelete
+                onSuccess={onSuccess}
+              />
+            ) : null}
             <button onClick={onClose} className="p-1.5 rounded-md hover:bg-gray-50"><X className="w-4 h-4"/></button>
           </div>
         </div>
