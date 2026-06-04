@@ -53,7 +53,7 @@ export default function ShelfLifePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: studyData, error: studyErr }, { data: batchData }] = await Promise.all([
+      const [{ data: studyData, error: studyErr }, { data: batchData }, { data: stabTps }] = await Promise.all([
         supabase
           .from('shelf_life_studies')
           .select('*, created_by, creator:employees!shelf_life_studies_created_by_fkey(id, full_name, initials), batches(id, batch_id, variant, experiment_type), shelf_life_logs(id, day_number, test_data, logged_by, created_at)')
@@ -63,8 +63,22 @@ export default function ShelfLifePage() {
           .select('id, batch_id, variant, experiment_type, batch_flasks(id, flask_label, status, current_stage)')
           .eq('status', 'released')
           .limit(100),
+        // A-23: also fetch stability_timepoints (secondary table) and merge into shelf_life_logs
+        supabase.from('stability_timepoints').select('*').order('timepoint_days', { ascending: true }),
       ]);
       if (studyErr) throw studyErr;
+      // A-23 reconciliation: convert stability_timepoints to shelf_life_log format and merge
+      const tpByStudy = {};
+      (stabTps || []).forEach(tp => {
+        if (!tpByStudy[tp.study_id]) tpByStudy[tp.study_id] = [];
+        tpByStudy[tp.study_id].push({ id: tp.id, day_number: tp.timepoint_days, test_data: tp.test_results || {}, created_at: tp.created_at, is_oos: tp.is_oos, _from_stability_timepoints: true });
+      });
+      // Merge into each study's shelf_life_logs (dedup by day_number, preferring shelf_life_logs)
+      studyData?.forEach(s => {
+        const existingDays = new Set((s.shelf_life_logs || []).map(l => l.day_number));
+        const extra = (tpByStudy[s.id] || []).filter(tp => !existingDays.has(tp.day_number));
+        s.shelf_life_logs = [...(s.shelf_life_logs || []), ...extra];
+      });
       setStudies(studyData || []);
       setBatches(batchData || []);
     } catch (err) { console.error('Shelf-life fetch error:', err); }
@@ -323,6 +337,34 @@ export default function ShelfLifePage() {
                   ) : null;
                 })()}
 
+                {/* A-24: ICH Q1E Statistical Shelf Life Regression */}
+                {(() => {
+                  const logs = study.shelf_life_logs || [];
+                  const pts = logs
+                    .filter(l => l.test_data?.pH != null && l.day_number != null)
+                    .sort((a,b) => a.day_number - b.day_number);
+                  if (pts.length < 3) return null;
+                  // Linear regression: pH = a + b×day
+                  const n = pts.length;
+                  const sumX = pts.reduce((s,p)=>s+p.day_number,0);
+                  const sumY = pts.reduce((s,p)=>s+parseFloat(p.test_data.pH),0);
+                  const sumXY = pts.reduce((s,p)=>s+p.day_number*parseFloat(p.test_data.pH),0);
+                  const sumX2 = pts.reduce((s,p)=>s+p.day_number*p.day_number,0);
+                  const b = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+                  const a = (sumY - b*sumX) / n;
+                  const spec = 3.8; // lower pH spec limit for LAB probiotic
+                  const shelfLifeDays = b < 0 ? Math.round((spec - a) / b) : null;
+                  return (
+                    <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs">
+                      <p className="font-black text-[10px] uppercase text-purple-800 mb-1">A-24 ICH Q1E pH Shelf-Life Regression ({n} datapoints)</p>
+                      <p className="text-purple-700 font-semibold">pH = {a.toFixed(3)} {b>=0?'+':''}{b.toFixed(5)}×day · R² slope: {Math.abs(b).toFixed(5)}/day</p>
+                      {shelfLifeDays && <p className="font-black text-purple-900 mt-0.5">Projected shelf life (pH hits {spec}): <span className="text-lg">{shelfLifeDays} days</span></p>}
+                      {!shelfLifeDays && <p className="text-purple-600 font-semibold mt-0.5">pH is stable or rising — no lower limit breach projected</p>}
+                      <p className="text-[9px] text-purple-400 mt-0.5">Based on pH lower spec limit {spec}. Confirm with stability study data.</p>
+                    </div>
+                  );
+                })()}
+
                 {/* A-37: Probiotic viability prediction at EoSL */}
                 {(() => {
                   const d0Log = study.shelf_life_logs?.find(l => l.day_number === 0);
@@ -342,7 +384,19 @@ export default function ShelfLifePage() {
                       <p className={`font-black mt-0.5 ${meetsSpec ? 'text-emerald-900' : 'text-red-900'}`}>
                         {meetsSpec ? '✓ Projects to meet ≥10⁵ CFU/g at EoSL' : '⚠ May fall below ≥10⁵ CFU/g — review storage conditions or shorten shelf life claim'}
                       </p>
-                      <p className="text-[9px] text-gray-400 mt-0.5">Assumes D-value = 30 days at {study.temperature_c || 4}°C. Validate with actual timepoint data.</p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">A-56 D-value model: D₃₀ = 30d at {study.temperature_c || 4}°C (1-log reduction). Validate with actual timepoint CFU data.</p>
+                    {/* A-56: Viability curve mini table */}
+                    <div className="mt-2 grid grid-cols-5 gap-1">
+                      {[0,14,30,60,90].map(day => {
+                        const pred = cfuVal * Math.pow(10, -day/30);
+                        return (
+                          <div key={day} className={`p-1 rounded text-center ${pred >= 1e6 ? 'bg-emerald-100' : pred >= 1e5 ? 'bg-amber-100' : 'bg-red-100'}`}>
+                            <p className="text-[8px] font-black text-gray-500">D{day}</p>
+                            <p className="text-[9px] font-black text-gray-800">{pred.toExponential(0)}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
                     </div>
                   );
                 })()}

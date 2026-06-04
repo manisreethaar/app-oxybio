@@ -69,7 +69,10 @@
       "Bash(git show *)",
       "Bash(gh run *)",
       "Bash(gh api *)",
-      "Bash(git commit -m 'fix\\(build\\): add force-dynamic to environmental-monitoring page *)"
+      "Bash(git commit -m 'fix\\(build\\): add force-dynamic to environmental-monitoring page *)",
+      "Bash(xargs grep -l \"onEdit\\\\|handleEdit\\\\|handleDelete\\\\|onDelete\\\\|handleModify\")",
+      "Bash(xargs grep -l \"pending_changes\")",
+      "Bash(xargs grep -l \"DELETE\\\\|delete\")"
     ]
   }
 }

@@ -1183,6 +1183,20 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
                 <ArrowDownToLine className="w-3.5 h-3.5"/>Generate Certificate of Analysis (COA)
               </button>
+              {/* A-38: Batch disposition decision tree */}
+              <div className={`p-3 rounded-xl border text-xs space-y-1 ${anyFail ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                <p className="font-black text-[10px] uppercase">A-38 Batch Disposition Decision</p>
+                {!anyFail && <p className="text-emerald-800 font-semibold">✓ All tests passed → <strong>Release</strong> batch to production/distribution</p>}
+                {anyFail && (
+                  <div className="space-y-1">
+                    <p className="text-red-800 font-semibold">Tests failed — choose one of:</p>
+                    <p className="text-red-700">• <strong>Reject</strong> — if failure is critical (pathogen, safety) or deviation is unacceptable</p>
+                    <p className="text-amber-700">• <strong>Conditional Release</strong> — if failure is non-critical with documented deviation approved by QA</p>
+                    <p className="text-orange-700">• <strong>Rework / Retest</strong> — if failure may be due to sampling error; use Re-test button above</p>
+                  </div>
+                )}
+              </div>
+
               {!isCeo && <p className="text-xs text-gray-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
               {isCeo && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

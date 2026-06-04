@@ -73,6 +73,9 @@ function RSMHeatmap({ heatmap, factors }) {
   };
   const G = heatmap.length;
   const fA = factors[0], fB = factors[1];
+  // A-40: Find optimal point (maximum value position)
+  let optRow = 0, optCol = 0;
+  heatmap.forEach((row, i) => row.forEach((val, j) => { if (val > heatmap[optRow][optCol]) { optRow = i; optCol = j; } }));
   return (
     <div>
       <p className="text-xs text-gray-500 mb-2">2D surface — Factor C held at centre level</p>
@@ -83,11 +86,16 @@ function RSMHeatmap({ heatmap, factors }) {
           <span>{fA ? fA.low_value : '-1'}</span>
         </div>
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${G}, 10px)`, gap: '1px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${G}, 10px)`, gap: '1px', position: 'relative' }}>
             {heatmap.map((row, i) =>
               row.map((val, j) => (
                 <div key={`${i}-${j}`} title={val.toFixed(3)}
-                  style={{ width: 10, height: 10, backgroundColor: toColor(val), borderRadius: 1 }} />
+                  style={{ width: 10, height: 10, backgroundColor: toColor(val), borderRadius: 1,
+                    outline: i===optRow && j===optCol ? '2px solid #fff' : 'none',
+                    boxShadow: i===optRow && j===optCol ? '0 0 0 1px #000' : 'none',
+                  }}>
+                  {i===optRow && j===optCol && <span style={{ fontSize: 7, lineHeight: '10px', textAlign: 'center', display: 'block', color: '#fff', fontWeight: 900 }}>★</span>}
+                </div>
               ))
             )}
           </div>
@@ -103,6 +111,98 @@ function RSMHeatmap({ heatmap, factors }) {
           <span className="text-[10px] text-gray-500">{min.toFixed(2)}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── A-67: Predictive Models Tab ──────────────────────────────────────────────
+function PredictiveModelsTab({ supabase, toast }) {
+  const [models,   setModels]   = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [form, setForm] = useState({ model_name: '', version: '1.0', target_variable: '', confidence_interval: '', feature_weights: '{}' });
+
+  useEffect(() => {
+    supabase.from('predictive_models').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { setModels(data || []); setLoading(false); });
+  }, [supabase]);
+
+  const handleSave = async () => {
+    if (!form.model_name || !form.target_variable) { toast.warn('Model name and target variable required.'); return; }
+    setSaving(true);
+    try {
+      let weights = {};
+      try { weights = JSON.parse(form.feature_weights); } catch { /* invalid JSON — keep empty */ }
+      const { error } = await supabase.from('predictive_models').insert({
+        model_name: form.model_name, version: form.version, target_variable: form.target_variable,
+        confidence_interval: form.confidence_interval ? parseFloat(form.confidence_interval) : null,
+        feature_weights: weights, is_active: true,
+      });
+      if (error) throw error;
+      toast.success('Predictive model registered.');
+      setShowForm(false);
+      supabase.from('predictive_models').select('*').order('created_at', { ascending: false }).then(({ data }) => setModels(data || []));
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-black text-gray-900">A-67 Predictive Model Registry</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Register ML models for process variable prediction (yield, CFU, pH endpoint)</p>
+        </div>
+        <button onClick={() => setShowForm(v=>!v)} className="px-4 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase tracking-wider hover:bg-navy-hover">Register Model</button>
+      </div>
+      {showForm && (
+        <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="field-label">Model Name</label><input value={form.model_name} onChange={e=>setForm(f=>({...f,model_name:e.target.value}))} className="field-input" placeholder="e.g. pH Endpoint Predictor v1"/></div>
+            <div><label className="field-label">Version</label><input value={form.version} onChange={e=>setForm(f=>({...f,version:e.target.value}))} className="field-input" placeholder="1.0"/></div>
+            <div><label className="field-label">Target Variable</label><input value={form.target_variable} onChange={e=>setForm(f=>({...f,target_variable:e.target.value}))} className="field-input" placeholder="e.g. final_ph, cfu_per_ml, yield_ml"/></div>
+            <div><label className="field-label">Confidence Interval (%)</label><input type="number" step="0.1" value={form.confidence_interval} onChange={e=>setForm(f=>({...f,confidence_interval:e.target.value}))} className="field-input" placeholder="95"/></div>
+          </div>
+          <div><label className="field-label">Feature Weights (JSON)</label>
+            <textarea value={form.feature_weights} onChange={e=>setForm(f=>({...f,feature_weights:e.target.value}))} rows={3}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono outline-none resize-none"
+              placeholder='{"inoculation_pct": 0.35, "initial_ph": 0.28, "temp_c": 0.22, "brix_0": 0.15}'/>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={handleSave} disabled={saving} className="px-5 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Saving...':'Register'}</button>
+            <button onClick={()=>setShowForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
+          </div>
+        </div>
+      )}
+      {models.length === 0 ? (
+        <div className="p-12 text-center text-gray-400 text-sm">No predictive models registered yet. Register a model above to track ML-based process predictions.</div>
+      ) : (
+        <div className="space-y-3">
+          {models.map(m => (
+            <div key={m.id} className={`surface p-4 border-l-4 ${m.is_active ? 'border-l-emerald-500' : 'border-l-gray-300'}`}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-black text-gray-900">{m.model_name} <span className="text-gray-400 font-semibold text-xs">v{m.version}</span></p>
+                  <p className="text-xs text-gray-600 mt-0.5">Target: <strong>{m.target_variable}</strong> · CI: {m.confidence_interval ? `${m.confidence_interval}%` : '—'}</p>
+                  {m.feature_weights && Object.keys(m.feature_weights).length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {Object.entries(m.feature_weights).map(([feat, weight]) => (
+                        <span key={feat} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded text-[9px] font-bold">{feat}: {weight}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase ${m.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                  {m.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1323,6 +1423,7 @@ export default function BioprocessDetailPage() {
     { id: 'analysis', label: 'Analysis', Icon: BarChart2 },
     { id: 'interpretation', label: 'Interpretation', Icon: Info },
     { id: 'scaledown', label: 'Scale-Down', Icon: BarChart2 },
+    { id: 'models', label: 'Predictive Models', Icon: BarChart2 },
   ];
 
   return (
@@ -1401,6 +1502,7 @@ export default function BioprocessDetailPage() {
         {activeTab === 'data' && <DataTab />}
         {activeTab === 'analysis' && <AnalysisTab />}
         {activeTab === 'interpretation' && <InterpretationTab />}
+        {activeTab === 'models' && <PredictiveModelsTab supabase={supabase} toast={toast} />}
         {activeTab === 'scaledown' && (
           <div className="space-y-6">
             <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">

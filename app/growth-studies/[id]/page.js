@@ -413,8 +413,8 @@ export default function GrowthStudyDetailPage() {
       substrateConcGL,
       // A-41: death phase detection
       inDeathPhase: isDeclinePahse,
-      // A-62: maintenance coefficient ms = µ_observed - µ_true (simplified: ms ≈ µmax × (1 - Yx/s_obs/Yx/s_true))
-      // We show a placeholder notice if in decline
+      // A-62: maintenance coefficient ms (simplified: lowest µ observed in early log phase)
+      ms: rates.length >= 4 ? Math.max(0, Math.min(...rates.slice(0, Math.ceil(rates.length/3)))).toFixed(4) : null,
     };
   })();
 
@@ -725,6 +725,17 @@ export default function GrowthStudyDetailPage() {
                   </div>
                 ))}
               </div>
+              {/* A-62: Maintenance coefficient */}
+              {kinetics.ms && (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-gray-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
+                    <p className="text-xl font-black text-gray-800 tabular-nums">{kinetics.ms}</p>
+                    <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
+                  </div>
+                </div>
+              )}
+
               {/* A-20: Monod kinetics additions */}
               {(kinetics.ks || kinetics.yxs) && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
