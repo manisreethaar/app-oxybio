@@ -9,7 +9,8 @@ import dynamic from 'next/dynamic';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
   Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
-  FileText, Download, Loader, Trash2, ArrowRight, MessageSquare
+  FileText, Download, Loader, Trash2, ArrowRight, MessageSquare,
+  Package, Layers
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,6 +30,8 @@ const SterilisationPanel = dynamic(() => import('./components/SterilisationPanel
 const InoculationPanel = dynamic(() => import('./components/InoculationPanel'), { ssr: false, loading: PanelLoading });
 const FermentationPanel = dynamic(() => import('./components/FermentationPanel'), { ssr: false, loading: PanelLoading });
 const StrainingPanel = dynamic(() => import('./components/StrainingPanel'), { ssr: false, loading: PanelLoading });
+const HarvestPanel = dynamic(() => import('./components/HarvestPanel'), { ssr: false, loading: PanelLoading });
+const DownstreamPanel = dynamic(() => import('./components/DownstreamPanel'), { ssr: false, loading: PanelLoading });
 const ExtractAdditionPanel = dynamic(() => import('./components/ExtractAdditionPanel'), { ssr: false, loading: PanelLoading });
 const QCHoldPanel = dynamic(() => import('./components/QCHoldPanel'), { ssr: false, loading: PanelLoading });
 const ReleasePanel = dynamic(() => import('./components/ReleasePanel'), { ssr: false, loading: PanelLoading });
@@ -40,8 +43,10 @@ const STAGES = [
   { id: 'sterilisation',    label: 'Sterilisation',    icon: ShieldCheck, color: 'text-slate-600',  bg: 'bg-slate-50',   border: 'border-slate-200'  },
   { id: 'inoculation',      label: 'Inoculation',      icon: Droplets,    color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200'   },
   { id: 'fermentation',     label: 'Fermentation',     icon: Activity,    color: 'text-navy',       bg: 'bg-navy/10',    border: 'border-navy/30'    },
+  { id: 'harvest',          label: 'Harvest',          icon: Package,     color: 'text-orange-600', bg: 'bg-orange-50',  border: 'border-orange-200', supplementary: true },
   { id: 'straining',        label: 'Straining',        icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
   { id: 'extract_addition', label: 'Extract Addition', icon: Leaf,        color: 'text-fuchsia-600',bg: 'bg-fuchsia-50', border: 'border-fuchsia-200'},
+  { id: 'downstream',       label: 'Downstream',       icon: Layers,      color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', supplementary: true },
   { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-rose-600',   bg: 'bg-rose-50',    border: 'border-rose-200'   },
   { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
   { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
@@ -50,7 +55,8 @@ const STAGES = [
 const PANEL_MAP = {
   media_prep: MediaPrepPanel, sterilisation: SterilisationPanel,
   inoculation: InoculationPanel, fermentation: FermentationPanel,
-  straining: StrainingPanel, extract_addition: ExtractAdditionPanel,
+  harvest: HarvestPanel, straining: StrainingPanel,
+  extract_addition: ExtractAdditionPanel, downstream: DownstreamPanel,
   qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
 
