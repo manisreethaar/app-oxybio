@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
-// Vercel Serverless Function Config
-export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
@@ -24,10 +23,10 @@ export async function GET(request) {
     const nowIst = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
     const todayStr = nowIst.toISOString().split('T')[0];
 
-    // 1. Fetch all active employees
+    // 1. Fetch all active employees with push subscriptions
     const { data: employees, error: empError } = await supabaseAdmin
       .from('employees')
-      .select('id, full_name, role')
+      .select('id, full_name, role, push_subscription')
       .eq('is_active', true);
     
     if (empError) throw empError;
@@ -59,7 +58,7 @@ export async function GET(request) {
       return NextResponse.json({ success: true, message: 'Everyone is accounted for (checked-in or on leave).' });
     }
 
-    // 5. Create notifications
+    // 5. Create in-app notifications
     const notifications = missingEmployees.map(emp => ({
       employee_id: emp.id,
       title: '⏰ Attendance Reminder',
@@ -74,23 +73,48 @@ export async function GET(request) {
 
     if (notifError) throw notifError;
 
-    // Fire off Push Notifications
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com';
-    await Promise.allSettled(missingEmployees.map(emp =>
-      fetch(`${appUrl}/api/push/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.CRON_SECRET}`
-        },
-        body: JSON.stringify({
-          assigned_to: emp.id,
-          title: '⏰ Missing Check-In',
-          body: 'It is past 10:00 AM. Please check in now via OxyOS.',
-          url: '/attendance'
-        })
-      })
-    ));
+    // 6. Dispatch Push Notifications Directly
+    if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      webpush.setVapidDetails(
+        process.env.VAPID_CONTACT_EMAIL || 'mailto:ceo@oxygenbioinnovations.com',
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+      );
+
+      let sentCount = 0;
+      let failCount = 0;
+
+      for (const emp of missingEmployees) {
+        if (!emp.push_subscription) continue;
+
+        try {
+          const sub = typeof emp.push_subscription === 'string'
+            ? JSON.parse(emp.push_subscription)
+            : emp.push_subscription;
+
+          await webpush.sendNotification(sub, JSON.stringify({
+            title: '⏰ Missing Check-In',
+            body: 'It is past 10:00 AM. Please check in now via OxyOS.',
+            url: '/attendance'
+          }));
+          sentCount++;
+        } catch (err) {
+          console.error(`[Morning Check] Failed to send push to user ${emp.id}:`, err.message);
+          
+          // Cleanup expired subscriptions (404/410)
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await supabaseAdmin
+              .from('employees')
+              .update({ push_subscription: null })
+              .eq('id', emp.id);
+          }
+          failCount++;
+        }
+      }
+      console.log(`[Morning Check] Push notifications sent: ${sentCount}, failed: ${failCount}`);
+    } else {
+      console.warn('[Morning Check] VAPID keys not configured, skipping push notifications.');
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -102,3 +126,4 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
