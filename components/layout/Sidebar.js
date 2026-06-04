@@ -6,7 +6,8 @@ import {
   CalendarOff, Clock, FileText, CalendarDays, Receipt,
   BookOpen, Users, LogOut, UserCircle, Contact, Menu, X,
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
-  Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle
+  Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle,
+  Wind, Wifi, ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -95,7 +96,10 @@ export default function Sidebar() {
       title: 'COMPLIANCE',
       items: [
         { name: 'Documents & SOPs',  href: '/documents',  icon: FileText,    show: effectiveCanDo('documents', 'view') },
-        { name: 'Compliance & CAPA', href: '/compliance', icon: ShieldAlert, show: effectiveCanDo('compliance', 'view') },
+        { name: 'Compliance & CAPA',         href: '/compliance',              icon: ShieldAlert, show: effectiveCanDo('compliance', 'view') },
+        { name: 'Shift Handover',             href: '/shift-handover',          icon: ArrowRight,  show: effectiveCanDo('batches', 'view') },
+        { name: 'Environmental Monitoring',   href: '/environmental-monitoring', icon: Wind,        show: effectiveCanDo('batches', 'view') },
+        { name: 'SCADA / Sensor Streams',     href: '/scada',                   icon: Wifi,        show: effectiveCanDo('equipment', 'view') },
       ]
     },
     {

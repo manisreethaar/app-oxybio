@@ -107,6 +107,68 @@ function RSMHeatmap({ heatmap, factors }) {
   );
 }
 
+// ── A-65: Scale-Down Model Form ──────────────────────────────────────────────
+function ScaleDownForm({ experimentId, supabase, toast, batches }) {
+  const [prodBatchId,   setProdBatchId]   = useState('');
+  const [scalingFactor, setScalingFactor] = useState('');
+  const [compScore,     setCompScore]     = useState('');
+  const [notes,         setNotes]         = useState('');
+  const [saving,        setSaving]        = useState(false);
+  const [saved,         setSaved]         = useState(null);
+
+  const handleSave = async () => {
+    if (!prodBatchId || !scalingFactor) { toast.warn('Production batch and scaling factor required.'); return; }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.from('scale_down_models').upsert({
+        bench_scale_batch_id:      experimentId,
+        production_scale_batch_id: prodBatchId,
+        scaling_factor:            parseFloat(scalingFactor),
+        comparability_score:       compScore ? parseFloat(compScore) : null,
+        notes:                     notes || null,
+      }, { onConflict: 'bench_scale_batch_id' }).select().single();
+      if (error) throw error;
+      setSaved(data);
+      toast.success('Scale-down model saved.');
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="field-label">Production Scale Batch *</label>
+          <select value={prodBatchId} onChange={e=>setProdBatchId(e.target.value)} className="field-input bg-white">
+            <option value="">Select production batch...</option>
+            {(batches || []).map(b => <option key={b.id} value={b.id}>{b.batch_id} ({b.variant})</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="field-label">Scaling Factor (production vol / bench vol) *</label>
+          <input type="number" step="0.1" value={scalingFactor} onChange={e=>setScalingFactor(e.target.value)} className="field-input" placeholder="e.g. 10 (bench 0.25L → prod 2.5L)"/>
+        </div>
+        <div>
+          <label className="field-label">Comparability Score (0–1)</label>
+          <input type="number" step="0.01" min="0" max="1" value={compScore} onChange={e=>setCompScore(e.target.value)} className="field-input" placeholder="e.g. 0.85 based on pH + CFU similarity"/>
+        </div>
+        <div>
+          <label className="field-label">Notes</label>
+          <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input" placeholder="Key process differences between scales"/>
+        </div>
+      </div>
+      {saved && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-800">
+          ✓ Scale-down model saved — scaling factor {scalingFactor}× · comparability {compScore || '—'}
+        </div>
+      )}
+      <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+        {saving ? 'Saving...' : 'Save Scale-Down Model'}
+      </button>
+    </div>
+  );
+}
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function BioprocessDetailPage() {
   const { id } = useParams();
@@ -1260,6 +1322,7 @@ export default function BioprocessDetailPage() {
     { id: 'data', label: 'Data Entry', Icon: FlaskConical },
     { id: 'analysis', label: 'Analysis', Icon: BarChart2 },
     { id: 'interpretation', label: 'Interpretation', Icon: Info },
+    { id: 'scaledown', label: 'Scale-Down', Icon: BarChart2 },
   ];
 
   return (
@@ -1338,6 +1401,17 @@ export default function BioprocessDetailPage() {
         {activeTab === 'data' && <DataTab />}
         {activeTab === 'analysis' && <AnalysisTab />}
         {activeTab === 'interpretation' && <InterpretationTab />}
+        {activeTab === 'scaledown' && (
+          <div className="space-y-6">
+            <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
+              <h3 className="text-sm font-black text-gray-900 mb-2 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-indigo-600"/>A-65 Scale-Down Model
+              </h3>
+              <p className="text-xs text-gray-600 font-semibold mb-4">Link this bench-scale experiment to a production-scale batch to compute scaling factor and comparability score.</p>
+              <ScaleDownForm experimentId={id} supabase={supabase} toast={toast} batches={batches}/>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
