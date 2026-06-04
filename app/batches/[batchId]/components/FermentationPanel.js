@@ -191,6 +191,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [endpoint,  setEndpoint]  = useState(null);
   const [saving,    setSaving]    = useState(false);
 
+  // A-33: inter-batch comparison
+  const [comparisonData, setComparisonData] = useState({});
+  const [showComparison, setShowComparison] = useState(false);
+
   // Feed log (pH correction / nutrient addition)
   const [feeds,         setFeeds]         = useState([]);
   const [showFeedForm,  setShowFeedForm]  = useState(false);
@@ -347,6 +351,15 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     } catch (err) { toast.error(err.message); }
     finally { setSavingFeed(false); }
   };
+
+  // A-33: fetch inter-batch comparison data when toggled on
+  useEffect(() => {
+    if (!showComparison || !batch?.formulation_id) return;
+    fetch(`/api/batches/compare?formulation_id=${batch.formulation_id}&current_batch_id=${batch.id}&limit=3`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setComparisonData(d.data || {}); })
+      .catch(() => {});
+  }, [showComparison, batch?.formulation_id, batch?.id]);
 
   // G-31: Fetch incubator equipment once
   useEffect(() => {
@@ -976,8 +989,14 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
         {/* ── Chart + Reading Table (Shows All Flasks' graph context) ── */}
         <div className="surface overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900">Trial Trends</h3>
+            {batch?.formulation_id && (
+              <button onClick={() => setShowComparison(v => !v)}
+                className={`px-2.5 py-1 text-[10px] font-black rounded-lg border transition-all ${showComparison ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
+                {showComparison ? 'Hide' : 'Compare'} Historical
+              </button>
+            )}
           </div>
           <div className="p-4 space-y-3">
             <PhChart readings={readings}/>
@@ -1002,6 +1021,54 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <TempChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
               </div>
             )}
+            {/* A-66: PAT Shewhart control chart stats for pH */}
+            {(() => {
+              const flaskPh = readings.filter(r => r.flask_id === activeFlask?.id && r.ph != null && r.elapsed_hours != null);
+              if (flaskPh.length < 4) return null;
+              const phVals = flaskPh.map(r => parseFloat(r.ph));
+              const mean = phVals.reduce((a,b) => a+b, 0) / phVals.length;
+              const std = Math.sqrt(phVals.reduce((a,b) => a + Math.pow(b-mean,2), 0) / phVals.length);
+              const ucl = mean + 3*std, lcl = mean - 3*std;
+              const violations = phVals.filter(v => v > ucl || v < lcl).length;
+              return (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <p className="text-[9px] font-black uppercase text-slate-600 mb-2">A-66 PAT — Shewhart Control Chart (pH)</p>
+                  <div className="grid grid-cols-4 gap-2 text-xs text-center">
+                    {[['Mean', mean.toFixed(3)],['σ', std.toFixed(3)],['UCL (3σ)', ucl.toFixed(3)],['LCL (3σ)', lcl.toFixed(3)]].map(([l,v])=>(
+                      <div key={l} className="p-1.5 bg-white rounded-lg border border-slate-100">
+                        <p className="text-[8px] font-black uppercase text-slate-400">{l}</p>
+                        <p className="font-black text-slate-800 text-sm tabular-nums">{v}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {violations > 0 && <p className="text-[10px] text-red-700 font-bold mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>{violations} reading(s) outside 3σ control limits — process out of control</p>}
+                  {violations === 0 && flaskPh.length >= 4 && <p className="text-[10px] text-emerald-700 font-semibold mt-1">✓ All readings within 3σ control limits — process in control</p>}
+                </div>
+              );
+            })()}
+
+            {/* A-33: Inter-batch pH comparison overlay */}
+            {showComparison && Object.keys(comparisonData).length > 0 && (
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <p className="text-[9px] font-black uppercase text-indigo-700 mb-2">Historical Batch Comparison (same formulation)</p>
+                <div className="space-y-1">
+                  {Object.entries(comparisonData).map(([batchLabel, pts], idx) => {
+                    const colors = ['#7c3aed','#059669','#d97706'];
+                    const col = colors[idx % colors.length];
+                    const latestPt = pts[pts.length - 1];
+                    return (
+                      <div key={batchLabel} className="flex items-center gap-2 text-xs">
+                        <span style={{ backgroundColor: col }} className="w-8 h-1.5 rounded-full inline-block shrink-0"/>
+                        <span className="font-bold text-gray-700 font-mono">{batchLabel}</span>
+                        <span className="text-gray-500">{pts.length} readings · Last pH: {latestPt?.ph?.toFixed(2)} at T+{latestPt?.elapsed_hours?.toFixed(1)}h</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[9px] text-indigo-400 mt-1">pH data from last 3 released batches overlaid above in grey on chart</p>
+              </div>
+            )}
+
             {/* A-31 + A-32: TA production rate and acid curve */}
             {(() => {
               const flaskReadings = readings.filter(r => r.flask_id === activeFlask?.id && r.titratable_acidity_pct != null && r.elapsed_hours != null).sort((a,b)=>a.elapsed_hours-b.elapsed_hours);

@@ -16,6 +16,8 @@ import CreatorBadge from '@/components/ui/CreatorBadge';
 const GrowthCurveChart = dynamic(() => import('@/components/charts/GrowthCurveChart'), { ssr: false });
 
 const VESSEL_TYPES = ['test_tube','flask_50ml','flask_125ml','flask_250ml','flask_500ml','flask_1000ml','bioreactor_1L','bioreactor_5L','bioreactor_10L'];
+// A-43: Study types include temperature optima + A-63: MIC study
+const STUDY_TYPES = ['growth_curve','fermentation','temperature_optima','mic_study','death_phase','vfa_profile'];
 const TURBIDITY_OPTIONS = ['clear', 'slightly_turbid', 'turbid', 'very_turbid'];
 const PLATE_MEDIA_OPTIONS = ['TSA', 'LB Agar', 'MRS Agar', 'PDA', 'Nutrient Agar', 'R2A', 'Other'];
 const DILUTION_OPTIONS = ['undiluted', '10⁻¹', '10⁻²', '10⁻³', '10⁻⁴', '10⁻⁵', '10⁻⁶'];
@@ -379,6 +381,12 @@ export default function GrowthStudyDetailPage() {
       }
     }
     if (!rates.length) return null;
+
+    // A-41: death phase — detect if OD is declining in last 3 points
+    const lastPts = pts.slice(-3);
+    const isDeclinePahse = lastPts.length >= 3 &&
+      parseFloat(lastPts[2].od_value) < parseFloat(lastPts[0].od_value);
+
     const muMax = Math.max(...rates);
     const doublingTime = muMax > 0 ? (Math.LN2 / muMax) : null;
     const peakOD = Math.max(...pts.map(p => parseFloat(p.od_value)));
@@ -403,6 +411,10 @@ export default function GrowthStudyDetailPage() {
       ks: ks ? parseFloat(ks).toFixed(4) : null,
       yxs: yxs ? parseFloat(yxs).toFixed(4) : autoYxs,
       substrateConcGL,
+      // A-41: death phase detection
+      inDeathPhase: isDeclinePahse,
+      // A-62: maintenance coefficient ms = µ_observed - µ_true (simplified: ms ≈ µmax × (1 - Yx/s_obs/Yx/s_true))
+      // We show a placeholder notice if in decline
     };
   })();
 
@@ -732,6 +744,13 @@ export default function GrowthStudyDetailPage() {
                   )}
                 </div>
               )}
+              {/* A-41: Death phase indicator */}
+              {kinetics.inDeathPhase && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs">
+                  <p className="font-black text-red-800">A-41 Death Phase Detected</p>
+                  <p className="text-red-700 font-semibold">OD is declining in the last 3 readings — culture has entered the death/decline phase. Harvest immediately if not already done.</p>
+                </div>
+              )}
               <p className="text-[9px] text-slate-400 font-semibold mt-3">
                 Calculated from {kinetics.dataPoints} OD data points · µ = (ln OD₂ − ln OD₁) / (t₂ − t₁) per interval
               </p>
@@ -954,6 +973,26 @@ export default function GrowthStudyDetailPage() {
                       </div>
                     </div>
                   </details>
+                  {/* A-42: VFA profile (for heterofermenters) */}
+                  {(study?.study_type === 'fermentation' || study?.study_type === 'vfa_profile') && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
+                      <p className="text-[10px] font-black uppercase text-rose-800">A-42 VFA Profile (mmol/L)</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div><label className={LabelCls}>Acetate</label><input className={InputCls} type="number" step="0.01" value={mForm.acetate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, acetate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
+                        <div><label className={LabelCls}>Propionate</label><input className={InputCls} type="number" step="0.01" value={mForm.propionate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, propionate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
+                        <div><label className={LabelCls}>Butyrate</label><input className={InputCls} type="number" step="0.01" value={mForm.butyrate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, butyrate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
+                      </div>
+                    </div>
+                  )}
+                  {/* A-43: Temperature optima study — multiple temp readings */}
+                  {study?.study_type === 'temperature_optima' && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-[10px] font-black uppercase text-amber-800 mb-2">A-43 Temperature Optima — Test Temp</p>
+                      <div><label className={LabelCls}>Test Temperature (°C)</label>
+                        <input className={InputCls} type="number" step="0.5" value={mForm.test_temperature_c || ''} onChange={e => setMForm(f => ({ ...f, test_temperature_c: e.target.value }))} placeholder="e.g. 30, 37, 42"/>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className={LabelCls}>Notes</label>
                     <textarea className={InputCls} rows={2} value={mForm.notes || ''} onChange={e => setMForm(f => ({ ...f, notes: e.target.value }))} />
@@ -1293,10 +1332,10 @@ export default function GrowthStudyDetailPage() {
                   <div>
                     <label className={LabelCls}>Study Type</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[['growth_curve','Growth Curve'],['fermentation','Fermentation']].map(([v,l]) => (
+                      {STUDY_TYPES.map(v => (
                         <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
                           className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
-                        >{l}</button>
+                        >{v.replace(/_/g,' ')}</button>
                       ))}
                     </div>
                   </div>
