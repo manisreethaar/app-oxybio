@@ -47,6 +47,14 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
   // Edit/Delete request state (staff → admin approval flow)
   const [editModal, setEditModal] = useState<any>(null); // the activity being edited
+  const [editForm, setEditForm] = useState<any>({
+    activity_description: '',
+    start_time: '',
+    end_time: '',
+    issue_observed: false,
+    issue_description: '',
+  });
+  const [requestingDelete, setRequestingDelete] = useState<string | null>(null); // activity id awaiting delete confirmation
   const [showAdminEditModal, setShowAdminEditModal] = useState(false);
   const [adminEditPayload, setAdminEditPayload] = useState<{ id: string, action: string, updates: any } | null>(null);
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
