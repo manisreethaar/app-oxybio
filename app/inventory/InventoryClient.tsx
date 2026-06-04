@@ -1375,21 +1375,31 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 >
                   <QrCode className="w-4 h-4" /> View QR
                 </button>
-                {selectedStock.status === 'Quarantined' ? (
-                  <button 
+                {selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine' ? (
+                  <button
                     onClick={async () => {
-                       const { error } = await supabase.from('inventory_stock').update({ status: 'Available' }).eq('id', selectedStock.id);
-                       if (!error) { 
-                         toast.success('Stock Released from QC Quarantine'); 
-                         setSelectedStock({...selectedStock, status: 'Available'}); 
-                         fetchData(0, false); 
+                       const qcNotes = window.prompt('QC Release Notes (identity test result, sampling method, observations):');
+                       if (qcNotes === null) return; // user cancelled
+                       const { data: { user } } = await supabase.auth.getUser();
+                       const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
+                       const { error } = await supabase.from('inventory_stock').update({
+                         status: 'Available',
+                         qc_status: 'Released',
+                         qc_released_by: emp?.id || null,
+                         qc_released_at: new Date().toISOString(),
+                         qc_notes: qcNotes || null,
+                       }).eq('id', selectedStock.id);
+                       if (!error) {
+                         toast.success('Stock QC Released — status updated to Available');
+                         setSelectedStock({...selectedStock, status: 'Available', qc_status: 'Released'});
+                         fetchData(0, false);
                        } else {
                          toast.error(error.message);
                        }
-                    }} 
+                    }}
                     className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
                   >
-                    Release from Quarantine
+                    ✓ QC Release (Quarantine → Available)
                   </button>
                 ) : (
                   <button 

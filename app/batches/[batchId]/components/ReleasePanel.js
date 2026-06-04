@@ -9,7 +9,9 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const [sensoryData, setSensoryData] = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [releaseError, setReleaseError] = useState(null);
-  const isCeo = ['ceo','admin'].includes(role);
+  // A-39: QA Head / admin / ceo can release
+  const isCeo = ['ceo','admin','cto','research_fellow'].includes(role);
+  const isQaAuthorised = ['ceo','admin','cto'].includes(role); // labelling sign-off requires higher authority
 
   const [yieldVol, setYieldVol] = useState('');
   const [bottles,  setBottles]  = useState('');
@@ -24,6 +26,20 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   // G-14: E-signature confirmation
   const [esigInput, setEsigInput] = useState('');
   const esigValid = esigInput.trim().toUpperCase() === 'RELEASE';
+
+  // A-17: Labelling verification
+  const [labelBatchNo,    setLabelBatchNo]    = useState('');
+  const [labelMfd,        setLabelMfd]        = useState('');
+  const [labelBbd,        setLabelBbd]        = useState('');
+  const [labelVerified,   setLabelVerified]   = useState(false);
+  const [packIntegrity,   setPackIntegrity]   = useState('Not Checked');
+  const [fillWeightG,     setFillWeightG]     = useState('');
+
+  // A-15: Batch cost inputs
+  const [matCost,  setMatCost]  = useState('');
+  const [labCost,  setLabCost]  = useState('');
+  const [ovhCost,  setOvhCost]  = useState('');
+  const [costSaved, setCostSaved] = useState(false);
 
   // G-09/G-13: Release certificate modal
   const [showCert, setShowCert] = useState(false);
@@ -90,6 +106,13 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
           sku_name:           skuName || null,
           // G-14: e-sig timestamp
           esig_confirmed_at:  new Date().toISOString(),
+          // A-17: labelling
+          label_verified:      labelVerified,
+          label_batch_number:  labelBatchNo || null,
+          label_mfd:           labelMfd || null,
+          label_bbd:           labelBbd || null,
+          pack_integrity_check: packIntegrity,
+          fill_weight_g:       fillWeightG ? parseFloat(fillWeightG) : null,
         }),
       });
 
@@ -336,6 +359,68 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs font-semibold text-blue-800 flex items-center gap-2">
                 <Package className="w-4 h-4 shrink-0"/>
                 On release: flask status transitions <span className="font-black mx-1">Quarantine → Released</span> in inventory.
+              </div>
+
+              {/* A-17: Labelling Verification */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <p className="text-xs font-black text-slate-900 uppercase tracking-wider">Labelling Verification</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="field-label">Label Batch Number</label>
+                    <input value={labelBatchNo} onChange={e => setLabelBatchNo(e.target.value)} className="field-input" placeholder="As printed on label"/>
+                  </div>
+                  <div>
+                    <label className="field-label">MFD on Label</label>
+                    <input type="date" value={labelMfd} onChange={e => setLabelMfd(e.target.value)} className="field-input"/>
+                  </div>
+                  <div>
+                    <label className="field-label">BBD on Label</label>
+                    <input type="date" value={labelBbd} onChange={e => setLabelBbd(e.target.value)} className="field-input"/>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label">Pack Integrity</label>
+                    <div className="flex gap-2">
+                      {['Pass','Fail','Not Checked'].map(o => (
+                        <button key={o} type="button" onClick={() => setPackIntegrity(o)}
+                          className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${packIntegrity===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-500 border-gray-200'}`}>
+                          {o}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="field-label">Fill Weight (g)</label>
+                    <input type="number" step="0.1" value={fillWeightG} onChange={e => setFillWeightG(e.target.value)} className="field-input" placeholder="Target vs actual"/>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={labelVerified} onChange={e => setLabelVerified(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                  <span className="text-xs font-bold text-slate-800">Labelling verified — batch number, MFD, BBD, net weight, and declarations are correct</span>
+                </label>
+                {packIntegrity === 'Fail' && <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>Pack integrity failure — do not release until seal/closure issue is resolved.</p>}
+              </div>
+
+              {/* A-15: Batch Cost */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-2xl space-y-3">
+                <p className="text-xs font-black text-green-900 uppercase tracking-wider">Batch Cost (COGS)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div><label className="field-label">Material Costs (₹)</label><input type="number" step="0.01" value={matCost} onChange={e=>setMatCost(e.target.value)} className="field-input" placeholder="0.00"/></div>
+                  <div><label className="field-label">Labor Costs (₹)</label><input type="number" step="0.01" value={labCost} onChange={e=>setLabCost(e.target.value)} className="field-input" placeholder="0.00"/></div>
+                  <div><label className="field-label">Overhead Costs (₹)</label><input type="number" step="0.01" value={ovhCost} onChange={e=>setOvhCost(e.target.value)} className="field-input" placeholder="0.00"/></div>
+                </div>
+                {(matCost || labCost || ovhCost) && (
+                  <p className="text-xs font-black text-green-800">Total COGS: ₹{((parseFloat(matCost)||0)+(parseFloat(labCost)||0)+(parseFloat(ovhCost)||0)).toFixed(2)}</p>
+                )}
+                <button type="button" onClick={async () => {
+                  const targetId = batchId || batch?.id;
+                  if (!targetId) return;
+                  const res = await fetch('/api/batch-costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_id: targetId, material_costs: matCost, labor_costs: labCost, overhead_costs: ovhCost }) });
+                  if ((await res.json()).success) { setCostSaved(true); }
+                }} className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider">
+                  {costSaved ? '✓ Cost Saved' : 'Save COGS'}
+                </button>
               </div>
 
               {/* G-14: E-signature confirmation */}
