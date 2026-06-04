@@ -246,7 +246,7 @@ export default function GrowthStudiesPage() {
                 {(study.creator || (!isAdmin && study.created_by === employeeProfile?.id)) && (
                   <div className="px-6 pb-4 flex items-center justify-between border-t border-white/40 pt-3">
                     <div className="flex items-center gap-1.5">
-                      {study.creator && <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm"/>}
+                      {study.creator && <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm" showTooltip={false}/>}
                       {study.creator && <span className="text-[10px] text-slate-400 font-medium">{study.creator.full_name}</span>}
                     </div>
                     {!isAdmin && study.created_by === employeeProfile?.id && (
