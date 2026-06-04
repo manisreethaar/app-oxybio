@@ -5,11 +5,11 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
 import {
   ShieldAlert, Clock, Calendar, AlertCircle,
-  CheckCircle2, Send, Loader2, ArrowRight, History, LogOut
+  CheckCircle2, Send, Loader2, ArrowRight, History, LogOut, XCircle
 } from 'lucide-react';
 
 export default function MispunchContent() {
-  const { employeeProfile, loading: authLoading } = useAuth();
+  const { employeeProfile, isAdmin, loading: authLoading } = useAuth();
   const toast = useToast();
   const [mispunches, setMispunches] = useState([]);
   const [openShifts, setOpenShifts] = useState([]);
@@ -19,13 +19,16 @@ export default function MispunchContent() {
   const [selfReportLog, setSelfReportLog] = useState(null);
   const [formData, setFormData] = useState({ hours: '', reason: '' });
   const [selfReportData, setSelfReportData] = useState({ hours: '', reason: '' });
+  const [adminMispunches, setAdminMispunches] = useState([]);
+  const [reviewingLog, setReviewingLog] = useState(null);
+  const [rejectRemark, setRejectRemark] = useState('');
   const supabase = useMemo(() => createClient(), []);
 
   const fetchData = async () => {
     if (!employeeProfile) return;
     setLoading(true);
     try {
-      const [mispunchRes, openRes] = await Promise.all([
+      const queries = [
         supabase
           .from('attendance_log')
           .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
@@ -39,13 +42,31 @@ export default function MispunchContent() {
           .is('check_out_time', null)
           .is('mispunch_status', null)
           .order('date', { ascending: false }),
-      ]);
+      ];
+
+      if (isAdmin) {
+        queries.push(
+          supabase
+            .from('attendance_log')
+            .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employees(full_name)')
+            .eq('mispunch_status', 'pending')
+            .order('date', { ascending: false })
+        );
+      }
+
+      const results = await Promise.all(queries);
+      const [mispunchRes, openRes] = results;
 
       if (mispunchRes.error) throw mispunchRes.error;
       if (openRes.error) throw openRes.error;
 
       setMispunches(mispunchRes.data || []);
       setOpenShifts(openRes.data || []);
+
+      if (isAdmin && results[2]) {
+        if (results[2].error) throw results[2].error;
+        setAdminMispunches(results[2].data || []);
+      }
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -56,7 +77,7 @@ export default function MispunchContent() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile]);
+  }, [employeeProfile, isAdmin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -116,6 +137,30 @@ export default function MispunchContent() {
     }
   };
 
+  const handleAdminReview = async (logId, action, remark) => {
+    if (action === 'reject' && (!remark || remark.trim().length < 5)) {
+      toast.warn("Please provide a valid rejection remark (min 5 characters).");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/mispunch/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId, action, remark })
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Review failed");
+      toast.success(`Mispunch ${action}ed successfully.`);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+      setReviewingLog(null);
+      setRejectRemark('');
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-400">Syncing attendance records...</div>;
 
   const requiredLogs = mispunches.filter(m => m.mispunch_status === 'required');
@@ -131,6 +176,72 @@ export default function MispunchContent() {
           Report missed checkouts or apply for manual hour reconciliation.
         </p>
       </div>
+
+      {isAdmin && adminMispunches.length > 0 && (
+        <section className="space-y-4 p-5 bg-slate-900 rounded-2xl shadow-lg border border-slate-800">
+          <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-400" /> Pending Admin Approvals ({adminMispunches.length})
+          </h2>
+          <div className="grid gap-3">
+            {adminMispunches.map(log => (
+              <div key={log.id} className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="text-white font-bold">{log.employees?.full_name}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
+                    {log.mispunch_requested_hours}H Requested
+                  </span>
+                </div>
+                <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-800 mb-3">
+                  {log.mispunch_reason}
+                </div>
+                {reviewingLog === log.id ? (
+                  <div className="space-y-2 mt-3">
+                    <input
+                      type="text"
+                      placeholder="Reason for rejection (required)..."
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:border-red-500 outline-none"
+                      value={rejectRemark}
+                      onChange={e => setRejectRemark(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAdminReview(log.id, 'reject', rejectRemark)}
+                        disabled={submitting || rejectRemark.trim().length < 5}
+                        className="flex-1 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        Confirm Reject
+                      </button>
+                      <button onClick={() => { setReviewingLog(null); setRejectRemark(''); }} className="flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs font-bold rounded-lg transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAdminReview(log.id, 'approve')}
+                      disabled={submitting}
+                      className="flex-1 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                    </button>
+                    <button
+                      onClick={() => setReviewingLog(log.id)}
+                      disabled={submitting}
+                      className="flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <XCircle className="w-3.5 h-3.5" /> Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {openShifts.length > 0 && (
         <section className="space-y-3">
