@@ -46,7 +46,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [showOptions, setShowOptions] = useState(false);
   
   const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '' });
-  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
+  const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved', qualification_status: 'Unqualified', qualified_at: '', qualification_notes: '', audit_due_date: '' });
   
   const [modalType, setModalType] = useState('stock'); // 'stock' | 'items' | 'vendors'
   const [trainingStatus, setTrainingStatus] = useState({ isTrained: true });
@@ -1181,6 +1181,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 }`}>
                   {vendor.status || 'Approved'} Supplier
                 </div>
+                {/* A-09: Vendor qualification badge */}
+                <div className={`ml-1 px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded inline-block ${
+                  vendor.qualification_status === 'Approved' ? 'bg-blue-50 text-blue-700' :
+                  vendor.qualification_status === 'Under Review' ? 'bg-amber-50 text-amber-700' :
+                  vendor.qualification_status === 'Suspended' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {vendor.qualification_status || 'Unqualified'} (AVL)
+                </div>
+                {vendor.audit_due_date && new Date(vendor.audit_due_date) < new Date() && (
+                  <p className="text-[9px] text-red-600 font-bold mt-1">⚠ Vendor audit overdue since {new Date(vendor.audit_due_date).toLocaleDateString('en-IN')}</p>
+                )}
               </div>
             </div>
           ))}
@@ -1401,6 +1412,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   >
                     ✓ QC Release (Quarantine → Available)
                   </button>
+                ) : selectedStock.qc_status === 'Rejected' ? (
+                  <div className="flex-[2] py-3 bg-red-50 border border-red-200 rounded-2xl text-center text-[10px] font-black text-red-700">
+                    REJECTED — {selectedStock.rejection_reason || 'No reason recorded'}
+                  </div>
                 ) : (
                   <button 
                     onClick={() => {
@@ -1415,6 +1430,81 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </button>
                 )}
               </div>
+
+              {/* A-08: AQL Sampling Plan */}
+              {selectedStock.received_quantity && (
+                <div className="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-xl text-[10px]">
+                  <p className="font-black text-indigo-800 uppercase mb-0.5">A-08 AQL Level II Incoming Sample Guide</p>
+                  <p className="text-indigo-700 font-semibold">
+                    Lot qty: {selectedStock.received_quantity} → Sample: {Math.max(1, Math.round(parseFloat(String(selectedStock.received_quantity)) * 0.1))} units · Accept ≤0 defects · Reject ≥1
+                  </p>
+                </div>
+              )}
+
+              {/* A-46: Quarantine location + A-47: Rejection + A-45: CoA verification */}
+              {(selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine') && (
+                <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                  <p className="text-[10px] font-black text-gray-500 uppercase">A-46 Quarantine Location</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      defaultValue={selectedStock.quarantine_location || ''}
+                      placeholder="Storage location (e.g. QC Cage 1)"
+                      className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
+                      onBlur={async (e) => {
+                        await supabase.from('inventory_stock').update({ quarantine_location: e.target.value || null }).eq('id', selectedStock.id);
+                      }}
+                    />
+                    <input
+                      defaultValue={selectedStock.quarantine_rack || ''}
+                      placeholder="Rack / shelf"
+                      className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
+                      onBlur={async (e) => {
+                        await supabase.from('inventory_stock').update({ quarantine_rack: e.target.value || null }).eq('id', selectedStock.id);
+                      }}
+                    />
+                  </div>
+                  {/* A-45: CoA verification */}
+                  <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <span className="text-[10px] font-black text-blue-800">A-45 CoA Verified</span>
+                    <input type="checkbox"
+                      defaultChecked={!!selectedStock.coa_url}
+                      onChange={async (e) => {
+                        if (!e.target.checked) return;
+                        const url = window.prompt('Enter CoA document URL (from supplier):');
+                        if (!url) { e.target.checked = false; return; }
+                        await supabase.from('inventory_stock').update({ coa_url: url }).eq('id', selectedStock.id);
+                        setSelectedStock({ ...selectedStock, coa_url: url });
+                        toast.success('CoA URL saved.');
+                      }}
+                      className="w-4 h-4 rounded border-blue-300"
+                    />
+                  </div>
+                  {/* A-47: Rejection workflow */}
+                  <button
+                    className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-[10px] uppercase tracking-wider hover:bg-red-100"
+                    onClick={async () => {
+                      const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
+                      if (!reason) return;
+                      const { data: { user } } = await supabase.auth.getUser();
+                      const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
+                      const { error } = await supabase.from('inventory_stock').update({
+                        status: 'Discarded',
+                        qc_status: 'Rejected',
+                        rejection_reason: reason,
+                        rejected_at: new Date().toISOString(),
+                        rejected_by: emp?.id || null,
+                      }).eq('id', selectedStock.id);
+                      if (!error) {
+                        toast.success('Lot rejected and marked as Discarded.');
+                        setSelectedStock(null);
+                        fetchData(0, false);
+                      } else { toast.error(error.message); }
+                    }}
+                  >
+                    ✗ Reject Lot (A-47)
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

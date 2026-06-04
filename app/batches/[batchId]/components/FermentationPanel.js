@@ -14,7 +14,7 @@ const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
 const APPEARANCE_OPTS = ['Normal','Colour change','Turbidity change','Separation observed'];
 
-function PhChart({ readings }) {
+function PhChart({ readings, comparisonData = {} }) {
   if (!readings.length) return (
     <div className="h-28 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl">No readings yet — chart will appear here</div>
   );
@@ -52,6 +52,18 @@ function PhChart({ readings }) {
               <circle key={j} cx={xS(p.elapsed_hours)} cy={yS(p.ph)} r={3}
                 fill={p.is_ph_alarm?'#ef4444':col} stroke="white" strokeWidth={1.2}/>
             ))}
+          </g>
+        );
+      })}
+      {/* A-33: Historical batch comparison overlays */}
+      {Object.entries(comparisonData).map(([batchLabel, pts], idx) => {
+        const sorted = [...pts].sort((a,b) => a.elapsed_hours - b.elapsed_hours).filter(p => p.ph >= minPh && p.ph <= maxPh && p.elapsed_hours <= maxH);
+        if (!sorted.length) return null;
+        const d = sorted.map((p,j) => `${j===0?'M':'L'}${xS(p.elapsed_hours).toFixed(1)},${yS(p.ph).toFixed(1)}`).join(' ');
+        const compColors = ['#7c3aed','#059669','#b45309'];
+        return (
+          <g key={`comp-${batchLabel}`} opacity={0.35}>
+            <path d={d} stroke={compColors[idx%compColors.length]} strokeWidth={1.5} fill="none" strokeDasharray="5,3" strokeLinecap="round"/>
           </g>
         );
       })}
@@ -999,7 +1011,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             )}
           </div>
           <div className="p-4 space-y-3">
-            <PhChart readings={readings}/>
+            <PhChart readings={readings} comparisonData={showComparison ? comparisonData : {}}/>
             {/* G-33: Brix trend chart */}
             {readings.some(r => r.brix != null) && (
               <div>
