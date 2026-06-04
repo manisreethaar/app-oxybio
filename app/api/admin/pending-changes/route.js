@@ -96,6 +96,11 @@ export async function PATCH(request) {
 
     const now = new Date().toISOString();
 
+    const SOFT_DELETE_TABLES = [
+      'batches', 'activity_log', 'formulations', 'equipment',
+      'tasks', 'lab_notebook_entries', 'inventory_items',
+    ];
+
     if (action === 'approve') {
       if (change.change_type === 'edit') {
         // Apply the proposed_data to the original table
@@ -106,7 +111,7 @@ export async function PATCH(request) {
 
         if (applyErr) throw new Error(`Failed to apply edit to ${change.table_name}: ${applyErr.message}`);
       } else if (change.change_type === 'delete') {
-        if (['batches', 'activity_log'].includes(change.table_name)) {
+        if (SOFT_DELETE_TABLES.includes(change.table_name)) {
           const { error: archiveErr } = await supabaseAdmin
             .from(change.table_name)
             .update({ archived_at: now, archived_by: admin.id })
