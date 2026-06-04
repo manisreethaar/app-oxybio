@@ -71,7 +71,9 @@ export async function PATCH(request) {
     // Clean up empty strings or undefined for date fields
     if (updateData.date_of_birth === '') updateData.date_of_birth = null;
     if (updateData.joined_date === '') updateData.joined_date = null;
-    // Auto-derive initials from full_name if not explicitly set
+    // Treat empty-string initials as null (user cleared the field)
+    if (updateData.initials === '') updateData.initials = null;
+    // Auto-derive initials from full_name only when truly absent
     if (!updateData.initials && updateData.full_name) {
       updateData.initials = deriveInitials(updateData.full_name);
     }

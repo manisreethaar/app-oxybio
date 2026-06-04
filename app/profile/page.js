@@ -163,45 +163,6 @@ export default function ProfilePage() {
         emergency_contact: profileData.emergency_contact || '',
         joined_date: profileData.joined_date ? new Date(profileData.joined_date).toISOString().split('T')[0] : '',
         base_salary: profileData.base_salary || 0
-      });
-    };
-
-    fetchProfile();
-  }, [employeeProfile, adminViewId, isAdminView, reset, supabase]);
-
-  const handleSaveSubmit = async (data) => {
-    setSaving(true);
-    const fetchWithTimeout = (url, options, timeout = 20000) => {
-      return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Network request timed out')), timeout))
-      ]);
-    };
-
-    try {
-      const payload = { ...data, id: emp.id }; // Explicitly use the displayed user's ID
-      const res = await fetchWithTimeout('/api/profile', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
-      
-      // Ensure local state matches form formatting (especially for dates)
-      const formattedData = {
-        ...emp,
-        ...data,
-        date_of_birth: data.date_of_birth ? data.date_of_birth : emp.date_of_birth,
-        joined_date: data.joined_date ? data.joined_date : emp.joined_date
-      };
-      
-      setEmp(formattedData); 
-      reset(data); // reset to the form data (strings)
-      setEditing(false);
-      toast.success('Profile updated successfully!');
-    } catch (err) { toast.error('Error: ' + err.message); }
-    finally { setSaving(false); }
-  };
-
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
