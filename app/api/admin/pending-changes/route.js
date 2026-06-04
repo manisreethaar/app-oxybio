@@ -99,6 +99,10 @@ export async function PATCH(request) {
     const SOFT_DELETE_TABLES = [
       'batches', 'activity_log', 'formulations', 'equipment',
       'tasks', 'lab_notebook_entries', 'inventory_items',
+      'shelf_life_studies', 'deviations', 'capa_actions',
+      'growth_studies', 'taste_panels', 'samples',
+      'batch_fermentation_readings', 'growth_measurements',
+      'shelf_life_logs', 'ph_readings', 'test_results',
     ];
 
     if (action === 'approve') {

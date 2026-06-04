@@ -57,6 +57,7 @@ export default function ShelfLifePage() {
         supabase
           .from('shelf_life_studies')
           .select('*, created_by, creator:employees!shelf_life_studies_created_by_fkey(id, full_name, initials), batches(id, batch_id, variant, experiment_type), shelf_life_logs(id, day_number, test_data, logged_by, created_at)')
+          .is('archived_at', null)
           .order('created_at', { ascending: false }),
         supabase
           .from('batches')

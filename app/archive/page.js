@@ -5,7 +5,8 @@ import Link from 'next/link';
 import {
   Archive, Activity, FlaskConical, Loader2, Trash2, RotateCcw,
   Search, Calendar, Package, Wrench, CheckSquare, BookOpen,
-  Users, X, AlertTriangle, ChevronDown,
+  Users, X, AlertTriangle, ChevronDown, Thermometer, ShieldAlert,
+  ClipboardList, Microscope, TestTube2, Beaker,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -87,6 +88,36 @@ function getArchiveCard(row, tabId) {
       meta: [row.activity_description],
       issue: row.issue_observed,
     },
+    shelf_life: {
+      title: row.batches?.batch_id || 'Shelf Life Study',
+      eyebrow: row.study_type,
+      meta: [row.storage_condition, row.status, row.creator?.full_name && `by ${row.creator.full_name}`],
+    },
+    deviations: {
+      title: row.title,
+      eyebrow: row.source,
+      meta: [row.severity, row.status, row.batches?.batch_id],
+    },
+    capa: {
+      title: row.title,
+      eyebrow: row.action_type,
+      meta: [row.status, row.assignee?.full_name && `Assigned: ${row.assignee.full_name}`],
+    },
+    growth_studies: {
+      title: row.title || 'Growth Study',
+      eyebrow: row.status,
+      meta: [row.creator?.full_name && `by ${row.creator.full_name}`],
+    },
+    research: {
+      title: row.session_title,
+      eyebrow: row.batches?.batch_id,
+      meta: [row.panelist_count && `${row.panelist_count} panelists`, row.status, row.creator?.full_name && `by ${row.creator.full_name}`],
+    },
+    samples: {
+      title: row.sample_label || 'Sample',
+      eyebrow: row.source_type,
+      meta: [row.source_label, row.batches?.batch_id],
+    },
   };
   return { ...fallback, ...(map[tabId] || {}) };
 }
@@ -138,14 +169,20 @@ function ArchiveMobileCard({ row, tabId, canRestore, onRestore, onDelete }) {
 
 // ── Tab config ───────────────────────────────────────────────────
 const TABS = [
-  { id: 'batches',      label: 'Batches',       icon: FlaskConical, table: 'batches' },
-  { id: 'activity',     label: 'Activity',       icon: Activity,     table: 'activity_log' },
-  { id: 'formulations', label: 'Formulations',   icon: ChevronDown,  table: 'formulations' },
-  { id: 'equipment',    label: 'Equipment',      icon: Wrench,       table: 'equipment' },
-  { id: 'tasks',        label: 'Tasks',          icon: CheckSquare,  table: 'tasks' },
-  { id: 'lnb',          label: 'Lab Notebook',   icon: BookOpen,     table: 'lab_notebook_entries' },
-  { id: 'inventory',    label: 'Inventory',      icon: Package,      table: 'inventory_items' },
-  { id: 'employees',    label: 'Employees',      icon: Users,        table: null }, // is_active=false, not archived_at
+  { id: 'batches',       label: 'Batches',       icon: FlaskConical,  table: 'batches' },
+  { id: 'activity',      label: 'Activity',       icon: Activity,      table: 'activity_log' },
+  { id: 'formulations',  label: 'Formulations',   icon: Beaker,        table: 'formulations' },
+  { id: 'equipment',     label: 'Equipment',      icon: Wrench,        table: 'equipment' },
+  { id: 'tasks',         label: 'Tasks',          icon: CheckSquare,   table: 'tasks' },
+  { id: 'lnb',           label: 'Lab Notebook',   icon: BookOpen,      table: 'lab_notebook_entries' },
+  { id: 'inventory',     label: 'Inventory',      icon: Package,       table: 'inventory_items' },
+  { id: 'shelf_life',    label: 'Shelf Life',     icon: Thermometer,   table: 'shelf_life_studies' },
+  { id: 'deviations',    label: 'Deviations',     icon: ShieldAlert,   table: 'deviations' },
+  { id: 'capa',          label: 'CAPA',           icon: ClipboardList, table: 'capa_actions' },
+  { id: 'growth_studies',label: 'Growth Studies', icon: Microscope,    table: 'growth_studies' },
+  { id: 'research',      label: 'Research',       icon: TestTube2,     table: 'taste_panels' },
+  { id: 'samples',       label: 'Samples',        icon: Package,       table: 'samples' },
+  { id: 'employees',     label: 'Employees',      icon: Users,         table: null },
 ];
 
 export default function ArchivePage() {
@@ -206,6 +243,9 @@ export default function ArchivePage() {
           r.employee_code, r.email, r.activity_description,
           r.formulations?.name, r.batches?.batch_id,
           r.author?.full_name, r.assigned_user?.full_name,
+          r.session_title, r.storage_condition, r.study_type, r.source,
+          r.severity, r.action_type, r.sample_label, r.source_type, r.source_label,
+          r.creator?.full_name, r.reporter?.full_name, r.assignee?.full_name,
         ].filter(Boolean).join(' ').toLowerCase();
         return searchable.includes(q);
       });
@@ -512,6 +552,137 @@ export default function ArchivePage() {
                     <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(i.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={i.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: i, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: i, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── Shelf Life ── */}
+          {tab === 'shelf_life' && (
+            <table className="hidden md:table min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50"><tr>
+                {['Batch', 'Type', 'Condition', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filtered.map(s => (
+                  <tr key={s.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-xs font-mono font-black text-navy">{s.batches?.batch_id || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-600">{s.study_type || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{s.storage_condition || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{s.status}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(s.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={s.archived_at}/></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: s, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: s, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── Deviations ── */}
+          {tab === 'deviations' && (
+            <table className="hidden md:table min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50"><tr>
+                {['Title', 'Source', 'Severity', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filtered.map(d => (
+                  <tr key={d.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[240px] truncate">{d.title}</td>
+                    <td className="px-5 py-3 text-xs text-gray-600">{d.source || '—'}</td>
+                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${d.severity === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' : d.severity === 'Major' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>{d.severity}</span></td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{d.status}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(d.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={d.archived_at}/></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: d, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: d, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── CAPA ── */}
+          {tab === 'capa' && (
+            <table className="hidden md:table min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50"><tr>
+                {['Title', 'Type', 'Status', 'Assigned To', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filtered.map(c => (
+                  <tr key={c.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[220px] truncate">{c.title}</td>
+                    <td className="px-5 py-3 text-xs text-gray-600">{c.action_type || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{c.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{c.assignee?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(c.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={c.archived_at}/></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: c, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: c, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── Growth Studies ── */}
+          {tab === 'growth_studies' && (
+            <table className="hidden md:table min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50"><tr>
+                {['Title', 'Status', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filtered.map(g => (
+                  <tr key={g.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[240px] truncate">{g.title || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{g.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{g.creator?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(g.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={g.archived_at}/></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: g, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: g, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── Research (Taste Panels) ── */}
+          {tab === 'research' && (
+            <table className="hidden md:table min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50"><tr>
+                {['Session', 'Batch', 'Panelists', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filtered.map(r => (
+                  <tr key={r.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[220px] truncate">{r.session_title}</td>
+                    <td className="px-5 py-3 text-xs font-mono text-navy">{r.batches?.batch_id || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-600">{r.panelist_count ?? '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{r.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(r.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={r.archived_at}/></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: r, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: r, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── Samples ── */}
+          {tab === 'samples' && (
+            <table className="hidden md:table min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50"><tr>
+                {['Label', 'Type', 'Source', 'Batch', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filtered.map(s => (
+                  <tr key={s.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-xs font-mono font-black text-gray-900">{s.sample_label || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-600">{s.source_type || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-500">{s.source_label || '—'}</td>
+                    <td className="px-5 py-3 text-xs font-mono text-navy">{s.batches?.batch_id || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(s.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={s.archived_at}/></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: s, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
+                    <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: s, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
                 ))}
               </tbody>

@@ -100,7 +100,7 @@ export default function CapaSection() {
     setLoading(true);
     try {
       const [{ data: devs }, { data: emps }, { data: sopsData }] = await Promise.all([
-        supabase.from('deviations').select('*, reported_by, created_by, reporter:employees!deviations_reported_by_fkey(full_name), creator:employees!deviations_created_by_fkey(id, full_name, initials), batches(id, batch_id)').order('created_at', { ascending: false }),
+        supabase.from('deviations').select('*, reported_by, created_by, reporter:employees!deviations_reported_by_fkey(full_name), creator:employees!deviations_created_by_fkey(id, full_name, initials), batches(id, batch_id)').is('archived_at', null).order('created_at', { ascending: false }),
         supabase.from('employees').select('id, full_name').eq('is_active', true),
         supabase.from('sop_library').select('id, title, version').order('title')
       ]);

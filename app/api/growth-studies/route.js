@@ -25,6 +25,7 @@ export async function GET(req) {
         formulations(id, name, code),
         growth_study_time_points(id, status)
       `)
+      .is('archived_at', null)
       .order('created_at', { ascending: false });
 
     if (status)   query = query.eq('status', status);
