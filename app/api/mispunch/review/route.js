@@ -48,17 +48,23 @@ export async function POST(request) {
     }
 
     // 3. Update log based on action
+    const now = new Date().toISOString();
     const updateData = {
         mispunch_status: action === 'approve' ? 'approved' : 'rejected',
         mispunch_remark: remark || null
     };
 
     if (action === 'approve') {
-        updateData.total_hours = log.mispunch_requested_hours;
-        // Also add a note
-        updateData.notes = `[EXECUTIVE APPROVED: ${log.mispunch_requested_hours}H CREDIT] - Reason: ${log.mispunch_reason}`;
+        const approvedHours = log.mispunch_requested_hours || 0;
+        updateData.total_hours = approvedHours;
+        // Set check_out_time to a synthetic value so the shift shows as closed
+        if (!log.check_out_time && log.check_in_time) {
+          const inTime = new Date(log.check_in_time).getTime();
+          updateData.check_out_time = new Date(inTime + approvedHours * 60 * 60 * 1000).toISOString();
+        }
+        updateData.notes = `[APPROVED: ${approvedHours}H CREDIT] - Reason: ${log.mispunch_reason}`;
     } else {
-        updateData.notes = `[EXECUTIVE REJECTED: 0H CREDIT] - Remark: ${remark}`;
+        updateData.notes = `[REJECTED: 0H CREDIT] - Remark: ${remark}`;
     }
 
     const { error: updateError } = await supabaseAdmin

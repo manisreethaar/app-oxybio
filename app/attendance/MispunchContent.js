@@ -139,11 +139,16 @@ export default function MispunchContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logId, action, remark })
       });
-      if (!res.ok) throw new Error((await res.json()).error || "Review failed");
-      toast.success(`Mispunch ${action}ed successfully.`);
-      fetchData();
+      let resData;
+      try { resData = await res.json(); } catch { resData = {}; }
+      if (!res.ok) {
+        throw new Error(resData.error || resData.details || `Server error: ${res.status}`);
+      }
+      toast.success(`Mispunch ${action === 'approve' ? 'approved' : 'rejected'} successfully.`);
+      await fetchData();
     } catch (err) {
-      toast.error(err.message);
+      console.error('[handleAdminReview]', err);
+      toast.error(err.message || 'Review failed. Please try again.');
     } finally {
       setSubmitting(false);
       setReviewingLog(null);
@@ -167,69 +172,82 @@ export default function MispunchContent() {
         </p>
       </div>
 
-      {isAdmin && adminMispunches.length > 0 && (
+      {isAdmin && (
         <section className="space-y-4 p-5 bg-slate-900 rounded-2xl shadow-lg border border-slate-800">
           <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400" /> Pending Admin Approvals ({adminMispunches.length})
+            <ShieldAlert className="w-4 h-4 text-amber-400" /> Pending Admin Approvals
+            {adminMispunches.length > 0 && (
+              <span className="ml-1 bg-amber-400/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30">
+                {adminMispunches.length} pending
+              </span>
+            )}
           </h2>
-          <div className="grid gap-3">
-            {adminMispunches.map(log => (
-              <div key={log.id} className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <p className="text-white font-bold">{log.employees?.full_name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+          {adminMispunches.length === 0 ? (
+            <div className="flex items-center gap-3 py-4 text-slate-400 text-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500/70 shrink-0" />
+              <p>No pending mispunch requests from your team.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {adminMispunches.map(log => (
+                <div key={log.id} className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="text-white font-bold">{log.employees?.full_name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
+                      {log.mispunch_requested_hours}H Requested
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
-                    {log.mispunch_requested_hours}H Requested
-                  </span>
-                </div>
-                <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-800 mb-3">
-                  {log.mispunch_reason}
-                </div>
-                {reviewingLog === log.id ? (
-                  <div className="space-y-2 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Reason for rejection (required)..."
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:border-red-500 outline-none"
-                      value={rejectRemark}
-                      onChange={e => setRejectRemark(e.target.value)}
-                    />
+                  <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-800 mb-3">
+                    {log.mispunch_reason}
+                  </div>
+                  {reviewingLog === log.id ? (
+                    <div className="space-y-2 mt-3">
+                      <input
+                        type="text"
+                        placeholder="Reason for rejection (required)..."
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:border-red-500 outline-none"
+                        value={rejectRemark}
+                        onChange={e => setRejectRemark(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAdminReview(log.id, 'reject', rejectRemark)}
+                          disabled={submitting || rejectRemark.trim().length < 5}
+                          className="flex-1 py-2.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {submitting ? 'Processing...' : 'Confirm Reject'}
+                        </button>
+                        <button onClick={() => { setReviewingLog(null); setRejectRemark(''); }} className="flex-1 py-2.5 bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs font-bold rounded-lg transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleAdminReview(log.id, 'reject', rejectRemark)}
-                        disabled={submitting || rejectRemark.trim().length < 5}
-                        className="flex-1 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                        onClick={() => handleAdminReview(log.id, 'approve')}
+                        disabled={submitting}
+                        className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-sm"
                       >
-                        Confirm Reject
+                        {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        Approve
                       </button>
-                      <button onClick={() => { setReviewingLog(null); setRejectRemark(''); }} className="flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs font-bold rounded-lg transition-colors">
-                        Cancel
+                      <button
+                        onClick={() => setReviewingLog(log.id)}
+                        disabled={submitting}
+                        className="flex-1 py-2.5 bg-slate-700 text-slate-300 hover:bg-red-900/40 hover:text-red-400 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        <XCircle className="w-3.5 h-3.5" /> Reject
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleAdminReview(log.id, 'approve')}
-                      disabled={submitting}
-                      className="flex-1 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Approve
-                    </button>
-                    <button
-                      onClick={() => setReviewingLog(log.id)}
-                      disabled={submitting}
-                      className="flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    >
-                      <XCircle className="w-3.5 h-3.5" /> Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
