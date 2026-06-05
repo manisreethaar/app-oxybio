@@ -184,8 +184,7 @@ function formatTestValue(tr) {
 
 // ── Main page ──────────────────────────────────────────────────────────────
 export default function LabBenchPage() {
-  const { role, employeeProfile } = useAuth();
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
+  const { employeeProfile } = useAuth();
 
   const [queue, setQueue]       = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -392,8 +391,7 @@ export default function LabBenchPage() {
       )}
 
       {/* ── My Recent Entries ── */}
-      {!isAdmin && (
-        <div className="pt-4 border-t border-slate-100 space-y-3">
+      <div className="pt-4 border-t border-slate-100 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <History className="w-4 h-4 text-slate-400" />
@@ -456,7 +454,6 @@ export default function LabBenchPage() {
             </div>
           ))}
         </div>
-      )}
 
     </div>
   );
