@@ -81,7 +81,11 @@ export default function TopBar() {
     // Optimistic update — mark the item read locally immediately
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    if (error) {
+      console.error('Failed to update notification:', error);
+      alert('Failed to mark read: ' + error.message);
+    }
     setNotifOpen(false);
     if (link) window.location.href = link;
   };
