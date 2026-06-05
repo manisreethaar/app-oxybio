@@ -161,7 +161,7 @@ export async function PATCH(request, { params }) {
         action: 'registered',
         operator_id: access.emp?.id || null,
       }));
-      await supabase.from('cell_bank_vial_logs').insert(logRows).catch(() => {});
+      try { await supabase.from('cell_bank_vial_logs').insert(logRows); } catch (_) {}
 
       // Update prep vial_count
       await supabase.from('cell_bank_preparations').update({ vial_count: count }).eq('id', params.id);

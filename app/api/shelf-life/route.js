@@ -55,7 +55,7 @@ export async function POST(request) {
         due_date: due.toISOString().slice(0, 10),
       };
     });
-    await supabase.from('tasks').insert(taskRows).catch(() => {});
+    try { await supabase.from('tasks').insert(taskRows); } catch (_) {}
 
     return NextResponse.json({ success: true, data });
   } catch (err) {
