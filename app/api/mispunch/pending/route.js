@@ -24,6 +24,7 @@ export async function GET(request) {
       .from('attendance_log')
       .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employees(full_name)')
       .eq('mispunch_status', 'pending')
+      .neq('employee_id', emp.id)   // Admins cannot approve their own requests
       .order('date', { ascending: false });
 
     if (error) throw error;
