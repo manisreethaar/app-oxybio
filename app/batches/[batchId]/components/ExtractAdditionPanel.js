@@ -71,6 +71,9 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       setFinalPh(data.final_product_ph||''); setAddTemp(data.addition_temp||ADD_TEMP[0]);
       setAddMethod(data.addition_method||ADD_METHOD[0]); setColBefore(data.colour_before||'');
       setColAfter(data.colour_after||''); setLafUsed(data.laf_used??true); setNotes(data.notes||'');
+      setPolyphenolMgG(data.polyphenol_mg_g||'');
+      setBetaGlucanPct(data.beta_glucan_pct||'');
+      setExtractBioSpec(data.extract_biospec||'');
       setMixingTimeMin(data.mixing_time_min||''); setMixingSpeedRpm(data.mixing_speed_rpm||'');
       setPostMixingPh(data.post_mixing_ph_check||''); setPostMixingBrix(data.post_mixing_brix||'');
       setBlendHomogeneity(data.blend_homogeneity_check||''); setAddTempActual(data.addition_temp_actual_c||'');
@@ -111,6 +114,9 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         addition_temp: addTemp, addition_method: addMethod,
         colour_before: colBefore, colour_after: colAfter,
         laf_used: lafUsed, notes, operator_id: employeeProfile?.id,
+        polyphenol_mg_g: polyphenolMgG ? parseFloat(polyphenolMgG) : null,
+        beta_glucan_pct: betaGlucanPct ? parseFloat(betaGlucanPct) : null,
+        extract_biospec: extractBioSpec || null,
         allergen_declaration: noneAllergens ? ['None'] : allergens,
         mixing_time_min:         mixingTimeMin   ? parseFloat(mixingTimeMin)   : null,
         mixing_speed_rpm:        mixingSpeedRpm  ? parseFloat(mixingSpeedRpm)  : null,
