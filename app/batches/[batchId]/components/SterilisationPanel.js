@@ -62,7 +62,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
     let isCurrent = true;
     const [dRes, eqRes] = await Promise.all([
       supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
-      supabase.from('equipment').select('id, name, status, calibration_due_date').order('name'),
+      supabase.from('equipment').select('id, name, status, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
     ]);
     if (!isCurrent) return;
     if (dRes.data) {

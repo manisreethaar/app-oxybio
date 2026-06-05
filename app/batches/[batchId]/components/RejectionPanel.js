@@ -56,9 +56,10 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_flask_rejection_record').upsert({
-        flask_id: activeFlask.id, batch_id: batch.id,
+        flask_id: activeFlask.id,
+        batch_id: batch.id,
         rejected_by: employeeProfile?.id,
-        root_cause: reason, rejection_stage: stage || activeFlask.current_stage,
+        rejection_reason: reason, rejection_stage: stage || activeFlask.current_stage,
         disposal_method: disposal,
         capa_required: capaReq, notes: notes || null,
         supplier_defect: supplierDefect,
@@ -128,7 +129,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
             <p className="text-xs text-red-600">{record.rejection_date ? new Date(record.rejection_date).toLocaleString('en-IN') : ''}</p>
           </div>
           <div className="grid grid-cols-1 gap-3 text-xs">
-            <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Reason / Root Cause</p><p className="font-semibold text-gray-800">{record.root_cause}</p></div>
+            <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Reason / Root Cause</p><p className="font-semibold text-gray-800">{record.rejection_reason}</p></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Failed Stage</p><p className="font-bold text-gray-800">{record.rejection_stage?.replace(/_/g,' ') || '—'}</p></div>
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Disposal Method</p><p className="font-bold text-gray-800">{record.disposal_method}</p></div>

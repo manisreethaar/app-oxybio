@@ -12,17 +12,18 @@ export async function GET(request) {
     // We want to link inventory_stock (lot) -> inventory_usage -> batches
     
     // 1. Fetch all inventory_usage records with stock and batch data
+    // Filter strictly for records that link a stock lot to a production batch
     let query = supabase
       .from('inventory_usage')
       .select(`
         id,
         quantity_used,
         created_at,
-        inventory_stock (
+        inventory_stock!inner (
           id, supplier_batch_number,
           inventory_items (name)
         ),
-        batches (
+        batches!inner (
           id, batch_id, status, product_name
         )
       `)
