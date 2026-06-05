@@ -242,14 +242,12 @@ export default function AttendancePage() {
       setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
 
       if (['admin', 'ceo', 'cto'].includes(role)) {
-        const { data: teamLogs } = await supabase.from('attendance_log')
-          .select('*, employees(full_name, role)').eq('date', todayStr);
-        const { data: allEmps } = await supabase.from('employees').select('id, full_name, role').eq('is_active', true);
-        const combined = (allEmps || []).map(emp => {
-          const log = (teamLogs || []).find(l => l.employee_id === emp.id);
-          return { ...emp, attendance: log };
-        });
-        setTeamToday(combined);
+        // Use server-side API to bypass RLS for cross-employee reads
+        const rosterRes = await fetch('/api/attendance/team-roster');
+        if (rosterRes.ok) {
+          const rosterData = await rosterRes.json();
+          setTeamToday(rosterData.data || []);
+        }
       }
     } catch (err) {
       console.error('Attendance fetch error:', err);

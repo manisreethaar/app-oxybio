@@ -32,8 +32,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Forbidden: Admin access required.' }, { status: 403 });
     }
 
-    // 2. Fetch the log
-    const { data: log, error: logErr } = await supabase
+    const supabaseAdmin = createAdminClient();
+
+    // 2. Fetch the log (use admin client to bypass RLS for other employees)
+    const { data: log, error: logErr } = await supabaseAdmin
       .from('attendance_log')
       .select('*')
       .eq('id', logId)
@@ -59,7 +61,7 @@ export async function POST(request) {
         updateData.notes = `[EXECUTIVE REJECTED: 0H CREDIT] - Remark: ${remark}`;
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('attendance_log')
       .update(updateData)
       .eq('id', logId);
