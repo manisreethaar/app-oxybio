@@ -28,7 +28,7 @@ export default function MispunchContent() {
     if (!employeeProfile) return;
     setLoading(true);
     try {
-      const queries = [
+      const results = await Promise.all([
         supabase
           .from('attendance_log')
           .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
@@ -42,20 +42,10 @@ export default function MispunchContent() {
           .is('check_out_time', null)
           .is('mispunch_status', null)
           .order('date', { ascending: false }),
-      ];
+        isAdmin ? fetch('/api/mispunch/pending').then(r => r.json()) : Promise.resolve(null)
+      ]);
 
-      if (isAdmin) {
-        queries.push(
-          supabase
-            .from('attendance_log')
-            .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employees(full_name)')
-            .eq('mispunch_status', 'pending')
-            .order('date', { ascending: false })
-        );
-      }
-
-      const results = await Promise.all(queries);
-      const [mispunchRes, openRes] = results;
+      const [mispunchRes, openRes, adminRes] = results;
 
       if (mispunchRes.error) throw mispunchRes.error;
       if (openRes.error) throw openRes.error;
@@ -63,9 +53,9 @@ export default function MispunchContent() {
       setMispunches(mispunchRes.data || []);
       setOpenShifts(openRes.data || []);
 
-      if (isAdmin && results[2]) {
-        if (results[2].error) throw results[2].error;
-        setAdminMispunches(results[2].data || []);
+      if (isAdmin && adminRes) {
+        if (adminRes.error) throw new Error(adminRes.error);
+        setAdminMispunches(adminRes.data || []);
       }
     } catch (err) {
       console.error('Fetch error:', err);
