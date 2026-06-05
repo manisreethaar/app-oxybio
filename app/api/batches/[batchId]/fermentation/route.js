@@ -168,7 +168,7 @@ export async function POST(request, { params }) {
           ethanol_pct:            data.ethanol_pct ?? null,
           plating_result:         data.plating_result || null,
           plating_done:      platingDone,
-          plating_status:    platingDone ? 'done_incubating' : 'not_done',
+          plating_status:    platingDone ? 'done_incubating' : (data.plating_status || 'not_done'),
           plating_config:    platingDone ? platingConfig : {},
           foam_level:        data.foam_level || null,
           visual_appearance: data.visual_appearance || null,
