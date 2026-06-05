@@ -77,7 +77,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       setStarchGelTemp(d.starch_gelat_temp_c||'');
       setStarchGelConfirm(d.starch_gelat_confirmed||false);
       setBufferCapacity(d.buffer_capacity_mmol_l||'');
-      setViscosityCp(d.viscosity_cP||'');
+      setViscosityCp(d.viscosity_cp||'');
       setSubstratePhotoUrl(d.substrate_photo_url||'');
       setAwValue(d.aw_value||'');
       setPretreatSteps(d.pre_treatment_steps||[]);
@@ -184,7 +184,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         starch_gelat_temp_c: starchGelTemp ? parseFloat(starchGelTemp) : null,
         starch_gelat_confirmed: starchGelConfirm,
         buffer_capacity_mmol_l: bufferCapacity ? parseFloat(bufferCapacity) : null,
-        viscosity_cP: viscosityCp ? parseFloat(viscosityCp) : null,
+        viscosity_cp: viscosityCp ? parseFloat(viscosityCp) : null,
         aw_value:            awValue ? parseFloat(awValue) : null,
         pre_treatment_steps: pretreatSteps,
         substrate_photo_url: substratePhotoUrl || null,
