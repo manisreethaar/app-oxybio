@@ -72,7 +72,16 @@
       "Bash(git commit -m 'fix\\(build\\): add force-dynamic to environmental-monitoring page *)",
       "Bash(xargs grep -l \"onEdit\\\\|handleEdit\\\\|handleDelete\\\\|onDelete\\\\|handleModify\")",
       "Bash(xargs grep -l \"pending_changes\")",
-      "Bash(xargs grep -l \"DELETE\\\\|delete\")"
+      "Bash(xargs grep -l \"DELETE\\\\|delete\")",
+      "Bash(xargs grep -l \"lab.?bench\\\\|Lab.?Bench\")",
+      "Bash(dir \"E:\\\\OXYBIO\\\\lib\\\\labBench\")",
+      "Bash(Get-ChildItem -Path \"E:\\\\OXYBIO\" -Recurse -Directory -Name)",
+      "Bash(xargs grep -l \"production\")",
+      "Bash(xargs grep -l \"production\\\\|batch_production\")",
+      "Bash(git -C \"E:\\\\OXYBIO\" log --oneline --all --since=\"2 weeks ago\")",
+      "Bash(git -C \"E:\\\\OXYBIO\" show 221ff6e --stat)",
+      "Bash(git -C \"E:\\\\OXYBIO\" show 221ff6e --name-only)",
+      "Bash(xargs grep -l \"batch_stage_harvest\\\\|batch_stage_downstream\")"
     ]
   }
 }
