@@ -6,6 +6,15 @@ import { syncStageToLNB } from '@/lib/lnbSync';
 import { validateEndpointPayload, validateReadingPayload } from '@/lib/fermentation/validation';
 import { can, isMasterAdmin } from '@/lib/permissions';
 
+// Validates that a value is a proper UUID — returns null otherwise.
+// Prevents "invalid input syntax for type uuid" when empty strings,
+// integer IDs, or the literal string "undefined" are passed in.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function safeUuid(val) {
+  if (!val || typeof val !== 'string') return null;
+  return UUID_RE.test(val.trim()) ? val.trim() : null;
+}
+
 async function getRequester(supabase) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
@@ -143,7 +152,7 @@ export async function POST(request, { params }) {
         .from('batch_fermentation_readings')
         .insert({
           batch_id:          batchId,
-          flask_id:          data.flask_id || null,
+          flask_id:          safeUuid(data.flask_id),
           flask_label:       data.flask_label || null,
           logged_at:         data.logged_at || new Date().toISOString(),
           elapsed_hours:     data.elapsed_hours || null,
@@ -154,9 +163,9 @@ export async function POST(request, { params }) {
           titratable_acidity_pct: data.titratable_acidity_pct ?? null,
           do_percent:             data.do_percent ?? null,
           co2_pressure_kpa:       data.co2_pressure_kpa ?? null,
-          incubator_equipment_id: data.incubator_equipment_id || null,
-          co2_observed:           data.co2_observed           || null,
-          ethanol_pct:            data.ethanol_pct            ?? null,
+          incubator_equipment_id: safeUuid(data.incubator_equipment_id),
+          co2_observed:           data.co2_observed || null,
+          ethanol_pct:            data.ethanol_pct ?? null,
           plating_result:         data.plating_result || null,
           plating_done:      platingDone,
           plating_status:    platingDone ? 'done_incubating' : 'not_done',
@@ -165,8 +174,8 @@ export async function POST(request, { params }) {
           visual_appearance: data.visual_appearance || null,
           is_retrospective:  data.is_retrospective || false,
           retro_reason:      data.retro_reason || null,
-          logged_by:         data.logged_by || null,
-          supervised_by:     data.supervised_by || null,
+          logged_by:         safeUuid(data.logged_by),
+          supervised_by:     safeUuid(data.supervised_by),
           notes:             data.notes || null,
         })
         .select()
