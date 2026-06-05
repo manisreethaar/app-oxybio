@@ -219,15 +219,17 @@ export async function POST(request, { params }) {
 
         // Auto-create task so the alarm has an actionable audit trail
         const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-        await supabase.from('tasks').insert({
-          title: `⚠ Fermentation Alarm: ${msgs.join(', ')}`,
-          description: `Auto-raised at T+${data.elapsed_hours?.toFixed(1)}hr for batch ${batchId}${data.flask_label ? ` (${data.flask_label})` : ''}. Investigate and log corrective action.`,
-          priority: 'high', status: 'todo',
-          batch_id: batchId,
-          assigned_to: data.logged_by || null,
-          assigned_by: data.logged_by || null,
-          due_date: tomorrow.toISOString().slice(0, 10),
-        }).catch(()=>{});
+        try {
+          await supabase.from('tasks').insert({
+            title: `⚠ Fermentation Alarm: ${msgs.join(', ')}`,
+            description: `Auto-raised at T+${data.elapsed_hours?.toFixed(1)}hr for batch ${batchId}${data.flask_label ? ` (${data.flask_label})` : ''}. Investigate and log corrective action.`,
+            priority: 'high', status: 'todo',
+            batch_id: batchId,
+            assigned_to: data.logged_by || null,
+            assigned_by: data.logged_by || null,
+            due_date: tomorrow.toISOString().slice(0, 10),
+          });
+        } catch (_) {}
       }
 
       return NextResponse.json({ success: true, data: responseRow, incubation, alarms: { ph: saved?.is_ph_alarm, temp: saved?.is_temp_alarm } });
