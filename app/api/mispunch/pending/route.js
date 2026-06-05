@@ -20,12 +20,18 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('attendance_log')
       .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employees(full_name)')
       .eq('mispunch_status', 'pending')
-      .neq('employee_id', emp.id)   // Admins cannot approve their own requests
       .order('date', { ascending: false });
+
+    // Non-CEO admins cannot approve their own requests
+    if (emp.role !== 'ceo') {
+      query = query.neq('employee_id', emp.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     
