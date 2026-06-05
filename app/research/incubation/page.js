@@ -475,13 +475,18 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
         <p className="text-[9px] text-gray-400 mb-1">Media: {first.media_lot}</p>
       )}
 
-      {/* Sterility summary */}
-      <div className="flex items-center gap-1 flex-wrap">
-        {sorted.map(r => (
-          <span key={r.id} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${sterileChip(r.sterility_status || 'Pending')}`}>
-            {r.replicate_label}: {r.sterility_status || 'Pending'}
-          </span>
-        ))}
+      {/* Sterility summary + creator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 flex-wrap">
+          {sorted.map(r => (
+            <span key={r.id} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${sterileChip(r.sterility_status || 'Pending')}`}>
+              {r.replicate_label}: {r.sterility_status || 'Pending'}
+            </span>
+          ))}
+        </div>
+        {first.employees && (
+          <CreatorBadge initials={first.employees.initials} fullName={first.employees.full_name} />
+        )}
       </div>
 
       {/* Expanded detail -- show first record's charts */}
@@ -585,14 +590,16 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
         </p>
       )}
 
-      {/* Sterility chip */}
+      {/* Sterility chip + creator */}
       <div className="flex items-center justify-between">
         <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${sterileChip(record.sterility_status || 'Pending')}`}>
           {record.sterility_status || 'Pending'}
         </span>
         <div className="flex items-center gap-1.5">
-          {record.employees && (
+          {record.employees ? (
             <CreatorBadge initials={record.employees.initials} fullName={record.employees.full_name} />
+          ) : record.logged_by ? null : (
+            <span className="text-[8px] text-gray-300 font-mono">auto</span>
           )}
           {record.end_time && record.duration_hours != null && (
             <span className="text-[9px] font-mono text-gray-400">
