@@ -62,14 +62,15 @@ export async function GET() {
     const studies = studyRes.data || [];
 
     // ── 2. Latest fermentation reading per (batch_id, flask_id) ─
-    const activeBatchIds = batches.map(b => b.batch_id);
-    let latestReadingMap = {}; // key: `${batch_id}::${flask_id}`
+    // batch_fermentation_readings.batch_id is a UUID FK to batches.id — use b.id, not b.batch_id
+    const activeBatchUuids = batches.map(b => b.id);
+    let latestReadingMap = {}; // key: `${batch_uuid}::${flask_id}`
 
-    if (activeBatchIds.length > 0) {
+    if (activeBatchUuids.length > 0) {
       const { data: readings } = await supabase
         .from('batch_fermentation_readings')
         .select('batch_id, flask_id, logged_at, elapsed_hours, ph, optical_density')
-        .in('batch_id', activeBatchIds)
+        .in('batch_id', activeBatchUuids)
         .order('logged_at', { ascending: false });
 
       // Keep only the most recent reading per (batch_id, flask_id)
@@ -89,7 +90,7 @@ export async function GET() {
         f.status !== 'planned' && f.current_stage !== 'qc_hold'
       );
       for (const flask of flasks) {
-        const key     = `${batch.batch_id}::${flask.id}`;
+        const key     = `${batch.id}::${flask.id}`;
         const reading = latestReadingMap[key] || null;
 
         let urgency, hoursSince, detail;
@@ -118,6 +119,7 @@ export async function GET() {
           urgency,
           source_type:  'batch',
           source_id:    batch.batch_id,
+          batch_uuid:   batch.id,
           source_label: `Batch ${batch.batch_id}`,
           flask_id:     flask.id,
           flask_label:  flask.flask_label,
