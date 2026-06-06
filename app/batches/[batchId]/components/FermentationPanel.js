@@ -14,7 +14,10 @@ const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
 const APPEARANCE_OPTS = ['Normal','Colour change','Turbidity change','Separation observed'];
 
-function PhChart({ readings, comparisonData = {} }) {
+function PhChart({ readings, loading = false, comparisonData = {} }) {
+  if (loading) return (
+    <div className="h-28 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl animate-pulse">Loading…</div>
+  );
   if (!readings.length) return (
     <div className="h-28 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl">No readings yet — chart will appear here</div>
   );
@@ -202,6 +205,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [inocu,     setInocu]     = useState(null);
   const [endpoint,  setEndpoint]  = useState(null);
   const [saving,    setSaving]    = useState(false);
+  const [loadingReadings, setLoadingReadings] = useState(true);
 
   // A-33: inter-batch comparison
   const [comparisonData, setComparisonData] = useState({});
@@ -301,6 +305,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   const fetchData = useCallback(async () => {
     if (!activeFlask?.id) return;
+    setLoadingReadings(true);
     const [rRes, iRes, epRes] = await Promise.all([
       supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
       supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
@@ -310,6 +315,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     if (rRes.data) setReadings(rRes.data);
     if (iRes.data) setInocu(iRes.data); else setInocu(null);
     setEndpoint(epRes.data ?? null);
+    setLoadingReadings(false);
   }, [batch.id, activeFlask?.id, supabase]);
 
   const fetchPendingIds = async () => {
@@ -331,6 +337,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   useEffect(() => {
     setReadings([]); setInocu(null); setEndpoint(null);
+    setLoadingReadings(true);
     setExceededNotifSent(false);
     setTa(''); setEpTa(''); setGramStainImg('');
     setFeeds([]);
@@ -695,9 +702,14 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Fermentation details.</div>;
 
   // pH range helpers for inline hint
+  // Suppress alarm/target hints at T+0h — initial pH is always on the higher side
+  const currentReadingElapsed = isRetro && loggedAt && tZero
+    ? (new Date(loggedAt) - tZero) / 3600000
+    : elapsedHr;
+  const isAtTZero = currentReadingElapsed !== null && currentReadingElapsed < 0.5;
   const phNum = parseFloat(pH);
-  const phInAlarmRange = pH && (phNum < 3.8 || phNum > 5.5);
-  const phOutOfTarget = pH && !phInAlarmRange && (phNum < 4.2 || phNum > 4.5);
+  const phInAlarmRange = pH && !isAtTZero && (phNum < 3.8 || phNum > 5.5);
+  const phOutOfTarget = pH && !isAtTZero && !phInAlarmRange && (phNum < 4.2 || phNum > 4.5);
 
   return (
     <div className="space-y-5">
@@ -1012,7 +1024,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             )}
           </div>
           <div className="p-4 space-y-3">
-            <PhChart readings={readings} comparisonData={showComparison ? comparisonData : {}}/>
+            <PhChart readings={readings} loading={loadingReadings} comparisonData={showComparison ? comparisonData : {}}/>
             {/* G-33: Brix trend chart */}
             {readings.some(r => r.brix != null) && (
               <div>
@@ -1198,7 +1210,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     </td>
                   </tr>
                 ))}
-                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-gray-400">No readings yet.</td></tr>}
+                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-gray-400">{loadingReadings ? 'Loading…' : 'No readings yet.'}</td></tr>}
               </tbody>
             </table>
           </div>
