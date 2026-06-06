@@ -58,7 +58,7 @@ export default function QuickLogOverlay() {
       .select('id, batch_id, current_stage, status, sku')
       .not('status', 'in', '("released","rejected")')
       .not('current_stage', 'in', '("released","rejected")')
-      .order('updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(25)
       .then(({ data }) => {
         if (!data) return;
