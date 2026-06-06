@@ -134,7 +134,7 @@ function QueueCard({ item }) {
           </Link>
           <Link
             href={item.source_type === 'batch'
-              ? `/batches/${item.source_id}`
+              ? `/batches/${item.batch_uuid || item.source_id}`
               : `/growth-studies/${item.source_id}`
             }
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-lg transition-colors"
