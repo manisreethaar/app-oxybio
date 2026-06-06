@@ -306,6 +306,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
       supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
     ]);
+    if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
     if (rRes.data) setReadings(rRes.data);
     if (iRes.data) setInocu(iRes.data); else setInocu(null);
     setEndpoint(epRes.data ?? null);
