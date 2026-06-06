@@ -56,12 +56,16 @@ export default function QuickLogOverlay() {
     supabase
       .from('batches')
       .select('id, batch_id, current_stage, status, sku')
-      .not('status', 'in', '("released","rejected")')
-      .not('current_stage', 'in', '("released","rejected")')
+      .neq('status', 'released')
+      .neq('status', 'rejected')
+      .neq('current_stage', 'released')
+      .neq('current_stage', 'rejected')
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(25)
-      .then(({ data }) => {
-        if (!data) return;
+      .then(({ data, error }) => {
+        if (error) console.error('QuickLog batches query error:', error);
+        if (!data?.length) return;
         // Fermentation batches first so the most useful option is at the top
         const sorted = [...data].sort((a, b) => {
           if (a.current_stage === 'fermentation' && b.current_stage !== 'fermentation') return -1;
