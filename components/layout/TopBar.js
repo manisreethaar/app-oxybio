@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
 import { Bell, Download, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { User, CreditCard } from 'lucide-react';
@@ -32,6 +32,16 @@ export default function TopBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const fetchUnreadCount = useCallback(async () => {
+    if (!employeeProfile?.id) return;
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('employee_id', employeeProfile.id)
+      .eq('is_read', false);
+    setUnreadCount(count ?? 0);
+  }, [supabase, employeeProfile?.id]);
+
   useEffect(() => {
     if (!employeeProfile?.id) return;
 
@@ -42,13 +52,11 @@ export default function TopBar() {
         .eq('employee_id', employeeProfile.id)
         .order('created_at', { ascending: false })
         .limit(5);
-      if (data) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.is_read).length);
-      }
+      if (data) setNotifications(data);
     };
 
     fetchNotifs();
+    fetchUnreadCount();
 
     const channel = supabase
       .channel(`notif-bell-${employeeProfile.id}`)
@@ -63,19 +71,17 @@ export default function TopBar() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `employee_id=eq.${employeeProfile.id}` },
-        (payload) => {
-          setNotifications(prev =>
-            prev.map(n => n.id === payload.new.id ? { ...n, is_read: payload.new.is_read } : n)
-          );
-          setUnreadCount(prev =>
-            Math.max(0, prev + (payload.new.is_read && !payload.old?.is_read ? -1 : 0))
-          );
-        }
+        () => { fetchUnreadCount(); }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [employeeProfile?.id, supabase]);
+  }, [employeeProfile?.id, supabase, fetchUnreadCount]);
+
+  // Re-fetch count whenever the user navigates (catches mark-all-read on notifications page)
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [pathname, fetchUnreadCount]);
 
   const markAsRead = async (id, link) => {
     // Optimistic update — mark the item read locally immediately
@@ -102,10 +108,8 @@ export default function TopBar() {
         .eq('employee_id', employeeProfile.id)
         .order('created_at', { ascending: false })
         .limit(5);
-      if (data) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.is_read).length);
-      }
+      if (data) setNotifications(data);
+      fetchUnreadCount();
     }
   };
 
