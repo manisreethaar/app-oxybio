@@ -757,9 +757,16 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           {!endpoint && tZero && (
             <button onClick={() => {
               if (!showEndpoint) {
+                // Pre-fill end time: use suggested planned end time if already in the past,
+                // otherwise default to right now. Always use toLocalDatetime() so the
+                // datetime-local input gets local time (not UTC), preventing a 5h30m
+                // offset error for IST users.
                 if (inocu?.planned_fermentation_hrs && tZero) {
                   const suggested = new Date(tZero.getTime() + inocu.planned_fermentation_hrs * 3600000);
-                  if (suggested < new Date()) setEndpointTime(suggested.toISOString().slice(0, 16));
+                  const prefill = suggested < new Date() ? suggested : new Date();
+                  setEndpointTime(toLocalDatetime(prefill.toISOString()));
+                } else {
+                  setEndpointTime(toLocalDatetime(new Date().toISOString()));
                 }
               } else {
                 setEndpointTime('');
@@ -1237,6 +1244,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </label>
                 <input
                   type="datetime-local"
+                  required
                   value={endpointTime}
                   max={toLocalDatetime(new Date().toISOString())}
                   onChange={e => setEndpointTime(e.target.value)}
