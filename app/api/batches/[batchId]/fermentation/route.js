@@ -256,6 +256,8 @@ export async function POST(request, { params }) {
         texture: data.texture || null,
         sensory_overall: data.sensory_overall || null,
         gram_stain: data.gram_stain || null,
+        gram_stain_image_url: data.gram_stain_image_url || null,
+        titratable_acidity_pct: data.titratable_acidity_pct ?? null,
         notes: data.notes || null,
         declared_by: data.declared_by || null,
       };
@@ -266,7 +268,12 @@ export async function POST(request, { params }) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Surface the DB error code so missing-column errors (PGRST204, 42703)
+        // are visible in the UI instead of a generic failure message.
+        const detail = error.code ? `[${error.code}] ${error.message}` : error.message;
+        throw new Error(detail);
+      }
 
       await syncStageToLNB(supabase, batchId, 'fermentation', {
         total_hours: endpointPayload.total_hours,
