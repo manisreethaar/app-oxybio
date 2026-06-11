@@ -42,19 +42,17 @@ export async function POST(request) {
     // 2. Geofence Verification (Server-side Source of Truth — uses Vercel env vars)
     const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
     const inGeofence = distance <= MAX_RADIUS_METERS;
-    const isNearby = distance <= MAX_RADIUS_METERS + 150; // Buffer for indoor GPS drift
 
-    // Protocol: Strict Geofence Enforcement (Prevent remote check-ins)
-    if (!inGeofence && !override) {
-        if (!isNearby) {
-            return NextResponse.json({
-                error: `Location Verification Failed: You are ${Math.round(distance)}m away from the campus. You must be within the geofence to check in.`
-            }, { status: 403 });
-        } else if (!photo_url) {
-            return NextResponse.json({
-                error: `Buffer Zone: You are ${Math.round(distance)}m away. A photo is required for indoor GPS drift auditing.`
-            }, { status: 403 });
-        }
+    // Protocol: GPS-drift tolerant enforcement. Network/WiFi-based location fixes
+    // can report a misleadingly small accuracy while being several km off the
+    // true position, which previously caused a hard "you are Xkm away" rejection
+    // for users physically on-site. Out-of-geofence check-ins are now allowed
+    // (flagged in_geofence=false for audit) as long as a verification photo is
+    // provided.
+    if (!inGeofence && !override && !photo_url) {
+        return NextResponse.json({
+            error: `Location Verification Failed: You are ${Math.round(distance)}m away from the campus. A photo is required to check in outside the geofence.`
+        }, { status: 403 });
     }
 
     // Admin override check
