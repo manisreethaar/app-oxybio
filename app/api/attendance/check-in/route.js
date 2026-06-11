@@ -42,17 +42,27 @@ export async function POST(request) {
     // 2. Geofence Verification (Server-side Source of Truth — uses Vercel env vars)
     const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
     const inGeofence = distance <= MAX_RADIUS_METERS;
+    const isLeadership = ['admin', 'ceo', 'cto'].includes(emp.role);
+    const isNearby = distance <= MAX_RADIUS_METERS + 150; // Buffer for indoor GPS drift
 
     // Protocol: GPS-drift tolerant enforcement. Network/WiFi-based location fixes
     // can report a misleadingly small accuracy while being several km off the
     // true position, which previously caused a hard "you are Xkm away" rejection
-    // for users physically on-site. Out-of-geofence check-ins are now allowed
-    // (flagged in_geofence=false for audit) as long as a verification photo is
-    // provided.
-    if (!inGeofence && !override && !photo_url) {
-        return NextResponse.json({
-            error: `Location Verification Failed: You are ${Math.round(distance)}m away from the campus. A photo is required to check in outside the geofence.`
-        }, { status: 403 });
+    // for users physically on-site. For regular staff, out-of-geofence check-ins
+    // are only allowed within the indoor-drift buffer zone (and require a photo).
+    // Leadership roles may check in from any distance with a photo, since their
+    // GPS verification is treated as advisory.
+    if (!inGeofence && !override) {
+        if (!isLeadership && !isNearby) {
+            return NextResponse.json({
+                error: `Location Verification Failed: You are ${Math.round(distance)}m away from the campus. You must be within the geofence to check in.`
+            }, { status: 403 });
+        }
+        if (!photo_url) {
+            return NextResponse.json({
+                error: `Buffer Zone: You are ${Math.round(distance)}m away. A photo is required for indoor GPS drift auditing.`
+            }, { status: 403 });
+        }
     }
 
     // Admin override check
