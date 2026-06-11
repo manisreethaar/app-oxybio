@@ -284,19 +284,17 @@ export default function AttendancePage() {
             return;
           }
           const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
+          // Don't hard-block on distance: indoor/WiFi-based location fixes can
+          // report a misleadingly small accuracy while being several km off.
+          // Proceed to photo verification (flagged in_geofence=false for audit).
           if (distance > geofence.radius) {
-            if (accuracy > ACCURACY_THRESHOLD) {
-              setCheckInError(`📡 GPS signal too weak (accuracy ±${Math.round(accuracy)}m). Please: (1) Step near a window, (2) Enable WiFi, (3) Wait 30 seconds and tap Check In again.`);
-            } else {
-              setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check in from the premises.`);
-            }
-            setActionLoading(false);
+            setCheckInError(`📍 You appear to be ${fmtDist(distance)} from the facility. A verification photo is required to check in.`);
           } else {
             setCheckInError('');
-            setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= geofence.radius, distance: Math.round(distance) });
-            setShowWebcam(true);
-            setActionLoading(false);
           }
+          setGeoData({ lat: latitude, lng: longitude, in_geofence: distance <= geofence.radius, distance: Math.round(distance) });
+          setShowWebcam(true);
+          setActionLoading(false);
         },
         (err) => {
           let msg = "Unable to retrieve location. Please enable GPS permissions for this site.";
