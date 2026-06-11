@@ -284,9 +284,17 @@ export default function AttendancePage() {
             return;
           }
           const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
-          // Don't hard-block on distance: indoor/WiFi-based location fixes can
-          // report a misleadingly small accuracy while being several km off.
-          // Proceed to photo verification (flagged in_geofence=false for audit).
+          const isLeadership = ['admin', 'ceo', 'cto'].includes(role);
+          const isNearby = distance <= geofence.radius + 150; // Buffer for indoor GPS drift
+          if (distance > geofence.radius && !isLeadership && !isNearby) {
+            setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check in from the premises.`);
+            setActionLoading(false);
+            return;
+          }
+          // Don't hard-block within the buffer zone (or for leadership): indoor/
+          // WiFi-based location fixes can report a misleadingly small accuracy
+          // while being off. Proceed to photo verification (flagged
+          // in_geofence=false for audit).
           if (distance > geofence.radius) {
             setCheckInError(`📍 You appear to be ${fmtDist(distance)} from the facility. A verification photo is required to check in.`);
           } else {
