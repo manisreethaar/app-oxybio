@@ -84,7 +84,6 @@ export default function SecureViewerModal({ url, title, onClose }) {
               src={viewerUrl} 
               className="w-full h-full border-0"
               title={title}
-              sandbox="allow-scripts allow-same-origin" // restrict popups and downloads
             />
           ) : isImage ? (
             <img src={url} alt={title} className="max-w-full max-h-full object-contain p-4" draggable="false" />
