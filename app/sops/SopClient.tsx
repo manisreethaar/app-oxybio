@@ -338,7 +338,6 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                 </div>
                 <button disabled={submittingAck} onClick={acknowledgeSOP} className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider flex items-center justify-center gap-1">{submittingAck ? "Processing..." : "Sign Procedure"}</button>
               </div>
-            </div>
           </div>
         </div>
       )}
