@@ -21,7 +21,10 @@ const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
-  file: z.any().refine((files) => files && files.length > 0, "Document file is required")
+  file: z.any().refine((files) => files && files.length > 0, "Document file is required"),
+  target_roles: z.array(z.string()).optional(),
+  target_departments: z.array(z.string()).optional(),
+  target_employees: z.array(z.string()).optional()
 });
 
 
@@ -35,6 +38,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('title');
+  const [employeesList, setEmployeesList] = useState<any[]>([]);
   const supabase = useMemo(() => createClient(), []);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -68,6 +72,12 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
             } catch (e) { console.error('Failed to parse categories', e); }
           }
         });
+        
+      supabase.from('employees').select('id, full_name, role').eq('is_active', true)
+        .then(({ data }) => {
+          if (data) setEmployeesList(data);
+        });
+
       if (!initialSops || initialSops.length === 0) {
         fetchSOPs(); 
       }
@@ -189,7 +199,10 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
           title: data.title,
           category: data.category,
           version: data.version,
-          document_url: uploadData.url
+          document_url: uploadData.url,
+          target_roles: data.target_roles || [],
+          target_departments: data.target_departments || [],
+          target_employees: data.target_employees || []
         })
       });
 
@@ -368,12 +381,41 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                   {upErrors.version && <p className="text-red-500 text-xs mt-1">{String(upErrors.version.message)}</p>}
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-1">Target Roles (leave empty for all)</label>
+                  <select multiple {...regUpload('target_roles')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-[10px] h-20 scrollbar-thin">
+                    <option value="admin">Admin</option>
+                    <option value="ceo">CEO</option>
+                    <option value="cto">CTO</option>
+                    <option value="research_fellow">Research Fellow</option>
+                    <option value="scientist">Scientist</option>
+                    <option value="staff">Staff</option>
+                    <option value="intern">Intern</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-1">Target Departments</label>
+                  <select multiple {...regUpload('target_departments')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-[10px] h-20 scrollbar-thin">
+                    <option value="Admin">Admin</option>
+                    <option value="R&D">R&amp;D</option>
+                    <option value="Production">Production</option>
+                    <option value="Management">Management</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 mb-1">Specific Employees (Hold Ctrl to multi-select)</label>
+                <select multiple {...regUpload('target_employees')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-[10px] h-20 scrollbar-thin">
+                  {employeesList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.role})</option>)}
+                </select>
+              </div>
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 mb-1">File (Document/PDF)</label>
                 <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" {...regUpload('file')} className="w-full border border-gray-200 rounded-lg p-2 bg-gray-50 text-xs" />
                 {upErrors.file && <p className="text-red-500 text-xs mt-1">{String(upErrors.file.message)}</p>}
               </div>
-              <button disabled={isUploading} type="submit" className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider">{isUploading ? 'Uploading...' : 'Publish'}</button>
+              <button disabled={isUploading} type="submit" className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider mt-2">{isUploading ? 'Uploading...' : 'Publish'}</button>
             </form>
           </div>
         </div>
