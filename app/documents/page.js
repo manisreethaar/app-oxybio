@@ -50,7 +50,7 @@ export default function DocumentsPage() {
         if (data?.value) {
           try {
             const parsed = JSON.parse(data.value);
-            setCategories(['All', ...parsed.map((c: any) => c.label)]);
+            setCategories(['All', ...parsed.map((c) => c.label)]);
           } catch (e) { console.error('Failed to parse categories', e); }
         }
       });
