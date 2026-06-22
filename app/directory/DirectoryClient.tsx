@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/context/ToastContext';
-import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2, UserPlus, UserCog, Sparkles, RefreshCw, Save, Power, Building2 } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2, UserPlus, UserCog, Sparkles, RefreshCw, Save, Power, Building2, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PERMISSIONS, { ROLE_WEIGHTS } from '@/lib/permissions';
 
@@ -51,8 +51,8 @@ function Field({ label, children }) {
   );
 }
 
-function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive }: {
-  emp: any; onClose: () => void; isAdmin: boolean; onEdit: (e: any) => void; onToggleActive: (e: any) => void;
+function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete }: {
+  emp: any; onClose: () => void; isAdmin: boolean; onEdit: (e: any) => void; onToggleActive: (e: any) => void; onDelete?: (e: any) => void;
 }) {
   const [toggling, setToggling] = useState(false);
 
@@ -118,7 +118,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive }: {
         </div>
 
         {/* ── Scrollable body ── */}
-        <div className="flex-1 overflow-y-auto border-t border-slate-100 px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto border-t border-slate-100 px-6 py-5 pb-10 space-y-4">
 
           {/* Contact */}
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
@@ -224,13 +224,22 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive }: {
 
         {/* ── Footer actions ── */}
         {isAdmin && (
-          <div className="shrink-0 border-t border-slate-100 px-6 py-4">
+          <div className="shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3 bg-white">
             <button
               onClick={() => { onClose(); onEdit(emp); }}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-navy text-white font-black rounded-xl hover:bg-navy/90 text-sm transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-navy text-white font-black rounded-xl hover:bg-navy/90 text-sm transition-colors"
             >
               <UserCog className="w-4 h-4"/> Edit Full Profile
             </button>
+            {onDelete && (
+              <button
+                onClick={() => { onClose(); onDelete(emp); }}
+                className="flex-none px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-black rounded-xl transition-colors"
+                title="Delete Employee"
+              >
+                <Trash2 className="w-5 h-5"/>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -711,7 +720,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
         {/* Profile Modal */}
       {viewingProfile && typeof document !== 'undefined' && createPortal(
-        <ProfileModal emp={viewingProfile} onClose={() => setViewingProfile(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin} onToggleActive={handleToggleActive}/>,
+        <ProfileModal emp={viewingProfile} onClose={() => setViewingProfile(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin} onToggleActive={handleToggleActive} onDelete={handleDeleteEmployee}/>,
         document.body
       )}
 
