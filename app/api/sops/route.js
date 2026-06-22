@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const sopSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  category: z.enum(['Fermentation', 'QC', 'Sanitation', 'Safety']),
+  category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
   document_url: z.string().url("Valid document URL is required")
 });

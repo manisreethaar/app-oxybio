@@ -57,9 +57,16 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
 
   useEffect(() => { 
     if (employeeProfile) {
-      // Fetch categories from lookup_categories table
-      supabase.from('lookup_categories').select('name').eq('type', 'sop').order('name')
-        .then(({ data }) => { if (data?.length) setCategories(data.map((c: any) => c.name)); });
+      // Fetch categories from app_settings table
+      supabase.from('app_settings').select('value').eq('key', 'document_categories').single()
+        .then(({ data }) => { 
+          if (data?.value) {
+            try {
+              const parsed = JSON.parse(data.value);
+              setCategories(parsed.map((c: any) => c.label));
+            } catch (e) { console.error('Failed to parse categories', e); }
+          }
+        });
       if (!initialSops || initialSops.length === 0) {
         fetchSOPs(); 
       }

@@ -17,8 +17,10 @@ export async function POST(request) {
     }
 
     const supabase = createClient();
-    const permission = await requireInventoryPermission(supabase, 'edit');
-    if (permission.error) return permission.error;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
       return NextResponse.json({ success: false, error: 'Only PDF, PNG, and JPG files are allowed' }, { status: 400 });
