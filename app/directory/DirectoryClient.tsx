@@ -19,6 +19,7 @@ const DESIGNATION_PRESETS = [
   { label: 'Chief Technology Officer (CTO)', code: 'CT' },
   { label: 'Research Fellow', code: 'RF' },
   { label: 'Scientist', code: 'SC' },
+  { label: 'Research Intern', code: 'RI' },
   { label: 'Intern', code: 'IN' },
   { label: 'Custom...', code: '' },
 ];
@@ -573,6 +574,25 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
     }
   };
 
+  const handleDeleteEmployee = async (emp: any) => {
+    if (!window.confirm(`Are you sure you want to completely delete ${emp.full_name}? This action cannot be undone.`)) return;
+    setUpdateLoading(true);
+    try {
+      const res = await fetch('/api/admin/delete-employee', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: emp.id }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      toast.success(`${emp.full_name} deleted successfully`);
+      setEditingEmployee(null);
+      await fetchEmployees();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
@@ -758,6 +778,26 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Details
                             </button>
                         </div>
+
+                        <div className="mt-8 pt-6 border-t border-red-100 bg-red-50/50 -mx-5 -mb-5 p-5 rounded-b-[2rem]">
+                            <h4 className="text-sm font-black text-red-700 uppercase tracking-wider mb-3">Danger Zone</h4>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button 
+                                    onClick={() => handleToggleActive(editingEmployee)}
+                                    disabled={updateLoading} 
+                                    className="flex-1 px-4 py-3 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <Power className="w-4 h-4"/> {editingEmployee.is_active ? 'Deactivate Account' : 'Reactivate Account'}
+                                </button>
+                                <button 
+                                    onClick={() => handleDeleteEmployee(editingEmployee)}
+                                    disabled={updateLoading} 
+                                    className="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <X className="w-4 h-4"/> Delete Permanently
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -846,7 +886,8 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 <Field label="Role">
                   <select {...register('role')} className="input-field">
                     <option value="admin">Administrator</option>
-                    <option value="staff">Staff / R&D</option>
+                    <option value="staff">Staff / R&amp;D</option>
+                    <option value="research_intern">Research Intern</option>
                     <option value="intern">Intern</option>
                   </select>
                 </Field>

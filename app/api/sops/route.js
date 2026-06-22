@@ -6,7 +6,10 @@ const sopSchema = z.object({
   title: z.string().min(1, "Title is required"),
   category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
-  document_url: z.string().url("Valid document URL is required")
+  document_url: z.string().url("Valid document URL is required"),
+  target_roles: z.array(z.string()).optional(),
+  target_departments: z.array(z.string()).optional(),
+  target_employees: z.array(z.string()).optional()
 });
 
 export async function POST(request) {
@@ -27,7 +30,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { title, category, version, document_url } = parsed.data;
+    const { title, category, version, document_url, target_roles, target_departments, target_employees } = parsed.data;
 
     // Invalidate previous active versions of this SOP (Gap 38: SOP Version Expiration)
     await supabase
@@ -46,6 +49,9 @@ export async function POST(request) {
         category, 
         version, 
         document_url, 
+        target_roles: target_roles || [],
+        target_departments: target_departments || [],
+        target_employees: target_employees || [],
         is_active: true 
       })
       .select()
