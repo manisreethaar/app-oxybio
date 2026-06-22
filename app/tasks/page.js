@@ -14,6 +14,7 @@ import {
   LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { canAssignTo } from '@/lib/permissions';
 import { differenceInDays } from 'date-fns';
 import TaskDetailModal from './components/TaskDetailModal';
@@ -24,6 +25,7 @@ import CreatorBadge from '@/components/ui/CreatorBadge';
 
 export default function TasksPage() {
   const { role, canDo, isAdmin: isMaster, employeeProfile, loading: authLoading } = useAuth();
+  const router = useRouter();
   const toast = useToast();
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -91,7 +93,11 @@ export default function TasksPage() {
   };
 
   useEffect(() => {
-    if (!employeeProfile) return;
+    if (authLoading) return;
+    if (!employeeProfile) {
+      router.push('/dashboard');
+      return;
+    }
     fetchTasks();
     fetchPendingIds();
 
@@ -109,7 +115,7 @@ export default function TasksPage() {
 
     return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile]);
+  }, [employeeProfile, authLoading, router]);
 
   useEffect(() => {
     let interval;
