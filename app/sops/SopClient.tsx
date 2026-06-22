@@ -20,7 +20,7 @@ const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
-  file: z.any().refine((files) => files && files.length > 0, "PDF file is required")
+  file: z.any().refine((files) => files && files.length > 0, "Document file is required")
 });
 
 
@@ -358,8 +358,8 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 mb-1">File (PDF)</label>
-                <input type="file" accept=".pdf" {...regUpload('file')} className="w-full border border-gray-200 rounded-lg p-2 bg-gray-50 text-xs" />
+                <label className="block text-[10px] font-bold text-gray-400 mb-1">File (Document/PDF)</label>
+                <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" {...regUpload('file')} className="w-full border border-gray-200 rounded-lg p-2 bg-gray-50 text-xs" />
                 {upErrors.file && <p className="text-red-500 text-xs mt-1">{String(upErrors.file.message)}</p>}
               </div>
               <button disabled={isUploading} type="submit" className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider">{isUploading ? 'Uploading...' : 'Publish'}</button>
