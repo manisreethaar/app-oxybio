@@ -38,12 +38,23 @@ export default function DocumentsPage() {
   });
   const supabase = useMemo(() => createClient(), []);
 
-  const categories = ['All', 'Legal', 'HR', 'Regulatory', 'Finance', 'IP', 'QC', 'SOP'];
+  const [categories, setCategories] = useState(['All', 'Legal', 'HR', 'Regulatory', 'Finance', 'IP', 'QC', 'SOP']);
 
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get('tab');
     if (tab === 'sops') setActiveTab('sops');
-  }, []);
+    
+    // Fetch categories from app_settings
+    supabase.from('app_settings').select('value').eq('key', 'document_categories').single()
+      .then(({ data }) => {
+        if (data?.value) {
+          try {
+            const parsed = JSON.parse(data.value);
+            setCategories(['All', ...parsed.map((c: any) => c.label)]);
+          } catch (e) { console.error('Failed to parse categories', e); }
+        }
+      });
+  }, [supabase]);
 
   useEffect(() => {
     if (employeeProfile) fetchDocuments();
