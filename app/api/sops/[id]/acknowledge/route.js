@@ -15,10 +15,7 @@ export async function POST(request, { params }) {
 
     const { signature_text, quiz_score } = await request.json();
     
-    // Innovation 3: Strict Evaluation Lock
-    if (quiz_score !== 100) {
-      return NextResponse.json({ error: 'COMPLIANCE FAILURE: 100% quiz score required for SOP signature.' }, { status: 403 });
-    }
+    // Removed strict quiz score check as quiz is being disabled
 
     if (!signature_text) {
       return NextResponse.json({ error: 'Missing signature text' }, { status: 400 });
@@ -46,10 +43,6 @@ export async function POST(request, { params }) {
       .insert([{
         sop_id: id,
         employee_id: employee.id,
-        signature_text: cleanSignature,
-        ip_address: ip,
-        user_agent: ua,
-        quiz_score: quiz_score,
         acknowledged_at: new Date().toISOString()
       }])
       .select();

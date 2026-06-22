@@ -111,8 +111,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ 
           employee_id: employeeProfile.id, 
-          signature_text: signatureText,
-          quiz_score: quizScore
+          signature_text: signatureText
         }) 
       });
       if (res.ok) { 
@@ -279,48 +278,10 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               <p className="text-sm font-bold text-gray-800 leading-snug">{showAckModal.title}</p>
             </div>
 
-            {!quizStarted && quizScore < 100 && (
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                  <p className="text-xs font-bold text-blue-900 mb-2">Pre-Signature Validation</p>
-                  <p className="text-[11px] text-blue-700 leading-relaxed">To ensure compliance, you must complete a brief micro-quiz on this SOP before signing. A 100% score is required.</p>
-                </div>
-                <button onClick={() => setQuizStarted(true)} className="w-full py-3 bg-navy text-white text-xs font-black uppercase rounded-xl shadow-lg hover:shadow-navy/20 transition-all">Start Validation Quiz</button>
-              </div>
-            )}
-
-            {quizStarted && quizScore < 100 && (
-              <div className="space-y-6">
-                {((showAckModal.quiz_data?.length > 0 ? showAckModal.quiz_data : FALLBACK_QUIZ)
-                ).map((q: any, qIdx: number) => (
-                  <div key={qIdx} className="space-y-2">
-                    <p className="text-xs font-bold text-gray-700">{qIdx + 1}. {q.q}</p>
-                    <div className="grid gap-2">
-                      {q.options.map((opt, oIdx) => (
-                        <button 
-                          key={oIdx} 
-                          onClick={() => {
-                            const newAns = [...userAnswers];
-                            newAns[qIdx] = oIdx;
-                            setUserAnswers(newAns);
-                          }}
-                          className={`text-left p-2.5 rounded-lg text-xs font-medium border transition-all ${userAnswers[qIdx] === oIdx ? 'bg-navy text-white border-navy scale-[1.02]' : 'bg-white text-gray-600 border-gray-200 hover:border-navy/30'}`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                <button onClick={handleQuizSubmit} className="w-full py-3 bg-emerald-600 text-white text-xs font-black uppercase rounded-xl">Submit Answers</button>
-              </div>
-            )}
-
-            {quizScore === 100 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 space-y-4">
+            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-4">
                 <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
                   <div className="bg-emerald-500 rounded-full p-1"><CheckCircle className="w-5 h-5 text-white"/></div>
-                  <div><p className="text-xs font-black text-emerald-900 uppercase">Validated</p><p className="text-[10px] text-emerald-700">100% Score achieved. Signature unlocked.</p></div>
+                  <div><p className="text-xs font-black text-emerald-900 uppercase">Ready for Signature</p><p className="text-[10px] text-emerald-700">Please provide your digital signature below.</p></div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1"><Mail className="w-3 h-3"/> Signature Statement</label>
@@ -328,7 +289,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                 </div>
                 <button disabled={submittingAck} onClick={acknowledgeSOP} className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider flex items-center justify-center gap-1">{submittingAck ? "Processing..." : "Sign Procedure"}</button>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
