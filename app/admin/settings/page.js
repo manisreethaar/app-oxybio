@@ -114,6 +114,7 @@ export default function BatchSettingsPage() {
   const toast = useToast();
   const [experimentTypes, setExperimentTypes] = useState([]);
   const [skuTargets, setSkuTargets] = useState([]);
+  const [documentCategories, setDocumentCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -124,6 +125,7 @@ export default function BatchSettingsPage() {
         if (json.success) {
           setExperimentTypes(json.data.experiment_types || []);
           setSkuTargets(json.data.sku_targets || []);
+          setDocumentCategories(json.data.document_categories || []);
         }
       })
       .catch(() => toast.error('Failed to load settings'))
@@ -141,7 +143,8 @@ export default function BatchSettingsPage() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       if (key === 'experiment_types') setExperimentTypes(json.data);
-      else setSkuTargets(json.data);
+      else if (key === 'sku_targets') setSkuTargets(json.data);
+      else if (key === 'document_categories') setDocumentCategories(json.data);
       toast.success('Saved successfully.');
     } catch (err) {
       toast.error(err.message);
@@ -187,6 +190,15 @@ export default function BatchSettingsPage() {
             icon={Tag}
             optionKey="sku_targets"
             options={skuTargets}
+            onSave={handleSave}
+            saving={saving}
+          />
+          <OptionsEditor
+            title="Document Categories"
+            description="Shown in the Category dropdown when uploading SOPs and Documents."
+            icon={Tag}
+            optionKey="document_categories"
+            options={documentCategories}
             onSave={handleSave}
             saving={saving}
           />

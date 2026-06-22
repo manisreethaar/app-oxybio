@@ -4,7 +4,7 @@ import { isMasterAdmin } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_KEYS = ['experiment_types', 'sku_targets'];
+const ALLOWED_KEYS = ['experiment_types', 'sku_targets', 'document_categories'];
 
 async function getAdminEmp(supabase) {
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -39,6 +39,12 @@ export async function GET() {
         { value: 'CLARITY', label: 'CLARITY' },
         { value: 'MOMENTUM', label: 'MOMENTUM' },
         { value: 'VITALITY', label: 'VITALITY' },
+      ],
+      document_categories: [
+        { value: 'Fermentation', label: 'Fermentation' },
+        { value: 'QC', label: 'QC' },
+        { value: 'Sanitation', label: 'Sanitation' },
+        { value: 'Safety', label: 'Safety' },
       ],
     };
 
