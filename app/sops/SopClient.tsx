@@ -8,7 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
-import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search, Trash2, Users } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 const FALLBACK_QUIZ = [
@@ -81,6 +81,9 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   }, [employeeProfile, fetchSOPs, initialSops, supabase]);
 
   const [showAckModal, setShowAckModal] = useState<any>(null);
+  const [showSignaturesModal, setShowSignaturesModal] = useState<any>(null);
+  const [signaturesData, setSignaturesData] = useState<any[]>([]);
+  const [loadingSignatures, setLoadingSignatures] = useState(false);
   const [signatureText, setSignatureText] = useState("");
   const [submittingAck, setSubmittingAck] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
@@ -129,6 +132,40 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
       toast.error("Error acknowledging SOP: " + err.message);
     } finally { 
       setSubmittingAck(false); 
+    }
+  };
+
+  const handleDeleteSOP = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this SOP? This action cannot be undone and will delete all associated signatures.')) return;
+    try {
+      const res = await fetch(`/api/sops/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete SOP');
+      }
+      toast.success('SOP deleted successfully');
+      fetchSOPs();
+    } catch (err) {
+      toast.error('Error: ' + err.message);
+    }
+  };
+
+  const handleViewSignatures = async (sopId: string) => {
+    setShowSignaturesModal(sopId);
+    setLoadingSignatures(true);
+    setSignaturesData([]);
+    try {
+      const res = await fetch(`/api/sops/${sopId}/acknowledgements`);
+      const data = await res.json();
+      if (res.ok) {
+        setSignaturesData(data.data || []);
+      } else {
+        toast.error('Failed to load signatures');
+      }
+    } catch (err) {
+      toast.error('Error loading signatures');
+    } finally {
+      setLoadingSignatures(false);
     }
   };
 
@@ -250,15 +287,27 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               ) : (
                 <div className="flex items-center text-amber-700 bg-amber-50 px-2 py-1 rounded text-[10px] font-bold uppercase border border-amber-100"><AlertTriangle className="w-3.5 h-3.5 mr-1" /> Needs Review</div>
               )}
-              {sop.document_url ? (
-                <a href={sop.document_url} target="_blank" rel="noopener noreferrer" className="p-1 text-gray-400 hover:text-navy hover:bg-gray-50 rounded-md border border-transparent hover:border-gray-200">
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              ) : (
-                <button disabled title="No document attached" className="p-1 text-gray-200 cursor-not-allowed border border-transparent">
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-              )}
+              <div className="flex gap-2">
+                {['admin','ceo','cto'].includes(role) && (
+                  <button onClick={() => handleViewSignatures(sop.id)} className="p-1 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-md border border-transparent hover:border-teal-200 transition-colors" title="View Acknowledgements">
+                    <Users className="w-4 h-4" />
+                  </button>
+                )}
+                {sop.document_url ? (
+                  <a href={sop.document_url} target="_blank" rel="noopener noreferrer" className="p-1 text-gray-400 hover:text-navy hover:bg-gray-50 rounded-md border border-transparent hover:border-gray-200 transition-colors">
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <button disabled title="No document attached" className="p-1 text-gray-200 cursor-not-allowed border border-transparent">
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                )}
+                {['admin','ceo','cto'].includes(role) && (
+                  <button onClick={() => handleDeleteSOP(sop.id)} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md border border-transparent hover:border-red-200 transition-colors" title="Delete SOP">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
             {!sop.is_acknowledged && (
               <button onClick={() => { setShowAckModal(sop); setSignatureText(`I confirm that I have read and understood ${sop.sop_id} (${sop.title}) and will follow it strictly.`); }} className="w-full mt-3 bg-navy hover:bg-navy-hover text-white font-bold text-xs py-2 rounded-lg transition-colors uppercase tracking-wider">Sign SOP</button>
@@ -325,6 +374,41 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               </div>
               <button disabled={isUploading} type="submit" className="w-full bg-navy hover:bg-navy-hover text-white font-bold py-2.5 rounded-lg transition-colors text-xs uppercase tracking-wider">{isUploading ? 'Uploading...' : 'Publish'}</button>
             </form>
+          </div>
+        </div>
+      )}
+      {showSignaturesModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 relative shadow-xl overflow-y-auto max-h-[85vh]">
+            <button onClick={() => setShowSignaturesModal(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+            <h2 className="text-xl font-black text-gray-900 mb-2">SOP Acknowledgements</h2>
+            <p className="text-xs text-gray-500 mb-6">List of all staff who have digitally signed this protocol.</p>
+            
+            {loadingSignatures ? (
+              <div className="py-8 text-center text-sm font-bold text-gray-400">Loading signatures...</div>
+            ) : signaturesData.length === 0 ? (
+              <div className="py-8 text-center text-sm font-bold text-gray-400 bg-gray-50 rounded-xl border border-gray-100">No signatures found for this SOP.</div>
+            ) : (
+              <div className="space-y-3">
+                {signaturesData.map((sig, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-emerald-50/30 border border-emerald-100 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs uppercase">
+                        {sig.employees?.initials || sig.employees?.full_name?.substring(0, 2) || 'U'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{sig.employees?.full_name || 'Unknown User'}</p>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{sig.employees?.role || 'Staff'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-gray-600">Signed on</p>
+                      <p className="text-[10px] font-bold text-emerald-700">{new Date(sig.acknowledged_at).toLocaleDateString()} {new Date(sig.acknowledged_at).toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
