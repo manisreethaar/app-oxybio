@@ -11,6 +11,7 @@ import { useToast } from '@/context/ToastContext';
 import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen, Trash2 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import SecureViewerModal from '@/components/ui/SecureViewerModal';
 
 const SopClient = dynamic(() => import('@/app/sops/SopClient'), { ssr: false });
 
@@ -37,6 +38,9 @@ export default function DocumentsPage() {
     defaultValues: { title: '', category: 'Legal', version: '1.0', access_level: 'all-staff', file: null }
   });
   const supabase = useMemo(() => createClient(), []);
+
+  const [isClient, setIsClient] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState(null);
 
   const [categories, setCategories] = useState(['All', 'Legal', 'HR', 'Regulatory', 'Finance', 'IP', 'QC', 'SOP']);
 
@@ -248,9 +252,9 @@ export default function DocumentsPage() {
                           <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>
                           <div className="flex gap-2">
                             {doc.file_url ? (
-                              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="View Document">
-                                <Download className="w-5 h-5" />
-                              </a>
+                              <button onClick={() => setViewerDoc({url: doc.file_url, title: doc.title})} className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="Secure View Document">
+                                <BookOpen className="w-5 h-5" />
+                              </button>
                             ) : (
                               <button disabled className="flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-full cursor-not-allowed" title="No Document Attached">
                                 <Download className="w-5 h-5" />
@@ -315,6 +319,14 @@ export default function DocumentsPage() {
             </form>
           </div>
         </div>
+      )}
+      
+      {viewerDoc && (
+        <SecureViewerModal 
+          url={viewerDoc.url} 
+          title={viewerDoc.title} 
+          onClose={() => setViewerDoc(null)} 
+        />
       )}
     </div>
   );

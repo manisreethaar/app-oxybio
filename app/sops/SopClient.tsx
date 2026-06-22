@@ -10,6 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
 import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search, Trash2, Users } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
+import SecureViewerModal from '@/components/ui/SecureViewerModal';
 import { motion, AnimatePresence } from 'framer-motion';
 const FALLBACK_QUIZ = [
   { q: "What is the primary objective of this SOP?", options: ["General reading", "Strict compliance", "Optional reference"], correct: 1 },
@@ -82,6 +83,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
 
   const [showAckModal, setShowAckModal] = useState<any>(null);
   const [showSignaturesModal, setShowSignaturesModal] = useState<any>(null);
+  const [viewerDoc, setViewerDoc] = useState<{url: string, title: string} | null>(null);
   const [signaturesData, setSignaturesData] = useState<any[]>([]);
   const [loadingSignatures, setLoadingSignatures] = useState(false);
   const [signatureText, setSignatureText] = useState("");
@@ -294,9 +296,9 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                   </button>
                 )}
                 {sop.document_url ? (
-                  <a href={sop.document_url} target="_blank" rel="noopener noreferrer" className="p-1 text-gray-400 hover:text-navy hover:bg-gray-50 rounded-md border border-transparent hover:border-gray-200 transition-colors">
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  <button onClick={() => setViewerDoc({url: sop.document_url, title: sop.title})} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-50 rounded-md border border-transparent hover:border-gray-200 transition-colors" title="Secure Document View">
+                    <BookOpen className="w-4 h-4" />
+                  </button>
                 ) : (
                   <button disabled title="No document attached" className="p-1 text-gray-200 cursor-not-allowed border border-transparent">
                     <ExternalLink className="w-4 h-4" />
@@ -410,6 +412,14 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
             )}
           </div>
         </div>
+      )}
+
+      {viewerDoc && (
+        <SecureViewerModal 
+          url={viewerDoc.url} 
+          title={viewerDoc.title} 
+          onClose={() => setViewerDoc(null)} 
+        />
       )}
     </div>
   );
