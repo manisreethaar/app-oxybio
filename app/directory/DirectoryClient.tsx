@@ -878,7 +878,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
             {inviteError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 font-medium">{inviteError}</div>}
 
-            <form onSubmit={handleSubmit(handleInviteSubmit)} className="space-y-5">
+            <form onSubmit={handleSubmit(handleInviteSubmit, (errors) => setInviteError(Object.values(errors)[0]?.message || 'Please fill all required fields correctly'))} className="space-y-5">
               <div className="grid grid-cols-1 gap-4">
                 <Field label="Full Name">
                   <input {...register('full_name')} className="input-field" placeholder="Santha Kumari R K"/>
