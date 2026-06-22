@@ -26,21 +26,8 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const { employeeProfile, loading } = useAuth();
 
-  // FIXED: Reduced from 5000ms to 1500ms — no reason to wait 5 seconds
-  const [timedOut, setTimedOut] = useState(false);
-
-  useEffect(() => {
-    if (!employeeProfile && !loading) {
-      const timer = setTimeout(() => {
-        setTimedOut(true);
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile, loading]);
-
-  // FIXED: Show skeleton immediately instead of blank screen with text
-  if (loading || (!employeeProfile && !timedOut)) {
+  // Remove the artificial delay
+  if (loading) {
     return <DashboardSkeleton />;
   }
 
