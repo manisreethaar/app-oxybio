@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen } from 'lucide-react';
+import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen, Trash2 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 
@@ -128,6 +128,21 @@ export default function DocumentsPage() {
     }
   };
 
+  const handleDeleteDocument = async (id) => {
+    if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/documents/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete document');
+      }
+      toast.success('Document deleted successfully');
+      fetchDocuments();
+    } catch (err) {
+      toast.error('Error: ' + err.message);
+    }
+  };
+
   const getExpiryWarning = (expiryDate) => {
     if (!expiryDate) return null;
     const days = differenceInDays(new Date(expiryDate), new Date());
@@ -231,15 +246,22 @@ export default function DocumentsPage() {
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                           <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>
-                          {doc.file_url ? (
-                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="View Document">
-                              <Download className="w-5 h-5" />
-                            </a>
-                          ) : (
-                            <button disabled className="flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-full cursor-not-allowed" title="No Document Attached">
-                              <Download className="w-5 h-5" />
-                            </button>
-                          )}
+                          <div className="flex gap-2">
+                            {doc.file_url ? (
+                              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="View Document">
+                                <Download className="w-5 h-5" />
+                              </a>
+                            ) : (
+                              <button disabled className="flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-full cursor-not-allowed" title="No Document Attached">
+                                <Download className="w-5 h-5" />
+                              </button>
+                            )}
+                            {(['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.id === doc.uploaded_by) && (
+                              <button onClick={() => handleDeleteDocument(doc.id)} className="flex items-center justify-center w-10 h-10 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors" title="Delete Document">
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
