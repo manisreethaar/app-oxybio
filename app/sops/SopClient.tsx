@@ -381,34 +381,40 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                   {upErrors.version && <p className="text-red-500 text-xs mt-1">{String(upErrors.version.message)}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-4 mt-2 border-t border-gray-100 pt-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 mb-1">Target Roles (leave empty for all)</label>
-                  <select multiple {...regUpload('target_roles')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-[10px] h-20 scrollbar-thin">
-                    <option value="admin">Admin</option>
-                    <option value="ceo">CEO</option>
-                    <option value="cto">CTO</option>
-                    <option value="research_fellow">Research Fellow</option>
-                    <option value="scientist">Scientist</option>
-                    <option value="staff">Staff</option>
-                    <option value="intern">Intern</option>
-                  </select>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Target Roles (leave empty for all)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['admin', 'ceo', 'cto', 'research_fellow', 'scientist', 'staff', 'intern'].map(role => (
+                      <label key={role} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" value={role} {...regUpload('target_roles')} className="rounded border-gray-300 text-navy focus:ring-navy w-3.5 h-3.5" />
+                        <span className="text-[10px] font-bold text-gray-700 uppercase">{role.replace('_', ' ')}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 mb-1">Target Departments</label>
-                  <select multiple {...regUpload('target_departments')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-[10px] h-20 scrollbar-thin">
-                    <option value="Admin">Admin</option>
-                    <option value="R&D">R&amp;D</option>
-                    <option value="Production">Production</option>
-                    <option value="Management">Management</option>
-                  </select>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Target Departments</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Admin', 'R&D', 'Production', 'Management'].map(dept => (
+                      <label key={dept} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" value={dept} {...regUpload('target_departments')} className="rounded border-gray-300 text-navy focus:ring-navy w-3.5 h-3.5" />
+                        <span className="text-[10px] font-bold text-gray-700 uppercase">{dept}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 mb-1">Specific Employees (Hold Ctrl to multi-select)</label>
-                <select multiple {...regUpload('target_employees')} className="w-full border border-gray-200 rounded-lg p-2 outline-none bg-white text-[10px] h-20 scrollbar-thin">
-                  {employeesList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.role})</option>)}
-                </select>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Specific Employees</label>
+                  <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-1 bg-gray-50/50 scrollbar-thin">
+                    {employeesList.map(e => (
+                      <label key={e.id} className="flex items-center gap-2 hover:bg-white p-1.5 rounded cursor-pointer transition-colors">
+                        <input type="checkbox" value={e.id} {...regUpload('target_employees')} className="rounded border-gray-300 text-navy focus:ring-navy w-3.5 h-3.5" />
+                        <span className="text-xs font-semibold text-gray-700">{e.full_name} <span className="text-[10px] text-gray-400 font-bold uppercase ml-1">({e.role?.replace('_', ' ')})</span></span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 mb-1">File (Document/PDF)</label>
