@@ -24,13 +24,13 @@ export default function LoginPage() {
     try {
       if (view === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) { setError(error.message); } 
+        if (error) { setError(error.message || 'Unable to sign in. Please try again.'); }
         else { router.push('/dashboard'); }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (error) { setError(error.message); }
+        if (error) { setError(error.message || 'Unable to send reset link. Please try again.'); }
         else { setMessage('Password reset link has been sent to your email.'); }
       }
     } catch (err) { setError('An unexpected error occurred. Please try again.'); } 
