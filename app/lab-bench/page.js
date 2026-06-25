@@ -58,7 +58,7 @@ function QueueCard({ item }) {
 
   return (
     <div className={clsx(
-      'bg-white rounded-2xl border p-4 flex items-start gap-3 hover:shadow-sm transition-all',
+      'card p-4 flex items-start gap-3 transition-all',
       u.ring
     )}>
       {/* Urgency dot + icon */}
@@ -380,7 +380,7 @@ export default function LabBenchPage() {
               { href: '/research/incubation', icon: ClipboardList, label: 'Incubation' },
             ].map(({ href, icon: Icon, label }) => (
               <Link key={href} href={href}
-                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-slate-500"
+                className="card flex flex-col items-center gap-1.5 py-3 hover:bg-slate-50 transition-colors text-slate-500"
               >
                 <Icon className="w-4 h-4" />
                 <span className="text-[10px] font-bold">{label}</span>
@@ -405,7 +405,7 @@ export default function LabBenchPage() {
           )}
 
           {recentEntries.map(sample => (
-            <div key={sample.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div key={sample.id} className="card overflow-hidden">
               <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-black text-slate-700 truncate">

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
@@ -15,6 +15,14 @@ export default function LoginPage() {
   const [view, setView] = useState('login'); // 'login' | 'forgot_password'
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/dashboard');
+      }
+    });
+  }, [router, supabase.auth]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

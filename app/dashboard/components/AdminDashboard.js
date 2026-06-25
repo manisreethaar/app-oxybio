@@ -172,7 +172,7 @@ export default function AdminDashboard({ employeeId }) {
 
 
   const StatCard = ({ title, value, icon: Icon, color, link, subtitle }) => (
-    <Link href={link} className="surface p-6 flex flex-col justify-between hover:border-gray-300 transition-all duration-150 group">
+    <Link href={link} className="card p-6 flex flex-col justify-between hover:border-gray-300 transition-all duration-150 group">
       <div className="flex items-start justify-between mb-4">
         <div className={`p-3.5 rounded-xl border ${color}`}>
           <Icon className="w-5 h-5" />
@@ -259,7 +259,7 @@ export default function AdminDashboard({ employeeId }) {
       </div>
 
       {/* Live Production Chart */}
-      <div className="surface p-6">
+      <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-base font-bold text-gray-900 tracking-tight">Production Yield — Last 6 Months</h3>
           <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-widest">Live Data</span>
@@ -273,7 +273,7 @@ export default function AdminDashboard({ employeeId }) {
       </div>
 
       {/* Production Panel */}
-      <div className="surface overflow-hidden flex flex-col">
+      <div className="card overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <h2 className="text-base font-bold text-gray-900 tracking-tight">Live Production Hub</h2>
           <Link href="/batches" className="text-xs font-bold text-gray-600 hover:text-gray-900 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 transition-colors">View All</Link>
@@ -369,7 +369,7 @@ export default function AdminDashboard({ employeeId }) {
 
       {/* QC Hold — Awaiting Release Decision */}
       {qcHoldBatches.length > 0 && !qcHoldDismissed && (
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-amber-200 flex justify-between items-center bg-amber-50">
             <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600"/>
@@ -475,7 +475,7 @@ export default function AdminDashboard({ employeeId }) {
 
       {/* Pending Leave Approvals */}
       {pendingLeaves.length > 0 && (
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-amber-100 flex justify-between items-center bg-amber-50/40">
             <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-amber-600" />
@@ -504,7 +504,7 @@ export default function AdminDashboard({ employeeId }) {
 
       {/* Mispunch Review Section */}
       {pendingMispunches.length > 0 && (
-        <div className="surface overflow-hidden flex flex-col border-red-100">
+        <div className={`card relative overflow-hidden group transition-all duration-200`}>
            <div className="px-6 py-4 border-b border-red-100 flex justify-between items-center bg-red-50/30">
             <h2 className="text-base font-bold text-red-900 tracking-tight flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" /> Pending Mispunch Reconciliations

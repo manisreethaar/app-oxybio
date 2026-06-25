@@ -238,7 +238,7 @@ export default function StaffDashboard({ employeeProfile }) {
       <div className="md:col-span-2 space-y-8">
 
         {/* Quick Actions CTA */}
-        <div className="surface p-8 flex flex-col sm:flex-row items-center justify-between">
+        <div className="card p-8 flex flex-col sm:flex-row items-center justify-between">
           <div className="mb-4 sm:mb-0 text-center sm:text-left">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight mb-1">Ready to Log Data?</h2>
             <p className="text-sm text-gray-500">Capture real-time pH metrics and shift activities instantly.</p>
@@ -258,10 +258,10 @@ export default function StaffDashboard({ employeeProfile }) {
 
         {/* Contextual Batch Prompt — only my task-linked batches */}
         {activeBatches.length > 0 && (
-          <div className="bg-white border-l-4 border-navy p-6 rounded-xl shadow-sm space-y-4">
+          <div className="card border-l-4 border-navy p-6 flex flex-col space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">My Active Batches</h2>
-              <span className="bg-navy text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse">ACTION REQUIRED</span>
+              <span className="bg-navy text-white text-[10px] font-black px-2 py-0.5 rounded">ACTION REQUIRED</span>
             </div>
             {activeBatches.map(batch => (
               <div key={batch.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group hover:border-navy transition-all">
@@ -279,7 +279,7 @@ export default function StaffDashboard({ employeeProfile }) {
 
         {/* 3A: Active Fermentations Monitoring Widget */}
         {activeFermentations.length > 0 && (
-          <div className="surface overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-navy" />
@@ -292,8 +292,8 @@ export default function StaffDashboard({ employeeProfile }) {
               {activeFermentations.map(b => {
                 const statusColors = {
                   green: { dot: 'bg-emerald-500', row: '', badge: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
-                  amber: { dot: 'bg-amber-400 animate-pulse', row: 'bg-amber-50/30', badge: 'text-amber-700 bg-amber-50 border-amber-200' },
-                  red:   { dot: 'bg-red-500 animate-ping', row: 'bg-red-50/30', badge: 'text-red-700 bg-red-50 border-red-200' },
+                  amber: { dot: 'bg-amber-400', row: 'bg-amber-50/30', badge: 'text-amber-700 bg-amber-50 border-amber-200' },
+                  red:   { dot: 'bg-red-500', row: 'bg-red-50/30', badge: 'text-red-700 bg-red-50 border-red-200' },
                 }[b.status];
 
                 const hrsLabel = b.hrsSinceLog !== null
@@ -339,7 +339,7 @@ export default function StaffDashboard({ employeeProfile }) {
 
         {/* My Activity Today */}
         {recentActivity.length > 0 && (
-          <div className="surface overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
               <h2 className="text-base font-bold text-gray-900 tracking-tight flex items-center gap-2">
                 <Clock className="w-4 h-4 text-gray-400" /> My Activity Today

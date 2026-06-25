@@ -77,18 +77,6 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
     let mounted = true;
 
     const init = async () => {
-      // --- DEV AUTH OVERRIDE ---
-      if (process.env.NODE_ENV === 'development') {
-        const mockUser = { id: 'mock-1', email: 'manisreethaar@gmail.com' };
-        const mockProfile = { id: 'mock-1', email: 'manisreethaar@gmail.com', role: 'admin', full_name: 'Master Admin', is_active: true };
-        setUser(mockUser);
-        setEmployeeProfile(mockProfile);
-        setLoading(false);
-        initializedRef.current = true;
-        return;
-      }
-      // -------------------------
-
       // Step 1: Get the current user (uses local JWT — no network call)
       let currentUser = initialSession?.user || null;
       if (!currentUser) {
