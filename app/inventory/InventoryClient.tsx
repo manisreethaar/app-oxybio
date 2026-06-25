@@ -632,13 +632,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             onClick={() => setStockFilter(tile.type as StockFilter)}
             className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
               stockFilter === tile.type
-                ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-100'
+                ? 'bg-white border-violet-500 shadow-md ring-2 ring-violet-100'
                 : 'bg-white border-gray-100 hover:border-gray-200'
             }`}
           >
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
             <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-teal-800'
+              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-violet-800'
             }`}>
               {tile.count}
             </span>
@@ -654,7 +654,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
             <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-teal-800'
+              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-violet-800'
             }`}>
               {tile.count}
             </span>
@@ -662,10 +662,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         ))}
 
         {activeTab === 'vendors' && [
-          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-teal-800' },
-          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-teal-800' },
-          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-teal-800' },
-          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-teal-800' },
+          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-violet-800' },
+          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-violet-800' },
+          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-violet-800' },
+          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-violet-800' },
         ].map(tile => (
           <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
@@ -695,7 +695,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Stock</p>
                     {[['all','All Stock'],['low','Low Stock Only'],['expiring','Expiring (&lt;30d)'],['expired','Expired']].map(([val, label]) => (
                       <button key={val} onClick={() => { setStockFilter(val as StockFilter); setShowOptions(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ stockFilter === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-violet-50 transition-colors ${ stockFilter === val ? 'text-violet-700 bg-violet-50/60' : 'text-gray-700' }`}>
                         {label}
                       </button>
                     ))}
@@ -706,7 +706,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Sort Registry</p>
                     {[['name','Name (Aâ€“Z)'],['newest','Newest First'],['stock','By Min Stock Level']].map(([val, label]) => (
                       <button key={val} onClick={() => { setRegistrySort(val); setShowOptions(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ registrySort === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-violet-50 transition-colors ${ registrySort === val ? 'text-violet-700 bg-violet-50/60' : 'text-gray-700' }`}>
                         {label}
                       </button>
                     ))}
@@ -716,9 +716,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <>
                     <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Supplier Options</p>
                     <button onClick={() => { setRegistrySearch(''); setShowOptions(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-teal-50 transition-colors">Clear Search</button>
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-violet-50 transition-colors">Clear Search</button>
                     <button onClick={() => { setRegistrySort('name'); setShowOptions(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-teal-50 transition-colors">Sort Aâ€“Z</button>
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-violet-50 transition-colors">Sort Aâ€“Z</button>
                   </>
                 )}
                 <div className="border-t border-gray-100 mt-1 mb-1" />
@@ -732,7 +732,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             </button>
           )}
           {canEditItems && (
-            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
+            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-violet-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-900/20 hover:bg-violet-900 transition-all active:scale-95">
               <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
           )}
@@ -758,11 +758,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
 
       <div className="flex border-b border-gray-200">
-        <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
-        <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
-        <button onClick={() => setActiveTab('vendors')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
-        <button onClick={() => setActiveTab('pr')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
-        <button onClick={() => setActiveTab('traceability')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
+        <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-violet-600 text-violet-900 bg-violet-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
+        <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-violet-600 text-violet-900 bg-violet-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
+        <button onClick={() => setActiveTab('vendors')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-violet-600 text-violet-900 bg-violet-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
+        <button onClick={() => setActiveTab('pr')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-violet-600 text-violet-900 bg-violet-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
+        <button onClick={() => setActiveTab('traceability')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-violet-600 text-violet-900 bg-violet-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
       </div>
 
       <div className="relative flex gap-2">
@@ -773,7 +773,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <input
             type="text"
             placeholder="Search by item name or lot number..."
-            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
+            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-violet-50 focus:border-violet-500 font-bold transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -813,7 +813,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
                   });
                    setModalType('stock'); setIsModalOpen(true); 
-                }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
+                }} className="mt-2 flex items-center px-4 py-2 bg-violet-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-violet-900 transition-all">
                   Receive Stock
                 </button>
               )}
@@ -825,7 +825,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div
                 key={s.id}
                 onClick={() => setSelectedStock(s)}
-                className={`bg-white rounded-xl border ${risk.isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} px-4 py-3 hover:shadow-sm hover:border-teal-100 transition-all flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group cursor-pointer`}
+                className={`bg-white rounded-xl border ${risk.isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} px-4 py-3 hover:shadow-sm hover:border-violet-100 transition-all flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group cursor-pointer`}
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -838,16 +838,16 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       </span>
                     )}
                   </div>
-                  <h3 className="text-sm font-black text-teal-950 mb-0.5 leading-tight">{s.inventory_items?.name}</h3>
+                  <h3 className="text-sm font-black text-violet-950 mb-0.5 leading-tight">{s.inventory_items?.name}</h3>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <Truck className="w-3.5 h-3.5 mr-1.5" /> Lot: <span className="text-teal-900 ml-1">{s.supplier_batch_number || 'N/A'}</span>
+                      <Truck className="w-3.5 h-3.5 mr-1.5" /> Lot: <span className="text-violet-900 ml-1">{s.supplier_batch_number || 'N/A'}</span>
                     </div>
                     <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-teal-900 ml-1">{s.location || 'Central Store'}</span>
+                      <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-violet-900 ml-1">{s.location || 'Central Store'}</span>
                     </div>
                     <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-teal-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
+                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-violet-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -855,7 +855,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className="flex flex-row items-center gap-3 sm:gap-4 shrink-0">
                   <div className="text-right">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
-                    <p className={`text-base font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-teal-800'}`}>
+                    <p className={`text-base font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-violet-800'}`}>
                       {s.current_quantity}<span className="text-[10px] ml-0.5">{s.inventory_items?.unit}</span>
                     </p>
                     {risk.minLevel > 0 && (
@@ -869,7 +869,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <button
                     type="button"
                     onClick={(event) => { event.stopPropagation(); setSelectedStock(s); }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-100 text-[9px] font-black uppercase tracking-widest hover:bg-teal-100 transition-all whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-violet-50 text-violet-800 border border-violet-100 text-[9px] font-black uppercase tracking-widest hover:bg-violet-100 transition-all whitespace-nowrap"
                   >
                     Details <ChevronRight className="w-3 h-3" />
                   </button>
@@ -882,7 +882,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       key={b.id}
                       href={`/batches/${b.id}`}
                       onClick={e => e.stopPropagation()}
-                      className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-black rounded border border-teal-100 hover:bg-teal-100 transition-colors"
+                      className="px-2 py-0.5 bg-violet-50 text-violet-700 text-[10px] font-black rounded border border-violet-100 hover:bg-violet-100 transition-colors"
                     >
                       {b.batch_id}
                     </Link>
@@ -902,7 +902,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <button 
                 onClick={loadMore}
                 disabled={loading}
-                className="px-8 py-3 bg-white border border-teal-100 text-teal-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-teal-50 transition-all flex items-center gap-2"
+                className="px-8 py-3 bg-white border border-violet-100 text-violet-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-violet-50 transition-all flex items-center gap-2"
               >
                 Load More Records
               </button>
@@ -923,7 +923,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 placeholder="Search by name, code, or category..."
                 value={registrySearch}
                 onChange={(e) => setRegistrySearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-teal-600 text-sm font-bold"
+                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-600 text-sm font-bold"
               />
             </div>
             <div className="flex items-center gap-3 w-full md:w-auto">
@@ -931,7 +931,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <select
                 value={registrySort}
                 onChange={(e) => setRegistrySort(e.target.value)}
-                className="px-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 text-xs font-bold focus:ring-2 focus:ring-teal-600"
+                className="px-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 text-xs font-bold focus:ring-2 focus:ring-violet-600"
               >
                 <option value="name">Alphabetical (A-Z)</option>
                 <option value="newest">Newest Added</option>
@@ -980,7 +980,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div key={category} className="space-y-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-[11px] font-black uppercase tracking-widest text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-100">
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-violet-800 bg-violet-50 px-3 py-1 rounded-full border border-violet-100">
                     {category} ({catItems.length})
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
@@ -993,9 +993,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       onClick={isSelectMode ? () => toggleItemSelect(item.id) : undefined}
                       className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm ${
                         isSelectMode ? 'cursor-pointer' : ''
-                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-teal-100'}`}
+                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-violet-100'}`}
                     >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute top-0 left-0 w-1 h-full bg-violet-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
                         {isSelectMode ? (
@@ -1011,7 +1011,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                               <>
                                 <button
                                   onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-violet-50 hover:text-violet-600 transition-all border border-gray-200 shadow-sm">
                                   <FileText className="w-3.5 h-3.5" />
                                 </button>
                                 <button
@@ -1042,7 +1042,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                             ) : canEditItems ? (
                               <button
                                 onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-violet-50 hover:text-violet-600 transition-all border border-gray-200 shadow-sm">
                                 <FileText className="w-3.5 h-3.5" />
                               </button>
                             ) : null}
@@ -1050,14 +1050,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         )}
                       </div>
                       
-                      <h3 className="text-xs font-black text-teal-950 leading-tight">{item.name}</h3>
+                      <h3 className="text-xs font-black text-violet-950 leading-tight">{item.name}</h3>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
                         {item.unit}{(item as any).hazardous && <span className="ml-1 text-orange-500">⚠</span>}
                       </p>
                       <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between gap-1">
                         <div>
                           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Stock</p>
-                          <p className="text-xs font-black text-teal-800">{item.min_stock_level || '0'} {item.unit}</p>
+                          <p className="text-xs font-black text-violet-800">{item.min_stock_level || '0'} {item.unit}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Code</p>
@@ -1147,7 +1147,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
+                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-violet-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-violet-900 transition-all">
                   Add Supplier
                 </button>
               )}
@@ -1158,7 +1158,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                  {canEditItems && (
                     <button
                       onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
-                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-violet-50 hover:text-violet-600 transition-all border border-gray-200 shadow-sm">
                       <FileText className="w-3.5 h-3.5" />
                     </button>
                  )}
@@ -1170,7 +1170,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     </button>
                  )}
               </div>
-              <h3 className="text-lg font-black text-teal-950">{vendor.name}</h3>
+              <h3 className="text-lg font-black text-violet-950">{vendor.name}</h3>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
               <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
                 <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><ExternalLink className="w-3 h-3"/> {vendor.email || 'No email'}</p>
@@ -1214,14 +1214,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Unified Modal Shell */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-violet-950/40 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
-            <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
+            <div className="px-8 py-6 bg-violet-800 text-white flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black tracking-tight">
                   {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'edit_stock' ? 'Edit Stock Log' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
                 </h2>
-                <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">
+                <p className="text-violet-300 text-[10px] font-bold uppercase tracking-widest mt-1">
                   {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
                 </p>
               </div>
@@ -1260,7 +1260,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
           <div className="w-full max-w-xl rounded-none sm:rounded-2xl bg-white h-[100dvh] sm:h-auto sm:max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-5 bg-teal-900 text-white relative">
+            <div className="p-5 bg-violet-900 text-white relative">
               <div className="absolute top-6 right-16 flex items-center gap-2">
                 {canDo('inventory', 'edit') && (
                   <button onClick={() => { 
@@ -1281,7 +1281,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <button onClick={() => setSelectedStock(null)} className="absolute top-6 right-6 text-white/50 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5"/></button>
               <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-black uppercase tracking-widest text-white">{selectedStock.inventory_items?.category}</span>
               <h2 className="text-2xl font-black font-mono tracking-tighter mt-1">{selectedStock.inventory_items?.name}</h2>
-              <p className="text-xs font-bold text-teal-200 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
+              <p className="text-xs font-bold text-violet-200 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
             </div>
 
             {/* Content Scrollable */}
@@ -1290,7 +1290,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Available Balance</p>
-                  <p className="text-2xl font-black font-mono text-teal-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
+                  <p className="text-2xl font-black font-mono text-violet-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Expiry Date</p>
@@ -1370,7 +1370,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div className="flex gap-2">
                 {selectedStock.coa_url && (
                   <a href={selectedStock.coa_url} target="_blank" rel="noreferrer" className="flex-1 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                    <FileText className="w-4 h-4 text-teal-600"/> View CoA
+                    <FileText className="w-4 h-4 text-violet-600"/> View CoA
                   </a>
                 )}
                 {selectedStock.sds_url && (
@@ -1424,7 +1424,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       setIsModalOpen(true);
                       setSelectedStock(null);
                     }} 
-                    className="flex-[2] py-4 bg-teal-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-teal-900 transition-all text-center"
+                    className="flex-[2] py-4 bg-violet-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-violet-900 transition-all text-center"
                   >
                     Issue Stock Out
                   </button>

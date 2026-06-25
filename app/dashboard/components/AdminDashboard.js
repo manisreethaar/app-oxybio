@@ -171,20 +171,22 @@ export default function AdminDashboard({ employeeId }) {
   };
 
 
-  const StatCard = ({ title, value, icon: Icon, color, link, subtitle }) => (
-    <Link href={link} className="card p-6 flex flex-col justify-between hover:border-gray-300 transition-all duration-150 group">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3.5 rounded-xl border ${color}`}>
-          <Icon className="w-5 h-5" />
+  const StatCard = ({ title, value, icon: Icon, color, link, subtitle }) => {
+    // Extract text color from the generic color string (e.g., text-blue-600)
+    const textColor = color.match(/text-[a-z]+-\d+/)?.[0] || 'text-violet-600';
+    return (
+      <Link href={link} className="card p-6 flex flex-col justify-between hover:border-gray-300 transition-all duration-150 group">
+        <div className="flex items-start justify-between mb-2">
+          <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
+          <Icon className={`w-4 h-4 ${textColor} opacity-80`} />
         </div>
-        {subtitle && <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-1 rounded">{subtitle}</span>}
-      </div>
-      <div>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{title}</p>
-        <p className="text-3xl font-black text-gray-900 tracking-tight">{value}</p>
-      </div>
-    </Link>
-  );
+        <div className="flex items-baseline gap-2">
+          <p className={`text-4xl font-black ${textColor} tracking-tight`}>{value}</p>
+          {subtitle && <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{subtitle}</span>}
+        </div>
+      </Link>
+    );
+  };
 
   if (loading) return (
     <div className="space-y-8">
@@ -199,12 +201,12 @@ export default function AdminDashboard({ employeeId }) {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="surface p-6 flex justify-between items-center bg-gray-50/50">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <h2 className="text-lg font-bold text-gray-900 tracking-tight">Admin Controller</h2>
-          <p className="text-xs text-gray-500">Live Operational Overview — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h2 className="text-xl font-black text-gray-900 tracking-tight">Admin Controller</h2>
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Live Operational Overview — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button 
              onClick={async () => {
                 const res = await fetch('/api/reports/attendance');
@@ -219,12 +221,12 @@ export default function AdminDashboard({ employeeId }) {
                    a.remove();
                 } else { toast.error("Export failed."); }
              }}
-             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all"
+             className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-[11px] font-bold hover:bg-violet-700 shadow-sm transition-all uppercase tracking-wider"
           >
-            <Download className="w-4 h-4"/> Export Logs
+            <Download className="w-3.5 h-3.5"/> Export Logs
           </button>
-          <button onClick={() => setShowConfig(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all">
-            <Settings className="w-4 h-4"/> Safeguards
+          <button onClick={() => setShowConfig(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-[11px] font-bold text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all uppercase tracking-wider">
+            <Settings className="w-3.5 h-3.5"/> Safeguards
           </button>
         </div>
       </div>

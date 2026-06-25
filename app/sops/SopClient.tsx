@@ -304,7 +304,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               )}
               <div className="flex gap-2">
                 {['admin','ceo','cto'].includes(role) && (
-                  <button onClick={() => handleViewSignatures(sop.id)} className="p-1 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-md border border-transparent hover:border-teal-200 transition-colors" title="View Acknowledgements">
+                  <button onClick={() => handleViewSignatures(sop.id)} className="p-1 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-md border border-transparent hover:border-violet-200 transition-colors" title="View Acknowledgements">
                     <Users className="w-4 h-4" />
                   </button>
                 )}

@@ -105,7 +105,21 @@ export default function ClientLayout({ children }) {
   return (
     <ToastProvider>
       {/* Root canvas */}
-      <div className="min-h-screen flex relative overflow-x-hidden bg-slate-50">
+      <div className="min-h-screen flex relative overflow-x-hidden" style={{ background: '#F4F6F9' }}>
+
+        {/* Decorative background blobs */}
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <div style={{
+            position: 'absolute', top: '-20%', right: '-10%',
+            width: '600px', height: '600px', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 70%)',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '-15%', left: '5%',
+            width: '500px', height: '500px', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(168,85,247,0.04) 0%, transparent 70%)',
+          }} />
+        </div>
 
         {/* Sidebar */}
         <Sidebar />
@@ -148,7 +162,7 @@ export default function ClientLayout({ children }) {
           )}
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-8 pt-[84px] pb-[72px] md:pb-8 min-h-screen">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-8 pt-[76px] pb-[72px] md:pb-8 min-h-screen">
             {loading ? (
               <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pt-2">
                 <div className="flex justify-between items-center">
