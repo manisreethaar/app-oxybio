@@ -651,7 +651,7 @@ export default function TasksPage() {
                 <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] font-bold text-gray-400">
                   <div className="flex -space-x-1.5">
                     {group.assignees.slice(0, 3).map((a, i) => (
-                      <div key={i} className="w-5 h-5 rounded-full border border-white bg-teal-100 flex items-center justify-center text-[8px] text-teal-800 font-black shadow-sm" title={a.assigned_user?.full_name}>
+                      <div key={i} className="w-5 h-5 rounded-full border border-white bg-violet-100 flex items-center justify-center text-[8px] text-violet-800 font-black shadow-sm" title={a.assigned_user?.full_name}>
                         {a.assigned_user?.full_name?.[0]}
                       </div>
                     ))}

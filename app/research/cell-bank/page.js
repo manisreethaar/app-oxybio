@@ -18,7 +18,7 @@ const STATUS_COLOR = {
 const SOURCE_COLOR = {
   MTCC:     'bg-indigo-100 text-indigo-700',
   NCIM:     'bg-purple-100 text-purple-700',
-  Isolated: 'bg-teal-100 text-teal-700',
+  Isolated: 'bg-violet-100 text-violet-700',
   Other:    'bg-gray-100 text-gray-600',
 };
 

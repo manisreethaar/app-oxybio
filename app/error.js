@@ -55,7 +55,7 @@ export default function GlobalError({ error, reset }) {
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={handleReset}
-            className="w-full flex items-center justify-center py-3.5 bg-teal-800 text-white font-bold rounded-xl hover:bg-teal-900 transition-colors shadow-md active:scale-95"
+            className="w-full flex items-center justify-center py-3.5 bg-violet-800 text-white font-bold rounded-xl hover:bg-violet-900 transition-colors shadow-md active:scale-95"
           >
             <RefreshCcw className="w-4 h-4 mr-2" /> Quick Refresh
           </button>

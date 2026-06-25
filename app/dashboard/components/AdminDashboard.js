@@ -289,7 +289,7 @@ export default function AdminDashboard({ employeeId }) {
               {(() => {
                 const BATCH_STAGES = ['media_prep','sterilisation','inoculation','fermentation','qc_hold','released'];
                 const STAGE_LABEL  = { media_prep:'Media Prep', sterilisation:'Sterilisation', inoculation:'Inoculation', fermentation:'Fermentation', qc_hold:'QC Hold', released:'Released' };
-                const STAGE_COLOR  = { media_prep:'bg-indigo-100 text-indigo-700', sterilisation:'bg-blue-100 text-blue-700', inoculation:'bg-violet-100 text-violet-700', fermentation:'bg-teal-100 text-teal-700', qc_hold:'bg-rose-100 text-rose-700', released:'bg-emerald-100 text-emerald-700' };
+                const STAGE_COLOR  = { media_prep:'bg-indigo-100 text-indigo-700', sterilisation:'bg-blue-100 text-blue-700', inoculation:'bg-violet-100 text-violet-700', fermentation:'bg-violet-100 text-violet-700', qc_hold:'bg-rose-100 text-rose-700', released:'bg-emerald-100 text-emerald-700' };
                 return activeBatches.map(batch => {
                   const stageIdx = BATCH_STAGES.indexOf(batch.current_stage);
                   const progress = stageIdx >= 0 ? Math.round(((stageIdx + 1) / BATCH_STAGES.length) * 100) : 0;
@@ -461,7 +461,7 @@ export default function AdminDashboard({ employeeId }) {
                     <span className={`text-[9px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>{dev.severity}</span>
                   </Link>
                   {dev.batches && (
-                    <Link href={`/batches/${dev.batches.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white text-teal-700 text-[9px] font-black rounded border border-teal-100 hover:bg-teal-50 transition-colors">
+                    <Link href={`/batches/${dev.batches.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white text-violet-700 text-[9px] font-black rounded border border-violet-100 hover:bg-violet-50 transition-colors">
                       Batch {dev.batches.batch_id}
                     </Link>
                   )}

@@ -141,7 +141,7 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-3">
           <PushNotificationToggle />
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-sm font-semibold hover:bg-teal-100 transition-colors">
+            <button onClick={markAllRead} className="flex items-center gap-2 px-4 py-2 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg text-sm font-semibold hover:bg-violet-100 transition-colors">
               <Check className="w-4 h-4" /> Mark all read ({unreadCount})
             </button>
           )}
@@ -150,7 +150,7 @@ export default function NotificationsPage() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
+          <div className="w-10 h-10 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin"/>
         </div>
       ) : (
         <>
@@ -163,14 +163,14 @@ export default function NotificationsPage() {
                   <div
                     key={notif.id}
                     onClick={() => markRead(notif.id)}
-                    className={`rounded-2xl p-4 flex items-start gap-4 border cursor-pointer transition-all hover:shadow-sm ${notif.is_read ? 'bg-white border-gray-100 opacity-70' : 'bg-teal-50/60 border-teal-200 shadow-sm'}`}
+                    className={`rounded-2xl p-4 flex items-start gap-4 border cursor-pointer transition-all hover:shadow-sm ${notif.is_read ? 'bg-white border-gray-100 opacity-70' : 'bg-violet-50/60 border-violet-200 shadow-sm'}`}
                   >
-                    <div className={`p-2 rounded-xl border shrink-0 mt-0.5 ${notif.is_read ? 'bg-gray-100 border-gray-200 text-gray-400' : 'bg-teal-100 border-teal-200 text-teal-600'}`}>
+                    <div className={`p-2 rounded-xl border shrink-0 mt-0.5 ${notif.is_read ? 'bg-gray-100 border-gray-200 text-gray-400' : 'bg-violet-100 border-violet-200 text-violet-600'}`}>
                       <Bell className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        {!notif.is_read && <span className="w-2 h-2 bg-teal-500 rounded-full shrink-0"/>}
+                        {!notif.is_read && <span className="w-2 h-2 bg-violet-500 rounded-full shrink-0"/>}
                         <h3 className="text-sm font-bold text-slate-800 truncate">{notif.title}</h3>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed">{notif.message}</p>
@@ -179,7 +179,7 @@ export default function NotificationsPage() {
                       </p>
                     </div>
                     {notif.link && (
-                      <Link href={notif.link} onClick={e => e.stopPropagation()} className="text-teal-600 hover:text-teal-800 shrink-0 mt-1">
+                      <Link href={notif.link} onClick={e => e.stopPropagation()} className="text-violet-600 hover:text-violet-800 shrink-0 mt-1">
                         <ChevronRight className="w-5 h-5" />
                       </Link>
                     )}
@@ -197,7 +197,7 @@ export default function NotificationsPage() {
                 {alerts.map(alert => {
                   const Icon = alert.icon;
                   return (
-                    <Link href={alert.url} key={alert.id} className="block w-full glass-card rounded-2xl p-5 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all outline-none focus:ring-2 focus:ring-teal-500">
+                    <Link href={alert.url} key={alert.id} className="block w-full glass-card rounded-2xl p-5 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all outline-none focus:ring-2 focus:ring-violet-500">
                       <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-xl border ${alert.color}`}>
                           <Icon className="w-6 h-6" />
@@ -228,7 +228,7 @@ export default function NotificationsPage() {
           {/* ── Empty state ── */}
           {directNotifs.length === 0 && alerts.length === 0 && (
             <div className="glass-card rounded-[2rem] p-12 text-center flex flex-col items-center justify-center min-h-[50vh]">
-              <div className="w-24 h-24 bg-teal-50 rounded-full flex flex-col items-center justify-center mb-6 border border-teal-100 shadow-sm relative text-teal-600">
+              <div className="w-24 h-24 bg-violet-50 rounded-full flex flex-col items-center justify-center mb-6 border border-violet-100 shadow-sm relative text-violet-600">
                 <BellRing className="w-10 h-10 mb-1" />
                 <span className="absolute top-4 right-4 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
               </div>

@@ -66,8 +66,8 @@ function ChangeCard({ change, onAction, isAdmin }) {
       {/* Header row */}
       <div className="flex items-start gap-4 p-5">
         {/* Requester avatar */}
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0 flex items-center justify-center">
-          <span className="text-teal-700 font-black text-sm">{change.requester?.initials || '??'}</span>
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-cyan-100 border border-white shadow-sm shrink-0 flex items-center justify-center">
+          <span className="text-violet-700 font-black text-sm">{change.requester?.initials || '??'}</span>
         </div>
 
         <div className="flex-1 min-w-0">
@@ -182,7 +182,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
                   <button
                     onClick={() => submit('approve')}
                     disabled={loading}
-                    className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-black text-sm rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-all shadow-sm disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-emerald-500 to-violet-600 text-white font-black text-sm rounded-xl hover:from-emerald-400 hover:to-violet-500 transition-all shadow-sm disabled:opacity-50"
                   >
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                     Approve {isDelete ? 'Deletion' : 'Edit'}
@@ -257,7 +257,7 @@ export default function ApprovalsPage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -284,7 +284,7 @@ export default function ApprovalsPage() {
         </div>
         <button
           onClick={() => fetchChanges(tab)}
-          className="p-2.5 rounded-xl bg-white/60 border border-white hover:bg-white transition-all text-slate-400 hover:text-teal-600"
+          className="p-2.5 rounded-xl bg-white/60 border border-white hover:bg-white transition-all text-slate-400 hover:text-violet-600"
           title="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
@@ -315,7 +315,7 @@ export default function ApprovalsPage() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
         </div>
       ) : changes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3 glass-card rounded-2xl">

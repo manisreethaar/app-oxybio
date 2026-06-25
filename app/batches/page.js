@@ -933,9 +933,9 @@ export default function BatchesPage() {
                       </div>
                       {errors.formulation_id && <p className="text-xs text-red-600 mt-1 font-semibold">{errors.formulation_id.message}</p>}
                       {batchIdPreview && (
-                        <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-100 rounded-lg">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-teal-500">Batch ID will be</span>
-                          <span className="font-black font-mono text-teal-800 text-sm tracking-tight">{batchIdPreview}</span>
+                        <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-violet-50 border border-violet-100 rounded-lg">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-violet-500">Batch ID will be</span>
+                          <span className="font-black font-mono text-violet-800 text-sm tracking-tight">{batchIdPreview}</span>
                         </div>
                       )}
                     </div>

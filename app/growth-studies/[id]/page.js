@@ -43,7 +43,7 @@ function elapsedHours(inocTime) {
 function StatusBadge({ status }) {
   const map = {
     setup: 'bg-slate-100 text-slate-600 border-slate-200',
-    active: 'bg-teal-50 text-teal-700 border-teal-200',
+    active: 'bg-violet-50 text-violet-700 border-violet-200',
     completed: 'bg-blue-50 text-blue-700 border-blue-200',
     analysed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
@@ -338,7 +338,7 @@ export default function GrowthStudyDetailPage() {
     load();
   };
 
-  const InputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500';
+  const InputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500';
   const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1';
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading study…</div>;
@@ -434,7 +434,7 @@ export default function GrowthStudyDetailPage() {
               </span>
             )}
             {isActive && (
-              <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded-full border border-teal-100">
+              <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-1 rounded-full border border-violet-100">
                 T + {elapsed.toFixed(1)}h elapsed
               </span>
             )}
@@ -447,7 +447,7 @@ export default function GrowthStudyDetailPage() {
         <div className="flex items-center gap-3 shrink-0">
           {study.status === 'setup' && (
             <button onClick={openStartModal} disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-xl text-sm disabled:opacity-50"
             >
               <Play className="w-4 h-4" /> Start Study
             </button>
@@ -468,7 +468,7 @@ export default function GrowthStudyDetailPage() {
           )}
           {isActive && (
             <button onClick={() => openMeasurementModal(nextTp)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-black rounded-xl text-sm"
             >
               <FlaskConical className="w-4 h-4" /> Record Sample
             </button>
@@ -498,7 +498,7 @@ export default function GrowthStudyDetailPage() {
           </h3>
           {canEdit && (
             <button onClick={() => openEditModal(study)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-teal-700 border border-slate-200 hover:border-teal-400 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-violet-700 border border-slate-200 hover:border-violet-400 rounded-xl transition-colors"
             >
               <Pencil className="w-3 h-3" /> Edit
             </button>
@@ -561,11 +561,11 @@ export default function GrowthStudyDetailPage() {
         <div className="lg:col-span-1 space-y-4">
           <div className="glass-card rounded-2xl p-5">
             <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-teal-600" /> Sampling Timeline
+              <Clock className="w-4 h-4 text-violet-600" /> Sampling Timeline
               <span className="ml-auto text-slate-400 font-bold text-xs">{tpDone}/{time_points.length}</span>
             </h3>
             <div className="h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden">
-              <div className="h-full bg-teal-500 rounded-full" style={{ width: `${time_points.length ? (tpDone / time_points.length) * 100 : 0}%` }} />
+              <div className="h-full bg-violet-500 rounded-full" style={{ width: `${time_points.length ? (tpDone / time_points.length) * 100 : 0}%` }} />
             </div>
 
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -576,13 +576,13 @@ export default function GrowthStudyDetailPage() {
                 const isOverdue = isActive && tp.status === 'pending' && tp.planned_hour < elapsed - 0.25;
 
                 return (
-                  <div key={tp.id} className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isNext ? 'bg-teal-50 border border-teal-200' : isOverdue ? 'bg-red-50 border border-red-100' : 'bg-white/50 border border-white'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${isDone ? 'bg-teal-500' : isMissed ? 'bg-slate-300' : isOverdue ? 'bg-red-400' : isNext ? 'bg-teal-200' : 'bg-slate-100'}`}>
+                  <div key={tp.id} className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isNext ? 'bg-violet-50 border border-violet-200' : isOverdue ? 'bg-red-50 border border-red-100' : 'bg-white/50 border border-white'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${isDone ? 'bg-violet-500' : isMissed ? 'bg-slate-300' : isOverdue ? 'bg-red-400' : isNext ? 'bg-violet-200' : 'bg-slate-100'}`}>
                       {isDone ? '✓' : isMissed ? '—' : tp.planned_hour}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className={`text-xs font-black ${isDone ? 'text-teal-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
+                        <p className={`text-xs font-black ${isDone ? 'text-violet-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
                           T + {tp.planned_hour}h
                         </p>
                         {/* 2A: Inline overdue badge */}
@@ -600,7 +600,7 @@ export default function GrowthStudyDetailPage() {
                           if (tp.sample_types.includes('od_ph') || tp.sample_types.includes('biochemistry')) openMeasurementModal(tp);
                           else openPlateModal(tp);
                         }}
-                        className="text-[10px] font-black text-teal-600 hover:text-teal-800 shrink-0"
+                        className="text-[10px] font-black text-violet-600 hover:text-violet-800 shrink-0"
                       >
                         Record
                       </button>
@@ -622,7 +622,7 @@ export default function GrowthStudyDetailPage() {
                   <div key={obs.id} className="bg-white/60 border border-white rounded-xl p-3">
                     <div className="flex justify-between items-start">
                       <span className="text-xs font-black text-slate-700">T+{obs.time_point_hours}h — {obs.observation_type === 'sterility' ? 'Sterility' : 'Colony Count'}</span>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-violet-50 text-violet-600 border-violet-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
                         {obs.result || 'pending'}
                       </span>
                     </div>
@@ -638,7 +638,7 @@ export default function GrowthStudyDetailPage() {
 
           {isActive && (
             <button onClick={() => openPlateModal(null)}
-              className="w-full py-2.5 border-2 border-dashed border-slate-200 hover:border-teal-400 text-slate-500 hover:text-teal-600 text-xs font-black rounded-2xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 border-2 border-dashed border-slate-200 hover:border-violet-400 text-slate-500 hover:text-violet-600 text-xs font-black rounded-2xl transition-colors flex items-center justify-center gap-2"
             >
               <Microscope className="w-3.5 h-3.5" /> Add Plate Observation
             </button>
@@ -687,7 +687,7 @@ export default function GrowthStudyDetailPage() {
           <div className="glass-card rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-teal-600" /> Growth Curve
+                <BarChart2 className="w-4 h-4 text-violet-600" /> Growth Curve
               </h3>
               <div className="flex gap-2 flex-wrap">
                 {availableLines.map(l => (
@@ -713,7 +713,7 @@ export default function GrowthStudyDetailPage() {
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: 'µmax (h⁻¹)', value: kinetics.muMax, desc: 'Max specific growth rate', color: 'teal' },
+                  { label: 'µmax (h⁻¹)', value: kinetics.muMax, desc: 'Max specific growth rate', color: 'violet' },
                   { label: 'Doubling Time', value: `${kinetics.doublingTime} h`, desc: 'Td = ln2 / µmax', color: 'indigo' },
                   { label: 'Generation Time', value: `${kinetics.generationTime} h`, desc: 'G = Td (bacteria)', color: 'violet' },
                   { label: 'Peak OD', value: kinetics.peakOD, desc: `OD${study.od_wavelength || 600} maximum`, color: 'emerald' },
@@ -772,7 +772,7 @@ export default function GrowthStudyDetailPage() {
           {comparisonStudies.length > 0 && (
             <div className="glass-card rounded-2xl p-6">
               <h3 className="font-black text-slate-800 text-sm mb-4">
-                Strain Comparison — Other studies with <span className="text-teal-700">{isolateName}</span>
+                Strain Comparison — Other studies with <span className="text-violet-700">{isolateName}</span>
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
@@ -788,7 +788,7 @@ export default function GrowthStudyDetailPage() {
                       <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                         <td className="py-2 pr-4 font-bold text-slate-800">{s.study_code || s.name}</td>
                         <td className="py-2 pr-4">
-                          <span className={`px-1.5 py-0.5 text-[9px] font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`px-1.5 py-0.5 text-[9px] font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500'}`}>
                             {s.status}
                           </span>
                         </td>
@@ -796,7 +796,7 @@ export default function GrowthStudyDetailPage() {
                         <td className="py-2 pr-4 text-slate-500">{s.temperature_c ? `${s.temperature_c}°C` : '—'}</td>
                         <td className="py-2 pr-4 text-slate-400">{s.created_at ? new Date(s.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '—'}</td>
                         <td className="py-2">
-                          <a href={`/growth-studies/${s.id}`} className="text-[9px] font-black text-teal-600 hover:underline">View →</a>
+                          <a href={`/growth-studies/${s.id}`} className="text-[9px] font-black text-violet-600 hover:underline">View →</a>
                         </td>
                       </tr>
                     ))}
@@ -842,7 +842,7 @@ export default function GrowthStudyDetailPage() {
                   <tbody>
                     {measurements.map(m => (
                       <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                        <td className="py-2 pr-4 font-black text-teal-700">T+{m.actual_hour}h</td>
+                        <td className="py-2 pr-4 font-black text-violet-700">T+{m.actual_hour}h</td>
                         <td className="py-2 pr-4">{m.od_value ?? '—'}</td>
                         <td className="py-2 pr-4">{m.ph_value ?? '—'}</td>
                         <td className="py-2 pr-4">{m.temperature_actual_c ?? '—'}</td>
@@ -922,7 +922,7 @@ export default function GrowthStudyDetailPage() {
                   key={key}
                   onClick={() => { setModalTab(key); setModalErr(''); }}
                   className={`flex-1 py-3 text-xs font-black transition-colors border-b-2 ${
-                    modalTab === key ? 'border-teal-600 text-teal-700 bg-teal-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'
+                    modalTab === key ? 'border-violet-600 text-violet-700 bg-violet-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {label}
@@ -953,7 +953,7 @@ export default function GrowthStudyDetailPage() {
                     </div>
                   </div>
                   <details className="group">
-                    <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-teal-600 transition-colors list-none flex items-center gap-1">
+                    <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-violet-600 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span> More fields
                     </summary>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1076,7 +1076,7 @@ export default function GrowthStudyDetailPage() {
                 <button
                   onClick={() => modalTab === 'measurement' ? saveMeasurement() : savePlate()}
                   disabled={modalSaving || (modalTab === 'measurement' && !mForm.actual_hour) || (modalTab === 'plate' && !pForm.time_point_hours)}
-                  className="flex-1 py-3 bg-teal-700 text-white font-black rounded-2xl text-sm hover:bg-teal-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-violet-700 text-white font-black rounded-2xl text-sm hover:bg-violet-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
                 </button>
@@ -1105,8 +1105,8 @@ export default function GrowthStudyDetailPage() {
               ) : (
                 <>
                   {/* Study identity */}
-                  <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
-                    <p className="text-[10px] font-black text-teal-500 uppercase tracking-wider mb-1">Study</p>
+                  <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-violet-500 uppercase tracking-wider mb-1">Study</p>
                     <p className="font-black text-slate-800">{study.name}</p>
                     {study.study_code && <p className="text-xs font-mono text-slate-500 mt-0.5">{study.study_code}</p>}
                   </div>
@@ -1121,7 +1121,7 @@ export default function GrowthStudyDetailPage() {
                           <p className="text-sm font-black text-violet-800 font-mono">{startInfo.vial.vial_code}</p>
                           <p className="text-xs text-violet-500">{startInfo.vial.storage_temp || ''}{startInfo.vial.freezer_id ? ` · ${startInfo.vial.freezer_id}` : ''}</p>
                         </div>
-                        <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded border bg-teal-50 text-teal-700 border-teal-200">→ Will be marked Used</span>
+                        <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded border bg-violet-50 text-violet-700 border-violet-200">→ Will be marked Used</span>
                       </div>
                     </div>
                   ) : startInfo?.has_vial && !startInfo?.vial ? (
@@ -1187,7 +1187,7 @@ export default function GrowthStudyDetailPage() {
                     </label>
                     <input
                       type="datetime-local"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                       value={actualInocTime}
                       max={nowDatetimeLocal()}
                       onChange={e => setActualInocTime(e.target.value)}
@@ -1204,7 +1204,7 @@ export default function GrowthStudyDetailPage() {
                       Cancel
                     </button>
                     <button onClick={confirmStart} disabled={actionLoading}
-                      className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Play className="w-4 h-4" /> Confirm & Start</>}
                     </button>
@@ -1345,7 +1345,7 @@ export default function GrowthStudyDetailPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {STUDY_TYPES.map(v => (
                         <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
-                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
+                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-500'}`}
                         >{v.replace(/_/g,' ')}</button>
                       ))}
                     </div>
@@ -1384,7 +1384,7 @@ export default function GrowthStudyDetailPage() {
                       </select>
                       {editForm.cell_bank_preparation_id && (
                         <div>
-                          <label className={LabelCls}>Vial <span className="text-teal-600 normal-case font-medium">(link or change)</span></label>
+                          <label className={LabelCls}>Vial <span className="text-violet-600 normal-case font-medium">(link or change)</span></label>
                           <select className={InputCls} value={editForm.vial_id} onChange={e => setEditForm(f => ({ ...f, vial_id: e.target.value }))}>
                             <option value="">No vial linked</option>
                             {editMeta.vials.map(v => (
@@ -1475,7 +1475,7 @@ export default function GrowthStudyDetailPage() {
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                   <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
-                    className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
                   </button>
