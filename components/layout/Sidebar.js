@@ -7,7 +7,7 @@ import {
   BookOpen, Users, LogOut, UserCircle, Contact, Menu, X,
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
   Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle,
-  Wind, Wifi, ArrowRight
+  Wind, Wifi, ArrowRight, PieChart
 } from 'lucide-react';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -59,6 +59,7 @@ export default function Sidebar() {
       title: 'OVERVIEW',
       items: [
         { name: 'Dashboard',     href: '/dashboard', icon: LayoutDashboard, show: effectiveCanDo('dashboard', 'view') },
+        { name: 'Analytics Hub', href: '/analytics', icon: PieChart,        show: ['admin', 'ceo', 'cto'].includes(effectiveRole) || employeeProfile?.department === 'RnD' },
         { name: 'Messages',      href: '/messages',  icon: MessageSquare,   show: true, badge: globalUnreadMessages },
         { name: 'Activity Feed', href: '/activity',  icon: Activity,        show: effectiveCanDo('activity', 'view') },
         { name: 'My Tasks',      href: '/tasks',     icon: CheckSquare,     show: effectiveCanDo('tasks', 'view') },
@@ -132,21 +133,23 @@ export default function Sidebar() {
         <Link
           href={item.href}
           className={clsx(
-            "flex items-center px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-150",
+            "flex items-center px-4 py-3 mx-2 my-1 text-sm font-bold rounded-[1.25rem] transition-all duration-300 relative overflow-hidden group/item",
             isActive
-              ? "text-navy bg-blue-50/80 shadow-sm border border-blue-100/50"
-              : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-transparent"
+              ? "text-zinc-900 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/50"
+              : "text-zinc-500 hover:bg-white/50 hover:text-zinc-800 border border-transparent"
           )}
+          title={item.name}
         >
-          <div className="flex items-center flex-1">
-            <Icon className={clsx("w-5 h-5 mr-3 transition-colors", isActive ? "text-navy stroke-[2.5px]" : "text-gray-400")} />
-            {item.name}
+          <div className="flex items-center flex-1 min-w-0 relative z-10">
+            <Icon className={clsx("w-5 h-5 shrink-0 transition-colors", isActive ? "text-accent stroke-[2.5px]" : "text-zinc-400 group-hover/item:text-accent")} />
+            <span className="ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap -translate-x-2 group-hover:translate-x-0">{item.name}</span>
           </div>
           {item.badge > 0 && (
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-2">
+            <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
               {item.badge > 99 ? '99+' : item.badge}
             </span>
           )}
+          {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full opacity-100 transition-all duration-300" />}
         </Link>
       </li>
     );
@@ -154,25 +157,25 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white h-full border-r border-gray-200 relative z-20">
-        <div className="p-8 flex items-center space-x-3 border-b border-gray-100">
-          <div className="w-10 h-10 rounded-xl bg-navy text-white font-bold flex items-center justify-center shadow-sm">
+      {/* Desktop Floating Dock Sidebar */}
+      <aside className="hidden md:flex flex-col fixed left-4 top-4 bottom-4 w-[76px] hover:w-[280px] glass-card z-50 transition-all duration-500 overflow-hidden group">
+        <div className="p-4 flex items-center space-x-3 border-b border-zinc-200/50 shrink-0">
+          <div className="w-10 h-10 rounded-[1.25rem] bg-gradient-to-br from-zinc-800 to-zinc-950 text-white font-bold flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.15)] shrink-0">
             O₂
           </div>
-          <span className="text-2xl font-black tracking-tighter text-gray-900">OxyOS</span>
+          <span className="text-xl font-black tracking-tighter text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap ml-1">OxyOS</span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto py-6 custom-scrollbar overflow-x-hidden">
           {menuSections.map((section, idx) => {
             const visibleItems = section.items.filter(i => i.show);
             if (visibleItems.length === 0) return null;
             return (
-              <div key={idx} className="mb-8">
-                <h3 className="px-8 text-[11px] font-black text-slate-400 tracking-[0.2em] mb-3 uppercase">
+              <div key={idx} className="mb-6">
+                <h3 className="px-5 text-[10px] font-black text-zinc-400 tracking-[0.2em] mb-2 uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                   {section.title}
                 </h3>
-                <ul className="space-y-1.5 px-3">
+                <ul className="space-y-1">
                   {visibleItems.map(renderNavItem)}
                 </ul>
               </div>
@@ -180,13 +183,14 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-zinc-200/50 shrink-0">
           <button
             onClick={signOut}
-            className="w-full flex items-center px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-150 group"
+            className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-500 hover:bg-white rounded-[1.25rem] transition-all duration-300 hover:shadow-soft"
+            title="Sign Out"
           >
-            <LogOut className="w-5 h-5 mr-3 text-red-400 group-hover:text-red-600 transition-colors" />
-            Sign Out
+            <LogOut className="w-5 h-5 shrink-0 text-red-400 transition-colors" />
+            <span className="ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap -translate-x-2 group-hover:translate-x-0">Sign Out</span>
           </button>
         </div>
       </aside>

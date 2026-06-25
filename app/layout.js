@@ -1,12 +1,12 @@
-import localFont from "next/font/local";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ClientLayout from "@/components/layout/ClientLayout";
 import Script from "next/script";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
   display: "swap",
 });
 
@@ -83,7 +83,7 @@ export default async function RootLayout({ children }) {
         }}
       />
       {/* No manual <head> needed — Next.js generates viewport meta from the export above */}
-      <body className={geistSans.className}>
+      <body className={jakarta.className}>
         <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>

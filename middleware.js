@@ -46,6 +46,17 @@ export async function middleware(request) {
   const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
   const isAuthRoute  = pathname === '/login';
 
+  // --- DEV AUTH OVERRIDE ---
+  if (process.env.NODE_ENV === 'development') {
+    if (pathname === '/' || isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+  // -------------------------
+
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
