@@ -96,7 +96,7 @@ export default function GrowthStudyReportPage() {
       {/* Report header */}
       <div className="mb-10 border-b-2 border-slate-800 pb-6">
         <div className="flex items-center gap-3 mb-2">
-          <FlaskConical className="w-7 h-7 text-teal-600 print:hidden" />
+          <FlaskConical className="w-7 h-7 text-violet-600 print:hidden" />
           <span className="text-xs font-black text-slate-400 uppercase tracking-widest">OxyOS Research Module</span>
         </div>
         <h1 className="text-3xl font-black text-slate-900 print:text-2xl">{study.name}</h1>
@@ -176,7 +176,7 @@ export default function GrowthStudyReportPage() {
               { label: 'Log Phase', value: growthParams.logStart != null ? `T+${growthParams.logStart}h → T+${growthParams.logEnd}h` : '—' },
             ].map(k => (
               <div key={k.label} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
-                <p className="text-xl font-black text-teal-700">{k.value}</p>
+                <p className="text-xl font-black text-violet-700">{k.value}</p>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-1">{k.label}</p>
               </div>
             ))}
@@ -202,7 +202,7 @@ export default function GrowthStudyReportPage() {
               <tbody>
                 {measurements.map((m, i) => (
                   <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                    <td className="border border-slate-100 px-3 py-1.5 font-black text-teal-700">T+{m.actual_hour}h</td>
+                    <td className="border border-slate-100 px-3 py-1.5 font-black text-violet-700">T+{m.actual_hour}h</td>
                     <td className="border border-slate-100 px-3 py-1.5">{m.od_value ?? '—'}</td>
                     <td className="border border-slate-100 px-3 py-1.5">{m.ph_value ?? '—'}</td>
                     <td className="border border-slate-100 px-3 py-1.5">{m.temperature_actual_c ?? '—'}</td>
@@ -241,7 +241,7 @@ export default function GrowthStudyReportPage() {
                   <td className="border border-slate-100 px-3 py-1.5">{obs.colony_count ?? '—'}</td>
                   <td className="border border-slate-100 px-3 py-1.5 max-w-[140px]">{obs.colony_morphology ?? '—'}</td>
                   <td className="border border-slate-100 px-3 py-1.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${obs.result === 'sterile' ? 'bg-emerald-100 text-emerald-700' : obs.result === 'contaminated' ? 'bg-red-100 text-red-700' : 'bg-teal-100 text-teal-700'}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${obs.result === 'sterile' ? 'bg-emerald-100 text-emerald-700' : obs.result === 'contaminated' ? 'bg-red-100 text-red-700' : 'bg-violet-100 text-violet-700'}`}>
                       {obs.result ?? 'pending'}
                     </span>
                   </td>

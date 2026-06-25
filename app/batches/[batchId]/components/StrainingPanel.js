@@ -378,8 +378,8 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         </div>
 
         {/* A-29: Cell wash step */}
-        <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-teal-900">Cell Wash Steps <span className="text-teal-400 text-[10px]">(A-29)</span></p>
+        <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-violet-900">Cell Wash Steps <span className="text-violet-400 text-[10px]">(A-29)</span></p>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="field-label">Number of Washes</label><input type="number" min="0" max="5" value={washSteps} onChange={e=>setWashSteps(e.target.value)} className="field-input" placeholder="0"/></div>
             <div><label className="field-label">Wash Buffer</label><input value={washBuffer} onChange={e=>setWashBuffer(e.target.value)} className="field-input" placeholder="e.g. 0.9% saline"/></div>

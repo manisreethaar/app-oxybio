@@ -163,7 +163,7 @@ export default function DocumentsPage() {
           <p className="text-gray-500 mt-1">Secure repository and official lab protocols.</p>
         </div>
         {activeTab === 'vault' && canDo('documents', 'upload') && (
-          <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-teal-800 text-white font-medium rounded-lg hover:bg-teal-900 transition-colors shadow-sm">
+          <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-violet-800 text-white font-medium rounded-lg hover:bg-violet-900 transition-colors shadow-sm">
             <Plus className="w-5 h-5 mr-1" /> Upload Document
           </button>
         )}
@@ -173,7 +173,7 @@ export default function DocumentsPage() {
         <button
           onClick={() => setActiveTab('vault')}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'vault' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'
+            activeTab === 'vault' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
         >
           <FileText className="w-4 h-4" /> Document Vault
@@ -181,7 +181,7 @@ export default function DocumentsPage() {
         <button
           onClick={() => setActiveTab('sops')}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'sops' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'
+            activeTab === 'sops' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
         >
           <BookOpen className="w-4 h-4" /> SOPs & Protocols
@@ -199,7 +199,7 @@ export default function DocumentsPage() {
                   {categories.map(c => (
                     <button
                       key={c} onClick={() => setCategory(c)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${category === c ? 'bg-teal-50 text-teal-800' : 'text-gray-600 hover:bg-gray-50'}`}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${category === c ? 'bg-violet-50 text-violet-800' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                       {c}
                     </button>
@@ -210,7 +210,7 @@ export default function DocumentsPage() {
                   <input 
                     type="text" placeholder="Search documents..." value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" 
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all" 
                   />
                 </div>
               </div>
@@ -227,7 +227,7 @@ export default function DocumentsPage() {
                     const warning = getExpiryWarning(doc.expiry_date);
                     return (
                       <div key={doc.id} className="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col shadow-sm transition-shadow hover:shadow-md relative overflow-hidden group">
-                        <div className={`absolute top-0 right-0 w-2 h-full ${doc.access_level === 'admin-only' ? 'bg-amber-400' : 'bg-teal-500'}`}></div>
+                        <div className={`absolute top-0 right-0 w-2 h-full ${doc.access_level === 'admin-only' ? 'bg-amber-400' : 'bg-violet-500'}`}></div>
                         <div className="flex justify-between items-start mb-4">
                           <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-wider bg-gray-100 text-gray-600 uppercase border border-gray-200">{doc.category}</span>
                           {warning && (
@@ -236,12 +236,12 @@ export default function DocumentsPage() {
                             </span>
                           )}
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-teal-800 transition-colors line-clamp-2">{doc.title}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-violet-800 transition-colors line-clamp-2">{doc.title}</h3>
                         <div className="text-sm text-gray-500 space-y-1 mb-6 mt-2 flex-1">
                           <p>Version <span className="font-semibold text-gray-700">{doc.version || '1.0'}</span></p>
                           <p>Effective: {doc.effective_date ? new Date(doc.effective_date).toLocaleDateString() : 'N/A'}</p>
                           <div className="flex items-center gap-1.5 mt-2">
-                            <span className="text-[10px] text-teal-600 font-bold uppercase tracking-wider">Uploaded By:</span>
+                            <span className="text-[10px] text-violet-600 font-bold uppercase tracking-wider">Uploaded By:</span>
                             {doc.employees && (
                               <CreatorBadge initials={doc.employees.initials} fullName={doc.employees.full_name} />
                             )}
@@ -252,7 +252,7 @@ export default function DocumentsPage() {
                           <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>
                           <div className="flex gap-2">
                             {doc.file_url ? (
-                              <button onClick={() => setViewerDoc({url: doc.file_url, title: doc.title})} className="flex items-center justify-center w-10 h-10 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 hover:text-teal-900 transition-colors" title="Secure View Document">
+                              <button onClick={() => setViewerDoc({url: doc.file_url, title: doc.title})} className="flex items-center justify-center w-10 h-10 bg-violet-50 text-violet-700 rounded-full hover:bg-violet-100 hover:text-violet-900 transition-colors" title="Secure View Document">
                                 <BookOpen className="w-5 h-5" />
                               </button>
                             ) : (
@@ -287,33 +287,33 @@ export default function DocumentsPage() {
             <form onSubmit={handleSubmit(handleUploadSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
-                <input type="text" {...register('title')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Q3 Financial Report" />
+                <input type="text" {...register('title')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-violet-500 outline-none" placeholder="e.g. Q3 Financial Report" />
                 {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select {...register('category')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                  <select {...register('category')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-violet-500 outline-none bg-white">
                     {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
-                  <input type="text" {...register('version')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="1.0" />
+                  <input type="text" {...register('version')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-violet-500 outline-none" placeholder="1.0" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
-                <select {...register('access_level')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                <select {...register('access_level')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-violet-500 outline-none bg-white">
                   <option value="all-staff">Public (All Staff)</option>
                   <option value="admin-only">Confidential (Admin Only)</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Document File</label>
-                <input type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" {...register('file')} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none bg-gray-50 text-sm" />
+                <input type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" {...register('file')} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-violet-500 outline-none bg-gray-50 text-sm" />
               </div>
-              <button disabled={uploading} type="submit" className="w-full bg-teal-800 text-white font-bold py-3 mt-4 rounded-xl hover:bg-teal-900 transition-colors disabled:opacity-50">
+              <button disabled={uploading} type="submit" className="w-full bg-violet-800 text-white font-bold py-3 mt-4 rounded-xl hover:bg-violet-900 transition-colors disabled:opacity-50">
                 {uploading ? 'Uploading securely...' : 'Upload & Commit to Vault'}
               </button>
             </form>

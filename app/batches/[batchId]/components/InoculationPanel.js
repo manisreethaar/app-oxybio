@@ -384,15 +384,15 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         </div>
 
         {/* A-26: Inoculum viability at point of use */}
-        <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-teal-900">Inoculum Viability at Point of Use <span className="text-teal-500 font-semibold text-[10px]">(A-26)</span></p>
+        <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-violet-900">Inoculum Viability at Point of Use <span className="text-violet-500 font-semibold text-[10px]">(A-26)</span></p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="field-label text-teal-800">Viability (%)</label>
+              <label className="field-label text-violet-800">Viability (%)</label>
               <input type="number" step="0.1" min="0" max="100" value={inoculumViabilityPct} onChange={e=>setInoculumViabilityPct(e.target.value)} className="field-input" placeholder="e.g. 92"/>
             </div>
             <div>
-              <label className="field-label text-teal-800">Method</label>
+              <label className="field-label text-violet-800">Method</label>
               <select value={inoculumViabilityMethod} onChange={e=>setInoculumViabilityMethod(e.target.value)} className="field-input bg-white text-xs">
                 {['Not checked','Methylene Blue','Live/Dead stain','Plate count','OD reading'].map(m=><option key={m}>{m}</option>)}
               </select>

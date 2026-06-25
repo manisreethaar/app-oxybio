@@ -487,18 +487,18 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
 const STAGE_META = [
   { key: 'preparation',    label: 'Cell Bank Preparation', color: 'emerald', perFlask: false },
   { key: 'strain_source',  label: 'Strain Source',         color: 'emerald', perFlask: false },
-  { key: 'broth_culture_1', label: 'Broth Culture #1',     color: 'teal',    perFlask: false },
+  { key: 'broth_culture_1', label: 'Broth Culture #1',     color: 'violet',    perFlask: false },
   { key: 'colony_pick',    label: 'Colony Pick',           color: 'indigo',  perFlask: false },
-  { key: 'broth_culture_2', label: 'Broth Culture #2',     color: 'teal',    perFlask: false },
+  { key: 'broth_culture_2', label: 'Broth Culture #2',     color: 'violet',    perFlask: false },
   { key: 'glycerol_stock', label: 'Glycerol Stock',        color: 'blue',    perFlask: false },
   { key: 'vial_storage',   label: 'Vial Registration',     color: 'blue',    perFlask: false },
   { key: 'completion',     label: 'Preparation Completion', color: 'emerald', perFlask: false },
   { key: 'media_prep',    label: 'Media Preparation',      color: 'amber',   perFlask: false },
   { key: 'sterilisation', label: 'Sterilisation',           color: 'blue',    perFlask: false },
   { key: 'inoculation',   label: 'Inoculation',             color: 'indigo',  perFlask: true  },
-  { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'teal',    perFlask: true  },
+  { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'violet',    perFlask: true  },
   { key: 'qc',            label: 'QC Hold',                 color: 'emerald', perFlask: true  },
-  { key: 'plating',       label: 'Plating Results',         color: 'teal',    perFlask: true  },
+  { key: 'plating',       label: 'Plating Results',         color: 'violet',    perFlask: true  },
   { key: 'sample_incubation', label: 'Sample Incubation',    color: 'blue',    perFlask: true  },
 ];
 
@@ -588,10 +588,10 @@ function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
     amber:   'bg-amber-50  border-amber-100  text-amber-700',
     blue:    'bg-blue-50   border-blue-100   text-blue-700',
     indigo:  'bg-indigo-50 border-indigo-100 text-indigo-700',
-    teal:    'bg-teal-50   border-teal-100   text-teal-700',
+    violet:    'bg-violet-50   border-violet-100   text-violet-700',
     emerald: 'bg-emerald-50 border-emerald-100 text-emerald-700',
   };
-  const headerClass = colorMap[colorKey] || colorMap.teal;
+  const headerClass = colorMap[colorKey] || colorMap.violet;
   const syncDate = perFlask
     ? Object.values(data)[0]?.synced_at
     : data.synced_at;

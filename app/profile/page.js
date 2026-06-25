@@ -22,13 +22,13 @@ function DigitalIDCard({ emp }) {
   return (
     <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full max-w-[340px] mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
       {/* Subtle modern background gradient */}
-      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-teal-800 to-cyan-900"/>
+      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-violet-800 to-cyan-900"/>
       
       {/* Header */}
       <div className="w-full relative z-10 flex justify-between items-start mb-8">
         <div>
           <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
-          <p className="text-teal-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
+          <p className="text-violet-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
         </div>
         <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
           emp.is_active 
@@ -52,7 +52,7 @@ function DigitalIDCard({ emp }) {
       </div>
 
       <h2 className="text-xl font-black text-slate-800 tracking-tight text-center leading-none mt-2">{emp.full_name}</h2>
-      <p className="text-xs font-bold text-teal-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
+      <p className="text-xs font-bold text-violet-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
       
       <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
@@ -62,7 +62,7 @@ function DigitalIDCard({ emp }) {
       {/* QR Code Section */}
       <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
         <div className="text-left pr-4">
-          <p className="text-[9px] font-black text-teal-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
+          <p className="text-[9px] font-black text-violet-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
           <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
             Scan to securely verify identity &amp; log compliance checkpoint access.
           </p>
@@ -267,7 +267,7 @@ export default function ProfilePage() {
            <p className="text-sm font-medium text-slate-500 mb-8 px-4">
              Your account ({(employeeProfile?.email || 'authenticated user')}) is not registered in the employee directory yet.
            </p>
-           <button onClick={() => window.location.reload()} className="w-full py-3.5 bg-teal-800 text-white font-bold rounded-xl shadow-md">
+           <button onClick={() => window.location.reload()} className="w-full py-3.5 bg-violet-800 text-white font-bold rounded-xl shadow-md">
              Refresh Session
            </button>
         </div>
@@ -306,7 +306,7 @@ export default function ProfilePage() {
           )}
           <button
             onClick={() => setView(view === 'info' ? 'card' : 'info')}
-            className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm font-bold text-teal-700 hover:bg-white transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm font-bold text-violet-700 hover:bg-white transition-all"
           >
             <CreditCard className="w-4 h-4"/>
             {view === 'info' ? 'View ID Card' : 'View Info'}
@@ -348,7 +348,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => fileRef.current.click()}
                   disabled={uploadingPhoto}
-                  className="absolute -bottom-2 -right-2 w-9 h-9 bg-teal-600 text-white rounded-xl flex items-center justify-center shadow-md hover:bg-teal-500 transition-all"
+                  className="absolute -bottom-2 -right-2 w-9 h-9 bg-violet-600 text-white rounded-xl flex items-center justify-center shadow-md hover:bg-violet-500 transition-all"
                 >
                   {uploadingPhoto ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Upload className="w-4 h-4"/>}
                 </button>
@@ -357,9 +357,9 @@ export default function ProfilePage() {
 
               <div className="flex-1 text-center sm:text-left">
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">{emp.full_name}</h2>
-                <p className="text-teal-600 font-bold mt-1">{emp.designation || emp.role}</p>
+                <p className="text-violet-600 font-bold mt-1">{emp.designation || emp.role}</p>
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
-                  <span className="px-3 py-1 bg-teal-50 text-teal-700 rounded-xl text-xs font-bold border border-teal-100">
+                  <span className="px-3 py-1 bg-violet-50 text-violet-700 rounded-xl text-xs font-bold border border-violet-100">
                     {emp.department}
                   </span>
                   <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-100">
@@ -530,7 +530,7 @@ export default function ProfilePage() {
 
 function InitialsField({ value, editing, registerProps }) {
   const display = value || '??';
-  const colors = ['bg-teal-600', 'bg-violet-600', 'bg-sky-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600'];
+  const colors = ['bg-violet-600', 'bg-violet-600', 'bg-sky-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600'];
   const colorIdx = display.charCodeAt(0) % colors.length;
   const bg = colors[colorIdx];
 
@@ -549,7 +549,7 @@ function InitialsField({ value, editing, registerProps }) {
             maxLength={3}
             placeholder="e.g. MB"
             {...registerProps}
-            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 uppercase"
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400 uppercase"
           />
         </div>
       ) : (
@@ -583,13 +583,13 @@ function InfoField({ label, value, icon: Icon, readonly, editing, multiline, inp
           <textarea
             {...registerProps}
             rows={3}
-            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
           />
         ) : (
           <input
             type={inputType || 'text'}
             {...registerProps}
-            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
         )
       ) : (

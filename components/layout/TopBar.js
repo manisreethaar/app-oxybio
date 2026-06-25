@@ -126,14 +126,8 @@ export default function TopBar() {
   return (
     <header
       ref={topbarRef}
-      className="fixed top-3 right-3 z-40 flex items-center gap-2 h-[52px] px-2 rounded-2xl md:left-[78px] left-3"
-      style={{
-        background: 'rgba(255,255,255,0.75)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        border: '1px solid rgba(255,255,255,0.9)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-      }}
+      className="fixed top-0 right-0 z-40 flex items-center gap-2 h-[60px] px-4 md:px-6 md:left-[64px] left-0 bg-white border-b border-gray-100"
+      style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}
     >
       {/* Page title */}
       <div className="hidden md:flex items-center gap-2 pl-3 pr-2">

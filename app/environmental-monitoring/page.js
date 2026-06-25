@@ -166,8 +166,8 @@ export default function EnvironmentalMonitoringPage() {
 
       {/* Log Sample Form */}
       {showSampleForm && (
-        <div className="surface p-5 border-l-4 border-l-teal-500 space-y-4">
-          <h3 className="text-sm font-black text-gray-900 flex items-center gap-2"><Wind className="w-4 h-4 text-teal-600"/>Log EMP Sample</h3>
+        <div className="surface p-5 border-l-4 border-l-violet-500 space-y-4">
+          <h3 className="text-sm font-black text-gray-900 flex items-center gap-2"><Wind className="w-4 h-4 text-violet-600"/>Log EMP Sample</h3>
           <form onSubmit={handleSubmitSample} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -216,7 +216,7 @@ export default function EnvironmentalMonitoringPage() {
             })()}
             <textarea value={sNotes} onChange={e => setSNotes(e.target.value)} rows={2} placeholder="Observations (morphology, colour, contamination notes)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
             <div className="flex gap-3">
-              <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+              <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
                 {submitting ? 'Logging...' : 'Save EMP Sample'}
               </button>
               <button type="button" onClick={() => setShowSampleForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs">Cancel</button>

@@ -75,7 +75,7 @@ function blankAdHocRow(hour = 0) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-const CellCls = 'w-full px-2 py-1.5 text-sm font-medium text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-slate-50 disabled:text-slate-400';
+const CellCls = 'w-full px-2 py-1.5 text-sm font-medium text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:bg-slate-50 disabled:text-slate-400';
 
 function rowHasData(row) {
   return row.ph !== '' || row.od !== '' || row.sterility !== '' || row.plate_done || row.notes !== '';
@@ -246,8 +246,8 @@ export default function GridEntryPage() {
   if (result) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 text-center">
-        <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-teal-600" />
+        <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-violet-600" />
         </div>
         <h2 className="text-xl font-black text-slate-800 mb-1">Grid Saved</h2>
         <p className="text-slate-500 text-sm font-medium mb-4">
@@ -278,7 +278,7 @@ export default function GridEntryPage() {
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => { setResult(null); setRows(rows.map(r => ({ ...r, ph: '', od: '', sterility: '', plate_done: false, colony_count: '', notes: '', skipped: false, skip_reason: '' }))); }}
-            className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm"
+            className="px-6 py-2.5 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-xl text-sm"
           >
             New Grid
           </button>
@@ -322,11 +322,11 @@ export default function GridEntryPage() {
               className={clsx(
                 'flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-black text-xs transition-all',
                 sourceType === value
-                  ? 'border-teal-600 bg-teal-50 text-teal-700'
+                  ? 'border-violet-600 bg-violet-50 text-violet-700'
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               )}
             >
-              <Icon className={clsx('w-4 h-4', sourceType === value ? 'text-teal-600' : 'text-slate-400')} />
+              <Icon className={clsx('w-4 h-4', sourceType === value ? 'text-violet-600' : 'text-slate-400')} />
               {label}
             </button>
           ))}
@@ -457,11 +457,11 @@ export default function GridEntryPage() {
         <div className="flex md:hidden items-center gap-2 mb-3">
           <button
             onClick={() => setMobileView('table')}
-            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'table' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200')}
+            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'table' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200')}
           >Table</button>
           <button
             onClick={() => setMobileView('cards')}
-            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'cards' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200')}
+            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'cards' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200')}
           >Cards</button>
         </div>
 
@@ -520,7 +520,7 @@ export default function GridEntryPage() {
           {/* Table footer summary */}
           <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
-              <span className="text-teal-700">{activeRows.length} with data</span>
+              <span className="text-violet-700">{activeRows.length} with data</span>
               {skippedRows.length > 0 && (
                 <span className="text-amber-600">{skippedRows.length} skipped</span>
               )}
@@ -541,15 +541,15 @@ export default function GridEntryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                 <div>
                   <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">pH</label>
-                  <input type="number" step="0.01" value={row.ph} onChange={e => updateRow(i, 'ph', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
+                  <input type="number" step="0.01" value={row.ph} onChange={e => updateRow(i, 'ph', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">OD</label>
-                  <input type="number" step="0.001" value={row.od} onChange={e => updateRow(i, 'od', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
+                  <input type="number" step="0.001" value={row.od} onChange={e => updateRow(i, 'od', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Temp °C</label>
-                  <input type="number" step="0.1" value={row.incubator_temp_c || ''} onChange={e => updateRow(i, 'incubator_temp_c', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
+                  <input type="number" step="0.1" value={row.incubator_temp_c || ''} onChange={e => updateRow(i, 'incubator_temp_c', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -592,7 +592,7 @@ export default function GridEntryPage() {
           type="button"
           onClick={handleSubmit}
           disabled={saving || (activeRows.length === 0 && skippedRows.length === 0)}
-          className="w-full py-4 bg-teal-700 hover:bg-teal-800 disabled:bg-slate-300 disabled:text-slate-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
+          className="w-full py-4 bg-violet-700 hover:bg-violet-800 disabled:bg-slate-300 disabled:text-slate-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
         >
           {saving ? (
             <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>

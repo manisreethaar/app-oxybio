@@ -16,7 +16,7 @@ import CreatorBadge from '@/components/ui/CreatorBadge';
 const URGENCY = {
   overdue:  { label: 'Overdue',   dot: 'bg-red-500',    text: 'text-red-700',    badge: 'bg-red-50 border-red-200 text-red-700',    ring: 'border-red-200' },
   due_soon: { label: 'Due Soon',  dot: 'bg-amber-400',  text: 'text-amber-700',  badge: 'bg-amber-50 border-amber-200 text-amber-700', ring: 'border-amber-200' },
-  active:   { label: 'Active',    dot: 'bg-teal-400',   text: 'text-teal-700',   badge: 'bg-teal-50 border-teal-200 text-teal-700',  ring: 'border-slate-200' },
+  active:   { label: 'Active',    dot: 'bg-violet-400',   text: 'text-violet-700',   badge: 'bg-violet-50 border-violet-200 text-violet-700',  ring: 'border-slate-200' },
   upcoming: { label: 'Upcoming',  dot: 'bg-slate-300',  text: 'text-slate-500',  badge: 'bg-slate-50 border-slate-200 text-slate-500', ring: 'border-slate-200' },
 };
 
@@ -81,7 +81,7 @@ function QueueCard({ item }) {
             {/* Sub-label: flask name or timepoint */}
             <p className="text-xs font-bold text-slate-500 mt-0.5">
               {isFerm && item.flask_label && (
-                <span className="text-teal-700">{item.flask_label}</span>
+                <span className="text-violet-700">{item.flask_label}</span>
               )}
               {isGrowth && (
                 <span className="text-violet-700">{item.timepoint_label}</span>
@@ -122,7 +122,7 @@ function QueueCard({ item }) {
         <div className="flex items-center gap-2 mt-3">
           <Link
             href={quickLogUrl(item)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-[11px] font-black rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-700 hover:bg-violet-800 text-white text-[11px] font-black rounded-lg transition-colors"
           >
             <Plus className="w-3 h-3" /> Log Now
           </Link>
@@ -283,7 +283,7 @@ export default function LabBenchPage() {
           </Link>
           <Link
             href="/lab-bench/log"
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black text-xs rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-violet-700 hover:bg-violet-800 text-white font-black text-xs rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" /> Quick Log
           </Link>
@@ -308,7 +308,7 @@ export default function LabBenchPage() {
                   filter === key
                     ? key === 'overdue'  ? 'bg-red-50    border-red-300    text-red-700'
                     : key === 'due_soon' ? 'bg-amber-50  border-amber-300  text-amber-700'
-                    : key === 'active'   ? 'bg-teal-50   border-teal-300   text-teal-700'
+                    : key === 'active'   ? 'bg-violet-50   border-violet-300   text-violet-700'
                     :                      'bg-slate-800 border-slate-800  text-white'
                     : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
                 )}
@@ -318,7 +318,7 @@ export default function LabBenchPage() {
                     'w-1.5 h-1.5 rounded-full',
                     key === 'overdue'  ? 'bg-red-500'
                     : key === 'due_soon' ? 'bg-amber-400'
-                    : 'bg-teal-400'
+                    : 'bg-violet-400'
                   )} />
                 )}
                 {label}
@@ -345,8 +345,8 @@ export default function LabBenchPage() {
       {/* ── Empty state ── */}
       {!loading && items.length === 0 && (
         <div className="text-center py-16 space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-7 h-7 text-teal-500" />
+          <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-7 h-7 text-violet-500" />
           </div>
           <p className="font-black text-slate-700">All clear</p>
           <p className="text-slate-400 text-sm font-medium max-w-xs mx-auto">
@@ -411,7 +411,7 @@ export default function LabBenchPage() {
                   <p className="text-xs font-black text-slate-700 truncate">
                     {sample.source_label || sample.sample_label}
                     {sample.flask_label && <span className="text-slate-400 font-medium"> · {sample.flask_label}</span>}
-                    {sample.timepoint_label && <span className="text-teal-600 font-medium"> {sample.timepoint_label}</span>}
+                    {sample.timepoint_label && <span className="text-violet-600 font-medium"> {sample.timepoint_label}</span>}
                   </p>
                   <CreatorBadge initials={employeeProfile?.initials} fullName={employeeProfile?.full_name} />
                 </div>
