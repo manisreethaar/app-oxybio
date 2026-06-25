@@ -398,7 +398,8 @@ export default function AttendancePage() {
             return;
           }
           const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
-          if (distance > geofence.radius) {
+          const isNearby = distance <= geofence.radius + 150; // Buffer for indoor GPS drift
+          if (!isNearby) {
             if (accuracy > ACCURACY_THRESHOLD) {
               setCheckInError(`📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`);
             } else {
