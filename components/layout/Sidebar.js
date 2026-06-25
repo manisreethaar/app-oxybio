@@ -8,7 +8,7 @@ import {
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
   Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle,
   Wind, Wifi, ArrowRight, ChevronRight, X, Home, Menu,
-  Bell, Search
+  Bell, Search, PieChart
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
@@ -67,6 +67,7 @@ export default function Sidebar() {
   const sections = [
     { title: 'Overview', items: [
       { name: 'Dashboard',   href: '/dashboard', icon: LayoutDashboard, show: eCanDo('dashboard','view') },
+      { name: 'Analytics',   href: '/analytics', icon: PieChart,        show: ['admin','ceo','cto'].includes(eRole) || employeeProfile?.department === 'RnD' },
       { name: 'Messages',    href: '/messages',  icon: MessageSquare,   show: true, badge: unread },
       { name: 'Activity',    href: '/activity',  icon: Activity,        show: eCanDo('activity','view') },
       { name: 'Tasks',       href: '/tasks',     icon: CheckSquare,     show: eCanDo('tasks','view') },
