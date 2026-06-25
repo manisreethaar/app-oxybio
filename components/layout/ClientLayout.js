@@ -135,55 +135,55 @@ export default function ClientLayout({ children }) {
 
   return (
     <ToastProvider>
-      <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-900 border-t-4 border-navy">
+      <div className="min-h-screen bg-mesh-light text-zinc-900 relative overflow-hidden flex">
         <Sidebar />
-        <div className="flex flex-col flex-1 overflow-hidden pb-20 md:pb-0 relative z-10">
+        <div className="flex flex-col flex-1 w-full relative z-10 md:ml-[90px] transition-all duration-300">
           <TopBar />
           {shellExtrasReady && <PushManager />}
 
           {navLoading && (
-            <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-teal-100">
+            <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-accent/20">
               <div
-                className="h-full bg-teal-600 transition-all duration-200 ease-out"
+                className="h-full bg-accent transition-all duration-200 ease-out shadow-[0_0_10px_rgba(14,165,233,0.5)]"
                 style={{ width: `${progress}%` }}
               />
             </div>
           )}
 
           {sessionExpired && (
-            <div className="bg-amber-500 text-white text-xs font-bold px-4 py-2 text-center flex items-center justify-center gap-3 animate-in slide-in-from-top duration-300">
-              <span>Your session has expired. Redirecting to login...</span>
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 text-white text-xs font-bold px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in slide-in-from-top duration-300">
+              <span>Your session has expired.</span>
               <button
                 onClick={() => { clearSessionExpired(); window.location.href = '/login'; }}
-                className="underline font-black hover:text-amber-100 transition-colors"
+                className="text-accent hover:text-sky-300 transition-colors"
               >
-                Sign In Now
+                Sign In
               </button>
             </div>
           )}
 
           {isOffline && (
-            <div className="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest py-1.5 px-4 text-center animate-in slide-in-from-top duration-300 flex items-center justify-center gap-2">
+            <div className="bg-red-500 text-white text-[10px] font-black uppercase tracking-widest py-1.5 px-4 text-center flex items-center justify-center gap-2 relative z-50">
               <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-              Offline Mode: Check-ins and Logs will fail until reconnected.
+              Offline Mode
             </div>
           )}
 
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 scroll-smooth">
+          <main className="flex-1 overflow-y-auto p-4 md:p-10 pt-20 md:pt-10 scroll-smooth h-screen custom-scrollbar relative">
             {loading ? (
-              <div className="space-y-6 animate-fade-in">
+              <div className="space-y-6 animate-fade-in max-w-[90rem] mx-auto">
                 <div className="flex justify-between items-center">
                   <Skeleton width={250} height={32} />
                   <Skeleton width={120} height={40} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Skeleton className="h-64 w-full rounded-2xl" />
-                  <Skeleton className="h-64 w-full rounded-2xl" />
-                  <Skeleton className="h-64 w-full rounded-2xl" />
+                  <Skeleton className="h-64 w-full rounded-3xl" />
+                  <Skeleton className="h-64 w-full rounded-3xl" />
+                  <Skeleton className="h-64 w-full rounded-3xl" />
                 </div>
               </div>
             ) : (
-              <div key={pathname}>
+              <div key={pathname} className="animate-page-enter max-w-[90rem] mx-auto">
                 {children}
               </div>
             )}

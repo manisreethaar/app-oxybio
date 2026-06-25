@@ -183,27 +183,27 @@ export default function TopBar() {
   };
 
   return (
-    <header ref={topbarRef} className="bg-white/95 backdrop-blur border-b border-gray-200 h-14 md:h-16 flex items-center justify-between px-3 sm:px-4 md:px-8 shrink-0 sticky top-0 z-40">
-      <h1 className="text-xl font-bold text-gray-900 hidden md:block tracking-tight">{getPageTitle()}</h1>
+    <header ref={topbarRef} className="fixed top-4 right-4 md:right-10 left-4 md:left-[auto] md:min-w-[360px] glass-card h-[60px] flex items-center justify-between px-3 sm:px-5 z-40">
+      <h1 className="text-xs font-black text-zinc-400 tracking-[0.2em] hidden md:block uppercase mr-8 pl-2">{getPageTitle()}</h1>
 
       <div className="md:hidden flex items-center">
-        <div className="w-8 h-8 rounded-xl bg-navy text-white font-bold flex items-center justify-center text-sm mr-2 shadow-sm">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 text-white font-bold flex items-center justify-center text-sm mr-2 shadow-sm">
           O₂
         </div>
-        <span className="text-lg font-black tracking-tight text-gray-900">OxyOS</span>
+        <span className="text-lg font-black tracking-tight text-zinc-900">OxyOS</span>
       </div>
 
-      <div className="flex items-center space-x-2 sm:space-x-3">
+      <div className="flex items-center space-x-2 sm:space-x-3 ml-auto">
 
         {/* Global Search trigger */}
         <button
           onClick={openSearch}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-500 bg-white/50 border border-white rounded-[1rem] hover:bg-white hover:shadow-soft hover:text-zinc-900 transition-all"
           title="Search modules (Ctrl+K)"
         >
-          <Search className="w-3.5 h-3.5" />
+          <Search className="w-4 h-4" />
           <span>Search</span>
-          <kbd className="text-[10px] text-gray-400">⌘K</kbd>
+          <kbd className="text-[9px] font-black tracking-wider text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded-md">⌘K</kbd>
         </button>
 
         {/* Mobile search icon */}
