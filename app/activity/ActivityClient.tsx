@@ -478,22 +478,22 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         <nav className="-mb-px flex gap-2 md:gap-6 overflow-x-auto mobile-scroll-tabs md:mx-0 md:px-0">
           {isAdmin && (
             <button onClick={() => setTab('brief')} 
-              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-violet-700 text-violet-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Zap className="w-4 h-4"/> Morning Brief
             </button>
           )}
           {isAdmin && (
             <button onClick={() => setTab('analytics')} 
-              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-violet-700 text-violet-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <TrendingUp className="w-4 h-4"/> Operations Hub
             </button>
           )}
           <button onClick={() => setTab('feed')}
-            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'feed' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'feed' ? 'border-violet-700 text-violet-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
             {isAdmin ? 'Team Activity Feed' : 'Recent Activity'}
           </button>
           <button onClick={() => setTab('log')}
-            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'log' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'log' ? 'border-violet-700 text-violet-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
             + Log Activity
           </button>
           {isAdmin && (
@@ -528,7 +528,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             <select
               value={filterEmployee}
               onChange={e => { setFilterEmployee(e.target.value); setActivityOffset(0); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-700 font-medium focus:ring-2 focus:ring-teal-500 outline-none"
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-700 font-medium focus:ring-2 focus:ring-violet-500 outline-none"
             >
               <option value="">All Staff</option>
               {allEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
@@ -537,12 +537,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">From</label>
             <input type="date" value={filterDateFrom} onChange={e => { setFilterDateFrom(e.target.value); setActivityOffset(0); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" />
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-violet-500 outline-none" />
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">To</label>
             <input type="date" value={filterDateTo} onChange={e => { setFilterDateTo(e.target.value); setActivityOffset(0); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" />
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-violet-500 outline-none" />
           </div>
           {(filterEmployee || filterDateFrom || filterDateTo) && (
             <button onClick={() => { setFilterEmployee(''); setFilterDateFrom(''); setFilterDateTo(''); setActivityOffset(0); }}
@@ -594,7 +594,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               { label: 'In Today', value: brief.presentToday.length, icon: CalendarCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
               { label: 'Not Yet In', value: brief.absentToday.length, icon: Users, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
               { label: 'Overdue Tasks', value: brief.overdueTasks.length, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
-              { label: 'Active Batches', value: brief.activeExperiments.length, icon: FlaskConical, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
+              { label: 'Active Batches', value: brief.activeExperiments.length, icon: FlaskConical, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100' },
             ].map(kpi => (
               <div key={kpi.label} className={`${kpi.bg} border ${kpi.border} rounded-2xl p-4 flex items-center gap-3`}>
                 <kpi.icon className={`w-7 h-7 ${kpi.color} shrink-0`}/>
@@ -707,15 +707,15 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           {brief.activeExperiments.length > 0 && (
             <div className="glass-card rounded-2xl p-5">
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-teal-500"/> Active Experiments
+                <FlaskConical className="w-4 h-4 text-violet-500"/> Active Experiments
               </h2>
               <div className="flex flex-wrap gap-2">
                 {brief.activeExperiments.map(b => (
-                  <div key={b.batch_id} className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-2 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
-                    <span className="text-sm font-black text-teal-800 font-mono">{b.batch_id}</span>
-                    {b.product_name && <span className="text-xs text-teal-600">{b.product_name}</span>}
-                    <span className="text-[10px] font-bold uppercase text-teal-500 bg-teal-100 px-1.5 py-0.5 rounded">{b.status}</span>
+                  <div key={b.batch_id} className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
+                    <span className="text-sm font-black text-violet-800 font-mono">{b.batch_id}</span>
+                    {b.product_name && <span className="text-xs text-violet-600">{b.product_name}</span>}
+                    <span className="text-[10px] font-bold uppercase text-violet-500 bg-violet-100 px-1.5 py-0.5 rounded">{b.status}</span>
                   </div>
                 ))}
               </div>
@@ -784,7 +784,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
               <div className="surface p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                    <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
                        <CheckCircle className="w-5 h-5"/>
                     </div>
                     <div>
@@ -875,7 +875,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             activities
               .filter(act => !priorityOnly || act.severity === 'high' || (act.issue_observed && !act.founder_comment))
               .map(act => (
-              <div key={act.id} className={`glass-card rounded-2xl border p-5 transition-all ${act.severity === 'high' || act.issue_observed ? 'border-red-200 bg-red-50/20' : 'border-white/60 hover:border-teal-200'}`}>
+              <div key={act.id} className={`glass-card rounded-2xl border p-5 transition-all ${act.severity === 'high' || act.issue_observed ? 'border-red-200 bg-red-50/20' : 'border-white/60 hover:border-violet-200'}`}>
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{isAdmin ? act.employees?.full_name : 'You'}</span>
@@ -935,21 +935,21 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 <p className="text-slate-700 whitespace-pre-wrap text-sm mb-2">{act.activity_description}</p>
                 {act.issue_observed && <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-900"><span className="font-bold">Issue: </span>{act.issue_description}</div>}
                 {act.founder_comment ? (
-                  <div className="mt-3 p-3 bg-teal-50 border border-teal-100 rounded-xl flex items-start">
-                    <MessageSquare className="w-4 h-4 text-teal-600 mr-2 mt-0.5 shrink-0"/>
-                    <div><p className="text-xs font-black text-teal-700 mb-0.5">ADMIN REVIEW</p><p className="text-sm text-teal-800">{act.founder_comment}</p></div>
+                  <div className="mt-3 p-3 bg-violet-50 border border-violet-100 rounded-xl flex items-start">
+                    <MessageSquare className="w-4 h-4 text-violet-600 mr-2 mt-0.5 shrink-0"/>
+                    <div><p className="text-xs font-black text-violet-700 mb-0.5">ADMIN REVIEW</p><p className="text-sm text-violet-800">{act.founder_comment}</p></div>
                   </div>
                 ) : isAdmin ? (
                   <div className="mt-3 pt-3 border-t border-slate-100">
                     {activeCommentId === act.id ? (
                       <div className="flex gap-2">
-                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a review note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"/>
-                        <button onClick={() => handleAddComment(act.id)} className="bg-teal-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">Save</button>
+                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a review note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"/>
+                        <button onClick={() => handleAddComment(act.id)} className="bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">Save</button>
                         <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-2 text-sm">Cancel</button>
 
                       </div>
                     ) : (
-                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm text-teal-600 font-bold hover:text-teal-800 flex items-center">
+                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm text-violet-600 font-bold hover:text-violet-800 flex items-center">
 
                         <MessageSquare className="w-3.5 h-3.5 mr-1"/> Add Review
                       </button>
@@ -1015,20 +1015,20 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             <div>
               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">What did you do? *</label>
               <textarea {...regLog('activity_description')} rows={4} 
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm" 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 resize-none bg-slate-50 text-sm" 
                 placeholder="Protocol steps, prep work, general tasks, results..."/>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Linked Batch</label>
-                <select {...regLog('batch_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
+                <select {...regLog('batch_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 bg-slate-50 text-sm">
                   <option value="">— None —</option>
                   {activeBatches.map(b => <option key={b.batch_id} value={b.batch_id}>{b.batch_id}</option>)}
                 </select>
               </div>
               <div className="flex-1">
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Hardware / Equipment</label>
-                <select {...regLog('equipment_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
+                <select {...regLog('equipment_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 bg-slate-50 text-sm">
                   <option value="">— None —</option>
                   {equipmentList.map(e => <option key={e.id} value={e.id}>{e.name} ({e.model})</option>)}
                 </select>
@@ -1047,11 +1047,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start</label>
-                  <input type="time" {...regLog('start_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                  <input type="time" {...regLog('start_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 bg-slate-50 text-sm"/>
                 </div>
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">End</label>
-                  <input type="time" {...regLog('end_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                  <input type="time" {...regLog('end_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 bg-slate-50 text-sm"/>
                 </div>
               </div>
             </div>
@@ -1073,7 +1073,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               )}
             </div>
             <button type="submit" disabled={isSubmitting || isCalOverdue}
-              className="w-full flex justify-center items-center py-3 px-4 rounded-xl text-sm font-black text-white bg-teal-800 hover:bg-teal-900 disabled:opacity-60 transition-all">
+              className="w-full flex justify-center items-center py-3 px-4 rounded-xl text-sm font-black text-white bg-violet-800 hover:bg-violet-900 disabled:opacity-60 transition-all">
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : isCalOverdue ? 'Locked (Calibration Required)' : 'Save Activity Entry'}
             </button>
           </form>
@@ -1124,7 +1124,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   rows={4}
                   value={editForm.activity_description}
                   onChange={e => setEditForm(f => ({ ...f, activity_description: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 resize-none bg-slate-50 text-sm"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1132,13 +1132,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start Time</label>
                   <input type="time" value={editForm.start_time}
                     onChange={e => setEditForm(f => ({ ...f, start_time: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 bg-slate-50 text-sm"/>
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">End Time</label>
                   <input type="time" value={editForm.end_time}
                     onChange={e => setEditForm(f => ({ ...f, end_time: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 bg-slate-50 text-sm"/>
                 </div>
               </div>
               <div>
@@ -1168,7 +1168,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               <button
                 onClick={submitEditRequest}
                 disabled={submittingRequest || !editForm.activity_description?.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 text-white text-sm font-black hover:bg-teal-800 disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-700 text-white text-sm font-black hover:bg-violet-800 disabled:opacity-60"
               >
                 {submittingRequest ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Send className="w-4 h-4"/> Submit for Approval</>}
               </button>
@@ -1203,16 +1203,16 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   {act.issue_description}
                 </div>
                 {act.founder_comment ? (
-                  <div className="mt-3 p-3 bg-white border border-teal-200 rounded-xl">
-                    <p className="text-xs font-black text-teal-700 mb-1">RESOLUTION NOTE</p>
+                  <div className="mt-3 p-3 bg-white border border-violet-200 rounded-xl">
+                    <p className="text-xs font-black text-violet-700 mb-1">RESOLUTION NOTE</p>
                     <p className="text-sm text-slate-700">{act.founder_comment}</p>
                   </div>
                 ) : (
                   <div className="mt-4 pt-3 border-t border-red-100">
                     {activeCommentId === act.id ? (
                       <div className="flex gap-2">
-                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"/>
-                        <button onClick={() => handleAddComment(act.id)} className="bg-teal-700 text-white px-4 py-1.5 rounded-lg text-sm font-black">Resolve</button>
+                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"/>
+                        <button onClick={() => handleAddComment(act.id)} className="bg-violet-700 text-white px-4 py-1.5 rounded-lg text-sm font-black">Resolve</button>
                         <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-3 text-sm font-medium">Cancel</button>
 
                       </div>
