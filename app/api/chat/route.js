@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { streamText, tool, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
