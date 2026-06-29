@@ -172,9 +172,9 @@ export default function LnbEntryPage() {
 
   const isDraft = entry.status === 'Draft';
   const isAuthor = entry.author?.id === employeeProfile.id;
-  const isAdmin = employeeProfile.role === 'admin';
-  const canEdit = isDraft && isAuthor;
-  const canDelete = canEdit || isAdmin;
+  const isAdmin = ['admin', 'ceo'].includes(employeeProfile.role);
+  const canEdit = isDraft && (isAuthor || isAdmin);
+  const canDelete = canEdit;
   const canCountersign = entry.status === 'Submitted' && 
                          (employeeProfile.role === 'admin' || employeeProfile.role === 'research_fellow') && 
                          entry.author?.id !== employeeProfile.id;
