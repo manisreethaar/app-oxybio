@@ -376,14 +376,14 @@ export default function EquipmentPage() {
                 <div className="flex gap-2">
                   <button
                     disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                    onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }}
+                    onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setMaintValue('log_type', device.requires_calibration ? 'Calibration' : 'Maintenance'); setIsMaintenanceOpen(true); }}
                     className="flex-1 py-3 bg-white border border-gray-200 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                       Log Maintenance
                   </button>
                   {device.requires_calibration && (
                     <button 
                       disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                      onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
+                      onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setMaintValue('log_type', 'Calibration'); setIsMaintenanceOpen(true); }} 
                       className="flex-1 py-3 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                         Calibrate Now
                     </button>
