@@ -41,7 +41,7 @@ export async function POST(request) {
         updateData.rejection_reason = comment;
     }
 
-    const { data, error } = await supabase.from('leave_applications').update(updateData).eq('id', id).select('*, employees(id, role, casual_leave_balance, medical_leave_balance, earned_leave_balance)').single();
+    const { data, error } = await supabase.from('leave_applications').update(updateData).eq('id', id).select('*, employees!leave_applications_employee_id_fkey(id, role, casual_leave_balance, medical_leave_balance, earned_leave_balance)').single();
 
     if (error) throw error;
 
