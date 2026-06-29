@@ -10,16 +10,16 @@ module.exports = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        // Brand violet
+        // Brand Slate (formerly named 'navy' but incorrectly mapped to Violet)
         navy: {
-          DEFAULT: '#7C3AED',
-          hover:   '#6D28D9',
-          light:   '#EDE9FE',
+          DEFAULT: '#1e293b', // Slate 800
+          hover:   '#334155', // Slate 700
+          light:   '#f1f5f9', // Slate 100
         },
         accent: {
-          DEFAULT: '#7C3AED',
-          hover:   '#6D28D9',
-          light:   '#EDE9FE',
+          DEFAULT: '#1e293b', // Slate 800
+          hover:   '#334155', // Slate 700
+          light:   '#f1f5f9', // Slate 100
         },
       },
       fontFamily: {
@@ -35,13 +35,13 @@ module.exports = {
         'glass':      '0 4px 24px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
         'soft':       '0 2px 8px rgba(0,0,0,0.04)',
         'lifted':     '0 8px 32px rgba(0,0,0,0.10)',
-        'glow':       '0 0 20px rgba(124,58,237,0.35)',
-        'glow-sm':    '0 0 10px rgba(124,58,237,0.25)',
+        'glow':       '0 0 20px rgba(30, 41, 59, 0.25)', // Slate glow
+        'glow-sm':    '0 0 10px rgba(30, 41, 59, 0.15)',
       },
       backgroundImage: {
-        'gradient-brand':   'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
-        'gradient-sidebar': 'linear-gradient(180deg, #0d0a14 0%, #130d1f 50%, #0d0a14 100%)',
-        'gradient-page':    'linear-gradient(135deg, #F7F5FF 0%, #F3F0FF 100%)',
+        'gradient-brand':   'linear-gradient(135deg, #334155 0%, #1e293b 100%)', // Slate 700 to 800
+        'gradient-sidebar': 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)', // Light slate/ice
+        'gradient-page':    'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', // Pure white to slate-50
       },
       animation: {
         'fade-in':    'fade-in 280ms cubic-bezier(0.16,1,0.3,1) both',

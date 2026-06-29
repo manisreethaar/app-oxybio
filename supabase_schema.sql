@@ -199,7 +199,7 @@ CREATE OR REPLACE FUNCTION is_admin() RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM employees 
-    WHERE employees.email = auth.jwt()->>'email' AND role = 'admin'
+    WHERE employees.email = auth.jwt()->>'email' AND role IN ('admin', 'ceo', 'cto')
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -135,17 +135,17 @@
   }
   .field-input:focus {
     @apply border-slate-400 bg-white;
-    box-shadow: 0 0 0 4px rgba(124,58,237,0.08);
+    box-shadow: 0 0 0 4px rgba(30,41,59,0.08);
   }
 
   /* Premium button */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-95;
-    background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%);
-    box-shadow: 0 4px 16px rgba(124,58,237,0.25);
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    box-shadow: 0 4px 16px rgba(30,41,59,0.25);
   }
   .btn-primary:hover {
-    box-shadow: 0 6px 24px rgba(124,58,237,0.35);
+    box-shadow: 0 6px 24px rgba(30,41,59,0.35);
     transform: translateY(-1px);
   }
 
