@@ -49,15 +49,15 @@ export default async function VerifyEmployeePage({ params }) {
   if (!emp.is_active) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-rose-100">
-          <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck className="w-10 h-10 text-rose-500 opacity-40" />
+        <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-red-100">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-10 h-10 text-red-500 opacity-40" />
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Access Revoked</h1>
-          <p className="text-rose-500 font-bold mb-4 uppercase tracking-widest text-xs">Credential Suspended</p>
-          <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 text-left mb-6">
-             <p className="text-sm font-bold text-rose-900">{emp.full_name}</p>
-             <p className="text-xs font-medium text-rose-700">{emp.designation || 'STAFF'}</p>
+          <p className="text-red-500 font-bold mb-4 uppercase tracking-widest text-xs">Credential Suspended</p>
+          <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-left mb-6">
+             <p className="text-sm font-bold text-red-900">{emp.full_name}</p>
+             <p className="text-xs font-medium text-red-700">{emp.designation || 'STAFF'}</p>
           </div>
           <p className="text-slate-500 text-sm">This identity is acknowledged by Oxygen Bioinnovations but is currently marked as <strong>Inactive</strong>. Access to facility nodes is restricted.</p>
         </div>

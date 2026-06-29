@@ -395,7 +395,7 @@ export default function QuickLogPage() {
           </div>
         )}
         {success.alarms?.temp && (
-          <div className="mx-auto max-w-xs mb-4 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-orange-700 text-sm font-bold">
+          <div className="mx-auto max-w-xs mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-700 text-sm font-bold">
             <Thermometer className="w-4 h-4 shrink-0" />
             Temperature alarm triggered — admin notified
           </div>
@@ -662,7 +662,7 @@ export default function QuickLogPage() {
           <TestCard
             title="pH"
             icon={Waves}
-            color="bg-blue-500"
+            color="bg-slate-500"
             skipped={tests.ph.skipped}
             skip_reason={tests.ph.skip_reason}
             onSkipToggle={() => updateTest('ph', { skipped: !tests.ph.skipped, skip_reason: '' })}
@@ -791,7 +791,7 @@ export default function QuickLogPage() {
           )}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-rose-500">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-red-500">
                   <FlaskConical className="w-4 h-4 text-white" />
                 </div>
                 <span className="font-black text-slate-700 text-sm">Plate Analysis</span>
@@ -810,8 +810,8 @@ export default function QuickLogPage() {
                     className={clsx(
                       'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
                       tests.plate_analysis.active
-                        ? 'border-rose-400 bg-rose-50 text-rose-700'
-                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600'
+                        ? 'border-red-400 bg-red-50 text-red-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
                     )}
                   >
                     {tests.plate_analysis.active ? (

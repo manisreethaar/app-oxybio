@@ -71,7 +71,7 @@ export default function NotificationsPage() {
           isOverdue,
           url: '/tasks',
           icon: isOverdue ? AlertTriangle : CheckSquare,
-          color: isOverdue ? 'text-red-600 bg-red-50 border-red-200' : 'text-blue-600 bg-blue-50 border-blue-200'
+          color: isOverdue ? 'text-red-600 bg-red-50 border-red-200' : 'text-slate-600 bg-slate-50 border-slate-200'
         });
       });
     }
@@ -163,9 +163,9 @@ export default function NotificationsPage() {
                   <div
                     key={notif.id}
                     onClick={() => markRead(notif.id)}
-                    className={`rounded-2xl p-4 flex items-start gap-4 border cursor-pointer transition-all hover:shadow-sm ${notif.is_read ? 'bg-white border-gray-100 opacity-70' : 'bg-slate-50/60 border-slate-200 shadow-sm'}`}
+                    className={`rounded-2xl p-4 flex items-start gap-4 border cursor-pointer transition-all hover:shadow-sm ${notif.is_read ? 'bg-white border-slate-100 opacity-70' : 'bg-slate-50/60 border-slate-200 shadow-sm'}`}
                   >
-                    <div className={`p-2 rounded-xl border shrink-0 mt-0.5 ${notif.is_read ? 'bg-gray-100 border-gray-200 text-gray-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
+                    <div className={`p-2 rounded-xl border shrink-0 mt-0.5 ${notif.is_read ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
                       <Bell className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
                               {alert.isOverdue ? 'Overdue' : 'Pending'}
                             </span>
                             {alert.priority && (
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${alert.priority === 'urgent' ? 'text-rose-600' : 'text-slate-400'}`}>
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${alert.priority === 'urgent' ? 'text-red-600' : 'text-slate-400'}`}>
                                 {alert.priority} Priority
                               </span>
                             )}

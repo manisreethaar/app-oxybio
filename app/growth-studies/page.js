@@ -10,7 +10,7 @@ import CreatorBadge from '@/components/ui/CreatorBadge';
 const STATUS_META = {
   setup:     { label: 'Setup',     color: 'bg-slate-100 text-slate-600 border-slate-200' },
   active:    { label: 'Active',    color: 'bg-slate-50 text-slate-700 border-slate-200' },
-  completed: { label: 'Completed', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  completed: { label: 'Completed', color: 'bg-slate-50 text-slate-700 border-slate-200' },
   analysed:  { label: 'Analysed',  color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 const TYPE_META = {

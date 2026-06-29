@@ -44,7 +44,7 @@ function StatusBadge({ status }) {
   const map = {
     setup: 'bg-slate-100 text-slate-600 border-slate-200',
     active: 'bg-slate-50 text-slate-700 border-slate-200',
-    completed: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed: 'bg-slate-50 text-slate-700 border-slate-200',
     analysed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
   return <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${map[status] || map.setup}`}>{status}</span>;
@@ -658,7 +658,7 @@ export default function GrowthStudyDetailPage() {
                     {study.cell_bank_vials.freezer_id}{study.cell_bank_vials.rack ? ` · Rack ${study.cell_bank_vials.rack}` : ''}{study.cell_bank_vials.position ? ` · Pos ${study.cell_bank_vials.position}` : ''}
                   </p>
                 )}
-                <span className="inline-block text-[9px] font-black px-1.5 py-0.5 rounded border bg-rose-50 text-rose-600 border-rose-200">Used</span>
+                <span className="inline-block text-[9px] font-black px-1.5 py-0.5 rounded border bg-red-50 text-red-600 border-red-200">Used</span>
               </div>
             </div>
           )}
@@ -696,7 +696,7 @@ export default function GrowthStudyDetailPage() {
                   >{l.label}</button>
                 ))}
                 <button onClick={() => setLogScale(p => !p)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${logScale ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-200'}`}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${logScale ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-400 border-slate-200'}`}
                 >log₁₀</button>
               </div>
             </div>
@@ -709,7 +709,7 @@ export default function GrowthStudyDetailPage() {
           {kinetics && (
             <div className="glass-card rounded-2xl p-6">
               <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-indigo-600"/> Kinetics Analysis
+                <BarChart2 className="w-4 h-4 text-slate-600"/> Kinetics Analysis
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
@@ -728,10 +728,10 @@ export default function GrowthStudyDetailPage() {
               {/* A-62: Maintenance coefficient */}
               {kinetics.ms && (
                 <div className="mt-3 pt-3 border-t border-slate-100">
-                  <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-gray-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
-                    <p className="text-xl font-black text-gray-800 tabular-nums">{kinetics.ms}</p>
-                    <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
+                    <p className="text-xl font-black text-slate-800 tabular-nums">{kinetics.ms}</p>
+                    <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
                   </div>
                 </div>
               )}
@@ -740,17 +740,17 @@ export default function GrowthStudyDetailPage() {
               {(kinetics.ks || kinetics.yxs) && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
                   {kinetics.ks && (
-                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-orange-500 mb-1">Ks (g/L)</p>
-                      <p className="text-xl font-black text-orange-800 tabular-nums">{kinetics.ks}</p>
-                      <p className="text-[9px] text-orange-400 font-semibold mt-0.5">Half-saturation constant</p>
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-amber-500 mb-1">Ks (g/L)</p>
+                      <p className="text-xl font-black text-amber-800 tabular-nums">{kinetics.ks}</p>
+                      <p className="text-[9px] text-amber-400 font-semibold mt-0.5">Half-saturation constant</p>
                     </div>
                   )}
                   {kinetics.yxs && (
-                    <div className="p-4 bg-cyan-50 border border-cyan-100 rounded-xl">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-cyan-500 mb-1">Yx/s (g/g)</p>
-                      <p className="text-xl font-black text-cyan-800 tabular-nums">{kinetics.yxs}</p>
-                      <p className="text-[9px] text-cyan-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Yx/s (g/g)</p>
+                      <p className="text-xl font-black text-slate-800 tabular-nums">{kinetics.yxs}</p>
+                      <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
                     </div>
                   )}
                 </div>
@@ -817,7 +817,7 @@ export default function GrowthStudyDetailPage() {
                 a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
                 a.download = `${study.study_code||study.id}_measurements.csv`;
                 a.click();
-              }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-200 flex items-center gap-1.5 transition-colors">
+              }} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors">
                 ↓ Export CSV
               </button>
             </div>
@@ -986,8 +986,8 @@ export default function GrowthStudyDetailPage() {
                   </details>
                   {/* A-42: VFA profile (for heterofermenters) */}
                   {(study?.study_type === 'fermentation' || study?.study_type === 'vfa_profile') && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
-                      <p className="text-[10px] font-black uppercase text-rose-800">A-42 VFA Profile (mmol/L)</p>
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
+                      <p className="text-[10px] font-black uppercase text-red-800">A-42 VFA Profile (mmol/L)</p>
                       <div className="grid grid-cols-3 gap-2">
                         <div><label className={LabelCls}>Acetate</label><input className={InputCls} type="number" step="0.01" value={mForm.acetate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, acetate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
                         <div><label className={LabelCls}>Propionate</label><input className={InputCls} type="number" step="0.01" value={mForm.propionate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, propionate_mmol_l: e.target.value }))} placeholder="0.0"/></div>

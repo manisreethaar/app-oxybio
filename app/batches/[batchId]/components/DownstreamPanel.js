@@ -85,7 +85,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
     finally { setSaving(false); }
   };
 
-  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Downstream details.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Downstream details.</div>;
 
   const completedCount = PROCESS_STEPS.filter(p => stepsCompleted[p.key]).length;
 
@@ -94,8 +94,8 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
       <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-slate-500">
         <Layers className="w-5 h-5 text-slate-600"/>
         <div>
-          <h2 className="text-base font-bold text-gray-900">Downstream Processing: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
-          <p className="text-xs text-gray-500">Concentration, drying, packaging and fill/finish record.</p>
+          <h2 className="text-base font-bold text-slate-900">Downstream Processing: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
+          <p className="text-xs text-slate-500">Concentration, drying, packaging and fill/finish record.</p>
         </div>
         <span className="ml-auto text-[10px] font-black text-slate-700 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
           {completedCount}/{PROCESS_STEPS.length} steps
@@ -104,14 +104,14 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
       {/* Process steps checklist */}
       <div className="surface p-5 space-y-3">
-        <h3 className="text-sm font-black text-gray-900">Process Steps Completed</h3>
+        <h3 className="text-sm font-black text-slate-900">Process Steps Completed</h3>
         {PROCESS_STEPS.map(step => (
-          <div key={step.key} className={`p-3 rounded-xl border transition-all ${stepsCompleted[step.key] ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
+          <div key={step.key} className={`p-3 rounded-xl border transition-all ${stepsCompleted[step.key] ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={stepsCompleted[step.key] || false}
                 onChange={e => setStepsCompleted(prev => ({ ...prev, [step.key]: e.target.checked }))}
-                className="w-4 h-4 rounded border-gray-300"/>
-              <span className={`text-sm font-bold ${stepsCompleted[step.key] ? 'text-emerald-800' : 'text-gray-700'}`}>{step.label}</span>
+                className="w-4 h-4 rounded border-slate-300"/>
+              <span className={`text-sm font-bold ${stepsCompleted[step.key] ? 'text-emerald-800' : 'text-slate-700'}`}>{step.label}</span>
               {stepsCompleted[step.key] && <CheckCircle2 className="w-4 h-4 text-emerald-600 ml-auto"/>}
             </label>
             {stepsCompleted[step.key] && (
@@ -125,7 +125,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
       {/* Output specifications */}
       <div className="surface p-5 space-y-4">
-        <h3 className="text-sm font-black text-gray-900">Output Specifications</h3>
+        <h3 className="text-sm font-black text-slate-900">Output Specifications</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="field-label">Final Concentration</label>
@@ -164,7 +164,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
           </div>
         </div>
 
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Downstream notes, deviations, rework..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Downstream notes, deviations, rework..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
           {saving ? 'Saving...' : 'Save Downstream Record'}

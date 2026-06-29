@@ -214,8 +214,8 @@ export default function EditRequestButton({
               disabled={submitting || (mode === 'delete' && deleteReason.trim().length < 5)}
               className={`mt-6 w-full py-3 font-black text-sm text-white rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${
                 mode === 'edit'
-                  ? 'bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400'
-                  : 'bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500'
+                  ? 'bg-gradient-to-br from-amber-500 to-amber-500 hover:from-amber-400 hover:to-amber-400'
+                  : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500'
               }`}
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <SendHorizonal className="w-4 h-4" />}

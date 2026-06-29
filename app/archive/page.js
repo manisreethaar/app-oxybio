@@ -25,7 +25,7 @@ function RetentionBadge({ archivedAt }) {
   if (days === null) return null;
   const color = days > 90 ? 'bg-red-50 text-red-700 border-red-200' :
                 days > 30 ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                            'bg-gray-50 text-gray-500 border-gray-200';
+                            'bg-slate-50 text-slate-500 border-slate-200';
   return (
     <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${color}`}>
       {days}d ago{days > 90 ? ' · review' : ''}
@@ -137,17 +137,17 @@ function ArchiveMobileCard({ row, tabId, canRestore, onRestore, onDelete }) {
           </div>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">Archived</p>
-          <p className="text-[11px] font-bold text-gray-600 mt-1">{formatArchiveDate(archivedAt)}</p>
+          <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Archived</p>
+          <p className="text-[11px] font-bold text-slate-600 mt-1">{formatArchiveDate(archivedAt)}</p>
         </div>
       </div>
       <div className="space-y-1">
         {card.meta.filter(Boolean).slice(0, 3).map((item, idx) => (
-          <p key={idx} className="text-xs font-semibold text-gray-500 line-clamp-2">{item}</p>
+          <p key={idx} className="text-xs font-semibold text-slate-500 line-clamp-2">{item}</p>
         ))}
       </div>
-      <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-        {card.href && <Link href={card.href} className="px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-black">View</Link>}
+      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        {card.href && <Link href={card.href} className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-black">View</Link>}
         {tabId === 'employees' ? (
           <Link href="/directory" className="px-3 py-2 rounded-xl bg-navy text-white text-xs font-black">Manage</Link>
         ) : (
@@ -290,12 +290,12 @@ export default function ArchivePage() {
     } catch (err) { toast.error(err.message); }
   };
 
-  if (authLoading) return <div className="page-container flex items-center justify-center min-h-[50vh] text-gray-400"><Loader2 className="w-5 h-5 animate-spin mr-2"/>Loading...</div>;
+  if (authLoading) return <div className="page-container flex items-center justify-center min-h-[50vh] text-slate-400"><Loader2 className="w-5 h-5 animate-spin mr-2"/>Loading...</div>;
   if (!isAdmin) return (
     <div className="page-container">
       <div className="surface p-8 text-center">
-        <Archive className="w-10 h-10 mx-auto text-gray-300 mb-3"/>
-        <p className="text-sm text-gray-500">Only admins, CEO, and CTO can access archived records.</p>
+        <Archive className="w-10 h-10 mx-auto text-slate-300 mb-3"/>
+        <p className="text-sm text-slate-500">Only admins, CEO, and CTO can access archived records.</p>
       </div>
     </div>
   );
@@ -321,7 +321,7 @@ export default function ArchivePage() {
         <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2">
           <Archive className="w-7 h-7 text-slate-500"/> Archive
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-slate-500 mt-1">
           Archived records sit here before permanent deletion. Restore to bring them back, or permanently delete to free space.
         </p>
       </div>
@@ -334,12 +334,12 @@ export default function ArchivePage() {
           const active = tab === t.id;
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-navy text-white border-navy' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+              className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-navy text-white border-navy' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
             >
               <Icon className="w-3.5 h-3.5"/>
               {t.label}
               {count > 0 && (
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black min-w-[18px] text-center ${active ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black min-w-[18px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {count}
                 </span>
               )}
@@ -351,35 +351,35 @@ export default function ArchivePage() {
       {/* Filters */}
       <div className="surface p-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"/>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name, ID, author…"
-            className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-          {search && <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4"/></button>}
+            className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+          {search && <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X className="w-4 h-4"/></button>}
         </div>
         <div className="flex items-center gap-2 overflow-x-auto">
-          <Calendar className="w-4 h-4 text-gray-400 shrink-0"/>
+          <Calendar className="w-4 h-4 text-slate-400 shrink-0"/>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            className="px-2 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
-          <span className="text-gray-400 text-xs">—</span>
+            className="px-2 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
+          <span className="text-slate-400 text-xs">—</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            className="px-2 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
+            className="px-2 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
           {(dateFrom || dateTo) && (
-            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-xs font-bold text-gray-500 hover:text-gray-700">Clear</button>
+            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-xs font-bold text-slate-500 hover:text-slate-700">Clear</button>
           )}
         </div>
-        <p className="text-[10px] font-bold text-gray-400 shrink-0">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</p>
+        <p className="text-[10px] font-bold text-slate-400 shrink-0">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Content */}
       {loading ? (
-        <div className="surface p-12 text-center text-gray-400 flex items-center justify-center gap-2">
+        <div className="surface p-12 text-center text-slate-400 flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin"/> Loading {currentTab?.label}…
         </div>
       ) : filtered.length === 0 ? (
         <div className="surface p-12 text-center">
-          <Archive className="w-10 h-10 mx-auto text-gray-200 mb-3"/>
-          <p className="text-sm text-gray-400">{data.length === 0 ? `No archived ${currentTab?.label?.toLowerCase()}.` : 'No results match your search.'}</p>
+          <Archive className="w-10 h-10 mx-auto text-slate-200 mb-3"/>
+          <p className="text-sm text-slate-400">{data.length === 0 ? `No archived ${currentTab?.label?.toLowerCase()}.` : 'No results match your search.'}</p>
         </div>
       ) : (
         <div className="surface overflow-hidden">
@@ -398,22 +398,22 @@ export default function ArchivePage() {
           {/* ── Employees tab (is_active=false) — special layout ── */}
           {tab === 'employees' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+              <thead className="bg-slate-50">
                 <tr>
                   {['Employee', 'Role', 'ID', 'Email', 'Dept', 'Joined', ''].map(h => (
-                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(emp => (
-                  <tr key={emp.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900">{emp.full_name}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600 capitalize">{emp.role?.replace(/_/g, ' ')}</td>
-                    <td className="px-5 py-3 text-xs font-mono font-bold text-gray-700">{emp.employee_code || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{emp.email}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{emp.department || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{emp.joined_date || '—'}</td>
+                  <tr key={emp.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900">{emp.full_name}</td>
+                    <td className="px-5 py-3 text-xs text-slate-600 capitalize">{emp.role?.replace(/_/g, ' ')}</td>
+                    <td className="px-5 py-3 text-xs font-mono font-bold text-slate-700">{emp.employee_code || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{emp.email}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{emp.department || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{emp.joined_date || '—'}</td>
                     <td className="px-5 py-3 text-right">
                       <Link href="/directory" className="text-xs font-bold text-navy hover:underline">Manage in Directory →</Link>
                     </td>
@@ -426,16 +426,16 @@ export default function ArchivePage() {
           {/* ── Batches ── */}
           {tab === 'batches' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Batch', 'Recipe', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Batch', 'Recipe', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(b => (
-                  <tr key={b.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-xs font-mono font-black text-gray-900">{b.batch_id}</td>
-                    <td className="px-5 py-3 text-xs font-semibold text-gray-700">{b.formulations?.name || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{b.status || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(b.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={b.archived_at}/></td>
+                  <tr key={b.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-xs font-mono font-black text-slate-900">{b.batch_id}</td>
+                    <td className="px-5 py-3 text-xs font-semibold text-slate-700">{b.formulations?.name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{b.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(b.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={b.archived_at}/></td>
                     <td className="px-5 py-3 text-right space-x-3">
                       <Link href={`/batches/${b.id}`} className="text-xs font-bold text-navy hover:underline">View</Link>
                       <button onClick={() => setConfirmAction({ type: 'restore', item: b, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button>
@@ -452,17 +452,17 @@ export default function ArchivePage() {
           {/* ── Formulations ── */}
           {tab === 'formulations' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Name', 'Code', 'Category', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Name', 'Code', 'Category', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(f => (
-                  <tr key={f.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900">{f.name}</td>
+                  <tr key={f.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900">{f.name}</td>
                     <td className="px-5 py-3 text-xs font-mono font-bold text-navy">{f.code} v{f.version}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{f.category || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{f.status}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(f.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={f.archived_at}/></td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{f.category || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{f.status}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(f.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={f.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: f, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: f, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -474,17 +474,17 @@ export default function ArchivePage() {
           {/* ── Equipment ── */}
           {tab === 'equipment' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Name', 'Model', 'Serial', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Name', 'Model', 'Serial', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(e => (
-                  <tr key={e.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900">{e.name}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{e.model || '—'}</td>
-                    <td className="px-5 py-3 text-xs font-mono text-gray-500">{e.serial_number || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{e.status}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(e.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={e.archived_at}/></td>
+                  <tr key={e.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900">{e.name}</td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{e.model || '—'}</td>
+                    <td className="px-5 py-3 text-xs font-mono text-slate-500">{e.serial_number || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{e.status}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(e.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={e.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: e, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: e, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -496,17 +496,17 @@ export default function ArchivePage() {
           {/* ── Tasks ── */}
           {tab === 'tasks' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Title', 'Priority', 'Assigned To', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Title', 'Priority', 'Assigned To', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(t => (
-                  <tr key={t.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[240px] truncate">{t.title}</td>
-                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${t.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-200' : t.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>{t.priority}</span></td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{t.assigned_user?.full_name || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{t.creator?.full_name || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(t.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={t.archived_at}/></td>
+                  <tr key={t.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[240px] truncate">{t.title}</td>
+                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${t.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-200' : t.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{t.priority}</span></td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{t.assigned_user?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{t.creator?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(t.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={t.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: t, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: t, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -518,17 +518,17 @@ export default function ArchivePage() {
           {/* ── Lab Notebook ── */}
           {tab === 'lnb' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Title', 'Batch', 'Author', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Title', 'Batch', 'Author', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(e => (
-                  <tr key={e.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[240px] truncate">{e.title}</td>
+                  <tr key={e.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[240px] truncate">{e.title}</td>
                     <td className="px-5 py-3 text-xs font-mono text-navy">{e.batches?.batch_id || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{e.author?.full_name || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{e.status}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(e.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={e.archived_at}/></td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{e.author?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{e.status}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(e.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={e.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: e, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: e, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -540,16 +540,16 @@ export default function ArchivePage() {
           {/* ── Inventory ── */}
           {tab === 'inventory' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Name', 'Category', 'Unit', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Name', 'Category', 'Unit', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(i => (
-                  <tr key={i.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900">{i.name}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{i.category || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{i.unit || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(i.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={i.archived_at}/></td>
+                  <tr key={i.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900">{i.name}</td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{i.category || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{i.unit || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(i.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={i.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: i, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: i, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -561,17 +561,17 @@ export default function ArchivePage() {
           {/* ── Shelf Life ── */}
           {tab === 'shelf_life' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Batch', 'Type', 'Condition', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Batch', 'Type', 'Condition', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(s => (
-                  <tr key={s.id} className="hover:bg-gray-50/50">
+                  <tr key={s.id} className="hover:bg-slate-50/50">
                     <td className="px-5 py-3 text-xs font-mono font-black text-navy">{s.batches?.batch_id || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{s.study_type || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{s.storage_condition || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{s.status}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(s.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={s.archived_at}/></td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{s.study_type || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{s.storage_condition || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{s.status}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(s.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={s.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: s, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: s, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -583,17 +583,17 @@ export default function ArchivePage() {
           {/* ── Deviations ── */}
           {tab === 'deviations' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Title', 'Source', 'Severity', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Title', 'Source', 'Severity', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(d => (
-                  <tr key={d.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[240px] truncate">{d.title}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{d.source || '—'}</td>
-                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${d.severity === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' : d.severity === 'Major' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>{d.severity}</span></td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{d.status}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(d.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={d.archived_at}/></td>
+                  <tr key={d.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[240px] truncate">{d.title}</td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{d.source || '—'}</td>
+                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${d.severity === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' : d.severity === 'Major' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{d.severity}</span></td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{d.status}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(d.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={d.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: d, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: d, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -605,17 +605,17 @@ export default function ArchivePage() {
           {/* ── CAPA ── */}
           {tab === 'capa' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Title', 'Type', 'Status', 'Assigned To', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Title', 'Type', 'Status', 'Assigned To', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[220px] truncate">{c.title}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{c.action_type || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{c.status || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{c.assignee?.full_name || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(c.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={c.archived_at}/></td>
+                  <tr key={c.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[220px] truncate">{c.title}</td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{c.action_type || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{c.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{c.assignee?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(c.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={c.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: c, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: c, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -627,16 +627,16 @@ export default function ArchivePage() {
           {/* ── Growth Studies ── */}
           {tab === 'growth_studies' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Title', 'Status', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Title', 'Status', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(g => (
-                  <tr key={g.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[240px] truncate">{g.title || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{g.status || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{g.creator?.full_name || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(g.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={g.archived_at}/></td>
+                  <tr key={g.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[240px] truncate">{g.title || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{g.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{g.creator?.full_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(g.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={g.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: g, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: g, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -648,17 +648,17 @@ export default function ArchivePage() {
           {/* ── Research (Taste Panels) ── */}
           {tab === 'research' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Session', 'Batch', 'Panelists', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Session', 'Batch', 'Panelists', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(r => (
-                  <tr key={r.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900 max-w-[220px] truncate">{r.session_title}</td>
+                  <tr key={r.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[220px] truncate">{r.session_title}</td>
                     <td className="px-5 py-3 text-xs font-mono text-navy">{r.batches?.batch_id || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{r.panelist_count ?? '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{r.status || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(r.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={r.archived_at}/></td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{r.panelist_count ?? '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{r.status || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(r.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={r.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: r, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: r, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -670,17 +670,17 @@ export default function ArchivePage() {
           {/* ── Samples ── */}
           {tab === 'samples' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50"><tr>
-                {['Label', 'Type', 'Source', 'Batch', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase">{h}</th>)}
+              <thead className="bg-slate-50"><tr>
+                {['Label', 'Type', 'Source', 'Batch', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(s => (
-                  <tr key={s.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 text-xs font-mono font-black text-gray-900">{s.sample_label || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-600">{s.source_type || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{s.source_label || '—'}</td>
+                  <tr key={s.id} className="hover:bg-slate-50/50">
+                    <td className="px-5 py-3 text-xs font-mono font-black text-slate-900">{s.sample_label || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-600">{s.source_type || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-500">{s.source_label || '—'}</td>
                     <td className="px-5 py-3 text-xs font-mono text-navy">{s.batches?.batch_id || '—'}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400 flex items-center gap-1.5">{new Date(s.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={s.archived_at}/></td>
+                    <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(s.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={s.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: s, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'delete', item: s, tabId: tab })} className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5"/>Delete</button></td>
                   </tr>
@@ -693,16 +693,16 @@ export default function ArchivePage() {
           {tab === 'activity' && (
             <div className="hidden md:block divide-y divide-gray-100">
               {filtered.map(a => (
-                <div key={a.id} className="flex items-start justify-between gap-4 px-5 py-4 hover:bg-gray-50/50">
+                <div key={a.id} className="flex items-start justify-between gap-4 px-5 py-4 hover:bg-slate-50/50">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-sm font-black text-gray-900">{a.employees?.full_name || 'Unknown'}</span>
-                      <span className="text-xs text-gray-400">{a.start_time} – {a.end_time}</span>
+                      <span className="text-sm font-black text-slate-900">{a.employees?.full_name || 'Unknown'}</span>
+                      <span className="text-xs text-slate-400">{a.start_time} – {a.end_time}</span>
                       {a.issue_observed && <span className="text-[9px] font-black text-red-700 bg-red-50 border border-red-100 rounded px-1.5 py-0.5">ISSUE</span>}
                       <RetentionBadge archivedAt={a.archived_at}/>
                     </div>
-                    <p className="text-xs text-gray-700 line-clamp-2">{a.activity_description}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">Archived {new Date(a.archived_at).toLocaleString()}</p>
+                    <p className="text-xs text-slate-700 line-clamp-2">{a.activity_description}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Archived {new Date(a.archived_at).toLocaleString()}</p>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => setConfirmAction({ type: 'restore', item: a, tabId: tab })} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold hover:bg-emerald-100"><RotateCcw className="w-3 h-3"/>Restore</button>

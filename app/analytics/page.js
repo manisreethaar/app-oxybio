@@ -7,7 +7,7 @@ export default function AnalyticsOverview() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Link href="/analytics/batches" className="glass-card rounded-2xl p-6 border border-slate-200/50 hover:shadow-soft transition-all group block">
         <div className="flex items-center justify-between mb-4">
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center">
             <Activity className="w-6 h-6" />
           </div>
         </div>

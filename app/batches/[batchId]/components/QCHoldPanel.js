@@ -643,7 +643,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const failCount   = tests.filter(t => t.pass_fail === 'Fail').length;
   const pendingCount= tests.filter(t => t.pass_fail === 'Pending').length;
 
-  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view QC records.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view QC records.</div>;
 
   return (
     <div className="space-y-5">
@@ -652,26 +652,26 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4 print:shadow-none print:rounded-none print:my-0">
             {/* Print-only: hide controls */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 print:hidden">
-              <h3 className="text-base font-black text-gray-900">Certificate of Analysis — Preview</h3>
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 print:hidden">
+              <h3 className="text-base font-black text-slate-900">Certificate of Analysis — Preview</h3>
               <div className="flex gap-2">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-navy text-white font-bold rounded-xl text-xs uppercase tracking-wider">Print / Save PDF</button>
-                <button onClick={() => setShowCoa(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs uppercase tracking-wider">Close</button>
+                <button onClick={() => setShowCoa(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider">Close</button>
               </div>
             </div>
             <div className="p-8 space-y-6" id="coa-print-area">
               {/* COA Header */}
-              <div className="text-center border-b-2 border-gray-900 pb-4">
-                <p className="text-2xl font-black text-gray-900 uppercase tracking-widest">OXYGEN BIOINNOVATIONS</p>
-                <p className="text-sm font-bold text-gray-500 mt-0.5">Internal Quality Control Certificate</p>
-                <p className="text-xs text-gray-400 mt-0.5">Probiotic Fermentation Products · Chennai, India</p>
+              <div className="text-center border-b-2 border-slate-900 pb-4">
+                <p className="text-2xl font-black text-slate-900 uppercase tracking-widest">OXYGEN BIOINNOVATIONS</p>
+                <p className="text-sm font-bold text-slate-500 mt-0.5">Internal Quality Control Certificate</p>
+                <p className="text-xs text-slate-400 mt-0.5">Probiotic Fermentation Products · Chennai, India</p>
               </div>
               {/* Title */}
               <div className="text-center">
-                <p className="text-lg font-black uppercase tracking-widest text-gray-900 border-2 border-gray-900 inline-block px-6 py-2">CERTIFICATE OF ANALYSIS</p>
+                <p className="text-lg font-black uppercase tracking-widest text-slate-900 border-2 border-slate-900 inline-block px-6 py-2">CERTIFICATE OF ANALYSIS</p>
               </div>
               {/* Batch Info Grid */}
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border border-gray-200 rounded-xl p-4">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border border-slate-200 rounded-xl p-4">
                 {[
                   ['Batch ID', batch.batch_id || batch.id],
                   ['Trial / Flask', activeFlask.flask_label],
@@ -681,32 +681,32 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   ['COA Generated', new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })],
                 ].map(([label, val]) => (
                   <div key={label} className="flex gap-2">
-                    <span className="font-black text-gray-500 w-36 shrink-0 text-xs uppercase">{label}:</span>
-                    <span className="font-bold text-gray-900 text-xs">{val || '—'}</span>
+                    <span className="font-black text-slate-500 w-36 shrink-0 text-xs uppercase">{label}:</span>
+                    <span className="font-bold text-slate-900 text-xs">{val || '—'}</span>
                   </div>
                 ))}
               </div>
               {/* Test Results Table */}
               <div>
-                <p className="text-xs font-black uppercase tracking-widest text-gray-600 mb-2">Test Results</p>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-600 mb-2">Test Results</p>
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Test Parameter</th>
-                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Specification</th>
-                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Result</th>
-                      <th className="border border-gray-300 px-3 py-2 text-left font-black text-gray-700">Unit</th>
-                      <th className="border border-gray-300 px-3 py-2 text-center font-black text-gray-700">Status</th>
+                    <tr className="bg-slate-100">
+                      <th className="border border-slate-300 px-3 py-2 text-left font-black text-slate-700">Test Parameter</th>
+                      <th className="border border-slate-300 px-3 py-2 text-left font-black text-slate-700">Specification</th>
+                      <th className="border border-slate-300 px-3 py-2 text-left font-black text-slate-700">Result</th>
+                      <th className="border border-slate-300 px-3 py-2 text-left font-black text-slate-700">Unit</th>
+                      <th className="border border-slate-300 px-3 py-2 text-center font-black text-slate-700">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tests.filter(t => !t.retest_of).map(t => (
                       <tr key={t.id} className={t.pass_fail === 'Fail' ? 'bg-red-50' : t.pass_fail === 'Pass' ? 'bg-emerald-50/50' : ''}>
-                        <td className="border border-gray-200 px-3 py-1.5 font-semibold text-gray-800">{t.test_name}</td>
-                        <td className="border border-gray-200 px-3 py-1.5 text-gray-600">{t.target_spec || '—'}</td>
-                        <td className="border border-gray-200 px-3 py-1.5 font-bold text-gray-900">{t.result_value || '—'}</td>
-                        <td className="border border-gray-200 px-3 py-1.5 text-gray-500">{t.result_unit || '—'}</td>
-                        <td className={`border border-gray-200 px-3 py-1.5 text-center font-black ${t.pass_fail === 'Pass' ? 'text-emerald-700' : t.pass_fail === 'Fail' ? 'text-red-700' : 'text-gray-500'}`}>{t.pass_fail}</td>
+                        <td className="border border-slate-200 px-3 py-1.5 font-semibold text-slate-800">{t.test_name}</td>
+                        <td className="border border-slate-200 px-3 py-1.5 text-slate-600">{t.target_spec || '—'}</td>
+                        <td className="border border-slate-200 px-3 py-1.5 font-bold text-slate-900">{t.result_value || '—'}</td>
+                        <td className="border border-slate-200 px-3 py-1.5 text-slate-500">{t.result_unit || '—'}</td>
+                        <td className={`border border-slate-200 px-3 py-1.5 text-center font-black ${t.pass_fail === 'Pass' ? 'text-emerald-700' : t.pass_fail === 'Fail' ? 'text-red-700' : 'text-slate-500'}`}>{t.pass_fail}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -717,20 +717,20 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <p className={`text-lg font-black uppercase tracking-widest ${anyFail ? 'text-red-800' : 'text-emerald-800'}`}>
                   Overall QC Status: {anyFail ? 'FAIL' : 'PASS'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">{tests.filter(t=>t.pass_fail==='Pass').length} Pass · {tests.filter(t=>t.pass_fail==='Fail').length} Fail · {tests.filter(t=>t.pass_fail==='Pending').length} Pending</p>
+                <p className="text-xs text-slate-500 mt-1">{tests.filter(t=>t.pass_fail==='Pass').length} Pass · {tests.filter(t=>t.pass_fail==='Fail').length} Fail · {tests.filter(t=>t.pass_fail==='Pending').length} Pending</p>
               </div>
               {/* Signatures */}
-              <div className="grid grid-cols-2 gap-8 pt-4 border-t border-gray-200 text-xs">
+              <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs">
                 <div className="space-y-6">
-                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">QC Analyst</p></div>
-                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">Date</p></div>
+                  <div className="border-b border-slate-400 pb-1"><p className="text-slate-400">QC Analyst</p></div>
+                  <div className="border-b border-slate-400 pb-1"><p className="text-slate-400">Date</p></div>
                 </div>
                 <div className="space-y-6">
-                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">Authorised by (QA Head)</p></div>
-                  <div className="border-b border-gray-400 pb-1"><p className="text-gray-400">Date</p></div>
+                  <div className="border-b border-slate-400 pb-1"><p className="text-slate-400">Authorised by (QA Head)</p></div>
+                  <div className="border-b border-slate-400 pb-1"><p className="text-slate-400">Date</p></div>
                 </div>
               </div>
-              <p className="text-[9px] text-gray-300 text-center">This document is generated by OxyOS — Oxygen Bioinnovations Internal Lab Management System. For internal use only.</p>
+              <p className="text-[9px] text-slate-300 text-center">This document is generated by OxyOS — Oxygen Bioinnovations Internal Lab Management System. For internal use only.</p>
             </div>
           </div>
         </div>
@@ -745,18 +745,18 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <XCircle className="w-5 h-5 text-red-600"/>
               </div>
               <div>
-                <h3 className="text-base font-black text-gray-900">Out-of-Spec Result Detected</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Test: <span className="font-bold text-red-700">{oosModal.testName}</span></p>
+                <h3 className="text-base font-black text-slate-900">Out-of-Spec Result Detected</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Test: <span className="font-bold text-red-700">{oosModal.testName}</span></p>
               </div>
             </div>
-            <p className="text-sm text-gray-700">A formal OOS (Out-of-Spec) investigation record is required for any failed QC test under GMP. This will be raised as a CAPA deviation in the Compliance module.</p>
+            <p className="text-sm text-slate-700">A formal OOS (Out-of-Spec) investigation record is required for any failed QC test under GMP. This will be raised as a CAPA deviation in the Compliance module.</p>
             <div>
               <label className="field-label">Brief description of the failure (optional)</label>
               <textarea value={oosDesc} onChange={e=>setOosDesc(e.target.value)} rows={3} placeholder={`e.g. ${oosModal.testName} result exceeded spec — possible cause: ...`}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold outline-none resize-none"/>
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none resize-none"/>
             </div>
             <div className="flex gap-3">
-              <button onClick={()=>setOosModal(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs uppercase tracking-wider">
+              <button onClick={()=>setOosModal(null)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider">
                 Skip for now
               </button>
               <button onClick={handleRaiseOos} disabled={raisingOos} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
@@ -768,14 +768,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       )}
 
       <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-rose-500">
-        <Clock className="w-5 h-5 text-rose-600"/>
-        <div><h2 className="text-base font-bold text-gray-900">QC Hold: <span className="text-rose-600">{activeFlask.flask_label}</span></h2>
-          <p className="text-xs text-gray-500">All standard tests must be recorded before this trial can be released or rejected.</p></div>
+        <Clock className="w-5 h-5 text-red-600"/>
+        <div><h2 className="text-base font-bold text-slate-900">QC Hold: <span className="text-red-600">{activeFlask.flask_label}</span></h2>
+          <p className="text-xs text-slate-500">All standard tests must be recorded before this trial can be released or rejected.</p></div>
       </div>
 
       {!sample ? (
         <div className="surface p-5 space-y-4">
-          <h3 className="text-sm font-bold text-gray-900">Create QC Sample Record for {activeFlask.flask_label}</h3>
+          <h3 className="text-sm font-bold text-slate-900">Create QC Sample Record for {activeFlask.flask_label}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Sampling Date</label><input type="date" value={samplingDate} onChange={e=>setSamplingDate(e.target.value)} className="field-input"/></div>
             <div><label className="field-label">Sample Volume (ml)</label><input type="number" step="0.1" value={volPerFlask} onChange={e=>setVolPerFlask(e.target.value)} className="field-input" placeholder="10"/></div>
@@ -785,7 +785,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             <div className="flex gap-2">
               {['In-house','NABL external lab'].map(o=>(
                 <button key={o} type="button" onClick={()=>setTestingLoc(o)}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${testingLoc===o?'bg-rose-600 text-white border-rose-600':'bg-white text-gray-600 border-gray-200 hover:border-rose-300'}`}>
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${testingLoc===o?'bg-red-600 text-white border-red-600':'bg-white text-slate-600 border-slate-200 hover:border-red-300'}`}>
                   {o}
                 </button>
               ))}
@@ -807,9 +807,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         <div className="space-y-4">
           <div className="surface p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Sample ID</p>
-              <p className="text-base font-black font-mono text-gray-900 mt-0.5">{sample.sample_id}</p>
-              <p className="text-xs text-gray-400">{sample.testing_location} · Sampled: {sample.sampling_date}</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Sample ID</p>
+              <p className="text-base font-black font-mono text-slate-900 mt-0.5">{sample.sample_id}</p>
+              <p className="text-xs text-slate-400">{sample.testing_location} · Sampled: {sample.sampling_date}</p>
             </div>
             <div className="flex gap-2 text-center">
               <div className="px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
@@ -820,9 +820,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <p className="text-lg font-black text-red-700">{failCount}</p>
                 <p className="text-[9px] font-bold text-red-600 uppercase">Fail</p>
               </div>
-              <div className="px-3 py-2 bg-gray-100 rounded-xl border border-gray-200">
-                <p className="text-lg font-black text-gray-600">{pendingCount}</p>
-                <p className="text-[9px] font-bold text-gray-500 uppercase">Pending</p>
+              <div className="px-3 py-2 bg-slate-100 rounded-xl border border-slate-200">
+                <p className="text-lg font-black text-slate-600">{pendingCount}</p>
+                <p className="text-[9px] font-bold text-slate-500 uppercase">Pending</p>
               </div>
             </div>
           </div>
@@ -839,7 +839,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               <button
                 type="button"
                 onClick={handleTogglePlating}
-                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${platingEnabled ? 'bg-slate-600' : 'bg-gray-300'}`}
+                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${platingEnabled ? 'bg-slate-600' : 'bg-slate-300'}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${platingEnabled ? 'translate-x-4' : ''}`}/>
               </button>
@@ -906,18 +906,18 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                       return (
                         <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2">
                           <div>
-                            <p className="text-xs font-black text-gray-800">{record.sample_name}</p>
+                            <p className="text-xs font-black text-slate-800">{record.sample_name}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${done ? 'bg-gray-100 text-gray-600' : 'bg-blue-50 text-blue-700'}`}>
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${done ? 'bg-slate-100 text-slate-600' : 'bg-slate-50 text-slate-700'}`}>
                                 {done ? `${Number(record.duration_hours||0).toFixed(1)}h done` : 'Ongoing'}
                               </span>
                               {done && (
-                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${sterile ? 'bg-emerald-50 text-emerald-700' : contaminated ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${sterile ? 'bg-emerald-50 text-emerald-700' : contaminated ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
                                   {record.sterility_status}
                                 </span>
                               )}
                               {record.colony_count != null && (
-                                <span className="text-[9px] text-gray-500">{record.colony_count} colonies</span>
+                                <span className="text-[9px] text-slate-500">{record.colony_count} colonies</span>
                               )}
                               {record.cfu_per_ml != null && (
                                 <span className="text-[9px] font-bold text-navy">{record.cfu_per_ml} CFU/ml</span>
@@ -928,7 +928,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                             <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-slate-700 hover:underline">Enter Results</a>
                             {isCeo && (
                               <button onClick={()=>setConfirmDeleteIncubationId(record.id)} disabled={deletingIncubationId===record.id}
-                                className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40">
+                                className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40">
                                 <Trash2 className="w-3.5 h-3.5"/>
                               </button>
                             )}
@@ -1018,7 +1018,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             <div className="surface p-4">
               {showCustomTest ? (
                 <div className="space-y-3">
-                  <p className="text-xs font-black text-gray-700">Add Custom Test</p>
+                  <p className="text-xs font-black text-slate-700">Add Custom Test</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <input value={customTestName} onChange={e=>setCustomTestName(e.target.value)} placeholder="Test name (required)" className="field-input text-xs p-2"/>
                     <input value={customTestSpec} onChange={e=>setCustomTestSpec(e.target.value)} placeholder="Target spec (optional)" className="field-input text-xs p-2"/>
@@ -1028,11 +1028,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                     <button onClick={handleAddCustomTest} disabled={!customTestName.trim()||savingCustomTest} className="px-4 py-2 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50">
                       {savingCustomTest ? 'Adding...' : 'Add Test'}
                     </button>
-                    <button onClick={()=>{setShowCustomTest(false);setCustomTestName('');setCustomTestSpec('');setCustomTestUnit('');}} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl">Cancel</button>
+                    <button onClick={()=>{setShowCustomTest(false);setCustomTestName('');setCustomTestSpec('');setCustomTestUnit('');}} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">Cancel</button>
                   </div>
                 </div>
               ) : (
-                <button onClick={()=>setShowCustomTest(true)} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all">
+                <button onClick={()=>setShowCustomTest(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all">
                   <Plus className="w-3.5 h-3.5"/>Add Custom Test
                 </button>
               )}
@@ -1043,39 +1043,39 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             <div className="surface overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-100">
-                  <thead><tr className="bg-gray-50/50">
-                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-48">Test</th>
-                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase">Target Spec</th>
-                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-28">Result</th>
-                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase w-16">Unit</th>
-                    <th className="px-4 py-3 text-left text-[9px] font-bold text-gray-400 uppercase">Date</th>
-                    <th className="px-4 py-3 text-center text-[9px] font-bold text-gray-400 uppercase w-32">Pass/Fail</th>
+                  <thead><tr className="bg-slate-50/50">
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-slate-400 uppercase w-48">Test</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-slate-400 uppercase">Target Spec</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-slate-400 uppercase w-28">Result</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-slate-400 uppercase w-16">Unit</th>
+                    <th className="px-4 py-3 text-left text-[9px] font-bold text-slate-400 uppercase">Date</th>
+                    <th className="px-4 py-3 text-center text-[9px] font-bold text-slate-400 uppercase w-32">Pass/Fail</th>
                   </tr></thead>
                   <tbody className="divide-y divide-gray-50">
                     {tests.map(t => (
-                    <tr key={t.id} className={t.pass_fail==='Fail'?'bg-red-50':t.pass_fail==='Pass'?'bg-emerald-50/50':'hover:bg-gray-50/30'}>
-                      <td className="px-4 py-3 text-xs font-bold text-gray-800">
+                    <tr key={t.id} className={t.pass_fail==='Fail'?'bg-red-50':t.pass_fail==='Pass'?'bg-emerald-50/50':'hover:bg-slate-50/30'}>
+                      <td className="px-4 py-3 text-xs font-bold text-slate-800">
                         {t.test_name}
                         {/* G-08: OOS badge */}
                         {oosRaised.has(t.id) && (
                           <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-[8px] font-black rounded uppercase">OOS Raised</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{t.target_spec}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{t.target_spec}</td>
                       <td className="px-4 py-3">
                         <input value={t.result_value||''} onChange={e=>handleUpdateTest(t.id,'result_value',e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs font-bold outline-none focus:border-navy" placeholder="—"/>
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-navy" placeholder="—"/>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{t.result_unit||'—'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">{t.result_unit||'—'}</td>
                       <td className="px-4 py-3">
                         <input type="date" value={t.tested_at||''} onChange={e=>handleUpdateTest(t.id,'tested_at',e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs outline-none focus:border-navy"/>
+                          className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-navy"/>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
                           {['Pass','Fail','N/A'].map(o=>(
                             <button key={o} onClick={()=>handleUpdateTest(t.id,'pass_fail',o)}
-                              className={`flex-1 py-1 text-[9px] font-black rounded border transition-all ${t.pass_fail===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-400 border-gray-200 hover:border-gray-300'}`}>
+                              className={`flex-1 py-1 text-[9px] font-black rounded border transition-all ${t.pass_fail===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>
                               {o}
                             </button>
                           ))}
@@ -1100,8 +1100,8 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           )}
 
           {!allDone && (
-            <div className="surface p-4 bg-gray-50 flex items-center gap-2 text-xs text-gray-500">
-              <Lock className="w-4 h-4 text-gray-400"/>
+            <div className="surface p-4 bg-slate-50 flex items-center gap-2 text-xs text-slate-500">
+              <Lock className="w-4 h-4 text-slate-400"/>
               <span className="font-semibold">{pendingCount} test(s) still pending — all tests must be recorded before trial can be released or rejected.</span>
             </div>
           )}
@@ -1118,10 +1118,10 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 </div>
               )}
               {/* A-18: Post-packaging QC */}
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-black text-blue-900">Post-Packaging QC Check</p>
-                  <button onClick={() => setShowPostPack(v=>!v)} className="text-[10px] font-bold text-blue-700 underline">{showPostPack?'Hide':'Add'}</button>
+                  <p className="text-xs font-black text-slate-900">Post-Packaging QC Check</p>
+                  <button onClick={() => setShowPostPack(v=>!v)} className="text-[10px] font-bold text-slate-700 underline">{showPostPack?'Hide':'Add'}</button>
                 </div>
                 {sample?.post_packaging_tested && (
                   <p className="text-xs text-emerald-700 font-bold">✓ Post-pack: pH {sample.post_packaging_ph || '—'} · CFU: {sample.post_packaging_cfu || '—'} · Pack: {sample.packaging_type || '—'}</p>
@@ -1145,7 +1145,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                       setSavingPostPack(false);
                       setShowPostPack(false);
                       fetchQcData();
-                    }} className="px-4 py-1.5 bg-blue-600 text-white font-bold rounded-lg text-xs disabled:opacity-50">
+                    }} className="px-4 py-1.5 bg-slate-600 text-white font-bold rounded-lg text-xs disabled:opacity-50">
                       {savingPostPack ? 'Saving...' : 'Save Post-Pack QC'}
                     </button>
                   </div>
@@ -1173,14 +1173,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                     <p className={`font-black mt-0.5 ${meetsEoSL ? 'text-emerald-800' : 'text-red-800'}`}>
                       {meetsEoSL ? '✓ Projected to meet ≥10⁵ CFU/g at 90 days' : '⚠ MAY NOT meet ≥10⁵ CFU/g at 90 days — verify shelf-life study'}
                     </p>
-                    <p className="text-[9px] text-gray-400 mt-0.5">Based on 1-log/30d D-value estimate at 4°C. Confirm with actual stability study.</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5">Based on 1-log/30d D-value estimate at 4°C. Confirm with actual stability study.</p>
                   </div>
                 );
               })()}
 
               {/* G-09: COA download button */}
               <button onClick={() => setShowCoa(true)}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                className="w-full py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2">
                 <ArrowDownToLine className="w-3.5 h-3.5"/>Generate Certificate of Analysis (COA)
               </button>
               {/* A-38: Batch disposition decision tree */}
@@ -1192,12 +1192,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                     <p className="text-red-800 font-semibold">Tests failed — choose one of:</p>
                     <p className="text-red-700">• <strong>Reject</strong> — if failure is critical (pathogen, safety) or deviation is unacceptable</p>
                     <p className="text-amber-700">• <strong>Conditional Release</strong> — if failure is non-critical with documented deviation approved by QA</p>
-                    <p className="text-orange-700">• <strong>Rework / Retest</strong> — if failure may be due to sampling error; use Re-test button above</p>
+                    <p className="text-amber-700">• <strong>Rework / Retest</strong> — if failure may be due to sampling error; use Re-test button above</p>
                   </div>
                 )}
               </div>
 
-              {!isCeo && <p className="text-xs text-gray-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
+              {!isCeo && <p className="text-xs text-slate-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
               {isCeo && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button onClick={()=>onAdvanceFlaskStage('released')} disabled={actionLoading}

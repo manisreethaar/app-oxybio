@@ -137,7 +137,7 @@ export default function TopBar() {
     >
       {/* Page title */}
       <div className="hidden md:flex items-center gap-2 pl-3 pr-2">
-        <h1 className="text-[13px] font-black text-zinc-800 tracking-tight whitespace-nowrap">
+        <h1 className="text-[13px] font-black text-slate-800 tracking-tight whitespace-nowrap">
           {getPageTitle()}
         </h1>
       </div>
@@ -148,12 +148,12 @@ export default function TopBar() {
           style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)', boxShadow: '0 0 12px rgba(71,85,105,0.3)' }}>
           O₂
         </div>
-        <span className="text-[14px] font-black text-zinc-900 tracking-tight">OxyOS</span>
+        <span className="text-[14px] font-black text-slate-900 tracking-tight">OxyOS</span>
       </div>
 
       {/* Mobile search */}
       <button onClick={openSearch}
-        className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-100 transition-colors">
+        className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 transition-colors">
         <Search className="w-4 h-4" />
       </button>
 
@@ -163,20 +163,20 @@ export default function TopBar() {
       {/* Desktop Search (Right aligned) */}
       <button
         onClick={openSearch}
-        className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold text-zinc-500 hover:text-zinc-800 transition-all group shrink-0"
+        className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold text-slate-500 hover:text-slate-800 transition-all group shrink-0"
         style={{ background: 'rgba(0,0,0,0.03)' }}
       >
-        <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+        <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
         <span>Search...</span>
-        <kbd className="ml-2 text-[9px] font-black text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-md tracking-wider">⌘K</kbd>
+        <kbd className="ml-2 text-[9px] font-black text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md tracking-wider">⌘K</kbd>
       </button>
 
       {/* Divider */}
-      <div className="hidden md:block w-px h-5 bg-zinc-200 mx-1 shrink-0" />
+      <div className="hidden md:block w-px h-5 bg-slate-200 mx-1 shrink-0" />
 
       <div className="flex items-center gap-1.5 pr-1">
         {/* Date */}
-        <div className="hidden lg:flex items-center h-8 px-3 rounded-lg text-[11px] font-bold text-zinc-500" style={{ background: 'rgba(0,0,0,0.04)' }}>
+        <div className="hidden lg:flex items-center h-8 px-3 rounded-lg text-[11px] font-bold text-slate-500" style={{ background: 'rgba(0,0,0,0.04)' }}>
           {todayStr}
         </div>
 
@@ -192,7 +192,7 @@ export default function TopBar() {
         {/* Bell */}
         <div className="relative">
           <button onClick={handleBellClick}
-            className="relative w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition-all">
+            className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all">
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: '#475569', boxShadow: '0 0 6px rgba(71,85,105,0.7)' }} />
@@ -202,24 +202,24 @@ export default function TopBar() {
           {notifOpen && (
             <div className="absolute right-0 mt-2 w-80 z-50 animate-in fade-in zoom-in-95 duration-150"
               style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(24px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '1.25rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)' }}>
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-100">
-                <span className="text-[12px] font-black text-zinc-800 uppercase tracking-widest">Notifications</span>
+              <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
+                <span className="text-[12px] font-black text-slate-800 uppercase tracking-widest">Notifications</span>
                 <Link href="/notifications" onClick={() => setNotifOpen(false)} className="text-[11px] font-bold text-slate-500 hover:text-slate-700">View all</Link>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="px-4 py-10 text-center">
-                    <Bell className="w-8 h-8 text-zinc-200 mx-auto mb-2" />
-                    <p className="text-xs font-bold text-zinc-400">You're all caught up!</p>
+                    <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-slate-400">You're all caught up!</p>
                   </div>
                 ) : notifications.map(n => (
                   <div key={n.id} onClick={() => markAsRead(n.id, n.link || '/notifications')}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-zinc-50 last:border-0 ${!n.is_read ? 'bg-slate-50/50' : 'hover:bg-zinc-50'}`}>
+                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-slate-50 last:border-0 ${!n.is_read ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}>
                     <div className="flex justify-between items-start gap-2">
-                      <p className={`text-[12px] leading-snug ${!n.is_read ? 'font-black text-zinc-900' : 'font-semibold text-zinc-600'}`}>{n.title}</p>
+                      <p className={`text-[12px] leading-snug ${!n.is_read ? 'font-black text-slate-900' : 'font-semibold text-slate-600'}`}>{n.title}</p>
                       {!n.is_read && <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: '#475569' }} />}
                     </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{n.message}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
                   </div>
                 ))}
               </div>
@@ -232,13 +232,13 @@ export default function TopBar() {
           <div className="relative">
             <button
               onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
-              className="flex items-center gap-2 pl-1.5 pr-2.5 h-9 rounded-xl hover:bg-zinc-100 transition-all"
+              className="flex items-center gap-2 pl-1.5 pr-2.5 h-9 rounded-xl hover:bg-slate-100 transition-all"
             >
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
                 style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
                 {getInitials(employeeProfile.full_name)}
               </div>
-              <span className="hidden md:block text-[12px] font-bold text-zinc-800 max-w-[100px] truncate">
+              <span className="hidden md:block text-[12px] font-bold text-slate-800 max-w-[100px] truncate">
                 {employeeProfile.full_name?.split(' ').slice(-1)[0] || 'Me'}
               </span>
             </button>
@@ -246,25 +246,25 @@ export default function TopBar() {
             {profileOpen && (
               <div className="absolute right-0 mt-2 w-52 z-50 animate-in fade-in zoom-in-95 duration-150"
                 style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(24px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '1.25rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)' }}>
-                <div className="px-4 py-4 border-b border-zinc-100">
+                <div className="px-4 py-4 border-b border-slate-100">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-black text-white mb-2"
                     style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
                     {getInitials(employeeProfile.full_name)}
                   </div>
-                  <p className="text-[13px] font-black text-zinc-900 leading-tight truncate">{employeeProfile.full_name}</p>
-                  <p className="text-[11px] font-semibold text-zinc-400 capitalize mt-0.5">{employeeProfile.designation || employeeProfile.role}</p>
+                  <p className="text-[13px] font-black text-slate-900 leading-tight truncate">{employeeProfile.full_name}</p>
+                  <p className="text-[11px] font-semibold text-slate-400 capitalize mt-0.5">{employeeProfile.designation || employeeProfile.role}</p>
                 </div>
                 <div className="p-2">
                   <Link href="/profile" onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] font-semibold text-zinc-700 hover:bg-zinc-100 transition-colors">
-                    <User className="w-4 h-4 text-zinc-400" /> View Profile
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+                    <User className="w-4 h-4 text-slate-400" /> View Profile
                   </Link>
                   <Link href="/profile" onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] font-semibold text-zinc-700 hover:bg-zinc-100 transition-colors">
-                    <CreditCard className="w-4 h-4 text-zinc-400" /> ID Card
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+                    <CreditCard className="w-4 h-4 text-slate-400" /> ID Card
                   </Link>
                   <button onClick={signOut}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors mt-1 border-t border-zinc-100 pt-3">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors mt-1 border-t border-slate-100 pt-3">
                     <LogOut className="w-4 h-4" /> Sign Out
                   </button>
                 </div>

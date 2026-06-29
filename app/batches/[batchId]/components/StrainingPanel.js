@@ -10,7 +10,7 @@ function CalibrationBadge({ equipment }) {
   const due = equipment.calibration_due_date ? new Date(equipment.calibration_due_date) : null;
   const today = new Date();
   const daysLeft = due ? Math.ceil((due - today) / 86400000) : null;
-  if (!due)          return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-400">No Cal. Data</span>;
+  if (!due)          return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">No Cal. Data</span>;
   if (daysLeft < 0)  return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-1"><AlertTriangle className="w-2.5 h-2.5"/>OVERDUE</span>;
   if (daysLeft <= 30) return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Due in {daysLeft}d</span>;
   return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Cal. OK</span>;
@@ -212,16 +212,16 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
 
-  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Centrifugation.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Centrifugation.</div>;
 
   return (
     <div className="space-y-5">
       <div className="surface p-5 border-l-4 border-l-amber-500">
         <div className="flex items-center gap-2 mb-1">
           <Beaker className="w-5 h-5 text-amber-600"/>
-          <h2 className="text-base font-bold text-gray-900">Centrifugation: <span className="text-amber-600">{activeFlask.flask_label}</span></h2>
+          <h2 className="text-base font-bold text-slate-900">Centrifugation: <span className="text-amber-600">{activeFlask.flask_label}</span></h2>
         </div>
-        <p className="text-xs text-gray-500">Log centrifuge run parameters and mass-balance recovery for this trial.</p>
+        <p className="text-xs text-slate-500">Log centrifuge run parameters and mass-balance recovery for this trial.</p>
         {record && (
           <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600"/>
@@ -235,7 +235,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Equipment Traceability */}
       <div className="surface p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
           <Wrench className="w-3 h-3"/>Equipment Used
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -247,11 +247,11 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* G-67: Method selection */}
       <div className="surface p-5 space-y-3">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Separation Method</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Separation Method</p>
         <div className="flex gap-2">
           {['Centrifugation','Membrane Filtration','Gravity Filtration','Depth Filtration'].map(m=>(
             <button key={m} type="button" onClick={()=>setMethod(m)}
-              className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${method===m?'bg-amber-600 text-white border-amber-600':'bg-white text-gray-600 border-gray-200 hover:border-amber-300'}`}>
+              className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${method===m?'bg-amber-600 text-white border-amber-600':'bg-white text-slate-600 border-slate-200 hover:border-amber-300'}`}>
               {m}
             </button>
           ))}
@@ -260,7 +260,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Centrifuge Run Parameters */}
       <div className="surface p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           {method === 'Centrifugation' ? 'Centrifuge Run Parameters' : 'Filtration Parameters'}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -294,11 +294,11 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           </div>
         )}
         {/* G-66: Second pass */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
+        <div className="border border-slate-200 rounded-xl overflow-hidden">
           <button type="button" onClick={()=>setShowPass2(p=>!p)}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-xs font-black text-gray-700 transition-colors">
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-xs font-black text-slate-700 transition-colors">
             <span>Second Centrifuge Pass (optional)</span>
-            <span className={`text-lg ${showPass2?'text-amber-600':'text-gray-300'}`}>{showPass2?'▼':'▶'}</span>
+            <span className={`text-lg ${showPass2?'text-amber-600':'text-slate-300'}`}>{showPass2?'▼':'▶'}</span>
           </button>
           {showPass2 && (
             <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -312,7 +312,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Mass Balance */}
       <div className="surface p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mass Balance (g)</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mass Balance (g)</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="field-label">Total Broth Before (g) *</label>
@@ -331,7 +331,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <div className="flex gap-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800">
             <span>Supernatant Recovery: <span className="text-lg font-black">{recoveryPct}%</span></span>
             {brothBefore && pelletWt && supernAfter && (
-              <span className="ml-4 text-gray-500 font-semibold">
+              <span className="ml-4 text-slate-500 font-semibold">
                 Mass check: {(parseFloat(supernAfter) + parseFloat(pelletWt)).toFixed(1)} g recovered of {parseFloat(brothBefore).toFixed(1)} g input
               </span>
             )}
@@ -341,7 +341,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Supernatant Quality + Volume */}
       <div className="surface p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Supernatant / Filtrate Quality</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Supernatant / Filtrate Quality</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="field-label">Colour</label>
@@ -361,18 +361,18 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <div>
             <label className="field-label">Turbidity (NTU)</label>
             <input type="number" step="0.1" value={turbidityNtu} onChange={e=>setTurbidityNtu(e.target.value)} className="field-input" placeholder="e.g. 5.2"/>
-            <p className="text-[9px] text-gray-400 mt-0.5">Objective clarity measurement</p>
+            <p className="text-[9px] text-slate-400 mt-0.5">Objective clarity measurement</p>
           </div>
         </div>
         {/* G-69: Volume after */}
         <div>
           <label className="field-label">Volume After Separation (ml)</label>
           <input type="number" step="0.1" value={volAfterMl} onChange={e=>setVolAfterMl(e.target.value)} className="field-input" placeholder="e.g. 400"/>
-          <p className="text-[9px] text-gray-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
+          <p className="text-[9px] text-slate-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
         </div>
         {/* A-53: Hold time before centrifuge */}
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-          <label className="block text-xs font-black text-blue-900 mb-1">Hold Time Before Centrifuge (min) <span className="text-blue-400 text-[10px]">(A-53 — time between fermentation end and centrifuge start)</span></label>
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <label className="block text-xs font-black text-slate-900 mb-1">Hold Time Before Centrifuge (min) <span className="text-slate-400 text-[10px]">(A-53 — time between fermentation end and centrifuge start)</span></label>
           <input type="number" step="1" value={holdTimeBefore} onChange={e=>setHoldTimeBefore(e.target.value)} className="field-input" placeholder="e.g. 30"/>
           {holdTimeBefore && parseFloat(holdTimeBefore) > 120 && <p className="text-[10px] text-amber-700 font-bold mt-1">⚠ Hold &gt;2h at room temp — risk of culture quality degradation</p>}
         </div>
@@ -388,11 +388,11 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         </div>
 
         {/* A-30: Post-centrifuge viability */}
-        <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-indigo-900">Post-Centrifuge Cell Viability <span className="text-indigo-400 text-[10px]">(A-30)</span></p>
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-slate-900">Post-Centrifuge Cell Viability <span className="text-slate-400 text-[10px]">(A-30)</span></p>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="field-label text-indigo-800">Viability (%)</label><input type="number" step="0.1" min="0" max="100" value={postCentVia} onChange={e=>setPostCentVia(e.target.value)} className="field-input" placeholder="e.g. 85"/></div>
-            <div><label className="field-label text-indigo-800">Method</label>
+            <div><label className="field-label text-slate-800">Viability (%)</label><input type="number" step="0.1" min="0" max="100" value={postCentVia} onChange={e=>setPostCentVia(e.target.value)} className="field-input" placeholder="e.g. 85"/></div>
+            <div><label className="field-label text-slate-800">Method</label>
               <select value={postCentViaMethod} onChange={e=>setPostCentViaMethod(e.target.value)} className="field-input bg-white text-xs">
                 {['','Methylene Blue','Live/Dead stain','Plate count','Flow Cytometry'].map(m=><option key={m}>{m}</option>)}
               </select>
@@ -402,8 +402,8 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
         {/* G-70: Pellet resuspension */}
         {pelletWt && (
-          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-            <p className="text-[10px] font-black text-gray-500 uppercase">Pellet Resuspension (if applicable)</p>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <p className="text-[10px] font-black text-slate-500 uppercase">Pellet Resuspension (if applicable)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Resuspension Buffer</label>
                 <input value={resuspBuffer} onChange={e=>setResuspBuffer(e.target.value)} className="field-input" placeholder="e.g. PBS, distilled water, media"/>
@@ -432,7 +432,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input" placeholder="Observed losses, equipment issues, deviations..."/>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : record ? 'Update Draft' : 'Save Draft'}
           </button>
           <button onClick={()=>handleSave(true)} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">

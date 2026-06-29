@@ -134,25 +134,25 @@ export default function MessageInput({
   const isImageFile = selectedFile && selectedFile.type.startsWith('image/');
 
   return (
-    <div className="bg-white border-t border-gray-100 p-3 md:p-4 shrink-0 flex flex-col">
+    <div className="bg-white border-t border-slate-100 p-3 md:p-4 shrink-0 flex flex-col">
       
       {/* Context Bar (Editing or Replying) */}
       {(editingMessage || replyingToMessage) && (
-        <div className="flex items-center justify-between bg-gray-50 border-l-4 border-navy px-3 py-2 rounded-r-lg mb-3 shadow-sm">
+        <div className="flex items-center justify-between bg-slate-50 border-l-4 border-navy px-3 py-2 rounded-r-lg mb-3 shadow-sm">
           <div className="flex items-center gap-2 overflow-hidden">
             {editingMessage ? <Edit2 className="w-4 h-4 text-navy shrink-0" /> : <CornerDownRight className="w-4 h-4 text-navy shrink-0" />}
             <div className="truncate">
               <p className="text-xs font-bold text-navy">
                 {editingMessage ? 'Editing Message' : `Replying to ${replyingToMessage.sender?.full_name || 'someone'}`}
               </p>
-              <p className="text-[11px] text-gray-500 truncate">
+              <p className="text-[11px] text-slate-500 truncate">
                 {(editingMessage?.content || replyingToMessage?.content || 'Attachment')}
               </p>
             </div>
           </div>
           <button 
             onClick={editingMessage ? onCancelEdit : onCancelReply}
-            className="p-1 hover:bg-gray-200 rounded-full transition-colors text-gray-500 shrink-0"
+            className="p-1 hover:bg-slate-200 rounded-full transition-colors text-slate-500 shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -165,13 +165,13 @@ export default function MessageInput({
           {selectedFile && (
             <div className="relative inline-block group">
               {isImageFile ? (
-                <div className="w-16 h-16 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
                   <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="h-16 flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 rounded-lg max-w-[200px]">
-                  <File className="w-6 h-6 text-gray-500 shrink-0" />
-                  <span className="text-xs font-bold text-gray-700 truncate">{selectedFile.name}</span>
+                <div className="h-16 flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 rounded-lg max-w-[200px]">
+                  <File className="w-6 h-6 text-slate-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-700 truncate">{selectedFile.name}</span>
                 </div>
               )}
               <button 
@@ -185,7 +185,7 @@ export default function MessageInput({
           )}
           
           {pinnedItem && (
-            <div className="relative inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-2 rounded-lg text-xs font-bold shadow-sm group">
+            <div className="relative inline-flex items-center gap-2 bg-slate-50 border border-slate-100 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold shadow-sm group">
               <Paperclip className="w-4 h-4 opacity-50 shrink-0" />
               <span className="truncate max-w-[200px]">Pinned: {pinnedItem.title || pinnedItem.id} ({pinnedItem.type})</span>
               <button 
@@ -205,7 +205,7 @@ export default function MessageInput({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={editingMessage} // Disable attachments when editing
-          className="p-2.5 text-gray-400 hover:text-navy hover:bg-gray-50 rounded-xl transition-colors mb-0.5 shrink-0 disabled:opacity-30"
+          className="p-2.5 text-slate-400 hover:text-navy hover:bg-slate-50 rounded-xl transition-colors mb-0.5 shrink-0 disabled:opacity-30"
           title="Attach File"
         >
           <Paperclip className="w-5 h-5" />
@@ -217,13 +217,13 @@ export default function MessageInput({
           />
         </button>
 
-        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-accent focus-within:border-accent transition-shadow flex items-center">
+        <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-accent focus-within:border-accent transition-shadow flex items-center">
           <input
             type="text"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-            className="w-full bg-transparent px-4 py-3 text-sm font-medium text-gray-700 outline-none"
+            className="w-full bg-transparent px-4 py-3 text-sm font-medium text-slate-700 outline-none"
             disabled={isSending}
           />
         </div>

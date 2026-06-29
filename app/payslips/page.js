@@ -106,8 +106,8 @@ function StatusPill({ status }) {
     present:      { label: 'Present',  cls: 'bg-emerald-100 text-emerald-700' },
     absent:       { label: 'Absent',   cls: 'bg-red-100 text-red-600' },
     on_leave:     { label: 'Leave',    cls: 'bg-amber-100 text-amber-700' },
-    leave_pending:{ label: 'Pending',  cls: 'bg-blue-100 text-blue-700' },
-    not_applicable: { label: '—',      cls: 'bg-gray-50 text-gray-300' },
+    leave_pending:{ label: 'Pending',  cls: 'bg-slate-100 text-slate-700' },
+    not_applicable: { label: '—',      cls: 'bg-slate-50 text-slate-300' },
   };
   const { label, cls } = map[status] || { label: status, cls: '' };
   return <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${cls}`}>{label}</span>;
@@ -124,19 +124,19 @@ function DayCell({ dayData }) {
     present:       'bg-emerald-50 border-emerald-200',
     absent:        'bg-red-50/60 border-red-100',
     on_leave:      'bg-amber-50 border-amber-200',
-    leave_pending: 'bg-blue-50 border-blue-100',
-    not_applicable:'bg-white border-gray-50',
+    leave_pending: 'bg-slate-50 border-slate-100',
+    not_applicable:'bg-white border-slate-50',
   };
 
   return (
-    <div className={`relative rounded-2xl border p-2 min-h-[80px] flex flex-col gap-1 transition-all ${bgMap[status] || 'bg-white border-gray-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
+    <div className={`relative rounded-2xl border p-2 min-h-[80px] flex flex-col gap-1 transition-all ${bgMap[status] || 'bg-white border-slate-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <span className={`text-xs font-black ${status === 'not_applicable' ? 'text-gray-200' : is_sunday && status !== 'present' ? 'text-gray-400' : 'text-slate-700'}`}>
+          <span className={`text-xs font-black ${status === 'not_applicable' ? 'text-slate-200' : is_sunday && status !== 'present' ? 'text-slate-400' : 'text-slate-700'}`}>
             {dayNum}
           </span>
           {is_sunday && (
-            <span className={`text-[8px] font-bold ${status === 'not_applicable' ? 'text-gray-200' : status === 'present' ? 'text-emerald-600/50' : 'text-gray-300'}`}>Sun</span>
+            <span className={`text-[8px] font-bold ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
           )}
         </div>
         {is_joining_day && <Star className="w-3 h-3 text-amber-500 fill-amber-400" />}
@@ -165,7 +165,7 @@ function DayCell({ dayData }) {
             </span>
           )}
           {log.manual_entry && (
-            <span className="block text-[8px] font-black text-purple-500 uppercase tracking-wide">Manual</span>
+            <span className="block text-[8px] font-black text-slate-500 uppercase tracking-wide">Manual</span>
           )}
         </div>
       )}
@@ -197,11 +197,11 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
     <div className="space-y-4">
       {/* Month Nav */}
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="p-2 rounded-xl hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="p-2 rounded-xl hover:bg-slate-100 transition-all">
           <ChevronLeft className="w-5 h-5 text-slate-600" />
         </button>
         <h3 className="text-lg font-black text-slate-800">{MONTHS[month - 1]} {year}</h3>
-        <button onClick={onNext} className="p-2 rounded-xl hover:bg-gray-100 transition-all">
+        <button onClick={onNext} className="p-2 rounded-xl hover:bg-slate-100 transition-all">
           <ChevronRight className="w-5 h-5 text-slate-600" />
         </button>
       </div>
@@ -212,23 +212,23 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
           { color: 'bg-emerald-400', label: 'Present' },
           { color: 'bg-red-400',    label: 'Absent' },
           { color: 'bg-amber-400',  label: 'On Leave' },
-          { color: 'bg-blue-400',   label: 'Leave Pending' },
+          { color: 'bg-slate-400',   label: 'Leave Pending' },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
             <div className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
-            <span className="text-[10px] font-bold text-gray-500">{l.label}</span>
+            <span className="text-[10px] font-bold text-slate-500">{l.label}</span>
           </div>
         ))}
         <div className="flex items-center gap-1.5">
           <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
-          <span className="text-[10px] font-bold text-gray-500">Joining Day</span>
+          <span className="text-[10px] font-bold text-slate-500">Joining Day</span>
         </div>
       </div>
 
       {/* Day labels header */}
       <div className="grid grid-cols-7 gap-1.5">
         {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-          <div key={d} className={`text-center text-[10px] font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-gray-300' : 'text-gray-400'}`}>
+          <div key={d} className={`text-center text-[10px] font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
             {d}
           </div>
         ))}
@@ -251,14 +251,14 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
             { label: 'Working Days', value: summary.total_working_days, color: 'text-slate-700' },
             { label: 'Present',      value: summary.present_days,       color: 'text-emerald-600' },
             { label: 'Absent',       value: summary.absent_days,        color: 'text-red-500' },
-            { label: 'Allowance',    value: summary.monthly_leave_allowance, color: 'text-blue-600' },
+            { label: 'Allowance',    value: summary.monthly_leave_allowance, color: 'text-slate-600' },
             { label: 'On Leave',     value: summary.leave_days,         color: 'text-amber-600' },
             { label: 'LOP Days',     value: summary.lop_days,           color: 'text-red-600' },
             { label: 'Total Hours',  value: `${summary.total_hours_worked}h`, color: 'text-slate-600' },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl border border-gray-100 px-3 py-3 text-center shadow-sm">
+            <div key={s.label} className="bg-white rounded-2xl border border-slate-100 px-3 py-3 text-center shadow-sm">
               <p className={`text-lg font-black ${s.color}`}>{s.value}</p>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{s.label}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -369,8 +369,8 @@ function PayslipPanel({
   if (!summary) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-center gap-2">
-        <AlertCircle className="w-8 h-8 text-gray-300" />
-        <p className="text-sm font-bold text-gray-400">Select a month with attendance data</p>
+        <AlertCircle className="w-8 h-8 text-slate-300" />
+        <p className="text-sm font-bold text-slate-400">Select a month with attendance data</p>
       </div>
     );
   }
@@ -379,7 +379,7 @@ function PayslipPanel({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
             {existingSlip ? (isEditing ? 'Editing Payslip' : 'Payslip Issued') : 'Generate Payslip'}
           </p>
           <p className="text-base font-black text-slate-800">{monthLabel} {year}</p>
@@ -403,8 +403,8 @@ function PayslipPanel({
           ['Leave Days', summary.leave_days],
           ['Total Hours', `${summary.total_hours_worked}h`],
         ].map(([l, v]) => (
-          <div key={l} className="bg-white rounded-xl px-3 py-2 border border-gray-100">
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{l}</p>
+          <div key={l} className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{l}</p>
             <p className="text-sm font-black text-slate-800 mt-0.5">{v}</p>
           </div>
         ))}
@@ -412,43 +412,43 @@ function PayslipPanel({
 
       {/* Override controls */}
       <div className={`space-y-3 transition-opacity ${!isEditing && existingSlip ? 'opacity-50 pointer-events-none' : ''}`}>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Admin Controls</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Admin Controls</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">LOP Days Override</label>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">LOP Days Override</label>
             <input
               type="number" min="0" step="0.5"
               value={lopOverride}
               onChange={e => setLopOverride(e.target.value)}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-slate-400 focus:outline-none"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-slate-400 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">PF Deduction (₹)</label>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">PF Deduction (₹)</label>
             <input
               type="number" min="0"
               value={pfDed}
               onChange={e => setPfDed(e.target.value)}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-slate-400 focus:outline-none"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-slate-400 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">ESI Deduction (₹)</label>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ESI Deduction (₹)</label>
             <input
               type="number" min="0"
               value={esiDed}
               onChange={e => setEsiDed(e.target.value)}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-slate-400 focus:outline-none"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-slate-400 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Admin Notes</label>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Admin Notes</label>
             <input
               type="text"
               value={adminNotes}
               onChange={e => setAdminNotes(e.target.value)}
               placeholder="Optional note"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
             />
           </div>
         </div>
@@ -456,9 +456,9 @@ function PayslipPanel({
 
       {/* Live calculation */}
       {calc && (
-        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Calculation</p>
+        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-4 py-2 bg-slate-50 border-b border-slate-100">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Calculation</p>
           </div>
           <div className="divide-y divide-gray-50">
             {[
@@ -469,7 +469,7 @@ function PayslipPanel({
               ['ESI Deduction', `- ₹${calc.esi_deduction.toLocaleString('en-IN')}`, 'text-red-400'],
             ].map(([label, val, cls]) => (
               <div key={label} className="flex justify-between items-center px-4 py-2.5">
-                <span className="text-xs font-bold text-gray-500">{label}</span>
+                <span className="text-xs font-bold text-slate-500">{label}</span>
                 <span className={`text-xs font-mono font-black ${cls}`}>{val}</span>
               </div>
             ))}
@@ -487,7 +487,7 @@ function PayslipPanel({
           {existingSlip && (
             <button
               onClick={() => { setIsEditing(false); setPfDed(existingSlip.pf_deduction ?? 0); setEsiDed(existingSlip.esi_deduction ?? 0); setLopOverride(existingSlip.lop_days ?? summary?.lop_days ?? 0); setAdminNotes(existingSlip.admin_notes ?? ''); }}
-              className="flex-1 py-3 bg-gray-100 text-gray-600 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-gray-200 transition-all"
+              className="flex-1 py-3 bg-slate-100 text-slate-600 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
             >
               Cancel
             </button>
@@ -506,7 +506,7 @@ function PayslipPanel({
       {existingSlip && !isEditing && (
         <button
           onClick={() => downloadPayslipPDF({ ...existingSlip })}
-          className="w-full py-3 bg-white border border-gray-200 text-slate-700 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 bg-white border border-slate-200 text-slate-700 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
         >
           <Download className="w-4 h-4" /> Download PDF
         </button>
@@ -519,20 +519,20 @@ function PayslipPanel({
 function EmployeeItem({ emp, isSelected, onClick }) {
   const initials = emp.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const roleColors = {
-    admin: 'bg-purple-100 text-purple-700',
+    admin: 'bg-slate-100 text-slate-700',
     ceo:   'bg-slate-800 text-white',
     cto:   'bg-slate-700 text-white',
-    staff: 'bg-blue-100 text-blue-700',
+    staff: 'bg-slate-100 text-slate-700',
     intern: 'bg-amber-100 text-amber-700',
-    research_intern: 'bg-orange-100 text-orange-700',
-    research_fellow: 'bg-green-100 text-green-700',
+    research_intern: 'bg-amber-100 text-amber-700',
+    research_fellow: 'bg-emerald-100 text-emerald-700',
   };
 
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-left ${
-        isSelected ? 'bg-slate-800 text-white shadow-lg' : 'bg-white hover:bg-gray-50 border border-gray-100'
+        isSelected ? 'bg-slate-800 text-white shadow-lg' : 'bg-white hover:bg-slate-50 border border-slate-100'
       }`}
     >
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
@@ -541,11 +541,11 @@ function EmployeeItem({ emp, isSelected, onClick }) {
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-black truncate ${isSelected ? 'text-white' : 'text-slate-800'}`}>{emp.full_name}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest ${isSelected ? 'bg-white/20 text-white' : (roleColors[emp.role] || 'bg-gray-100 text-gray-600')}`}>
+          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest ${isSelected ? 'bg-white/20 text-white' : (roleColors[emp.role] || 'bg-slate-100 text-slate-600')}`}>
             {emp.role}
           </span>
           {emp.base_salary ? (
-            <span className={`text-[9px] font-bold ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+            <span className={`text-[9px] font-bold ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
               ₹{Number(emp.base_salary).toLocaleString('en-IN')}
             </span>
           ) : (
@@ -690,36 +690,36 @@ export default function PayrollPage() {
         {loadingInit ? (
           <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-slate-400" /></div>
         ) : payslips.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-16 text-center">
-            <FileText className="w-10 h-10 mx-auto mb-3 text-gray-200" />
-            <p className="text-sm font-bold text-gray-400">No payslips issued yet.</p>
+          <div className="bg-white rounded-2xl border border-dashed border-slate-200 py-16 text-center">
+            <FileText className="w-10 h-10 mx-auto mb-3 text-slate-200" />
+            <p className="text-sm font-bold text-slate-400">No payslips issued yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-100">
-                <thead className="bg-gray-50">
+                <thead className="bg-slate-50">
                   <tr>
                     {['Period', 'Working Days', 'LOP Days', 'Gross', 'Net Salary', ''].map(h => (
-                      <th key={h} className="px-5 py-4 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                      <th key={h} className="px-5 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {payslips.map(slip => (
-                    <tr key={slip.id} className="hover:bg-gray-50">
+                    <tr key={slip.id} className="hover:bg-slate-50">
                       <td className="px-5 py-4 font-mono font-black text-slate-700 text-sm">
                         {slip.month} {slip.year}
                         {slip.is_auto_generated && <span className="ml-2 text-[10px] bg-slate-50 text-slate-500 border px-1.5 py-0.5 rounded font-bold">AUTO</span>}
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-500 font-mono">{slip.total_working_days ?? '—'}</td>
+                      <td className="px-5 py-4 text-sm text-slate-500 font-mono">{slip.total_working_days ?? '—'}</td>
                       <td className="px-5 py-4 text-sm font-black">
-                        <span className={slip.lop_days > 0 ? 'text-red-500' : 'text-green-600'}>{slip.lop_days ?? '—'}</span>
+                        <span className={slip.lop_days > 0 ? 'text-red-500' : 'text-emerald-600'}>{slip.lop_days ?? '—'}</span>
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-500">₹{Number(slip.gross_salary || 0).toLocaleString('en-IN')}</td>
+                      <td className="px-5 py-4 text-sm text-slate-500">₹{Number(slip.gross_salary || 0).toLocaleString('en-IN')}</td>
                       <td className="px-5 py-4 text-sm font-black text-emerald-700">₹{Number(slip.net_salary || 0).toLocaleString('en-IN')}</td>
                       <td className="px-5 py-4">
-                        <button onClick={() => downloadPayslipPDF(slip)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-slate-50 transition-all">
+                        <button onClick={() => downloadPayslipPDF(slip)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
                           <Download className="w-3.5 h-3.5" /> PDF
                         </button>
                       </td>
@@ -754,10 +754,10 @@ export default function PayrollPage() {
             { label: 'Slips Issued', value: payslips.length, icon: <Receipt className="w-4 h-4" /> },
             { label: 'Total Payroll', value: `₹${payslips.reduce((a, s) => a + parseFloat(s.gross_salary || 0), 0).toLocaleString('en-IN')}`, icon: <TrendingUp className="w-4 h-4" /> },
           ].map(chip => (
-            <div key={chip.label} className="flex items-center gap-2 bg-white border border-gray-100 rounded-2xl px-4 py-2.5 shadow-sm">
+            <div key={chip.label} className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl px-4 py-2.5 shadow-sm">
               <span className="text-slate-500">{chip.icon}</span>
               <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{chip.label}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{chip.label}</p>
                 <p className="text-sm font-black text-slate-800">{chip.value}</p>
               </div>
             </div>
@@ -766,12 +766,12 @@ export default function PayrollPage() {
       </div>
 
       {/* Mobile tab bar */}
-      <div className="flex md:hidden gap-1 bg-gray-100 rounded-2xl p-1">
+      <div className="flex md:hidden gap-1 bg-slate-100 rounded-2xl p-1">
         {[['roster','Team'], ['calendar','Calendar'], ['payslip','Payslip']].map(([key, label]) => (
           <button
             key={key}
             onClick={() => setMobilePanel(key)}
-            className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mobilePanel === key ? 'bg-white text-slate-800 shadow-sm' : 'text-gray-500'}`}
+            className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mobilePanel === key ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
           >
             {label}
           </button>
@@ -783,13 +783,13 @@ export default function PayrollPage() {
 
         {/* ── Panel A: Employee Roster ── */}
         <div className={`${mobilePanel === 'roster' ? 'flex' : 'hidden'} md:flex flex-col gap-2 w-full md:w-64 shrink-0`}>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Team ({employees.length})</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Team ({employees.length})</p>
           <div className="max-h-[calc(100vh-200px)] overflow-y-auto pr-1 pb-10 custom-scrollbar">
             <div className="space-y-6 mt-4">
               {/* Management Group */}
               {employees.some(e => ['admin', 'ceo', 'cto'].includes(e.role)) && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Management</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Management</p>
                   {employees.filter(e => ['admin', 'ceo', 'cto'].includes(e.role)).map(emp => (
                     <EmployeeItem 
                       key={emp.id} 
@@ -804,7 +804,7 @@ export default function PayrollPage() {
               {/* Scientists Group */}
               {employees.some(e => ['scientist', 'research_fellow'].includes(e.role)) && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Scientists & Researchers</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Scientists & Researchers</p>
                   {employees.filter(e => ['scientist', 'research_fellow'].includes(e.role)).map(emp => (
                     <EmployeeItem 
                       key={emp.id} 
@@ -819,7 +819,7 @@ export default function PayrollPage() {
               {/* Staff & Interns Group */}
               {employees.some(e => ['staff', 'intern', 'research_intern'].includes(e.role)) && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Staff & Interns</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Staff & Interns</p>
                   {employees.filter(e => ['staff', 'intern', 'research_intern'].includes(e.role)).map(emp => (
                     <EmployeeItem 
                       key={emp.id} 
@@ -835,35 +835,35 @@ export default function PayrollPage() {
         </div>
 
         {/* ── Panel B: Attendance Calendar ── */}
-        <div className={`${mobilePanel === 'calendar' ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-w-0 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-5 md:p-6`}>
+        <div className={`${mobilePanel === 'calendar' ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-w-0 bg-white rounded-[2rem] border border-slate-100 shadow-sm p-5 md:p-6`}>
           {!selectedEmployee ? (
             <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
               <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center">
                 <Users className="w-8 h-8 text-slate-300" />
               </div>
-              <p className="text-base font-black text-gray-400">Select an employee</p>
-              <p className="text-sm text-gray-300 font-medium">Choose from the team roster to view attendance calendar</p>
+              <p className="text-base font-black text-slate-400">Select an employee</p>
+              <p className="text-sm text-slate-300 font-medium">Choose from the team roster to view attendance calendar</p>
             </div>
           ) : (
             <>
               {/* Employee header */}
-              <div className="flex items-center gap-3 mb-5 pb-5 border-b border-gray-100">
+              <div className="flex items-center gap-3 mb-5 pb-5 border-b border-slate-100">
                 <div className="w-11 h-11 bg-slate-800 rounded-2xl flex items-center justify-center text-white font-black text-sm">
                   {selectedEmployee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                 </div>
                 <div className="flex-1">
                   <p className="font-black text-slate-800">{selectedEmployee.full_name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-gray-400 font-bold">{selectedEmployee.designation || selectedEmployee.role}</p>
+                    <p className="text-xs text-slate-400 font-bold">{selectedEmployee.designation || selectedEmployee.role}</p>
                     {selectedEmployee.joined_date && (
-                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
                         DOJ: {new Date(selectedEmployee.joined_date).toLocaleDateString('en-IN')}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Base Salary</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Base Salary</p>
                   <p className="text-sm font-black text-slate-800">₹{Number(selectedEmployee.base_salary || 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
@@ -880,8 +880,8 @@ export default function PayrollPage() {
 
               {/* Payslip history for this employee */}
               {empPayslips.length > 0 && (
-                <div className="mt-6 pt-5 border-t border-gray-100">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Issued Payslips</p>
+                <div className="mt-6 pt-5 border-t border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Issued Payslips</p>
                   <div className="flex flex-wrap gap-2">
                     {empPayslips.map(slip => (
                       <button
@@ -909,11 +909,11 @@ export default function PayrollPage() {
         </div>
 
         {/* ── Panel C: Payslip Generator ── */}
-        <div className={`${mobilePanel === 'payslip' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 shrink-0 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-5`}>
+        <div className={`${mobilePanel === 'payslip' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 shrink-0 bg-white rounded-[2rem] border border-slate-100 shadow-sm p-5`}>
           {!selectedEmployee ? (
             <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-              <Calculator className="w-10 h-10 text-gray-200" />
-              <p className="text-sm font-black text-gray-400">No employee selected</p>
+              <Calculator className="w-10 h-10 text-slate-200" />
+              <p className="text-sm font-black text-slate-400">No employee selected</p>
             </div>
           ) : (
             <PayslipPanel

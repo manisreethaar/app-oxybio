@@ -1,12 +1,12 @@
 'use client';
 
 const PALETTE = [
-  'from-slate-100 to-cyan-100 text-slate-700',
   'from-slate-100 to-slate-100 text-slate-700',
-  'from-amber-100 to-orange-100 text-amber-700',
-  'from-rose-100 to-pink-100 text-rose-700',
-  'from-sky-100 to-blue-100 text-sky-700',
-  'from-emerald-100 to-green-100 text-emerald-700',
+  'from-slate-100 to-slate-100 text-slate-700',
+  'from-amber-100 to-amber-100 text-amber-700',
+  'from-red-100 to-red-100 text-red-700',
+  'from-slate-100 to-slate-100 text-slate-700',
+  'from-emerald-100 to-emerald-100 text-emerald-700',
 ];
 
 function colorFor(str = '') {

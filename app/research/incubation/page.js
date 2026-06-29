@@ -27,10 +27,10 @@ function sterileChip(status) {
 }
 
 function PlateStatusIcon({ record }) {
-  if (!record.end_time)                              return <Clock className="w-3.5 h-3.5 text-blue-400" />;
+  if (!record.end_time)                              return <Clock className="w-3.5 h-3.5 text-slate-400" />;
   if (record.sterility_status === 'Sterile')         return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
   if (record.sterility_status === 'Contaminated')    return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
-  return <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />;
+  return <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />;
 }
 
 function parseObservation(obs) {
@@ -44,11 +44,11 @@ function parseObservation(obs) {
 
 function parseMorphologyChips(raw) {
   const CHIP_COLORS = {
-    shape:     'bg-blue-50 text-blue-700 border-blue-200',
+    shape:     'bg-slate-50 text-slate-700 border-slate-200',
     margin:    'bg-slate-50 text-slate-700 border-slate-200',
     elevation: 'bg-slate-50 text-slate-700 border-slate-200',
-    color:     'bg-orange-50 text-orange-700 border-orange-200',
-    surface:   'bg-pink-50 text-pink-700 border-pink-200',
+    color:     'bg-amber-50 text-amber-700 border-amber-200',
+    surface:   'bg-red-50 text-red-700 border-red-200',
   };
   if (!raw) return null;
   try {
@@ -57,7 +57,7 @@ function parseMorphologyChips(raw) {
       return (
         <div className="flex flex-wrap gap-1 mt-1">
           {Object.entries(p).map(([trait, choice]) => (
-            <span key={trait} className={`px-2 py-0.5 rounded text-[8px] font-black border ${CHIP_COLORS[trait] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+            <span key={trait} className={`px-2 py-0.5 rounded text-[8px] font-black border ${CHIP_COLORS[trait] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               {choice}
             </span>
           ))}
@@ -65,7 +65,7 @@ function parseMorphologyChips(raw) {
       );
     }
   } catch {}
-  return <span className="text-[9px] text-gray-500">{raw}</span>;
+  return <span className="text-[9px] text-slate-500">{raw}</span>;
 }
 
 /** Format ms duration as "2h 15min" */
@@ -179,8 +179,8 @@ function GrowthCurveChart({ observation }) {
   if (data.length < 2) return null;
 
   return (
-    <div className="mt-3 border-t border-gray-100 pt-3">
-      <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Growth Curve</p>
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Growth Curve</p>
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -225,8 +225,8 @@ function ODTrendChart({ observation }) {
   if (data.length < 2) return null;
 
   return (
-    <div className="mt-3 border-t border-gray-100 pt-3">
-      <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">OD Trend</p>
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">OD Trend</p>
       <ResponsiveContainer width="100%" height={100}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -252,30 +252,30 @@ function ExpandedPlateDetail({ record }) {
   const { reads, notes } = parseObservation(record.observation);
 
   return (
-    <div className="border-t border-gray-100 mt-2 pt-2 space-y-2">
+    <div className="border-t border-slate-100 mt-2 pt-2 space-y-2">
       {/* Colony morphology chips */}
       {record.colony_morphology && (
         <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Morphology</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Morphology</p>
           {parseMorphologyChips(record.colony_morphology)}
         </div>
       )}
 
       {/* Dilution info */}
       {(record.dilution_factor != null || record.volume_plated_ml != null || record.replicate_label) && (
-        <div className="flex flex-wrap gap-2 text-[9px] font-mono text-gray-500">
+        <div className="flex flex-wrap gap-2 text-[9px] font-mono text-slate-500">
           {record.dilution_factor != null && (
-            <span className="bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
+            <span className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
               Dilution: {record.dilution_factor}
             </span>
           )}
           {record.volume_plated_ml != null && (
-            <span className="bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
+            <span className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
               Vol: {record.volume_plated_ml}mL
             </span>
           )}
           {record.replicate_label && record.replicate_label !== 'None' && (
-            <span className="bg-blue-50 border border-blue-200 text-blue-700 rounded px-1.5 py-0.5 font-black">
+            <span className="bg-slate-50 border border-slate-200 text-slate-700 rounded px-1.5 py-0.5 font-black">
               Rep {record.replicate_label}
             </span>
           )}
@@ -285,23 +285,23 @@ function ExpandedPlateDetail({ record }) {
       {/* Reads summary */}
       {reads.length > 0 && (
         <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Plate Reads</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Plate Reads</p>
           <div className="space-y-0.5">
             {reads.map(r => (
               <div key={r.hour} className="flex items-center gap-2 text-[9px]">
-                <span className="font-mono text-gray-500 w-10 shrink-0">T+{r.hour}h</span>
+                <span className="font-mono text-slate-500 w-10 shrink-0">T+{r.hour}h</span>
                 <span className={`font-black px-1.5 py-0.5 rounded border text-[8px] ${
                   r.status === 'growing'      ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
                   r.status === 'contaminated' ? 'text-red-700 bg-red-50 border-red-200' :
                   r.status === 'tntc'         ? 'text-amber-700 bg-amber-50 border-amber-200' :
-                  'text-gray-600 bg-gray-50 border-gray-200'
+                  'text-slate-600 bg-slate-50 border-slate-200'
                 }`}>
                   {r.status?.replace(/_/g, ' ')}
                 </span>
                 {r.colony_count != null && r.colony_count !== '' && (
-                  <span className="text-gray-500">{r.colony_count} col</span>
+                  <span className="text-slate-500">{r.colony_count} col</span>
                 )}
-                {r.notes && <span className="text-gray-400 truncate">{r.notes}</span>}
+                {r.notes && <span className="text-slate-400 truncate">{r.notes}</span>}
               </div>
             ))}
           </div>
@@ -313,7 +313,7 @@ function ExpandedPlateDetail({ record }) {
       <ODTrendChart observation={record.observation} />
 
       {notes && (
-        <p className="text-[9px] text-gray-500 italic border-t border-gray-100 pt-2">{notes}</p>
+        <p className="text-[9px] text-slate-500 italic border-t border-slate-100 pt-2">{notes}</p>
       )}
     </div>
   );
@@ -359,14 +359,14 @@ function ContaminationCard({ samples }) {
     <div className="surface p-4 col-span-2 md:col-span-4">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Contamination Rate</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contamination Rate</p>
           <div className="flex items-center gap-2 mt-1">
-            <p className={`text-2xl font-black font-mono ${stats.overall > 0 ? 'text-red-700' : 'text-gray-900'}`}>
+            <p className={`text-2xl font-black font-mono ${stats.overall > 0 ? 'text-red-700' : 'text-slate-900'}`}>
               {stats.overall}%
             </p>
             {stats.trend !== null && (
               <span className={`flex items-center gap-0.5 text-[10px] font-black ${
-                stats.trend > 0 ? 'text-red-600' : stats.trend < 0 ? 'text-emerald-600' : 'text-gray-400'
+                stats.trend > 0 ? 'text-red-600' : stats.trend < 0 ? 'text-emerald-600' : 'text-slate-400'
               }`}>
                 {stats.trend > 0
                   ? <TrendingUp className="w-3 h-3" />
@@ -385,15 +385,15 @@ function ContaminationCard({ samples }) {
         <div className="space-y-1.5">
           {stats.byCategory.map(({ cat, total, pct }) => (
             <div key={cat} className="flex items-center gap-2">
-              <span className="text-[9px] text-gray-500 w-28 shrink-0 truncate">{cat}</span>
-              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <span className="text-[9px] text-slate-500 w-28 shrink-0 truncate">{cat}</span>
+              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${pct > 0 ? 'bg-red-400' : 'bg-emerald-300'}`}
                   style={{ width: `${Math.max(pct, 2)}%` }}
                 />
               </div>
-              <span className="text-[9px] font-black text-gray-600 w-8 text-right">{pct}%</span>
-              <span className="text-[9px] text-gray-400 w-10 text-right">({total})</span>
+              <span className="text-[9px] font-black text-slate-600 w-8 text-right">{pct}%</span>
+              <span className="text-[9px] text-slate-400 w-10 text-right">({total})</span>
             </div>
           ))}
         </div>
@@ -428,21 +428,21 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
   return (
     <div
       className={`rounded-xl border transition-all p-3 bg-white group cursor-pointer ${
-        expanded ? 'border-navy shadow-sm' : 'border-gray-200 hover:border-navy hover:shadow-sm'
+        expanded ? 'border-navy shadow-sm' : 'border-slate-200 hover:border-navy hover:shadow-sm'
       }`}
       onClick={() => setExpanded(e => !e)}
     >
       {/* Tile header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Beaker className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-          <span className="text-xs font-black text-gray-800 truncate">
+          <Beaker className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="text-xs font-black text-slate-800 truncate">
             {first.plate_label || first.sample_name || 'Plate'}
             {first.dilution_factor != null ? ` (Dil: ${first.dilution_factor})` : ''}
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {anyOngoing && <Clock className="w-3.5 h-3.5 text-blue-400" />}
+          {anyOngoing && <Clock className="w-3.5 h-3.5 text-slate-400" />}
           {anyContaminated && <AlertCircle className="w-3.5 h-3.5 text-red-400" />}
         </div>
       </div>
@@ -455,24 +455,24 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
               ? 'bg-red-50 text-red-700 border-red-200'
               : sorted[i].sterility_status === 'Sterile'
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-blue-50 text-blue-700 border-blue-200'
+              : 'bg-slate-50 text-slate-700 border-slate-200'
           }`}>
             {lbl}
           </span>
         ))}
-        <span className="text-[9px] text-gray-400 ml-1">triplicate</span>
+        <span className="text-[9px] text-slate-400 ml-1">triplicate</span>
       </div>
 
       {/* Mean count */}
       {meanCount !== null && (
-        <p className="text-[9px] font-mono text-gray-500 mb-1">
+        <p className="text-[9px] font-mono text-slate-500 mb-1">
           Mean colonies: {meanCount}
         </p>
       )}
 
       {/* Media lot */}
       {first.media_lot && (
-        <p className="text-[9px] text-gray-400 mb-1">Media: {first.media_lot}</p>
+        <p className="text-[9px] text-slate-400 mb-1">Media: {first.media_lot}</p>
       )}
 
       {/* Sterility summary + creator */}
@@ -509,7 +509,7 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
                     type="button"
                     onClick={e => { e.stopPropagation(); setConfirmDeleteId(r.id); }}
                     disabled={deletingId === r.id}
-                    className="p-1 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-50 disabled:opacity-40"
+                    className="p-1 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 disabled:opacity-40"
                     title={`Delete replicate ${r.replicate_label}`}
                   >
                     <Trash2 className="w-3 h-3" />
@@ -535,14 +535,14 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
     <div
       onClick={() => setExpanded(e => !e)}
       className={`cursor-pointer rounded-xl border transition-all p-3 bg-white group ${
-        expanded ? 'border-navy shadow-sm' : 'border-gray-200 hover:border-navy hover:shadow-sm'
+        expanded ? 'border-navy shadow-sm' : 'border-slate-200 hover:border-navy hover:shadow-sm'
       }`}
     >
       {/* Tile header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Beaker className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-          <span className="text-xs font-black text-gray-800 truncate">
+          <Beaker className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="text-xs font-black text-slate-800 truncate">
             {record.plate_label || record.sample_name || (record.plate_total ? `Plate ${record.plate_index || 1}/${record.plate_total}` : 'Plate')}
           </span>
         </div>
@@ -556,26 +556,26 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
 
       {/* Flask */}
       {record.batch_flasks?.flask_label && (
-        <p className="text-[10px] font-mono text-gray-500 mb-1">
+        <p className="text-[10px] font-mono text-slate-500 mb-1">
           Flask: {record.batch_flasks.flask_label}
         </p>
       )}
 
       {/* Media lot */}
       {record.media_lot && (
-        <p className="text-[9px] text-gray-400 mb-1">Media: {record.media_lot}</p>
+        <p className="text-[9px] text-slate-400 mb-1">Media: {record.media_lot}</p>
       )}
 
       {/* Replicate label chip */}
       {record.replicate_label && record.replicate_label !== 'None' && (
-        <span className="inline-block text-[8px] font-black px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200 mb-1">
+        <span className="inline-block text-[8px] font-black px-1.5 py-0.5 rounded border bg-slate-50 text-slate-700 border-slate-200 mb-1">
           Rep {record.replicate_label}
         </span>
       )}
 
       {/* Observation snippet */}
       {record.observation && !expanded && (
-        <p className="text-[9px] text-gray-400 truncate mb-1.5">
+        <p className="text-[9px] text-slate-400 truncate mb-1.5">
           {(() => {
             try {
               const p = JSON.parse(record.observation);
@@ -599,10 +599,10 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
           {record.employees ? (
             <CreatorBadge initials={record.employees.initials} fullName={record.employees.full_name} />
           ) : record.logged_by ? null : (
-            <span className="text-[8px] text-gray-300 font-mono">auto</span>
+            <span className="text-[8px] text-slate-300 font-mono">auto</span>
           )}
           {record.end_time && record.duration_hours != null && (
-            <span className="text-[9px] font-mono text-gray-400">
+            <span className="text-[9px] font-mono text-slate-400">
               {Number(record.duration_hours).toFixed(0)}h
             </span>
           )}
@@ -611,7 +611,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
 
       {/* Results */}
       {(record.colony_count != null || record.cfu_per_ml != null) && (
-        <div className="mt-1.5 text-[9px] font-mono text-gray-500 space-y-0.5">
+        <div className="mt-1.5 text-[9px] font-mono text-slate-500 space-y-0.5">
           {record.colony_count != null && <p>Colonies: {record.colony_count}</p>}
           {record.cfu_per_ml  != null && <p>CFU/mL: {record.cfu_per_ml}</p>}
         </div>
@@ -621,7 +621,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
       {expanded && (
         <div onClick={e => e.stopPropagation()}>
           <ExpandedPlateDetail record={record} />
-          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onEdit(record); }}
@@ -634,7 +634,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
                 <Link
                   href={`/lab-notebook/${record.linked_lnb_id}`}
                   onClick={e => e.stopPropagation()}
-                  className="p-1 text-gray-400 hover:text-emerald-600 rounded"
+                  className="p-1 text-slate-400 hover:text-emerald-600 rounded"
                   title="View Lab Notebook"
                 >
                   <BookOpen className="w-3 h-3" />
@@ -644,7 +644,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
                 <button
                   onClick={e => { e.stopPropagation(); setConfirmDeleteId(record.id); }}
                   disabled={deletingId === record.id}
-                  className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
+                  className="p-1 text-slate-400 hover:text-red-500 rounded disabled:opacity-40"
                   title="Delete"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -662,7 +662,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
             <Link
               href={`/lab-notebook/${record.linked_lnb_id}`}
               onClick={e => e.stopPropagation()}
-              className="p-1 text-gray-400 hover:text-emerald-600 rounded"
+              className="p-1 text-slate-400 hover:text-emerald-600 rounded"
               title="View Lab Notebook"
             >
               <BookOpen className="w-3 h-3" />
@@ -672,7 +672,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
             <button
               onClick={e => { e.stopPropagation(); setConfirmDeleteId(record.id); }}
               disabled={deletingId === record.id}
-              className="p-1 text-gray-400 hover:text-red-500 rounded disabled:opacity-40"
+              className="p-1 text-slate-400 hover:text-red-500 rounded disabled:opacity-40"
               title="Delete"
             >
               <Trash2 className="w-3 h-3" />
@@ -819,7 +819,7 @@ export default function SampleIncubationPage() {
   if (!employeeProfile) return null;
 
   return (
-    <div className="page-container text-gray-900 space-y-6">
+    <div className="page-container text-slate-900 space-y-6">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -827,7 +827,7 @@ export default function SampleIncubationPage() {
           <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <FlaskConical className="w-7 h-7 text-navy" /> Incubation Hub
           </h1>
-          <p className="text-sm font-medium text-gray-500 mt-1">All plated samples, grouped by batch and log-hour timepoint</p>
+          <p className="text-sm font-medium text-slate-500 mt-1">All plated samples, grouped by batch and log-hour timepoint</p>
         </div>
         <div className="flex gap-2 shrink-0">
           <Link href="/lab-bench/log"
@@ -852,13 +852,13 @@ export default function SampleIncubationPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          ['Batches / Sources', grouped.length,        'text-gray-900'],
-          ['Ongoing Plates',    stats.ongoing,         'text-blue-700'],
-          ['Over 72h Open',     stats.overdue,         stats.overdue      ? 'text-amber-700' : 'text-gray-900'],
-          ['Contaminated',      stats.contaminated,    stats.contaminated ? 'text-red-700'   : 'text-gray-900'],
+          ['Batches / Sources', grouped.length,        'text-slate-900'],
+          ['Ongoing Plates',    stats.ongoing,         'text-slate-700'],
+          ['Over 72h Open',     stats.overdue,         stats.overdue      ? 'text-amber-700' : 'text-slate-900'],
+          ['Contaminated',      stats.contaminated,    stats.contaminated ? 'text-red-700'   : 'text-slate-900'],
         ].map(([label, value, color]) => (
           <div key={label} className="surface p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
             <p className={`mt-1 text-2xl font-black font-mono ${color}`}>{value}</p>
           </div>
         ))}
@@ -874,18 +874,18 @@ export default function SampleIncubationPage() {
       {/* Filters */}
       <div className="surface p-3 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Search sample name..."
-            className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold outline-none focus:border-navy"
+            className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold outline-none focus:border-navy"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold outline-none focus:border-navy"
+          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold outline-none focus:border-navy"
         >
           <option value="all">All statuses</option>
           <option value="ongoing">Ongoing only</option>
@@ -900,8 +900,8 @@ export default function SampleIncubationPage() {
         </div>
       ) : grouped.length === 0 ? (
         <div className="surface p-16 text-center">
-          <FlaskConical className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-400 font-medium">No incubation records found.</p>
+          <FlaskConical className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+          <p className="text-slate-400 font-medium">No incubation records found.</p>
           <Link href="/lab-bench/log" className="mt-3 inline-block text-navy font-bold text-sm hover:underline">
             Log samples in Lab Bench
           </Link>
@@ -920,21 +920,21 @@ export default function SampleIncubationPage() {
                 {/* Source (batch) header */}
                 <button
                   onClick={() => toggleSource(src.key)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50/70 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 hover:bg-slate-50/70 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${src.key === '__other__' ? 'bg-gray-100' : 'bg-navy/10'}`}>
-                      <Layers className={`w-4 h-4 ${src.key === '__other__' ? 'text-gray-400' : 'text-navy'}`} />
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${src.key === '__other__' ? 'bg-slate-100' : 'bg-navy/10'}`}>
+                      <Layers className={`w-4 h-4 ${src.key === '__other__' ? 'text-slate-400' : 'text-navy'}`} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-gray-900">{src.label}</span>
+                        <span className="font-black text-slate-900">{src.label}</span>
                         {src.batch_status && (
                           <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
                             src.batch_status === 'released'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                             src.batch_status === 'rejected'   ? 'bg-red-50 text-red-700 border-red-200' :
-                            src.batch_status === 'fermenting' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                            'bg-gray-50 text-gray-500 border-gray-200'
+                            src.batch_status === 'fermenting' ? 'bg-slate-50 text-slate-700 border-slate-200' :
+                            'bg-slate-50 text-slate-500 border-slate-200'
                           }`} title="Current batch status">Batch: {src.batch_status}</span>
                         )}
                         {src.batch_id && (
@@ -948,11 +948,11 @@ export default function SampleIncubationPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-gray-400">
+                        <span className="text-[10px] font-bold text-slate-400">
                           {allRecords.length} plate{allRecords.length !== 1 ? 's' : ''} -- {src.timepoints.size} timepoint{src.timepoints.size !== 1 ? 's' : ''}
                         </span>
                         {ongoingCount > 0 && (
-                          <span className="text-[10px] font-bold text-blue-600">{ongoingCount} ongoing</span>
+                          <span className="text-[10px] font-bold text-slate-600">{ongoingCount} ongoing</span>
                         )}
                         {contaminatedCount > 0 && (
                           <span className="text-[10px] font-bold text-red-600">{contaminatedCount} contaminated</span>
@@ -971,14 +971,14 @@ export default function SampleIncubationPage() {
                       </Link>
                     )}
                     {isExpanded
-                      ? <ChevronDown className="w-4 h-4 text-gray-400" />
-                      : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                      ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                      : <ChevronRight className="w-4 h-4 text-slate-400" />}
                   </div>
                 </button>
 
                 {/* Timepoints + plates */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 divide-y divide-gray-50">
+                  <div className="border-t border-slate-100 divide-y divide-gray-50">
                     {[...src.timepoints.values()].map(tp => {
                       const tpFullKey = `${src.key}::${tp.key}`;
                       const isTpOpen  = expandedTimepoints.has(tpFullKey);
@@ -1027,16 +1027,16 @@ export default function SampleIncubationPage() {
                           {/* Timepoint row */}
                           <button
                             onClick={() => toggleTimepoint(tpFullKey)}
-                            className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition-colors text-left"
+                            className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50/50 transition-colors text-left"
                           >
                             <div className="flex items-center gap-3 flex-wrap">
                               <div className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
-                              <span className="text-sm font-black text-gray-700">{tp.label}</span>
-                              <span className="text-[10px] font-bold text-gray-400">
+                              <span className="text-sm font-black text-slate-700">{tp.label}</span>
+                              <span className="text-[10px] font-bold text-slate-400">
                                 {tp.records.length} plate{tp.records.length !== 1 ? 's' : ''}
                               </span>
                               {tpOngoing > 0 && (
-                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                                <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
                                   {tpOngoing} ongoing
                                 </span>
                               )}
@@ -1047,8 +1047,8 @@ export default function SampleIncubationPage() {
                               )}
                             </div>
                             {isTpOpen
-                              ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                              : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+                              ? <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              : <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
                           </button>
 
                           {/* Plate tiles grid */}
@@ -1103,7 +1103,7 @@ export default function SampleIncubationPage() {
                               >
                                 <Plus className="w-3 h-3" /> Add plate for this timepoint
                               </button>
-                              <span className="text-[9px] text-gray-400">
+                              <span className="text-[9px] text-slate-400">
                                 Use Replicate A / B / C to group plates from the same sample
                               </span>
                             </div>

@@ -46,13 +46,13 @@ export default function BlockEditor({ value, onChange, canEdit }) {
   return (
     <div className="space-y-4">
       {blocks.map((block, index) => (
-        <div key={block.id} className="relative group/block bg-white p-3 rounded-2xl border border-gray-100 shadow-sm transition-shadow hover:shadow-md">
+        <div key={block.id} className="relative group/block bg-white p-3 rounded-2xl border border-slate-100 shadow-sm transition-shadow hover:shadow-md">
           {/* Controls */}
           {canEdit && (
-            <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity z-10 bg-white shadow-sm border border-gray-200 rounded-lg p-1">
-              <button onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-50 rounded disabled:opacity-30"><ArrowUp className="w-3.5 h-3.5" /></button>
+            <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity z-10 bg-white shadow-sm border border-slate-200 rounded-lg p-1">
+              <button onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-slate-400 hover:text-navy hover:bg-slate-50 rounded disabled:opacity-30"><ArrowUp className="w-3.5 h-3.5" /></button>
               <button onClick={() => removeBlock(block.id)} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
-              <button onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-400 hover:text-navy hover:bg-gray-50 rounded disabled:opacity-30"><ArrowDown className="w-3.5 h-3.5" /></button>
+              <button onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-slate-400 hover:text-navy hover:bg-slate-50 rounded disabled:opacity-30"><ArrowDown className="w-3.5 h-3.5" /></button>
             </div>
           )}
 
@@ -65,13 +65,13 @@ export default function BlockEditor({ value, onChange, canEdit }) {
 
       {canEdit && (
         <div className="flex items-center justify-center gap-3 pt-2">
-          <button onClick={() => addBlock('text')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-navy border border-gray-200 transition-colors shadow-sm">
+          <button onClick={() => addBlock('text')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-navy border border-slate-200 transition-colors shadow-sm">
             <Type className="w-4 h-4" /> Add Text
           </button>
-          <button onClick={() => addBlock('image')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-navy border border-gray-200 transition-colors shadow-sm">
+          <button onClick={() => addBlock('image')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-navy border border-slate-200 transition-colors shadow-sm">
             <ImageIcon className="w-4 h-4" /> Add Image
           </button>
-          <button onClick={() => addBlock('table_chart')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-navy border border-gray-200 transition-colors shadow-sm">
+          <button onClick={() => addBlock('table_chart')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-navy border border-slate-200 transition-colors shadow-sm">
             <TableIcon className="w-4 h-4" /> Add Data Table
           </button>
         </div>

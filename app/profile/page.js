@@ -22,7 +22,7 @@ function DigitalIDCard({ emp }) {
   return (
     <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full max-w-[340px] mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
       {/* Subtle modern background gradient */}
-      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-slate-800 to-cyan-900"/>
+      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-slate-800 to-slate-900"/>
       
       {/* Header */}
       <div className="w-full relative z-10 flex justify-between items-start mb-8">
@@ -530,7 +530,7 @@ export default function ProfilePage() {
 
 function InitialsField({ value, editing, registerProps }) {
   const display = value || '??';
-  const colors = ['bg-slate-600', 'bg-slate-600', 'bg-sky-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600'];
+  const colors = ['bg-slate-600', 'bg-slate-600', 'bg-slate-600', 'bg-amber-600', 'bg-red-600', 'bg-emerald-600'];
   const colorIdx = display.charCodeAt(0) % colors.length;
   const bg = colors[colorIdx];
 

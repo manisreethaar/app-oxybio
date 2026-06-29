@@ -40,8 +40,8 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
             <Icon className="w-4 h-4 text-navy" />
           </div>
           <div>
-            <p className="text-sm font-black text-gray-900">{title}</p>
-            <p className="text-[11px] text-gray-400">{description}</p>
+            <p className="text-sm font-black text-slate-900">{title}</p>
+            <p className="text-[11px] text-slate-400">{description}</p>
           </div>
         </div>
         {dirty && (
@@ -59,19 +59,19 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
       {/* Existing options */}
       <div className="space-y-2">
         {items.map((item) => (
-          <div key={item.value} className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl border border-gray-100">
-            <GripVertical className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+          <div key={item.value} className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+            <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
             <span className="font-mono text-xs font-black text-navy bg-navy/10 px-2 py-0.5 rounded shrink-0 min-w-[56px] text-center">
               {item.value}
             </span>
             <input
               value={item.label}
               onChange={e => handleLabelEdit(item.value, e.target.value)}
-              className="flex-1 text-xs font-semibold text-gray-700 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-navy focus:outline-none py-0.5 transition-colors"
+              className="flex-1 text-xs font-semibold text-slate-700 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-navy focus:outline-none py-0.5 transition-colors"
             />
             <button
               onClick={() => handleDelete(item.value)}
-              className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+              className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
               title="Remove"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -81,19 +81,19 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
       </div>
 
       {/* Add new option */}
-      <div className="flex gap-2 pt-1 border-t border-gray-100">
+      <div className="flex gap-2 pt-1 border-t border-slate-100">
         <input
           value={newValue}
           onChange={e => setNewValue(e.target.value.toUpperCase())}
           placeholder="Code (e.g. F3)"
           maxLength={10}
-          className="w-24 px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-navy/20"
+          className="w-24 px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-navy/20"
         />
         <input
           value={newLabel}
           onChange={e => setNewLabel(e.target.value)}
           placeholder="Label shown in dropdown (e.g. F3 — New type)"
-          className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-navy/20"
+          className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-navy/20"
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
         />
         <button
@@ -103,8 +103,8 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
           <Plus className="w-3.5 h-3.5" /> Add
         </button>
       </div>
-      <p className="text-[10px] text-gray-400">
-        Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-gray-500 text-[9px]">Enter</kbd> in the label field or click Add. Edit labels inline. Click Save Changes when done.
+      <p className="text-[10px] text-slate-400">
+        Press <kbd className="px-1 py-0.5 bg-slate-100 rounded text-slate-500 text-[9px]">Enter</kbd> in the label field or click Add. Edit labels inline. Click Save Changes when done.
       </p>
     </div>
   );
@@ -156,8 +156,8 @@ export default function BatchSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-black text-gray-900">Batch Settings</h1>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <h1 className="text-xl font-black text-slate-900">Batch Settings</h1>
+        <p className="text-xs text-slate-500 mt-0.5">
           Manage the dropdown options that appear when creating a new batch. Changes take effect immediately for all users.
         </p>
       </div>
@@ -166,9 +166,9 @@ export default function BatchSettingsPage() {
         <div className="space-y-4">
           {[1, 2].map(i => (
             <div key={i} className="surface p-5 animate-pulse">
-              <div className="h-5 bg-gray-200 rounded w-40 mb-3" />
+              <div className="h-5 bg-slate-200 rounded w-40 mb-3" />
               <div className="space-y-2">
-                {[1, 2, 3].map(j => <div key={j} className="h-9 bg-gray-100 rounded-xl" />)}
+                {[1, 2, 3].map(j => <div key={j} className="h-9 bg-slate-100 rounded-xl" />)}
               </div>
             </div>
           ))}

@@ -160,7 +160,7 @@ export default function DocumentsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Documents & SOPs</h1>
-          <p className="text-gray-500 mt-1">Secure repository and official lab protocols.</p>
+          <p className="text-slate-500 mt-1">Secure repository and official lab protocols.</p>
         </div>
         {activeTab === 'vault' && canDo('documents', 'upload') && (
           <button onClick={() => setShowUploadModal(true)} className="flex items-center px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
@@ -191,72 +191,72 @@ export default function DocumentsPage() {
       {activeTab === 'vault' && (
         <>
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading documents...</div>
+            <div className="p-8 text-center text-slate-500">Loading documents...</div>
           ) : (
             <>
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-2 rounded-xl shadow-sm border border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
                 <div className="flex space-x-1 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-hide">
                   {categories.map(c => (
                     <button
                       key={c} onClick={() => setCategory(c)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${category === c ? 'bg-slate-50 text-slate-800' : 'text-gray-600 hover:bg-gray-50'}`}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${category === c ? 'bg-slate-50 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
                       {c}
                     </button>
                   ))}
                 </div>
                 <div className="relative w-full sm:w-64">
-                  <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="text" placeholder="Search documents..." value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all" 
+                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all" 
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredDocs.length === 0 ? (
-                  <div className="col-span-full py-12 text-center bg-white border border-gray-200 rounded-2xl shadow-sm text-gray-500">
-                    <Archive className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No documents found</h3>
+                  <div className="col-span-full py-12 text-center bg-white border border-slate-200 rounded-2xl shadow-sm text-slate-500">
+                    <Archive className="w-12 h-12 mx-auto text-slate-300 mb-4" />
+                    <h3 className="text-lg font-medium text-slate-900 mb-1">No documents found</h3>
                     <p>There are no documents in the &apos;{category}&apos; category.</p>
                   </div>
                 ) : (
                   filteredDocs.map(doc => {
                     const warning = getExpiryWarning(doc.expiry_date);
                     return (
-                      <div key={doc.id} className="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col shadow-sm transition-shadow hover:shadow-md relative overflow-hidden group">
+                      <div key={doc.id} className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col shadow-sm transition-shadow hover:shadow-md relative overflow-hidden group">
                         <div className={`absolute top-0 right-0 w-2 h-full ${doc.access_level === 'admin-only' ? 'bg-amber-400' : 'bg-slate-500'}`}></div>
                         <div className="flex justify-between items-start mb-4">
-                          <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-wider bg-gray-100 text-gray-600 uppercase border border-gray-200">{doc.category}</span>
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-wider bg-slate-100 text-slate-600 uppercase border border-slate-200">{doc.category}</span>
                           {warning && (
                             <span className={`px-2 py-1 rounded flex items-center text-xs font-bold ${warning.color}`}>
                               <AlertTriangle className="w-3 h-3 mr-1" /> {warning.text}
                             </span>
                           )}
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-slate-800 transition-colors line-clamp-2">{doc.title}</h3>
-                        <div className="text-sm text-gray-500 space-y-1 mb-6 mt-2 flex-1">
-                          <p>Version <span className="font-semibold text-gray-700">{doc.version || '1.0'}</span></p>
+                        <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-slate-800 transition-colors line-clamp-2">{doc.title}</h3>
+                        <div className="text-sm text-slate-500 space-y-1 mb-6 mt-2 flex-1">
+                          <p>Version <span className="font-semibold text-slate-700">{doc.version || '1.0'}</span></p>
                           <p>Effective: {doc.effective_date ? new Date(doc.effective_date).toLocaleDateString() : 'N/A'}</p>
                           <div className="flex items-center gap-1.5 mt-2">
                             <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Uploaded By:</span>
                             {doc.employees && (
                               <CreatorBadge initials={doc.employees.initials} fullName={doc.employees.full_name} />
                             )}
-                            <span className="text-[10px] text-gray-700">{doc.employees?.full_name || 'System / Admin'}</span>
+                            <span className="text-[10px] text-slate-700">{doc.employees?.full_name || 'System / Admin'}</span>
                           </div>
                         </div>
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                          <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>
+                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                          <span className="text-xs font-medium text-slate-400 uppercase tracking-widest">{doc.access_level === 'admin-only' ? 'CONFIDENTIAL' : 'PUBLIC (STAFF)'}</span>
                           <div className="flex gap-2">
                             {doc.file_url ? (
                               <button onClick={() => setViewerDoc({url: doc.file_url, title: doc.title})} className="flex items-center justify-center w-10 h-10 bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 hover:text-slate-900 transition-colors" title="Secure View Document">
                                 <BookOpen className="w-5 h-5" />
                               </button>
                             ) : (
-                              <button disabled className="flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-full cursor-not-allowed" title="No Document Attached">
+                              <button disabled className="flex items-center justify-center w-10 h-10 bg-slate-50 text-slate-400 rounded-full cursor-not-allowed" title="No Document Attached">
                                 <Download className="w-5 h-5" />
                               </button>
                             )}
@@ -282,36 +282,36 @@ export default function DocumentsPage() {
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl max-w-md w-full p-5 md:p-8 relative shadow-2xl">
-            <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600">×</button>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Document to Vault</h2>
+            <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">×</button>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Upload Document to Vault</h2>
             <form onSubmit={handleSubmit(handleUploadSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
-                <input type="text" {...register('title')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none" placeholder="e.g. Q3 Financial Report" />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Document Title</label>
+                <input type="text" {...register('title')} className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none" placeholder="e.g. Q3 Financial Report" />
                 {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select {...register('category')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none bg-white">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                  <select {...register('category')} className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none bg-white">
                     {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
-                  <input type="text" {...register('version')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none" placeholder="1.0" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Version</label>
+                  <input type="text" {...register('version')} className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none" placeholder="1.0" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
-                <select {...register('access_level')} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none bg-white">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Access Level</label>
+                <select {...register('access_level')} className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-slate-500 outline-none bg-white">
                   <option value="all-staff">Public (All Staff)</option>
                   <option value="admin-only">Confidential (Admin Only)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Document File</label>
-                <input type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" {...register('file')} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-slate-500 outline-none bg-gray-50 text-sm" />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Document File</label>
+                <input type="file" accept=".pdf,.doc,.docx,.csv,.xlsx,.xls" {...register('file')} className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-slate-500 outline-none bg-slate-50 text-sm" />
               </div>
               <button disabled={uploading} type="submit" className="w-full bg-slate-800 text-white font-bold py-3 mt-4 rounded-xl hover:bg-slate-900 transition-colors disabled:opacity-50">
                 {uploading ? 'Uploading securely...' : 'Upload & Commit to Vault'}

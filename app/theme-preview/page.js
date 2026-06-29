@@ -53,7 +53,7 @@ export default function ThemePreview() {
 
         {/* OPTION 2: ICY BLUE (SKY) */}
         <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-          <div className="bg-sky-50/50 border-b border-sky-100 p-4">
+          <div className="bg-slate-50/50 border-b border-slate-100 p-4">
             <h2 className="text-lg font-black text-slate-800">2. Icy Blue (Sky)</h2>
             <p className="text-xs text-slate-500">Subtle, airy pop of color. (Uses sky-500)</p>
           </div>
@@ -61,7 +61,7 @@ export default function ThemePreview() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Primary Buttons</p>
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm">
+                <button className="flex items-center gap-2 px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm">
                   <Upload className="w-4 h-4" /> Save Changes
                 </button>
                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all">
@@ -72,7 +72,7 @@ export default function ThemePreview() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Active Badges</p>
               <div className="flex gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-bold">
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Active Batch
                 </span>
                 <span className="px-3 py-1 bg-white text-slate-500 border border-slate-200 rounded-lg text-xs font-medium">
@@ -84,7 +84,7 @@ export default function ThemePreview() {
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Input Focus (Ring)</p>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type="text" placeholder="Focus me..." className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all" />
+                <input type="text" placeholder="Focus me..." className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all" />
               </div>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function ThemePreview() {
 
         {/* OPTION 3: INDIGO */}
         <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-          <div className="bg-indigo-50/50 border-b border-indigo-100 p-4">
+          <div className="bg-slate-50/50 border-b border-slate-100 p-4">
             <h2 className="text-lg font-black text-slate-800">3. Classic Indigo</h2>
             <p className="text-xs text-slate-500">Trustworthy, standard tech blue. (Uses indigo-600)</p>
           </div>
@@ -100,7 +100,7 @@ export default function ThemePreview() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Primary Buttons</p>
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-sm">
+                <button className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-sm">
                   <Upload className="w-4 h-4" /> Save Changes
                 </button>
                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all">
@@ -111,7 +111,7 @@ export default function ThemePreview() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Active Badges</p>
               <div className="flex gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold">
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Active Batch
                 </span>
                 <span className="px-3 py-1 bg-white text-slate-500 border border-slate-200 rounded-lg text-xs font-medium">
@@ -123,7 +123,7 @@ export default function ThemePreview() {
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Input Focus (Ring)</p>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type="text" placeholder="Focus me..." className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" />
+                <input type="text" placeholder="Focus me..." className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all" />
               </div>
             </div>
           </div>
