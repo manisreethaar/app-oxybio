@@ -56,8 +56,10 @@ export default function QuickLogOverlay() {
     supabase
       .from('batches')
       .select('id, batch_id, current_stage, status, sku')
-      .not('status', 'in', '("released","rejected")')
-      .not('current_stage', 'in', '("released","rejected")')
+      .neq('status', 'released')
+      .neq('status', 'rejected')
+      .neq('current_stage', 'released')
+      .neq('current_stage', 'rejected')
       .order('updated_at', { ascending: false })
       .limit(25)
       .then(({ data }) => {
