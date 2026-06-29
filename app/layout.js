@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
