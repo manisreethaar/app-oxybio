@@ -3,16 +3,21 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
 /**
- * Calculates the number of valid working days between two dates.
- * OxyBio Rule: Mon-Sat are working days. Sundays are paid holidays.
+ * OxyBio Leave Policy:
+ * - No fixed weekly holidays. All calendar days (including Sundays) are working days.
+ * - Every employee is entitled to 4 leave days per month (any day of the week).
+ * - Additional formally approved leave applications are credited on top.
+ * - LOP = total_calendar_days − days_present − 4_monthly_allowance − approved_leave_days
  */
-function getWorkingDays(startDate, endDate) {
+const MONTHLY_LEAVE_ALLOWANCE = 4;
+
+/** Returns the total number of calendar days between two dates (inclusive). All 7 days count. */
+function getTotalCalendarDays(startDate, endDate) {
   let count = 0;
   const current = new Date(startDate);
   const end = new Date(endDate);
   while (current <= end) {
-    const dayOfWeek = current.getDay(); // 0 = Sunday
-    if (dayOfWeek !== 0) count++; // Exclude Sundays only
+    count++;
     current.setDate(current.getDate() + 1);
   }
   return count;
@@ -73,8 +78,8 @@ export async function POST(request) {
       }
     }
 
-    // Count total payable working days in the period
-    const totalWorkingDays = getWorkingDays(periodStart, monthEnd);
+    // Count total calendar days in the period (no day is automatically excluded)
+    const totalWorkingDays = getTotalCalendarDays(periodStart, monthEnd);
 
     // Count present days from attendance_log
     const startStr = periodStart.toISOString().split('T')[0];
@@ -91,15 +96,18 @@ export async function POST(request) {
     // Unique present days (in case of multiple logs per day)
     const presentDays = new Set((attendanceLogs || []).map(a => a.date)).size;
 
-    // ── Leave Policy by Role ──────────────────────────────────────────────────
-    // CL-only roles (intern, research_intern, research_fellow): Only Casual Leave
-    // counts as paid leave. Any SL/EL they somehow have would be LOP.
-    // All other permanent roles: All approved leave types (CL/SL/EL) count as paid.
+    // ── Leave Policy ──────────────────────────────────────────────────────────
+    // All employees get 4 days leave per month (any day of the week — no fixed holidays).
+    // Formally approved leave applications (any type) are credited on top of the 4-day allowance.
+    // LOP = total_calendar_days - days_present - 4_monthly_allowance - approved_leave_days
     // ─────────────────────────────────────────────────────────────────────────
-    const CL_ONLY_ROLES = ['intern', 'research_intern', 'research_fellow'];
-    const isClOnly = CL_ONLY_ROLES.includes(emp.role?.toLowerCase());
 
-    let leaveQuery = supabase
+    // Prorate the monthly allowance if employee joined mid-month
+    const fullMonthDays = getTotalCalendarDays(monthStart, monthEnd);
+    const periodFraction = totalWorkingDays / fullMonthDays;
+    const proratedAllowance = Math.round(MONTHLY_LEAVE_ALLOWANCE * periodFraction * 10) / 10;
+
+    const { data: approvedLeaves } = await supabase
       .from('leave_applications')
       .select('total_days, leave_type')
       .eq('employee_id', employee_id)
@@ -107,20 +115,13 @@ export async function POST(request) {
       .gte('start_date', startStr)
       .lte('end_date', endStr);
 
-    if (isClOnly) {
-      leaveQuery = leaveQuery.eq('leave_type', 'Casual');
-    }
-
-    const { data: approvedLeaves } = await leaveQuery;
     const approvedLeaveDays = (approvedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
 
-    const leavePolicyNote = isClOnly
-      ? '6 CL credited on DOJ · 1 CL/month after 6-month mark · CL only (no SL/EL). Unused CL expires Dec 31.'
-      : 'All approved leave types (CL/SL/EL) credited as paid.';
+    const leavePolicyNote =
+      `4 days/month leave allowance (any day) + approved leave applications credited. No fixed weekly holiday.`;
 
-    // Calculate LOP
-    // Credited working days = present + approved paid leave
-    const creditedDays = Math.min(presentDays + approvedLeaveDays, totalWorkingDays);
+    // Calculate LOP: days unaccounted for after allowance + approved leaves
+    const creditedDays = presentDays + proratedAllowance + approvedLeaveDays;
     const lopDays = Math.max(0, totalWorkingDays - creditedDays);
 
     // Salary Computation
@@ -143,8 +144,9 @@ export async function POST(request) {
         base_salary: emp.base_salary,
         total_working_days: totalWorkingDays,
         present_days: presentDays,
+        monthly_leave_allowance: proratedAllowance,
         approved_leave_days: approvedLeaveDays,
-        lop_days: lopDays,
+        lop_days: Math.round(lopDays * 100) / 100,
         lop_deduction: Math.round(lopDeduction * 100) / 100,
         gross_salary: Math.round(grossSalary * 100) / 100,
         pf_deduction: parseFloat(pf_deduction || 0),

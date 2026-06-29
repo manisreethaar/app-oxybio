@@ -95,30 +95,28 @@ export async function GET(request) {
       if (!attendanceMap[log.date]) attendanceMap[log.date] = log;
     });
 
-    // Build calendar days
+    // Build calendar days — no day is automatically excluded or marked as rest
     const calendarDays = [];
     const cur = new Date(monthStart);
     while (cur <= monthEnd) {
       const ds = cur.toISOString().split('T')[0];
-      const dayOfWeek = cur.getDay(); // 0=Sun
-      const isSunday = dayOfWeek === 0;
+      const dayOfWeek = cur.getDay(); // 0=Sun, kept for display only
 
-      // Before DOJ → not applicable
       const isBeforeDOJ = emp.joined_date && new Date(emp.joined_date) > cur;
       const isJoiningDay = emp.joined_date && emp.joined_date === ds;
-      const isWeekend = isSunday;
       const log = attendanceMap[ds] || null;
       const leave = leaveDateMap[ds] || null;
 
-      let status = 'absent'; // default for working days
+      // Status priority: not_applicable → present (any day with a log) → on_leave → leave_pending → absent
+      let status = 'absent';
       if (isBeforeDOJ) status = 'not_applicable';
-      else if (isWeekend) status = 'weekend';
-      else if (log && log.check_in_time) status = 'present';
+      else if (log && log.check_in_time) status = 'present';  // present on ANY day, incl. Sunday
       else if (leave) status = leave.status === 'approved' ? 'on_leave' : 'leave_pending';
 
       calendarDays.push({
         date: ds,
         day_of_week: dayOfWeek,
+        is_sunday: dayOfWeek === 0,   // purely cosmetic flag for the UI
         status,
         is_joining_day: isJoiningDay,
         log: log ? {
@@ -140,13 +138,12 @@ export async function GET(request) {
       cur.setDate(cur.getDate() + 1);
     }
 
-    // Compute summary stats
-    const workingDays = calendarDays.filter(d => !['weekend', 'not_applicable'].includes(d.status));
-    const presentDays = calendarDays.filter(d => d.status === 'present');
-    const absentDays  = calendarDays.filter(d => d.status === 'absent');
-    const leaveDays   = calendarDays.filter(d => d.status === 'on_leave');
-    const totalHours  = presentDays.reduce((sum, d) => sum + parseFloat(d.log?.total_hours || 0), 0);
-    const avgHours    = presentDays.length > 0 ? totalHours / presentDays.length : 0;
+    // Compute summary stats — all calendar days count, no auto exclusions
+    const presentDays  = calendarDays.filter(d => d.status === 'present');
+    const absentDays   = calendarDays.filter(d => d.status === 'absent');
+    const leaveDays    = calendarDays.filter(d => d.status === 'on_leave');
+    const totalHours   = presentDays.reduce((sum, d) => sum + parseFloat(d.log?.total_hours || 0), 0);
+    const avgHours     = presentDays.length > 0 ? totalHours / presentDays.length : 0;
 
     // Proration: if joined during this month, period starts from DOJ
     let periodStartStr = startStr;
@@ -155,17 +152,19 @@ export async function GET(request) {
       if (doj > monthStart && doj <= monthEnd) periodStartStr = emp.joined_date;
     }
 
-    // Total payable working days (Mon-Sat only, from period start)
+    // Total payable days = all calendar days from period start (no day excluded)
     let payableWorkingDays = 0;
     const pd = new Date(periodStartStr);
-    while (pd <= monthEnd) {
-      if (pd.getDay() !== 0) payableWorkingDays++;
-      pd.setDate(pd.getDate() + 1);
-    }
+    while (pd <= monthEnd) { payableWorkingDays++; pd.setDate(pd.getDate() + 1); }
+
+    // 4 days/month allowance, prorated for mid-month joiners
+    const fullMonthDays = calendarDays.length;
+    const periodFraction = payableWorkingDays / fullMonthDays;
+    const monthlyLeaveAllowance = Math.round(4 * periodFraction * 10) / 10;
 
     const approvedLeaveDays = leaveDays.length;
-    const creditedDays = Math.min(presentDays.length + approvedLeaveDays, payableWorkingDays);
-    const lopDays = Math.max(0, payableWorkingDays - creditedDays);
+    // LOP = total − present − 4_allowance − approved_leaves
+    const lopDays = Math.max(0, Math.round((payableWorkingDays - presentDays.length - monthlyLeaveAllowance - approvedLeaveDays) * 100) / 100);
 
     return NextResponse.json({
       success: true,
@@ -175,6 +174,7 @@ export async function GET(request) {
         calendar_days: calendarDays,
         summary: {
           total_working_days: payableWorkingDays,
+          monthly_leave_allowance: monthlyLeaveAllowance,
           present_days: presentDays.length,
           absent_days: absentDays.length,
           leave_days: approvedLeaveDays,
