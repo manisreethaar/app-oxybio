@@ -107,7 +107,6 @@ function StatusPill({ status }) {
     absent:       { label: 'Absent',   cls: 'bg-red-100 text-red-600' },
     on_leave:     { label: 'Leave',    cls: 'bg-amber-100 text-amber-700' },
     leave_pending:{ label: 'Pending',  cls: 'bg-blue-100 text-blue-700' },
-    weekend:      { label: 'Rest',     cls: 'bg-gray-100 text-gray-400' },
     not_applicable: { label: '—',      cls: 'bg-gray-50 text-gray-300' },
   };
   const { label, cls } = map[status] || { label: status, cls: '' };
@@ -116,7 +115,7 @@ function StatusPill({ status }) {
 
 // ── Calendar Day Cell ──────────────────────────────────────────────────────────
 function DayCell({ dayData }) {
-  const { date, status, log, leave, is_joining_day } = dayData;
+  const { date, status, log, leave, is_joining_day, is_sunday } = dayData;
   const d = new Date(date + 'T00:00:00');
   const dayNum = d.getDate();
   const isToday = date === new Date().toISOString().split('T')[0];
@@ -126,16 +125,20 @@ function DayCell({ dayData }) {
     absent:        'bg-red-50/60 border-red-100',
     on_leave:      'bg-amber-50 border-amber-200',
     leave_pending: 'bg-blue-50 border-blue-100',
-    weekend:       'bg-gray-50 border-gray-100',
     not_applicable:'bg-white border-gray-50',
   };
 
   return (
     <div className={`relative rounded-2xl border p-2 min-h-[80px] flex flex-col gap-1 transition-all ${bgMap[status] || 'bg-white border-gray-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
       <div className="flex items-center justify-between">
-        <span className={`text-xs font-black ${status === 'not_applicable' ? 'text-gray-200' : status === 'weekend' ? 'text-gray-400' : 'text-slate-700'}`}>
-          {dayNum}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className={`text-xs font-black ${status === 'not_applicable' ? 'text-gray-200' : is_sunday && status !== 'present' ? 'text-gray-400' : 'text-slate-700'}`}>
+            {dayNum}
+          </span>
+          {is_sunday && (
+            <span className={`text-[8px] font-bold ${status === 'not_applicable' ? 'text-gray-200' : status === 'present' ? 'text-emerald-600/50' : 'text-gray-300'}`}>Sun</span>
+          )}
+        </div>
         {is_joining_day && <Star className="w-3 h-3 text-amber-500 fill-amber-400" />}
         {isToday && <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />}
       </div>
@@ -169,10 +172,6 @@ function DayCell({ dayData }) {
 
       {(status === 'on_leave' || status === 'leave_pending') && leave && (
         <span className="text-[10px] font-black text-amber-600 leading-tight">{leave.leave_type}</span>
-      )}
-
-      {status === 'weekend' && (
-        <span className="text-[9px] text-gray-300 font-bold">Sun</span>
       )}
     </div>
   );
@@ -214,7 +213,6 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
           { color: 'bg-red-400',    label: 'Absent' },
           { color: 'bg-amber-400',  label: 'On Leave' },
           { color: 'bg-blue-400',   label: 'Leave Pending' },
-          { color: 'bg-gray-300',   label: 'Rest Day' },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
             <div className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
@@ -248,11 +246,12 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
 
       {/* Summary strip */}
       {summary && (
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 pt-2">
+        <div className="grid grid-cols-3 md:grid-cols-7 gap-3 pt-2">
           {[
             { label: 'Working Days', value: summary.total_working_days, color: 'text-slate-700' },
             { label: 'Present',      value: summary.present_days,       color: 'text-emerald-600' },
             { label: 'Absent',       value: summary.absent_days,        color: 'text-red-500' },
+            { label: 'Allowance',    value: summary.monthly_leave_allowance, color: 'text-blue-600' },
             { label: 'On Leave',     value: summary.leave_days,         color: 'text-amber-600' },
             { label: 'LOP Days',     value: summary.lop_days,           color: 'text-red-600' },
             { label: 'Total Hours',  value: `${summary.total_hours_worked}h`, color: 'text-slate-600' },
@@ -400,6 +399,7 @@ function PayslipPanel({
         {[
           ['Working Days', summary.total_working_days],
           ['Present', summary.present_days],
+          ['Allowance', summary.monthly_leave_allowance],
           ['Leave Days', summary.leave_days],
           ['Total Hours', `${summary.total_hours_worked}h`],
         ].map(([l, v]) => (
