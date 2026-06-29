@@ -82,8 +82,15 @@ export async function POST(request) {
     const totalWorkingDays = getTotalCalendarDays(periodStart, monthEnd);
 
     // Count present days from attendance_log
-    const startStr = periodStart.toISOString().split('T')[0];
-    const endStr = monthEnd.toISOString().split('T')[0];
+    const toDateStr = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    
+    const startStr = toDateStr(periodStart);
+    const endStr = toDateStr(monthEnd);
 
     const { data: attendanceLogs } = await supabase
       .from('attendance_log')
@@ -107,15 +114,50 @@ export async function POST(request) {
     const periodFraction = totalWorkingDays / fullMonthDays;
     const proratedAllowance = Math.round(MONTHLY_LEAVE_ALLOWANCE * periodFraction * 10) / 10;
 
+    // Fetch leaves that overlap with the current payslip period
     const { data: approvedLeaves } = await supabase
       .from('leave_applications')
-      .select('total_days, leave_type')
+      .select('start_date, end_date, total_days, leave_type')
       .eq('employee_id', employee_id)
       .eq('status', 'approved')
-      .gte('start_date', startStr)
-      .lte('end_date', endStr);
+      .lte('start_date', endStr)
+      .gte('end_date', startStr);
 
-    const approvedLeaveDays = (approvedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
+    let approvedLeaveDays = 0;
+    for (const l of (approvedLeaves || [])) {
+      if (l.leave_type === 'Permission' || !l.total_days) continue;
+      
+      const lStart = l.start_date;
+      const lEnd = l.end_date;
+      
+      if (lStart >= startStr && lEnd <= endStr) {
+        // Leave is entirely within this month
+        approvedLeaveDays += l.total_days;
+      } else {
+        // Leave crosses boundaries, calculate proportional days
+        const parseDate = (s) => {
+          const [y, m, d] = s.split('-');
+          return new Date(y, m - 1, d);
+        };
+        const leaveStartDate = parseDate(lStart);
+        const leaveEndDate = parseDate(lEnd);
+        const pStart = parseDate(startStr);
+        const pEnd = parseDate(endStr);
+        
+        const overlapStart = leaveStartDate > pStart ? leaveStartDate : pStart;
+        const overlapEnd = leaveEndDate < pEnd ? leaveEndDate : pEnd;
+        
+        if (overlapStart <= overlapEnd) {
+          const totalLeaveCalDays = getTotalCalendarDays(leaveStartDate, leaveEndDate);
+          const overlapCalDays = getTotalCalendarDays(overlapStart, overlapEnd);
+          if (totalLeaveCalDays > 0) {
+            approvedLeaveDays += (overlapCalDays / totalLeaveCalDays) * l.total_days;
+          }
+        }
+      }
+    }
+    
+    approvedLeaveDays = Math.round(approvedLeaveDays * 2) / 2; // Round to nearest 0.5
 
     const leavePolicyNote =
       `4 days/month leave allowance (any day) + approved leave applications credited. No fixed weekly holiday.`;
