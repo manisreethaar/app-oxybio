@@ -28,6 +28,7 @@ export async function GET() {
       tasksCount,
       compCount,
       attendanceCount,
+      currentlyInLabCount,
       totalEmps,
       mispunchesResult,
       activeBatchesResult
@@ -50,6 +51,9 @@ export async function GET() {
       // Today's attendance
       supabase.from('attendance_log').select('id', { count: 'exact', head: true })
         .eq('date', todayStr),
+      // Currently in lab
+      supabase.from('attendance_log').select('id', { count: 'exact', head: true })
+        .eq('date', todayStr).is('check_out_time', null),
       // Active employees
       supabase.from('employees').select('id', { count: 'exact', head: true })
         .eq('is_active', true),
@@ -108,6 +112,7 @@ export async function GET() {
           urgentTasks:              tasksCount?.count       || 0,
           upcomingCompliance:       compCount?.count        || 0,
           checkedInToday:           attendanceCount?.count  || 0,
+          currentlyInLab:           currentlyInLabCount?.count || 0,
           totalEmployees:           totalEmps?.count        || 0,
           pendingMispunches:        mispunchesResult?.count || 0,
           activeBatches:            activeBatchesResult?.data?.length || 0

@@ -23,7 +23,7 @@ export default function AdminDashboard({ employeeId }) {
   const [showConfig, setShowConfig] = useState(false);
   const [thresholds, setThresholds] = useState({ minPh: 4.0, maxPh: 7.8, tempMax: 35 });
   const [chartData, setChartData] = useState([]);
-  const [attendanceStats, setAttendanceStats] = useState({ checkedIn: 0, total: 0 });
+  const [attendanceStats, setAttendanceStats] = useState({ checkedIn: 0, currentlyInLab: 0, total: 0 });
   const [pendingMispunches, setPendingMispunches] = useState([]);
   const [reviewingMispunch, setReviewingMispunch] = useState(null);
   const [rejectRemark, setRejectRemark] = useState('');
@@ -89,7 +89,7 @@ export default function AdminDashboard({ employeeId }) {
         });
         setChartData(chartData);
         setActiveBatches(activeBatches);
-        setAttendanceStats({ checkedIn: stats.checkedInToday, total: stats.totalEmployees });
+        setAttendanceStats({ checkedIn: stats.checkedInToday, currentlyInLab: stats.currentlyInLab, total: stats.totalEmployees });
         setPendingMispunches(mispunches);
         
         // Set alerts for unacknowledged deviations
@@ -256,7 +256,7 @@ export default function AdminDashboard({ employeeId }) {
           icon={Users}
           color="bg-emerald-50 border-emerald-100 text-emerald-600"
           link="/attendance"
-          subtitle="Live"
+          subtitle={`${attendanceStats.currentlyInLab} Currently in Lab`}
         />
       </div>
 
