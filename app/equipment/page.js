@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -15,6 +15,7 @@ const equipSchema = z.object({
   name: z.string().min(1, "Name is required"),
   model: z.string().optional(),
   serial_number: z.string().optional(),
+  requires_calibration: z.boolean().default(false),
   calibration_due_date: z.string().optional().or(z.literal('')),
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational'),
   iq_doc_url: z.string().optional().or(z.literal('')),
@@ -63,10 +64,12 @@ export default function EquipmentPage() {
   const [sortOrder, setSortOrder] = useState('name');
   
   // REACT HOOK FORM SETUPS
-  const { register: regEquip, handleSubmit: handEquip, formState: { errors: eqErrors, isSubmitting: isEqSubmitting }, reset: resetEquip } = useForm({
+  const { register: regEquip, handleSubmit: handEquip, formState: { errors: eqErrors, isSubmitting: isEqSubmitting }, reset: resetEquip, control: equipControl } = useForm({
     resolver: zodResolver(equipSchema),
-    defaultValues: { name: '', model: '', serial_number: '', calibration_due_date: '', status: 'Operational', iq_doc_url: '', oq_doc_url: '', pq_doc_url: '' }
+    defaultValues: { name: '', model: '', serial_number: '', requires_calibration: false, calibration_due_date: '', status: 'Operational', iq_doc_url: '', oq_doc_url: '', pq_doc_url: '' }
   });
+
+  const watchRequiresCalibration = useWatch({ control: equipControl, name: 'requires_calibration' });
 
   const { register: regMaint, handleSubmit: handMaint, formState: { errors: mxErrors, isSubmitting: isMxSubmitting }, reset: resetMaint, setValue: setMaintValue } = useForm({
     resolver: zodResolver(maintSchema),
@@ -307,15 +310,17 @@ export default function EquipmentPage() {
 
               <div className="p-6 flex-1 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Calib. Due</p>
-                      {isCalibrationDue ? <AlertTriangle className="w-4 h-4 text-red-600" /> : <Shield className="w-4 h-4 text-slate-600" />}
+                  {device.requires_calibration && (
+                    <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Calib. Due</p>
+                        {isCalibrationDue ? <AlertTriangle className="w-4 h-4 text-red-600" /> : <Shield className="w-4 h-4 text-slate-600" />}
+                      </div>
+                      <p className={`text-sm font-black font-mono tracking-tighter ${isCalibrationDue ? 'text-red-700' : 'text-slate-900'}`}>
+                        {device.calibration_due_date ? new Date(device.calibration_due_date).toLocaleDateString() : 'N/A'}
+                      </p>
                     </div>
-                    <p className={`text-sm font-black font-mono tracking-tighter ${isCalibrationDue ? 'text-red-700' : 'text-slate-900'}`}>
-                      {device.calibration_due_date ? new Date(device.calibration_due_date).toLocaleDateString() : 'N/A'}
-                    </p>
-                  </div>
+                  )}
                   
                   {(() => {
                     const isPmDue = device.next_pm_date && (new Date(device.next_pm_date) < new Date());
@@ -375,12 +380,14 @@ export default function EquipmentPage() {
                     className="flex-1 py-3 bg-white border border-gray-200 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                       Log Maintenance
                   </button>
-                  <button 
-                    disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                    onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
-                    className="flex-1 py-3 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                      Calibrate Now
-                  </button>
+                  {device.requires_calibration && (
+                    <button 
+                      disabled={!['admin', 'ceo', 'cto'].includes(role)}
+                      onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setIsMaintenanceOpen(true); }} 
+                      className="flex-1 py-3 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Calibrate Now
+                    </button>
+                  )}
                 </div>
                 <button 
                   onClick={() => { setActiveDevice(device); setTicketValue('equipment_id', device.id); setIsTicketOpen(true); }} 
@@ -421,16 +428,30 @@ export default function EquipmentPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Calibration Due</label>
-                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
-                    {...regEquip('calibration_due_date')} />
-                </div>
-                <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next PM Due Date</label>
                   <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regEquip('next_pm_date')} />
                 </div>
               </div>
+              {/* Calibration Toggle */}
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl ring-1 ring-gray-200">
+                <div>
+                  <p className="text-sm font-black text-slate-800">Requires Calibration</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Enable for pH meters, balances, thermometers, etc.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" {...regEquip('requires_calibration')} />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-700"></div>
+                </label>
+              </div>
+              {/* Calibration Date — only shown when toggle is on */}
+              {watchRequiresCalibration && (
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Calibration Due</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                    {...regEquip('calibration_due_date')} />
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PM Frequency (Days)</label>
