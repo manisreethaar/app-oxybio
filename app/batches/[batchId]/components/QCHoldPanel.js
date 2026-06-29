@@ -828,18 +828,18 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           </div>
 
           {/* Plating & Incubation section */}
-          <div className="surface p-4 border border-violet-100 bg-violet-50/20">
+          <div className="surface p-4 border border-slate-100 bg-slate-50/20">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs font-black text-violet-900 uppercase tracking-wider flex items-center gap-1.5">
+                <p className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                   <Microscope className="w-3.5 h-3.5"/> Plating & Incubation
                 </p>
-                <p className="text-xs text-violet-700 mt-0.5">Enable to log plate details, start incubation, and pull results back into QC tests.</p>
+                <p className="text-xs text-slate-700 mt-0.5">Enable to log plate details, start incubation, and pull results back into QC tests.</p>
               </div>
               <button
                 type="button"
                 onClick={handleTogglePlating}
-                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${platingEnabled ? 'bg-violet-600' : 'bg-gray-300'}`}
+                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${platingEnabled ? 'bg-slate-600' : 'bg-gray-300'}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${platingEnabled ? 'translate-x-4' : ''}`}/>
               </button>
@@ -847,7 +847,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
             {platingEnabled && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-violet-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-slate-100">
                   <div>
                     <label className="field-label">Media Type (Recipe)</label>
                     <select value={plateMedia} onChange={e=>handleUpdatePlatingConfig('media_type', e.target.value)} className="field-input text-xs bg-white">
@@ -892,7 +892,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   <button
                     onClick={handleStartPlating}
                     disabled={creatingIncubation}
-                    className="w-full py-2.5 bg-violet-700 hover:bg-violet-800 text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-60 flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-60 flex items-center justify-center gap-1.5"
                   >
                     <FlaskConical className="w-3.5 h-3.5"/>
                     {creatingIncubation ? 'Starting...' : 'Start Plating'}
@@ -904,7 +904,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                       const sterile = record.sterility_status === 'Sterile';
                       const contaminated = record.sterility_status === 'Contaminated';
                       return (
-                        <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-violet-100 bg-white px-3 py-2">
+                        <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2">
                           <div>
                             <p className="text-xs font-black text-gray-800">{record.sample_name}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -925,7 +925,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-violet-700 hover:underline">Enter Results</a>
+                            <a href="/research/incubation" className="text-[10px] font-black uppercase tracking-wider text-slate-700 hover:underline">Enter Results</a>
                             {isCeo && (
                               <button onClick={()=>setConfirmDeleteIncubationId(record.id)} disabled={deletingIncubationId===record.id}
                                 className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-40">
@@ -949,7 +949,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                     )}
 
                     {!incubations.some(r => r.end_time) && (
-                      <p className="text-xs text-violet-600 font-semibold text-center py-1">
+                      <p className="text-xs text-slate-600 font-semibold text-center py-1">
                         Plate incubating — enter results in Research → Incubation when ready.
                       </p>
                     )}

@@ -237,7 +237,7 @@ export default function CompliancePage() {
           <p className="text-gray-500 mt-1">Regulatory deadlines, renewals, and non-conformance actions.</p>
         </div>
         {activeTab === 'calendar' && ['admin', 'ceo', 'cto'].includes(role) && (
-          <button onClick={() => setShowAdd(!showAdd)} className="flex items-center px-4 py-2 bg-violet-800 text-white font-medium rounded-lg hover:bg-violet-900 shadow-sm transition-colors">
+          <button onClick={() => setShowAdd(!showAdd)} className="flex items-center px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 shadow-sm transition-colors">
             <Plus className="w-5 h-5 mr-1" /> Add Compliance Item
           </button>
         )}
@@ -247,27 +247,27 @@ export default function CompliancePage() {
         <button
           onClick={() => setActiveTab('calendar')}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'calendar' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'
+            activeTab === 'calendar' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
         >
           <CalendarDays className="w-4 h-4" /> Regulatory Calendar
         </button>
         <button onClick={() => setActiveTab('capa')}
-          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'capa' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'capa' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <AlertTriangle className="w-4 h-4" /> CAPA Tracker
         </button>
         <button onClick={() => setActiveTab('audits')}
-          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'audits' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'audits' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <ClipboardList className="w-4 h-4" /> Internal Audits
           {audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length > 0 && <span className="text-[9px] bg-amber-100 text-amber-700 font-black px-1.5 py-0.5 rounded-full">{audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length}</span>}
         </button>
         <button onClick={() => setActiveTab('complaints')}
-          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'complaints' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'complaints' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <MessageSquare className="w-4 h-4" /> Complaints
           {complaints.filter(c=>c.status==='Open').length > 0 && <span className="text-[9px] bg-red-100 text-red-700 font-black px-1.5 py-0.5 rounded-full">{complaints.filter(c=>c.status==='Open').length}</span>}
         </button>
         <button onClick={() => setActiveTab('milestones')}
-          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'milestones' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+          className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'milestones' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <Flag className="w-4 h-4" /> Regulatory Milestones
         </button>
       </div>
@@ -303,34 +303,34 @@ export default function CompliancePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Title *</label>
-                      <input type="text" {...register('title')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-violet-500" placeholder="e.g. FSSAI License Renewal" />
+                      <input type="text" {...register('title')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-slate-500" placeholder="e.g. FSSAI License Renewal" />
                       {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Category & Dept *</label>
-                      <select {...register('category')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-violet-500">
+                      <select {...register('category')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-slate-500">
                         {['FSSAI', 'TIIC', 'PF', 'ESI', 'Patent', 'NABL', 'Equipment', 'Lease', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Due Date *</label>
-                      <input type="date" {...register('due_date')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-violet-500" />
+                      <input type="date" {...register('due_date')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-slate-500" />
                       {errors.due_date && <p className="text-red-500 text-xs mt-1">{errors.due_date.message}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Responsible Person</label>
-                      <select {...register('responsible_person')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-violet-500">
+                      <select {...register('responsible_person')} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-slate-500">
                         <option value="">Unassigned</option>
                         {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
                       </select>
                     </div>
                     <div className="md:col-span-2 flex items-center space-x-6 mt-2 pb-4 border-b border-gray-100">
                       <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                        <input type="checkbox" {...register('is_recurring')} className="rounded text-violet-600 focus:ring-violet-500" />
+                        <input type="checkbox" {...register('is_recurring')} className="rounded text-slate-600 focus:ring-slate-500" />
                         <span>Is Recurring?</span>
                       </label>
                       {watchedRecurring && (
-                        <select {...register('recurrence')} className="px-3 py-1 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-violet-500">
+                        <select {...register('recurrence')} className="px-3 py-1 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-slate-500">
                           <option value="weekly">Weekly</option>
                           <option value="monthly">Monthly</option>
                           <option value="annual">Annually</option>
@@ -340,7 +340,7 @@ export default function CompliancePage() {
                   </div>
                   <div className="flex justify-end space-x-3">
                     <button type="button" onClick={() => { setShowAdd(false); reset(); }} className="px-5 py-2 hover:bg-gray-100 border border-transparent rounded-lg text-sm font-medium text-gray-700">Cancel</button>
-                    <button type="submit" disabled={actionLoading} className="px-5 py-2 bg-violet-800 text-white font-medium rounded-lg text-sm shadow-sm hover:bg-violet-900 disabled:opacity-50">Save Item</button>
+                    <button type="submit" disabled={actionLoading} className="px-5 py-2 bg-slate-800 text-white font-medium rounded-lg text-sm shadow-sm hover:bg-slate-900 disabled:opacity-50">Save Item</button>
                   </div>
                 </form>
               )}
@@ -348,7 +348,7 @@ export default function CompliancePage() {
               <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
                 <div className="relative flex-1 min-w-[220px]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search compliance title, category, or owner..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-500" />
+                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search compliance title, category, or owner..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-slate-100 focus:border-slate-500" />
                 </div>
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
                   <option value="All">All Statuses</option>
@@ -387,7 +387,7 @@ export default function CompliancePage() {
                               <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded border ${badgeColor}`}>
                                 {item.calculated_status === 'overdue' ? 'OVERDUE' : item.calculated_status === 'done' ? 'DONE' : `${daysTo} days left`}
                               </span>
-                              {item.is_recurring && <span className="text-[10px] font-bold uppercase text-violet-700 tracking-widest bg-violet-50 px-2 py-0.5 rounded">{item.recurrence}</span>}
+                              {item.is_recurring && <span className="text-[10px] font-bold uppercase text-slate-700 tracking-widest bg-slate-50 px-2 py-0.5 rounded">{item.recurrence}</span>}
                             </div>
                             <h3 className={`text-lg font-bold ${item.calculated_status === 'done' ? 'line-through text-gray-500' : 'text-gray-900'}`}>{item.title}</h3>
                             <div className="flex flex-wrap items-center mt-2 text-sm text-gray-500 gap-4">

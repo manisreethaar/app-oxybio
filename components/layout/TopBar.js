@@ -145,7 +145,7 @@ export default function TopBar() {
       {/* Mobile logo */}
       <div className="md:hidden flex items-center gap-2 pl-2 pr-1">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-black"
-          style={{ background: 'linear-gradient(135deg,#0EA5E9,#6366F1)', boxShadow: '0 0 12px rgba(14,165,233,0.3)' }}>
+          style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)', boxShadow: '0 0 12px rgba(71,85,105,0.3)' }}>
           O₂
         </div>
         <span className="text-[14px] font-black text-zinc-900 tracking-tight">OxyOS</span>
@@ -184,7 +184,7 @@ export default function TopBar() {
         {deferredPrompt && (
           <button onClick={handleInstallClick}
             className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg,#0EA5E9,#6366F1)' }}>
+            style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
             <Download className="w-3.5 h-3.5" /> Install
           </button>
         )}
@@ -195,7 +195,7 @@ export default function TopBar() {
             className="relative w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition-all">
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: '#A855F7', boxShadow: '0 0 6px rgba(168,85,247,0.7)' }} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: '#475569', boxShadow: '0 0 6px rgba(71,85,105,0.7)' }} />
             )}
           </button>
 
@@ -204,7 +204,7 @@ export default function TopBar() {
               style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(24px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '1.25rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)' }}>
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-100">
                 <span className="text-[12px] font-black text-zinc-800 uppercase tracking-widest">Notifications</span>
-                <Link href="/notifications" onClick={() => setNotifOpen(false)} className="text-[11px] font-bold text-violet-500 hover:text-violet-700">View all</Link>
+                <Link href="/notifications" onClick={() => setNotifOpen(false)} className="text-[11px] font-bold text-slate-500 hover:text-slate-700">View all</Link>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
@@ -214,10 +214,10 @@ export default function TopBar() {
                   </div>
                 ) : notifications.map(n => (
                   <div key={n.id} onClick={() => markAsRead(n.id, n.link || '/notifications')}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-zinc-50 last:border-0 ${!n.is_read ? 'bg-violet-50/50' : 'hover:bg-zinc-50'}`}>
+                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-zinc-50 last:border-0 ${!n.is_read ? 'bg-slate-50/50' : 'hover:bg-zinc-50'}`}>
                     <div className="flex justify-between items-start gap-2">
                       <p className={`text-[12px] leading-snug ${!n.is_read ? 'font-black text-zinc-900' : 'font-semibold text-zinc-600'}`}>{n.title}</p>
-                      {!n.is_read && <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: '#A855F7' }} />}
+                      {!n.is_read && <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: '#475569' }} />}
                     </div>
                     <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{n.message}</p>
                   </div>
@@ -235,7 +235,7 @@ export default function TopBar() {
               className="flex items-center gap-2 pl-1.5 pr-2.5 h-9 rounded-xl hover:bg-zinc-100 transition-all"
             >
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
-                style={{ background: 'linear-gradient(135deg,#0EA5E9,#6366F1)' }}>
+                style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
                 {getInitials(employeeProfile.full_name)}
               </div>
               <span className="hidden md:block text-[12px] font-bold text-zinc-800 max-w-[100px] truncate">
@@ -248,7 +248,7 @@ export default function TopBar() {
                 style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(24px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '1.25rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)' }}>
                 <div className="px-4 py-4 border-b border-zinc-100">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-black text-white mb-2"
-                    style={{ background: 'linear-gradient(135deg,#0EA5E9,#6366F1)' }}>
+                    style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
                     {getInitials(employeeProfile.full_name)}
                   </div>
                   <p className="text-[13px] font-black text-zinc-900 leading-tight truncate">{employeeProfile.full_name}</p>

@@ -34,9 +34,9 @@ const ACTION_COLOR = {
   registered:    'bg-emerald-100 text-emerald-700',
   thawed:        'bg-blue-100 text-blue-700',
   used_in_batch: 'bg-amber-100 text-amber-700',
-  returned:      'bg-violet-100 text-violet-700',
+  returned:      'bg-slate-100 text-slate-700',
   discarded:     'bg-red-100 text-red-600',
-  shipped:       'bg-purple-100 text-purple-700',
+  shipped:       'bg-slate-100 text-slate-700',
 };
 
 function addMonths(date, months) {
@@ -113,7 +113,7 @@ function ShipVialModal({ vial, onClose, onShipped }) {
         </div>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">Cancel</button>
-          <button onClick={handleShip} disabled={saving} className="flex-1 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">{saving ? 'Shipping...' : 'Confirm Ship'}</button>
+          <button onClick={handleShip} disabled={saving} className="flex-1 py-2 bg-slate-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">{saving ? 'Shipping...' : 'Confirm Ship'}</button>
         </div>
       </div>
     </div>
@@ -184,7 +184,7 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
     : vial.status === 'Used'
     ? 'bg-amber-50 border-amber-200'
     : vial.status === 'Shipped'
-    ? 'bg-purple-50 border-purple-200'
+    ? 'bg-slate-50 border-slate-200'
     : 'bg-gray-50 border-gray-200';
 
   const expiryWarning = isExpired(vial.expires_at)
@@ -209,7 +209,7 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
           <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
             vial.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
             vial.status === 'Used' ? 'bg-amber-100 text-amber-700' :
-            vial.status === 'Shipped' ? 'bg-purple-100 text-purple-700' :
+            vial.status === 'Shipped' ? 'bg-slate-100 text-slate-700' :
             'bg-gray-200 text-gray-600'
           }`}>
             {vial.status}
@@ -220,7 +220,7 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
           {isAdmin && vial.status === 'Available' && (
             <div className="flex gap-1 flex-wrap justify-end">
               <button onClick={() => handleActionClick('thaw')} disabled={acting} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-200 disabled:opacity-50">Thaw</button>
-              <button onClick={() => setShowShipModal(true)} disabled={acting} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] font-bold hover:bg-purple-200 disabled:opacity-50">Ship</button>
+              <button onClick={() => setShowShipModal(true)} disabled={acting} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold hover:bg-slate-200 disabled:opacity-50">Ship</button>
               <button onClick={() => handleActionClick('discard')} disabled={acting} className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-200 disabled:opacity-50">Discard</button>
             </div>
           )}
@@ -237,8 +237,8 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
             <div key={l.id} className="flex items-center gap-2">
               <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${ACTION_COLOR[l.action] || 'bg-gray-100 text-gray-500'}`}>{l.action.replace(/_/g,' ')}</span>
               {l.batches?.batch_id && <Link href={`/batches/${l.batch_id}`} className="text-[10px] text-navy font-semibold hover:underline flex items-center gap-0.5">{l.batches.batch_id}<ExternalLink className="w-2.5 h-2.5"/></Link>}
-              {l.destination && <span className="text-[10px] text-purple-700 font-semibold">{l.destination}</span>}
-              {l.recovery_pct != null && <span className="text-[10px] text-violet-700 font-semibold">{l.recovery_pct}% recovery</span>}
+              {l.destination && <span className="text-[10px] text-slate-700 font-semibold">{l.destination}</span>}
+              {l.recovery_pct != null && <span className="text-[10px] text-slate-700 font-semibold">{l.recovery_pct}% recovery</span>}
               <span className="text-[10px] text-gray-400 ml-auto">{new Date(l.created_at).toLocaleString('en-IN')}</span>
             </div>
           ))}
@@ -436,7 +436,7 @@ function StabilitySection({ prep, prepId, isAdmin, onSaved }) {
     <div className="surface p-5 space-y-3">
       <button onClick={() => setOpen(v => !v)} className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <Thermometer className="w-4 h-4 text-violet-600"/>
+          <Thermometer className="w-4 h-4 text-slate-600"/>
           <p className="text-sm font-black text-gray-900">Stability Testing Schedule</p>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400"/> : <ChevronDown className="w-4 h-4 text-gray-400"/>}
@@ -512,7 +512,7 @@ function StabilitySection({ prep, prepId, isAdmin, onSaved }) {
           {isAdmin && (
             <div className="flex items-center gap-3 flex-wrap">
               <button onClick={handleSave} disabled={saving}
-                className="px-4 py-2 bg-violet-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">
+                className="px-4 py-2 bg-slate-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">
                 {saving ? 'Saving...' : 'Save Stability Tests'}
               </button>
               {/* A-22: Update next stability test date */}
@@ -527,7 +527,7 @@ function StabilitySection({ prep, prepId, isAdmin, onSaved }) {
                     const json = await res.json();
                     if (json.success) onSaved();
                   }}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-violet-400"/>
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-slate-400"/>
               </div>
             </div>
           )}
@@ -836,10 +836,10 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
                 <input type="number" value={form.incubation_hours||''} onChange={e=>set('incubation_hours',e.target.value)} className="field-input" placeholder="48"/></div>
             </div>
             {incubations?.filter(i => i.sample_type === 'Agar Plate').length > 0 && (
-              <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl space-y-1">
-                <p className="text-[10px] font-black text-violet-700 uppercase">Incubation Results (from Incubation module)</p>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <p className="text-[10px] font-black text-slate-700 uppercase">Incubation Results (from Incubation module)</p>
                 {incubations.filter(i => i.sample_type === 'Agar Plate').map(i => (
-                  <div key={i.id} className="text-xs text-violet-800 font-semibold flex gap-4 flex-wrap">
+                  <div key={i.id} className="text-xs text-slate-800 font-semibold flex gap-4 flex-wrap">
                     <span>{i.sample_name}</span>
                     {i.colony_count != null && <span>Colonies: {i.colony_count}</span>}
                     {i.cfu_per_ml != null && <span>CFU/ml: {i.cfu_per_ml}</span>}
@@ -1021,7 +1021,7 @@ export default function CellBankDetailPage() {
             <>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-black text-gray-900">{prep?.prep_code}</h1>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${prep?.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : prep?.type === 'RCB' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>{prep?.type}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${prep?.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : prep?.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>{prep?.type}</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">P{passageNum}</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLOR[prep?.status] || 'bg-gray-100 text-gray-600'}`}>{prep?.status}</span>
               </div>

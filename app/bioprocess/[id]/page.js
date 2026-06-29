@@ -1245,7 +1245,7 @@ export default function BioprocessDetailPage() {
         return (
           <div className="space-y-6">
             <div className="flex items-center gap-3 flex-wrap">
-              <div className={`flex-1 rounded-xl p-4 border text-center ${result.dominant === 'growth-associated' ? 'bg-blue-50 border-blue-200' : result.dominant === 'non-growth-associated' ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200'}`}>
+              <div className={`flex-1 rounded-xl p-4 border text-center ${result.dominant === 'growth-associated' ? 'bg-blue-50 border-blue-200' : result.dominant === 'non-growth-associated' ? 'bg-slate-50 border-slate-200' : 'bg-amber-50 border-amber-200'}`}>
                 <div className="text-lg font-black capitalize">{result.dominant} product</div>
                 <div className="text-xs text-gray-500 mt-1">Luedeking-Piret classification</div>
               </div>

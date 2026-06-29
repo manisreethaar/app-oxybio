@@ -356,12 +356,12 @@ export default function ShelfLifePage() {
                   const spec = 3.8; // lower pH spec limit for LAB probiotic
                   const shelfLifeDays = b < 0 ? Math.round((spec - a) / b) : null;
                   return (
-                    <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs">
-                      <p className="font-black text-[10px] uppercase text-purple-800 mb-1">A-24 ICH Q1E pH Shelf-Life Regression ({n} datapoints)</p>
-                      <p className="text-purple-700 font-semibold">pH = {a.toFixed(3)} {b>=0?'+':''}{b.toFixed(5)}×day · R² slope: {Math.abs(b).toFixed(5)}/day</p>
-                      {shelfLifeDays && <p className="font-black text-purple-900 mt-0.5">Projected shelf life (pH hits {spec}): <span className="text-lg">{shelfLifeDays} days</span></p>}
-                      {!shelfLifeDays && <p className="text-purple-600 font-semibold mt-0.5">pH is stable or rising — no lower limit breach projected</p>}
-                      <p className="text-[9px] text-purple-400 mt-0.5">Based on pH lower spec limit {spec}. Confirm with stability study data.</p>
+                    <div className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                      <p className="font-black text-[10px] uppercase text-slate-800 mb-1">A-24 ICH Q1E pH Shelf-Life Regression ({n} datapoints)</p>
+                      <p className="text-slate-700 font-semibold">pH = {a.toFixed(3)} {b>=0?'+':''}{b.toFixed(5)}×day · R² slope: {Math.abs(b).toFixed(5)}/day</p>
+                      {shelfLifeDays && <p className="font-black text-slate-900 mt-0.5">Projected shelf life (pH hits {spec}): <span className="text-lg">{shelfLifeDays} days</span></p>}
+                      {!shelfLifeDays && <p className="text-slate-600 font-semibold mt-0.5">pH is stable or rising — no lower limit breach projected</p>}
+                      <p className="text-[9px] text-slate-400 mt-0.5">Based on pH lower spec limit {spec}. Confirm with stability study data.</p>
                     </div>
                   );
                 })()}

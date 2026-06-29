@@ -456,13 +456,13 @@ export default function AttendancePage() {
       </div>
 
       <div className="flex border-b border-slate-200">
-        <button onClick={() => setActiveTab('today')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'today' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('today')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'today' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <Clock className="w-4 h-4" /> Today
         </button>
-        <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'analytics' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'analytics' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <BarChart2 className="w-4 h-4" /> Analytics
         </button>
-        <button onClick={() => setActiveTab('corrections')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'corrections' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('corrections')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'corrections' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <AlertCircle className="w-4 h-4" /> Corrections
         </button>
       </div>
@@ -508,7 +508,7 @@ export default function AttendancePage() {
               <AttendanceChart data={weeklyChartData} />
             )}
             <div className="flex gap-6 mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-violet-600 inline-block"></span> On Time</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-600 inline-block"></span> On Time</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 inline-block"></span> Late</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 inline-block"></span> Early</span>
             </div>
@@ -520,7 +520,7 @@ export default function AttendancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="glass-card rounded-[2rem] p-8 relative overflow-hidden flex flex-col items-center justify-center text-center min-h-[400px]">
             <h2 className="text-lg font-black text-slate-800 mb-8 absolute top-6 left-6 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-violet-600" /> Today&apos;s Shift
+              <Clock className="w-5 h-5 text-slate-600" /> Today&apos;s Shift
             </h2>
             
             {!todayLog ? (
@@ -548,7 +548,7 @@ export default function AttendancePage() {
                 )}
                 <button 
                   onClick={initiateCheckIn} disabled={actionLoading}
-                  className="w-full py-4 bg-gradient-to-br from-violet-500 to-cyan-600 hover:from-violet-400 hover:to-cyan-500 text-white rounded-2xl font-black text-lg shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-50 active:scale-95"
+                  className="w-full py-4 bg-gradient-to-br from-slate-500 to-cyan-600 hover:from-slate-400 hover:to-cyan-500 text-white rounded-2xl font-black text-lg shadow-lg shadow-slate-500/20 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-50 active:scale-95"
                 >
                   <Camera className="w-5 h-5 mr-2" /> Verify & Check In
                 </button>
@@ -561,11 +561,11 @@ export default function AttendancePage() {
                     {getShiftStatus(todayLog.check_in_time).label}
                   </span>
                 )}
-                <div className="w-40 h-40 border-[6px] border-violet-500 rounded-full flex items-center justify-center mx-auto mb-8 relative bg-white shadow-[0_0_40px_rgba(20,184,166,0.2)]">
-                  <div className="absolute inset-[-6px] border-[6px] border-violet-200 rounded-full animate-ping opacity-30"></div>
+                <div className="w-40 h-40 border-[6px] border-slate-500 rounded-full flex items-center justify-center mx-auto mb-8 relative bg-white shadow-[0_0_40px_rgba(20,184,166,0.2)]">
+                  <div className="absolute inset-[-6px] border-[6px] border-slate-200 rounded-full animate-ping opacity-30"></div>
                   <div className="text-center">
-                    <p className="text-4xl font-black text-violet-800 mb-0.5 tabular-nums tracking-tighter">{elapsedHours}<span className="text-xl">h</span></p>
-                    <p className="text-[10px] font-black text-violet-600 uppercase tracking-[0.2em] mt-1">Elapsed</p>
+                    <p className="text-4xl font-black text-slate-800 mb-0.5 tabular-nums tracking-tighter">{elapsedHours}<span className="text-xl">h</span></p>
+                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Elapsed</p>
                   </div>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 flex items-center justify-center gap-3">
@@ -592,7 +592,7 @@ export default function AttendancePage() {
               </div>
             ) : (
               <div className="w-full max-w-[280px] pt-4">
-                <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-violet-50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-600 border border-emerald-200 shadow-sm">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-600 border border-emerald-200 shadow-sm">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <h3 className="text-2xl font-black text-slate-800 mb-2">Shift Completed</h3>
@@ -638,7 +638,7 @@ export default function AttendancePage() {
                             {getShiftStatus(log.check_in_time).label}
                           </span>
                         )}
-                        {log.in_geofence && <span className="text-[8px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded border border-violet-100 flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/>GPS</span>}
+                        {log.in_geofence && <span className="text-[8px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/>GPS</span>}
                       </div>
                     </div>
                   )
@@ -658,7 +658,7 @@ export default function AttendancePage() {
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">Team Roster</h2>
               <p className="text-sm font-medium text-slate-500 mt-1">Live view of who is physically on-site.</p>
             </div>
-            <button className="hidden sm:flex items-center px-4 py-2.5 text-xs font-black uppercase tracking-widest text-violet-700 bg-violet-50 border border-violet-100 rounded-xl hover:bg-violet-100 transition-colors shadow-sm">
+            <button className="hidden sm:flex items-center px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors shadow-sm">
               <Download className="w-4 h-4 mr-2" /> Export CSV
             </button>
           </div>
@@ -680,13 +680,13 @@ export default function AttendancePage() {
                           {emp.full_name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
-                      {status === 'active' && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-violet-500 border-2 border-white rounded-full animate-pulse"></div>}
+                      {status === 'active' && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-slate-500 border-2 border-white rounded-full animate-pulse"></div>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-slate-800 truncate">{emp.full_name}</p>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mt-0.5">{emp.role}</p>
                       <div className="mt-2.5">
-                        {status === 'active' && <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded inline-flex items-center border border-violet-100"><Clock className="w-3 h-3 mr-1"/> IN: {formatTime(emp.attendance.check_in_time)}</span>}
+                        {status === 'active' && <span className="text-xs font-bold text-slate-700 bg-slate-50 px-2.5 py-1 rounded inline-flex items-center border border-slate-100"><Clock className="w-3 h-3 mr-1"/> IN: {formatTime(emp.attendance.check_in_time)}</span>}
                         {status === 'completed' && <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded inline-flex items-center border border-slate-200">{emp.attendance.total_hours}h completed</span>}
                         {status === 'absent' && <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded inline-flex items-center border border-red-100">Not Signed In</span>}
                       </div>
@@ -714,7 +714,7 @@ export default function AttendancePage() {
             <div className="p-5 text-center border-b border-slate-100">
               <h3 className="text-xl font-black text-slate-800">Live Face Verification</h3>
               <p className="text-sm text-slate-500 font-medium mt-1">Keep your face in the oval and move slightly.</p>
-              <div className="mt-2 text-[10px] font-bold text-violet-700 bg-violet-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
+              <div className="mt-2 text-[10px] font-bold text-slate-700 bg-slate-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
                 <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {geofence.radius}m)
               </div>
             </div>
@@ -727,12 +727,12 @@ export default function AttendancePage() {
               <div className="absolute inset-0 border-[40px] border-slate-900/40 pointer-events-none" />
               <div className={`absolute inset-0 m-10 border-4 rounded-[100%] pointer-events-none transition-colors duration-300 ${
                 captureReady ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' :
-                faceStatus === 'detected' ? 'border-violet-400' :
+                faceStatus === 'detected' ? 'border-slate-400' :
                 faceStatus === 'missing' ? 'border-red-400' : 'border-white/40 border-dashed'
               }`} />
               <div className={`absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                 captureReady ? 'bg-emerald-500 text-white' :
-                faceStatus === 'detected' ? 'bg-violet-500 text-white' :
+                faceStatus === 'detected' ? 'bg-slate-500 text-white' :
                 faceStatus === 'missing' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300'
               }`}>
                 {captureReady ? '✓ Ready' : faceStatus === 'detected' ? 'Face Detected' : faceStatus === 'missing' ? 'No Face' : 'Scanning…'}
@@ -743,7 +743,7 @@ export default function AttendancePage() {
                 <span>Liveness Check</span><span>{livenessProgress}%</span>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-300 ${captureReady ? 'bg-emerald-500' : 'bg-violet-500'}`} style={{ width: `${livenessProgress}%` }} />
+                <div className={`h-full rounded-full transition-all duration-300 ${captureReady ? 'bg-emerald-500' : 'bg-slate-500'}`} style={{ width: `${livenessProgress}%` }} />
               </div>
               {!captureReady && (
                 <p className="text-[10px] text-slate-400 mt-1.5 text-center">
@@ -754,7 +754,7 @@ export default function AttendancePage() {
             <div className="p-5 bg-slate-50 flex gap-4">
               <button onClick={() => setShowWebcam(false)} disabled={actionLoading} className="flex-1 py-3.5 px-4 bg-white text-slate-600 font-bold rounded-2xl border border-slate-200 hover:bg-slate-100 transition-colors disabled:opacity-50">Cancel</button>
               <button onClick={captureSelfieAndCheckIn} disabled={actionLoading || !captureReady} className={`flex-1 py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center ${
-                captureReady ? 'bg-violet-800 hover:bg-violet-900 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                captureReady ? 'bg-slate-800 hover:bg-slate-900 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               } disabled:opacity-60`}>
                 {actionLoading ? 'Uploading…' : captureReady ? 'Check In' : `Verifying… ${livenessProgress}%`}
               </button>

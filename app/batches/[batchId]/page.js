@@ -46,7 +46,7 @@ const STAGES = [
   { id: 'harvest',          label: 'Harvest',          icon: Package,     color: 'text-orange-600', bg: 'bg-orange-50',  border: 'border-orange-200', supplementary: true },
   { id: 'straining',        label: 'Straining',        icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
   { id: 'extract_addition', label: 'Extract Addition', icon: Leaf,        color: 'text-fuchsia-600',bg: 'bg-fuchsia-50', border: 'border-fuchsia-200'},
-  { id: 'downstream',       label: 'Downstream',       icon: Layers,      color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', supplementary: true },
+  { id: 'downstream',       label: 'Downstream',       icon: Layers,      color: 'text-slate-600', bg: 'bg-slate-50',  border: 'border-slate-200', supplementary: true },
   { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-rose-600',   bg: 'bg-rose-50',    border: 'border-rose-200'   },
   { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
   { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },

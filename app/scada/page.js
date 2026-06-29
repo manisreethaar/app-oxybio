@@ -120,7 +120,7 @@ export default function ScadaDashboardPage() {
 
       {/* Manual ingestion form */}
       {showManual && (
-        <div className="surface p-5 border-l-4 border-l-violet-500 space-y-4">
+        <div className="surface p-5 border-l-4 border-l-slate-500 space-y-4">
           <h3 className="text-sm font-black text-gray-900">Log Manual Sensor Reading</h3>
           <form onSubmit={handleManualLog} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div><label className="field-label">Equipment *</label>
@@ -141,7 +141,7 @@ export default function ScadaDashboardPage() {
               <input value={unit} onChange={e=>setUnit(e.target.value)} className="field-input" placeholder="e.g. pH, °C, %"/>
             </div>
             <div className="col-span-2 sm:col-span-4 flex gap-3">
-              <button type="submit" disabled={saving} className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Logging...':'Log Reading'}</button>
+              <button type="submit" disabled={saving} className="px-5 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Logging...':'Log Reading'}</button>
               <button type="button" onClick={()=>setShowManual(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
             </div>
           </form>
@@ -155,9 +155,9 @@ export default function ScadaDashboardPage() {
           const Icon = SENSOR_ICONS[type] || Activity;
           const age = latest ? Math.round((Date.now() - new Date(latest.timestamp).getTime()) / 60000) : null;
           return (
-            <div key={type} className={`surface p-4 ${latest ? 'border-l-4 border-l-violet-500' : ''}`}>
+            <div key={type} className={`surface p-4 ${latest ? 'border-l-4 border-l-slate-500' : ''}`}>
               <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 ${latest ? 'text-violet-600' : 'text-gray-300'}`}/>
+                <Icon className={`w-4 h-4 ${latest ? 'text-slate-600' : 'text-gray-300'}`}/>
                 <span className="text-[10px] font-black uppercase text-gray-500">{type}</span>
               </div>
               {latest ? (
@@ -199,7 +199,7 @@ export default function ScadaDashboardPage() {
                   <tr key={s.id} className="hover:bg-gray-50/30">
                     <td className="px-4 py-2 text-gray-500 whitespace-nowrap font-mono">{new Date(s.timestamp).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</td>
                     <td className="px-4 py-2 font-semibold text-gray-700">{s.equipment?.name || '—'}</td>
-                    <td className="px-4 py-2"><span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded text-[9px] font-black">{s.sensor_type}</span></td>
+                    <td className="px-4 py-2"><span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-[9px] font-black">{s.sensor_type}</span></td>
                     <td className="px-4 py-2 text-right font-black text-gray-900 tabular-nums">{s.sensor_value} <span className="text-gray-400 font-semibold">{s.unit}</span></td>
                   </tr>
                 ))}

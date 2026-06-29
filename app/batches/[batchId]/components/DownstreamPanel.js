@@ -91,13 +91,13 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-purple-500">
-        <Layers className="w-5 h-5 text-purple-600"/>
+      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-slate-500">
+        <Layers className="w-5 h-5 text-slate-600"/>
         <div>
-          <h2 className="text-base font-bold text-gray-900">Downstream Processing: <span className="text-purple-600">{activeFlask.flask_label}</span></h2>
+          <h2 className="text-base font-bold text-gray-900">Downstream Processing: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-gray-500">Concentration, drying, packaging and fill/finish record.</p>
         </div>
-        <span className="ml-auto text-[10px] font-black text-purple-700 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200">
+        <span className="ml-auto text-[10px] font-black text-slate-700 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
           {completedCount}/{PROCESS_STEPS.length} steps
         </span>
       </div>
@@ -166,7 +166,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Downstream notes, deviations, rework..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
           {saving ? 'Saving...' : 'Save Downstream Record'}
         </button>
       </div>

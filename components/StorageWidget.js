@@ -220,7 +220,7 @@ export default function StorageWidget() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
               { type: 'attendance', label: 'Attendance Logs', icon: '📋', color: 'bg-blue-600 hover:bg-blue-700' },
-              { type: 'activity_log', label: 'Activity Logs', icon: '📝', color: 'bg-purple-600 hover:bg-purple-700' },
+              { type: 'activity_log', label: 'Activity Logs', icon: '📝', color: 'bg-slate-600 hover:bg-slate-700' },
               { type: 'vial_logs', label: 'Vial Logs (Permanent)', icon: '🧪', color: 'bg-red-600 hover:bg-red-700' },
             ].map(({ type, label, icon, color }) => (
               <button

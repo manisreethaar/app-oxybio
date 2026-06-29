@@ -45,8 +45,8 @@ function parseObservation(obs) {
 function parseMorphologyChips(raw) {
   const CHIP_COLORS = {
     shape:     'bg-blue-50 text-blue-700 border-blue-200',
-    margin:    'bg-purple-50 text-purple-700 border-purple-200',
-    elevation: 'bg-violet-50 text-violet-700 border-violet-200',
+    margin:    'bg-slate-50 text-slate-700 border-slate-200',
+    elevation: 'bg-slate-50 text-slate-700 border-slate-200',
     color:     'bg-orange-50 text-orange-700 border-orange-200',
     surface:   'bg-pink-50 text-pink-700 border-pink-200',
   };
@@ -831,7 +831,7 @@ export default function SampleIncubationPage() {
         </div>
         <div className="flex gap-2 shrink-0">
           <Link href="/lab-bench/log"
-            className="flex items-center px-4 py-2 bg-violet-700 hover:bg-violet-800 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all"
+            className="flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all"
           >
             <ExternalLink className="w-4 h-4 mr-1.5" /> Log in Lab Bench
           </Link>
@@ -965,7 +965,7 @@ export default function SampleIncubationPage() {
                       <Link
                         href="/lab-bench/log"
                         onClick={e => e.stopPropagation()}
-                        className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-[10px] uppercase tracking-wider rounded-lg border border-violet-200 transition-colors"
+                        className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider rounded-lg border border-slate-200 transition-colors"
                       >
                         <Plus className="w-3 h-3" /> Log Sample
                       </Link>
@@ -1030,7 +1030,7 @@ export default function SampleIncubationPage() {
                             className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition-colors text-left"
                           >
                             <div className="flex items-center gap-3 flex-wrap">
-                              <div className="w-2 h-2 rounded-full bg-violet-400 shrink-0" />
+                              <div className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                               <span className="text-sm font-black text-gray-700">{tp.label}</span>
                               <span className="text-[10px] font-bold text-gray-400">
                                 {tp.records.length} plate{tp.records.length !== 1 ? 's' : ''}

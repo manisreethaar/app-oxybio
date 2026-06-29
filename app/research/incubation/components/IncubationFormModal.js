@@ -64,8 +64,8 @@ const MORPHOLOGY_OPTIONS = {
 
 const CHIP_COLORS = {
   shape:     'bg-blue-50 text-blue-700 border-blue-200',
-  margin:    'bg-purple-50 text-purple-700 border-purple-200',
-  elevation: 'bg-violet-50 text-violet-700 border-violet-200',
+  margin:    'bg-slate-50 text-slate-700 border-slate-200',
+  elevation: 'bg-slate-50 text-slate-700 border-slate-200',
   color:     'bg-orange-50 text-orange-700 border-orange-200',
   surface:   'bg-pink-50 text-pink-700 border-pink-200',
 };

@@ -41,12 +41,12 @@ function LeaveBar({ label, used, total, color }) {
   const barColor = {
     blue:    'bg-blue-500',
     emerald: 'bg-emerald-500',
-    violet:  'bg-violet-500',
+    slate:  'bg-slate-500',
   }[color] || 'bg-gray-400';
   const textColor = {
     blue:    'text-blue-600',
     emerald: 'text-emerald-600',
-    violet:  'text-violet-600',
+    slate:  'text-slate-600',
   }[color] || 'text-gray-600';
 
   return (
@@ -381,7 +381,7 @@ export default function StaffDashboard({ employeeProfile }) {
             ) : (
               <>
                 <LeaveBar label="Medical Leave" used={leaveStats.medical} total={limits.medical} color="emerald" />
-                <LeaveBar label="Earned Leave"  used={leaveStats.earned}  total={limits.earned}  color="violet" />
+                <LeaveBar label="Earned Leave"  used={leaveStats.earned}  total={limits.earned}  color="slate" />
               </>
             )}
             <Link href="/leave" className="mt-2 block w-full py-2.5 text-center text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">

@@ -159,7 +159,7 @@ export default function NewGrowthStudyPage() {
     (form.isolate_source !== 'strain' || form.cell_bank_strain_id) &&
     (form.isolate_source !== 'prep' || form.cell_bank_preparation_id);
 
-  const InputCls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent';
+  const InputCls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent';
   const LabelCls = 'block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5';
 
   return (
@@ -173,11 +173,11 @@ export default function NewGrowthStudyPage() {
       <div className="flex items-center gap-2 mb-8">
         {['Isolate & Media', 'Conditions', 'Sampling Schedule'].map((s, i) => (
           <div key={s} className="flex items-center gap-2 flex-1">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-colors ${step > i + 1 ? 'bg-violet-600 border-violet-600 text-white' : step === i + 1 ? 'bg-white border-violet-600 text-violet-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-colors ${step > i + 1 ? 'bg-slate-600 border-slate-600 text-white' : step === i + 1 ? 'bg-white border-slate-600 text-slate-700' : 'bg-white border-slate-200 text-slate-400'}`}>
               {step > i + 1 ? '✓' : i + 1}
             </div>
-            <span className={`text-xs font-bold hidden sm:block ${step === i + 1 ? 'text-violet-700' : 'text-slate-400'}`}>{s}</span>
-            {i < 2 && <div className={`flex-1 h-0.5 ${step > i + 1 ? 'bg-violet-500' : 'bg-slate-200'}`} />}
+            <span className={`text-xs font-bold hidden sm:block ${step === i + 1 ? 'text-slate-700' : 'text-slate-400'}`}>{s}</span>
+            {i < 2 && <div className={`flex-1 h-0.5 ${step > i + 1 ? 'bg-slate-500' : 'bg-slate-200'}`} />}
           </div>
         ))}
       </div>
@@ -195,7 +195,7 @@ export default function NewGrowthStudyPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[['growth_curve', 'Growth Curve', 'Isolate characterisation, OD/pH tracking'], ['fermentation', 'Fermentation', 'Process monitoring, product formation']].map(([v, l, d]) => (
                   <button key={v} type="button" onClick={() => setField('study_type', v)}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all ${form.study_type === v ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all ${form.study_type === v ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                   >
                     <p className="font-black text-sm text-slate-800">{l}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{d}</p>
@@ -225,7 +225,7 @@ export default function NewGrowthStudyPage() {
                   </select>
                   {form.cell_bank_preparation_id && (
                     <div className="mt-3">
-                      <label className={LabelCls}>Select Vial to Use <span className="text-violet-600">*</span></label>
+                      <label className={LabelCls}>Select Vial to Use <span className="text-slate-600">*</span></label>
                       {vials.length === 0 ? (
                         <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-medium">
                           No available vials for this preparation.
@@ -337,7 +337,7 @@ export default function NewGrowthStudyPage() {
                 placeholder="Hours"
                 onKeyDown={e => e.key === 'Enter' && addTimePoint()}
               />
-              <button onClick={addTimePoint} className="px-4 py-2 bg-violet-600 text-white rounded-xl text-xs font-black hover:bg-violet-700 flex items-center gap-1.5 min-h-[38px]">
+              <button onClick={addTimePoint} className="px-4 py-2 bg-slate-600 text-white rounded-xl text-xs font-black hover:bg-slate-700 flex items-center gap-1.5 min-h-[38px]">
                 <Plus className="w-3.5 h-3.5" /> Add Point
               </button>
               <span className="text-xs text-slate-400 font-medium hidden sm:inline">Press Enter or click Add</span>
@@ -347,7 +347,7 @@ export default function NewGrowthStudyPage() {
               {timePoints.map((tp, i) => (
                 <div key={tp.planned_hour} className="flex items-start gap-3 bg-slate-50 rounded-2xl p-3">
                   <div className="w-16 shrink-0 text-center">
-                    <span className="text-lg font-black text-violet-700">T+{tp.planned_hour}h</span>
+                    <span className="text-lg font-black text-slate-700">T+{tp.planned_hour}h</span>
                   </div>
                   <div className="flex-1 flex flex-wrap gap-1.5">
                     {SAMPLE_TYPE_OPTIONS.map(opt => (
@@ -357,8 +357,8 @@ export default function NewGrowthStudyPage() {
                         onClick={() => toggleSampleType(i, opt.value)}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${
                           tp.sample_types.includes(opt.value)
-                            ? 'bg-violet-600 text-white border-violet-600'
-                            : 'bg-white text-slate-500 border-slate-200 hover:border-violet-400'
+                            ? 'bg-slate-600 text-white border-slate-600'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
                         }`}
                         title={opt.label}
                       >
@@ -389,7 +389,7 @@ export default function NewGrowthStudyPage() {
             <button
               onClick={() => setStep(s => s + 1)}
               disabled={step === 1 && !canNext1}
-              className="flex-1 flex items-center justify-center px-5 py-3 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </button>
@@ -397,7 +397,7 @@ export default function NewGrowthStudyPage() {
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="flex-1 py-3 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-2xl text-sm disabled:opacity-50"
+              className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-50"
             >
               {saving ? 'Creating…' : 'Create Study'}
             </button>
