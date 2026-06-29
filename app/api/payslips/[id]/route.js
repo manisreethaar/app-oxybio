@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -38,7 +39,12 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const { data, error } = await supabaseAdmin
       .from('payslips')
       .update({
         ...parsed.data,
