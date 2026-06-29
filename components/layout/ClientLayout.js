@@ -112,12 +112,12 @@ export default function ClientLayout({ children }) {
           <div style={{
             position: 'absolute', top: '-20%', right: '-10%',
             width: '600px', height: '600px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(148,163,184,0.05) 0%, transparent 70%)',
           }} />
           <div style={{
             position: 'absolute', bottom: '-15%', left: '5%',
             width: '500px', height: '500px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(168,85,247,0.04) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(100,116,139,0.04) 0%, transparent 70%)',
           }} />
         </div>
 
