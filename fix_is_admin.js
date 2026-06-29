@@ -1,5 +1,6 @@
 const { Client } = require('pg');
 require('dotenv').config({ path: '.env.local' });
+require('dns').setDefaultResultOrder('ipv4first');
 
 async function fixIsAdmin() {
   const client = new Client({
