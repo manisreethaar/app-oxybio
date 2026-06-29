@@ -21,7 +21,7 @@ CREATE TABLE employees (
 CREATE TABLE leave_applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES employees(id),
-    leave_type TEXT CHECK (leave_type IN ('Casual', 'Sick', 'Earned')),
+    leave_type TEXT CHECK (leave_type IN ('Casual', 'Sick', 'Earned', 'Permission')),
     start_date DATE,
     end_date DATE,
     total_days INTEGER,
