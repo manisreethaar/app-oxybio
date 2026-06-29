@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { PieChart, Filter, Activity, BarChart2, CalendarDays } from 'lucide-react';
