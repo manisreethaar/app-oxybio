@@ -466,7 +466,7 @@ CRITICAL RULES:
           execute: async () => {
             const { data, error } = await supabase
               .from('leave_applications')
-              .select('id, employee_id, leave_type, start_date, end_date, total_days, reason, status, employees(full_name)')
+              .select('id, employee_id, leave_type, start_date, end_date, total_days, reason, status, employees!leave_applications_employee_id_fkey(full_name)')
               .eq('status', 'pending')
               .order('created_at', { ascending: false });
             if (error) throw new Error(error.message);
@@ -726,7 +726,7 @@ CRITICAL RULES:
               // Active batches
               supabase.from('batches').select('id, batch_id, variant, status, start_time').in('status', ['fermenting', 'qc-hold']).order('created_at', { ascending: false }),
               // Pending leaves
-              supabase.from('leave_applications').select('id, leave_type, start_date, end_date, reason, employees(full_name)').eq('status', 'pending'),
+              supabase.from('leave_applications').select('id, leave_type, start_date, end_date, reason, employees!leave_applications_employee_id_fkey(full_name)').eq('status', 'pending'),
               // Open high-priority tasks
               supabase.from('tasks').select('id, title, priority, status, due_date, employees!tasks_assigned_to_fkey(full_name)').in('status', ['open', 'in-progress']).in('priority', ['high', 'urgent']),
               // Overdue + upcoming compliance

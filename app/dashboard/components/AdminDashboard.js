@@ -114,7 +114,7 @@ export default function AdminDashboard({ employeeId }) {
         supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
         supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').is('archived_at', null).order('created_at', { ascending: false }).limit(5),
         supabase.from('batches').select('id, batch_id, current_stage, status, formulations(name)').is('archived_at', null).eq('current_stage', 'qc_hold').not('status', 'in', '("released","rejected")').order('created_at', { ascending: false }),
-        supabase.from('leave_applications').select('id, leave_type, start_date, end_date, employee:employees(full_name)').eq('status', 'pending').order('created_at', { ascending: true }).limit(5),
+        supabase.from('leave_applications').select('id, leave_type, start_date, end_date, employee:employees!leave_applications_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at', { ascending: true }).limit(5),
       ]);
       setLowStock(stockRes.data || []);
       setCalibDue(calibRes.data || []);

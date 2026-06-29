@@ -40,7 +40,7 @@ export async function GET() {
       supabase.from('compliance_items').select('id', { count: 'exact', head: true })
         .eq('status', 'overdue'),
       // Pending leaves
-      supabase.from('leave_applications').select('id, employees(full_name)', { count: 'exact' })
+      supabase.from('leave_applications').select('id, employees!leave_applications_employee_id_fkey(full_name)', { count: 'exact' })
         .eq('status', 'pending').limit(5),
       // Urgent task count
       supabase.from('tasks').select('id', { count: 'exact', head: true })

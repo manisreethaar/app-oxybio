@@ -93,7 +93,7 @@ export default function LeavePage() {
       if (['admin', 'ceo', 'cto'].includes(role)) {
         const [myLeavesRes, pLeavesRes] = await Promise.all([
           supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }),
-          supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
+          supabase.from('leave_applications').select('*, employees!leave_applications_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
         ]);
         setLeaves(myLeavesRes.data || []);
         setPendingLeaves(pLeavesRes.data || []);
