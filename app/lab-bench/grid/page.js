@@ -727,8 +727,8 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
             className={clsx(
               'w-7 h-7 rounded-lg border flex items-center justify-center mx-auto transition-all text-xs font-black',
               row.plate_done && !dim
-                ? 'bg-rose-100 border-rose-300 text-rose-600'
-                : 'bg-white border-slate-200 text-slate-300 hover:border-rose-200 hover:bg-rose-50'
+                ? 'bg-red-100 border-red-300 text-red-600'
+                : 'bg-white border-slate-200 text-slate-300 hover:border-red-200 hover:bg-red-50'
             )}
             title={row.plate_done ? 'Plate taken' : 'Mark plate taken'}
           >

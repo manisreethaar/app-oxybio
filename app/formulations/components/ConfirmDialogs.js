@@ -18,17 +18,17 @@ export default function ConfirmDialogs({
       {rejectingId && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Reject Formulation</h3>
-            <p className="text-xs text-gray-500 mb-4">You must provide a reason for sending this recipe back to Draft.</p>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Reject Formulation</h3>
+            <p className="text-xs text-slate-500 mb-4">You must provide a reason for sending this recipe back to Draft.</p>
             <textarea
               autoFocus
               value={rejectionReason}
               onChange={e => setRejectionReason(e.target.value)}
               placeholder="e.g. Yield calculation in Phase 2 seems incorrect..."
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium h-32 outline-none focus:ring-1 focus:ring-red-500 resize-none mb-4"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium h-32 outline-none focus:ring-1 focus:ring-red-500 resize-none mb-4"
             />
             <div className="flex gap-3">
-              <button onClick={onCancelReject} className="flex-1 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold">Cancel</button>
+              <button onClick={onCancelReject} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold">Cancel</button>
               <button onClick={onConfirmReject} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700">Confirm Reject</button>
             </div>
           </div>
@@ -39,10 +39,10 @@ export default function ConfirmDialogs({
       {pendingDeleteId && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Delete Recipe</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to permanently delete this recipe? This action cannot be undone.</p>
+            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Delete Recipe</h3>
+            <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to permanently delete this recipe? This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={onCancelDelete} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={onCancelDelete} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
               <button
                 onClick={onConfirmDelete}
                 className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition inline-flex items-center justify-center gap-2"
@@ -59,11 +59,11 @@ export default function ConfirmDialogs({
       {pendingArchiveId && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Archive Formulation</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to archive this formulation? It will be hidden and no longer possible to create batches from it.</p>
+            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Archive Formulation</h3>
+            <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to archive this formulation? It will be hidden and no longer possible to create batches from it.</p>
             <div className="flex gap-3">
-              <button onClick={onCancelArchive} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
-              <button onClick={onConfirmArchive} className="flex-1 py-2 bg-gray-600 text-white rounded-lg text-sm font-bold hover:bg-gray-700 transition">Archive</button>
+              <button onClick={onCancelArchive} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
+              <button onClick={onConfirmArchive} className="flex-1 py-2 bg-slate-600 text-white rounded-lg text-sm font-bold hover:bg-slate-700 transition">Archive</button>
             </div>
           </div>
         </div>

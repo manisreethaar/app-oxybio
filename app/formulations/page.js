@@ -20,12 +20,12 @@ import ConfirmDialogs from './components/ConfirmDialogs';
 
 // Status config
 const STATUS_CONFIG = {
-  'Draft':     { label: 'Draft',       color: 'bg-gray-100 text-gray-600 border-gray-200',       dot: 'bg-gray-400' },
+  'Draft':     { label: 'Draft',       color: 'bg-slate-100 text-slate-600 border-slate-200',       dot: 'bg-slate-400' },
   'In Review': { label: 'In Review',   color: 'bg-amber-50 text-amber-700 border-amber-200',     dot: 'bg-amber-400' },
   'Approved':  { label: 'Approved',    color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
   'Archived':  { label: 'Archived',    color: 'bg-slate-100 text-slate-400 border-slate-200',    dot: 'bg-slate-400' },
   // Legacy values
-  'active':    { label: 'Draft',       color: 'bg-gray-100 text-gray-600 border-gray-200',       dot: 'bg-gray-400' },
+  'active':    { label: 'Draft',       color: 'bg-slate-100 text-slate-600 border-slate-200',       dot: 'bg-slate-400' },
   'archived':  { label: 'Archived',    color: 'bg-slate-100 text-slate-400 border-slate-200',    dot: 'bg-slate-400' },
 };
 
@@ -314,13 +314,13 @@ export default function FormulationsPage() {
   if (!employeeProfile) return null;
 
   return (
-    <div className="page-container text-gray-900">
+    <div className="page-container text-slate-900">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Recipe Management</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1">Scientific Formula Registry & Version Control</p>
+          <p className="text-sm font-medium text-slate-500 mt-1">Scientific Formula Registry & Version Control</p>
         </div>
         <button onClick={handleOpenNewRecipe} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
           <Plus className="w-4 h-4 mr-1.5" /> New Recipe
@@ -342,16 +342,16 @@ export default function FormulationsPage() {
       <div className="flex flex-col md:flex-row gap-4 mb-2">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"/>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"/>
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Search by recipe name or code..."
-            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
               <X className="w-4 h-4"/>
             </button>
           )}
@@ -359,7 +359,7 @@ export default function FormulationsPage() {
 
         {/* Sort & Filter */}
         <div className="flex flex-wrap gap-2 items-center">
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
             {[
               { key: 'newest', label: 'Newest', Icon: CalendarDays },
               { key: 'oldest', label: 'Oldest', Icon: CalendarDays },
@@ -369,14 +369,14 @@ export default function FormulationsPage() {
               <button
                 key={key}
                 onClick={() => setSortOrder(key)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortOrder === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortOrder === key ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 <Icon className="w-3 h-3"/> <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
             {['All', 'Draft', 'In Review', 'Approved'].map(s => (
               <button
                 key={s}
@@ -384,7 +384,7 @@ export default function FormulationsPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                   statusFilter === s 
                     ? 'bg-white text-navy shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 {s}
@@ -400,7 +400,7 @@ export default function FormulationsPage() {
       {/* Formula Diff */}
       {compareIds.length === 2 && (
         <div className="max-w-xl mx-auto relative">
-           <button onClick={() => setCompareIds([])} className="absolute -top-3 -right-3 bg-white border border-gray-200 rounded-full p-1 shadow-md z-10 hover:text-red-500"><X className="w-4 h-4"/></button>
+           <button onClick={() => setCompareIds([])} className="absolute -top-3 -right-3 bg-white border border-slate-200 rounded-full p-1 shadow-md z-10 hover:text-red-500"><X className="w-4 h-4"/></button>
            <FormulaDiff 
              v1={formulations.find(f => f.id === compareIds[0])} 
              v2={formulations.find(f => f.id === compareIds[1])} 
@@ -415,7 +415,7 @@ export default function FormulationsPage() {
              {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
           </div>
         ) : filteredFormulations.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">
+          <div className="col-span-full py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-sm font-medium text-slate-400">
             {statusFilter === 'All' ? 'No recipes registered yet.' : `No recipes with status "${statusFilter}".`}
           </div>
         ) : (
@@ -441,7 +441,7 @@ export default function FormulationsPage() {
                     
                     {/* Top row: version + status badge */}
                     <div className="flex justify-between items-start mb-3">
-                      <span className="px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">V{f.version}</span>
+                      <span className="px-2 py-0.5 bg-slate-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-slate-100">V{f.version}</span>
                       <div className="flex items-center gap-1">
                         <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
@@ -452,11 +452,11 @@ export default function FormulationsPage() {
                           (f.status === 'Draft' || f.status === 'active' || (f.status === 'In Review' && isApprover) || (f.status === 'Approved' && isApprover)) && (
                             <div className="flex gap-1 ml-1">
                               {(f.status === 'Draft' || f.status === 'active' || isApprover) && (
-                                <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-navy hover:bg-gray-200 transition-all" title="Edit Recipe">
+                                <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-slate-100 text-slate-400 hover:text-navy hover:bg-slate-200 transition-all" title="Edit Recipe">
                                   <Plus className="w-3 h-3 rotate-45"/>
                                 </button>
                               )}
-                              <button onClick={() => handleDeleteRecipe(f.id)} className="p-1 rounded bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all" title="Delete Recipe">
+                              <button onClick={() => handleDeleteRecipe(f.id)} className="p-1 rounded bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all" title="Delete Recipe">
                                 <Trash2 className="w-3 h-3"/>
                               </button>
                             </div>
@@ -497,7 +497,7 @@ export default function FormulationsPage() {
                               fetchBatchHistory(f.id);
                             }
                           }}
-                          className="inline-flex items-center gap-1 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors"
+                          className="inline-flex items-center gap-1 text-[9px] font-bold bg-slate-50 text-slate-700 border border-slate-100 px-2 py-0.5 rounded-full hover:bg-slate-100 transition-colors"
                         >
                           <FlaskConical className="w-2.5 h-2.5"/>
                           {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} {'>'}
@@ -505,16 +505,16 @@ export default function FormulationsPage() {
                       </div>
                     )}
 
-                    <h3 className="text-lg font-bold text-gray-900 mb-0.5">{f.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-0.5">{f.name}</h3>
                     <p className="text-xs font-bold text-navy mb-3 font-mono">{f.code}</p>
 
                     {/* Ingredients */}
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 mb-3">
                       <div className="flex justify-between items-center mb-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ingredients</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ingredients</p>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-bold text-gray-400">Vol (mL):</span>
-                          <input type="number" value={scaleFactors[f.id] || f.base_volume_ml || 1000} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || f.base_volume_ml || 1000})} step="10" min="1" className="w-16 px-1 py-0.5 text-center border border-gray-200 rounded bg-white text-[10px] font-black"/>
+                          <span className="text-[9px] font-bold text-slate-400">Vol (mL):</span>
+                          <input type="number" value={scaleFactors[f.id] || f.base_volume_ml || 1000} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || f.base_volume_ml || 1000})} step="10" min="1" className="w-16 px-1 py-0.5 text-center border border-slate-200 rounded bg-white text-[10px] font-black"/>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -527,7 +527,7 @@ export default function FormulationsPage() {
                               {ing.name}: {((parseFloat(ing.quantity) || 0) * factor).toFixed(2)}{ing.unit}
                             </span>
                           );
-                        }) : <p className="text-xs font-semibold text-gray-400 italic">No components linked.</p>}
+                        }) : <p className="text-xs font-semibold text-slate-400 italic">No components linked.</p>}
                       </div>
                     </div>
 
@@ -535,7 +535,7 @@ export default function FormulationsPage() {
                     {f.creator && (
                       <div className="flex items-center gap-1.5 mb-2">
                         <CreatorBadge initials={f.creator.initials} fullName={f.creator.full_name} size="sm"/>
-                        <span className="text-[10px] text-gray-400 font-medium">by {f.creator.full_name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">by {f.creator.full_name}</span>
                       </div>
                     )}
 
@@ -550,7 +550,7 @@ export default function FormulationsPage() {
                     )}
 
                     {f.notes && (
-                      <p className="text-[10px] text-gray-400 italic mb-3 line-clamp-2">&quot;{f.notes}&quot;</p>
+                      <p className="text-[10px] text-slate-400 italic mb-3 line-clamp-2">&quot;{f.notes}&quot;</p>
                     )}
 
                     {f.rejection_reason && f.status === 'Draft' && (
@@ -570,7 +570,7 @@ export default function FormulationsPage() {
                         <button 
                           onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
                           className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
-                            compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-400 border-gray-200 hover:border-navy hover:text-navy'
+                            compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-slate-400 border-slate-200 hover:border-navy hover:text-navy'
                           }`}
                         >
                           <GitCompare className="w-3.5 h-3.5"/>
@@ -623,7 +623,7 @@ export default function FormulationsPage() {
                             <button
                                 disabled={isLoading}
                                 onClick={() => handleStatusChange(f.id, 'Draft')}
-                                className="col-span-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="col-span-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
                                 <ArrowRight className="w-3.5 h-3.5 rotate-180"/> Recall to Draft
                             </button>
@@ -643,7 +643,7 @@ export default function FormulationsPage() {
                           {isApprover && (
                             <button
                               onClick={() => handleArchive(f.id)}
-                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-400 hover:text-amber-600 hover:border-amber-200 transition-all flex items-center justify-center"
+                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-400 hover:text-amber-600 hover:border-amber-200 transition-all flex items-center justify-center"
                             >
                               Archive
                             </button>
@@ -651,7 +651,7 @@ export default function FormulationsPage() {
                           {isApprover && (
                             <button
                               onClick={() => handleDeleteRecipe(f.id)}
-                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 bg-white text-gray-400 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1"
+                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-400 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1"
                             >
                               <Trash2 className="w-3 h-3"/> Delete
                             </button>
@@ -661,7 +661,7 @@ export default function FormulationsPage() {
 
                       {/* Non-approved: Show disabled Launch Batch as hint */}
                       {f.status !== 'Approved' && (
-                        <div className="w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-dashed border-gray-200 text-center text-gray-300 cursor-not-allowed select-none">
+                        <div className="w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-dashed border-slate-200 text-center text-slate-300 cursor-not-allowed select-none">
                           Batch locked until Approved
                         </div>
                       )}
@@ -678,15 +678,15 @@ export default function FormulationsPage() {
                           className="overflow-hidden mt-3"
                         >
                           <div className="border-t border-slate-100 pt-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
                               <History className="w-3 h-3"/> Batch History
                             </p>
                             {!batchHistory[f.id] ? (
                               <div className="flex justify-center py-3">
-                                <Loader2 className="w-4 h-4 animate-spin text-gray-300"/>
+                                <Loader2 className="w-4 h-4 animate-spin text-slate-300"/>
                               </div>
                             ) : batchHistory[f.id].length === 0 ? (
-                              <p className="text-[10px] text-gray-400 italic text-center py-2">No batches yet.</p>
+                              <p className="text-[10px] text-slate-400 italic text-center py-2">No batches yet.</p>
                             ) : (
                               <div className="space-y-1.5">
                                 {batchHistory[f.id].map(b => {
@@ -694,23 +694,23 @@ export default function FormulationsPage() {
                                   const bStatusColor =
                                     bStatus === 'released'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                     bStatus === 'rejected'   ? 'bg-red-50 text-red-600 border-red-200' :
-                                    bStatus === 'active'     ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    bStatus === 'active'     ? 'bg-slate-50 text-slate-700 border-slate-200' :
                                     bStatus === 'scheduled'  ? 'bg-navy/5 text-navy border-navy/20' :
-                                                               'bg-gray-50 text-gray-500 border-gray-200';
+                                                               'bg-slate-50 text-slate-500 border-slate-200';
                                   return (
                                     <Link
                                       key={b.id}
                                       href={`/batches/${b.id}`}
-                                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-navy/30 hover:bg-blue-50/40 transition-all group/batch"
+                                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-navy/30 hover:bg-slate-50/40 transition-all group/batch"
                                     >
-                                      <span className="font-mono text-[10px] font-bold text-gray-800 truncate">{b.batch_id || b.id.slice(0, 8)}</span>
+                                      <span className="font-mono text-[10px] font-bold text-slate-800 truncate">{b.batch_id || b.id.slice(0, 8)}</span>
                                       <span className={`shrink-0 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${bStatusColor}`}>
                                         {b.status || 'Unknown'}
                                       </span>
-                                      <span className="shrink-0 text-[9px] text-gray-400">
+                                      <span className="shrink-0 text-[9px] text-slate-400">
                                         {b.start_time ? new Date(b.start_time).toLocaleDateString() : '?????"'}
                                       </span>
-                                      <ChevronRight className="w-3 h-3 text-gray-300 group-hover/batch:text-navy shrink-0 transition-colors"/>
+                                      <ChevronRight className="w-3 h-3 text-slate-300 group-hover/batch:text-navy shrink-0 transition-colors"/>
                                     </Link>
                                   );
                                 })}

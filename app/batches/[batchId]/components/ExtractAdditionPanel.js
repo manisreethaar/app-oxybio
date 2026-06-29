@@ -140,16 +140,16 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
     finally { setSaving(false); }
   };
 
-  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Extract Addition.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Extract Addition.</div>;
 
   return (
     <div className="space-y-5">
       <div className="surface p-5 border-l-4 border-l-fuchsia-500">
         <div className="flex items-center gap-2 mb-1">
-          <Leaf className="w-5 h-5 text-fuchsia-600"/>
-          <h2 className="text-base font-bold text-gray-900">Extract Addition: <span className="text-fuchsia-600">{activeFlask.flask_label}</span></h2>
+          <Leaf className="w-5 h-5 text-slate-600"/>
+          <h2 className="text-base font-bold text-slate-900">Extract Addition: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
         </div>
-        <p className="text-xs text-gray-500">Log mushroom decoction/extract integration for this specific trial.</p>
+        <p className="text-xs text-slate-500">Log mushroom decoction/extract integration for this specific trial.</p>
         
         {record && (
           <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2">
@@ -159,8 +159,8 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       </div>
 
       <div className="surface overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="text-sm font-bold text-gray-900">Decoction / Extract Prep</h3>
+        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-sm font-bold text-slate-900">Decoction / Extract Prep</h3>
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -195,13 +195,13 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Extract initial pH</label><input type="number" step="0.01" value={exPh} onChange={e=>setExPh(e.target.value)} className="field-input p-2" placeholder="e.g. 6.5"/></div>
           {/* A-36, A-54: Bioactive markers */}
-          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-gray-400 text-[9px]">A-36</span></label><input type="number" step="0.1" value={polyphenolMgG} onChange={e=>setPolyphenolMgG(e.target.value)} className="field-input p-2" placeholder="e.g. 12.5"/></div>
-          <div><label className="field-label">β-Glucan Content (%) <span className="text-gray-400 text-[9px]">A-54</span></label><input type="number" step="0.01" value={betaGlucanPct} onChange={e=>setBetaGlucanPct(e.target.value)} className="field-input p-2" placeholder="e.g. 0.35"/></div>
+          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-slate-400 text-[9px]">A-36</span></label><input type="number" step="0.1" value={polyphenolMgG} onChange={e=>setPolyphenolMgG(e.target.value)} className="field-input p-2" placeholder="e.g. 12.5"/></div>
+          <div><label className="field-label">β-Glucan Content (%) <span className="text-slate-400 text-[9px]">A-54</span></label><input type="number" step="0.01" value={betaGlucanPct} onChange={e=>setBetaGlucanPct(e.target.value)} className="field-input p-2" placeholder="e.g. 0.35"/></div>
           <div><label className="field-label">Bioactive Specification</label><input value={extractBioSpec} onChange={e=>setExtractBioSpec(e.target.value)} className="field-input p-2" placeholder="e.g. ≥10mg/g polyphenols"/></div>
             <div className="flex flex-col justify-center">
               <label className="flex items-center gap-2 cursor-pointer mt-4">
-                <input type="checkbox" checked={phAdjDone} onChange={e=>setPhAdjDone(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
-                <span className="text-xs font-bold text-gray-700">pH Adjusted before addition?</span>
+                <input type="checkbox" checked={phAdjDone} onChange={e=>setPhAdjDone(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <span className="text-xs font-bold text-slate-700">pH Adjusted before addition?</span>
               </label>
             </div>
           </div>
@@ -214,8 +214,8 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       </div>
 
       <div className="surface overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="text-sm font-bold text-gray-900">Integration into Fermentate</h3>
+        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-sm font-bold text-slate-900">Integration into Fermentate</h3>
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -239,10 +239,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             <div><label className="field-label">Colour Before</label><input value={colBefore} onChange={e=>setColBefore(e.target.value)} className="field-input p-2" placeholder="Yellowish"/></div>
             <div><label className="field-label">Colour After</label><input value={colAfter} onChange={e=>setColAfter(e.target.value)} className="field-input p-2" placeholder="Amber brown"/></div>
           </div>
-          <div className="flex border-t border-gray-100 pt-4 mt-2">
+          <div className="flex border-t border-slate-100 pt-4 mt-2">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={lafUsed} onChange={e=>setLafUsed(e.target.checked)} className="w-5 h-5 rounded border-gray-300"/>
-              <span className="text-sm font-bold text-gray-700">LAF Cabinet / Clean Room used</span>
+              <input type="checkbox" checked={lafUsed} onChange={e=>setLafUsed(e.target.checked)} className="w-5 h-5 rounded border-slate-300"/>
+              <span className="text-sm font-bold text-slate-700">LAF Cabinet / Clean Room used</span>
             </label>
           </div>
           <div><label className="field-label">Notes</label>
@@ -250,8 +250,8 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           </div>
 
           {/* G-36: Mixing parameters */}
-          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-            <p className="text-[11px] font-black uppercase text-gray-500 tracking-wider">Mixing & Integration Parameters</p>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+            <p className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Mixing & Integration Parameters</p>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="field-label">Mixing Time (min)</label>
                 <input type="number" step="0.5" value={mixingTimeMin} onChange={e=>setMixingTimeMin(e.target.value)} className="field-input p-2" placeholder="e.g. 10"/>
@@ -261,7 +261,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               </div>
             </div>
             {/* G-38: Actual addition temperature */}
-            <div><label className="field-label">Actual Addition Temp (°C) <span className="text-gray-400 font-normal text-[9px]">(measured)</span></label>
+            <div><label className="field-label">Actual Addition Temp (°C) <span className="text-slate-400 font-normal text-[9px]">(measured)</span></label>
               <input type="number" step="0.1" value={addTempActual} onChange={e=>setAddTempActual(e.target.value)} className="field-input p-2" placeholder="e.g. 24.5"/>
             </div>
             {/* G-37: Blend homogeneity */}
@@ -269,7 +269,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               <div className="flex gap-2">
                 {['Homogeneous','Slight separation','Phase separation observed'].map(o=>(
                   <button key={o} type="button" onClick={()=>setBlendHomogeneity(o)}
-                    className={`flex-1 py-1.5 text-[9px] font-black rounded-lg border transition-all ${blendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
+                    className={`flex-1 py-1.5 text-[9px] font-black rounded-lg border transition-all ${blendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
                     {o}
                   </button>
                 ))}
@@ -297,7 +297,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
                 <button key={al} type="button"
                   disabled={noneAllergens}
                   onClick={() => setAllergens(prev => prev.includes(al) ? prev.filter(a=>a!==al) : [...prev,al])}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all disabled:opacity-40 ${allergens.includes(al) ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}>
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all disabled:opacity-40 ${allergens.includes(al) ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-400'}`}>
                   {al}
                 </button>
               ))}
@@ -315,8 +315,8 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-gray-100">
-            <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+            <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
               {saving?'Saving...':'Save Draft'}
             </button>
             <button onClick={()=>handleSave(true)} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">

@@ -32,7 +32,7 @@ export default function InventoryLoading() {
 
       {/* Table Rows */}
       <div className="surface overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-slate-100">
           <Skeleton className="h-10 w-full rounded-xl" />
         </div>
         <div className="divide-y divide-gray-50">

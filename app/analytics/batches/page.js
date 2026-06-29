@@ -178,7 +178,7 @@ export default function BatchAnalyticsPage() {
             <select
               value={selectedProduct}
               onChange={e => setSelectedProduct(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-500 outline-none"
             >
               <option value="ALL">All Products</option>
               {products.map(p => <option key={p} value={p}>{p}</option>)}
@@ -191,7 +191,7 @@ export default function BatchAnalyticsPage() {
           <select
             value={dateRange}
             onChange={e => setDateRange(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-500 outline-none"
           >
             <option value="1M">Last 1 Month</option>
             <option value="3M">Last 3 Months</option>
@@ -221,7 +221,7 @@ export default function BatchAnalyticsPage() {
             {/* pH Overlay Chart */}
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center">
-                <Activity className="w-4 h-4 mr-2 text-indigo-500" />
+                <Activity className="w-4 h-4 mr-2 text-slate-500" />
                 pH Progression Overlay
               </h3>
               <div className="h-80">
@@ -245,7 +245,7 @@ export default function BatchAnalyticsPage() {
             {/* Endpoint Scatter */}
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center">
-                <Layers className="w-4 h-4 mr-2 text-fuchsia-500" />
+                <Layers className="w-4 h-4 mr-2 text-slate-500" />
                 Endpoint Duration vs pH
               </h3>
               <div className="h-80">

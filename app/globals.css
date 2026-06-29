@@ -98,10 +98,10 @@
     @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2;
   }
   .page-title {
-    @apply text-2xl font-black tracking-tight text-zinc-900 leading-tight;
+    @apply text-2xl font-black tracking-tight text-slate-900 leading-tight;
   }
   .page-subtitle {
-    @apply text-[13px] font-medium text-zinc-500 mt-0.5;
+    @apply text-[13px] font-medium text-slate-500 mt-0.5;
   }
 
   /* Tab button style */
@@ -128,10 +128,10 @@
 
   /* Field styles */
   .field-label {
-    @apply block text-[11px] font-black uppercase tracking-widest text-zinc-400 mb-1.5;
+    @apply block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5;
   }
   .field-input {
-    @apply w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[14px] font-medium text-zinc-900 outline-none transition-all;
+    @apply w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-medium text-slate-900 outline-none transition-all;
   }
   .field-input:focus {
     @apply border-slate-400 bg-white;
@@ -150,11 +150,11 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-zinc-700 bg-white border border-zinc-200 transition-all active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-slate-700 bg-white border border-slate-200 transition-all active:scale-95;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .btn-secondary:hover {
-    @apply bg-zinc-50 border-zinc-300;
+    @apply bg-slate-50 border-slate-300;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
 
@@ -162,12 +162,12 @@
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold;
   }
-  .badge-blue { @apply badge bg-sky-100 text-sky-700; }
+  .badge-blue { @apply badge bg-slate-100 text-slate-700; }
   .badge-green { @apply badge bg-emerald-100 text-emerald-700; }
   .badge-yellow { @apply badge bg-amber-100 text-amber-700; }
   .badge-red { @apply badge bg-red-100 text-red-700; }
   .badge-slate { @apply badge bg-slate-100 text-slate-700; }
-  .badge-zinc { @apply badge bg-zinc-100 text-zinc-600; }
+  .badge-zinc { @apply badge bg-slate-100 text-slate-600; }
 
   /* Mobile card */
   .mobile-card { @apply card; }

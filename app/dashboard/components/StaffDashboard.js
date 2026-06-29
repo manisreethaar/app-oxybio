@@ -39,25 +39,25 @@ function LeaveBar({ label, used, total, color }) {
   const remaining = Math.max(0, total - used);
   const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
   const barColor = {
-    blue:    'bg-blue-500',
+    blue:    'bg-slate-500',
     emerald: 'bg-emerald-500',
     slate:  'bg-slate-500',
-  }[color] || 'bg-gray-400';
+  }[color] || 'bg-slate-400';
   const textColor = {
-    blue:    'text-blue-600',
+    blue:    'text-slate-600',
     emerald: 'text-emerald-600',
     slate:  'text-slate-600',
-  }[color] || 'text-gray-600';
+  }[color] || 'text-slate-600';
 
   return (
     <div>
       <div className="flex justify-between items-end mb-1">
-        <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">{label}</span>
+        <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</span>
         <span className={`text-base font-black ${textColor}`}>
-          {remaining} <span className="text-xs text-gray-400 font-semibold">/ {total} days</span>
+          {remaining} <span className="text-xs text-slate-400 font-semibold">/ {total} days</span>
         </span>
       </div>
-      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
         <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -240,8 +240,8 @@ export default function StaffDashboard({ employeeProfile }) {
         {/* Quick Actions CTA */}
         <div className="card p-8 flex flex-col sm:flex-row items-center justify-between">
           <div className="mb-4 sm:mb-0 text-center sm:text-left">
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight mb-1">Ready to Log Data?</h2>
-            <p className="text-sm text-gray-500">Capture real-time pH metrics and shift activities instantly.</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Ready to Log Data?</h2>
+            <p className="text-sm text-slate-500">Capture real-time pH metrics and shift activities instantly.</p>
           </div>
           <div className="flex items-center gap-3">
             {unreadCount > 0 && (
@@ -260,16 +260,16 @@ export default function StaffDashboard({ employeeProfile }) {
         {activeBatches.length > 0 && (
           <div className="card border-l-4 border-navy p-6 flex flex-col space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">My Active Batches</h2>
+              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">My Active Batches</h2>
               <span className="bg-navy text-white text-[10px] font-black px-2 py-0.5 rounded">ACTION REQUIRED</span>
             </div>
             {activeBatches.map(batch => (
-              <div key={batch.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group hover:border-navy transition-all">
+              <div key={batch.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-navy transition-all">
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Batch {batch.batch_id} · {batch.product_name || 'Generic'}</p>
-                  <p className="text-sm font-black text-gray-900">Next: {nextStepMap[batch.current_stage] || 'Monitor Process Status'}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Batch {batch.batch_id} · {batch.product_name || 'Generic'}</p>
+                  <p className="text-sm font-black text-slate-900">Next: {nextStepMap[batch.current_stage] || 'Monitor Process Status'}</p>
                 </div>
-                <Link href={`/batches/${batch.id}`} className="text-[10px] font-black text-navy bg-white border border-gray-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
+                <Link href={`/batches/${batch.id}`} className="text-[10px] font-black text-navy bg-white border border-slate-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
                   GO TO BATCH
                 </Link>
               </div>
@@ -280,13 +280,13 @@ export default function StaffDashboard({ employeeProfile }) {
         {/* 3A: Active Fermentations Monitoring Widget */}
         {activeFermentations.length > 0 && (
           <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-navy" />
-                <h2 className="text-sm font-black text-gray-900">Active Fermentations</h2>
-                <span className="text-[10px] font-black text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded-full">{activeFermentations.length}</span>
+                <h2 className="text-sm font-black text-slate-900">Active Fermentations</h2>
+                <span className="text-[10px] font-black text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full">{activeFermentations.length}</span>
               </div>
-              <Link href="/batches" className="text-xs font-bold text-gray-500 hover:text-navy transition-colors">View All →</Link>
+              <Link href="/batches" className="text-xs font-bold text-slate-500 hover:text-navy transition-colors">View All →</Link>
             </div>
             <div className="divide-y divide-gray-50">
               {activeFermentations.map(b => {
@@ -305,14 +305,14 @@ export default function StaffDashboard({ employeeProfile }) {
                   <Link
                     key={b.id}
                     href={`/batches/${b.id}`}
-                    className={`flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors ${statusColors.row}`}
+                    className={`flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors ${statusColors.row}`}
                   >
                     <div className="relative shrink-0">
                       <div className={`w-2 h-2 rounded-full ${statusColors.dot}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black text-gray-900 font-mono">{b.batch_id}</p>
-                      <p className="text-[10px] text-gray-400 font-semibold">
+                      <p className="text-xs font-black text-slate-900 font-mono">{b.batch_id}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">
                         pH {b.lr?.ph?.toFixed(2) ?? '—'} · Last log: {hrsLabel}
                       </p>
                     </div>
@@ -326,7 +326,7 @@ export default function StaffDashboard({ employeeProfile }) {
                         {b.hrsSinceLog === null ? 'LOG NOW' : b.status === 'red' ? 'OVERDUE' : b.status === 'amber' ? 'DUE SOON' : 'OK'}
                       </span>
                     )}
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
                   </Link>
                 );
               })}
@@ -340,19 +340,19 @@ export default function StaffDashboard({ employeeProfile }) {
         {/* My Activity Today */}
         {recentActivity.length > 0 && (
           <div className="card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h2 className="text-base font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                <Clock className="w-4 h-4 text-gray-400" /> My Activity Today
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400" /> My Activity Today
               </h2>
-              <Link href="/activity" className="text-xs font-bold text-gray-500 hover:text-navy transition-colors">Full Log →</Link>
+              <Link href="/activity" className="text-xs font-bold text-slate-500 hover:text-navy transition-colors">Full Log →</Link>
             </div>
             <ul className="divide-y divide-gray-50">
               {recentActivity.map(act => (
                 <li key={act.id} className="px-6 py-3 flex items-start gap-3">
                   <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${act.issue_observed ? 'bg-red-500' : 'bg-emerald-400'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{act.activity_description}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{act.start_time} – {act.end_time}</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate">{act.activity_description}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{act.start_time} – {act.end_time}</p>
                   </div>
                   {act.issue_observed && (
                     <span className="text-[10px] font-black text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded shrink-0">ISSUE</span>
@@ -369,14 +369,14 @@ export default function StaffDashboard({ employeeProfile }) {
 
         {/* Leave Balance with Progress Bars */}
         <div className="surface overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h2 className="text-base font-bold text-gray-900 tracking-tight">Time Off Balances</h2>
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">Time Off Balances</h2>
           </div>
           <div className="p-6 space-y-5">
             <LeaveBar label="Casual Leave" used={leaveStats.casual} total={limits.casual} color="blue" />
             {isClOnly ? (
-              <div className="text-xs text-gray-400 font-medium bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-                <span className="font-bold text-blue-600">CL Policy:</span> 1 day earned per month since your joining date.
+              <div className="text-xs text-slate-400 font-medium bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+                <span className="font-bold text-slate-600">CL Policy:</span> 1 day earned per month since your joining date.
               </div>
             ) : (
               <>
@@ -384,7 +384,7 @@ export default function StaffDashboard({ employeeProfile }) {
                 <LeaveBar label="Earned Leave"  used={leaveStats.earned}  total={limits.earned}  color="slate" />
               </>
             )}
-            <Link href="/leave" className="mt-2 block w-full py-2.5 text-center text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+            <Link href="/leave" className="mt-2 block w-full py-2.5 text-center text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
               Submit Requisition
             </Link>
           </div>
@@ -392,7 +392,7 @@ export default function StaffDashboard({ employeeProfile }) {
 
         {/* Quick links */}
         <div className="surface p-5">
-          <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Quick Access</h2>
+          <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Quick Access</h2>
           <div className="space-y-1">
             {[
               { label: 'Attendance', href: '/attendance' },
@@ -400,11 +400,11 @@ export default function StaffDashboard({ employeeProfile }) {
               { label: 'SOPs', href: '/sops' },
               { label: 'Notifications', href: '/notifications', badge: unreadCount },
             ].map(({ label, href, badge }) => (
-              <Link key={href} href={href} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors group">
-                <span className="text-sm font-semibold text-gray-700 group-hover:text-navy">{label}</span>
+              <Link key={href} href={href} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group">
+                <span className="text-sm font-semibold text-slate-700 group-hover:text-navy">{label}</span>
                 <div className="flex items-center gap-2">
                   {badge > 0 && <span className="text-[10px] font-black text-white bg-red-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-navy" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-navy" />
                 </div>
               </Link>
             ))}

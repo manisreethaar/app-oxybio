@@ -241,12 +241,12 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   return (
     <div className="space-y-5">
       <div className="surface p-5 flex items-center gap-3">
-        <Beaker className="w-5 h-5 text-indigo-600"/>
-        <div><h2 className="text-base font-bold text-gray-900">Media Preparation & BOM</h2>
-          <p className="text-xs text-gray-500">Record all raw material BOM fulfillment and substrate setup.</p></div>
+        <Beaker className="w-5 h-5 text-slate-600"/>
+        <div><h2 className="text-base font-bold text-slate-900">Media Preparation & BOM</h2>
+          <p className="text-xs text-slate-500">Record all raw material BOM fulfillment and substrate setup.</p></div>
         <div className="ml-auto flex items-center gap-2">
           {/* G-17: BOM Report */}
-          <button onClick={()=>setShowBomReport(true)} className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-black rounded-lg uppercase flex items-center gap-1">
+          <button onClick={()=>setShowBomReport(true)} className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-black rounded-lg uppercase flex items-center gap-1">
             <ClipboardList className="w-3 h-3"/>BOM Report
           </button>
           {data?.is_complete && <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Complete</span>}
@@ -257,17 +257,17 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         <div className="mb-4">
           <div className="flex justify-between items-end mb-4">
             <div>
-              <h3 className="text-xs font-black uppercase text-indigo-800 mb-1">BOM Traceability</h3>
-              <p className="text-[11px] font-medium text-gray-500">Recipe: <span className="text-indigo-600 font-bold">{batch.formulations?.name}</span> | Base: {baseVol}ml | Target: {targetVol}ml</p>
+              <h3 className="text-xs font-black uppercase text-slate-800 mb-1">BOM Traceability</h3>
+              <p className="text-[11px] font-medium text-slate-500">Recipe: <span className="text-slate-600 font-bold">{batch.formulations?.name}</span> | Base: {baseVol}ml | Target: {targetVol}ml</p>
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-black uppercase text-gray-400">Scale Factor</span>
-              <p className="text-sm font-black text-indigo-600">{scaleFactor.toFixed(2)}x</p>
+              <span className="text-[10px] font-black uppercase text-slate-400">Scale Factor</span>
+              <p className="text-sm font-black text-slate-600">{scaleFactor.toFixed(2)}x</p>
             </div>
           </div>
           
           <div className="space-y-4">
-            {formulationIngredients.length === 0 && <p className="text-xs text-gray-400 italic">No ingredients found in recipe.</p>}
+            {formulationIngredients.length === 0 && <p className="text-xs text-slate-400 italic">No ingredients found in recipe.</p>}
             {formulationIngredients.map(ing => {
                const scaledQty = ((parseFloat(ing.quantity) || 0) * scaleFactor).toFixed(2);
                // Filter stock: match by exact item_id, OR match by name for legacy compat
@@ -277,10 +277,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                const isKavuni = ing.name?.toLowerCase().includes('kavuni');
 
                return (
-                 <div key={ing.item_id} className="p-4 border border-indigo-100 bg-indigo-50/20 rounded-xl">
+                 <div key={ing.item_id} className="p-4 border border-slate-100 bg-slate-50/20 rounded-xl">
                    <div className="flex justify-between items-center mb-3">
-                     <span className="font-bold text-sm text-indigo-900">{ing.name}</span>
-                     <span className="text-[10px] font-black text-indigo-600 bg-indigo-100 px-2 py-1 rounded">Target: {parseFloat(scaledQty)} {ing.unit}</span>
+                     <span className="font-bold text-sm text-slate-900">{ing.name}</span>
+                     <span className="text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-1 rounded">Target: {parseFloat(scaledQty)} {ing.unit}</span>
                    </div>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                      <div>
@@ -323,7 +323,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                            </p>
                          );
                          if (pct > 0) return (
-                           <p className="text-[10px] font-semibold text-gray-400 mt-1">
+                           <p className="text-[10px] font-semibold text-slate-400 mt-1">
                              ±{pct.toFixed(1)}% from target — within tolerance
                            </p>
                          );
@@ -334,22 +334,22 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                    
                    {/* Specific Process Parameters tied to Ingredients */}
                    {isRagi && (
-                     <div className="mt-4 pt-3 border-t border-indigo-100/50">
+                     <div className="mt-4 pt-3 border-t border-slate-100/50">
                         <label className="field-label">Ragi Moisture Check</label>
                         <div className="flex gap-2">
                           {['Pass','Fail'].map(o=>(
                             <button key={o} type="button" onClick={()=>setRagiMoist(o)}
-                              className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${ragiMoist===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>
+                              className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${ragiMoist===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
                               {o}
                             </button>
                           ))}
-                          <button type="button" onClick={()=>setRagiMoist('')} className={`px-3 text-xs font-bold rounded-lg border transition-all ${!ragiMoist?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-400 border-gray-200'}`}>N/A</button>
+                          <button type="button" onClick={()=>setRagiMoist('')} className={`px-3 text-xs font-bold rounded-lg border transition-all ${!ragiMoist?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-400 border-slate-200'}`}>N/A</button>
                         </div>
                         {ragiMoist==='Fail' && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Moisture check failed — log deviation before advancing.</p>}
                      </div>
                    )}
                    {isKavuni && isF2 && (
-                     <div className="mt-4 pt-3 border-t border-indigo-100/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                     <div className="mt-4 pt-3 border-t border-slate-100/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div><label className="field-label">Pre-cook Temp (°C)</label><input type="number" step="0.1" value={kavuniTemp} onChange={e=>setKavuniTemp(e.target.value)} className="field-input" placeholder="90.0"/></div>
                         <div><label className="field-label">Pre-cook Duration (min)</label><input type="number" value={kavuniMin} onChange={e=>setKavuniMin(e.target.value)} className="field-input" placeholder="30"/></div>
                      </div>
@@ -361,7 +361,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         </div>
 
         {/* G-51: Substrate particle size / mesh */}
-        <div className="border-t border-gray-100 pt-4">
+        <div className="border-t border-slate-100 pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label">Substrate Particle Size / Mesh #</label>
@@ -369,53 +369,53 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </div>
             {/* G-53: Water Activity */}
             <div>
-              <label className="field-label">Water Activity (aW) <span className="text-gray-400 text-[9px]">substrate</span></label>
+              <label className="field-label">Water Activity (aW) <span className="text-slate-400 text-[9px]">substrate</span></label>
               <input type="number" step="0.01" min="0" max="1" value={awValue} onChange={e=>setAwValue(e.target.value)} className="field-input" placeholder="0.95"/>
               {awValue && parseFloat(awValue) > 0.97 && <p className="text-[10px] text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
             </div>
             {/* A-25: Starch Gelatinization */}
             <div>
-              <label className="field-label">Starch Gelatinization Temp (°C) <span className="text-gray-400 text-[9px]">A-25</span></label>
+              <label className="field-label">Starch Gelatinization Temp (°C) <span className="text-slate-400 text-[9px]">A-25</span></label>
               <input type="number" step="0.1" value={starchGelTemp} onChange={e=>setStarchGelTemp(e.target.value)} className="field-input" placeholder="65–70°C (grain substrates)"/>
             </div>
             <div className="flex flex-col justify-end pb-0.5">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={starchGelConfirm} onChange={e=>setStarchGelConfirm(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
-                <span className="text-xs font-bold text-gray-700">Gelatinization confirmed (iodine test / viscosity change)</span>
+                <input type="checkbox" checked={starchGelConfirm} onChange={e=>setStarchGelConfirm(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <span className="text-xs font-bold text-slate-700">Gelatinization confirmed (iodine test / viscosity change)</span>
               </label>
             </div>
             {/* A-58: Buffer Capacity */}
             <div>
-              <label className="field-label">Buffer Capacity (mmol/L) <span className="text-gray-400 text-[9px]">A-58</span></label>
+              <label className="field-label">Buffer Capacity (mmol/L) <span className="text-slate-400 text-[9px]">A-58</span></label>
               <input type="number" step="0.1" value={bufferCapacity} onChange={e=>setBufferCapacity(e.target.value)} className="field-input" placeholder="e.g. 25"/>
-              <p className="text-[9px] text-gray-400 mt-0.5">Resistance to pH change — affects fermentation rate variability</p>
+              <p className="text-[9px] text-slate-400 mt-0.5">Resistance to pH change — affects fermentation rate variability</p>
             </div>
             {/* A-59: Viscosity */}
             <div>
-              <label className="field-label">Substrate Viscosity (cP) <span className="text-gray-400 text-[9px]">A-59</span></label>
+              <label className="field-label">Substrate Viscosity (cP) <span className="text-slate-400 text-[9px]">A-59</span></label>
               <input type="number" step="0.1" value={viscosityCp} onChange={e=>setViscosityCp(e.target.value)} className="field-input" placeholder="e.g. 120"/>
-              <p className="text-[9px] text-gray-400 mt-0.5">Affects mixing efficiency and mass transfer</p>
+              <p className="text-[9px] text-slate-400 mt-0.5">Affects mixing efficiency and mass transfer</p>
             </div>
           </div>
           {/* G-85: Substrate photo URL */}
           <div>
-            <label className="field-label">Substrate Photo URL <span className="text-gray-400 text-[9px]">optional — colour/texture traceability</span></label>
+            <label className="field-label">Substrate Photo URL <span className="text-slate-400 text-[9px]">optional — colour/texture traceability</span></label>
             <input type="url" value={substratePhotoUrl} onChange={e=>setSubstratePhotoUrl(e.target.value)} className="field-input" placeholder="https://... (link to substrate photo)"/>
             {substratePhotoUrl && <a href={substratePhotoUrl} target="_blank" rel="noreferrer" className="text-[10px] text-navy underline font-bold mt-0.5 inline-block">View photo →</a>}
           </div>
         </div>
 
         {/* G-52: Modular pre-treatment steps */}
-        <div className="border-t border-gray-100 pt-4 space-y-2">
+        <div className="border-t border-slate-100 pt-4 space-y-2">
           <div className="flex items-center justify-between">
             <label className="field-label mb-0">Pre-treatment Steps</label>
             <button type="button" onClick={()=>setPretreatSteps(p=>[...p,{type:'Heat',target_temp:'',duration_min:'',notes:''}])}
-              className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-black rounded-lg uppercase hover:bg-indigo-100">
+              className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-[9px] font-black rounded-lg uppercase hover:bg-slate-100">
               + Add Step
             </button>
           </div>
           {pretreatSteps.map((step, idx) => (
-            <div key={idx} className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-xl grid grid-cols-4 gap-2 items-center">
+            <div key={idx} className="p-3 bg-slate-50/40 border border-slate-100 rounded-xl grid grid-cols-4 gap-2 items-center">
               <select value={step.type} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,type:e.target.value}:s))} className="field-input text-xs col-span-1 bg-white p-1.5">
                 {['Heat','Steam','Chemical','Enzymatic','Mechanical','Other'].map(t=><option key={t}>{t}</option>)}
               </select>
@@ -424,10 +424,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               <button type="button" onClick={()=>setPretreatSteps(p=>p.filter((_,i)=>i!==idx))} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
             </div>
           ))}
-          {pretreatSteps.length === 0 && <p className="text-[10px] text-gray-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
+          {pretreatSteps.length === 0 && <p className="text-[10px] text-slate-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
         </div>
 
-        <div className="border-t border-gray-100 pt-5">
+        <div className="border-t border-slate-100 pt-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label">Added Water Volume (ml)</label>
@@ -439,8 +439,8 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </div>
           </div>
           <div className="mt-3">
-            <label className="field-label">Initial pH of Slurry <span className="text-gray-400">(pre-fermentation)</span></label>
-            <input type="number" step="0.01" value={initPH} onChange={e=>setInitPH(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-2xl font-black font-mono text-center focus:border-navy outline-none" placeholder="6.00"/>
+            <label className="field-label">Initial pH of Slurry <span className="text-slate-400">(pre-fermentation)</span></label>
+            <input type="number" step="0.01" value={initPH} onChange={e=>setInitPH(e.target.value)} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-2xl font-black font-mono text-center focus:border-navy outline-none" placeholder="6.00"/>
           </div>
         </div>
 
@@ -452,10 +452,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </select>
           </div>
         )}
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes / observations..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes / observations..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button onClick={()=>handleSave(true)} disabled={saving||actionLoading||ragiMoist==='Fail'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
@@ -468,23 +468,23 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       {showBomReport && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-indigo-600"/>
-                <h3 className="text-base font-black text-gray-900">BOM Traceability Report</h3>
+                <ClipboardList className="w-5 h-5 text-slate-600"/>
+                <h3 className="text-base font-black text-slate-900">BOM Traceability Report</h3>
               </div>
-              <button onClick={() => setShowBomReport(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4 text-gray-400"/></button>
+              <button onClick={() => setShowBomReport(false)} className="p-1.5 rounded-lg hover:bg-slate-100"><X className="w-4 h-4 text-slate-400"/></button>
             </div>
             <div className="p-5 space-y-3">
-              <p className="text-xs text-gray-500 font-semibold">Batch: <span className="font-black text-gray-800">{batch.batch_id}</span> · Recipe: <span className="font-black text-navy">{batch.formulations?.name}</span></p>
+              <p className="text-xs text-slate-500 font-semibold">Batch: <span className="font-black text-slate-800">{batch.batch_id}</span> · Recipe: <span className="font-black text-navy">{batch.formulations?.name}</span></p>
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-indigo-50">
-                    <th className="border border-indigo-100 px-3 py-2 text-left font-black text-indigo-800">Ingredient</th>
-                    <th className="border border-indigo-100 px-3 py-2 text-right font-black text-indigo-800">Target</th>
-                    <th className="border border-indigo-100 px-3 py-2 font-black text-indigo-800">Lot Selected</th>
-                    <th className="border border-indigo-100 px-3 py-2 text-right font-black text-indigo-800">Actual</th>
-                    <th className="border border-indigo-100 px-3 py-2 text-right font-black text-indigo-800">Dev %</th>
+                  <tr className="bg-slate-50">
+                    <th className="border border-slate-100 px-3 py-2 text-left font-black text-slate-800">Ingredient</th>
+                    <th className="border border-slate-100 px-3 py-2 text-right font-black text-slate-800">Target</th>
+                    <th className="border border-slate-100 px-3 py-2 font-black text-slate-800">Lot Selected</th>
+                    <th className="border border-slate-100 px-3 py-2 text-right font-black text-slate-800">Actual</th>
+                    <th className="border border-slate-100 px-3 py-2 text-right font-black text-slate-800">Dev %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -497,11 +497,11 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                     const lot = availableStock.find(s=>s.id===usage.lotId);
                     return (
                       <tr key={ing.item_id} className={Math.abs(devNum)>10 ? 'bg-amber-50' : ''}>
-                        <td className="border border-gray-100 px-3 py-1.5 font-semibold text-gray-800">{ing.name}</td>
-                        <td className="border border-gray-100 px-3 py-1.5 text-right text-gray-600">{parseFloat(target)} {ing.unit}</td>
-                        <td className="border border-gray-100 px-3 py-1.5 font-mono text-[10px] text-gray-700">{lot?.supplier_batch_number || (usage.lotId ? '—' : 'Not selected')}</td>
-                        <td className="border border-gray-100 px-3 py-1.5 text-right font-bold text-gray-900">{isNaN(actual) ? '—' : `${actual} ${ing.unit}`}</td>
-                        <td className={`border border-gray-100 px-3 py-1.5 text-right font-black ${Math.abs(devNum)>10 ? 'text-amber-700' : 'text-gray-500'}`}>{dev === '—' ? '—' : `${devNum > 0 ? '+' : ''}${dev}%`}</td>
+                        <td className="border border-slate-100 px-3 py-1.5 font-semibold text-slate-800">{ing.name}</td>
+                        <td className="border border-slate-100 px-3 py-1.5 text-right text-slate-600">{parseFloat(target)} {ing.unit}</td>
+                        <td className="border border-slate-100 px-3 py-1.5 font-mono text-[10px] text-slate-700">{lot?.supplier_batch_number || (usage.lotId ? '—' : 'Not selected')}</td>
+                        <td className="border border-slate-100 px-3 py-1.5 text-right font-bold text-slate-900">{isNaN(actual) ? '—' : `${actual} ${ing.unit}`}</td>
+                        <td className={`border border-slate-100 px-3 py-1.5 text-right font-black ${Math.abs(devNum)>10 ? 'text-amber-700' : 'text-slate-500'}`}>{dev === '—' ? '—' : `${devNum > 0 ? '+' : ''}${dev}%`}</td>
                       </tr>
                     );
                   })}
@@ -520,12 +520,12 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       {pendingOverride !== null && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Safety Override</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Ragi moisture check failed. Please ensure you log a Process Deviation before continuing. Proceed anyway?</p>
+            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Safety Override</h3>
+            <p className="text-sm text-slate-600 mb-6 text-center">Ragi moisture check failed. Please ensure you log a Process Deviation before continuing. Proceed anyway?</p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingOverride(null)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
               >
                 Cancel
               </button>

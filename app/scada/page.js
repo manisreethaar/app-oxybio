@@ -79,7 +79,7 @@ export default function ScadaDashboardPage() {
   });
 
   if (authLoading || loading) return (
-    <div className="page-container flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-gray-400"/></div>
+    <div className="page-container flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-slate-400"/></div>
   );
 
   return (
@@ -87,12 +87,12 @@ export default function ScadaDashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">SCADA / Sensor Streams</h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Real-time sensor data ingestion · POST endpoint: <code className="bg-gray-100 px-1 py-0.5 rounded font-mono text-[10px]">/api/scada</code>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time sensor data ingestion · POST endpoint: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">/api/scada</code>
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border ${streams.length > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+          <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border ${streams.length > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
             {streams.length > 0 ? <Wifi className="w-3.5 h-3.5"/> : <WifiOff className="w-3.5 h-3.5"/>}
             {streams.length > 0 ? `${streams.length} streams` : 'No data'}
           </div>
@@ -104,10 +104,10 @@ export default function ScadaDashboardPage() {
       </div>
 
       {/* API Integration instructions */}
-      <div className="surface p-5 bg-gray-50 space-y-2">
-        <p className="text-xs font-black text-gray-700 uppercase tracking-wider">Device Integration</p>
-        <p className="text-xs text-gray-600 font-semibold">Send POST requests to <code className="bg-white px-2 py-0.5 rounded border border-gray-200 font-mono">/api/scada</code> with header <code className="bg-white px-2 py-0.5 rounded border border-gray-200 font-mono">Authorization: Bearer {'{CRON_SECRET}'}</code></p>
-        <pre className="bg-white p-3 rounded-lg border border-gray-200 text-[10px] font-mono text-gray-700 overflow-x-auto">{`// Example: pH controller POST
+      <div className="surface p-5 bg-slate-50 space-y-2">
+        <p className="text-xs font-black text-slate-700 uppercase tracking-wider">Device Integration</p>
+        <p className="text-xs text-slate-600 font-semibold">Send POST requests to <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">/api/scada</code> with header <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">Authorization: Bearer {'{CRON_SECRET}'}</code></p>
+        <pre className="bg-white p-3 rounded-lg border border-slate-200 text-[10px] font-mono text-slate-700 overflow-x-auto">{`// Example: pH controller POST
 {
   "equipment_id": "<uuid from Equipment module>",
   "batch_id": "<optional batch uuid>",
@@ -121,7 +121,7 @@ export default function ScadaDashboardPage() {
       {/* Manual ingestion form */}
       {showManual && (
         <div className="surface p-5 border-l-4 border-l-slate-500 space-y-4">
-          <h3 className="text-sm font-black text-gray-900">Log Manual Sensor Reading</h3>
+          <h3 className="text-sm font-black text-slate-900">Log Manual Sensor Reading</h3>
           <form onSubmit={handleManualLog} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div><label className="field-label">Equipment *</label>
               <select value={equipId} onChange={e=>setEquipId(e.target.value)} className="field-input bg-white" required>
@@ -142,7 +142,7 @@ export default function ScadaDashboardPage() {
             </div>
             <div className="col-span-2 sm:col-span-4 flex gap-3">
               <button type="submit" disabled={saving} className="px-5 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Logging...':'Log Reading'}</button>
-              <button type="button" onClick={()=>setShowManual(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
+              <button type="button" onClick={()=>setShowManual(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Cancel</button>
             </div>
           </form>
         </div>
@@ -157,16 +157,16 @@ export default function ScadaDashboardPage() {
           return (
             <div key={type} className={`surface p-4 ${latest ? 'border-l-4 border-l-slate-500' : ''}`}>
               <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 ${latest ? 'text-slate-600' : 'text-gray-300'}`}/>
-                <span className="text-[10px] font-black uppercase text-gray-500">{type}</span>
+                <Icon className={`w-4 h-4 ${latest ? 'text-slate-600' : 'text-slate-300'}`}/>
+                <span className="text-[10px] font-black uppercase text-slate-500">{type}</span>
               </div>
               {latest ? (
                 <>
-                  <p className="text-2xl font-black text-gray-900 tabular-nums">{latest.sensor_value}<span className="text-sm font-semibold text-gray-400 ml-1">{latest.unit}</span></p>
-                  <p className="text-[10px] text-gray-400 mt-1">{latest.equipment?.name || 'Unknown'} · {age === 0 ? 'Just now' : `${age}m ago`}</p>
+                  <p className="text-2xl font-black text-slate-900 tabular-nums">{latest.sensor_value}<span className="text-sm font-semibold text-slate-400 ml-1">{latest.unit}</span></p>
+                  <p className="text-[10px] text-slate-400 mt-1">{latest.equipment?.name || 'Unknown'} · {age === 0 ? 'Just now' : `${age}m ago`}</p>
                 </>
               ) : (
-                <p className="text-sm text-gray-300 font-bold">No data</p>
+                <p className="text-sm text-slate-300 font-bold">No data</p>
               )}
             </div>
           );
@@ -175,12 +175,12 @@ export default function ScadaDashboardPage() {
 
       {/* Stream log */}
       <div className="surface overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-          <h3 className="text-sm font-black text-gray-900">Recent Sensor Readings</h3>
-          <button onClick={fetchAll} className="text-xs text-gray-500 hover:text-navy font-bold">Refresh</button>
+        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <h3 className="text-sm font-black text-slate-900">Recent Sensor Readings</h3>
+          <button onClick={fetchAll} className="text-xs text-slate-500 hover:text-navy font-bold">Refresh</button>
         </div>
         {streams.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">
+          <div className="p-12 text-center text-slate-400">
             <Activity className="w-10 h-10 mx-auto mb-3 opacity-20"/>
             <p className="font-semibold">No sensor data yet.</p>
             <p className="text-xs mt-1">Connect instruments to the POST endpoint or log manually above.</p>
@@ -188,19 +188,19 @@ export default function ScadaDashboardPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[500px] text-xs">
-              <thead><tr className="bg-gray-50">
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Timestamp</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Equipment</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Sensor</th>
-                <th className="px-4 py-2 text-right font-black text-gray-400 uppercase text-[9px]">Value</th>
+              <thead><tr className="bg-slate-50">
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Timestamp</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Equipment</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Sensor</th>
+                <th className="px-4 py-2 text-right font-black text-slate-400 uppercase text-[9px]">Value</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {streams.slice(0, 100).map(s => (
-                  <tr key={s.id} className="hover:bg-gray-50/30">
-                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap font-mono">{new Date(s.timestamp).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</td>
-                    <td className="px-4 py-2 font-semibold text-gray-700">{s.equipment?.name || '—'}</td>
+                  <tr key={s.id} className="hover:bg-slate-50/30">
+                    <td className="px-4 py-2 text-slate-500 whitespace-nowrap font-mono">{new Date(s.timestamp).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</td>
+                    <td className="px-4 py-2 font-semibold text-slate-700">{s.equipment?.name || '—'}</td>
                     <td className="px-4 py-2"><span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-[9px] font-black">{s.sensor_type}</span></td>
-                    <td className="px-4 py-2 text-right font-black text-gray-900 tabular-nums">{s.sensor_value} <span className="text-gray-400 font-semibold">{s.unit}</span></td>
+                    <td className="px-4 py-2 text-right font-black text-slate-900 tabular-nums">{s.sensor_value} <span className="text-slate-400 font-semibold">{s.unit}</span></td>
                   </tr>
                 ))}
               </tbody>

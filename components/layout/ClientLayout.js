@@ -148,7 +148,7 @@ export default function ClientLayout({ children }) {
               style={{ background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <span className="text-[13px] font-semibold text-white/80">Session expired.</span>
               <button onClick={() => { clearSessionExpired(); window.location.href = '/login'; }}
-                className="text-[12px] font-black text-sky-400 hover:text-sky-300 transition-colors">Sign In →</button>
+                className="text-[12px] font-black text-slate-400 hover:text-slate-300 transition-colors">Sign In →</button>
             </div>
           )}
 

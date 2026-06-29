@@ -225,7 +225,7 @@ export default function EquipmentPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Equipment Master Registry</h1>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">ISO 9001 Compliance Dashboard</p>
         </div>
         {isAdmin && (
           <button onClick={() => setIsModalOpen(true)} className="flex items-center px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95">
@@ -236,21 +236,21 @@ export default function EquipmentPage() {
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Search equipment, model, serial, or batch..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-slate-100 focus:border-slate-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100 focus:border-slate-500"
           />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 uppercase outline-none">
           <option value="All">All Statuses</option>
           <option value="Operational">Operational</option>
           <option value="Under Maintenance">Under Maintenance</option>
           <option value="Out of Service">Out of Service</option>
         </select>
-        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-600 uppercase outline-none">
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 uppercase outline-none">
           <option value="name">Name A-Z</option>
           <option value="due">Calibration Due</option>
           <option value="status">Status</option>
@@ -259,7 +259,7 @@ export default function EquipmentPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEquipment.length === 0 ? (
-          <div className="md:col-span-2 lg:col-span-3 py-16 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-sm font-bold text-gray-400">
+          <div className="md:col-span-2 lg:col-span-3 py-16 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-sm font-bold text-slate-400">
             No equipment matches the current search.
           </div>
         ) : filteredEquipment.map((device) => {
@@ -267,10 +267,10 @@ export default function EquipmentPage() {
           const isNearDue = device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
 
           return (
-            <div key={device.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-slate-950/5 transition-all">
+            <div key={device.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-slate-950/5 transition-all">
               <div className={`p-6 ${device.status === 'Operational' ? 'bg-slate-50/50' : 'bg-red-50/50'}`}>
                 <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-slate-800 border border-gray-100">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-slate-800 border border-slate-100">
                     <Database className="w-6 h-6" />
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -297,7 +297,7 @@ export default function EquipmentPage() {
                 </div>
                 <h3 className="text-xl font-black text-slate-950 mb-1 leading-tight">{device.name}</h3>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
                   {(() => {
                     const logs = device.calibration_logs || [];
                     const latest = logs.sort((a, b) => new Date(b.calibration_date || 0) - new Date(a.calibration_date || 0))[0];
@@ -311,9 +311,9 @@ export default function EquipmentPage() {
               <div className="p-6 flex-1 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   {device.requires_calibration && (
-                    <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Calib. Due</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Calib. Due</p>
                         {isCalibrationDue ? <AlertTriangle className="w-4 h-4 text-red-600" /> : <Shield className="w-4 h-4 text-slate-600" />}
                       </div>
                       <p className={`text-sm font-black font-mono tracking-tighter ${isCalibrationDue ? 'text-red-700' : 'text-slate-900'}`}>
@@ -325,9 +325,9 @@ export default function EquipmentPage() {
                   {(() => {
                     const isPmDue = device.next_pm_date && (new Date(device.next_pm_date) < new Date());
                     return (
-                      <div className={`p-4 rounded-2xl border ${isPmDue ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                      <div className={`p-4 rounded-2xl border ${isPmDue ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">PM Due</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">PM Due</p>
                           {isPmDue && <AlertTriangle className="w-4 h-4 text-red-600" />}
                         </div>
                         <p className={`text-sm font-black font-mono tracking-tighter ${isPmDue ? 'text-red-700' : 'text-slate-900'}`}>
@@ -340,7 +340,7 @@ export default function EquipmentPage() {
 
                 {batchUsageMap[device.id] && (
                   <div className="px-4 py-3 bg-navy/5 rounded-2xl border border-navy/10">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Last used in</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Last used in</p>
                     <div className="flex items-center justify-between">
                       <Link href={`/batches/${batchUsageMap[device.id].id}`} className="text-xs font-black text-navy hover:underline font-mono tracking-wider">
                         {batchUsageMap[device.id].batch_id}
@@ -356,17 +356,17 @@ export default function EquipmentPage() {
                 {(device.iq_doc_url || device.oq_doc_url || device.pq_doc_url) && (
                   <div className="flex flex-wrap gap-2">
                     {device.iq_doc_url && (
-                      <a href={device.iq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-gray-100 border border-gray-100 transition-all flex items-center justify-center gap-1">
+                      <a href={device.iq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-slate-100 border border-slate-100 transition-all flex items-center justify-center gap-1">
                         IQ Doc
                       </a>
                     )}
                     {device.oq_doc_url && (
-                      <a href={device.oq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-gray-100 border border-gray-100 transition-all flex items-center justify-center gap-1">
+                      <a href={device.oq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-slate-100 border border-slate-100 transition-all flex items-center justify-center gap-1">
                         OQ Doc
                       </a>
                     )}
                     {device.pq_doc_url && (
-                      <a href={device.pq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-gray-100 border border-gray-100 transition-all flex items-center justify-center gap-1">
+                      <a href={device.pq_doc_url} target="_blank" rel="noreferrer" className="flex-1 px-2 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center hover:bg-slate-100 border border-slate-100 transition-all flex items-center justify-center gap-1">
                         PQ Doc
                       </a>
                     )}
@@ -377,7 +377,7 @@ export default function EquipmentPage() {
                   <button
                     disabled={!['admin', 'ceo', 'cto'].includes(role)}
                     onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setMaintValue('log_type', device.requires_calibration ? 'Calibration' : 'Maintenance'); setIsMaintenanceOpen(true); }}
-                    className="flex-1 py-3 bg-white border border-gray-200 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                       Log Maintenance
                   </button>
                   {device.requires_calibration && (
@@ -409,58 +409,58 @@ export default function EquipmentPage() {
             </div>
             <form onSubmit={handEquip(onSubmitEquipment)} className="p-8 space-y-5">
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Equipment Name</label>
-                <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Equipment Name</label>
+                <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                   {...regEquip('name')} placeholder="e.g. Bioreactor 01" />
                 {eqErrors.name && <p className="text-red-500 text-xs mt-1">{eqErrors.name.message}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Model / Brand</label>
-                  <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Model / Brand</label>
+                  <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regEquip('model')} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Serial Number</label>
-                  <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold font-mono" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Serial Number</label>
+                  <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold font-mono" 
                     {...regEquip('serial_number')} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next PM Due Date</label>
-                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Next PM Due Date</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regEquip('next_pm_date')} />
                 </div>
               </div>
               {/* Calibration Toggle */}
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl ring-1 ring-gray-200">
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-2xl ring-1 ring-slate-200">
                 <div>
                   <p className="text-sm font-black text-slate-800">Requires Calibration</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Enable for pH meters, balances, thermometers, etc.</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Enable for pH meters, balances, thermometers, etc.</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" {...regEquip('requires_calibration')} />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-700"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-700"></div>
                 </label>
               </div>
               {/* Calibration Date — only shown when toggle is on */}
               {watchRequiresCalibration && (
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Calibration Due</label>
-                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Next Calibration Due</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regEquip('calibration_due_date')} />
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PM Frequency (Days)</label>
-                  <input type="number" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">PM Frequency (Days)</label>
+                  <input type="number" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regEquip('pm_frequency_days', { valueAsNumber: true })} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Initial Status</label>
-                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Initial Status</label>
+                  <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regEquip('status')}>
                     <option value="Operational">Operational</option>
                     <option value="Out of Service">Out of Service</option>
@@ -470,23 +470,23 @@ export default function EquipmentPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">IQ Document URL</label>
-                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-xs font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">IQ Document URL</label>
+                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-xs font-bold" 
                     {...regEquip('iq_doc_url')} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">OQ Document URL</label>
-                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-xs font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">OQ Document URL</label>
+                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-xs font-bold" 
                     {...regEquip('oq_doc_url')} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">PQ Document URL</label>
-                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-xs font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">PQ Document URL</label>
+                  <input type="text" placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-xs font-bold" 
                     {...regEquip('pq_doc_url')} />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setIsModalOpen(false); resetEquip(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="button" onClick={() => { setIsModalOpen(false); resetEquip(); setActiveDevice(null); }} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isEqSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
                   {isEqSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : modalMode === 'edit' ? 'Save Asset Changes' : 'Register Asset'}
                 </button>
@@ -507,21 +507,21 @@ export default function EquipmentPage() {
               <input type="hidden" {...regMaint('equipment_id')} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Log Date</label>
-                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Log Date</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regMaint('calibration_date')} />
                   {mxErrors.calibration_date && <p className="text-red-500 text-xs mt-1">{mxErrors.calibration_date.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Next Due Date</label>
-                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Next Due Date</label>
+                  <input type="date" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regMaint('next_due_date')} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Log Type</label>
-                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Log Type</label>
+                  <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regMaint('log_type')}>
                     <option value="Calibration">Calibration</option>
                     <option value="Maintenance">Preventive Maintenance</option>
@@ -530,8 +530,8 @@ export default function EquipmentPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Equipment Status</label>
-                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Equipment Status</label>
+                  <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                     {...regMaint('status')}>
                     <option value="Operational">Operational</option>
                     <option value="Out of Service">Out of Service</option>
@@ -540,13 +540,13 @@ export default function EquipmentPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Notes / Results</label>
-                <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold min-h-[100px]" 
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Notes / Results</label>
+                <textarea className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold min-h-[100px]" 
                   {...regMaint('result')} placeholder="Enter findings or notes..." />
                 {mxErrors.result && <p className="text-red-500 text-xs mt-1">{mxErrors.result.message}</p>}
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setIsMaintenanceOpen(false); resetMaint(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="button" onClick={() => { setIsMaintenanceOpen(false); resetMaint(); setActiveDevice(null); }} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isMxSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
                   {isMxSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Log Entry'}
                 </button>
@@ -570,14 +570,14 @@ export default function EquipmentPage() {
             <form onSubmit={handTicket(onSubmitTicket)} className="p-8 space-y-5">
               <input type="hidden" {...regTicket('equipment_id')} />
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Issue Title</label>
-                <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Issue Title</label>
+                <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                   {...regTicket('title')} placeholder="e.g. Temperature fluctuating widely" />
                 {tktErrors.title && <p className="text-red-500 text-xs mt-1">{tktErrors.title.message}</p>}
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Severity</label>
-                <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Severity</label>
+                <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold" 
                   {...regTicket('severity')}>
                   <option value="Low">Low (Operational, minor issue)</option>
                   <option value="Medium">Medium (Operational but needs attention)</option>
@@ -586,12 +586,12 @@ export default function EquipmentPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Description</label>
-                <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold min-h-[100px]" 
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Description</label>
+                <textarea className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold min-h-[100px]" 
                   {...regTicket('description')} placeholder="Provide details..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setIsTicketOpen(false); resetTicket(); setActiveDevice(null); }} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
+                <button type="button" onClick={() => { setIsTicketOpen(false); resetTicket(); setActiveDevice(null); }} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">Cancel</button>
                 <button type="submit" disabled={isTktSubmitting} className="flex-2 py-4 px-8 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-950/20 transition-all active:scale-95 flex items-center justify-center">
                   {isTktSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Ticket'}
                 </button>

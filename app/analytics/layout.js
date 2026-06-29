@@ -41,7 +41,7 @@ export default async function AnalyticsLayout({ children }) {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight flex items-center">
-            <PieChart className="w-8 h-8 mr-3 text-indigo-600" />
+            <PieChart className="w-8 h-8 mr-3 text-slate-600" />
             Analytics Hub
           </h1>
           <p className="mt-2 text-slate-500 font-medium">Comparative and deep analysis across modules.</p>

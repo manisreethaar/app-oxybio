@@ -31,7 +31,7 @@ const getShiftStatus = (checkInTime) => {
   const h = new Date(checkInTime).getHours();
   const m = new Date(checkInTime).getMinutes();
   const totalMins = h * 60 + m;
-  if (totalMins < 7 * 60) return { label: 'Early', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+  if (totalMins < 7 * 60) return { label: 'Early', color: 'text-slate-700 bg-slate-50 border-slate-200' };
   if (totalMins > 11 * 60) return { label: 'Late', color: 'text-red-700 bg-red-50 border-red-200' };
   return { label: 'On Time', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
 };
@@ -471,8 +471,8 @@ export default function AttendancePage() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="glass-card rounded-2xl p-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mb-4">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center mb-4">
+                <TrendingUp className="w-5 h-5 text-slate-600" />
               </div>
               <p className="text-3xl font-black text-slate-800">{weeklyTotalHours}h</p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">This Week</p>
@@ -510,7 +510,7 @@ export default function AttendancePage() {
             <div className="flex gap-6 mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-600 inline-block"></span> On Time</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 inline-block"></span> Late</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 inline-block"></span> Early</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-500 inline-block"></span> Early</span>
             </div>
           </div>
         </div>
@@ -548,7 +548,7 @@ export default function AttendancePage() {
                 )}
                 <button 
                   onClick={initiateCheckIn} disabled={actionLoading}
-                  className="w-full py-4 bg-gradient-to-br from-slate-500 to-cyan-600 hover:from-slate-400 hover:to-cyan-500 text-white rounded-2xl font-black text-lg shadow-lg shadow-slate-500/20 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-50 active:scale-95"
+                  className="w-full py-4 bg-gradient-to-br from-slate-500 to-slate-600 hover:from-slate-400 hover:to-slate-500 text-white rounded-2xl font-black text-lg shadow-lg shadow-slate-500/20 transition-all flex items-center justify-center uppercase tracking-widest disabled:opacity-50 active:scale-95"
                 >
                   <Camera className="w-5 h-5 mr-2" /> Verify & Check In
                 </button>
@@ -622,7 +622,7 @@ export default function AttendancePage() {
                   return (
                     <div key={log.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 border border-white hover:bg-white/80 transition-all shadow-sm">
                       <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-black shadow-sm ${hours >= 8 ? 'bg-gradient-to-br from-emerald-100 to-green-100 text-emerald-700 border border-emerald-200' : hours > 0 ? 'bg-gradient-to-br from-amber-50 to-orange-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-black shadow-sm ${hours >= 8 ? 'bg-gradient-to-br from-emerald-100 to-emerald-100 text-emerald-700 border border-emerald-200' : hours > 0 ? 'bg-gradient-to-br from-amber-50 to-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
                           {hours > 0 ? `${hours.toFixed(1)}h` : 'OFF'}
                         </div>
                         <div>

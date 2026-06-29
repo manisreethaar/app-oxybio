@@ -169,7 +169,7 @@ export default function LabAnalyticsPage() {
           <select
             value={dateRange}
             onChange={e => setDateRange(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-500 outline-none"
           >
             <option value="1M">Last 1 Month</option>
             <option value="3M">Last 3 Months</option>
@@ -199,7 +199,7 @@ export default function LabAnalyticsPage() {
             {/* OD Overlay Chart */}
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center">
-                <BarChart2 className="w-4 h-4 mr-2 text-indigo-500" />
+                <BarChart2 className="w-4 h-4 mr-2 text-slate-500" />
                 Optical Density (OD) Progression
               </h3>
               <div className="h-80">

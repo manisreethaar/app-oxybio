@@ -51,14 +51,14 @@ export default function ImageBlock({ block, updateBlock, canEdit }) {
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 mb-2 px-1">
-        <ImageIcon className="w-4 h-4 text-gray-400" />
-        <span className="text-xs font-bold text-gray-500 uppercase">Image Block</span>
+        <ImageIcon className="w-4 h-4 text-slate-400" />
+        <span className="text-xs font-bold text-slate-500 uppercase">Image Block</span>
       </div>
       
-      <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden p-4">
+      <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden p-4">
         {url ? (
           <div className="relative group">
-            <img src={url} alt="Notebook Block" className="w-full max-w-2xl rounded-lg mx-auto border border-gray-100" />
+            <img src={url} alt="Notebook Block" className="w-full max-w-2xl rounded-lg mx-auto border border-slate-100" />
             
             {canEdit && (
               <button 
@@ -76,10 +76,10 @@ export default function ImageBlock({ block, updateBlock, canEdit }) {
                   value={caption}
                   onChange={updateCaption}
                   placeholder="Add a caption..."
-                  className="w-full text-center text-xs text-gray-500 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-navy outline-none py-1 transition-colors"
+                  className="w-full text-center text-xs text-slate-500 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-navy outline-none py-1 transition-colors"
                 />
               ) : (
-                caption && <p className="text-center text-xs text-gray-500 italic mt-2">{caption}</p>
+                caption && <p className="text-center text-xs text-slate-500 italic mt-2">{caption}</p>
               )}
             </div>
           </div>
@@ -97,7 +97,7 @@ export default function ImageBlock({ block, updateBlock, canEdit }) {
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg border border-dashed border-gray-300 font-bold text-xs hover:bg-gray-100 hover:text-navy transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-lg border border-dashed border-slate-300 font-bold text-xs hover:bg-slate-100 hover:text-navy transition-colors disabled:opacity-50"
                 >
                   {uploading ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
@@ -108,7 +108,7 @@ export default function ImageBlock({ block, updateBlock, canEdit }) {
                 {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
               </>
             ) : (
-              <span className="text-gray-400 italic text-sm">No image uploaded.</span>
+              <span className="text-slate-400 italic text-sm">No image uploaded.</span>
             )}
           </div>
         )}

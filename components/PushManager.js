@@ -145,7 +145,7 @@ export default function PushManager() {
   if (!showBanner || subscribed || !user) return null;
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 to-navy text-white px-4 py-3 shadow-md flex flex-col sm:flex-row items-center justify-center sm:justify-between z-40 relative">
+    <div className="bg-gradient-to-r from-slate-900 to-navy text-white px-4 py-3 shadow-md flex flex-col sm:flex-row items-center justify-center sm:justify-between z-40 relative">
       <div className="flex items-center mb-3 sm:mb-0">
         <div className="bg-amber-100 p-2 rounded-full mr-3 shadow-inner hidden sm:block border border-amber-200">
           {isIOS ? (
@@ -158,7 +158,7 @@ export default function PushManager() {
           <h4 className="font-bold text-sm">
             {isIOS ? 'Install as App for Notifications' : 'Enable Standard Notifications'}
           </h4>
-          <p className="text-gray-300 text-xs mt-0.5 max-w-xl">
+          <p className="text-slate-300 text-xs mt-0.5 max-w-xl">
             {isIOS 
               ? 'Add OxyOS to your home screen to receive push notifications.'
               : 'Get instant alerts when you are assigned a new protocol or task.'}
@@ -167,7 +167,7 @@ export default function PushManager() {
       </div>
       <div className="flex items-center space-x-3 shrink-0">
         {isIOS ? (
-          <span className="text-xs text-gray-300 bg-slate-700 px-3 py-2 rounded-lg">
+          <span className="text-xs text-slate-300 bg-slate-700 px-3 py-2 rounded-lg">
             Add to Home Screen
           </span>
         ) : (
@@ -175,7 +175,7 @@ export default function PushManager() {
             <button 
               onClick={subscribeUser} 
               disabled={loading} 
-              className="bg-white text-navy font-bold px-4 py-2 rounded-lg text-xs hover:bg-gray-100 shadow-sm transition-colors flex items-center disabled:opacity-50"
+              className="bg-white text-navy font-bold px-4 py-2 rounded-lg text-xs hover:bg-slate-100 shadow-sm transition-colors flex items-center disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1"/> : "Enable"}
             </button>
@@ -186,7 +186,7 @@ export default function PushManager() {
             )}
           </>
         )}
-        <button onClick={() => setShowBanner(false)} className="text-gray-400 hover:text-white p-2 rounded-full transition-colors"><X className="w-4 h-4" /></button>
+        <button onClick={() => setShowBanner(false)} className="text-slate-400 hover:text-white p-2 rounded-full transition-colors"><X className="w-4 h-4" /></button>
       </div>
     </div>
   );

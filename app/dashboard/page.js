@@ -9,16 +9,16 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-4 sm:space-y-6 animate-pulse">
       <div className="mb-8">
-        <div className="h-8 w-64 bg-gray-200 rounded-lg mb-2" />
-        <div className="h-4 w-80 bg-gray-100 rounded-lg" />
+        <div className="h-8 w-64 bg-slate-200 rounded-lg mb-2" />
+        <div className="h-4 w-80 bg-slate-100 rounded-lg" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
+          <div key={i} className="h-24 bg-slate-100 rounded-2xl" />
         ))}
       </div>
-      <div className="h-40 bg-gray-100 rounded-2xl" />
-      <div className="h-32 bg-gray-100 rounded-2xl" />
+      <div className="h-40 bg-slate-100 rounded-2xl" />
+      <div className="h-32 bg-slate-100 rounded-2xl" />
     </div>
   );
 }
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-black text-slate-800 tracking-tight">
           Good {greeting}, {getNameForGreeting(employeeProfile?.full_name)}
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-slate-500 mt-1">
           Here&apos;s what&apos;s happening across Oxygen Bioinnovations today.
         </p>
       </div>

@@ -11,7 +11,7 @@ export default function Loading() {
           <Skeleton width={100} height={36} className="rounded-lg" />
         </div>
       </div>
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
         <Skeleton className="h-64 rounded-xl" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

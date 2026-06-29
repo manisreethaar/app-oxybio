@@ -66,7 +66,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
       {/* Header row */}
       <div className="flex items-start gap-4 p-5">
         {/* Requester avatar */}
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-cyan-100 border border-white shadow-sm shrink-0 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-100 border border-white shadow-sm shrink-0 flex items-center justify-center">
           <span className="text-slate-700 font-black text-sm">{change.requester?.initials || '??'}</span>
         </div>
 
