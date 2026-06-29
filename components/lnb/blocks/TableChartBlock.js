@@ -138,7 +138,7 @@ export default function TableChartBlock({ block, updateBlock, canEdit }) {
         )}
       </div>
       
-      <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden p-4 overflow-x-auto">
+      <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden p-4 overflow-x-auto relative">
         <table className="w-full border-collapse">
           <tbody>
             {data.map((row, r) => (
@@ -154,30 +154,31 @@ export default function TableChartBlock({ block, updateBlock, canEdit }) {
                     />
                     
                     {canEdit && (
-                      <>
-                        {/* Add/Remove Column buttons (only on first row) */}
-                        {r === 0 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white shadow-sm border border-gray-200 rounded px-1 py-0.5">
-                            <button onClick={() => addColumn(c)} className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Add column before"><Plus className="w-3 h-3" /></button>
-                            <button onClick={() => addColumn(c + 1)} className="p-0.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Add column after"><Plus className="w-3 h-3" /></button>
-                            <button onClick={() => deleteColumn(c)} className="p-0.5 text-red-500 hover:bg-red-50 rounded" title="Delete column"><Trash2 className="w-3 h-3" /></button>
-                          </div>
-                        )}
-                        
-                        {/* Add/Remove Row buttons (only on first column) */}
-                        {c === 0 && (
-                          <div className="absolute top-1/2 -left-8 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white shadow-sm border border-gray-200 rounded px-0.5 py-1">
-                            <button onClick={() => addRow(r)} className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Add row above"><Plus className="w-3 h-3" /></button>
-                            <button onClick={() => addRow(r + 1)} className="p-0.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Add row below"><Plus className="w-3 h-3" /></button>
-                            <button onClick={() => deleteRow(r)} className="p-0.5 text-red-500 hover:bg-red-50 rounded" title="Delete row"><Trash2 className="w-3 h-3" /></button>
-                          </div>
-                        )}
-                      </>
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+                        {r === 0 && <button onClick={() => deleteColumn(c)} className="p-1 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded shadow-sm" title="Delete column"><Trash2 className="w-3 h-3" /></button>}
+                        {c === 0 && <button onClick={() => deleteRow(r)} className="p-1 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded shadow-sm" title="Delete row"><Trash2 className="w-3 h-3" /></button>}
+                      </div>
                     )}
                   </td>
                 ))}
+                {canEdit && r === 0 && (
+                   <td rowSpan={data.length} className="w-10 p-2 align-top border-none bg-transparent">
+                     <button onClick={() => addColumn(data[0].length)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors shadow-sm flex items-center justify-center w-full h-full min-h-[36px]" title="Add Column">
+                       <Plus className="w-4 h-4" />
+                     </button>
+                   </td>
+                )}
               </tr>
             ))}
+            {canEdit && (
+              <tr>
+                <td colSpan={data[0].length} className="p-2 border-none">
+                  <button onClick={() => addRow(data.length)} className="flex items-center justify-center gap-1 w-full p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 font-bold text-xs transition-colors shadow-sm">
+                    <Plus className="w-4 h-4" /> Add Row
+                  </button>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
