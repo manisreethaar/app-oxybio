@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import { markdownToHtml } from '@/utils/markdown';
+import BlockEditor from '@/components/lnb/BlockEditor';
 
 export default function LnbEntryPage() {
   const params = useParams();
@@ -273,7 +274,17 @@ export default function LnbEntryPage() {
            />
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
            <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
-           <SectionBox title="Detailed Observations" icon={<FileCheck className="w-4 h-4" />} canEdit={canEdit} value={observations} onChange={setObservations} placeholder="Record qualitative and quantitative readings..." isLarge />
+           
+           <div className="surface p-0 overflow-hidden border border-gray-200 shadow-sm rounded-2xl bg-white">
+             <div className="bg-gray-50/50 px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+               <div className="text-navy"><FileCheck className="w-4 h-4" /></div>
+               <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Detailed Observations</h3>
+             </div>
+             <div className="p-4 bg-gray-50/30">
+               <BlockEditor value={observations} onChange={setObservations} canEdit={canEdit} />
+             </div>
+           </div>
+           
            <SectionBox title="Conclusions" icon={<FileSignature className="w-4 h-4" />} canEdit={canEdit} value={conclusions} onChange={setConclusions} placeholder="Summarize findings and next steps..." />
         </div>
 
