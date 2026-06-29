@@ -18,8 +18,8 @@ async function downloadPayslipPDF(slip) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
 
-  // Header band - violet
-  doc.setFillColor(15, 118, 110); // violet-700
+  // Header band - slate
+  doc.setFillColor(15, 118, 110); // slate-700
   doc.rect(0, 0, W, 38, 'F');
 
   doc.setTextColor(255, 255, 255);
@@ -227,7 +227,7 @@ export default function PayslipsPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center p-20">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
       </div>
     );
   }
@@ -247,7 +247,7 @@ export default function PayslipsPage() {
         {isAdmin && (
           <button
             onClick={() => { setShowGenerator(true); setCalcResult(null); setCalcError(''); }}
-            className="flex items-center px-6 py-3 bg-violet-700 text-white font-black rounded-2xl hover:bg-violet-800 transition-all shadow-lg active:scale-95"
+            className="flex items-center px-6 py-3 bg-slate-700 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95"
           >
             <Calculator className="w-5 h-5 mr-2" /> Generate Payslip
           </button>
@@ -258,9 +258,9 @@ export default function PayslipsPage() {
       {isAdmin && payslips.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
-            { label: 'Total Slips Issued', value: payslips.length, icon: <Receipt className="w-5 h-5" />, color: 'violet' },
+            { label: 'Total Slips Issued', value: payslips.length, icon: <Receipt className="w-5 h-5" />, color: 'slate' },
             { label: 'Total Payroll', value: `₹${payslips.reduce((a, s) => a + parseFloat(s.gross_salary || 0), 0).toLocaleString('en-IN')}`, icon: <Users className="w-5 h-5" />, color: 'blue' },
-            { label: 'Auto-Generated', value: payslips.filter(s => s.is_auto_generated).length, icon: <Calculator className="w-5 h-5" />, color: 'purple' }
+            { label: 'Auto-Generated', value: payslips.filter(s => s.is_auto_generated).length, icon: <Calculator className="w-5 h-5" />, color: 'slate' }
           ].map(tile => (
             <div key={tile.label} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex items-center gap-4">
               <div className={`p-3 rounded-xl bg-${tile.color}-50 text-${tile.color}-700`}>{tile.icon}</div>
@@ -291,10 +291,10 @@ export default function PayslipsPage() {
             <tbody className="bg-white divide-y divide-gray-50">
               {payslips.map(slip => (
                 <tr key={slip.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-violet-800 font-mono tracking-widest">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800 font-mono tracking-widest">
                     {slip.month} {slip.year}
                     {slip.is_auto_generated && (
-                      <span className="ml-2 text-[10px] bg-violet-50 text-violet-600 border border-violet-200 px-1.5 py-0.5 rounded font-bold">AUTO</span>
+                      <span className="ml-2 text-[10px] bg-slate-50 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded font-bold">AUTO</span>
                     )}
                   </td>
                   {isAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-700">{slip.employees?.full_name}</td>}
@@ -309,7 +309,7 @@ export default function PayslipsPage() {
                   <td className="px-6 py-4 text-center">
                     <button
                       onClick={() => downloadPayslipPDF(slip)}
-                      className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-600 hover:bg-violet-50 hover:border-violet-400 hover:text-violet-700 transition-all"
+                      className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-600 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-700 transition-all"
                     >
                       <Download className="w-3.5 h-3.5 mr-1.5" /> PDF
                     </button>
@@ -349,7 +349,7 @@ export default function PayslipsPage() {
               <div>
                 <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Employee *</label>
                 <select
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
                   value={genEmployee}
                   onChange={e => { setGenEmployee(e.target.value); setCalcResult(null); }}
                 >
@@ -367,7 +367,7 @@ export default function PayslipsPage() {
                 <div>
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Month *</label>
                   <select
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
                     value={genMonth}
                     onChange={e => { setGenMonth(e.target.value); setCalcResult(null); }}
                   >
@@ -378,7 +378,7 @@ export default function PayslipsPage() {
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Year *</label>
                   <input
                     type="number" min="2024" max="2099"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
                     value={genYear}
                     onChange={e => { setGenYear(e.target.value); setCalcResult(null); }}
                   />
@@ -391,7 +391,7 @@ export default function PayslipsPage() {
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">PF Deduction (₹)</label>
                   <input
                     type="number" min="0" placeholder="0"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
                     value={genPF}
                     onChange={e => { setGenPF(e.target.value); setCalcResult(null); }}
                   />
@@ -400,7 +400,7 @@ export default function PayslipsPage() {
                   <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">ESI Deduction (₹)</label>
                   <input
                     type="number" min="0" placeholder="0"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-slate-400 focus:outline-none"
                     value={genESI}
                     onChange={e => { setGenESI(e.target.value); setCalcResult(null); }}
                   />
@@ -420,7 +420,7 @@ export default function PayslipsPage() {
                 <button
                   onClick={handleCalculate}
                   disabled={calculating}
-                  className="w-full py-4 bg-violet-700 text-white font-black rounded-2xl hover:bg-violet-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full py-4 bg-slate-700 text-white font-black rounded-2xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg"
                 >
                   {calculating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calculator className="w-5 h-5" />}
                   {calculating ? 'Calculating...' : 'Calculate from Attendance'}
@@ -429,10 +429,10 @@ export default function PayslipsPage() {
 
               {/* Calculated Result Review */}
               {calcResult && (
-                <div className="bg-violet-50 border border-violet-200 rounded-2xl p-5 space-y-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="w-5 h-5 text-violet-600" />
-                    <span className="font-black text-violet-800 text-sm">Calculation Complete — Review Before Approving</span>
+                    <CheckCircle className="w-5 h-5 text-slate-600" />
+                    <span className="font-black text-slate-800 text-sm">Calculation Complete — Review Before Approving</span>
                   </div>
 
                   {calcResult.leave_policy_note && (
@@ -454,7 +454,7 @@ export default function PayslipsPage() {
                       ['PF Deduction', `- ₹${calcResult.pf_deduction?.toLocaleString('en-IN')}`],
                       ['ESI Deduction', `- ₹${calcResult.esi_deduction?.toLocaleString('en-IN')}`],
                     ].map(([label, val]) => (
-                      <div key={label} className="flex justify-between items-center bg-white rounded-xl px-3 py-2 border border-violet-100">
+                      <div key={label} className="flex justify-between items-center bg-white rounded-xl px-3 py-2 border border-slate-100">
                         <span className="text-xs text-gray-500 font-bold">{label}</span>
                         <span className="font-mono font-black text-slate-800 text-xs">{val}</span>
                       </div>
@@ -462,7 +462,7 @@ export default function PayslipsPage() {
                   </div>
 
                   {/* NET SALARY Highlight */}
-                  <div className="bg-violet-700 rounded-2xl px-5 py-4 flex items-center justify-between">
+                  <div className="bg-slate-700 rounded-2xl px-5 py-4 flex items-center justify-between">
                     <span className="text-white font-black tracking-widest text-sm">NET SALARY</span>
                     <span className="text-white font-black text-xl font-mono">₹{calcResult.net_salary?.toLocaleString('en-IN')}</span>
                   </div>

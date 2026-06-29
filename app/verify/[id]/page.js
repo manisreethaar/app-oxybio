@@ -78,7 +78,7 @@ export default async function VerifyEmployeePage({ params }) {
         {/* ID Card Display */}
         <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-500">
           {/* Header */}
-          <div className="bg-gradient-to-br from-violet-800 to-violet-950 p-6 flex flex-col items-center relative overflow-hidden">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-950 p-6 flex flex-col items-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
             
             {emp.photo_url ? (
@@ -92,7 +92,7 @@ export default async function VerifyEmployeePage({ params }) {
             
             <div className="mt-4 text-center z-10">
               <h2 className="text-2xl font-black text-white tracking-tight leading-tight">{emp.full_name}</h2>
-              <p className="text-violet-200 font-medium text-sm mt-1">{emp.designation || emp.role?.toUpperCase() || 'STAFF'}</p>
+              <p className="text-slate-200 font-medium text-sm mt-1">{emp.designation || emp.role?.toUpperCase() || 'STAFF'}</p>
             </div>
           </div>
 

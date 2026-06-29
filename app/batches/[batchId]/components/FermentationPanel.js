@@ -915,11 +915,11 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
 
               {/* 1A: Plate this sample? — Yes / No / Later */}
-              <div className="bg-violet-50/50 border border-violet-100 p-3 rounded-xl space-y-3">
+              <div className="bg-slate-50/50 border border-slate-100 p-3 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-gray-800">Plate this sample?</span>
                   <div className="flex gap-1.5">
-                    {[['yes','Yes','bg-violet-600 text-white border-violet-600'],['no','No','bg-gray-200 text-gray-700 border-gray-200'],['later','Later','bg-amber-100 text-amber-700 border-amber-300']].map(([val, label, activeClass]) => (
+                    {[['yes','Yes','bg-slate-600 text-white border-slate-600'],['no','No','bg-gray-200 text-gray-700 border-gray-200'],['later','Later','bg-amber-100 text-amber-700 border-amber-300']].map(([val, label, activeClass]) => (
                       <button
                         key={val} type="button"
                         onClick={() => setPlatingIntent(platingIntent === val ? null : val)}
@@ -1276,7 +1276,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Colour Description</label>
-                <input value={colourDesc} onChange={e=>setColourDesc(e.target.value)} placeholder="e.g. Reddish-purple" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none"/>
+                <input value={colourDesc} onChange={e=>setColourDesc(e.target.value)} placeholder="e.g. Reddish-slate" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none"/>
               </div>
               <div className="space-y-2">
                 <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gram Stain Result</label>
@@ -1484,9 +1484,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </div>
               </div>
               {(editingReading.sample_incubation_id || editingReading.plating_result) && (
-                <div className="rounded-lg border border-violet-100 bg-violet-50/40 px-3 py-2">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-violet-700">Plating</p>
-                  <p className="mt-0.5 text-xs text-violet-800">
+                <div className="rounded-lg border border-slate-100 bg-slate-50/40 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-700">Plating</p>
+                  <p className="mt-0.5 text-xs text-slate-800">
                     {editingReading.sample_incubation_id
                       ? 'Linked incubation results are edited in Sample Incubation.'
                       : `Legacy result: ${editingReading.plating_result}`}

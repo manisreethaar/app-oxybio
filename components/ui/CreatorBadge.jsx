@@ -1,8 +1,8 @@
 'use client';
 
 const PALETTE = [
-  'from-violet-100 to-cyan-100 text-violet-700',
-  'from-violet-100 to-purple-100 text-violet-700',
+  'from-slate-100 to-cyan-100 text-slate-700',
+  'from-slate-100 to-slate-100 text-slate-700',
   'from-amber-100 to-orange-100 text-amber-700',
   'from-rose-100 to-pink-100 text-rose-700',
   'from-sky-100 to-blue-100 text-sky-700',

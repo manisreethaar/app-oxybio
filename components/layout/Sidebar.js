@@ -14,15 +14,17 @@ import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
-/* ─── Brand violet tokens ─── */
+/* ─── White & Slate Theme Tokens ─── */
 const V = {
-  grad: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
-  glow: '0 0 20px rgba(124,58,237,0.45)',
-  sidebar: 'linear-gradient(180deg, #0d0a14 0%, #130d1f 60%, #0d0a14 100%)',
-  border: 'rgba(255,255,255,0.06)',
-  activeBg: 'rgba(124,58,237,0.15)',
-  activeText: '#C084FC',
-  hoverBg: 'rgba(255,255,255,0.04)',
+  grad: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)',
+  glow: '0 0 15px rgba(71,85,105,0.2)',
+  sidebar: '#ffffff',
+  border: '#e2e8f0',
+  activeBg: '#f1f5f9',
+  activeText: '#475569',
+  hoverBg: '#f8fafc',
+  text: '#1e293b',
+  textLight: '#64748b',
 };
 
 /* ─── Quick-access items shown in mobile bottom bar ─── */
@@ -122,28 +124,31 @@ export default function Sidebar() {
     const Icon   = item.icon;
     return (
       <Link href={item.href}
-        style={active ? { background: V.activeBg } : {}}
-        className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl transition-all duration-150 relative group/ni
-          ${active ? 'text-purple-300' : 'text-white/40 hover:text-white/80'}
-        `}
+        style={{ 
+          background: active ? V.activeBg : 'transparent',
+          color: active ? V.activeText : V.textLight
+        }}
+        onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = V.hoverBg; e.currentTarget.style.color = V.text; } }}
+        onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = V.textLight; } }}
+        className="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl transition-all duration-150 relative group/ni"
         title={!expanded ? item.name : undefined}
       >
-        {active && <span style={{ background: V.grad, boxShadow: '0 0 8px rgba(168,85,247,0.6)' }}
+        {active && <span style={{ background: V.grad, boxShadow: V.glow }}
           className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" />}
         <Icon style={{ width: '1rem', height: '1rem', flexShrink: 0,
-          color: active ? '#C084FC' : undefined,
-          filter: active ? 'drop-shadow(0 0 4px rgba(192,132,252,0.6))' : undefined }}
+          color: active ? V.activeText : undefined,
+          filter: active ? `drop-shadow(0 0 2px ${V.activeBg})` : undefined }}
         />
         {expanded && (
           <span className="text-[13px] font-semibold whitespace-nowrap leading-none">{item.name}</span>
         )}
         {expanded && item.badge > 0 && (
-          <span className="ml-auto text-[10px] font-black text-white px-1.5 py-0.5 rounded-full"
+          <span className="ml-auto text-[10px] font-black text-white px-1.5 py-0.5 rounded-full shadow-sm"
             style={{ background: V.grad }}>{item.badge > 99 ? '99+' : item.badge}</span>
         )}
         {!expanded && item.badge > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-            style={{ background: '#A855F7', boxShadow: '0 0 6px rgba(168,85,247,0.8)' }} />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full shadow-sm"
+            style={{ background: '#475569' }} />
         )}
       </Link>
     );
@@ -155,7 +160,7 @@ export default function Sidebar() {
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => setExpanded(false)}
-        className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-50 transition-all duration-300 ease-in-out"
+        className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-50 transition-all duration-300 ease-in-out shadow-[1px_0_20px_rgba(0,0,0,0.02)]"
         style={{
           width: expanded ? 240 : 60,
           background: V.sidebar,
@@ -169,7 +174,7 @@ export default function Sidebar() {
             O₂
           </div>
           {expanded && (
-            <span className="ml-3 text-[15px] font-black text-white tracking-tight whitespace-nowrap">OxyOS</span>
+            <span className="ml-3 text-[15px] font-black tracking-tight whitespace-nowrap" style={{ color: V.text }}>OxyOS</span>
           )}
         </div>
 
@@ -181,7 +186,7 @@ export default function Sidebar() {
             return (
               <div key={i}>
                 {expanded && (
-                  <p className="px-4 pb-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/20">{sec.title}</p>
+                  <p className="px-4 pb-1 text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: '#94a3b8' }}>{sec.title}</p>
                 )}
                 {!expanded && i > 0 && <div className="mx-auto mb-2" style={{ width: 28, borderTop: `1px solid ${V.border}` }} />}
                 {vis.map(item => <DesktopItem key={item.href} item={item} />)}
@@ -193,23 +198,23 @@ export default function Sidebar() {
         {/* Footer */}
         <div className="shrink-0 p-3" style={{ borderTop: `1px solid ${V.border}` }}>
           {expanded ? (
-            <div className="flex items-center gap-3 px-2 py-2 rounded-xl" style={{ background: V.hoverBg }}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0"
+            <div className="flex items-center gap-3 px-2 py-2 rounded-xl" style={{ background: V.hoverBg, border: `1px solid ${V.border}` }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 shadow-sm"
                 style={{ background: V.grad }}>
                 {initials(employeeProfile?.full_name)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-bold text-white/90 truncate">{employeeProfile?.full_name || '—'}</p>
-                <p className="text-[10px] text-white/30 capitalize truncate">{employeeProfile?.role || ''}</p>
+                <p className="text-[12px] font-bold truncate" style={{ color: V.text }}>{employeeProfile?.full_name || '—'}</p>
+                <p className="text-[10px] capitalize truncate" style={{ color: V.textLight }}>{employeeProfile?.role || ''}</p>
               </div>
               <button onClick={signOut} title="Sign out"
-                className="p-1.5 rounded-lg text-white/20 hover:text-red-400 transition-colors">
-                <LogOut style={{ width: '0.9rem', height: '0.9rem' }} />
+                className="p-1.5 rounded-lg transition-colors hover:bg-red-50" style={{ color: V.textLight }}>
+                <LogOut className="text-red-400" style={{ width: '0.9rem', height: '0.9rem' }} />
               </button>
             </div>
           ) : (
             <button onClick={signOut} title="Sign out"
-              className="w-full flex items-center justify-center py-2.5 rounded-xl text-white/20 hover:text-red-400 transition-colors">
+              className="w-full flex items-center justify-center py-2.5 rounded-xl transition-colors hover:bg-red-50 hover:text-red-500" style={{ color: V.textLight }}>
               <LogOut style={{ width: '1rem', height: '1rem' }} />
             </button>
           )}
@@ -218,38 +223,38 @@ export default function Sidebar() {
 
       {/* ══ Mobile: Full-Screen Navigation Sheet ═══ */}
       {sheet && (
-        <div className="md:hidden fixed inset-0 z-[70]" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
+        <div className="md:hidden fixed inset-0 z-[70]" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) setSheet(false); }}>
           <div
-            className="absolute inset-x-0 bottom-[64px] max-h-[88dvh] flex flex-col rounded-t-3xl overflow-hidden animate-slide-in-bottom"
+            className="absolute inset-x-0 bottom-[64px] max-h-[88dvh] flex flex-col rounded-t-3xl overflow-hidden animate-slide-in-bottom shadow-2xl"
             style={{ background: V.sidebar, borderTop: `1px solid ${V.border}` }}
           >
             {/* Sheet Header */}
             <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: `1px solid ${V.border}` }}>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-black"
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-black shadow-md"
                   style={{ background: V.grad }}>
                   O₂
                 </div>
-                <span className="text-[15px] font-black text-white">OxyOS</span>
+                <span className="text-[15px] font-black" style={{ color: V.text }}>OxyOS</span>
               </div>
               <button onClick={() => setSheet(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-white/40 hover:text-white transition-colors"
-                style={{ background: 'rgba(255,255,255,0.07)' }}>
+                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+                style={{ background: V.hoverBg, color: V.textLight }}>
                 <X style={{ width: '1rem', height: '1rem' }} />
               </button>
             </div>
 
             {/* User Strip */}
             {employeeProfile && (
-              <div className="flex items-center gap-3 mx-4 my-3 px-4 py-3 rounded-2xl" style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.2)' }}>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-black text-white shrink-0"
-                  style={{ background: V.grad, boxShadow: V.glow }}>
+              <div className="flex items-center gap-3 mx-4 my-3 px-4 py-3 rounded-2xl shadow-sm" style={{ background: V.hoverBg, border: `1px solid ${V.border}` }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-black text-white shrink-0 shadow-sm"
+                  style={{ background: V.grad }}>
                   {initials(employeeProfile.full_name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-black text-white truncate">{employeeProfile.full_name}</p>
-                  <p className="text-[11px] text-purple-300/70 capitalize truncate">{employeeProfile.designation || employeeProfile.role}</p>
+                  <p className="text-[14px] font-black truncate" style={{ color: V.text }}>{employeeProfile.full_name}</p>
+                  <p className="text-[11px] capitalize truncate" style={{ color: V.textLight }}>{employeeProfile.designation || employeeProfile.role}</p>
                 </div>
               </div>
             )}
@@ -261,23 +266,25 @@ export default function Sidebar() {
                 if (!vis.length) return null;
                 return (
                   <div key={i} className="mb-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/25 mb-2 px-1">{sec.title}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] mb-2 px-1" style={{ color: '#94a3b8' }}>{sec.title}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {vis.map(item => {
                         const active = isActive(item);
                         const Icon   = item.icon;
                         return (
                           <Link key={item.href} href={item.href}
-                            className="flex flex-col items-center justify-center gap-2 py-3.5 px-1 rounded-2xl relative transition-all active:scale-95"
-                            style={{ background: active ? V.activeBg : 'rgba(255,255,255,0.04)',
-                              border: `1px solid ${active ? 'rgba(124,58,237,0.3)' : V.border}` }}
+                            className="flex flex-col items-center justify-center gap-2 py-3.5 px-1 rounded-2xl relative transition-all active:scale-95 shadow-sm"
+                            style={{ 
+                              background: active ? V.activeBg : '#ffffff',
+                              border: `1px solid ${active ? '#cbd5e1' : V.border}` 
+                            }}
                           >
                             {item.badge > 0 && (
                               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
-                                style={{ background: '#A855F7', boxShadow: '0 0 6px rgba(168,85,247,0.8)' }} />
+                                style={{ background: '#475569' }} />
                             )}
-                            <Icon style={{ width: '1.2rem', height: '1.2rem', color: active ? '#C084FC' : 'rgba(255,255,255,0.35)' }} />
-                            <span style={{ fontSize: 10, fontWeight: 700, color: active ? '#E9D5FF' : 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.2 }}>
+                            <Icon style={{ width: '1.2rem', height: '1.2rem', color: active ? V.activeText : V.textLight }} />
+                            <span style={{ fontSize: 10, fontWeight: 700, color: active ? V.text : V.textLight, textAlign: 'center', lineHeight: 1.2 }}>
                               {item.name}
                             </span>
                           </Link>
@@ -290,8 +297,8 @@ export default function Sidebar() {
 
               {/* Sign out */}
               <button onClick={signOut}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-red-400 font-bold text-[13px] mt-2 active:scale-95 transition-all"
-                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[13px] mt-2 active:scale-95 transition-all shadow-sm"
+                style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444' }}>
                 <LogOut style={{ width: '1rem', height: '1rem' }} /> Sign Out
               </button>
             </div>
@@ -300,10 +307,10 @@ export default function Sidebar() {
       )}
 
       {/* ══ Mobile Bottom Navigation Bar ═══════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[60]"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[60] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
         style={{
-          background: 'rgba(13,10,20,0.97)',
-          backdropFilter: 'blur(24px)',
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(20px)',
           borderTop: `1px solid ${V.border}`,
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
@@ -321,18 +328,17 @@ export default function Sidebar() {
                 className="flex-1 flex flex-col items-center justify-center gap-1 relative transition-all active:scale-90"
               >
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-b-full"
-                    style={{ background: V.grad, boxShadow: '0 2px 8px rgba(168,85,247,0.7)' }} />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-b-full shadow-sm"
+                    style={{ background: V.grad }} />
                 )}
                 <Icon style={{
                   width: '1.2rem', height: '1.2rem',
-                  color: active ? '#C084FC' : 'rgba(255,255,255,0.28)',
-                  filter: active ? 'drop-shadow(0 0 6px rgba(192,132,252,0.5))' : undefined,
+                  color: active ? V.activeText : '#94a3b8',
                   transition: 'all 0.2s',
                 }} />
                 <span style={{
                   fontSize: 10, fontWeight: 700,
-                  color: active ? '#E9D5FF' : 'rgba(255,255,255,0.28)',
+                  color: active ? V.text : '#94a3b8',
                   transition: 'all 0.2s',
                 }}>{item.name}</span>
               </Link>
@@ -343,17 +349,17 @@ export default function Sidebar() {
           <Link href="/messages"
             className="flex-1 flex flex-col items-center justify-center gap-1 relative transition-all active:scale-90">
             {pathname.startsWith('/messages') && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-b-full"
-                style={{ background: V.grad, boxShadow: '0 2px 8px rgba(168,85,247,0.7)' }} />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-b-full shadow-sm"
+                style={{ background: V.grad }} />
             )}
             <div className="relative">
-              <MessageSquare style={{ width: '1.2rem', height: '1.2rem', color: pathname.startsWith('/messages') ? '#C084FC' : 'rgba(255,255,255,0.28)' }} />
+              <MessageSquare style={{ width: '1.2rem', height: '1.2rem', color: pathname.startsWith('/messages') ? V.activeText : '#94a3b8' }} />
               {unread > 0 && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
-                  style={{ background: '#A855F7', boxShadow: '0 0 6px rgba(168,85,247,0.8)' }} />
+                  style={{ background: '#475569' }} />
               )}
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, color: pathname.startsWith('/messages') ? '#E9D5FF' : 'rgba(255,255,255,0.28)' }}>Inbox</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: pathname.startsWith('/messages') ? V.text : '#94a3b8' }}>Inbox</span>
           </Link>
 
           {/* More / Menu button */}
@@ -361,9 +367,9 @@ export default function Sidebar() {
             className="flex-1 flex flex-col items-center justify-center gap-1 transition-all active:scale-90">
             <div className="w-8 h-8 flex items-center justify-center rounded-xl"
               style={{ background: sheet ? V.activeBg : 'transparent', transition: 'all 0.2s' }}>
-              <Menu style={{ width: '1.2rem', height: '1.2rem', color: sheet ? '#C084FC' : 'rgba(255,255,255,0.28)' }} />
+              <Menu style={{ width: '1.2rem', height: '1.2rem', color: sheet ? V.activeText : '#94a3b8' }} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, color: sheet ? '#E9D5FF' : 'rgba(255,255,255,0.28)', marginTop: -4 }}>More</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: sheet ? V.text : '#94a3b8', marginTop: -4 }}>More</span>
           </button>
         </div>
       </nav>

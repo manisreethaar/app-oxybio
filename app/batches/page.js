@@ -54,8 +54,8 @@ const STATUS_COLORS = {
   'in-progress':'bg-orange-50 text-orange-700 border-orange-100', // DB canonical value
   in_progress:  'bg-orange-50 text-orange-700 border-orange-100', // code alias
   fermenting:  'bg-amber-50 text-amber-700 border-amber-100',
-  qc_hold:     'bg-purple-50 text-purple-700 border-purple-100',
-  'qc-hold':   'bg-purple-50 text-purple-700 border-purple-100',
+  qc_hold:     'bg-slate-50 text-slate-700 border-slate-100',
+  'qc-hold':   'bg-slate-50 text-slate-700 border-slate-100',
   released:    'bg-emerald-50 text-emerald-700 border-emerald-100',
   rejected:    'bg-red-50 text-red-700 border-red-100',
   deviation:   'bg-red-50 text-red-700 border-red-100',
@@ -933,9 +933,9 @@ export default function BatchesPage() {
                       </div>
                       {errors.formulation_id && <p className="text-xs text-red-600 mt-1 font-semibold">{errors.formulation_id.message}</p>}
                       {batchIdPreview && (
-                        <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-violet-50 border border-violet-100 rounded-lg">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-violet-500">Batch ID will be</span>
-                          <span className="font-black font-mono text-violet-800 text-sm tracking-tight">{batchIdPreview}</span>
+                        <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Batch ID will be</span>
+                          <span className="font-black font-mono text-slate-800 text-sm tracking-tight">{batchIdPreview}</span>
                         </div>
                       )}
                     </div>

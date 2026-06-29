@@ -85,7 +85,7 @@ function autoSampleLabel(sourceType, batch, study, cellPrep, flaskLabel, logHour
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
-const InputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500';
+const InputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
 const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5';
 
 function SkipPanel({ reason, onChange }) {
@@ -130,7 +130,7 @@ function TestCard({ title, icon: Icon, color, skipped, onSkipToggle, children, s
           className={clsx(
             'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
             skipped
-              ? 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100'
+              ? 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
           )}
         >
@@ -382,8 +382,8 @@ export default function QuickLogPage() {
   if (success) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 text-center">
-        <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-violet-600" />
+        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-slate-600" />
         </div>
         <h2 className="text-xl font-black text-slate-800 mb-1">Sample Logged</h2>
         <p className="text-slate-500 text-sm font-medium mb-2">{success.sample_label}</p>
@@ -406,7 +406,7 @@ export default function QuickLogPage() {
         {success.incubation_count > 0 && (
           <Link
             href="/research/incubation"
-            className="mx-auto mb-6 flex items-center justify-center gap-2 max-w-xs px-4 py-3 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl text-violet-700 font-bold text-sm transition-colors"
+            className="mx-auto mb-6 flex items-center justify-center gap-2 max-w-xs px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold text-sm transition-colors"
           >
             <FlaskConical className="w-4 h-4" />
             {success.incubation_count} incubation plate{success.incubation_count !== 1 ? 's' : ''} created — View in Incubation Hub →
@@ -416,7 +416,7 @@ export default function QuickLogPage() {
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => setSuccess(null)}
-            className="px-6 py-2.5 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-xl text-sm"
+            className="px-6 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-xl text-sm"
           >
             Log Another Sample
           </button>
@@ -462,11 +462,11 @@ export default function QuickLogPage() {
               className={clsx(
                 'flex flex-col items-center justify-center py-4 rounded-2xl border-2 font-black text-sm transition-all min-h-[44px]',
                 sourceType === value
-                  ? 'border-violet-600 bg-violet-50 text-violet-700 shadow-sm'
+                  ? 'border-slate-600 bg-slate-50 text-slate-700 shadow-sm'
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
               )}
             >
-              <Icon className={clsx('w-6 h-6 mb-1.5', sourceType === value ? 'text-violet-600' : 'text-slate-400')} />
+              <Icon className={clsx('w-6 h-6 mb-1.5', sourceType === value ? 'text-slate-600' : 'text-slate-400')} />
               {label}
             </button>
           ))}
@@ -491,7 +491,7 @@ export default function QuickLogPage() {
               {sources.batches.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
                   No batches in fermentation stage.{' '}
-                  <Link href="/batches" className="text-violet-600 font-bold hover:underline">Go to Batches →</Link>
+                  <Link href="/batches" className="text-slate-600 font-bold hover:underline">Go to Batches →</Link>
                 </p>
               ) : (
                 <div>
@@ -541,7 +541,7 @@ export default function QuickLogPage() {
               {sources.growth_studies.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
                   No active growth studies.{' '}
-                  <Link href="/growth-studies" className="text-violet-600 font-bold hover:underline">Go to Growth Studies →</Link>
+                  <Link href="/growth-studies" className="text-slate-600 font-bold hover:underline">Go to Growth Studies →</Link>
                 </p>
               ) : (
                 <div>
@@ -575,7 +575,7 @@ export default function QuickLogPage() {
                           className={clsx(
                             'flex flex-col items-center py-2 px-1 rounded-xl border text-xs font-black transition-all',
                             timePointId === tp.id
-                              ? 'border-violet-600 bg-violet-50 text-violet-700'
+                              ? 'border-slate-600 bg-slate-50 text-slate-700'
                               : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                           )}
                         >
@@ -597,7 +597,7 @@ export default function QuickLogPage() {
               {sources.cell_bank_preparations?.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
                   No in-progress cell bank preparations.{' '}
-                  <Link href="/research/cell-bank" className="text-violet-600 font-bold hover:underline">Go to Cell Bank</Link>
+                  <Link href="/research/cell-bank" className="text-slate-600 font-bold hover:underline">Go to Cell Bank</Link>
                 </p>
               ) : (
                 <div>
@@ -696,7 +696,7 @@ export default function QuickLogPage() {
           <TestCard
             title={`OD (Optical Density${selectedStudy?.od_wavelength ? ` @${selectedStudy.od_wavelength}nm` : ''})`}
             icon={Activity}
-            color="bg-violet-500"
+            color="bg-slate-500"
             skipped={tests.od.skipped}
             skip_reason={tests.od.skip_reason}
             onSkipToggle={() => updateTest('od', { skipped: !tests.od.skipped, skip_reason: '' })}
@@ -751,7 +751,7 @@ export default function QuickLogPage() {
           <TestCard
             title="Sterility Check"
             icon={ClipboardList}
-            color="bg-violet-500"
+            color="bg-slate-500"
             skipped={tests.sterility.skipped}
             skip_reason={tests.sterility.skip_reason}
             onSkipToggle={() => updateTest('sterility', { skipped: !tests.sterility.skipped, skip_reason: '' })}
@@ -770,7 +770,7 @@ export default function QuickLogPage() {
                         ? opt === 'Fail'
                           ? 'border-red-500 bg-red-50 text-red-700'
                           : opt === 'Pass'
-                            ? 'border-violet-500 bg-violet-50 text-violet-700'
+                            ? 'border-slate-500 bg-slate-50 text-slate-700'
                             : 'border-amber-400 bg-amber-50 text-amber-700'
                         : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
                     )}
@@ -831,7 +831,7 @@ export default function QuickLogPage() {
                   className={clsx(
                     'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
                     tests.plate_analysis.skipped
-                      ? 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100'
+                      ? 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
                   )}
                 >
@@ -926,7 +926,7 @@ export default function QuickLogPage() {
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Lab Safety & Traceability</p>
           {/* G-22: batch linkage already shown via source selector above */}
           {sourceType === 'batch' && sourceId && (
-            <p className="text-xs font-bold text-violet-700 flex items-center gap-1">
+            <p className="text-xs font-bold text-slate-700 flex items-center gap-1">
               <Activity className="w-3.5 h-3.5"/>Work Order linked to: <span className="font-black">{sourceId}</span>
             </p>
           )}
@@ -981,7 +981,7 @@ export default function QuickLogPage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-4 bg-violet-700 hover:bg-violet-800 disabled:bg-violet-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
+          className="w-full py-4 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
         >
           {saving ? (
             <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>

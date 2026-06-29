@@ -394,7 +394,7 @@ export default function ConsumerResearchPage() {
             }}
             className={`flex items-center px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all active:scale-95 border ${
               compareMode
-                ? 'bg-violet-600 text-white border-violet-600 hover:bg-violet-700'
+                ? 'bg-slate-600 text-white border-slate-600 hover:bg-slate-700'
                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -412,7 +412,7 @@ export default function ConsumerResearchPage() {
 
       {/* Compare mode banner */}
       {compareMode && (
-        <div className="mt-4 p-3 bg-violet-50 border border-violet-200 rounded-xl text-xs font-semibold text-violet-800">
+        <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
           Compare mode: select 2-3 sessions using the checkboxes on each card. Then scroll down to see the overlay chart.
         </div>
       )}
@@ -551,7 +551,7 @@ export default function ConsumerResearchPage() {
 
               {/* Meta row */}
               <div className="flex items-center justify-between mb-4">
-                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-100 flex items-center gap-1">
+                <span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-100 flex items-center gap-1">
                   <Users className="w-3 h-3"/> {s.panelist_count} Panelists
                 </span>
                 <div className="flex items-center gap-2">
@@ -617,7 +617,7 @@ export default function ConsumerResearchPage() {
                         <tr key={st.attr} className="border-t border-slate-100">
                           <td className="py-1 pr-2 font-bold text-gray-700 capitalize">{st.attr}</td>
                           <td className={`text-right pr-2 font-black ${
-                            st.pass === true  ? 'text-violet-700' :
+                            st.pass === true  ? 'text-slate-700' :
                             st.pass === false ? 'text-red-600'  : 'text-gray-800'
                           }`}>
                             {st.mean ?? '-'}
@@ -626,7 +626,7 @@ export default function ConsumerResearchPage() {
                           <td className="text-right pr-2 text-gray-500">{st.min ?? '-'}</td>
                           <td className="text-right pr-2 text-gray-500">{st.max ?? '-'}</td>
                           <td className="text-right">
-                            {st.pass === true  && <CheckCircle2 className="w-3.5 h-3.5 text-violet-600 inline"/>}
+                            {st.pass === true  && <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 inline"/>}
                             {st.pass === false && <XCircle      className="w-3.5 h-3.5 text-red-500 inline"/>}
                             {st.pass === null  && <span className="text-gray-300">-</span>}
                           </td>
@@ -727,13 +727,13 @@ export default function ConsumerResearchPage() {
                       <div className="flex items-center gap-2">
                         <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{criterion}</label>
                         {threshold != null && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${passing ? 'bg-violet-50 text-violet-700' : 'bg-red-50 text-red-600'}`}>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${passing ? 'bg-slate-50 text-slate-700' : 'bg-red-50 text-red-600'}`}>
                             min {threshold}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {passing === true  && <CheckCircle2 className="w-4 h-4 text-violet-600"/>}
+                        {passing === true  && <CheckCircle2 className="w-4 h-4 text-slate-600"/>}
                         {passing === false && <XCircle      className="w-4 h-4 text-red-500"/>}
                         <input
                           type="number"

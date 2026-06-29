@@ -17,8 +17,8 @@ const STATUS_COLOR = {
 
 const SOURCE_COLOR = {
   MTCC:     'bg-indigo-100 text-indigo-700',
-  NCIM:     'bg-purple-100 text-purple-700',
-  Isolated: 'bg-violet-100 text-violet-700',
+  NCIM:     'bg-slate-100 text-slate-700',
+  Isolated: 'bg-slate-100 text-slate-700',
   Other:    'bg-gray-100 text-gray-600',
 };
 
@@ -759,7 +759,7 @@ export default function CellBankPage() {
               return (
                 <Link key={p.id} href={`/research/cell-bank/${p.id}`}
                   className="surface p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>
                     {p.type}
                   </div>
                   <div className="flex-1 min-w-0">

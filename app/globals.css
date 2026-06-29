@@ -134,7 +134,7 @@
     @apply w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[14px] font-medium text-zinc-900 outline-none transition-all;
   }
   .field-input:focus {
-    @apply border-violet-400 bg-white;
+    @apply border-slate-400 bg-white;
     box-shadow: 0 0 0 4px rgba(124,58,237,0.08);
   }
 
@@ -166,7 +166,7 @@
   .badge-green { @apply badge bg-emerald-100 text-emerald-700; }
   .badge-yellow { @apply badge bg-amber-100 text-amber-700; }
   .badge-red { @apply badge bg-red-100 text-red-700; }
-  .badge-purple { @apply badge bg-violet-100 text-violet-700; }
+  .badge-slate { @apply badge bg-slate-100 text-slate-700; }
   .badge-zinc { @apply badge bg-zinc-100 text-zinc-600; }
 
   /* Mobile card */

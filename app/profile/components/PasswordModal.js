@@ -29,7 +29,7 @@ export default function PasswordModal({
               required type="password"
               value={passwordForm.password}
               onChange={e => setPasswordForm({...passwordForm, password: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-sm border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-600 transition-all outline-none"
+              className="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-sm border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-slate-600 transition-all outline-none"
             />
           </div>
           <div>
@@ -38,12 +38,12 @@ export default function PasswordModal({
               required type="password"
               value={passwordForm.confirm}
               onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-sm border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-600 transition-all outline-none"
+              className="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-sm border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-slate-600 transition-all outline-none"
             />
           </div>
           <button
             disabled={passwordLoading} type="submit"
-            className="w-full py-4 bg-violet-800 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-violet-900/20 hover:bg-violet-900 transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Update Password'}
           </button>

@@ -43,7 +43,7 @@ export const STANDARD_QC_TESTS = [
   { test_name: 'CFU count (Viable count)',      target_spec: '≥10⁶ CFU/ml',             result_unit: 'CFU/ml' },
   { test_name: 'Gram stain',                   target_spec: 'Gram-positive rods dominant', result_unit: '' },
   { test_name: 'Sensory — Aroma',              target_spec: 'Tangy, clean, no off-odour', result_unit: '' },
-  { test_name: 'Sensory — Colour',             target_spec: 'Consistent (Kavuni: reddish-purple)', result_unit: '' },
+  { test_name: 'Sensory — Colour',             target_spec: 'Consistent (Kavuni: reddish-slate)', result_unit: '' },
   { test_name: 'Sensory — Taste',              target_spec: 'Acceptable to panel',     result_unit: '' },
   { test_name: 'Sensory — Overall',            target_spec: 'PASS ≥7/10',             result_unit: 'score' },
   { test_name: 'Microbial (Yeast + Mould)',    target_spec: 'Defer to Phase 1',        result_unit: 'CFU/ml', pass_fail: 'N/A' },
@@ -403,4 +403,5 @@ export async function DELETE(request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
 

@@ -59,7 +59,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const [supernAfter,   setSupernAfter]   = useState('');
   const [pelletWt,      setPelletWt]      = useState('');
   // Supernatant quality
-  const [colour,        setColour]        = useState('Reddish-purple');
+  const [colour,        setColour]        = useState('Reddish-slate');
   const [clarity,       setClarity]       = useState(CLARITY_OPTS[0]);
   const [ph,            setPh]            = useState('');
   const [notes,         setNotes]         = useState('');
@@ -110,7 +110,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       setBrothBefore(data.broth_wt_before_g ?? '');
       setSupernAfter(data.supernatant_wt_after_g ?? '');
       setPelletWt(data.pellet_wt_g ?? '');
-      setColour(data.filtrate_colour || 'Reddish-purple');
+      setColour(data.filtrate_colour || 'Reddish-slate');
       setClarity(data.filtrate_clarity || CLARITY_OPTS[0]);
       setPh(data.filtrate_ph ?? '');
       setNotes(data.notes || '');
@@ -345,7 +345,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="field-label">Colour</label>
-            <input value={colour} onChange={e=>setColour(e.target.value)} className="field-input" placeholder="Reddish-purple"/>
+            <input value={colour} onChange={e=>setColour(e.target.value)} className="field-input" placeholder="Reddish-slate"/>
           </div>
           <div>
             <label className="field-label">Clarity</label>
@@ -378,8 +378,8 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         </div>
 
         {/* A-29: Cell wash step */}
-        <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-violet-900">Cell Wash Steps <span className="text-violet-400 text-[10px]">(A-29)</span></p>
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <p className="text-xs font-black text-slate-900">Cell Wash Steps <span className="text-slate-400 text-[10px]">(A-29)</span></p>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="field-label">Number of Washes</label><input type="number" min="0" max="5" value={washSteps} onChange={e=>setWashSteps(e.target.value)} className="field-input" placeholder="0"/></div>
             <div><label className="field-label">Wash Buffer</label><input value={washBuffer} onChange={e=>setWashBuffer(e.target.value)} className="field-input" placeholder="e.g. 0.9% saline"/></div>
