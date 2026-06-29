@@ -567,7 +567,6 @@ export default function PayrollPage() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [payslips, setPayslips] = useState([]);       // all payslips (admin) or own (staff)
-  const [empPayslips, setEmpPayslips] = useState([]); // payslips for selected employee
   const [loadingInit, setLoadingInit] = useState(true);
 
   // Calendar state
@@ -641,10 +640,9 @@ export default function PayrollPage() {
     setCalMonth(now.getMonth() + 1);
     setCalYear(now.getFullYear());
     fetchCalendarData(emp.id, now.getMonth() + 1, now.getFullYear());
-    // filter payslips for this employee
-    setEmpPayslips(payslips.filter(s => s.employee_id === emp.id));
+    fetchCalendarData(emp.id, now.getMonth() + 1, now.getFullYear());
     setMobilePanel('calendar');
-  }, [payslips, fetchCalendarData, now]);
+  }, [fetchCalendarData, now]);
 
   // Month navigation
   const handlePrevMonth = () => {
@@ -663,6 +661,11 @@ export default function PayrollPage() {
     if (selectedEmployee) fetchCalendarData(selectedEmployee.id, m, y);
   };
 
+  const empPayslips = useMemo(() => {
+    if (!selectedEmployee) return [];
+    return payslips.filter(s => s.employee_id === selectedEmployee.id);
+  }, [payslips, selectedEmployee]);
+
   const currentMonthPayslip = useMemo(() => {
     if (!selectedEmployee) return null;
     return empPayslips.find(s =>
@@ -672,11 +675,7 @@ export default function PayrollPage() {
   }, [empPayslips, selectedEmployee, calYear, calMonth]);
 
   const handlePayslipSaved = () => {
-    fetchInitial().then(() => {
-      if (selectedEmployee) {
-        setEmpPayslips(payslips.filter(s => s.employee_id === selectedEmployee.id));
-      }
-    });
+    fetchInitial(); // React will re-evaluate empPayslips automatically
   };
 
   // ── Non-admin view ────────────────────────────────────────────────────────────
@@ -785,15 +784,53 @@ export default function PayrollPage() {
         {/* ── Panel A: Employee Roster ── */}
         <div className={`${mobilePanel === 'roster' ? 'flex' : 'hidden'} md:flex flex-col gap-2 w-full md:w-64 shrink-0`}>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Team ({employees.length})</p>
-          <div className="space-y-1.5 max-h-[calc(100vh-200px)] overflow-y-auto pr-0.5">
-            {employees.map(emp => (
-              <EmployeeItem
-                key={emp.id}
-                emp={emp}
-                isSelected={selectedEmployee?.id === emp.id}
-                onClick={() => handleSelectEmployee(emp)}
-              />
-            ))}
+          <div className="max-h-[calc(100vh-200px)] overflow-y-auto pr-1 pb-10 custom-scrollbar">
+            <div className="space-y-6 mt-4">
+              {/* Management Group */}
+              {employees.some(e => ['admin', 'ceo', 'cto'].includes(e.role)) && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Management</p>
+                  {employees.filter(e => ['admin', 'ceo', 'cto'].includes(e.role)).map(emp => (
+                    <EmployeeItem 
+                      key={emp.id} 
+                      emp={emp} 
+                      isSelected={selectedEmployee?.id === emp.id} 
+                      onClick={() => handleSelectEmployee(emp)} 
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Scientists Group */}
+              {employees.some(e => ['scientist', 'research_fellow'].includes(e.role)) && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Scientists & Researchers</p>
+                  {employees.filter(e => ['scientist', 'research_fellow'].includes(e.role)).map(emp => (
+                    <EmployeeItem 
+                      key={emp.id} 
+                      emp={emp} 
+                      isSelected={selectedEmployee?.id === emp.id} 
+                      onClick={() => handleSelectEmployee(emp)} 
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Staff & Interns Group */}
+              {employees.some(e => ['staff', 'intern', 'research_intern'].includes(e.role)) && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Staff & Interns</p>
+                  {employees.filter(e => ['staff', 'intern', 'research_intern'].includes(e.role)).map(emp => (
+                    <EmployeeItem 
+                      key={emp.id} 
+                      emp={emp} 
+                      isSelected={selectedEmployee?.id === emp.id} 
+                      onClick={() => handleSelectEmployee(emp)} 
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
