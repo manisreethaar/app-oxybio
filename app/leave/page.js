@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 // import removed as notifications are handled by the backend API route
 import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } from 'lucide-react';
-import { differenceInBusinessDays } from 'date-fns';
+// import { differenceInBusinessDays } from 'date-fns';
 
 const ALL_LEAVE_TYPES = ['Casual', 'Sick', 'Earned', 'Permission'];
 
@@ -109,8 +109,13 @@ export default function LeavePage() {
   const calculateDays = () => {
     if (isPermission) return 0;
     if (!watchStartDate || !watchEndDate) return 0;
-    const days = differenceInBusinessDays(new Date(watchEndDate), new Date(watchStartDate)) + 1;
-    return days > 0 ? days : 0;
+    const start = new Date(watchStartDate);
+    const end = new Date(watchEndDate);
+    if (end < start) return 0;
+    // Calculate calendar days
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
   };
 
   const handleApplyForm = async (data) => {
