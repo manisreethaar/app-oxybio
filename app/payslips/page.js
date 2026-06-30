@@ -7,7 +7,7 @@ import {
   Download, Receipt, Users, Calculator, CheckCircle, AlertTriangle,
   Loader2, FileText, RefreshCw, X, ChevronLeft, ChevronRight,
   Clock, Calendar, TrendingUp, Edit3, Save, Star, MapPin,
-  User, BadgeCheck, AlertCircle, ArrowLeft
+  User, BadgeCheck, AlertCircle, ArrowLeft, Trash2
 } from 'lucide-react';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -270,7 +270,7 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
 // ── Payslip Generator / Editor Panel ──────────────────────────────────────────
 function PayslipPanel({
   employee, summary, month, year, monthLabel,
-  existingSlip, onSaved, onClose
+  existingSlip, onSaved, onDeleted, onClose
 }) {
   const toast = useToast();
   const [pfDed, setPfDed]   = useState(existingSlip?.pf_deduction ?? 0);
@@ -281,6 +281,24 @@ function PayslipPanel({
   const [adminNotes, setAdminNotes] = useState(existingSlip?.admin_notes ?? '');
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(!existingSlip);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this payslip? This action cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/payslips/${existingSlip.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      toast.success('Payslip deleted successfully.');
+      onDeleted();
+    } catch (err) {
+      toast.error('Failed to delete payslip: ' + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const baseSalary = employee?.base_salary || 0;
 
@@ -504,12 +522,22 @@ function PayslipPanel({
       )}
 
       {existingSlip && !isEditing && (
-        <button
-          onClick={() => downloadPayslipPDF({ ...existingSlip })}
-          className="w-full py-3 bg-white border border-slate-200 text-slate-700 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-        >
-          <Download className="w-4 h-4" /> Download PDF
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => downloadPayslipPDF({ ...existingSlip })}
+            className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" /> Download PDF
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="px-4 py-3 bg-red-50 text-red-600 font-black rounded-2xl text-xs hover:bg-red-100 transition-all flex items-center justify-center shrink-0"
+            title="Delete Payslip"
+          >
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -917,6 +945,7 @@ export default function PayrollPage() {
             </div>
           ) : (
             <PayslipPanel
+              key={`${selectedEmployee.id}-${calMonth}-${calYear}-${currentMonthPayslip?.id || 'new'}`}
               employee={selectedEmployee}
               summary={calData?.summary}
               month={calMonth}
@@ -924,6 +953,7 @@ export default function PayrollPage() {
               monthLabel={MONTHS[calMonth - 1]}
               existingSlip={currentMonthPayslip}
               onSaved={handlePayslipSaved}
+              onDeleted={handlePayslipSaved}
               onClose={() => setMobilePanel('calendar')}
             />
           )}

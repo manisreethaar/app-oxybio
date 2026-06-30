@@ -62,3 +62,41 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: adminEmp } = await supabase
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+
+    if (!adminEmp || !['admin', 'ceo', 'cto'].includes(adminEmp.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { id } = params;
+    if (!id) return NextResponse.json({ error: 'Payslip ID required' }, { status: 400 });
+
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const { error } = await supabaseAdmin
+      .from('payslips')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+
+  } catch (err) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
