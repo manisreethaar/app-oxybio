@@ -121,7 +121,7 @@ function DayCell({ dayData }) {
   const isToday = date === new Date().toISOString().split('T')[0];
 
   const bgMap = {
-    present:       log && !log.check_out_time ? 'bg-red-50/30 border-red-300' : 'bg-emerald-50 border-emerald-200',
+    present:       log && (!log.check_out_time || log.mispunch_status === 'required') ? 'bg-red-50/30 border-red-300' : 'bg-emerald-50 border-emerald-200',
     absent:        'bg-red-50/60 border-red-100',
     on_leave:      'bg-amber-50 border-amber-200',
     leave_pending: 'bg-slate-50 border-slate-100',
@@ -151,7 +151,7 @@ function DayCell({ dayData }) {
               {new Date(log.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
             </span>
           </div>
-          {log.check_out_time ? (
+          {log.check_out_time && log.mispunch_status !== 'required' ? (
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
               <span className="text-[10px] font-bold text-slate-500 font-mono">
