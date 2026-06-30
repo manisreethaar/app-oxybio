@@ -223,23 +223,25 @@ export default function AttendancePage() {
   }, [employeeProfile, todayLog?.id]);
 
   const fetchAttendanceData = async () => {
-    if (!employeeProfile || !employeeProfile.id) return;
+    if (!employeeProfile) return;
     setLoading(true);
     try {
-    // Use IST date (UTC+5:30) to match what the check-in API stores in the DB
-    const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
-    const { data: today } = await supabase.from('attendance_log')
-      .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle();
-    setTodayLog(today || null);
+      if (employeeProfile.id) {
+        // Use IST date (UTC+5:30) to match what the check-in API stores in the DB
+        const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+        const { data: today } = await supabase.from('attendance_log')
+          .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        setTodayLog(today || null);
 
-      const { data: history } = await supabase.from('attendance_log')
-        .select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).limit(30);
-      setMyHistory(history || []);
+        const { data: history } = await supabase.from('attendance_log')
+          .select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).limit(30);
+        setMyHistory(history || []);
 
-      const { data: leavesToday } = await supabase.from('leave_applications')
-        .select('employee_id').eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr);
-      setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+        const { data: leavesToday } = await supabase.from('leave_applications')
+          .select('employee_id').eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr);
+        setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+      }
 
       if (['admin', 'ceo', 'cto'].includes(role)) {
         // Use server-side API to bypass RLS for cross-employee reads

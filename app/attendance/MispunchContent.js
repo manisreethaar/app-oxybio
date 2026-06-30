@@ -29,19 +29,19 @@ export default function MispunchContent() {
     setLoading(true);
     try {
       const results = await Promise.all([
-        supabase
+        employeeProfile.id ? supabase
           .from('attendance_log')
           .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
           .eq('employee_id', employeeProfile.id)
           .not('mispunch_status', 'is', null)
-          .order('date', { ascending: false }),
-        supabase
+          .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
+        employeeProfile.id ? supabase
           .from('attendance_log')
           .select('id, date, check_in_time')
           .eq('employee_id', employeeProfile.id)
           .is('check_out_time', null)
           .is('mispunch_status', null)
-          .order('date', { ascending: false }),
+          .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
         isAdmin ? fetch('/api/mispunch/pending').then(r => r.json()) : Promise.resolve(null)
       ]);
 
