@@ -60,7 +60,7 @@ export async function GET(request) {
     // Fetch all attendance logs in month
     const { data: logs } = await supabase
       .from('attendance_log')
-      .select('id, date, check_in_time, check_out_time, total_hours, location_lat, location_lng, in_geofence, notes, manual_entry')
+      .select('id, date, check_in_time, check_out_time, total_hours, location_lat, location_lng, in_geofence, notes, manual_entry, mispunch_status, mispunch_requested_hours')
       .eq('employee_id', employee_id)
       .gte('date', startStr)
       .lte('date', endStr)
@@ -123,7 +123,9 @@ export async function GET(request) {
           id: log.id,
           check_in_time: log.check_in_time,
           check_out_time: log.check_out_time,
-          total_hours: log.total_hours ? parseFloat(log.total_hours).toFixed(2) : null,
+          total_hours: (log.mispunch_status === 'approved' && log.mispunch_requested_hours) 
+            ? parseFloat(log.mispunch_requested_hours).toFixed(2) 
+            : (log.total_hours ? parseFloat(log.total_hours).toFixed(2) : null),
           in_geofence: log.in_geofence,
           manual_entry: log.manual_entry,
           notes: log.notes,
