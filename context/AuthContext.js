@@ -57,13 +57,15 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       if (error) {
         if (error.code === 'PGRST116') {
           console.warn(`[OxyOS] No employee profile for ${email}`);
+          if (isMasterAdmin(email)) {
+            return { email, role: 'admin', full_name: 'Master Admin', is_active: true };
+          }
         }
         return null;
       }
 
       if (data?.role) data.role = data.role.toLowerCase();
       if (isMasterAdmin(email)) {
-        if (!data) return { email, role: 'admin', full_name: 'Master Admin', is_active: true };
         data.role = 'admin';
       }
       return data;
