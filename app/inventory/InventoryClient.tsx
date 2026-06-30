@@ -524,11 +524,62 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const executeSeed = async () => {
     setIsSubmitting(true);
     const catalogData = {
-      "RAW MATERIALS LIST": ["AMPHOTERIC SURFACTANTS (CAPB)", "AOS Liquid", "Sodium Carbonate Anhydrous", "CDEA Flakes", "Acrylates Copolymer (Aqua SF-1)", "Dimethyldichlorosilane (DMDM Hydantoin)", "NaOH Flakes", "TETRASODIUM EDTA (VERSENE 100)", "Propylene glycol (PG)", "Cocomonoethanolamide", "Disodium Laureth Sulfosuccinate (DLS)", "Diethanolamine", "C - 1045", "Kathon CG (MIT/CMIT preservatives)", "Triethanolamine (TEA)", "Xanthan Gum", "Disodium EDTA", "Potassium Hydroxide", "Guar Hydroxypropyltrimonium Chloride (Guar Gum)", "Sodium Lauryl Ether Sulphate (SLES)", "Carbomer (Ultrez 20 / Aqua SF-1)", "Polyquaternium (PQ-7)", "Polyquaternium (PQ-10)", "Glycerin", "Cetostearyl alcohol (CSA / Cetearyl Alcohol)"],
-      "GLASSWARES": ["McCartney bottles (Universal bottles)", "Culture tubes - 20ml", "Falcon tubes - 15ml", "Falcon tubes - 50ml", "Conical flasks - 250ml", "Burett - 50ml", "Burett - 100ml", "Pipette - 10ml", "Pipette - 25ml", "Measuring Cylinders - 10ml", "Measuring Cylinders - 50ml", "Measuring Cylinders - 100ml", "Measuring Cylinders - 250ml", "Measuring Cylinders - 500ml", "Measuring Cylinders - 1000ml", "Beaker (Glass) - 50ml", "Beaker (Glass) - 100ml", "Beaker (Glass) - 250ml", "Beaker (Glass) - 500ml", "BOD bottles (Incubation bottles)", "Pipette Pump", "Volumetric flask (250ml)", "Desiccator", "Test tubes", "Separatory funnels - 50ml", "Reagent bottles - (Clear and Amber)", "Erlenmeyer Flasks (Conical flasks)", "Condenser (Liebig condenser)", "Test tube racks (Plastic)", "Burette stand (Retort stand with clamp)", "Buchner funnel (Porcelain)", "Wash bottles (Plastic)", "Glass funnels (60mm)", "Weighing boats (Plastic)", "Watch Glasses"],
-      "PLASTICS AND CONSUMMABLES": ["Micropipettes (Adjustable volumes)", "Micropipette Tips - 10ul", "Micropipette Tips - 200ul", "Pasteur Pipettes", "Syringe Filters (0.22 and 0.45 micron)", "Parafilm", "Kimwipes (Lint-free wipes)", "Microcentrifuge Tubes - 1.5ml", "Microcentrifuge Tubes - 2.0ml", "Syringes (1ml, 5ml, 10ml, 20ml)", "Petri dishes (Plastic, empty P90 & P60)", "Sterile Cotton Swabs (Long)", "Inoculating loops - 10ul", "Inoculating loops - 1ul", "Inoculating loop holders", "Cell spreaders (L-shaped, Disposable)", "Disposable Gloves (Nitrile)", "Face masks", "Lab coats (Disposable or Cotton)", "Shoe covers (Disposable)", "Autoclave bags", "Biohazard waste bags", "Aluminum foil", "Autoclave Tape", "Sample bottles (Glass / Plastic) - 250ml", "Sample bottles (Glass / Plastic) - 500ml", "Cotton plugs / Non-absorbent Cotton", "Staining Jars (Coplin Jars) - Glass", "Slide Storage Boxes (Plastic / Wood)"],
-      "PHOTOGRAPHY / DIAGNOSTIC MEDIA": ["Blood Agar Base (Columbia Agar base or similar)", "MacConkey agar", "Eosin Methylene Blue (EMB) agar", "Soybean Casein Digest Medium (SCDM / TSB)", "Baird Parker Agar", "Sabouraud Dextrose Agar (SDA)", "Lauryl Tryptose Broth (LTB)", "Brilliant Green Bile Broth (BGBB)"],
-      "MICROBIOLOGY CHEMICALS": ["3% Hydrogen Peroxide", "Xylene (Solution or CP)", "DPX Mountant", "Crystal violet (Gram's Method)", "Gram's Iodine", "Safranin (Gram's counterstain)", "95% Ethanol OR Isopropyl alcohol", "Kovac's Reagent (for Indole test)", "Simmons Citrate Agar (Base)", "Methyl Red - Voges-Proskauer (MR-VP) Medium", "Alpha-naphthol (for VP test)", "Potassium Hydroxide (KOH) Solution (40% for VP test)", "TSI (Triple Sugar Iron) Agar", "Urea Agar Base (Christensen's Urea Agar base)", "40% Urea Solution (for Urea Agar)", "Motility Indole Ornithine (MIO) Medium", "Nitrate Broth (or Nitrate test media)", "Sulfanilic acid (Nitrate Reagent A)", "Alpha-naphthylamine (Nitrate Reagent B)", "Zinc powder (for nitrate reduction test)", "Gelatin", "Nutrient Broth / Peptone Water", "Mineral oil (sterile - for biochemical tests)", "Immersion oil (for microscopy)", "Methylene Blue", "Malachite green (Endospore stain)", "Carbol Fuchsin / Ziehl Neelsen Stain (AFB stain)", "Acid Alcohol (For AFB stain)", "Lactophenol cotton blue (for fungal staining)", "Lugol's Iodine", "Oxidase Reagent (Gordon-McLeod reagent / discs)", "Catalase reagent (3% H2O2)", "Barium Chloride (for McFarland standard)", "Sulfuric Acid (for McFarland standard)", "Lysol (Phenol / 5% Phenol solution) OR Dettol (Diluted)"]
+      "RAW MATERIALS LIST": [
+        "Ragi",
+        "KK rice",
+        "Urad dal"
+      ],
+      "REAGENTS AND CHEMICALS": [
+        "Aceto carmine",
+        "Barfoed's reagent ⚠🧤",
+        "Bial's reagent",
+        "Biuret reagent ⚠🧤🥽",
+        "Bromocresol green solution",
+        "Bromophenol blue indicator",
+        "Bromophenol blue solution",
+        "Cedar wood oil",
+        "Chlorophenol red solution",
+        "Crystal violet solution 🧤",
+        "Ehrlich's reagent",
+        "Gentian violet stain solution aqueous 🧤",
+        "Giemsa's stain solution 🔥",
+        "Indole-3 acetic acid",
+        "Lactophenol ⚠🧤",
+        "Malachite green ⚠☠🧤",
+        "Methyl orange solution",
+        "Methylene blue alkaline",
+        "Methylene blue aqueous",
+        "Methylene blue staining solution aqueous",
+        "Molisch's reagent ⚠🥽🌬",
+        "Morner's reagent ⚠",
+        "Ninhydrin",
+        "Phenol reagent ⚠",
+        "Phenolphthalein solution 🔥",
+        "Picric acid saturated solution ⚠💥",
+        "Pure linseed oil ⚠🔥",
+        "Robert's reagent",
+        "Robert's test reagent",
+        "Safranine stain solution",
+        "Seliwanoff's reagent ⚠🥽🌬",
+        "Tollen's reagent ⚠💥",
+        "Trypan blue solutions ⚠☠🧤",
+        "Wright's stain solution 🔥"
+      ],
+      "INDICATORS AND BIOCHEMICALS": [
+        "1,10 Phenanthroline hydrate",
+        "3,5 Dinitro salicylic acid (DNS)",
+        "Albumin Bovine Fraction (BSA)",
+        "Anthrone",
+        "Egg albumine",
+        "Egg albumine flakes",
+        "Iodine Resublimed ⚠",
+        "Iodine trione hydrate",
+        "Kinetin pure",
+        "L-Leucine",
+        "Orcinol",
+        "Proteinase K",
+        "Pyridoxine hydrochloride"
+      ]
     };
 
     // Build a flat array of all items for a single bulk insert (much faster)
@@ -537,7 +588,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       for (const itemName of itemsList) {
         allItems.push({
           name: itemName, category, sub_category: '', unit: 'units', min_stock_level: 1,
-          storage_condition: 'Room Temperature', preferred_supplier: null, hazardous: false,
+          storage_condition: 'Room Temperature', preferred_supplier: null, hazardous: itemName.includes('⚠') || itemName.includes('🔥') || itemName.includes('☠'),
           cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '',
           item_code: `ITM-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`
         });
@@ -545,8 +596,48 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     }
 
     const instrumentsList = [
-      "Bench top pH meter", "STEREO MICROSCOPE WITH LED LIGHT", "Hand held refractometer",
-      "Centrifuge (Micro centrifuge)", "Ultrasonic bath (sonicator)", "LABORATORY WEIGHING SCALE"
+      "Autoclave",
+      "Bio Chemical India – Fermentor (model: Bioage 2A)",
+      "Scigenics – Fermentor",
+      "Kemi – Laminar Air Flow",
+      "Tech Lab Instruments – Incubator",
+      "Technico – BOD Incubator",
+      "Hybridization Oven – Scigenics Biotech",
+      "Bino CXI – Microscope",
+      "Remi – Clinical Centrifuge",
+      "Remi – Cooling Centrifuge (Model 412 LAG)",
+      "Remi – Micro Centrifuge (12C)",
+      "Remi – R-8C Centrifuge",
+      "Remi – Centrifuge (KA 6775)",
+      "Deen Instruments – Magnetic Stirrer",
+      "Remi – Cyclo Mixer",
+      "Orbital Shaker – Scigenics Biotech",
+      "Orbital Water Bath Shaker – Ind Labs",
+      "Rotary Shaker – Ind Labs",
+      "Rashmi – Water Bath",
+      "Oil Bath",
+      "Electronic Scale",
+      "Weighing Machine (Electronic, Max 300 g)",
+      "Precision Lab Furniture Industries – Hot Air Oven",
+      "Golden / Butterfly – Stove",
+      "Hot Plate",
+      "Microwave Oven – Samsung",
+      "LG – Refrigerator",
+      "LG – Refrigerator (Model GL 328)",
+      "Deep Freezer – Ins Lab",
+      "Rockwell – Deep Freezer",
+      "Rockwell – Deep Freezer (Model SFR450DDU)",
+      "Ice Flake Machine",
+      "Medox – pH Meter",
+      "Borosil – Double Distillation Unit",
+      "Labtronics – Digital Flame Photometer (LT 65)",
+      "Alpha Infotech – Gel Documentation System",
+      "Medox / Weal Tech – UV Transilluminator",
+      "Labtronics – Microprocessor Colony Counter",
+      "Rashmi Scientific Company – Soxhlet Apparatus",
+      "Sonic Vibra Cell – Ultrasonicator",
+      "Endee – Gas Analyser (PA960)",
+      "Remi / Techno Instrument Co. – Homogeniser"
     ];
 
     try {
