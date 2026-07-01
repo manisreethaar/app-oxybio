@@ -94,7 +94,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           </div>
           <div className="pb-2 flex-1 min-w-0">
             <h2 className="text-xl font-black text-slate-800 leading-tight truncate">{emp.full_name}</h2>
-            <p className="text-xs font-bold text-violet-600 mt-0.5">{emp.designation || emp.role?.replace(/_/g, ' ')}</p>
+            <p className="text-xs font-bold text-navy mt-0.5">{emp.designation || emp.role?.replace(/_/g, ' ')}</p>
           </div>
         </div>
 
@@ -676,7 +676,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
-                                <p className="text-xs font-bold text-violet-600 mt-0.5">{emp.designation || emp.role}</p>
+                                <p className="text-xs font-bold text-navy mt-0.5">{emp.designation || emp.role}</p>
                                 <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
                             </div>
                             </div>

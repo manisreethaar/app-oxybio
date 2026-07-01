@@ -1,0 +1,604 @@
+﻿
+> tmp_docx\out.txt:189:1
+  tmp_docx\out.txt:190:
+  tmp_docx\out.txt:191:Aceto carmine
+> tmp_docx\out.txt:203:2
+  tmp_docx\out.txt:204:
+  tmp_docx\out.txt:205:Barfoed's reagent
+> tmp_docx\out.txt:217:3
+  tmp_docx\out.txt:218:
+  tmp_docx\out.txt:219:Bial's reagent
+> tmp_docx\out.txt:231:4
+  tmp_docx\out.txt:232:
+  tmp_docx\out.txt:233:Biuret reagent
+> tmp_docx\out.txt:245:5
+  tmp_docx\out.txt:246:
+  tmp_docx\out.txt:247:Bromocresol green solution
+> tmp_docx\out.txt:259:6
+  tmp_docx\out.txt:260:
+  tmp_docx\out.txt:261:Bromophenol blue indicator
+> tmp_docx\out.txt:273:7
+  tmp_docx\out.txt:274:
+  tmp_docx\out.txt:275:Bromophenol blue solution
+> tmp_docx\out.txt:287:8
+  tmp_docx\out.txt:288:
+  tmp_docx\out.txt:289:Cedar wood oil
+> tmp_docx\out.txt:301:9
+  tmp_docx\out.txt:302:
+  tmp_docx\out.txt:303:Chlorophenol red solution
+> tmp_docx\out.txt:315:10
+  tmp_docx\out.txt:316:
+  tmp_docx\out.txt:317:Crystal violet solution
+> tmp_docx\out.txt:329:11
+  tmp_docx\out.txt:330:
+  tmp_docx\out.txt:331:Ehrlich's reagent
+> tmp_docx\out.txt:343:12
+  tmp_docx\out.txt:344:
+  tmp_docx\out.txt:345:Gentian violet stain solution aqueous
+> tmp_docx\out.txt:357:13
+  tmp_docx\out.txt:358:
+  tmp_docx\out.txt:359:Giemsa's stain solution
+> tmp_docx\out.txt:371:14
+  tmp_docx\out.txt:372:
+  tmp_docx\out.txt:373:Indole-3 acetic acid
+> tmp_docx\out.txt:385:15
+  tmp_docx\out.txt:386:
+  tmp_docx\out.txt:387:Lactophenol
+> tmp_docx\out.txt:399:16
+  tmp_docx\out.txt:400:
+  tmp_docx\out.txt:401:Malachite green
+> tmp_docx\out.txt:413:17
+  tmp_docx\out.txt:414:
+  tmp_docx\out.txt:415:Methyl orange solution
+> tmp_docx\out.txt:427:18
+  tmp_docx\out.txt:428:
+  tmp_docx\out.txt:429:Methylene blue alkaline
+> tmp_docx\out.txt:441:19
+  tmp_docx\out.txt:442:
+  tmp_docx\out.txt:443:Methylene blue aqueous
+> tmp_docx\out.txt:455:20
+  tmp_docx\out.txt:456:
+  tmp_docx\out.txt:457:Methylene blue staining solution aqueous
+> tmp_docx\out.txt:469:21
+  tmp_docx\out.txt:470:
+  tmp_docx\out.txt:471:Molisch's reagent
+> tmp_docx\out.txt:483:22
+  tmp_docx\out.txt:484:
+  tmp_docx\out.txt:485:Morner's reagent
+> tmp_docx\out.txt:497:23
+  tmp_docx\out.txt:498:
+  tmp_docx\out.txt:499:Ninhydrin
+> tmp_docx\out.txt:511:24
+  tmp_docx\out.txt:512:
+  tmp_docx\out.txt:513:Phenol reagent
+> tmp_docx\out.txt:525:25
+  tmp_docx\out.txt:526:
+  tmp_docx\out.txt:527:Phenolphthalein solution
+> tmp_docx\out.txt:539:26
+  tmp_docx\out.txt:540:
+  tmp_docx\out.txt:541:Picric acid saturated solution
+> tmp_docx\out.txt:553:27
+  tmp_docx\out.txt:554:
+  tmp_docx\out.txt:555:Pure linseed oil
+> tmp_docx\out.txt:567:28
+  tmp_docx\out.txt:568:
+  tmp_docx\out.txt:569:Robert's reagent
+> tmp_docx\out.txt:581:29
+  tmp_docx\out.txt:582:
+  tmp_docx\out.txt:583:Robert's test reagent
+> tmp_docx\out.txt:595:30
+  tmp_docx\out.txt:596:
+  tmp_docx\out.txt:597:Safranine stain solution
+> tmp_docx\out.txt:609:31
+  tmp_docx\out.txt:610:
+  tmp_docx\out.txt:611:Seliwanoff's reagent
+> tmp_docx\out.txt:623:32
+  tmp_docx\out.txt:624:
+  tmp_docx\out.txt:625:Tollen's reagent
+> tmp_docx\out.txt:637:33
+  tmp_docx\out.txt:638:
+  tmp_docx\out.txt:639:Trypan blue solutions
+> tmp_docx\out.txt:651:34
+  tmp_docx\out.txt:652:
+  tmp_docx\out.txt:653:Wright's stain solution
+> tmp_docx\out.txt:685:1
+  tmp_docx\out.txt:686:
+  tmp_docx\out.txt:687:1,10 Phenanthroline hydrate
+> tmp_docx\out.txt:699:2
+  tmp_docx\out.txt:700:
+  tmp_docx\out.txt:701:3,5 Dinitro salicylic acid (DNS)
+> tmp_docx\out.txt:713:3
+  tmp_docx\out.txt:714:
+  tmp_docx\out.txt:715:Albumin Bovine Fraction (BSA)
+> tmp_docx\out.txt:727:4
+  tmp_docx\out.txt:728:
+  tmp_docx\out.txt:729:Anthrone
+> tmp_docx\out.txt:741:5
+  tmp_docx\out.txt:742:
+  tmp_docx\out.txt:743:Cedar wood oil
+> tmp_docx\out.txt:755:6
+  tmp_docx\out.txt:756:
+  tmp_docx\out.txt:757:Egg albumine
+> tmp_docx\out.txt:769:7
+  tmp_docx\out.txt:770:
+  tmp_docx\out.txt:771:Egg albumine flakes
+> tmp_docx\out.txt:783:8
+  tmp_docx\out.txt:784:
+  tmp_docx\out.txt:785:Iodine Resublimed
+> tmp_docx\out.txt:797:9
+  tmp_docx\out.txt:798:
+  tmp_docx\out.txt:799:Iodine trione hydrate
+> tmp_docx\out.txt:811:10
+  tmp_docx\out.txt:812:
+  tmp_docx\out.txt:813:Kinetin pure
+> tmp_docx\out.txt:825:11
+  tmp_docx\out.txt:826:
+  tmp_docx\out.txt:827:L-Leucine
+> tmp_docx\out.txt:839:12
+  tmp_docx\out.txt:840:
+  tmp_docx\out.txt:841:Orcinol
+> tmp_docx\out.txt:853:13
+  tmp_docx\out.txt:854:
+  tmp_docx\out.txt:855:Proteinase K
+> tmp_docx\out.txt:867:14
+  tmp_docx\out.txt:868:
+  tmp_docx\out.txt:869:Pyridoxine hydrochloride
+> tmp_docx\out.txt:2705:1
+  tmp_docx\out.txt:2706:
+> tmp_docx\out.txt:2707:1
+  tmp_docx\out.txt:2708:
+  tmp_docx\out.txt:2709:—
+> tmp_docx\out.txt:2713:2
+  tmp_docx\out.txt:2714:
+> tmp_docx\out.txt:2715:2
+  tmp_docx\out.txt:2716:
+  tmp_docx\out.txt:2717:PARTIALLY FUNCTIONAL, NOT WORKING
+> tmp_docx\out.txt:2721:2
+  tmp_docx\out.txt:2722:
+> tmp_docx\out.txt:2723:2
+  tmp_docx\out.txt:2724:
+  tmp_docx\out.txt:2725:—
+> tmp_docx\out.txt:2729:2
+  tmp_docx\out.txt:2730:
+> tmp_docx\out.txt:2731:2
+  tmp_docx\out.txt:2732:
+  tmp_docx\out.txt:2733:—
+> tmp_docx\out.txt:2737:2
+  tmp_docx\out.txt:2738:
+> tmp_docx\out.txt:2739:2
+  tmp_docx\out.txt:2740:
+  tmp_docx\out.txt:2741:IN MAINTENANCE
+> tmp_docx\out.txt:2745:1
+  tmp_docx\out.txt:2746:
+> tmp_docx\out.txt:2747:1
+  tmp_docx\out.txt:2748:
+  tmp_docx\out.txt:2749:—
+> tmp_docx\out.txt:2753:5
+  tmp_docx\out.txt:2754:
+> tmp_docx\out.txt:2755:5
+  tmp_docx\out.txt:2756:
+  tmp_docx\out.txt:2757:—
+> tmp_docx\out.txt:2761:2
+  tmp_docx\out.txt:2762:
+> tmp_docx\out.txt:2763:3
+  tmp_docx\out.txt:2764:
+  tmp_docx\out.txt:2765:—
+> tmp_docx\out.txt:2769:3
+  tmp_docx\out.txt:2770:
+> tmp_docx\out.txt:2771:3
+  tmp_docx\out.txt:2772:
+  tmp_docx\out.txt:2773:—
+> tmp_docx\out.txt:2777:3
+  tmp_docx\out.txt:2778:
+> tmp_docx\out.txt:2779:3
+  tmp_docx\out.txt:2780:
+  tmp_docx\out.txt:2781:—
+> tmp_docx\out.txt:2785:3
+  tmp_docx\out.txt:2786:
+> tmp_docx\out.txt:2787:3
+  tmp_docx\out.txt:2788:
+  tmp_docx\out.txt:2789:—
+> tmp_docx\out.txt:2793:2
+  tmp_docx\out.txt:2794:
+> tmp_docx\out.txt:2795:3
+  tmp_docx\out.txt:2796:
+  tmp_docx\out.txt:2797:—
+> tmp_docx\out.txt:2801:3
+  tmp_docx\out.txt:2802:
+> tmp_docx\out.txt:2803:3
+  tmp_docx\out.txt:2804:
+  tmp_docx\out.txt:2805:—
+> tmp_docx\out.txt:2809:5
+  tmp_docx\out.txt:2810:
+> tmp_docx\out.txt:2811:5
+  tmp_docx\out.txt:2812:
+  tmp_docx\out.txt:2813:—
+> tmp_docx\out.txt:2817:1
+  tmp_docx\out.txt:2818:
+> tmp_docx\out.txt:2819:1
+  tmp_docx\out.txt:2820:
+  tmp_docx\out.txt:2821:IN MAINTENANCE
+> tmp_docx\out.txt:2825:2
+  tmp_docx\out.txt:2826:
+> tmp_docx\out.txt:2827:2
+  tmp_docx\out.txt:2828:
+  tmp_docx\out.txt:2829:—
+> tmp_docx\out.txt:2833:2
+  tmp_docx\out.txt:2834:
+> tmp_docx\out.txt:2835:2
+  tmp_docx\out.txt:2836:
+  tmp_docx\out.txt:2837:—
+> tmp_docx\out.txt:2841:3
+  tmp_docx\out.txt:2842:
+> tmp_docx\out.txt:2843:3
+  tmp_docx\out.txt:2844:
+  tmp_docx\out.txt:2845:—
+> tmp_docx\out.txt:2849:2
+  tmp_docx\out.txt:2850:
+> tmp_docx\out.txt:2851:2
+  tmp_docx\out.txt:2852:
+  tmp_docx\out.txt:2853:—
+> tmp_docx\out.txt:2857:1
+  tmp_docx\out.txt:2858:
+> tmp_docx\out.txt:2859:1
+  tmp_docx\out.txt:2860:
+  tmp_docx\out.txt:2861:—
+> tmp_docx\out.txt:2865:1
+  tmp_docx\out.txt:2866:
+> tmp_docx\out.txt:2867:1
+  tmp_docx\out.txt:2868:
+  tmp_docx\out.txt:2869:—
+> tmp_docx\out.txt:2873:1
+  tmp_docx\out.txt:2874:
+> tmp_docx\out.txt:2875:1
+  tmp_docx\out.txt:2876:
+  tmp_docx\out.txt:2877:—
+> tmp_docx\out.txt:2881:1
+  tmp_docx\out.txt:2882:
+> tmp_docx\out.txt:2883:1
+  tmp_docx\out.txt:2884:
+  tmp_docx\out.txt:2885:—
+> tmp_docx\out.txt:2889:1
+  tmp_docx\out.txt:2890:
+> tmp_docx\out.txt:2891:2
+  tmp_docx\out.txt:2892:
+  tmp_docx\out.txt:2893:—
+> tmp_docx\out.txt:2897:1
+  tmp_docx\out.txt:2898:
+> tmp_docx\out.txt:2899:1
+  tmp_docx\out.txt:2900:
+  tmp_docx\out.txt:2901:—
+> tmp_docx\out.txt:2905:52
+  tmp_docx\out.txt:2906:
+> tmp_docx\out.txt:2907:55
+  tmp_docx\out.txt:2908:
+  tmp_docx\out.txt:2909:
+> tmp_docx\out.txt:2925:1
+  tmp_docx\out.txt:2926:
+  tmp_docx\out.txt:2927:Autoclave
+> tmp_docx\out.txt:2929:1
+  tmp_docx\out.txt:2930:
+  tmp_docx\out.txt:2931:Sterile media prep, aseptic fermentation, GMP-grade glassware/equipment sterilisation. 
+CONFIRMED present and functional (founder, June 2026) — not part of the original raw inventory capture, added on 
+direct confirmation. Pairs with the dry-heat ovens (Drying / Dry-Heat Ovens category) for the two-method sterilisation 
+split specified in SOP-002 (160°C/2hr dry heat for Soxhlet-type glassware vs. 121°C/15psi/15min wet autoclave for 
+media/liquid-contact items).
+> tmp_docx\out.txt:2947:2
+  tmp_docx\out.txt:2948:
+  tmp_docx\out.txt:2949:Bio Chemical India – Fermentor (model: Bioage 2A)
+> tmp_docx\out.txt:2951:1
+  tmp_docx\out.txt:2952:
+  tmp_docx\out.txt:2953:Phase 0/1 scale-up fermentation. CONFIRMED (founder, June 2026): this is the Bioage 2A unit — 
+running, but no functional probes (no pH/DO/temp logging) and a shaft problem. Usable for unmonitored/manual runs only.
+> tmp_docx\out.txt:2957:3
+  tmp_docx\out.txt:2958:
+  tmp_docx\out.txt:2959:Scigenics – Fermentor
+> tmp_docx\out.txt:2961:1
+  tmp_docx\out.txt:2962:
+  tmp_docx\out.txt:2963:Phase 0/1 scale-up fermentation. CONFIRMED (founder, June 2026): this is the unit reported 
+completely non-functional. Do not schedule any run on it until repaired.
+> tmp_docx\out.txt:2979:4
+  tmp_docx\out.txt:2980:
+  tmp_docx\out.txt:2981:Kadavul Electric Mechanical Industries – Laminar Air Flow
+> tmp_docx\out.txt:2983:1
+  tmp_docx\out.txt:2984:
+  tmp_docx\out.txt:2985:Core aseptic technique workstation (SOP-001) — all sterile media/culture handling.
+> tmp_docx\out.txt:2989:5
+  tmp_docx\out.txt:2990:
+  tmp_docx\out.txt:2991:Kemi – Laminar Air Flow
+> tmp_docx\out.txt:2993:1
+  tmp_docx\out.txt:2994:
+  tmp_docx\out.txt:2995:Second LAF unit — redundancy/parallel aseptic work capacity.
+> tmp_docx\out.txt:3011:6
+  tmp_docx\out.txt:3012:
+  tmp_docx\out.txt:3013:Tech Lab Instruments – Incubator
+> tmp_docx\out.txt:3015:1
+  tmp_docx\out.txt:3016:
+  tmp_docx\out.txt:3017:General-purpose temperature-controlled incubation for cultures.
+> tmp_docx\out.txt:3021:7
+  tmp_docx\out.txt:3022:
+  tmp_docx\out.txt:3023:Technico – BOD Incubator
+> tmp_docx\out.txt:3025:1
+  tmp_docx\out.txt:3026:
+  tmp_docx\out.txt:3027:Precision temperature-controlled incubation — fermentation runs, CFU plate incubation 
+(typically 37°C for LAB).
+> tmp_docx\out.txt:3043:8
+  tmp_docx\out.txt:3044:
+  tmp_docx\out.txt:3045:Hybridization Oven – Scigenics Biotech
+> tmp_docx\out.txt:3047:1
+  tmp_docx\out.txt:3048:
+  tmp_docx\out.txt:3049:Relevant only for hybridisation-based molecular work (e.g. Southern blotting) — not a Phase 0 
+priority. Currently unavailable regardless.
+> tmp_docx\out.txt:3053:9
+  tmp_docx\out.txt:3054:
+  tmp_docx\out.txt:3055:Plant Growth Chamber (Orbitek) – Scigenics Biotech
+> tmp_docx\out.txt:3057:1
+  tmp_docx\out.txt:3058:
+  tmp_docx\out.txt:3059:Designed for plant growth, but a controlled-temperature/light chamber is also adaptable as a 
+mushroom mycelium fruiting/incubation environment — worth piloting if dedicated mycelium incubation space is needed.
+> tmp_docx\out.txt:3075:10
+  tmp_docx\out.txt:3076:
+  tmp_docx\out.txt:3077:Bino CXI – Microscope
+> tmp_docx\out.txt:3079:1
+  tmp_docx\out.txt:3080:
+  tmp_docx\out.txt:3081:Gram staining (SOP-007), Lactophenol Cotton Blue mycelial morphology checks, oil-immersion 
+work with Cedar Wood Oil. Only microscope on site — no redundancy if this unit goes down.
+> tmp_docx\out.txt:3097:11
+  tmp_docx\out.txt:3098:
+  tmp_docx\out.txt:3099:Remi – Clinical Centrifuge
+> tmp_docx\out.txt:3101:1
+  tmp_docx\out.txt:3102:
+  tmp_docx\out.txt:3103:General sample/cell pelleting.
+> tmp_docx\out.txt:3107:12
+  tmp_docx\out.txt:3108:
+  tmp_docx\out.txt:3109:Remi – Cooling Centrifuge (Model 412 LAG)
+> tmp_docx\out.txt:3111:1
+  tmp_docx\out.txt:3112:
+  tmp_docx\out.txt:3113:Temperature-controlled centrifugation — relevant for protein/enzyme work sensitive to heat.
+> tmp_docx\out.txt:3117:13
+  tmp_docx\out.txt:3118:
+  tmp_docx\out.txt:3119:Remi – Micro Centrifuge (12C)
+> tmp_docx\out.txt:3121:1
+  tmp_docx\out.txt:3122:
+  tmp_docx\out.txt:3123:Small-volume (microfuge tube) centrifugation — molecular biology work.
+> tmp_docx\out.txt:3127:14
+  tmp_docx\out.txt:3128:
+  tmp_docx\out.txt:3129:Remi – R-8C Centrifuge
+> tmp_docx\out.txt:3131:1
+  tmp_docx\out.txt:3132:
+  tmp_docx\out.txt:3133:General-purpose centrifugation.
+> tmp_docx\out.txt:3137:15
+  tmp_docx\out.txt:3138:
+  tmp_docx\out.txt:3139:Remi – Centrifuge (KA 6775)
+> tmp_docx\out.txt:3141:1
+  tmp_docx\out.txt:3142:
+  tmp_docx\out.txt:3143:General-purpose centrifugation — confirm rotor/tube compatibility against the other four Remi 
+units before assuming interchangeability.
+> tmp_docx\out.txt:3159:16
+  tmp_docx\out.txt:3160:
+  tmp_docx\out.txt:3161:Deen Instruments – Magnetic Stirrer
+> tmp_docx\out.txt:3163:2
+  tmp_docx\out.txt:3164:
+  tmp_docx\out.txt:3165:General buffer/media/reagent dissolution.
+> tmp_docx\out.txt:3169:17
+  tmp_docx\out.txt:3170:
+  tmp_docx\out.txt:3171:Remi – Cyclo Mixer
+> tmp_docx\out.txt:3173:1
+  tmp_docx\out.txt:3174:
+  tmp_docx\out.txt:3175:Vortexing small sample volumes.
+> tmp_docx\out.txt:3191:18
+  tmp_docx\out.txt:3192:
+  tmp_docx\out.txt:3193:Orbital Shaker – Scigenics Biotech
+> tmp_docx\out.txt:3195:1
+  tmp_docx\out.txt:3196:
+  tmp_docx\out.txt:3197:Liquid culture agitation for aerobic LAB/yeast growth, dissolution of reagents.
+> tmp_docx\out.txt:3201:19
+  tmp_docx\out.txt:3202:
+  tmp_docx\out.txt:3203:Orbital Water Bath Shaker – Ind Labs
+> tmp_docx\out.txt:3205:1
+  tmp_docx\out.txt:3206:
+  tmp_docx\out.txt:3207:Combined shaking and temperature control for incubated liquid cultures.
+> tmp_docx\out.txt:3211:20
+  tmp_docx\out.txt:3212:
+  tmp_docx\out.txt:3213:Rotary Shaker – Ind Labs
+> tmp_docx\out.txt:3215:1
+  tmp_docx\out.txt:3216:
+  tmp_docx\out.txt:3217:Liquid culture agitation, alternative to the orbital shaker.
+> tmp_docx\out.txt:3233:21
+  tmp_docx\out.txt:3234:
+  tmp_docx\out.txt:3235:ITC Industrial and Laboratory – Refrigerator Water Bath
+> tmp_docx\out.txt:3237:1
+  tmp_docx\out.txt:3238:
+  tmp_docx\out.txt:3239:Precision low-temperature water bath work.
+> tmp_docx\out.txt:3243:22
+  tmp_docx\out.txt:3244:
+  tmp_docx\out.txt:3245:Rashmi – Water Bath
+> tmp_docx\out.txt:3247:1
+  tmp_docx\out.txt:3248:
+  tmp_docx\out.txt:3249:General incubation/heating at controlled temperature — e.g. postbiotic heat lock 
+(SOP-OBI-POSTBIO-001, 78°C/18min).
+> tmp_docx\out.txt:3253:23
+  tmp_docx\out.txt:3254:
+  tmp_docx\out.txt:3255:Oil Bath
+> tmp_docx\out.txt:3257:1
+  tmp_docx\out.txt:3258:
+  tmp_docx\out.txt:3259:High-temperature heating beyond water-bath range, e.g. Soxhlet reflux.
+> tmp_docx\out.txt:3275:24
+  tmp_docx\out.txt:3276:
+  tmp_docx\out.txt:3277:Cyberlab – Electronic Weighing Machine (Max 600 g)
+> tmp_docx\out.txt:3279:1
+  tmp_docx\out.txt:3280:
+  tmp_docx\out.txt:3281:General reagent and media weighing up to 600g.
+> tmp_docx\out.txt:3285:25
+  tmp_docx\out.txt:3286:
+  tmp_docx\out.txt:3287:Electronic Scale
+> tmp_docx\out.txt:3289:1
+  tmp_docx\out.txt:3290:
+  tmp_docx\out.txt:3291:General-purpose weighing — confirm max capacity/precision grade against the other two balances 
+to assign the right one per task.
+> tmp_docx\out.txt:3295:26
+  tmp_docx\out.txt:3296:
+  tmp_docx\out.txt:3297:Weighing Machine (Electronic, Max 300 g)
+> tmp_docx\out.txt:3299:1
+  tmp_docx\out.txt:3300:
+  tmp_docx\out.txt:3301:Smaller-capacity general-purpose weighing.
+> tmp_docx\out.txt:3317:27
+  tmp_docx\out.txt:3318:
+  tmp_docx\out.txt:3319:Industrial & Laboratory Tools Corporation – Hot Air Oven
+> tmp_docx\out.txt:3321:2
+  tmp_docx\out.txt:3322:
+  tmp_docx\out.txt:3323:Dry-heat sterilisation of glassware (per SOP-002, e.g. 160°C/2hr for Soxhlet flasks) and 
+substrate drying steps.
+> tmp_docx\out.txt:3327:28
+  tmp_docx\out.txt:3328:
+  tmp_docx\out.txt:3329:Precision Lab Furniture Industries – Hot Air Oven
+> tmp_docx\out.txt:3331:1
+  tmp_docx\out.txt:3332:
+  tmp_docx\out.txt:3333:Third dry-heat oven — parallel sterilisation/drying capacity to the two units above (3 hot air 
+ovens on site in total).
+> tmp_docx\out.txt:3349:29
+  tmp_docx\out.txt:3350:
+  tmp_docx\out.txt:3351:Golden / Butterfly – Stove
+> tmp_docx\out.txt:3353:1
+  tmp_docx\out.txt:3354:
+  tmp_docx\out.txt:3355:General heating; substrate cooking/preparation for ragi/black rice sprouting steps.
+> tmp_docx\out.txt:3359:30
+  tmp_docx\out.txt:3360:
+  tmp_docx\out.txt:3361:Hot Plate
+> tmp_docx\out.txt:3363:1
+  tmp_docx\out.txt:3364:
+  tmp_docx\out.txt:3365:General reagent heating/dissolution.
+> tmp_docx\out.txt:3369:31
+  tmp_docx\out.txt:3370:
+  tmp_docx\out.txt:3371:Microwave Oven – Samsung
+> tmp_docx\out.txt:3373:1
+  tmp_docx\out.txt:3374:
+  tmp_docx\out.txt:3375:Rapid media/agar melting and reheating.
+> tmp_docx\out.txt:3391:32
+  tmp_docx\out.txt:3392:
+  tmp_docx\out.txt:3393:LG – Refrigerator
+> tmp_docx\out.txt:3395:1
+  tmp_docx\out.txt:3396:
+  tmp_docx\out.txt:3397:General 2–8°C reagent/sample storage.
+> tmp_docx\out.txt:3401:33
+  tmp_docx\out.txt:3402:
+  tmp_docx\out.txt:3403:LG – Refrigerator (Model GL 328)
+> tmp_docx\out.txt:3405:1
+  tmp_docx\out.txt:3406:
+  tmp_docx\out.txt:3407:Second refrigerator — segregate raw material vs. reagent storage if not already done.
+> tmp_docx\out.txt:3411:34
+  tmp_docx\out.txt:3412:
+  tmp_docx\out.txt:3413:Deep Freezer – Ins Lab
+> tmp_docx\out.txt:3415:1
+  tmp_docx\out.txt:3416:
+  tmp_docx\out.txt:3417:Long-term frozen storage — enzyme stocks (e.g. Proteinase K), DMSO-cryopreserved strain banks.
+> tmp_docx\out.txt:3421:35
+  tmp_docx\out.txt:3422:
+  tmp_docx\out.txt:3423:Rockwell – Deep Freezer
+> tmp_docx\out.txt:3425:1
+  tmp_docx\out.txt:3426:
+  tmp_docx\out.txt:3427:Long-term frozen storage.
+> tmp_docx\out.txt:3431:36
+  tmp_docx\out.txt:3432:
+  tmp_docx\out.txt:3433:Rockwell – Deep Freezer (Model SFR450DDU)
+> tmp_docx\out.txt:3435:1
+  tmp_docx\out.txt:3436:
+  tmp_docx\out.txt:3437:Third deep freezer — confirm allocation (raw material / reagent / strain bank) to avoid ad-hoc 
+use across all three.
+> tmp_docx\out.txt:3453:37
+  tmp_docx\out.txt:3454:
+  tmp_docx\out.txt:3455:Ice Flake Machine
+> tmp_docx\out.txt:3457:1
+  tmp_docx\out.txt:3458:
+  tmp_docx\out.txt:3459:Keeping heat-sensitive samples (enzymes, live cultures, extracts) cold during active bench 
+work. Currently unavailable.
+> tmp_docx\out.txt:3475:38
+  tmp_docx\out.txt:3476:
+  tmp_docx\out.txt:3477:Medox – pH Meter
+> tmp_docx\out.txt:3479:1
+  tmp_docx\out.txt:3480:
+  tmp_docx\out.txt:3481:Fermentation pH-kinetics tracking (OB-EXP-001), PBS pH adjustment (SOP-OBI-PBS-001). Requires 
+routine calibration per the pH meter calibration logbook.
+> tmp_docx\out.txt:3497:40
+  tmp_docx\out.txt:3498:
+  tmp_docx\out.txt:3499:Bhanu – Double Distillation Easy Still Mark 2000 DDQ XL
+> tmp_docx\out.txt:3501:1
+  tmp_docx\out.txt:3502:
+  tmp_docx\out.txt:3503:Produces double-distilled water for reagent and media preparation — foundational utility for 
+nearly every assay on this list.
+> tmp_docx\out.txt:3507:41
+  tmp_docx\out.txt:3508:
+  tmp_docx\out.txt:3509:Borosil – Double Distillation Unit
+> tmp_docx\out.txt:3511:1
+  tmp_docx\out.txt:3512:
+  tmp_docx\out.txt:3513:Secondary/backup distilled water source.
+> tmp_docx\out.txt:3529:42
+  tmp_docx\out.txt:3530:
+  tmp_docx\out.txt:3531:Lab Man – UV Visible Spectrophotometer (Model UV 1200)
+> tmp_docx\out.txt:3533:1
+  tmp_docx\out.txt:3534:
+  tmp_docx\out.txt:3535:CORE INSTRUMENT — GABA Ninhydrin assay (SOP-OBI-GABA-ASSAY-001), TPC assay (765nm), DNS 
+reducing-sugar assay, Anthrone carbohydrate assay. The single most cross-referenced instrument on this list, and the 
+only one of its kind on site.
+> tmp_docx\out.txt:3539:43
+  tmp_docx\out.txt:3540:
+  tmp_docx\out.txt:3541:Labtronics – Digital Flame Photometer (LT 65)
+> tmp_docx\out.txt:3543:1
+  tmp_docx\out.txt:3544:
+  tmp_docx\out.txt:3545:Sodium/potassium quantification — relevant to electrolyte/mineral panel work on the fermented 
+base.
+> tmp_docx\out.txt:3549:44
+  tmp_docx\out.txt:3550:
+  tmp_docx\out.txt:3551:Systronics – Digital Nephelo Turbidity Meter (Model 132)
+> tmp_docx\out.txt:3553:1
+  tmp_docx\out.txt:3554:
+  tmp_docx\out.txt:3555:Tracking bacterial/yeast growth via turbidity — a faster proxy for culture density than plate 
+counts during method development.
+> tmp_docx\out.txt:3571:45
+  tmp_docx\out.txt:3572:
+  tmp_docx\out.txt:3573:Alpha Infotech – Gel Documentation System
+> tmp_docx\out.txt:3575:1
+  tmp_docx\out.txt:3576:
+  tmp_docx\out.txt:3577:Visualising agarose gel electrophoresis results — relevant once 16S PCR product verification 
+for LAB strain identification begins.
+> tmp_docx\out.txt:3581:46
+  tmp_docx\out.txt:3582:
+  tmp_docx\out.txt:3583:Medox / Weal Tech – UV Transilluminator
+> tmp_docx\out.txt:3585:1
+  tmp_docx\out.txt:3586:
+  tmp_docx\out.txt:3587:Viewing UV-fluorescent gels/plates — pairs with the Gel Documentation System.
+> tmp_docx\out.txt:3603:47
+  tmp_docx\out.txt:3604:
+  tmp_docx\out.txt:3605:Labtronics – Microprocessor Colony Counter
+> tmp_docx\out.txt:3607:1
+  tmp_docx\out.txt:3608:
+  tmp_docx\out.txt:3609:CFU enumeration (SOP-006) — core to all LAB plate-count work.
+> tmp_docx\out.txt:3625:48
+  tmp_docx\out.txt:3626:
+  tmp_docx\out.txt:3627:Rashmi Scientific Company – Soxhlet Apparatus
+> tmp_docx\out.txt:3629:1
+  tmp_docx\out.txt:3630:
+  tmp_docx\out.txt:3631:Lipid/fat extraction (Hexane/Petroleum Ether solvent) — relevant to fat-content determination 
+of mushroom biomass or grain substrate.
+> tmp_docx\out.txt:3647:49
+  tmp_docx\out.txt:3648:
+  tmp_docx\out.txt:3649:Sonic Vibra Cell – Ultrasonicator
+> tmp_docx\out.txt:3651:1
+  tmp_docx\out.txt:3652:
+  tmp_docx\out.txt:3653:Ultrasound-assisted extraction — can improve bioactive yield from mushroom hot-water extracts, 
+and cell lysis for intracellular assays.
+> tmp_docx\out.txt:3669:50
+  tmp_docx\out.txt:3670:
+  tmp_docx\out.txt:3671:Endee – Gas Analyser (PA960)
+> tmp_docx\out.txt:3673:1
+  tmp_docx\out.txt:3674:
+  tmp_docx\out.txt:3675:Potential use: monitoring CO₂/O₂ in fermentation headspace, relevant to anaerobic fermentation 
+tracking (SOP-OBI-ANAEROBIC-001).
+> tmp_docx\out.txt:3691:51
+  tmp_docx\out.txt:3692:
+  tmp_docx\out.txt:3693:Remi / Techno Instrument Co. – Homogeniser
+> tmp_docx\out.txt:3695:2
+  tmp_docx\out.txt:3696:
+  tmp_docx\out.txt:3697:Homogenising mushroom biomass or grain substrate ahead of extraction/assay steps.
+
+
