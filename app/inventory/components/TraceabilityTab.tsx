@@ -69,7 +69,7 @@ export default function TraceabilityTab() {
         <input
           type="text"
           placeholder="Search by lot number, item name, or batch ID..."
-          className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-violet-50 focus:border-violet-500 font-bold transition-all"
+          className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -78,7 +78,7 @@ export default function TraceabilityTab() {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin mb-4 text-violet-600" />
+            <Loader2 className="w-8 h-8 animate-spin mb-4 text-slate-600" />
             <p className="font-bold">Loading traceability data...</p>
           </div>
         ) : records.length === 0 ? (
@@ -106,12 +106,12 @@ export default function TraceabilityTab() {
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(r.date).toLocaleTimeString()}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-black text-violet-900">{r.item_name}</p>
-                      <p className="text-[10px] font-bold text-violet-700/70 uppercase tracking-widest mt-0.5">Lot: {r.lot_number}</p>
+                      <p className="text-sm font-black text-slate-900">{r.item_name}</p>
+                      <p className="text-[10px] font-bold text-slate-700/70 uppercase tracking-widest mt-0.5">Lot: {r.lot_number}</p>
                       <p className="text-xs font-semibold text-slate-500 mt-1">Used: {r.quantity_used}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col items-center justify-center text-slate-300 group-hover:text-violet-400 transition-colors">
+                      <div className="flex flex-col items-center justify-center text-slate-300 group-hover:text-slate-400 transition-colors">
                         <ArrowRight className="w-5 h-5" />
                         <Link2 className="w-3 h-3 mt-1" />
                       </div>

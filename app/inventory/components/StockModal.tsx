@@ -41,7 +41,7 @@ export default function StockModal({
           <p className="text-sm text-slate-500 font-medium mt-2 max-w-xs mx-auto">To maintain GMP compliance, you must read and sign the <b>Sanitation SOP</b> before handling warehouse stock.</p>
         </div>
         <div className="flex flex-col gap-3 w-full">
-          <Link href="/sops" className="w-full py-4 bg-violet-800 text-white font-black rounded-2xl shadow-lg hover:bg-violet-900 transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">Open SOP Library</Link>
+          <Link href="/sops" className="w-full py-4 bg-slate-800 text-white font-black rounded-2xl shadow-lg hover:bg-slate-900 transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">Open SOP Library</Link>
           <button onClick={onClose} className="text-xs font-bold text-slate-400 hover:text-slate-600">Close Window</button>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function StockModal({
         <div className="grid grid-cols-1 gap-5">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
-            <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-violet-100 text-sm font-bold disabled:opacity-50"
+            <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold disabled:opacity-50"
               value={newStock.item_id} onChange={(e) => setNewStock({...newStock, item_id: e.target.value})} disabled={modalType === 'edit_stock'}>
               <option value="">Select Item...</option>
               {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
@@ -63,7 +63,7 @@ export default function StockModal({
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Supplier / Vendor</label>
-            <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-violet-100 text-sm font-bold"
+            <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold"
               value={newStock.vendor_id} onChange={(e) => setNewStock({...newStock, vendor_id: e.target.value})}>
               <option value="">Select Supplier...</option>
               {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -72,24 +72,24 @@ export default function StockModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">{modalType === 'edit_stock' ? 'Current Quantity' : 'Quantity Recvd'}</label>
-              <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-violet-100 text-sm font-bold"
+              <input type="number" step="0.01" required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold"
                 value={newStock.received_quantity} onChange={(e) => setNewStock({...newStock, received_quantity: e.target.value})} />
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Supplier Batch #</label>
-              <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-violet-100 text-sm font-bold font-mono"
+              <input type="text" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold font-mono"
                 value={newStock.supplier_batch_number} onChange={(e) => setNewStock({...newStock, supplier_batch_number: e.target.value})} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Expiry Date</label>
-              <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-violet-100 text-sm font-bold"
+              <input type="date" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold"
                 value={newStock.expiry_date} onChange={(e) => setNewStock({...newStock, expiry_date: e.target.value})} />
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Warehouse Location</label>
-              <input type="text" placeholder="e.g. Shelf A1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-violet-100 text-sm font-bold"
+              <input type="text" placeholder="e.g. Shelf A1" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold"
                 value={newStock.location} onChange={(e) => setNewStock({...newStock, location: e.target.value})} />
             </div>
           </div>
@@ -126,9 +126,9 @@ export default function StockModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 flex items-center gap-2">
-                CoA Document {uploadingCoA && <Loader2 className="w-3 h-3 animate-spin text-violet-600"/>}
+                CoA Document {uploadingCoA && <Loader2 className="w-3 h-3 animate-spin text-slate-600"/>}
               </label>
-              <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleFileChange(e, 'coa')} className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => handleFileChange(e, 'coa')} className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 cursor-pointer" />
               {newStock.coa_url && (
                 <div className="mt-2">
                   <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><FileText className="w-3 h-3"/> Uploaded</span>
@@ -156,7 +156,7 @@ export default function StockModal({
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
-          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-violet-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-violet-900 shadow-xl shadow-violet-950/20 transition-all active:scale-95 flex items-center justify-center">
+          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : modalType === 'edit_stock' ? 'Save Changes' : 'Log Entry'}
           </button>
         </div>
@@ -204,7 +204,7 @@ export default function StockModal({
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-[10px] hover:bg-gray-200 transition-all">Cancel</button>
-          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-violet-800 text-white font-black rounded-2xl text-[10px] hover:bg-violet-900 shadow-xl transition-all">
+          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-[10px] hover:bg-slate-900 shadow-xl transition-all">
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Issue Stock'}
           </button>
         </div>

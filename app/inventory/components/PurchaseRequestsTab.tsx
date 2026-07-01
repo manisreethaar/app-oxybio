@@ -63,7 +63,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-black text-gray-800">Purchase Requisitions (PR)</h2>
-        <button onClick={() => setShowModal(true)} className="flex items-center px-4 py-2 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700">
+        <button onClick={() => setShowModal(true)} className="flex items-center px-4 py-2 bg-slate-600 text-white font-bold rounded-xl hover:bg-slate-700">
           <Plus className="w-4 h-4 mr-2" /> New Request
         </button>
       </div>
@@ -127,32 +127,32 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Item Name *</label>
-                <input required value={form.item_name} onChange={e=>setForm({...form, item_name: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 outline-none" />
+                <input required value={form.item_name} onChange={e=>setForm({...form, item_name: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-slate-500 outline-none" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity *</label>
-                  <input required type="number" step="0.01" value={form.requested_quantity} onChange={e=>setForm({...form, requested_quantity: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-violet-500" />
+                  <input required type="number" step="0.01" value={form.requested_quantity} onChange={e=>setForm({...form, requested_quantity: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-slate-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
-                  <input value={form.unit} onChange={e=>setForm({...form, unit: e.target.value})} placeholder="e.g. kg, L" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-violet-500" />
+                  <input value={form.unit} onChange={e=>setForm({...form, unit: e.target.value})} placeholder="e.g. kg, L" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-slate-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Reason / Justification</label>
-                <textarea value={form.reason} onChange={e=>setForm({...form, reason: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-violet-500" rows={3}></textarea>
+                <textarea value={form.reason} onChange={e=>setForm({...form, reason: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-slate-500" rows={3}></textarea>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Urgency</label>
-                <select value={form.urgency} onChange={e=>setForm({...form, urgency: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-violet-500">
+                <select value={form.urgency} onChange={e=>setForm({...form, urgency: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-slate-500">
                   <option value="Normal">Normal</option>
                   <option value="High">High (Urgent)</option>
                 </select>
               </div>
               <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl">Cancel</button>
-                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-sm">Submit PR</button>
+                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-slate-600 hover:bg-slate-700 rounded-xl shadow-sm">Submit PR</button>
               </div>
             </form>
           </div>
