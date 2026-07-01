@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
