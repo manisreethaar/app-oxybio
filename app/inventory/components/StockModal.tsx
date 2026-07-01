@@ -51,7 +51,7 @@ export default function StockModal({
   // Stock Receive / Edit Form
   if (modalType === 'stock' || modalType === 'edit_stock') {
     return (
-      <form onSubmit={modalType === 'edit_stock' ? handleUpdateStock : handleAddStock} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+      <form onSubmit={modalType === 'edit_stock' ? handleUpdateStock : handleAddStock} className="p-5 sm:p-6 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
         <div className="grid grid-cols-1 gap-5">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Inventory Item</label>
@@ -167,7 +167,7 @@ export default function StockModal({
   // Issue Stock Form
   if (modalType === 'issue') {
     return (
-      <form onSubmit={handleIssueStock} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+      <form onSubmit={handleIssueStock} className="p-5 sm:p-6 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
         <div>
           <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Select Stock Item</label>
           <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold" value={newIssue.stock_id} onChange={e => setNewIssue({...newIssue, stock_id: e.target.value})}>
