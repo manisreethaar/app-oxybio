@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { X, Lock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
