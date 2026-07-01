@@ -1307,16 +1307,16 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-950/40 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
-            <div className="px-8 py-6 bg-slate-800 text-white flex items-center justify-between">
+            <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gray-50 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div>
-                <h2 className="text-xl font-black tracking-tight">
+                <h2 className="text-lg font-black tracking-tight text-slate-800">
                   {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'edit_stock' ? 'Edit Stock Log' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
                 </h2>
-                <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest mt-1">
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">
                   {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
                 </p>
               </div>
-              {modalType === 'stock' && !trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-6 h-6 text-amber-400 font-black animate-pulse" />}
+              {modalType === 'stock' && !trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-5 h-5 text-amber-500 font-black animate-pulse" />}
             </div>
 
             {/* Stock / Issue forms */}
@@ -1351,8 +1351,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
           <div className="w-full max-w-xl rounded-none sm:rounded-2xl bg-white h-[100dvh] sm:h-auto sm:max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-5 bg-slate-900 text-white relative">
-              <div className="absolute top-6 right-16 flex items-center gap-2">
+            <div className="p-5 bg-gray-50 border-b border-gray-100 relative shrink-0">
+              <div className="absolute top-5 right-14 flex items-center gap-2">
                 {canDo('inventory', 'edit') && (
                   <button onClick={() => { 
                     setNewStock({ 
@@ -1364,15 +1364,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     setModalType('edit_stock');
                     setIsModalOpen(true);
                     setSelectedStock(null);
-                  }} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+                  }} className="p-1.5 rounded-lg bg-white border border-gray-200 text-slate-600 hover:bg-gray-100 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
                     <Edit3 className="w-4 h-4"/> Edit
                   </button>
                 )}
               </div>
-              <button onClick={() => setSelectedStock(null)} className="absolute top-6 right-6 text-white/50 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5"/></button>
-              <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-black uppercase tracking-widest text-white">{selectedStock.inventory_items?.category}</span>
-              <h2 className="text-2xl font-black font-mono tracking-tighter mt-1">{selectedStock.inventory_items?.name}</h2>
-              <p className="text-xs font-bold text-slate-200 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
+              <button onClick={() => setSelectedStock(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-200 rounded-lg transition-all"><X className="w-5 h-5"/></button>
+              <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600">{selectedStock.inventory_items?.category}</span>
+              <h2 className="text-xl font-black font-mono tracking-tighter mt-1 text-slate-800">{selectedStock.inventory_items?.name}</h2>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
             </div>
 
             {/* Content Scrollable */}

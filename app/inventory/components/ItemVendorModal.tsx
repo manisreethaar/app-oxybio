@@ -36,7 +36,7 @@ export default function ItemVendorModal({
   // Item Add / Edit
   if (modalType === 'items' || modalType === 'edit_item') {
     return (
-      <form onSubmit={modalType === 'items' ? handleAddItem : handleUpdateItem} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+      <form onSubmit={modalType === 'items' ? handleAddItem : handleUpdateItem} className="p-5 sm:p-6 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Item Code / SKU</label>
@@ -115,7 +115,7 @@ export default function ItemVendorModal({
 
   // Vendor Add / Edit
   return (
-    <form onSubmit={modalType === 'edit_vendor' ? handleUpdateVendor : handleAddVendor} className="p-8 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+    <form onSubmit={modalType === 'edit_vendor' ? handleUpdateVendor : handleAddVendor} className="p-5 sm:p-6 pb-24 space-y-5 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Vendor Name</label>
