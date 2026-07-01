@@ -73,7 +73,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   
   // Registry specific state
   const [registrySearch, setRegistrySearch] = useState('');
-  const [registrySort, setRegistrySort] = useState('name'); // 'name' | 'stock' | 'newest'
+  const [registrySort, setRegistrySort] = useState('name');
+  const [stockSort, setStockSort] = useState('expiry');
+  const [isSelectMode, setIsSelectMode] = useState(false); // 'name' | 'stock' | 'newest'
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteType, setDeleteType] = useState<'item' | 'vendor'>('item');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -869,20 +871,33 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button 
-          onClick={() => {
-            const code = prompt('Scan QR Code (or type ID manually):');
-            if (code) {
-              const id = code.replace('OXY-STOCK-', '');
-              const s = stock.find(x => x.id === id);
-              if (s) setSelectedStock(s);
-              else toast.error('Stock item not found from QR code');
-            }
-          }}
-          className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg"
-        >
-          <QrCode className="w-5 h-5" /> Scan
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={stockSort}
+            onChange={(e) => setStockSort(e.target.value)}
+            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-sm"
+          >
+            <option value="expiry">Sort: Nearest Expiry</option>
+            <option value="name">Sort: Name (A-Z)</option>
+            <option value="quantity_asc">Sort: Quantity (Low to High)</option>
+            <option value="quantity_desc">Sort: Quantity (High to Low)</option>
+            <option value="newest">Sort: Newest Added</option>
+          </select>
+          <button 
+            onClick={() => {
+              const code = prompt('Scan QR Code (or type ID manually):');
+              if (code) {
+                const id = code.replace('OXY-STOCK-', '');
+                const s = stock.find(x => x.id === id);
+                if (s) setSelectedStock(s);
+                else toast.error('Stock item not found from QR code');
+              }
+            }}
+            className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shrink-0"
+          >
+            <QrCode className="w-5 h-5" /> Scan
+          </button>
+        </div>
       </div>
 
       {activeTab === 'stock' && (
