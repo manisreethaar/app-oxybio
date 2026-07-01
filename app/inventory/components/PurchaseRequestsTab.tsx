@@ -7,6 +7,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
 
   const [form, setForm] = useState({
@@ -28,6 +29,8 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/purchase-request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -41,6 +44,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
         fetchRequests();
       } else toast.error(json.error);
     } catch (e) { toast.error('Failed to submit'); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleStatus = async (id: string, status: string) => {
@@ -152,7 +156,9 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
               </div>
               <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl">Cancel</button>
-                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-slate-600 hover:bg-slate-700 rounded-xl shadow-sm">Submit PR</button>
+                <button type="submit" disabled={isSubmitting} className="px-6 py-2 text-sm font-bold text-white bg-slate-600 hover:bg-slate-700 rounded-xl shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? 'Submitting...' : 'Submit PR'}
+                </button>
               </div>
             </form>
           </div>
