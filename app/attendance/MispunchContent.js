@@ -354,7 +354,7 @@ export default function MispunchContent() {
       )}
 
       {selfReportLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSelfReport}>
               <div className="p-6 border-b border-slate-100 bg-amber-50">
@@ -400,7 +400,7 @@ export default function MispunchContent() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSubmit}>
               <div className="p-6 border-b border-slate-100 bg-slate-50/50">

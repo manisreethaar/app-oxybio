@@ -141,7 +141,7 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-transparent z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50/50">
           <h3 className="font-bold text-slate-900 flex items-center gap-2">

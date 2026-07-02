@@ -841,7 +841,7 @@ export default function BatchesPage() {
       {/* ── New Batch Modal ──────────────────────────────────── */}
       <AnimatePresence>
         {showNewBatchModal && (
-          <div className="fixed inset-0 bg-transparent flex justify-center items-end md:items-center z-50 p-0 md:p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-end md:items-center z-50 p-0 md:p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.98, y: 28 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1063,7 +1063,7 @@ export default function BatchesPage() {
       {/* ── Cancel Batch Confirmation Modal ──────────────────── */}
       <AnimatePresence>
         {cancelConfirmId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/10 backdrop-blur-sm p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

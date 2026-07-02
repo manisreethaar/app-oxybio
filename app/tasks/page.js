@@ -495,7 +495,7 @@ export default function TasksPage() {
       </div>
 
       {showCreate && (
-        <div className="fixed inset-0 z-[160] bg-transparent md:static md:bg-transparent md: flex items-end md:block" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }}>
+        <div className="fixed inset-0 z-[160] bg-slate-50/10 backdrop-blur-sm md:static md:bg-transparent md: flex items-end md:block" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }}>
         <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="card p-4 md:p-6 animate-in fade-in duration-200 md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
           <h2 className="text-base font-bold text-slate-900 mb-6 flex items-center gap-1.5">
             <ListChecks className="w-5 h-5 text-navy"/> {editingTaskId ? 'Edit Task Details' : (isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder')}
@@ -777,7 +777,7 @@ export default function TasksPage() {
 
       {/* Delete Task Modal */}
       {pendingDeleteTask && (
-        <div className="fixed inset-0 bg-transparent z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Delete Task</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">

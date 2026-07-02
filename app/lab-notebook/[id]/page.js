@@ -344,7 +344,7 @@ export default function LnbEntryPage() {
 
       {/* Submit Review Modal */}
       {pendingSubmitReview && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Submit for Review</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">
@@ -370,7 +370,7 @@ export default function LnbEntryPage() {
 
       {/* Countersign Modal */}
       {pendingCountersign && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Countersign Document</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">

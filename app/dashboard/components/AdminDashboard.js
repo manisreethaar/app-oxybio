@@ -550,7 +550,7 @@ export default function AdminDashboard({ employeeId }) {
       {/* Mispunch Modal */}
       <AnimatePresence>
         {reviewingMispunch && (
-          <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
+          <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -612,7 +612,7 @@ export default function AdminDashboard({ employeeId }) {
       {/* Safeguards Modal */}
       <AnimatePresence>
         {showConfig && (
-          <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
+          <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -647,7 +647,7 @@ export default function AdminDashboard({ employeeId }) {
 
       {/* Quick Approve Modal */}
       {pendingQuickApprove && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Quick Approve Mispunch</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to approve <strong className="text-emerald-600">{pendingQuickApprove.mispunch_requested_hours}h</strong> for <strong>{pendingQuickApprove.employees?.full_name}</strong>?</p>
