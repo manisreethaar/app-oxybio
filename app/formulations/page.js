@@ -544,7 +544,7 @@ export default function FormulationsPage() {
                       <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0"/>
                         <p className="text-[10px] font-bold text-emerald-700">
-                          Approved by {f.approver.full_name} ?? {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
+                          Approved by {f.approver.full_name} · {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
                         </p>
                       </div>
                     )}
