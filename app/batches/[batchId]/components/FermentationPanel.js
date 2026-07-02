@@ -1402,7 +1402,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Admin Edit Endpoint Modal */}
       {editingEndpoint && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-amber-700 mb-1 flex items-center gap-2">
               <Pencil className="w-4 h-4"/> Correct Endpoint Record
@@ -1434,7 +1434,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Admin Edit Reading Modal ── */}
       {editingReading && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-md shadow-xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900">Edit Reading — {editingReading.flask_label} T+{editingReading.elapsed_hours?.toFixed(1)}h</h3>
@@ -1525,7 +1525,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Admin Delete Reading Modal ── */}
       {deletingReading && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-red-600 mb-2 flex items-center gap-2">
               <Trash2 className="w-4 h-4"/> Delete Reading
@@ -1554,7 +1554,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Out of Range Override Modal */}
       {pendingOOROverride && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-amber-600 mb-2 text-center flex items-center justify-center gap-2">
               <AlertTriangle className="w-5 h-5"/> pH Alert

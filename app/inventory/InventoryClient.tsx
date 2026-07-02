@@ -1367,7 +1367,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-transparent">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -1398,7 +1398,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Confirmation Modal */}
       {deletingId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-transparent">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -1506,7 +1506,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Unified Modal Shell */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
             <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gray-50 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div>
@@ -1549,7 +1549,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
       {/* Stock Item Detail Modal (Section 2.4) */}
       {selectedStock && (
-        <div className="fixed inset-0 bg-transparent z-[1100] flex items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
           <div className="w-full max-w-xl rounded-none sm:rounded-2xl bg-white h-[100dvh] sm:h-auto sm:max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="p-5 bg-gray-50 border-b border-gray-100 relative shrink-0">
@@ -1804,7 +1804,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* QR Code Modal */}
       {showQR && selectedStock && (
-        <div className="fixed inset-0 bg-transparent z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowQR(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
               <X className="w-5 h-5" />
@@ -1821,7 +1821,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Auto-Load Modal */}
       {pendingSeed && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">

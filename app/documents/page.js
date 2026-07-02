@@ -280,7 +280,7 @@ export default function DocumentsPage() {
       {activeTab === 'sops' && <SopClient initialSops={[]} />}
 
       {showUploadModal && (
-        <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl max-w-md w-full p-5 md:p-8 relative shadow-2xl">
             <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">×</button>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Upload Document to Vault</h2>
