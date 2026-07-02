@@ -539,10 +539,25 @@ export default function CellBankPage() {
         fetch(`/api/formulations?t=${ts}`),
       ]);
       const [sJson, pJson, fJson] = await Promise.all([sRes.json(), pRes.json(), fRes.json()]);
-      if (sJson.success) setStrains(sJson.data || []);
-      if (pJson.success) setPreps(pJson.data || []);
-      if (Array.isArray(fJson)) setFormulations(fJson.filter(f => f.status === 'Approved'));
-    } catch (err) { toast.error('Failed to load cell bank data'); }
+      
+      if (sJson.success) {
+        setStrains(sJson.data || []);
+      } else {
+        toast.error(`Strains Error: ${sJson.error}`);
+      }
+
+      if (pJson.success) {
+        setPreps(pJson.data || []);
+      } else {
+        toast.error(`Preps Error: ${pJson.error}`);
+      }
+
+      if (Array.isArray(fJson)) {
+        setFormulations(fJson.filter(f => f.status === 'Approved'));
+      } else if (fJson.error) {
+        toast.error(`Formulations Error: ${fJson.error}`);
+      }
+    } catch (err) { toast.error(`Fetch Error: ${err.message}`); }
     finally { setLoading(false); }
   }, [toast]);
 
