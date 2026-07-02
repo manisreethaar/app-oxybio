@@ -1129,7 +1129,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     >
                       <div className={`absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : 'bg-slate-600'}`}></div>
                       <div className="flex justify-between items-start mb-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${category === 'RAW MATERIALS' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">
                           {s.location || 'Central Store'}
                         </span>
                         {(risk.isExpired || risk.isExpiring || risk.isLow) && (
@@ -1139,9 +1139,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         )}
                       </div>
                       
-                      <h3 className="text-sm font-black text-slate-900 mb-1 leading-tight line-clamp-2">{s.inventory_items?.name}</h3>
+                      <h3 className="text-xs font-black text-slate-950 leading-tight mb-0.5 line-clamp-2">{s.inventory_items?.name}</h3>
                       
-                      <div className="flex flex-col gap-1 mb-3">
+                      <div className="flex flex-col gap-0.5 mb-2 mt-1">
                         <div className="flex items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                           <Truck className="w-3 h-3 mr-1" /> Lot: <span className="text-slate-900 ml-1 truncate">{s.supplier_batch_number || 'N/A'}</span>
                         </div>
