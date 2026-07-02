@@ -387,7 +387,7 @@ export default function CapaSection() {
       {deviations.length === 0 ? <div className="text-center py-16 text-slate-400 text-sm">No NCRs recorded.</div> : filteredDeviations.length === 0 ? <div className="text-center py-16 text-slate-400 text-sm">No NCRs match the current search.</div> : (
         <div className="space-y-2">
           {filteredDeviations.map(dev => (
-            <div key={dev.id} role="button" tabIndex={0} onClick={() => loadDetail(dev)} onKeyDown={e => e.key === 'Enter' && loadDetail(dev)} className="w-full surface p-4 flex items-center justify-between hover:border-slate-300 transition-colors text-left cursor-pointer">
+            <div key={dev.id} role="button" tabIndex={0} onClick={() => loadDetail(dev)} onKeyDown={e => e.key === 'Enter' && loadDetail(dev)} className="w-full card p-4 flex items-center justify-between hover:border-slate-300 transition-colors text-left cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className={`w-1 h-10 rounded-full shrink-0 ${dev.severity === 'Critical' ? 'bg-red-500' : dev.severity === 'Major' ? 'bg-amber-500' : 'bg-slate-400'}`}/>
                 <div>
