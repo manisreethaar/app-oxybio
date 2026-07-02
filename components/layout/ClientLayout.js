@@ -49,7 +49,12 @@ export default function ClientLayout({ children }) {
       const anchor = e.target.closest('a');
       if (!anchor) return;
       const href = anchor.getAttribute('href');
-      if (href?.startsWith('/') && !href.startsWith('/api') && href !== pathname) startNav();
+      if (href?.startsWith('/') && !href.startsWith('/api')) {
+        const basePath = href.split('?')[0].split('#')[0];
+        if (basePath !== pathname) {
+          startNav();
+        }
+      }
     };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
