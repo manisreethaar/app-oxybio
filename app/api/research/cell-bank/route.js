@@ -81,7 +81,7 @@ export async function GET(request) {
         linked_formulation:formulations(id, code, name, version, category, status),
         cell_bank_strains(id, name, source_type, accession_number, formulation_id, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type),
-        employees(full_name, initials)
+        employees!cell_bank_preparations_created_by_fkey(full_name, initials)
       `)
       .order('created_at', { ascending: false });
 
