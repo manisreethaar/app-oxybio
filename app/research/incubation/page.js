@@ -356,7 +356,7 @@ function ContaminationCard({ samples }) {
   }, [samples]);
 
   return (
-    <div className="surface p-4 col-span-2 md:col-span-4">
+    <div className="card p-4 col-span-2 md:col-span-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contamination Rate</p>
@@ -857,7 +857,7 @@ export default function SampleIncubationPage() {
           ['Over 72h Open',     stats.overdue,         stats.overdue      ? 'text-amber-700' : 'text-slate-900'],
           ['Contaminated',      stats.contaminated,    stats.contaminated ? 'text-red-700'   : 'text-slate-900'],
         ].map(([label, value, color]) => (
-          <div key={label} className="surface p-4">
+          <div key={label} className="card p-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
             <p className={`mt-1 text-2xl font-black font-mono ${color}`}>{value}</p>
           </div>
@@ -872,7 +872,7 @@ export default function SampleIncubationPage() {
       )}
 
       {/* Filters */}
-      <div className="surface p-3 flex flex-col sm:flex-row gap-3">
+      <div className="card p-3 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -899,7 +899,7 @@ export default function SampleIncubationPage() {
           {[1, 2].map(i => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
         </div>
       ) : grouped.length === 0 ? (
-        <div className="surface p-16 text-center">
+        <div className="card p-16 text-center">
           <FlaskConical className="w-10 h-10 text-slate-200 mx-auto mb-3" />
           <p className="text-slate-400 font-medium">No incubation records found.</p>
           <Link href="/lab-bench/log" className="mt-3 inline-block text-navy font-bold text-sm hover:underline">
@@ -915,7 +915,7 @@ export default function SampleIncubationPage() {
             const contaminatedCount = allRecords.filter(r => r.sterility_status === 'Contaminated').length;
 
             return (
-              <div key={src.key} className="surface overflow-hidden">
+              <div key={src.key} className="card overflow-hidden">
 
                 {/* Source (batch) header */}
                 <button

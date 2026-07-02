@@ -153,7 +153,7 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="surface p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="card p-5 space-y-4">
       <p className="text-sm font-bold text-slate-900">Register New Strain</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2"><label className="field-label">Strain Name / Organism <span className="text-red-500">*</span></label>
@@ -245,7 +245,7 @@ function EditStrainForm({ strain, formulations, onSave, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="surface p-5 space-y-4 border-2 border-slate-200">
+    <form onSubmit={handleSubmit} className="card p-5 space-y-4 border-2 border-slate-200">
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold text-slate-900 flex items-center gap-2"><Pencil className="w-4 h-4 text-slate-500"/>Edit Strain</p>
         <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4"/></button>
@@ -393,7 +393,7 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
   }, [form.strain_id, needsParent]);
 
   return (
-    <form onSubmit={handleSubmit} className="surface p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="card p-5 space-y-4">
       <p className="text-sm font-bold text-slate-900">Start New Cell Bank Preparation</p>
       <p className="text-xs text-slate-500">Prep code auto-generated: <span className="font-mono font-bold">OB-CB-{new Date().getFullYear()}-NNN</span></p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -660,7 +660,7 @@ export default function CellBankPage() {
       </div>
 
       {requestedFormulationId && (
-        <div className="surface p-4 bg-slate-50 border border-slate-100 flex items-start gap-3">
+        <div className="card p-4 bg-slate-50 border border-slate-100 flex items-start gap-3">
           <BookOpen className="w-5 h-5 text-navy shrink-0 mt-0.5"/>
           <div className="flex-1">
             <p className="text-sm font-bold text-slate-900">Recipe linked from Recipe Management</p>
@@ -671,7 +671,7 @@ export default function CellBankPage() {
 
       {/* Low Vial Stock Warning */}
       {lowVialStrains.length > 0 && !lowVialDismissed && (
-        <div className="surface p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
+        <div className="card p-4 bg-amber-50 border border-amber-200 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
           <div className="flex-1">
             <p className="text-sm font-bold text-amber-800">Low Vial Stock Warning</p>
@@ -693,7 +693,7 @@ export default function CellBankPage() {
           { label: 'MCB',              value: preps.filter(p => p.type === 'MCB').length,  color: 'text-emerald-600' },
           { label: 'WCB',              value: preps.filter(p => p.type === 'WCB').length,  color: 'text-amber-600' },
         ].map(s => (
-          <div key={s.label} className="surface p-4 text-center">
+          <div key={s.label} className="card p-4 text-center">
             <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
             <p className="text-xs text-slate-500 font-bold mt-0.5">{s.label}</p>
           </div>
@@ -759,7 +759,7 @@ export default function CellBankPage() {
               const passageNum = (p.passage_number != null && p.passage_number > 0) ? p.passage_number : 1;
               return (
                 <Link key={p.id} href={`/research/cell-bank/${p.id}`}
-                  className="surface p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
+                  className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>
                     {p.type}
                   </div>
@@ -826,7 +826,7 @@ export default function CellBankPage() {
               const isExpanded = expandedStrainId === s.id;
               const batchList = strainBatches[s.id];
               return (
-                <div key={s.id} className="surface overflow-hidden">
+                <div key={s.id} className="card overflow-hidden">
                   <div className="p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
                       <Dna className="w-5 h-5 text-slate-600"/>

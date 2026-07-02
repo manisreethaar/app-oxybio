@@ -240,7 +240,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3">
+      <div className="card p-5 flex items-center gap-3">
         <Beaker className="w-5 h-5 text-slate-600"/>
         <div><h2 className="text-base font-bold text-slate-900">Media Preparation & BOM</h2>
           <p className="text-xs text-slate-500">Record all raw material BOM fulfillment and substrate setup.</p></div>
@@ -253,7 +253,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         </div>
       </div>
 
-      <div className="surface p-5 space-y-5">
+      <div className="card p-5 space-y-5">
         <div className="mb-4">
           <div className="flex justify-between items-end mb-4">
             <div>

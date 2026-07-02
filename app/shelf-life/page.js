@@ -263,7 +263,7 @@ export default function ShelfLifePage() {
             const displayData = chartData.length > 0 ? chartData : [{ day: 'D0', ph: 4.2, brix: 10 }];
 
             return (
-              <div key={study.id} className="surface p-6 hover:shadow-md transition-all">
+              <div key={study.id} className="card p-6 hover:shadow-md transition-all">
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-slate-50 px-2 py-0.5 rounded border border-slate-100 mb-2 inline-block">Study ID: {study.id.slice(0,8).toUpperCase()}</span>

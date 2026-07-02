@@ -526,7 +526,7 @@ export default function BatchesPage() {
         ))}
       </div>
 
-      <div className="surface p-3 flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
+      <div className="card p-3 flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
@@ -557,7 +557,7 @@ export default function BatchesPage() {
         </h2>
 
         {displayedBatches.length === 0 ? (
-          <div className="surface p-10 text-center">
+          <div className="card p-10 text-center">
             <Beaker className="w-10 h-10 text-slate-200 mx-auto mb-3"/>
             <p className="text-slate-400 font-medium text-sm">No {statusFilter} batches.</p>
             {statusFilter === 'active' && canDo('batches', 'create') && (
@@ -609,7 +609,7 @@ export default function BatchesPage() {
               return (
                 <div
                   key={batch.id}
-                  className={`surface overflow-hidden flex flex-col hover:border-slate-300 transition-all ${hasAlarm ? 'border-red-300 ring-1 ring-red-200' : ''}`}
+                  className={`card overflow-hidden flex flex-col hover:border-slate-300 transition-all ${hasAlarm ? 'border-red-300 ring-1 ring-red-200' : ''}`}
                 >
                   {/* Card Header */}
                   <div className="px-5 py-4 flex justify-between items-start border-b border-slate-100 bg-slate-50/40">
@@ -743,7 +743,7 @@ export default function BatchesPage() {
             <span className="ml-2 px-2 py-0.5 bg-navy text-white text-[10px] font-black rounded-full">{displayedBatches.length}</span>
           )}
         </h2>
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="md:hidden p-3 space-y-3">
             {displayedBatches.map(l => (
               <div key={l.id} className="mobile-card p-4 space-y-3">

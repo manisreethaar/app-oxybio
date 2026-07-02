@@ -496,7 +496,7 @@ export default function TasksPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-[160] bg-slate-900/40 backdrop-blur-sm md:static md:bg-transparent md:backdrop-blur-0 flex items-end md:block" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }}>
-        <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="surface p-4 md:p-6 animate-in fade-in duration-200 md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
+        <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="card p-4 md:p-6 animate-in fade-in duration-200 md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
           <h2 className="text-base font-bold text-slate-900 mb-6 flex items-center gap-1.5">
             <ListChecks className="w-5 h-5 text-navy"/> {editingTaskId ? 'Edit Task Details' : (isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder')}
           </h2>
@@ -567,7 +567,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      <div className="surface p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
+      <div className="card p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
@@ -629,7 +629,7 @@ export default function TasksPage() {
             const progress = Math.round((group.completedCount / group.totalCount) * 100);
             
             return (
-              <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`surface p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+              <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`card p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${progress === 100 ? 'bg-emerald-500' : group.priority === 'urgent' ? 'bg-red-500' : group.priority === 'high' ? 'bg-amber-500' : 'bg-slate-400'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${group.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{group.priority}</span>
@@ -680,7 +680,7 @@ export default function TasksPage() {
             const approvalBadge = { 'pending_review': { label: 'Review', cls: 'bg-amber-50 text-amber-700 border-amber-100' }, 'approved': { label: 'Approved OK', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' }, 'rejected': { label: 'Returned', cls: 'bg-red-50 text-red-700 border-red-100' } }[task.approval_status];
 
             return (
-              <div key={task.id} onClick={() => setSelectedTask(task)} className={`surface p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+              <div key={task.id} onClick={() => setSelectedTask(task)} className={`card p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${task.status === 'done' ? 'bg-emerald-500' : task.priority === 'urgent' ? 'bg-red-500' : task.priority === 'high' ? 'bg-amber-500' : task.priority === 'medium' ? 'bg-slate-400' : 'bg-slate-300'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
                   <div className="flex gap-1.5 items-center">

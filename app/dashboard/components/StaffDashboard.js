@@ -368,7 +368,7 @@ export default function StaffDashboard({ employeeProfile }) {
       <div className="space-y-8">
 
         {/* Leave Balance with Progress Bars */}
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
             <h2 className="text-base font-bold text-slate-900 tracking-tight">Time Off Balances</h2>
           </div>
@@ -391,7 +391,7 @@ export default function StaffDashboard({ employeeProfile }) {
         </div>
 
         {/* Quick links */}
-        <div className="surface p-5">
+        <div className="card p-5">
           <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Quick Access</h2>
           <div className="space-y-1">
             {[

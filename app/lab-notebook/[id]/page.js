@@ -275,7 +275,7 @@ export default function LnbEntryPage() {
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
            <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
            
-           <div className="surface p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
+           <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
              <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                <div className="text-navy"><FileCheck className="w-4 h-4" /></div>
                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Detailed Observations</h3>
@@ -290,7 +290,7 @@ export default function LnbEntryPage() {
 
         {/* Sidebar Signatures */}
         <div className="space-y-6">
-           <div className="surface p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
+           <div className="card p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
               <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Chain of Custody</h3>
               
               <div className="mb-6">
@@ -467,7 +467,7 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
   const html  = value ? markdownToHtml(value) : '';
 
   return (
-    <div className="surface p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
+    <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
       <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
         <div className="text-navy">{icon}</div>
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">{title}</h3>
@@ -662,7 +662,7 @@ function StageLogPanel({ snapshots, formulationMap = {}, entryId, role, onResync
 
   if (present.length === 0 && !canResync) return null;
   return (
-    <div className="surface rounded-2xl border border-slate-100 bg-slate-50/20 overflow-hidden">
+    <div className="card rounded-2xl border border-slate-100 bg-slate-50/20 overflow-hidden">
       <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
         <FlaskConical className="w-4 h-4 text-slate-500" />
         <h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">Auto-Synced Stage Data</h3>

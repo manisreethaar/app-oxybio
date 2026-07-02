@@ -329,7 +329,7 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
   ], [all]);
 
   return (
-    <div className="surface mt-6">
+    <div className="card mt-6">
       <div className="px-5 pt-5 pb-3 border-b border-slate-100">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Linked Records</h3>

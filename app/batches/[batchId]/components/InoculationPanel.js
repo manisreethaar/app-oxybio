@@ -218,13 +218,13 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-blue-500">
+      <div className="card p-5 flex items-center gap-3 border-l-4 border-l-blue-500">
         <Droplets className="w-5 h-5 text-slate-600"/>
         <div><h2 className="text-base font-bold text-slate-900">Inoculation: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-slate-500">Define the independent starter source and timeline for this specific trial.</p></div>
       </div>
 
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         {/* Source Type */}
         <div>
           <label className="field-label">Inoculum Source Type</label>

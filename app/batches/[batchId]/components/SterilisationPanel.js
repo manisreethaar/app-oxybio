@@ -215,7 +215,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3">
+      <div className="card p-5 flex items-center gap-3">
         <ShieldCheck className="w-5 h-5 text-slate-600"/>
         <div><h2 className="text-base font-bold text-slate-900">Sterilisation</h2>
           <p className="text-xs text-slate-500">CCP — autoclave/pressure cooker record. Pass required to proceed.</p></div>
@@ -223,7 +223,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       </div>
 
       {passFail === 'Fail' && (
-        <div className="surface p-4 border-red-300 bg-red-50 flex items-start gap-3">
+        <div className="card p-4 border-red-300 bg-red-50 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5"/>
           <div className="flex-1">
             <p className="text-sm font-bold text-red-800">Sterilisation Failed — Advance Blocked</p>
@@ -236,7 +236,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         </div>
       )}
 
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         {/* Method */}
         <div>
           <label className="field-label">Method</label>

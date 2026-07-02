@@ -287,7 +287,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         {filteredSops.length === 0 ? (
           <div className="md:col-span-2 lg:col-span-3 py-16 text-center text-sm font-bold text-gray-400">No SOPs match the current search.</div>
         ) : filteredSops.map((sop: any) => (
-          <div key={sop.id} className={`surface p-5 flex flex-col hover:border-gray-300 transition-colors ${!sop.is_acknowledged ? 'border-blue-200 bg-blue-50/10' : ''}`}>
+          <div key={sop.id} className={`card p-5 flex flex-col hover:border-gray-300 transition-colors ${!sop.is_acknowledged ? 'border-violet-200 bg-violet-50/10' : ''}`}>
             <div className="flex justify-between items-start mb-3">
               <span className="font-mono text-xs font-bold tracking-wider text-navy bg-gray-100 px-1.5 py-0.5 rounded-md border border-gray-200">{sop.sop_id}</span>
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{sop.category}</span>

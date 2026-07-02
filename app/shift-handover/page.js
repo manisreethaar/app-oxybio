@@ -80,7 +80,7 @@ export default function ShiftHandoverPage() {
       </div>
 
       {showForm && (
-        <div className="surface p-6 border-l-4 border-l-navy space-y-4">
+        <div className="card p-6 border-l-4 border-l-navy space-y-4">
           <h3 className="text-sm font-black text-slate-900">Sign Off Shift Handover</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -130,7 +130,7 @@ export default function ShiftHandoverPage() {
       )}
 
       {handovers.length === 0 ? (
-        <div className="surface p-12 text-center text-slate-400">
+        <div className="card p-12 text-center text-slate-400">
           <ArrowRight className="w-10 h-10 mx-auto mb-3 opacity-30"/>
           <p className="font-semibold text-sm">No shift handovers logged yet.</p>
           <p className="text-xs mt-1">Use the button above to sign off at the end of each shift.</p>
@@ -138,7 +138,7 @@ export default function ShiftHandoverPage() {
       ) : (
         <div className="space-y-4">
           {handovers.map(h => (
-            <div key={h.id} className="surface p-5 space-y-4">
+            <div key={h.id} className="card p-5 space-y-4">
               {/* Header */}
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-2">

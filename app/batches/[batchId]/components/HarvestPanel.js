@@ -108,7 +108,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-orange-500">
+      <div className="card p-5 flex items-center gap-3 border-l-4 border-l-orange-500">
         <Package className="w-5 h-5 text-amber-600"/>
         <div>
           <h2 className="text-base font-bold text-slate-900">Harvest: <span className="text-amber-600">{activeFlask.flask_label}</span></h2>
@@ -117,7 +117,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         {record && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Saved</span>}
       </div>
 
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         {/* Harvest start + method */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>

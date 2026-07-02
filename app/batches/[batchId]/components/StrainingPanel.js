@@ -216,7 +216,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 border-l-4 border-l-amber-500">
+      <div className="card p-5 border-l-4 border-l-amber-500">
         <div className="flex items-center gap-2 mb-1">
           <Beaker className="w-5 h-5 text-amber-600"/>
           <h2 className="text-base font-bold text-slate-900">Centrifugation: <span className="text-amber-600">{activeFlask.flask_label}</span></h2>
@@ -234,7 +234,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       </div>
 
       {/* Equipment Traceability */}
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
           <Wrench className="w-3 h-3"/>Equipment Used
         </p>
@@ -246,7 +246,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       </div>
 
       {/* G-67: Method selection */}
-      <div className="surface p-5 space-y-3">
+      <div className="card p-5 space-y-3">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Separation Method</p>
         <div className="flex gap-2">
           {['Centrifugation','Membrane Filtration','Gravity Filtration','Depth Filtration'].map(m=>(
@@ -259,7 +259,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       </div>
 
       {/* Centrifuge Run Parameters */}
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           {method === 'Centrifugation' ? 'Centrifuge Run Parameters' : 'Filtration Parameters'}
         </p>
@@ -311,7 +311,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       </div>
 
       {/* Mass Balance */}
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mass Balance (g)</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
@@ -340,7 +340,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       </div>
 
       {/* Supernatant Quality + Volume */}
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Supernatant / Filtrate Quality</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
@@ -417,7 +417,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       </div>
 
       {/* Supervisor + Notes */}
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         {isIntern && (
           <div>
             <label className="field-label text-red-500">Supervised By (Required for Juniors)</label>

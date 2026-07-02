@@ -524,7 +524,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── Feed Controls: filters + export ───────────────────── */}
       {tab === 'feed' && (
-        <div className="surface p-3 flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
+        <div className="card p-3 flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
           {isAdmin && (
             <select
               value={filterEmployee}
@@ -754,7 +754,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         >
            {/* Top KPIs */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="surface p-6">
+              <div className="card p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy">
                        <Activity className="w-5 h-5"/>
@@ -768,7 +768,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                  </div>
               </div>
 
-              <div className="surface p-6">
+              <div className="card p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
                        <AlertTriangle className="w-5 h-5"/>
@@ -783,7 +783,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                  <p className="text-[10px] font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
               </div>
 
-              <div className="surface p-6">
+              <div className="card p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-navy">
                        <CheckCircle className="w-5 h-5"/>
@@ -802,7 +802,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
            {/* Charts Section */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Productivity Chart */}
-              <div className="surface p-6">
+              <div className="card p-6">
                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-navy"/> Activity Velocity
                  </h3>
@@ -812,7 +812,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               </div>
 
               {/* Issue Tracker Heatmap */}
-              <div className="surface p-6">
+              <div className="card p-6">
                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500"/> Deviation Heatmap
                  </h3>
@@ -830,7 +830,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
            </div>
 
            {/* Recent High Priority Events */}
-           <div className="surface p-6">
+           <div className="card p-6">
               <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Critical Review Feed</h3>
               <div className="space-y-3">
                  {activities.filter(a => a.severity === 'high' || a.issue_observed).slice(0, 3).map(act => (
@@ -881,11 +881,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{isAdmin ? act.employees?.full_name : 'You'}</span>
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
-                    {act.batch_id && <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-mono font-bold rounded border border-blue-100">{act.batch_id}</span>}
+                    {act.batch_id && <span className="px-2 py-0.5 bg-violet-50 text-violet-700 text-xs font-mono font-bold rounded border border-violet-100">{act.batch_id}</span>}
                     {act.severity && (
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${
                         act.severity === 'high' ? 'bg-red-50 text-red-700 border-red-100' : 
-                        act.severity === 'normal' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                        act.severity === 'normal' ? 'bg-violet-50 text-violet-700 border-violet-100' :
                         'bg-slate-50 text-slate-500 border-slate-200'
                       }`}>
                         {act.severity}
@@ -895,7 +895,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/messages?pin_type=activity&pin_id=${act.id}&pin_title=${encodeURIComponent('Activity: ' + (act.activity_description.length > 20 ? act.activity_description.substring(0, 20) + '...' : act.activity_description))}`)}
-                      className="p-1.5 rounded-lg border border-indigo-200 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50"
+                      className="p-1.5 rounded-lg border border-violet-200 text-violet-500 hover:text-violet-700 hover:bg-violet-50"
                       title="Discuss activity"
                     >
                       <MessageSquare className="w-3.5 h-3.5"/>
@@ -916,7 +916,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                         <>
                           <button
                             onClick={() => openEditModal(act)}
-                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-violet-600 hover:bg-violet-50 hover:border-violet-200"
                             title="Request edit"
                           >
                             <Edit2 className="w-3.5 h-3.5"/>

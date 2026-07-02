@@ -741,7 +741,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         </div>
       )}
       {/* Header + alarms */}
-      <div className="surface p-5 border-l-4 border-l-navy">
+      <div className="card p-5 border-l-4 border-l-navy">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-navy"/>
@@ -817,7 +817,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ── Reading Log Form ── */}
         {!endpoint && tZero && (
-          <div className="surface overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">Log Reading for {activeFlask.flask_label}</h3>
             </div>
@@ -1020,7 +1020,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         )}
 
         {/* ── Chart + Reading Table (Shows All Flasks' graph context) ── */}
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Trial Trends</h3>
             {batch?.formulation_id && (
@@ -1226,7 +1226,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Endpoint Declaration ── */}
       {!endpoint && showEndpoint && (
-        <div className="surface overflow-hidden border-2 border-navy/20">
+        <div className="card overflow-hidden border-2 border-navy/20">
           <div className="px-5 py-4 border-b border-slate-100 bg-navy/5 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-navy"/>
             <h3 className="text-sm font-bold text-slate-900">Declare Endpoint for {activeFlask.flask_label}</h3>
@@ -1316,7 +1316,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Feed / pH Correction Log */}
       {tZero && (
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Droplet className="w-4 h-4 text-slate-600"/>
@@ -1379,7 +1379,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Advance button (after endpoint declared) */}
       {endpoint && (
-        <div className="surface p-5 flex items-center justify-between gap-4">
+        <div className="card p-5 flex items-center justify-between gap-4">
           <div className="text-sm">
             <p className="font-bold text-slate-900">Endpoint declared ✓</p>
             <p className="text-slate-500 text-xs">Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total fermentation</p>

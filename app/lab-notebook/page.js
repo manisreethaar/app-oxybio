@@ -310,7 +310,7 @@ export default function DigitalLnbPage() {
         const totalVisible = Object.values(grouped).flat().length;
 
         if (totalVisible === 0) return (
-          <div className="surface p-12 text-center mt-4">
+          <div className="card p-12 text-center mt-4">
             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4"/>
             <h3 className="text-lg font-bold text-slate-700">{entries.length === 0 ? 'No LNB Entries Found' : 'No results match your search'}</h3>
             <p className="text-sm text-slate-500 mt-1 mb-6">{entries.length === 0 ? 'Start documenting your experiments.' : 'Try a different search term or group.'}</p>
@@ -320,7 +320,7 @@ export default function DigitalLnbPage() {
 
         const EntryCard = ({ entry }) => (
           <Link key={entry.id} href={`/lab-notebook/${entry.id}`} className="block group">
-            <div className="surface p-5 hover:shadow-md transition-all border border-slate-100 hover:border-navy/20 cursor-pointer">
+            <div className="card p-5 hover:shadow-md transition-all border border-slate-100 hover:border-navy/20 cursor-pointer">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">

@@ -190,7 +190,7 @@ export default function AdminDashboard({ employeeId }) {
 
   if (loading) return (
     <div className="space-y-8">
-      <div className="surface p-6 flex justify-between items-center"><Skeleton width={200} height={28}/> <Skeleton width={100} height={36}/></div>
+      <div className="card p-6 flex justify-between items-center"><Skeleton width={200} height={28}/> <Skeleton width={100} height={36}/></div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 w-full rounded-2xl"/>)}
       </div>
@@ -407,7 +407,7 @@ export default function AdminDashboard({ employeeId }) {
 
       {/* Operational Alerts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="surface p-5">
+        <div className="card p-5">
           <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500"/> Low Stock Alerts
           </h3>
@@ -426,7 +426,7 @@ export default function AdminDashboard({ employeeId }) {
           )}
         </div>
 
-        <div className="surface p-5">
+        <div className="card p-5">
           <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
             <Settings className="w-4 h-4 text-slate-500"/> Calibration Due
           </h3>
@@ -448,7 +448,7 @@ export default function AdminDashboard({ employeeId }) {
           )}
         </div>
 
-        <div className="surface p-5">
+        <div className="card p-5">
           <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-red-500"/> Open CAPA Items
           </h3>

@@ -421,7 +421,7 @@ export default function ConsumerResearchPage() {
       {/* Trend chart                                                          */}
       {/* ------------------------------------------------------------------ */}
       {sessions.length >= 2 && !compareMode && (
-        <div className="surface p-6 mb-6 mt-8">
+        <div className="card p-6 mb-6 mt-8">
           <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-1 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-navy"/> Sensory Score Trend
           </h2>
@@ -434,7 +434,7 @@ export default function ConsumerResearchPage() {
       {/* Compare radar overlay                                                */}
       {/* ------------------------------------------------------------------ */}
       {compareMode && compareSessions.length >= 2 && (
-        <div className="surface p-6 mt-6">
+        <div className="card p-6 mt-6">
           <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-4 flex items-center gap-2">
             <GitCompareArrows className="w-4 h-4"/> Session Comparison
           </h2>
@@ -518,7 +518,7 @@ export default function ConsumerResearchPage() {
           return (
             <div
               key={s.id}
-              className={`surface p-6 hover:shadow-md transition-all group relative overflow-hidden ${
+              className={`card p-6 hover:shadow-md transition-all group relative overflow-hidden ${
                 compareMode && isSelected ? 'ring-2' : ''
               }`}
               style={compareMode && isSelected ? { '--tw-ring-color': COMPARE_COLORS[colorIdx] } : {}}

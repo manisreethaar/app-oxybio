@@ -212,7 +212,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
       )}
 
       {/* Header */}
-      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-emerald-500">
+      <div className="card p-5 flex items-center gap-3 border-l-4 border-l-emerald-500">
         <CheckCircle className="w-5 h-5 text-emerald-600"/>
         <div>
           <h2 className="text-base font-bold text-slate-900">
@@ -224,7 +224,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
       {/* Already released — show record */}
       {record && (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
             <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2"/>
             <p className="text-sm font-black text-emerald-800">Released</p>
@@ -266,7 +266,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
       {/* Release form */}
       {!record && (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           {!isCeo ? (
             <div className="p-6 bg-slate-50 rounded-2xl text-center">
               <Lock className="w-8 h-8 text-slate-300 mx-auto mb-3"/>

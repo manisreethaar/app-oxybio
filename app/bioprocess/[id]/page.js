@@ -182,7 +182,7 @@ function PredictiveModelsTab({ supabase, toast }) {
       ) : (
         <div className="space-y-3">
           {models.map(m => (
-            <div key={m.id} className={`surface p-4 border-l-4 ${m.is_active ? 'border-l-emerald-500' : 'border-l-gray-300'}`}>
+            <div key={m.id} className={`card p-4 border-l-4 ${m.is_active ? 'border-l-emerald-500' : 'border-l-gray-300'}`}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-black text-slate-900">{m.model_name} <span className="text-slate-400 font-semibold text-xs">v{m.version}</span></p>

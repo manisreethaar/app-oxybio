@@ -74,7 +74,7 @@ export default function StorageWidget() {
   };
 
   if (loading) return (
-    <div className="surface p-6 animate-pulse space-y-4">
+    <div className="card p-6 animate-pulse space-y-4">
       <div className="h-5 w-40 bg-slate-200 rounded" />
       <div className="h-3 w-full bg-slate-100 rounded-full" />
       <div className="h-3 w-full bg-slate-100 rounded-full" />
@@ -92,7 +92,7 @@ export default function StorageWidget() {
   const storStatus = stor?.percentUsed > 85 ? 'danger' : stor?.percentUsed > 60 ? 'warn' : 'ok';
 
   return (
-    <div className="surface p-6 space-y-6">
+    <div className="card p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -33,7 +33,7 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
   };
 
   return (
-    <div className="surface p-5 space-y-4">
+    <div className="card p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-navy/10 rounded-lg flex items-center justify-center shrink-0">
@@ -165,7 +165,7 @@ export default function BatchSettingsPage() {
       {loading ? (
         <div className="space-y-4">
           {[1, 2].map(i => (
-            <div key={i} className="surface p-5 animate-pulse">
+            <div key={i} className="card p-5 animate-pulse">
               <div className="h-5 bg-slate-200 rounded w-40 mb-3" />
               <div className="space-y-2">
                 {[1, 2, 3].map(j => <div key={j} className="h-9 bg-slate-100 rounded-xl" />)}
