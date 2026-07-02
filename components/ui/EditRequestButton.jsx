@@ -120,7 +120,7 @@ export default function EditRequestButton({
       </div>
 
       {open && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
             <button
               onClick={() => setOpen(false)}

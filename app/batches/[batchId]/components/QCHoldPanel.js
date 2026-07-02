@@ -649,7 +649,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     <div className="space-y-5">
       {/* G-09: Certificate of Analysis (COA) Print Modal */}
       {showCoa && sample && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-transparent flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4 print:shadow-none print:rounded-none print:my-0">
             {/* Print-only: hide controls */}
             <div className="flex items-center justify-between p-5 border-b border-slate-100 print:hidden">
@@ -738,7 +738,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
       {/* G-08: OOS Investigation Modal */}
       {oosModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-transparent flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">

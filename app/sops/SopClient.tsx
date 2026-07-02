@@ -333,7 +333,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
       </div>
 
       {showAckModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-sm w-full p-6 pb-32 relative shadow-xl border border-gray-100 flex flex-col gap-4 overflow-y-auto max-h-[95vh]">
             <button onClick={() => { setShowAckModal(null); setQuizStarted(false); setQuizScore(0); }} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
             <div className="flex flex-col gap-0.5"><h2 className="text-base font-bold text-gray-900">Digital Acknowledgment</h2><p className="text-accent font-bold uppercase tracking-wider text-[9px]">Module 8: Interactive Compliance</p></div>
@@ -359,7 +359,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
       )}
 
       {showUploadModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-sm w-full p-6 pb-32 relative shadow-xl overflow-y-auto max-h-[95vh]">
             <button onClick={() => setShowUploadModal(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4"/></button>
             <h2 className="text-base font-bold text-gray-900 mb-4">Upload Document</h2>
@@ -428,7 +428,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         </div>
       )}
       {showSignaturesModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-lg w-full p-6 relative shadow-xl overflow-y-auto max-h-[85vh]">
             <button onClick={() => setShowSignaturesModal(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
             <h2 className="text-xl font-black text-gray-900 mb-2">SOP Acknowledgements</h2>

@@ -16,7 +16,7 @@ export default function ConfirmDialogs({
     <>
       {/* Rejection reason modal */}
       {rejectingId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2">Reject Formulation</h3>
             <p className="text-xs text-slate-500 mb-4">You must provide a reason for sending this recipe back to Draft.</p>
@@ -37,7 +37,7 @@ export default function ConfirmDialogs({
 
       {/* Delete confirmation modal */}
       {pendingDeleteId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Delete Recipe</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to permanently delete this recipe? This action cannot be undone.</p>
@@ -57,7 +57,7 @@ export default function ConfirmDialogs({
 
       {/* Archive confirmation modal */}
       {pendingArchiveId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Archive Formulation</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to archive this formulation? It will be hidden and no longer possible to create batches from it.</p>

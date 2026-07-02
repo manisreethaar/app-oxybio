@@ -37,7 +37,7 @@ export default function SecureViewerModal({ url, title, onClose }) {
   const userEmail = employeeProfile?.email || 'Unauthorized';
 
   return (
-    <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex justify-center items-center z-[100] p-4 select-none">
+    <div className="fixed inset-0 bg-transparent flex justify-center items-center z-[100] p-4 select-none">
       <div 
         className={`bg-white rounded-xl w-full h-full max-w-6xl max-h-[90vh] flex flex-col relative shadow-2xl transition-all duration-200 overflow-hidden ${isBlurred ? 'blur-md grayscale' : ''}`}
         onContextMenu={(e) => e.preventDefault()} // Block right click

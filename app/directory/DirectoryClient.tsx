@@ -64,7 +64,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-transparent flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="bg-white w-full sm:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden max-h-[95dvh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
 
         {/* ── Header gradient strip ── */}
@@ -252,7 +252,7 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
   const [showFullProfile, setShowFullProfile] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="relative w-full max-w-sm">
         <button onClick={onClose} className="absolute -top-4 -right-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors">
           <X className="w-5 h-5 text-slate-600"/>
@@ -727,7 +727,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Admin Quick Edit Profile Modal */}
       {editingEmployee && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-0 sm:p-4">
             <div className="flex flex-col bg-white rounded-[2rem] max-w-2xl w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
                 <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
                 <h2 className="text-2xl font-black text-slate-800 mb-2">Edit {editingEmployee.full_name}</h2>
@@ -869,7 +869,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Add Employee Modal */}
       {showInviteModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-0 sm:p-4">
           <div className="flex flex-col glass-panel rounded-[2rem] max-w-lg w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto bg-white">
             <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all">
               <X className="w-5 h-5"/>

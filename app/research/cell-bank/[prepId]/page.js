@@ -87,7 +87,7 @@ function ShipVialModal({ vial, onClose, onShipped }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <p className="text-sm font-black text-slate-900">Ship Vial to External Lab</p>
         <p className="text-xs text-slate-500">Vial: <span className="font-mono font-bold">{vial.vial_code}</span></p>
@@ -247,7 +247,7 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
 
       {/* Thaw/use confirm with recovery_pct */}
       {confirmAction && (confirmAction === 'thaw' || confirmAction === 'use') && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <p className="text-sm font-black text-slate-900">{confirmAction === 'thaw' ? 'Log Thaw' : 'Mark Vial Used'}</p>
             <p className="text-xs text-slate-500">Vial: <span className="font-mono font-bold">{vial.vial_code}</span></p>
@@ -548,7 +548,7 @@ function CoaModal({ prep, onClose }) {
   const handlePrint = () => window.print();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4 overflow-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
         {/* Modal controls (hidden on print) */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100 print:hidden">
