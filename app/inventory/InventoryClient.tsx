@@ -1118,7 +1118,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
                 {catStock.map((s: any) => {
                   const risk = getStockRisk(s);
                   return (
@@ -1278,7 +1278,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
                   {catItems.map(item => (
                     <div
                       key={item.id}

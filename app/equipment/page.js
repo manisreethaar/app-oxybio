@@ -257,7 +257,7 @@ export default function EquipmentPage() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredEquipment.length === 0 ? (
           <div className="md:col-span-2 lg:col-span-3 py-16 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-sm font-bold text-slate-400">
             No equipment matches the current search.
