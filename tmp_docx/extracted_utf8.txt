@@ -1,0 +1,3767 @@
+﻿OXYGEN BIOINNOVATIONS PVT LTD  ΓÇó  Shared Lab Reference ΓÇö Internal
+
+OB-REF-LAB-004   Γöé   Rev 1.0   Γöé   June 2026
+
+
+
+OXYGEN BIOINNOVATIONS PRIVATE LIMITED
+
+CIN: U72100TZ2026PTC038160   Γöé   TBI-DETI@ACE, Cabin D, Hosur, Tamil Nadu
+
+α«ëα«úα«╡α»ç α««α«░α»üα«¿α»ìα«ñα»ü  ΓÇó  Food Is Medicine
+
+SHARED LAB MASTER INVENTORY
+
+Reagents, Indicators, Chemicals & Instruments ΓÇö with Hazard Classification, OBI-Specific Relevance & Operational Status
+
+34 Reagents  ΓÇó  14 Indicators  ΓÇó  ~155 Chemicals (AΓÇôZ)  ΓÇó  52 Instruments  ΓÇó  4 Cross-Reference Categories
+
+Document Number
+
+OB-REF-LAB-004
+
+Version
+
+1.0
+
+Effective Date
+
+June 2026
+
+Review Date
+
+December 2026, or immediately upon any equipment status change
+
+Classification
+
+Confidential ΓÇö Internal Use Only
+
+Prepared By
+
+CEO, Oxygen Bioinnovations Pvt. Ltd.
+
+Source Facility
+
+Adhiyamaan College of Engineering, Department of Biotechnology ΓÇö TBI-DETI@ACE Cabin D (shared facility)
+
+Companion Documents
+
+OBI-BOOK-SOP-001, OxyOS Inventory Hub. Supersedes OB-REF-CHEM-001/002/003 (Liquid / Stains & Indicators / Solid & Powder Reagents, April 2026) as the current physical stock reference ΓÇö see Section 1.
+
+
+
+1. Purpose & Scope
+
+This document captures a physical inventory check of the shared laboratory facility (Adhiyamaan College of Engineering, Department of Biotechnology / TBI-DETI@ACE Cabin D), conducted June 2026 and reported via founder communication. It classifies every reagent, indicator, chemical, and instrument by category and hazard tier, and ΓÇö where applicable ΓÇö ties each entry to the specific OBI SOP, experimental protocol, or product line it serves.
+
+PRECEDENCE: OB-REF-CHEM-001/002/003 (April 2026) were prepared one month before old chemical stock was discarded. This document, captured June 2026, is the current authoritative record of what is physically on the shelf. Where an item appears in 001/002/003 but not here, treat it as likely discarded rather than as an omission in this document ΓÇö see Section 8 for the formal retirement step still needed on those three volumes.
+
+ΓÜá DEDUPLICATION & LABELLING LOG
+
+ΓÇÿPhenol reagentΓÇÖ (Reagent List #24) confirmed by founder as the FolinΓÇôCiocalteu reagent ΓÇö recommend relabelling the physical container to prevent future misidentification.
+
+ΓÇÿCedar wood oilΓÇÖ appears on both the Reagent List and Indicator List ΓÇö same physical stock (oil-immersion microscopy), consolidated as one line in this document.
+
+ΓÇÿIodine trione hydrateΓÇÖ (Indicator List) is a probable transcription variant of ΓÇÿIndane trione hydrate,ΓÇÖ which OB-REF-CHEM-003ΓÇÖs own correction log already identifies as Ninhydrin ΓÇö verify against the physical label.
+
+ΓÇÿRobertΓÇÖs reagentΓÇÖ and ΓÇÿRobertΓÇÖs test reagentΓÇÖ likely represent two stock units of the same reagent (quantity-tagged in the original export) ΓÇö composition not independently confirmed; verify before use.
+
+ΓÇÿPicric acidΓÇÖ and ΓÇÿPicric acid saturated solutionΓÇÖ likely refer to the same physical stock across the Reagent List and Master Chemical Inventory.
+
+Numeric suffixes in the original raw export (e.g. ΓÇÿ-2ΓÇÖ, ΓÇÿ-3ΓÇÖ) are read as stock-count tags from the source inventory system, not distinct reagent variants ΓÇö stripped throughout this document for readability.
+
+RESOLVED: Bio Chemical IndiaΓÇÖs fermentor model is confirmed as Bioage 2A (founder, June 2026) ΓÇö Section 2 and Section 7.1 updated accordingly.
+
+Open task: OB-REF-CHEM-001/002/003 (April 2026) have not yet been formally annotated to mark which entries were discarded after this June 2026 capture ΓÇö see Section 8.
+
+
+
+ΓÜá PRIORITY HAZARD ACTIONS ΓÇö THIS INVENTORY
+
+Acrylamide ΓÇö IARC 2A neurotoxic carcinogen. Never weigh without gloves + fume hood; polymerised gel is safe.
+
+Benzene, Carbon Tetrachloride, Perchloroethylene ΓÇö IARC Group 1/2A carcinogens. Evaluate elimination/substitution; these are legacy solvents with safer modern alternatives.
+
+Nickel Chloride ΓÇö IARC Group 1 carcinogen. Minimise all use.
+
+Phenyl Hydrazine Hydrochloride / Phenyl Hydrazone ΓÇö carcinogen + blood toxin. Substitute wherever possible.
+
+Sodium Nitroprusside ΓÇö cyanide complex. NEVER acidify.
+
+TollenΓÇÖs Reagent ΓÇö forms a contact-explosive silver residue if stored. Prepare immediately before use; never store prepared reagent.
+
+Picric Acid ΓÇö explosive when allowed to dry out. Confirmed currently stored correctly as a saturated solution; verify monthly that it has not evaporated or crystallised.
+
+Malachite Green ΓÇö not FSSAI-permitted in any food-contact application. Confirm this stock is lab-stain grade only and segregated from any product-contact area.
+
+Trypan Blue ΓÇö suspected carcinogen/teratogen. Gloves, dedicated waste stream, avoid skin contact.
+
+Cross-reference: OB-REF-CHEM-003 separately flags Potassium Dichromate, Mercuric Sulphate, and Sodium Arsenate as additional Group 1 carcinogens in physical stock ΓÇö not re-listed here as they did not appear in this particular inventory export; confirm their status independently.
+
+
+
+2. Equipment Operational Status ΓÇö Action-Relevant
+
+Check this section before planning any fermentation, drying, or sample-staging step. Status current as of founder report, 18 June 2026.
+
+Equipment
+
+Status
+
+Operational Note
+
+Fermentor ΓÇö Bio Chemical India (model: Bioage 2A)
+
+PARTIALLY FUNCTIONAL
+
+CONFIRMED (founder, June 2026): this is the Bioage 2A unit. Running, but no functional probes ΓÇö no pH/DO/temp logging ΓÇö and a shaft problem. Usable for unmonitored/manual runs only.
+
+Fermentor ΓÇö Scigenics (listed unit)
+
+NOT WORKING
+
+CONFIRMED (founder, June 2026): this is the unit reported completely non-functional. Do not schedule any fermentation run on it until repaired.
+
+Hybridization Oven ΓÇô Scigenics Biotech
+
+IN MAINTENANCE
+
+Not usable until returned from maintenance. Low Phase 0 priority regardless.
+
+Ice Flake Machine
+
+IN MAINTENANCE
+
+Not usable until returned from maintenance ΓÇö plan cold-chain workarounds for heat-sensitive samples in the meantime.
+
+
+
+Autoclave: CONFIRMED present and functional (founder, June 2026). This was absent from the original raw inventory capture but has been added to Section 7.1/7.2 on direct confirmation ΓÇö sterile media prep, aseptic fermentation, and GMP-grade processing are not blocked on this front. Pair with the dry-heat ovens for the two-method sterilisation split specified in SOP-002.
+
+
+
+3. Category Colour Key
+
+Applied consistently across the Reagent, Indicator, and Chemical tables below for quick visual scanning.
+
+Microbio Media
+
+Buffer / Salt
+
+Metal / Inorganic
+
+Analytical Reagent
+
+Organic Standard
+
+Protein / Bio
+
+Polymer / Surfactant
+
+Dye / Stain
+
+Vitamin / Nutrient
+
+Electrophoresis
+
+Plant / Fungal Hormone
+
+
+
+4. Reagent List ΓÇö Classified
+
+34 entries as received, June 2026. Hazard tier and OBI-specific relevance assessed against current Phase 0 CLARITY protocols and OBI-BOOK-SOP-001.
+
+#
+
+Reagent
+
+Category
+
+Hazard
+
+Classic Use
+
+OBI-Specific Relevance
+
+Storage / Handling
+
+1
+
+Aceto carmine
+
+Dye / Stain
+
+Low
+
+Stains chromosomes/nuclei red for plant cytology (root-tip squash technique).
+
+Limited current use; relevant only if grain (ragi/black rice) cytogenetic work is undertaken.
+
+RT, amber, sealed.
+
+2
+
+Barfoed's reagent
+
+Analytical Reagent
+
+Moderate
+
+Cupric acetate + acetic acid; distinguishes monosaccharides from disaccharides (mono┬¡saccharides reduce faster, brick-red precipitate).
+
+Useful for tracking sugar profile changes during ragi/black-rice starch hydrolysis across fermentation.
+
+RT, sealed. Toxic (copper) ΓÇö gloves.
+
+3
+
+Bial's reagent
+
+Analytical Reagent
+
+Moderate
+
+Orcinol + HCl + FeClΓéâ; classic test for pentose sugars (e.g. ribose) ΓÇö forms blue-green colour.
+
+Niche; relevant only for RNA/nucleic-acid-related pentose work, not routine QC.
+
+Amber, 4┬░C ΓÇö light sensitive.
+
+4
+
+Biuret reagent
+
+Protein / Bio
+
+Moderate
+
+CuSOΓéä + NaOH (┬▒ tartrate); detects peptide bonds ΓÇö violet colour proportional to protein content.
+
+Usable as a low-cost protein-content QC method for fermented ragi base if HPLC/Bradford is unavailable.
+
+RT, sealed. Alkaline ΓÇö gloves/goggles.
+
+5
+
+Bromocresol green solution
+
+Dye / Stain
+
+Low
+
+pH indicator (yellow ΓåÆ blue, pH 3.8ΓÇô5.4); also basis of the BCG dye-binding protein assay.
+
+Could double as a real-time visual pH tracker dropped into fermentation media, or for BCG protein quantification.
+
+RT, amber, sealed.
+
+6
+
+Bromophenol blue indicator
+
+Dye / Stain
+
+Low
+
+pH indicator (yellow ΓåÆ blue, pH 3.0ΓÇô4.6); also the standard tracking dye for gel electrophoresis loading buffer.
+
+Relevant if/when LAB strain genomic work (16S PCR product checks) moves forward.
+
+RT, sealed.
+
+7
+
+Bromophenol blue solution
+
+Dye / Stain
+
+Low
+
+Pre-made solution form of the above.
+
+Same as above ΓÇö consolidate physical stock with the indicator form to avoid duplicate inventory lines.
+
+RT, sealed.
+
+8
+
+Cedar wood oil
+
+Dye / Stain (mounting aid)
+
+Low
+
+Immersion oil for 1000x oil-immersion microscopy.
+
+Pairs directly with the Bino CXI microscope on the instrument list for high-resolution spore/cell visualisation. NOTE: also listed separately on the Indicator list ΓÇö same physical reagent, consolidate as one stock line.
+
+RT, sealed, away from solvents.
+
+9
+
+Chlorophenol red solution
+
+Dye / Stain
+
+Low
+
+pH indicator (yellow ΓåÆ red/violet, pH 4.8ΓÇô6.4); commonly incorporated into fermentation media to visually track acid production.
+
+Worth piloting as a colour-change indicator strip/media additive for real-time visual monitoring of the ragi + Karuppu Kavuni fermentation pH drop, alongside electronic pH logging.
+
+RT, amber, sealed.
+
+10
+
+Crystal violet solution
+
+Dye / Stain
+
+Moderate
+
+Primary Gram stain dye; general bacterial/cell stain.
+
+Core reagent for Gram staining (SOP-007) ΓÇö confirms LAB morphology and screens for Gram-negative contamination.
+
+RT, sealed. Stains skin/surfaces ΓÇö gloves.
+
+11
+
+Ehrlich's reagent
+
+Analytical Reagent
+
+Moderate
+
+p-DMAB in acidified ethanol; indole test for bacterial identification, also urobilinogen detection.
+
+Useful confirmatory test if isolating/identifying contaminant or LAB strains beyond catalase typing.
+
+Amber, 4┬░C ΓÇö light/air sensitive, degrades to pink/brown.
+
+12
+
+Gentian violet stain solution aqueous
+
+Dye / Stain
+
+Moderate
+
+Triarylmethane dye, historically used in Gram staining and as a topical antiseptic.
+
+Functionally redundant with Crystal violet already in stock ΓÇö confirm whether both are genuinely needed or one can be phased out.
+
+RT, sealed. Stains skin ΓÇö gloves.
+
+13
+
+Giemsa's stain solution
+
+Dye / Stain
+
+Moderate
+
+Methanol-based Romanowsky stain; blood film/malaria parasite staining, chromosome banding.
+
+Reserve for Phase 2 in-vitro safety/haematotoxicity studies referenced in the reagent catalogue ΓÇö not a Phase 0 priority.
+
+Flammables cabinet ΓÇö methanol-based.
+
+14
+
+Indole-3 acetic acid
+
+Plant / Fungal Hormone
+
+Low
+
+Auxin ΓÇö classic plant growth hormone used in tissue-culture media.
+
+Direct relevance to fungal mycelium (Lion's Mane/Cordyceps/Reishi) growth promotion is not well established in literature ΓÇö treat as exploratory, not a validated growth-media input, until trialled.
+
+4┬░C, amber ΓÇö light sensitive.
+
+15
+
+Lactophenol
+
+Dye / Stain (mountant)
+
+Moderate
+
+Phenol-based fungal mounting medium, often combined with cotton blue.
+
+If unpaired with cotton blue, of limited standalone use ΓÇö confirm whether this is the carrier for the lactophenol cotton blue entry in the master chemical list, to avoid double-counting stock.
+
+RT, sealed. Phenol component is corrosive ΓÇö gloves.
+
+16
+
+Malachite green
+
+Dye / Stain
+
+High
+
+Triphenylmethane dye; classic bacterial endospore stain.
+
+CAUTION: malachite green is banned as a food/aquaculture-contact substance in India (carcinogenic metabolite, malachite green is not FSSAI-permitted in any food-contact application) ΓÇö confirm this stock is lab-stain grade only and is never used near product-contact surfaces or packaging.
+
+RT, sealed. Suspected carcinogen ΓÇö dedicated waste stream, gloves.
+
+17
+
+Methyl orange solution
+
+Dye / Stain
+
+Low
+
+pH indicator (red ΓåÆ yellow, pH 3.1ΓÇô4.4); acid-base titration endpoint indicator.
+
+Usable for titratable acidity (TA) titration of fermented curd/beverage ΓÇö a standard QC parameter for fermented foods.
+
+RT, sealed.
+
+18
+
+Methylene blue alkaline
+
+Dye / Stain
+
+Moderate
+
+Loeffler's methylene blue; general bacterial stain, also a vital/viability dye.
+
+Usable for a quick viability check (dye-exclusion) on LAB cultures between formal CFU counts.
+
+RT, sealed.
+
+19
+
+Methylene blue aqueous
+
+Dye / Stain
+
+Moderate
+
+Plain aqueous form of the above.
+
+Same uses as alkaline form ΓÇö confirm which formulation is the working stock to avoid redundant entries.
+
+RT, sealed.
+
+20
+
+Methylene blue staining solution aqueous
+
+Dye / Stain
+
+Moderate
+
+Ready-to-use working solution.
+
+Same as above.
+
+RT, sealed.
+
+21
+
+Molisch's reagent
+
+Analytical Reagent
+
+High
+
+╬▒-naphthol + conc. HΓééSOΓéä; general qualitative test for carbohydrates (purple ring at the acid-sugar interface).
+
+General confirmatory test for the presence of fermentable carbohydrate in substrate extracts before more specific assays (DNS/Anthrone).
+
+RT, sealed. Concentrated acid component ΓÇö fume hood, goggles.
+
+22
+
+Morner's reagent
+
+Analytical Reagent
+
+Moderate
+
+Formaldehyde + conc. HΓééSOΓéä; Mo╠êrner's test specifically detects tryptophan.
+
+Relevant only if amino-acid-specific profiling of the fermented base (beyond GABA) is undertaken.
+
+RT, sealed, corrosive component.
+
+23
+
+Ninhydrin
+
+Analytical Reagent
+
+Moderate
+
+Reacts with free amino groups (primary amines) to give a purple (Ruhemann's purple) colour ΓÇö classic amino acid/protein detection.
+
+CORE REAGENT ΓÇö this is the active reagent in your own SOP-OBI-GABA-ASSAY-001 (Ninhydrin Spectrophotometric Method for GABA quantification). Verify stock is current and sufficient before any GABA batch is run.
+
+RT, amber, sealed ΓÇö degrades with moisture/light.
+
+24
+
+Phenol reagent
+
+Analytical Reagent
+
+Moderate
+
+CONFIRMED (founder, June 2026): this IS the FolinΓÇôCiocalteu reagent, simply shelf-labelled ΓÇ£Phenol reagent.ΓÇ¥ Used with Gallic acid and Sodium carbonate for the Total Phenolic Content (TPC) assay.
+
+All three TPC assay components ΓÇö this Phenol/FolinΓÇôCiocalteu reagent, Gallic acid, and Sodium carbonate ΓÇö are confirmed present in this inventory (see Master Chemical Inventory, Section 6). The TPC assay for mushroom extract characterisation (cited in OB-REF-CHEM-003 as critical for IP disclosure) is runnable as soon as the UV-Vis spectrophotometer is free.
+
+4┬░C, amber, sealed ΓÇö relabel container to read ΓÇ£FolinΓÇôCiocalteu (Phenol) ReagentΓÇ¥ to prevent future confusion.
+
+25
+
+Phenolphthalein solution
+
+Dye / Stain
+
+Low
+
+pH indicator (colourless ΓåÆ pink, pH 8.2ΓÇô10.0); standard acid-base titration endpoint indicator.
+
+Direct relevance: titratable acidity (TA) testing of the fermented beverage ΓÇö a core, low-cost QC parameter you do not yet appear to be running routinely.
+
+RT, sealed. Ethanol-based ΓÇö flammable.
+
+26
+
+Picric acid saturated solution
+
+Dye / Stain / Fixative
+
+SEVERE
+
+Component of Bouin's fixative; also historical use in some colourimetric (Jaffe-type) assays.
+
+Stored correctly as a saturated aqueous solution, which is the safe form ΓÇö confirm monthly that it has not evaporated/crystallised, since dry picric acid is a shock-sensitive explosive.
+
+RT, away from heat/metal caps (forms shock-sensitive metal picrates) ΓÇö never allow to dry out.
+
+27
+
+Pure linseed oil
+
+Organic Standard
+
+Low
+
+Drying oil; historic use in some immersion/mounting applications and equipment maintenance.
+
+No identified current OBI application.
+
+RT, sealed, away from oxidisers (spontaneous combustion risk on oil-soaked rags).
+
+28
+
+Robert's reagent
+
+Uncategorised / Verify
+
+Moderate
+
+Listed as a classical qualitative test reagent; exact composition/protocol not confirmed from available references ΓÇö verify against the physical bottle label and supplier datasheet before use.
+
+Unknown until verified ΓÇö do not assume application.
+
+Verify storage conditions from label.
+
+29
+
+Robert's test reagent
+
+Uncategorised / Verify
+
+Moderate
+
+Appears to be a second stock entry of the reagent above (quantity-tagged in the original inventory export). Likely the same reagent as ΓÇ£Robert's reagentΓÇ¥ ΓÇö verify before treating as a distinct item.
+
+Same caveat as above.
+
+Verify storage conditions from label.
+
+30
+
+Safranine stain solution
+
+Dye / Stain
+
+Low
+
+Counterstain in Gram staining (red); also stains lignified plant tissue red.
+
+Could be used as an alternative/backup Gram counterstain, or for lignin visualisation in ragi/black-rice bran fraction histology.
+
+RT, sealed.
+
+31
+
+Seliwanoff's reagent
+
+Analytical Reagent
+
+High
+
+Resorcinol + conc. HCl; distinguishes ketoses (fast red, e.g. fructose) from aldoses (slow, e.g. glucose).
+
+Useful for characterising the sugar profile of grain hydrolysate, alongside Barfoed's and Molisch's reagents.
+
+RT, sealed. Concentrated acid ΓÇö fume hood, goggles.
+
+32
+
+Tollen's reagent
+
+Analytical Reagent
+
+SEVERE
+
+Ammoniacal silver nitrate; aldehyde test (silver mirror) for reducing sugars.
+
+If used, prepare immediately before each test ΓÇö never store. Aged Tollen's reagent forms silver fulminate/nitride, a contact explosive. Dispose of any prepared-but-unused reagent the same day with acidified rinse, never down a sink with metal fittings.
+
+DO NOT STORE PREPARED REAGENT. Stock components (AgNOΓéâ, ammonia) separately.
+
+33
+
+Trypan blue solutions
+
+Dye / Stain
+
+High
+
+Vital dye-exclusion stain; live/dead cell viability counting under a hemocytometer.
+
+Useful for viability counts on LAB or mushroom mycelial fragment suspensions, as a faster alternative to plate-count CFU for screening purposes.
+
+RT, sealed. Suspected carcinogen/teratogen ΓÇö gloves, dedicated waste, avoid skin contact.
+
+34
+
+Wright's stain solution
+
+Dye / Stain
+
+Moderate
+
+Methanol-based blood smear stain, similar to Giemsa/Leishman.
+
+Same Phase-2 reservation as Giemsa's stain ΓÇö not a Phase 0 priority.
+
+Flammables cabinet ΓÇö methanol-based.
+
+
+
+5. Indicator / Biochemical Test Compound List ΓÇö Classified
+
+14 entries as received.
+
+#
+
+Reagent
+
+Category
+
+Hazard
+
+Classic Use
+
+OBI-Specific Relevance
+
+Storage / Handling
+
+1
+
+1,10 Phenanthroline hydrate
+
+Analytical Reagent
+
+Moderate
+
+Chelates Fe┬▓Γü║ to form an intense orange-red complex; standard colorimetric method for ferrous iron determination.
+
+Ragi is marketed/perceived as iron-rich ΓÇö this reagent enables an in-house iron-content verification assay to support that claim with data, rather than relying on generic literature values.
+
+RT, amber, sealed.
+
+2
+
+3,5 Dinitro salicylic acid (DNS)
+
+Analytical Reagent
+
+Moderate
+
+Reducing-sugar assay reagent ΓÇö forms a red-brown complex with reducing sugars on heating, read at 540nm.
+
+Already present in the Master Chemical Inventory under ΓÇ£3,5-Dinitrosalicylic AcidΓÇ¥ ΓÇö this is the same reagent, listed twice across the two source lists. Tracks sugar release during ragi/black-rice starch hydrolysis across the fermentation timeline.
+
+RT, amber, sealed.
+
+3
+
+Albumin Bovine Fraction (BSA)
+
+Protein / Bio
+
+Low
+
+Standard reference protein for Bradford/Lowry/BCA/Biuret protein assays.
+
+Required as the calibration standard for any of the protein-quantification methods listed in this document (Biuret reagent, Bromocresol green).
+
+4┬░C, sealed ΓÇö avoid repeated freeze-thaw of reconstituted stock.
+
+4
+
+Anthrone
+
+Analytical Reagent
+
+Moderate
+
+AnthroneΓÇôsulfuric acid method ΓÇö quantifies total carbohydrate (green-blue colour).
+
+Direct relevance: total carbohydrate content of the ragi + Karuppu Kavuni substrate, and of the finished fermented base ΓÇö a core nutritional-panel parameter.
+
+RT, amber, sealed ΓÇö light sensitive, prepare fresh working solution.
+
+5
+
+Cedar wood oil
+
+Dye / Stain (mounting aid)
+
+Low
+
+Duplicate of the Reagent-list entry ΓÇö same physical stock, oil-immersion microscopy.
+
+See Reagent List entry above ΓÇö consolidate as a single inventory line.
+
+RT, sealed.
+
+6
+
+Egg albumine
+
+Protein / Bio
+
+Low
+
+Protein source for assay controls; egg white-derived.
+
+Usable as an alternative/cheaper protein standard to BSA for routine protein-assay calibration, where BSA-grade accuracy is not required.
+
+RT or 4┬░C depending on grade ΓÇö check label.
+
+7
+
+Egg albumine flakes
+
+Protein / Bio
+
+Low
+
+Dried/flaked form of the above.
+
+Same use as liquid form ΓÇö longer shelf stability.
+
+RT, sealed, away from moisture.
+
+8
+
+Iodine Resublimed
+
+Analytical Reagent
+
+Moderate
+
+High-purity iodine; starch-iodine test (blue-black complex), Gram's iodine component, iodometric titrations.
+
+Direct relevance: a simple starch-iodine spot test can visually track starch breakdown progress during ragi fermentation between formal DNS/Anthrone readings.
+
+RT, sealed, away from metals (corrosive vapour).
+
+9
+
+Iodine trione hydrate
+
+Uncategorised / Verify
+
+Moderate
+
+Likely a transcription variant of ΓÇ£Indane trione hydrate,ΓÇ¥ which your own OB-REF-CHEM-003 correction log already identifies as Ninhydrin under a different name. Treat as a probable duplicate of the Ninhydrin entry until the physical label is checked.
+
+If confirmed as Ninhydrin, consolidate with the Reagent List Ninhydrin entry ΓÇö do not double-count stock for budgeting/reorder purposes.
+
+Verify against physical label before use.
+
+10
+
+Kinetin pure
+
+Plant / Fungal Hormone
+
+Low
+
+Cytokinin plant hormone; tissue-culture growth regulator.
+
+Established use is plant tissue culture (grain seedling/callus work), not standard for fungal mycelium media ΓÇö treat any mushroom-culture application as exploratory.
+
+4┬░C, amber, sealed.
+
+11
+
+L-Leucine
+
+Protein / Bio
+
+Low
+
+Branched-chain amino acid; reference standard for amino acid profiling and ninhydrin assay calibration curves.
+
+Useful calibration reference alongside the GABA Ninhydrin assay, to distinguish the GABA-specific signal from general free-amino-acid background.
+
+RT, sealed.
+
+12
+
+Orcinol
+
+Analytical Reagent
+
+Moderate
+
+Active component of Bial's reagent (pentose/RNA test).
+
+Cross-reference Bial's reagent in the Reagent List ΓÇö same application, pentose sugar/nucleic acid detection.
+
+RT, sealed, light sensitive.
+
+13
+
+Proteinase K
+
+Protein / Bio
+
+Low
+
+Broad-spectrum serine protease; digests protein contamination during DNA/RNA extraction.
+
+Required if LAB strain genomic work (16S identification, GABA-producing strain confirmation) proceeds beyond phenotypic (catalase/Gram) typing.
+
+-20┬░C, do not refreeze repeatedly ΓÇö aliquot on first thaw.
+
+14
+
+Pyridoxine hydrochloride
+
+Vitamin / Nutrient
+
+Low
+
+Vitamin B6 reference standard.
+
+Direct relevance if Vitamin B6 fortification is ever added to the CLARITY/MOMENTUM/VITALITY line ΓÇö enables in-house verification of label-claim accuracy ahead of any NABL nutritional panel submission.
+
+RT, amber, sealed ΓÇö light sensitive.
+
+
+
+6. Master Chemical Inventory ΓÇö Alphabetical, Classified
+
+Compiled from the reagent and indicator lists above plus the broader chemical stock check, organised AΓÇôZ as originally provided. Every entry carries a category tag, hazard tier, and a note ΓÇö high-relevance items to current OBI work are marked accordingly within the note.
+
+A
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Acetaldehyde
+
+Organic Standard
+
+Moderate
+
+Volatile aldehyde; flammable, irritant. Can form as an off-note during incomplete/stressed LAB fermentation ΓÇö worth knowing as a potential spoilage marker, not just a reagent.
+
+Acetamide
+
+Organic Standard
+
+Moderate
+
+IARC 2B possible carcinogen; solvent/synthesis intermediate. No identified routine OBI use.
+
+Acetanilide
+
+Organic Standard
+
+Moderate
+
+Historic analgesic precursor; toxic if ingested (methaemoglobinaemia risk). No identified routine OBI use.
+
+Acetic Acid
+
+Buffer / Salt
+
+Moderate
+
+Corrosive at high concentration. Core reagent for titratable acidity (TA) determination of fermented products ΓÇö dilute carefully, standardise concentration before titration use.
+
+Acetic Acid Glacial
+
+Buffer / Salt
+
+High
+
+Concentrated (>99%) form of the above ΓÇö dilute to working strength before any titration or buffer prep.
+
+Acetone
+
+Organic Standard
+
+Moderate
+
+Flammable solvent. Glassware cleaning, lipid extraction, and ground-glass-joint degreasing (your own SOP specifies acetone for Soxhlet joint cleaning ΓÇö detergent alone is insufficient).
+
+Acetyl Acetate
+
+Organic Standard
+
+Low-Moderate
+
+Ester solvent; flavour-chemistry reference compound. Could support flavour-profile reference work if pursued.
+
+Acetyl Chloride
+
+Organic Standard
+
+High
+
+Reacts violently with moisture, releasing HCl gas. Fume hood mandatory. No identified routine OBI use.
+
+Acrylamide
+
+Electrophoresis
+
+SEVERE
+
+IARC 2A neurotoxic carcinogen ΓÇö your own catalogue already flags this. Never weigh without gloves and fume hood; polymerised gel is safe to handle.
+
+Activated Charcoal
+
+Analytical Reagent
+
+Low
+
+Decolorising/purification agent ΓÇö usable for clarifying coloured fermentation broth or mushroom extract before spectrophotometric assays.
+
+Agar Agar
+
+Microbio Media
+
+Low
+
+Solidifying agent for all plate media ΓÇö a core, high-turnover consumable for every CFU enumeration run.
+
+Albumin (if applicable)
+
+Protein / Bio
+
+Low
+
+Generic protein reference ΓÇö cross-reference the specific BSA / egg albumin entries for assay-grade use.
+
+Alizarin Red
+
+Dye / Stain
+
+Low
+
+Calcium-binding histological stain (orange-red on Ca┬▓Γü║). Already documented in OB-REF-CHEM-003 for calcium spatial-distribution studies in fermented ragi grain matrix and ragi mineral assay reference.
+
+Aluminium Chloride Anhydrous
+
+Metal / Inorganic
+
+Moderate
+
+Corrosive, hygroscopic Lewis acid catalyst. No identified routine OBI use.
+
+Aluminium Nitrate
+
+Metal / Inorganic
+
+Moderate
+
+Oxidiser. No identified routine OBI use.
+
+Aluminium Potassium Sulphate
+
+Metal / Inorganic
+
+Low
+
+Alum ΓÇö water clarification/mordant. Could assist in clarifying fermentation broth if turbidity becomes an issue.
+
+Ammonia
+
+Metal / Inorganic
+
+Moderate
+
+Corrosive fumes ΓÇö ventilation required. pH adjustment, Kjeldahl distillation step.
+
+Ammonium Acetate
+
+Buffer / Salt
+
+Low
+
+Volatile buffer salt; relevant if HPLC/LC-MS outsourced testing requires a defined mobile-phase additive.
+
+Ammonium Chloride
+
+Buffer / Salt
+
+Low-Moderate
+
+Buffer salt; Kjeldahl nitrogen determination component.
+
+Ammonium Ferrous Sulphate
+
+Metal / Inorganic
+
+Low-Moderate
+
+Redox titration standard (iron determination) ΓÇö pairs with 1,10-phenanthroline.
+
+Ammonium Molybdate
+
+Metal / Inorganic
+
+Moderate
+
+Molybdenum-blue method for phosphate determination ΓÇö relevant to a phosphorus nutritional-panel parameter.
+
+Ammonium Nitrate
+
+Metal / Inorganic
+
+High
+
+Oxidiser / explosive precursor ΓÇö confirm storage complies with restricted-substance handling norms; minimise quantity held on site.
+
+Ammonium Persulphate
+
+Electrophoresis
+
+Moderate
+
+Oxidiser, respiratory sensitiser. Gel polymerisation catalyst, paired with TEMED and Acrylamide.
+
+Ammonium Peroxydisulphate
+
+Electrophoresis
+
+Moderate
+
+Same compound as Ammonium Persulphate under an alternate name ΓÇö consolidate stock listing to avoid double-counting.
+
+Amyl Alcohol
+
+Organic Standard
+
+Moderate
+
+Flammable. Kjeldahl anti-foaming agent; component of phenol-chloroform-isoamyl alcohol nucleic acid extraction.
+
+
+
+B
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Barium Chloride
+
+Metal / Inorganic
+
+High
+
+Toxic if ingested (cardiac risk). Sulphate precipitation test reagent ΓÇö minimise quantities handled.
+
+Barium Nitrate
+
+Metal / Inorganic
+
+High
+
+Toxic, oxidiser. No identified routine OBI use.
+
+Barium Sulphate
+
+Metal / Inorganic
+
+Low
+
+Insoluble, low acute hazard. Turbidity/precipitation reference standard.
+
+Beef Extract
+
+Microbio Media
+
+Low
+
+Nutrient broth/agar component ΓÇö nitrogen and growth-factor source for general bacterial culture media.
+
+Benedict's Qualitative Reagent
+
+Analytical Reagent
+
+Low-Moderate
+
+Classic reducing-sugar screening test ΓÇö simpler/faster than DNS for a quick qualitative check of sugar release during fermentation.
+
+Benzaldehyde
+
+Organic Standard
+
+Moderate
+
+Irritant; almond-like flavour reference compound ΓÇö of interest only if flavour-profiling work is pursued.
+
+Benzene
+
+Organic Standard
+
+SEVERE
+
+IARC Group 1 carcinogen. Eliminate or substitute wherever an alternative solvent can serve the same purpose ΓÇö minimise any remaining stock and use.
+
+Benzoic Acid
+
+Organic Standard
+
+Low-Moderate
+
+FSSAI-regulated food preservative. Relevant as an analytical reference standard if preservative-limit compliance testing is ever required for a packaged SKU.
+
+Boric Acid
+
+Metal / Inorganic
+
+Moderate
+
+Reproductive toxicity concern at high exposure. Buffer component (e.g. borate buffers).
+
+Bromine Water
+
+Analytical Reagent
+
+High
+
+Corrosive, toxic fumes ΓÇö fume hood mandatory. Unsaturation (double-bond) test reagent.
+
+Bromocresol Green Solution
+
+Dye / Stain
+
+Low
+
+pH indicator / BCG protein-assay dye ΓÇö see Reagent List entry for fuller detail.
+
+Buffer
+
+Buffer / Salt
+
+Low
+
+Generic, unlabelled buffer stock ΓÇö relabel with exact composition and pH before further use to maintain traceability.
+
+Buffer Powder
+
+Buffer / Salt
+
+Low
+
+Same caution as above ΓÇö confirm specific formulation on the physical label.
+
+Buffer Tablets
+
+Buffer / Salt
+
+Low
+
+Pre-formulated buffer tablets (commonly pH calibration tablets) ΓÇö confirm pH values on packaging match what pH-meter calibration logs require.
+
+
+
+C
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Calcium Borate
+
+Metal / Inorganic
+
+Low
+
+No identified routine OBI use.
+
+Calcium Carbonate
+
+Metal / Inorganic
+
+Low
+
+Calcium-fortification reference standard ΓÇö relevant if calcium fortification claims are ever pursued on a SKU label.
+
+Calcium Chloride
+
+Metal / Inorganic
+
+Low-Moderate
+
+HIGH RELEVANCE: with Sodium Alginate (see Section S), this is the standard ionic-gelation pairing for alginate bead encapsulation ΓÇö directly applicable if a probiotic/bioactive microencapsulation delivery format is explored for any of the three SKUs.
+
+Calcium Nitrate
+
+Metal / Inorganic
+
+Moderate
+
+Oxidiser. No identified routine OBI use.
+
+Carbon Fuchsin Strong
+
+Dye / Stain
+
+Low-Moderate
+
+Acid-fast stain / Gram counterstain alternative.
+
+Carbon Tetrachloride
+
+Organic Standard
+
+SEVERE
+
+IARC 2B carcinogen, hepatotoxic, ozone-depleting (Montreal Protocol restricted). Legacy reagent ΓÇö confirm whether this stock can be safely retired rather than retained.
+
+Carboxymethyl Cellulose Sodium Salt
+
+Polymer / Surfactant
+
+Low
+
+Thickener/stabiliser ΓÇö directly relevant as a candidate texture/mouthfeel stabiliser for the fermented beverage base.
+
+Cedar Wood Oil
+
+Dye / Stain (mounting aid)
+
+Low
+
+Duplicate of the Reagent-list entry ΓÇö see above, oil-immersion microscopy.
+
+Cetrimide
+
+Polymer / Surfactant
+
+Moderate
+
+Cationic surfactant/disinfectant. Component of Pseudomonas-selective media, or usable as a surface disinfectant.
+
+Cetyltrimethyl Ammonium Bromide (CTAB)
+
+Polymer / Surfactant
+
+Moderate
+
+CTAB-method DNA extraction reagent ΓÇö relevant for plant (grain) or fungal genomic DNA work, e.g. species confirmation of mushroom cultures.
+
+Cholesterol
+
+Organic Standard
+
+Low
+
+Lipid/sterol chromatography reference standard ΓÇö useful as a retention-time reference if profiling ergosterol or other mushroom sterols via outsourced HPLC.
+
+Citric Acid
+
+Organic Standard
+
+Low
+
+Core food acidulant and pH-adjustment agent ΓÇö directly relevant to beverage formulation and as a natural preservative/flavour component.
+
+Copper Sulphate
+
+Metal / Inorganic
+
+Moderate
+
+Toxic/irritant. Core analytical copper source ΓÇö Biuret protein assay, Fehling's/Benedict's reagents, Kjeldahl catalyst. Cross-reference OB-REF-CHEM-003 for full prep detail.
+
+Cottonseed Oil
+
+Organic Standard
+
+Low
+
+Carrier oil / lipid reference. No identified routine OBI use beyond general lipid work.
+
+Cupric Sulphate Pentahydrate
+
+Metal / Inorganic
+
+Moderate
+
+Hydrated form of Copper Sulphate (blue crystals) ΓÇö do not confuse with anhydrous (white powder) when weighing; MW differs (249.69 vs 159.61).
+
+Cupric Nitrate
+
+Metal / Inorganic
+
+Moderate
+
+Toxic/irritant copper salt. Limited routine use beyond general copper-source applications.
+
+Cyclohexanone
+
+Organic Standard
+
+Moderate
+
+Flammable, irritant solvent. No identified routine OBI use.
+
+
+
+D
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+D-Fructose
+
+Organic Standard
+
+Low
+
+Sugar standard ΓÇö calibration reference for Seliwanoff's test and general sweetness/sugar-profile work.
+
+D-Sorbitol Powder
+
+Organic Standard
+
+Low
+
+Sugar alcohol ΓÇö relevant only if a reduced-sugar/sugar-alcohol-sweetened product variant is ever explored.
+
+3,5-Dinitrosalicylic Acid (DNS)
+
+Analytical Reagent
+
+Moderate
+
+Reducing-sugar assay ΓÇö see Indicator List entry for full detail. Same compound, cross-listed.
+
+Diacetyl Monoxime
+
+Analytical Reagent
+
+Moderate
+
+Urea/creatinine colorimetric test component. No identified routine OBI use.
+
+Diphenylamine
+
+Analytical Reagent
+
+Moderate
+
+Toxic. DNA quantification (deoxyribose reaction) or nitrate test reagent ΓÇö relevant only if pursuing nucleic-acid quantification beyond standard kits.
+
+Dipotassium Hydrogen Orthophosphate
+
+Buffer / Salt
+
+Low
+
+MRS broth buffering component ΓÇö directly relevant to LAB media preparation and your modified-MRS work.
+
+Disodium Hydrogen Orthophosphate Anhydrous
+
+Buffer / Salt
+
+Low
+
+Phosphate buffer component ΓÇö relevant to PBS preparation (SOP-OBI-PBS-001) alongside NaCl and KCl.
+
+Dimethyl Sulfoxide (DMSO)
+
+Organic Standard
+
+Moderate
+
+Skin-penetrating solvent ΓÇö carries dissolved chemicals through skin, handle with full PPE. Standard cryoprotectant for freezing LAB/fungal culture stocks for strain banking.
+
+Dextrose Extra Pure
+
+Organic Standard
+
+Low
+
+High-purity glucose ΓÇö media component and sugar-profile reference standard.
+
+
+
+E
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+EDTA
+
+Buffer / Salt
+
+Low
+
+Chelating agent ΓÇö DNA extraction buffers, anticoagulant, metal-ion control in some assays.
+
+Epsom Salt (MgSOΓéä)
+
+Metal / Inorganic
+
+Low
+
+Magnesium source ΓÇö MRS broth contains MgSOΓéä, directly relevant to LAB media formulation.
+
+
+
+F
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Fehling's Solution I
+
+Analytical Reagent
+
+Moderate
+
+Alkaline copper reagent; reducing-sugar test, paired with Solution II.
+
+Fehling's Solution II
+
+Analytical Reagent
+
+Moderate
+
+Alkaline tartrate component, combine fresh with Solution I immediately before use ΓÇö corrosive when combined.
+
+Ferric Chloride Anhydrous
+
+Metal / Inorganic
+
+Moderate
+
+Corrosive. Phenol-test reagent ΓÇö forms coloured complexes with phenolic compounds, usable for a rapid qualitative polyphenol screen ahead of full TPC assay.
+
+Ferrous Sulphate
+
+Metal / Inorganic
+
+Low-Moderate
+
+Iron fortification/content reference standard ΓÇö relevant given ragi's marketed iron content.
+
+Ficoll Type 400
+
+Polymer / Surfactant
+
+Low
+
+Density-gradient separation medium (cell/organelle separation). Niche ΓÇö no identified routine OBI use.
+
+Folic Acid
+
+Vitamin / Nutrient
+
+Low
+
+Vitamin B9 reference standard ΓÇö relevant if folate fortification or label-claim verification is pursued.
+
+Formamide
+
+Organic Standard
+
+Moderate
+
+Teratogen ΓÇö handle with care. Nucleic-acid gel denaturant; relevant only for molecular work beyond current scope.
+
+Fructose
+
+Organic Standard
+
+Low
+
+Duplicate of D-Fructose ΓÇö consolidate stock listing.
+
+
+
+G
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Gallic Acid
+
+Analytical Reagent
+
+Low
+
+Primary TPC assay standard (gallic acid equivalents, GAE) ΓÇö pairs directly with the Phenol/FolinΓÇôCiocalteu reagent and Sodium carbonate. Critical for IP disclosure and mushroom extract characterisation per OB-REF-CHEM-003.
+
+Glutaraldehyde
+
+Protein / Bio
+
+High
+
+Sensitiser, respiratory irritant, suspected carcinogen at high exposure. Tissue/cell fixative ΓÇö use only in a fume hood.
+
+Glycerol
+
+Organic Standard
+
+Low
+
+Cryoprotectant for bacterial/fungal glycerol stocks (strain banking); also a humectant of possible formulation interest.
+
+Glycine
+
+Protein / Bio
+
+Low
+
+Amino acid standard; Tris-glycine electrophoresis buffer component.
+
+Glycolic Acid 70%
+
+Organic Standard
+
+Moderate
+
+Corrosive concentrate. Primarily a cosmetic-chemistry acid ΓÇö limited food-lab relevance.
+
+Gower's Solution
+
+Analytical Reagent
+
+Low-Moderate
+
+Classic haemocytometer diluting fluid for blood/cell counting ΓÇö adaptable for yeast/LAB cell counts via haemocytometer as a faster screening alternative to plate counts.
+
+
+
+H
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Hexane
+
+Organic Standard
+
+Moderate
+
+Flammable; neurotoxic with chronic exposure. Standard lipid/oil extraction solvent for Soxhlet apparatus ΓÇö directly applicable to fat content determination in mushroom biomass or ragi substrate.
+
+Hydrochloric Acid
+
+Buffer / Salt
+
+Moderate
+
+Corrosive. pH adjustment, hydrolysis reactions, titrations.
+
+Hydrochloric Acid 35%
+
+Buffer / Salt
+
+High
+
+Concentrated form ΓÇö dilute in a fume hood before routine use.
+
+Hydrogen Peroxide
+
+Analytical Reagent
+
+Moderate
+
+Oxidiser. Catalase test reagent ΓÇö directly used in your own SOP-OBI-CAT-001 for colony differentiation.
+
+Hydroquinone
+
+Organic Standard
+
+Moderate
+
+Suspected carcinogen/skin sensitiser. Reducing agent ΓÇö limited routine use, minimise exposure.
+
+
+
+I
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Industrial Solution
+
+Uncategorised / Verify
+
+Moderate
+
+Non-specific label ΓÇö identify exact contents from the physical bottle/SDS before any further use or this document's classification.
+
+Iodine
+
+Analytical Reagent
+
+Moderate
+
+Corrosive, oxidiser. Gram's iodine, starch-iodine test, iodometric titrations ΓÇö see Iodine Resublimed entry.
+
+Isoamyl Alcohol
+
+Organic Standard
+
+Moderate
+
+Flammable. Phenol-chloroform-isoamyl alcohol DNA extraction; also a banana-flavour reference compound.
+
+
+
+J
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Jenner's Stain
+
+Dye / Stain
+
+Moderate
+
+Methanol-based Romanowsky blood stain ΓÇö reserve for Phase 2 in-vitro haematotoxicity work per OB-REF-CHEM-003.
+
+
+
+L
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+L-Ascorbic Acid (Vitamin C)
+
+Vitamin / Nutrient
+
+Low
+
+Antioxidant and Vitamin C fortification reference standard ΓÇö relevant both for label-claim verification and as a reference compound in antioxidant-capacity assays.
+
+Lactophenol Cotton Blue
+
+Dye / Stain
+
+Moderate
+
+HIGH RELEVANCE: standard fungal mycelium morphology stain ΓÇö directly usable for confirming correct Lion's Mane/Cordyceps/Reishi mycelial morphology and screening for contaminant fungi under the microscope.
+
+Lactose
+
+Organic Standard
+
+Low
+
+Milk sugar ΓÇö directly relevant to the curd fermentation substrate work (OB-EXP-001) as a fermentable-sugar reference.
+
+Lab Solution
+
+Uncategorised / Verify
+
+Moderate
+
+Non-specific label ΓÇö identify exact contents before further classification or use.
+
+LB Broth
+
+Microbio Media
+
+Low
+
+General-purpose bacterial culture medium (E. coli/cloning-oriented) ΓÇö lower priority than MRS for LAB-specific work, but useful for general contamination checks.
+
+Lead Acetate
+
+Metal / Inorganic
+
+High
+
+Toxic heavy metal (neuro/reproductive toxicant). Hydrogen-sulphide detection paper. Minimise use; maintain a dedicated lead-waste stream.
+
+Leishman's Stain
+
+Dye / Stain
+
+Moderate
+
+Methanol-based blood smear stain ΓÇö same Phase-2 reservation as Giemsa/Wright's/Jenner's.
+
+Leishman's Staining Solution
+
+Dye / Stain
+
+Moderate
+
+Working solution form of the above.
+
+
+
+M
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+MacConkey Agar
+
+Microbio Media
+
+Low
+
+Selective/differential medium for Gram-negative enteric bacteria (lactose fermenters vs non-fermenters) ΓÇö useful for coliform/contamination screening of the fermented product, a relevant food-safety QC check.
+
+Magnesium Chloride
+
+Metal / Inorganic
+
+Low
+
+Enzyme cofactor (e.g. PCR Mg┬▓Γü║ requirement); general media component.
+
+Magnesium Phosphate
+
+Metal / Inorganic
+
+Low
+
+Mineral reference standard.
+
+Magnesium Sulphate
+
+Metal / Inorganic
+
+Low
+
+MRS broth component ΓÇö see Epsom Salt entry.
+
+Manganese Sulphate Monohydrate
+
+Metal / Inorganic
+
+Low-Moderate
+
+Trace mineral / MRS broth growth-factor component for LAB.
+
+Manganous Chloride
+
+Metal / Inorganic
+
+Low-Moderate
+
+Similar trace-mineral role to manganese sulphate.
+
+May-Grunwald's Eosin Methylene Blue Modified Solution
+
+Dye / Stain
+
+Moderate
+
+Methanol-based blood/cytology stain ΓÇö Phase 2 relevance only.
+
+MEM (Minimum Essential Medium)
+
+Microbio Media
+
+Low
+
+Mammalian cell culture medium ΓÇö relevant only if a cell-line-based safety/bioactivity assay (Phase 2) is undertaken.
+
+Meso-Inositol
+
+Organic Standard
+
+Low
+
+Vitamin-like growth factor for yeast/fungal cultures ΓÇö worth testing as a mycelium growth-media optimisation additive.
+
+Methanol
+
+Organic Standard
+
+High
+
+Toxic (blindness risk on ingestion), flammable. Polyphenol/bioactive extraction solvent ΓÇö ventilation and no open flame nearby.
+
+Methyl Cellulose
+
+Polymer / Surfactant
+
+Low
+
+Thickener/stabiliser ΓÇö same formulation-texture relevance as Carboxymethyl Cellulose.
+
+MRS Broth
+
+Microbio Media
+
+Low
+
+CORE MEDIUM ΓÇö central to all LAB fermentation and CFU enumeration work; your modified formulation (with trisodium citrate, without Tween 80) is referenced directly in OB-EXP-001.
+
+Mueller Hinton Agar
+
+Microbio Media
+
+Low
+
+Antibiotic-susceptibility testing medium ΓÇö relevant if assessing antibiotic resistance profile of candidate probiotic LAB strains, a real regulatory consideration for probiotic claims.
+
+
+
+N
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Naphthol
+
+Organic Standard
+
+Moderate
+
+Toxic. Active component of Molisch's reagent ΓÇö see above.
+
+Nickel Chloride
+
+Metal / Inorganic
+
+SEVERE
+
+IARC Group 1 carcinogen ΓÇö your own catalogue already flags this for minimisation. Avoid all non-essential use.
+
+Ninhydrin
+
+Analytical Reagent
+
+Moderate
+
+Duplicate of Reagent List entry ΓÇö see above for full detail, including its role in SOP-OBI-GABA-ASSAY-001.
+
+Nitric Acid
+
+Metal / Inorganic
+
+High
+
+Corrosive oxidiser. Sample digestion / mineral analysis prep (ICP-adjacent).
+
+Nutrient Agar
+
+Microbio Media
+
+Low
+
+General-purpose bacterial culture medium.
+
+Nutrient Broth
+
+Microbio Media
+
+Low
+
+Liquid form of the above.
+
+
+
+O
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+O-Toluidine Reagent
+
+Analytical Reagent
+
+High
+
+Suspected carcinogen ΓÇö historically used in glucose-oxidase blood glucose assays. Consider a safer substitute assay method rather than routine use.
+
+Ortho Phosphoric Acid
+
+Buffer / Salt
+
+Moderate
+
+Corrosive. Acidulant/buffer component; also a common cola-type beverage acidulant for reference.
+
+Oxalic Acid
+
+Organic Standard
+
+Moderate
+
+Toxic if ingested (kidney stone risk). Reducing agent/titration standard ΓÇö also a naturally occurring anti-nutrient in some grains, relevant if anti-nutrient profiling of the ragi/black-rice substrate is undertaken.
+
+
+
+P
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Paraffin Liquid Colourless
+
+Organic Standard
+
+Low
+
+Histology embedding/sealing, general lubricant.
+
+Paraffin Wax
+
+Organic Standard
+
+Low
+
+Histology embedding; equipment sealing.
+
+Peptone Bacteriological
+
+Microbio Media
+
+Low
+
+Core nitrogen source underlying nearly all microbiological media (nutrient broth, MRS, etc.) ΓÇö a foundational, high-turnover consumable.
+
+Perchloroethylene
+
+Organic Standard
+
+SEVERE
+
+IARC 2A carcinogen, dry-cleaning solvent. Legacy reagent ΓÇö evaluate retirement of this stock.
+
+Perchloric Acid 60%
+
+Metal / Inorganic
+
+High
+
+Strong oxidising acid ΓÇö explosion risk on contact with organics. Fume hood rated for perchloric acid only, no organic-material contact.
+
+Perchloric Acid 70%
+
+Metal / Inorganic
+
+High
+
+More concentrated form ΓÇö same precautions, heightened risk.
+
+Petroleum Ether
+
+Organic Standard
+
+Moderate
+
+Flammable. Lipid-extraction solvent for Soxhlet work.
+
+Petroleum Jelly Yellow
+
+Organic Standard
+
+Low
+
+Sealing agent ΓÇö directly relevant to anaerobic flask water-lock sealing per SOP-OBI-ANAEROBIC-001.
+
+Phenol
+
+Analytical Reagent
+
+Moderate
+
+= FolinΓÇôCiocalteu reagent (see Reagent List entry for full detail and TPC assay relevance). Corrosive, toxic ΓÇö gloves mandatory.
+
+Phenyl Hydrazine Hydrochloride
+
+Analytical Reagent
+
+SEVERE
+
+Carcinogen and blood toxin ΓÇö your own catalogue already recommends substitution. Avoid use where any alternative exists.
+
+Phenyl Hydrazone
+
+Analytical Reagent
+
+SEVERE
+
+Related compound to the above ΓÇö same caution applies.
+
+Phosphate Buffer
+
+Buffer / Salt
+
+Low
+
+General buffer ΓÇö see PBS preparation (SOP-OBI-PBS-001).
+
+pH Standard 7
+
+Buffer / Salt
+
+Low
+
+pH meter calibration standard ΓÇö core, recurring calibration consumable; cross-reference the pH meter calibration logbook for usage tracking.
+
+Phthalic Acid
+
+Organic Standard
+
+Moderate
+
+Irritant. Buffer/standard compound ΓÇö no identified routine OBI use.
+
+Picric Acid
+
+Dye / Stain / Fixative
+
+SEVERE
+
+Duplicate of the Reagent List ΓÇ£Picric acid saturated solutionΓÇ¥ entry ΓÇö see above for full hazard detail. Confirm both entries refer to the same physical stock.
+
+Polyethylene Glycol (PEG)
+
+Polymer / Surfactant
+
+Low
+
+DNA/protein precipitation; also a candidate pharmaceutical/nutraceutical excipient if a capsule/tablet format is ever explored.
+
+Polyvinylpyrrolidone K30 (PVP)
+
+Polymer / Surfactant
+
+Low
+
+Binder/stabiliser excipient ΓÇö same exploratory relevance as PEG for solid-dosage formats.
+
+Potassium Acetate
+
+Buffer / Salt
+
+Low
+
+General buffer component.
+
+Potassium Bisulphate
+
+Buffer / Salt
+
+Moderate
+
+Corrosive acidic salt ΓÇö fusion flux applications.
+
+Potassium Carbonate Anhydrous
+
+Buffer / Salt
+
+Moderate
+
+Irritant alkaline buffer salt.
+
+Potassium Chloride
+
+Buffer / Salt
+
+Low
+
+Electrolyte; PBS ingredient (SOP-OBI-PBS-001) alongside NaCl.
+
+Potassium Dihydrogen Orthophosphate
+
+Buffer / Salt
+
+Low
+
+MRS broth buffer component ΓÇö directly relevant to LAB media.
+
+Potassium Hydroxide Pellets
+
+Buffer / Salt
+
+High
+
+Strong corrosive base ΓÇö saponification, titration standardisation.
+
+Potassium Iodide
+
+Buffer / Salt
+
+Low-Moderate
+
+Iodometric titration reagent; Gram's iodine component.
+
+Potassium Nitrate
+
+Metal / Inorganic
+
+Moderate
+
+Oxidiser. Traditional curing-salt reference compound ΓÇö relevant only if any cured/preserved product format is explored.
+
+Potassium Oxalate
+
+Organic Standard
+
+Moderate
+
+Toxic. Anticoagulant / calcium-precipitating agent.
+
+Potassium Permanganate
+
+Analytical Reagent
+
+High
+
+Strong oxidiser, corrosive. Titrations; also a surface disinfectant ΓÇö relevant to lab/equipment sanitisation (SOP-OBI-CLEAN-001).
+
+Potassium Sodium Tartrate
+
+Buffer / Salt
+
+Low
+
+Rochelle salt ΓÇö Fehling's/Biuret-adjacent reagent component.
+
+Potassium Sulphate
+
+Buffer / Salt
+
+Low
+
+Kjeldahl digestion catalyst booster (raises boiling point of the digestion mixture).
+
+Propionic Acid
+
+Organic Standard
+
+Moderate
+
+Corrosive, pungent. Mould-inhibiting food preservative reference ΓÇö relevant to shelf-life/spoilage-prevention discussions for the finished beverage.
+
+Pyridine
+
+Organic Standard
+
+High
+
+Flammable, toxic, strong odour. Solvent/catalyst ΓÇö fume hood mandatory.
+
+Pyridoxine Hydrochloride
+
+Vitamin / Nutrient
+
+Low
+
+Duplicate of Indicator List entry ΓÇö Vitamin B6 reference standard, see above.
+
+
+
+S
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Sabouraud Dextrose Agar
+
+Microbio Media
+
+Low
+
+HIGH RELEVANCE: standard selective medium for fungal/yeast culture ΓÇö directly usable for mushroom mycelium plating, purity checks, and yeast contamination screening of the fermented base.
+
+Salicylic Acid
+
+Organic Standard
+
+Moderate
+
+Irritant. Preservative/plant-hormone reference compound.
+
+Silica Gel G
+
+Analytical Reagent
+
+Low
+
+TLC stationary phase ΓÇö directly used in your own SOP-OBI-GABASCREEN-001 (TLC-based GABA screening of LAB isolates).
+
+Silica Gel G for TLC
+
+Analytical Reagent
+
+Low
+
+TLC-grade variant of the above ΓÇö confirm which grade is current working stock for the GABA screening SOP.
+
+Silica Gel White
+
+Analytical Reagent
+
+Low
+
+General desiccant/drying-agent grade ΓÇö distinct from the TLC-grade entries above; do not substitute one for the other in the TLC SOP.
+
+Sodium Acetate
+
+Buffer / Salt
+
+Low
+
+General buffer component.
+
+Sodium Acetate Anhydrous
+
+Buffer / Salt
+
+Low
+
+Anhydrous form ΓÇö adjust mass calculations vs. hydrated forms when preparing buffers.
+
+Sodium Acetate Trihydrate
+
+Buffer / Salt
+
+Low
+
+Hydrated form ΓÇö see note above on mass calculation.
+
+Sodium Alginate
+
+Polymer / Surfactant
+
+Low
+
+HIGH RELEVANCE: with Calcium Chloride, the standard ionic-gelation pair for alginate bead microencapsulation ΓÇö directly applicable to any probiotic/bioactive delivery-format exploration.
+
+Sodium Benzoate
+
+Organic Standard
+
+Low-Moderate
+
+FSSAI-regulated food preservative ΓÇö reference standard for compliance testing if used in any packaged SKU.
+
+Sodium Borate Alkaline Solution
+
+Buffer / Salt
+
+Moderate
+
+Borax-based alkaline buffer.
+
+Sodium Carbonate Anhydrous
+
+Buffer / Salt
+
+Moderate
+
+Irritant. THIRD TPC ASSAY COMPONENT ΓÇö used with Gallic acid and the Phenol/FolinΓÇôCiocalteu reagent to develop colour in the TPC assay. All three components are confirmed present in this inventory.
+
+Sodium Chloride
+
+Buffer / Salt
+
+Low
+
+Ubiquitous buffer/saline/food ingredient; PBS isotonicity agent (SOP-OBI-PBS-001).
+
+Sodium Dihydrogen Orthophosphate
+
+Buffer / Salt
+
+Low
+
+Phosphate buffer component.
+
+Sodium Hydrogen Carbonate
+
+Buffer / Salt
+
+Low
+
+Baking soda ΓÇö mild base, possible leavening/pH-adjustment reference.
+
+Sodium Hydroxide Pellets
+
+Buffer / Salt
+
+High
+
+Strong corrosive base ΓÇö titration standardisation, saponification. Your own SOP (PBS prep) specifies 0.1M working stock, NOT concentrated NaOH, for pH adjustment to avoid overshoot.
+
+Sodium Hypochlorite
+
+Analytical Reagent
+
+Moderate
+
+Corrosive oxidiser. Disinfectant/surface sanitiser ΓÇö relevant to SOP-OBI-CLEAN-001 lab and equipment sanitisation.
+
+Sodium Iodide
+
+Buffer / Salt
+
+Low-Moderate
+
+Iodometric titration reagent.
+
+Sodium Lauryl Sulphate (SDS)
+
+Polymer / Surfactant
+
+Moderate
+
+Irritant anionic surfactant. SDS-PAGE protein denaturation, cell lysis buffers.
+
+Sodium Nitrite
+
+Metal / Inorganic
+
+Moderate
+
+Regulated curing agent ΓÇö methaemoglobinaemia risk if mishandled. Reference standard if nitrite/nitrate compliance testing is ever relevant.
+
+Sodium Nitroprusside
+
+Analytical Reagent
+
+SEVERE
+
+Cyanide complex ΓÇö your own catalogue already flags this: NEVER acidify. Ketone/cysteine qualitative test reagent.
+
+Sodium Potassium Tartrate
+
+Buffer / Salt
+
+Low
+
+Duplicate of Potassium Sodium Tartrate entry above ΓÇö consolidate.
+
+Sodium Salicylate
+
+Organic Standard
+
+Moderate
+
+Analgesic precursor reference ΓÇö limited routine OBI use.
+
+Sodium Sulphate Anhydrous
+
+Buffer / Salt
+
+Low
+
+Drying agent ΓÇö removes residual water from organic solvents after extraction steps.
+
+Sodium Sulphide Flakes
+
+Metal / Inorganic
+
+High
+
+Releases toxic HΓééS gas on contact with acid ΓÇö never combine with acids; fume hood, careful handling only.
+
+Sucrose
+
+Organic Standard
+
+Low
+
+Sugar standard/sweetener ΓÇö core reference for sweetness and fermentation-substrate sugar calculations.
+
+Sulfuric Acid
+
+Buffer / Salt
+
+High
+
+Strongly corrosive, violently exothermic with water (always add acid to water, never the reverse). Molisch's/Anthrone carbohydrate test component; sample digestion reagent.
+
+Synthetic Vinegar
+
+Organic Standard
+
+Low
+
+Acetic acid / food-grade acid reference source.
+
+
+
+T
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Tartaric Acid
+
+Organic Standard
+
+Low
+
+Food acidulant; also the classic chirality reference compound in stereochemistry.
+
+TEMED
+
+Electrophoresis
+
+Moderate
+
+Corrosive, flammable, strong odour. Gel polymerisation catalyst ΓÇö paired with Acrylamide and Ammonium Persulphate.
+
+Titriplex III Pure (EDTA disodium salt)
+
+Buffer / Salt
+
+Low
+
+Chelating titrant ΓÇö water-hardness determination.
+
+Tris Buffer
+
+Buffer / Salt
+
+Low
+
+Core molecular-biology buffer ΓÇö DNA work, electrophoresis buffers.
+
+Tris Hydrochloride
+
+Buffer / Salt
+
+Low
+
+Hydrochloride salt form of the above.
+
+Tri-Ammonium Citrate
+
+Buffer / Salt
+
+Low
+
+Component of your own modified MRS recipe with trisodium citrate, as referenced in OB-EXP-001 ΓÇö confirm whether this or the trisodium form below is the one actually in use.
+
+Trisodium Citrate
+
+Buffer / Salt
+
+Low
+
+CONFIRMED component of your modified MRS broth formulation per OB-EXP-001 (ΓÇ£modified MRS with trisodium citrate and without Tween 80ΓÇ¥) ΓÇö core to validated LAB plate counts.
+
+Tween 20
+
+Polymer / Surfactant
+
+Low
+
+Nonionic surfactant; general media/assay supplement.
+
+Tween 80
+
+Polymer / Surfactant
+
+Low
+
+NOTE: your validated modified-MRS formulation (OB-EXP-001) deliberately EXCLUDES Tween 80. If this stock appears in a media-prep batch record for MRS, confirm it is not being added by mistake against the validated recipe.
+
+
+
+U
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Urea
+
+Organic Standard
+
+Low-Moderate
+
+Nitrogen source / protein denaturant; also a substrate for the urease test if strain characterisation expands.
+
+
+
+Y
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Yeast Extract
+
+Microbio Media
+
+Low
+
+Core nutrient broth/MRS component ΓÇö B-vitamin and nitrogen source for LAB growth media.
+
+
+
+Z
+
+Chemical
+
+Category
+
+Hazard
+
+Note
+
+Zinc Acetate
+
+Metal / Inorganic
+
+Moderate
+
+Irritant. Mineral reference/precipitant.
+
+Zinc Carbonate
+
+Metal / Inorganic
+
+Low
+
+Mineral reference standard.
+
+Zinc Chloride Anhydrous
+
+Metal / Inorganic
+
+Moderate
+
+Corrosive, hygroscopic. Lucas reagent component; mineral reference.
+
+Zinc Sulphate
+
+Metal / Inorganic
+
+Low-Moderate
+
+Zinc-fortification reference standard; also a protein-precipitating agent in some assay protocols.
+
+
+
+
+
+7. Master Instrument Inventory ΓÇö Categorised, with Quantity & Status
+
+Grouped by function (fermentation, aseptic workspace, centrifugation, incubation, etc.) rather than alphabetically, since several categories hold multiple units/models ΓÇö grouping plus an explicit Qty column makes the actual on-site count visible at a glance instead of being buried across scattered alphabetical entries. Default status ΓÇ£OperationalΓÇ¥ reflects the instrument being listed without a maintenance/fault flag in the founder's report ΓÇö not independently physically re-verified beyond that report.
+
+7.1  Category Summary
+
+Category
+
+Distinct Models Listed
+
+Total Physical Units
+
+Status Flags
+
+Sterilisation
+
+1
+
+1
+
+ΓÇö
+
+Fermentation
+
+2
+
+2
+
+PARTIALLY FUNCTIONAL, NOT WORKING
+
+Aseptic Workspace (Laminar Air Flow)
+
+2
+
+2
+
+ΓÇö
+
+Incubation ΓÇö General / BOD
+
+2
+
+2
+
+ΓÇö
+
+Incubation ΓÇö Specialised Chambers
+
+2
+
+2
+
+IN MAINTENANCE
+
+Microscopy
+
+1
+
+1
+
+ΓÇö
+
+Centrifugation
+
+5
+
+5
+
+ΓÇö
+
+Mixing / Stirring / Vortexing
+
+2
+
+3
+
+ΓÇö
+
+Shaking / Agitation
+
+3
+
+3
+
+ΓÇö
+
+Water & Oil Baths
+
+3
+
+3
+
+ΓÇö
+
+Weighing Balances
+
+3
+
+3
+
+ΓÇö
+
+Drying / Dry-Heat Ovens
+
+2
+
+3
+
+ΓÇö
+
+General Heating
+
+3
+
+3
+
+ΓÇö
+
+Cold Storage ΓÇö Refrigerators & Freezers
+
+5
+
+5
+
+ΓÇö
+
+Cold-Chain Support
+
+1
+
+1
+
+IN MAINTENANCE
+
+pH Measurement
+
+2
+
+2
+
+ΓÇö
+
+Distillation / Water Purification
+
+2
+
+2
+
+ΓÇö
+
+Spectrophotometry & Optical Analysis
+
+3
+
+3
+
+ΓÇö
+
+Imaging
+
+2
+
+2
+
+ΓÇö
+
+Colony / Cell Counting
+
+1
+
+1
+
+ΓÇö
+
+Extraction
+
+1
+
+1
+
+ΓÇö
+
+Cell Disruption / Ultrasonication
+
+1
+
+1
+
+ΓÇö
+
+Gas Analysis
+
+1
+
+1
+
+ΓÇö
+
+Sample Preparation ΓÇö Homogenisation
+
+1
+
+2
+
+ΓÇö
+
+Support Infrastructure
+
+1
+
+1
+
+ΓÇö
+
+TOTAL
+
+52
+
+55
+
+
+
+7.2  Instruments by Category
+
+Sterilisation  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+1
+
+Autoclave
+
+1
+
+Sterile media prep, aseptic fermentation, GMP-grade glassware/equipment sterilisation. CONFIRMED present and functional (founder, June 2026) ΓÇö not part of the original raw inventory capture, added on direct confirmation. Pairs with the dry-heat ovens (Drying / Dry-Heat Ovens category) for the two-method sterilisation split specified in SOP-002 (160┬░C/2hr dry heat for Soxhlet-type glassware vs. 121┬░C/15psi/15min wet autoclave for media/liquid-contact items).
+
+Operational
+
+Fermentation  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+2
+
+Bio Chemical India ΓÇô Fermentor (model: Bioage 2A)
+
+1
+
+Phase 0/1 scale-up fermentation. CONFIRMED (founder, June 2026): this is the Bioage 2A unit ΓÇö running, but no functional probes (no pH/DO/temp logging) and a shaft problem. Usable for unmonitored/manual runs only.
+
+PARTIALLY FUNCTIONAL
+
+3
+
+Scigenics ΓÇô Fermentor
+
+1
+
+Phase 0/1 scale-up fermentation. CONFIRMED (founder, June 2026): this is the unit reported completely non-functional. Do not schedule any run on it until repaired.
+
+NOT WORKING
+
+Aseptic Workspace (Laminar Air Flow)  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+4
+
+Kadavul Electric Mechanical Industries ΓÇô Laminar Air Flow
+
+1
+
+Core aseptic technique workstation (SOP-001) ΓÇö all sterile media/culture handling.
+
+Operational
+
+5
+
+Kemi ΓÇô Laminar Air Flow
+
+1
+
+Second LAF unit ΓÇö redundancy/parallel aseptic work capacity.
+
+Operational
+
+Incubation ΓÇö General / BOD  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+6
+
+Tech Lab Instruments ΓÇô Incubator
+
+1
+
+General-purpose temperature-controlled incubation for cultures.
+
+Operational
+
+7
+
+Technico ΓÇô BOD Incubator
+
+1
+
+Precision temperature-controlled incubation ΓÇö fermentation runs, CFU plate incubation (typically 37┬░C for LAB).
+
+Operational
+
+Incubation ΓÇö Specialised Chambers  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+8
+
+Hybridization Oven ΓÇô Scigenics Biotech
+
+1
+
+Relevant only for hybridisation-based molecular work (e.g. Southern blotting) ΓÇö not a Phase 0 priority. Currently unavailable regardless.
+
+IN MAINTENANCE
+
+9
+
+Plant Growth Chamber (Orbitek) ΓÇô Scigenics Biotech
+
+1
+
+Designed for plant growth, but a controlled-temperature/light chamber is also adaptable as a mushroom mycelium fruiting/incubation environment ΓÇö worth piloting if dedicated mycelium incubation space is needed.
+
+Operational
+
+Microscopy  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+10
+
+Bino CXI ΓÇô Microscope
+
+1
+
+Gram staining (SOP-007), Lactophenol Cotton Blue mycelial morphology checks, oil-immersion work with Cedar Wood Oil. Only microscope on site ΓÇö no redundancy if this unit goes down.
+
+Operational
+
+Centrifugation  (5 models, 5 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+11
+
+Remi ΓÇô Clinical Centrifuge
+
+1
+
+General sample/cell pelleting.
+
+Operational
+
+12
+
+Remi ΓÇô Cooling Centrifuge (Model 412 LAG)
+
+1
+
+Temperature-controlled centrifugation ΓÇö relevant for protein/enzyme work sensitive to heat.
+
+Operational
+
+13
+
+Remi ΓÇô Micro Centrifuge (12C)
+
+1
+
+Small-volume (microfuge tube) centrifugation ΓÇö molecular biology work.
+
+Operational
+
+14
+
+Remi ΓÇô R-8C Centrifuge
+
+1
+
+General-purpose centrifugation.
+
+Operational
+
+15
+
+Remi ΓÇô Centrifuge (KA 6775)
+
+1
+
+General-purpose centrifugation ΓÇö confirm rotor/tube compatibility against the other four Remi units before assuming interchangeability.
+
+Operational
+
+Mixing / Stirring / Vortexing  (2 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+16
+
+Deen Instruments ΓÇô Magnetic Stirrer
+
+2
+
+General buffer/media/reagent dissolution.
+
+Operational
+
+17
+
+Remi ΓÇô Cyclo Mixer
+
+1
+
+Vortexing small sample volumes.
+
+Operational
+
+Shaking / Agitation  (3 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+18
+
+Orbital Shaker ΓÇô Scigenics Biotech
+
+1
+
+Liquid culture agitation for aerobic LAB/yeast growth, dissolution of reagents.
+
+Operational
+
+19
+
+Orbital Water Bath Shaker ΓÇô Ind Labs
+
+1
+
+Combined shaking and temperature control for incubated liquid cultures.
+
+Operational
+
+20
+
+Rotary Shaker ΓÇô Ind Labs
+
+1
+
+Liquid culture agitation, alternative to the orbital shaker.
+
+Operational
+
+Water & Oil Baths  (3 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+21
+
+ITC Industrial and Laboratory ΓÇô Refrigerator Water Bath
+
+1
+
+Precision low-temperature water bath work.
+
+Operational
+
+22
+
+Rashmi ΓÇô Water Bath
+
+1
+
+General incubation/heating at controlled temperature ΓÇö e.g. postbiotic heat lock (SOP-OBI-POSTBIO-001, 78┬░C/18min).
+
+Operational
+
+23
+
+Oil Bath
+
+1
+
+High-temperature heating beyond water-bath range, e.g. Soxhlet reflux.
+
+Operational
+
+Weighing Balances  (3 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+24
+
+Cyberlab ΓÇô Electronic Weighing Machine (Max 600 g)
+
+1
+
+General reagent and media weighing up to 600g.
+
+Operational
+
+25
+
+Electronic Scale
+
+1
+
+General-purpose weighing ΓÇö confirm max capacity/precision grade against the other two balances to assign the right one per task.
+
+Operational
+
+26
+
+Weighing Machine (Electronic, Max 300 g)
+
+1
+
+Smaller-capacity general-purpose weighing.
+
+Operational
+
+Drying / Dry-Heat Ovens  (2 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+27
+
+Industrial & Laboratory Tools Corporation ΓÇô Hot Air Oven
+
+2
+
+Dry-heat sterilisation of glassware (per SOP-002, e.g. 160┬░C/2hr for Soxhlet flasks) and substrate drying steps.
+
+Operational
+
+28
+
+Precision Lab Furniture Industries ΓÇô Hot Air Oven
+
+1
+
+Third dry-heat oven ΓÇö parallel sterilisation/drying capacity to the two units above (3 hot air ovens on site in total).
+
+Operational
+
+General Heating  (3 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+29
+
+Golden / Butterfly ΓÇô Stove
+
+1
+
+General heating; substrate cooking/preparation for ragi/black rice sprouting steps.
+
+Operational
+
+30
+
+Hot Plate
+
+1
+
+General reagent heating/dissolution.
+
+Operational
+
+31
+
+Microwave Oven ΓÇô Samsung
+
+1
+
+Rapid media/agar melting and reheating.
+
+Operational
+
+Cold Storage ΓÇö Refrigerators & Freezers  (5 models, 5 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+32
+
+LG ΓÇô Refrigerator
+
+1
+
+General 2ΓÇô8┬░C reagent/sample storage.
+
+Operational
+
+33
+
+LG ΓÇô Refrigerator (Model GL 328)
+
+1
+
+Second refrigerator ΓÇö segregate raw material vs. reagent storage if not already done.
+
+Operational
+
+34
+
+Deep Freezer ΓÇô Ins Lab
+
+1
+
+Long-term frozen storage ΓÇö enzyme stocks (e.g. Proteinase K), DMSO-cryopreserved strain banks.
+
+Operational
+
+35
+
+Rockwell ΓÇô Deep Freezer
+
+1
+
+Long-term frozen storage.
+
+Operational
+
+36
+
+Rockwell ΓÇô Deep Freezer (Model SFR450DDU)
+
+1
+
+Third deep freezer ΓÇö confirm allocation (raw material / reagent / strain bank) to avoid ad-hoc use across all three.
+
+Operational
+
+Cold-Chain Support  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+37
+
+Ice Flake Machine
+
+1
+
+Keeping heat-sensitive samples (enzymes, live cultures, extracts) cold during active bench work. Currently unavailable.
+
+IN MAINTENANCE
+
+pH Measurement  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+38
+
+Medox ΓÇô pH Meter
+
+1
+
+Fermentation pH-kinetics tracking (OB-EXP-001), PBS pH adjustment (SOP-OBI-PBS-001). Requires routine calibration per the pH meter calibration logbook.
+
+Operational
+
+Distillation / Water Purification  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+40
+
+Bhanu ΓÇô Double Distillation Easy Still Mark 2000 DDQ XL
+
+1
+
+Produces double-distilled water for reagent and media preparation ΓÇö foundational utility for nearly every assay on this list.
+
+Operational
+
+41
+
+Borosil ΓÇô Double Distillation Unit
+
+1
+
+Secondary/backup distilled water source.
+
+Operational
+
+Spectrophotometry & Optical Analysis  (3 models, 3 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+42
+
+Lab Man ΓÇô UV Visible Spectrophotometer (Model UV 1200)
+
+1
+
+CORE INSTRUMENT ΓÇö GABA Ninhydrin assay (SOP-OBI-GABA-ASSAY-001), TPC assay (765nm), DNS reducing-sugar assay, Anthrone carbohydrate assay. The single most cross-referenced instrument on this list, and the only one of its kind on site.
+
+Operational
+
+43
+
+Labtronics ΓÇô Digital Flame Photometer (LT 65)
+
+1
+
+Sodium/potassium quantification ΓÇö relevant to electrolyte/mineral panel work on the fermented base.
+
+Operational
+
+44
+
+Systronics ΓÇô Digital Nephelo Turbidity Meter (Model 132)
+
+1
+
+Tracking bacterial/yeast growth via turbidity ΓÇö a faster proxy for culture density than plate counts during method development.
+
+Operational
+
+Imaging  (2 models, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+45
+
+Alpha Infotech ΓÇô Gel Documentation System
+
+1
+
+Visualising agarose gel electrophoresis results ΓÇö relevant once 16S PCR product verification for LAB strain identification begins.
+
+Operational
+
+46
+
+Medox / Weal Tech ΓÇô UV Transilluminator
+
+1
+
+Viewing UV-fluorescent gels/plates ΓÇö pairs with the Gel Documentation System.
+
+Operational
+
+Colony / Cell Counting  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+47
+
+Labtronics ΓÇô Microprocessor Colony Counter
+
+1
+
+CFU enumeration (SOP-006) ΓÇö core to all LAB plate-count work.
+
+Operational
+
+Extraction  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+48
+
+Rashmi Scientific Company ΓÇô Soxhlet Apparatus
+
+1
+
+Lipid/fat extraction (Hexane/Petroleum Ether solvent) ΓÇö relevant to fat-content determination of mushroom biomass or grain substrate.
+
+Operational
+
+Cell Disruption / Ultrasonication  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+49
+
+Sonic Vibra Cell ΓÇô Ultrasonicator
+
+1
+
+Ultrasound-assisted extraction ΓÇö can improve bioactive yield from mushroom hot-water extracts, and cell lysis for intracellular assays.
+
+Operational
+
+Gas Analysis  (1 model, 1 unit)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+50
+
+Endee ΓÇô Gas Analyser (PA960)
+
+1
+
+Potential use: monitoring COΓéé/OΓéé in fermentation headspace, relevant to anaerobic fermentation tracking (SOP-OBI-ANAEROBIC-001).
+
+Operational
+
+Sample Preparation ΓÇö Homogenisation  (1 model, 2 units)
+
+#
+
+Instrument
+
+Qty
+
+OBI-Specific Application / SOP Link
+
+Status
+
+51
+
+Remi / Techno Instrument Co. ΓÇô Homogeniser
+
+2
+
+Homogenising mushroom biomass or grain substrate ahead of extraction/assay steps.
+
+Operational
+
+
+
+8. Next Steps
+
+Formally annotate OB-REF-CHEM-001/002/003 (April 2026) to mark which catalogued entries have since been discarded, so the legacy volumes don't get mistaken for current stock by anyone who opens them without this document for context.
+
+Run the TPC assay (Gallic Acid + Phenol/FolinΓÇôCiocalteu Reagent + Sodium Carbonate, all three confirmed present) on the UV-Vis spectrophotometer as soon as it is free ΓÇö no reagent blocker remains for this assay.
+
+Confirm whether ΓÇÿRobertΓÇÖs reagentΓÇÖ and ΓÇÿIodine trione hydrateΓÇÖ resolve to known compounds (see Section 1 dedup log) ΓÇö the only unresolved identification items in this document.
+
+Verify Malachite Green stock is segregated from any product-contact area, given its FSSAI food-contact restriction.
+
+Update Section 2 / Section 7.1 once the Scigenics fermentor is repaired or the Bioage 2A unit's probes/shaft are fixed.
+
+Record the autoclave's make/model and cycle parameters (temperature, pressure, hold time) for Section 7.1, since the founder confirmation did not include a specific model ΓÇö needed for SOP-002 cross-reference accuracy.
+
+Sync this document's findings into the OxyOS Inventory Hub per Module 6 of the OxyOS Staff Guide, so stock status is visible to all roles, not just held in this reference document.
+
+
+
+9. Sign-Off and Document Control
+
+Role
+
+Name
+
+Signature and Date
+
+Prepared by
+
+Mr. Manisreethaar S, CEO & Director
+
+______________________________
+
+Co-Director Review
+
+Libinraj Christopher
+
+______________________________
+
+OB-REF-CHEM-001/002/003 retirement annotations completed
+
+
+
+______________________________
+
+ΓÇÿRobertΓÇÖs reagentΓÇÖ / ΓÇÿIodine trione hydrateΓÇÖ identity confirmed
+
+
+
+______________________________
+
+OxyOS Inventory Hub sync confirmed
+
+
+
+______________________________
+
+Next physical stock verification due
+
+
+
+______________________________
+
+
+
+
