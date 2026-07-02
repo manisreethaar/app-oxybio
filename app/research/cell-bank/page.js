@@ -10,7 +10,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const STATUS_COLOR = {
-  'In Progress': 'bg-slate-100 text-slate-700',
+  'In Progress': 'bg-cyan-50 text-cyan-700 border border-cyan-200',
   'Completed':   'bg-emerald-100 text-emerald-700',
   'Discarded':   'bg-red-100 text-red-600',
 };
