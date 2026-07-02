@@ -1367,8 +1367,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-transparent
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-transparent rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-transparent">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
@@ -1398,8 +1398,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Confirmation Modal */}
       {deletingId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-transparent
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-transparent rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-transparent">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
@@ -1506,8 +1506,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Unified Modal Shell */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-transparent
-          <div className="bg-transparent rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-transparent">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
             <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gray-50 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div>
                 <h2 className="text-lg font-black tracking-tight text-slate-800">
