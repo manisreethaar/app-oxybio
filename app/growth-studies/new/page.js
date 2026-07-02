@@ -240,7 +240,7 @@ export default function NewGrowthStudyPage() {
                           ))}
                         </select>
                       )}
-                      <p className="text-[10px] text-slate-400 font-medium mt-1">The selected vial will be marked as Used when the study is started.</p>
+                      <p className="text-xs text-slate-400 font-medium mt-1">The selected vial will be marked as Used when the study is started.</p>
                     </div>
                   )}
                 </>
@@ -355,7 +355,7 @@ export default function NewGrowthStudyPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => toggleSampleType(i, opt.value)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-colors ${
                           tp.sample_types.includes(opt.value)
                             ? 'bg-slate-600 text-white border-slate-600'
                             : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'

@@ -110,7 +110,7 @@ function StatusPill({ status }) {
     not_applicable: { label: '—',      cls: 'bg-slate-50 text-slate-300' },
   };
   const { label, cls } = map[status] || { label: status, cls: '' };
-  return <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${cls}`}>{label}</span>;
+  return <span className={`text-xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${cls}`}>{label}</span>;
 }
 
 // ── Calendar Day Cell ──────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ function DayCell({ dayData }) {
             {dayNum}
           </span>
           {is_sunday && (
-            <span className={`text-[8px] font-bold ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
+            <span className={`text-xs font-bold ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
           )}
         </div>
         {is_joining_day && <Star className="w-3 h-3 text-amber-500 fill-amber-400" />}
@@ -147,36 +147,36 @@ function DayCell({ dayData }) {
         <div className="space-y-0.5 flex-1">
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-[10px] font-bold text-emerald-700 font-mono">
+            <span className="text-xs font-bold text-emerald-700 font-mono">
               {new Date(log.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
             </span>
           </div>
           {log.check_out_time && log.mispunch_status !== 'required' ? (
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold text-slate-500 font-mono">
+              <span className="text-xs font-bold text-slate-500 font-mono">
                 {new Date(log.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-1 mt-1">
               <AlertTriangle className="w-3 h-3 text-red-500" />
-              <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">Missed Checkout</span>
+              <span className="text-xs font-black text-red-600 uppercase tracking-widest">Missed Checkout</span>
             </div>
           )}
           {log.total_hours && (
-            <span className="block text-[10px] font-black text-slate-600 mt-0.5">
+            <span className="block text-xs font-black text-slate-600 mt-0.5">
               {log.total_hours}h
             </span>
           )}
           {log.manual_entry && (
-            <span className="block text-[8px] font-black text-slate-500 uppercase tracking-wide">Manual</span>
+            <span className="block text-xs font-black text-slate-500 uppercase tracking-wide">Manual</span>
           )}
         </div>
       )}
 
       {(status === 'on_leave' || status === 'leave_pending') && leave && (
-        <span className="text-[10px] font-black text-amber-600 leading-tight">{leave.leave_type}</span>
+        <span className="text-xs font-black text-amber-600 leading-tight">{leave.leave_type}</span>
       )}
     </div>
   );
@@ -221,19 +221,19 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
             <div className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
-            <span className="text-[10px] font-bold text-slate-500">{l.label}</span>
+            <span className="text-xs font-bold text-slate-500">{l.label}</span>
           </div>
         ))}
         <div className="flex items-center gap-1.5">
           <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
-          <span className="text-[10px] font-bold text-slate-500">Joining Day</span>
+          <span className="text-xs font-bold text-slate-500">Joining Day</span>
         </div>
       </div>
 
       {/* Day labels header */}
       <div className="grid grid-cols-7 gap-1.5">
         {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-          <div key={d} className={`text-center text-[10px] font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
+          <div key={d} className={`text-center text-xs font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
             {d}
           </div>
         ))}
@@ -263,7 +263,7 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl border border-slate-100 px-3 py-3 text-center shadow-sm">
               <p className={`text-lg font-black ${s.color}`}>{s.value}</p>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -410,7 +410,7 @@ function PayslipPanel({
         {existingSlip && !isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
           >
             <Edit3 className="w-3 h-3" /> Edit
           </button>
@@ -427,7 +427,7 @@ function PayslipPanel({
           ['Total Hours', `${summary.total_hours_worked}h`],
         ].map(([l, v]) => (
           <div key={l} className="bg-white rounded-xl px-3 py-2 border border-slate-100">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{l}</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{l}</p>
             <p className="text-sm font-black text-slate-800 mt-0.5">{v}</p>
           </div>
         ))}
@@ -435,10 +435,10 @@ function PayslipPanel({
 
       {/* Override controls */}
       <div className={`space-y-3 transition-opacity ${!isEditing && existingSlip ? 'opacity-50 pointer-events-none' : ''}`}>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Admin Controls</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Admin Controls</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">LOP Days Override</label>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">LOP Days Override</label>
             <input
               type="number" min="0" step="0.5"
               value={lopOverride}
@@ -447,7 +447,7 @@ function PayslipPanel({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">PF Deduction (₹)</label>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">PF Deduction (₹)</label>
             <input
               type="number" min="0"
               value={pfDed}
@@ -456,7 +456,7 @@ function PayslipPanel({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ESI Deduction (₹)</label>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">ESI Deduction (₹)</label>
             <input
               type="number" min="0"
               value={esiDed}
@@ -465,7 +465,7 @@ function PayslipPanel({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Admin Notes</label>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Admin Notes</label>
             <input
               type="text"
               value={adminNotes}
@@ -481,7 +481,7 @@ function PayslipPanel({
       {calc && (
         <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-4 py-2 bg-slate-50 border-b border-slate-100">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Calculation</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Live Calculation</p>
           </div>
           <div className="divide-y divide-gray-50">
             {[
@@ -574,15 +574,15 @@ function EmployeeItem({ emp, isSelected, onClick }) {
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-black truncate ${isSelected ? 'text-white' : 'text-slate-800'}`}>{emp.full_name}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest ${isSelected ? 'bg-white/20 text-white' : (roleColors[emp.role] || 'bg-slate-100 text-slate-600')}`}>
+          <span className={`text-xs font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest ${isSelected ? 'bg-white/20 text-white' : (roleColors[emp.role] || 'bg-slate-100 text-slate-600')}`}>
             {emp.role}
           </span>
           {emp.base_salary ? (
-            <span className={`text-[9px] font-bold ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
+            <span className={`text-xs font-bold ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
               ₹{Number(emp.base_salary).toLocaleString('en-IN')}
             </span>
           ) : (
-            <span className="text-[9px] font-bold text-red-400">No salary</span>
+            <span className="text-xs font-bold text-red-400">No salary</span>
           )}
         </div>
       </div>
@@ -734,7 +734,7 @@ export default function PayrollPage() {
                 <thead className="bg-slate-50">
                   <tr>
                     {['Period', 'Working Days', 'LOP Days', 'Gross', 'Net Salary', ''].map(h => (
-                      <th key={h} className="px-5 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                      <th key={h} className="px-5 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-widest">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -743,7 +743,7 @@ export default function PayrollPage() {
                     <tr key={slip.id} className="hover:bg-slate-50">
                       <td className="px-5 py-4 font-mono font-black text-slate-700 text-sm">
                         {slip.month} {slip.year}
-                        {slip.is_auto_generated && <span className="ml-2 text-[10px] bg-slate-50 text-slate-500 border px-1.5 py-0.5 rounded font-bold">AUTO</span>}
+                        {slip.is_auto_generated && <span className="ml-2 text-xs bg-slate-50 text-slate-500 border px-1.5 py-0.5 rounded font-bold">AUTO</span>}
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-500 font-mono">{slip.total_working_days ?? '—'}</td>
                       <td className="px-5 py-4 text-sm font-black">
@@ -790,7 +790,7 @@ export default function PayrollPage() {
             <div key={chip.label} className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl px-4 py-2.5 shadow-sm">
               <span className="text-slate-500">{chip.icon}</span>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{chip.label}</p>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{chip.label}</p>
                 <p className="text-sm font-black text-slate-800">{chip.value}</p>
               </div>
             </div>
@@ -816,13 +816,13 @@ export default function PayrollPage() {
 
         {/* ── Panel A: Employee Roster ── */}
         <div className={`${mobilePanel === 'roster' ? 'flex' : 'hidden'} md:flex flex-col gap-2 w-full md:w-64 shrink-0`}>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Team ({employees.length})</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Team ({employees.length})</p>
           <div className="max-h-[calc(100vh-200px)] overflow-y-auto pr-1 pb-10 custom-scrollbar">
             <div className="space-y-6 mt-4">
               {/* Management Group */}
               {employees.some(e => ['admin', 'ceo', 'cto'].includes(e.role)) && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Management</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Management</p>
                   {employees.filter(e => ['admin', 'ceo', 'cto'].includes(e.role)).map(emp => (
                     <EmployeeItem 
                       key={emp.id} 
@@ -837,7 +837,7 @@ export default function PayrollPage() {
               {/* Scientists Group */}
               {employees.some(e => ['scientist', 'research_fellow'].includes(e.role)) && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Scientists & Researchers</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Scientists & Researchers</p>
                   {employees.filter(e => ['scientist', 'research_fellow'].includes(e.role)).map(emp => (
                     <EmployeeItem 
                       key={emp.id} 
@@ -852,7 +852,7 @@ export default function PayrollPage() {
               {/* Staff & Interns Group */}
               {employees.some(e => ['staff', 'intern', 'research_intern'].includes(e.role)) && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Staff & Interns</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Staff & Interns</p>
                   {employees.filter(e => ['staff', 'intern', 'research_intern'].includes(e.role)).map(emp => (
                     <EmployeeItem 
                       key={emp.id} 
@@ -889,14 +889,14 @@ export default function PayrollPage() {
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-xs text-slate-400 font-bold">{selectedEmployee.designation || selectedEmployee.role}</p>
                     {selectedEmployee.joined_date && (
-                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                      <span className="text-xs font-black text-slate-300 uppercase tracking-widest">
                         DOJ: {new Date(selectedEmployee.joined_date).toLocaleDateString('en-IN')}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Base Salary</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Base Salary</p>
                   <p className="text-sm font-black text-slate-800">₹{Number(selectedEmployee.base_salary || 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
@@ -914,7 +914,7 @@ export default function PayrollPage() {
               {/* Payslip history for this employee */}
               {empPayslips.length > 0 && (
                 <div className="mt-6 pt-5 border-t border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Issued Payslips</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Issued Payslips</p>
                   <div className="flex flex-wrap gap-2">
                     {empPayslips.map(slip => (
                       <button
@@ -928,7 +928,7 @@ export default function PayrollPage() {
                           }
                           setMobilePanel('payslip');
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl text-[10px] font-black hover:bg-emerald-100 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl text-xs font-black hover:bg-emerald-100 transition-all"
                       >
                         <BadgeCheck className="w-3 h-3" />
                         {slip.month} {slip.year}

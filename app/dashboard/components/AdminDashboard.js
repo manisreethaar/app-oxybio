@@ -177,12 +177,12 @@ export default function AdminDashboard({ employeeId }) {
     return (
       <Link href={link} className="card p-6 flex flex-col justify-between hover:border-slate-300 transition-all duration-150 group">
         <div className="flex items-start justify-between mb-2">
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{title}</p>
           <Icon className={`w-4 h-4 ${textColor} opacity-80`} />
         </div>
         <div className="flex items-baseline gap-2">
           <p className={`text-4xl font-black ${textColor} tracking-tight`}>{value}</p>
-          {subtitle && <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{subtitle}</span>}
+          {subtitle && <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{subtitle}</span>}
         </div>
       </Link>
     );
@@ -204,7 +204,7 @@ export default function AdminDashboard({ employeeId }) {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">Admin Controller</h2>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Live Operational Overview — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Live Operational Overview — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -221,11 +221,11 @@ export default function AdminDashboard({ employeeId }) {
                    a.remove();
                 } else { toast.error("Export failed."); }
              }}
-             className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg text-[11px] font-bold hover:bg-slate-700 shadow-sm transition-all uppercase tracking-wider"
+             className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg text-xs font-bold hover:bg-slate-700 shadow-sm transition-all uppercase tracking-wider"
           >
             <Download className="w-3.5 h-3.5"/> Export Logs
           </button>
-          <button onClick={() => setShowConfig(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-sm transition-all uppercase tracking-wider">
+          <button onClick={() => setShowConfig(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-sm transition-all uppercase tracking-wider">
             <Settings className="w-3.5 h-3.5"/> Safeguards
           </button>
         </div>
@@ -264,7 +264,7 @@ export default function AdminDashboard({ employeeId }) {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-base font-bold text-slate-900 tracking-tight">Production Yield — Last 6 Months</h3>
-          <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-widest">Live Data</span>
+          <span className="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-widest">Live Data</span>
         </div>
         <div className="h-72 w-full min-w-0">
           <ProductionYieldChart data={chartData} />
@@ -315,11 +315,11 @@ export default function AdminDashboard({ employeeId }) {
                     ? 'border-amber-300 bg-amber-50/20'
                     : 'border-slate-200 bg-white';
                   const statusPill = phAlarm
-                    ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">⚠ pH Alarm</span>
+                    ? <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">⚠ pH Alarm</span>
                     : logOverdue
-                    ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Log Overdue</span>
+                    ? <span className="text-xs font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Log Overdue</span>
                     : isFermenting
-                    ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">On Track</span>
+                    ? <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">On Track</span>
                     : null;
 
                   return (
@@ -330,7 +330,7 @@ export default function AdminDashboard({ employeeId }) {
                           <p className="font-bold text-slate-900 tracking-tight text-sm leading-tight truncate">{batch.variant}</p>
                         </div>
                         <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${STAGE_COLOR[batch.current_stage] || 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${STAGE_COLOR[batch.current_stage] || 'bg-slate-100 text-slate-500'}`}>
                             {STAGE_LABEL[batch.current_stage] || batch.current_stage || '—'}
                           </span>
                           {statusPill}
@@ -343,14 +343,14 @@ export default function AdminDashboard({ employeeId }) {
                       </div>
                       <div className="flex items-center mt-auto pt-3 border-t border-slate-100 justify-between gap-2">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Last pH</p>
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Last pH</p>
                           <p className={`font-black text-lg ${phAlarm ? 'text-red-500' : lastReading ? 'text-emerald-600' : 'text-slate-300'}`}>
                             {lastReading?.ph ?? '—'}
                           </p>
                         </div>
                         {isFermenting && (
                           <div className="text-center">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Last Log</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Last Log</p>
                             <p className={`text-sm font-black ${logOverdue ? 'text-amber-600' : 'text-slate-600'}`}>
                               {hoursSinceLog !== null ? `${hoursSinceLog}h ago` : 'No logs'}
                             </p>
@@ -376,7 +376,7 @@ export default function AdminDashboard({ employeeId }) {
             <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600"/>
               ⚠ Awaiting Release Decision
-              <span className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black">{qcHoldBatches.length}</span>
+              <span className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-xs font-black">{qcHoldBatches.length}</span>
             </h2>
             <button onClick={() => setQcHoldDismissed(true)} className="text-amber-400 hover:text-amber-700 transition-colors" aria-label="Dismiss">
               <X className="w-4 h-4"/>
@@ -388,9 +388,9 @@ export default function AdminDashboard({ employeeId }) {
                 <div key={b.id} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-xl">
                   <div className="min-w-0">
                     <p className="font-mono text-xs font-black text-amber-900">{b.batch_id}</p>
-                    {b.formulations?.name && <p className="text-[11px] text-amber-700 font-semibold truncate mt-0.5">{b.formulations.name}</p>}
+                    {b.formulations?.name && <p className="text-xs text-amber-700 font-semibold truncate mt-0.5">{b.formulations.name}</p>}
                   </div>
-                  <Link href={`/batches/${b.id}`} className="ml-3 shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                  <Link href={`/batches/${b.id}`} className="ml-3 shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
                     Review →
                   </Link>
                 </div>
@@ -418,7 +418,7 @@ export default function AdminDashboard({ employeeId }) {
               {lowStock.map(item => (
                 <Link key={item.id} href={`/inventory?search=${encodeURIComponent(item.item?.name || '')}`} className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
                   <span className="text-xs font-bold text-amber-800 truncate">{item.item?.name}</span>
-                  <span className="text-[10px] font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? '—'} {item.unit}</span>
+                  <span className="text-xs font-black text-amber-600 whitespace-nowrap ml-2 bg-amber-100 px-1.5 py-0.5 rounded">{item.current_quantity ?? '—'} {item.unit}</span>
                 </Link>
               ))}
               <Link href="/inventory" className="block text-center text-xs font-bold text-amber-600 hover:underline mt-1 pt-1 border-t border-amber-100">View Inventory →</Link>
@@ -439,7 +439,7 @@ export default function AdminDashboard({ employeeId }) {
                 return (
                   <Link key={eq.id} href="/equipment" className={`flex justify-between items-center p-2 rounded-lg border hover:opacity-90 transition-colors ${isOverdue ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
                     <span className={`text-xs font-bold truncate ${isOverdue ? 'text-red-800' : 'text-amber-800'}`}>{eq.name}</span>
-                    <span className={`text-[10px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{new Date(eq.calibration_due_date).toLocaleDateString()}</span>
+                    <span className={`text-xs font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{new Date(eq.calibration_due_date).toLocaleDateString()}</span>
                   </Link>
                 );
               })}
@@ -460,10 +460,10 @@ export default function AdminDashboard({ employeeId }) {
                 <div key={dev.id} className="p-2 bg-red-50 rounded-lg border border-red-100 space-y-1">
                   <Link href="/capa" className="flex justify-between items-center hover:opacity-80 transition-opacity">
                     <span className="text-xs font-bold text-red-800 truncate">{dev.title}</span>
-                    <span className={`text-[9px] font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'}`}>{dev.severity}</span>
+                    <span className={`text-xs font-black whitespace-nowrap ml-2 px-1.5 py-0.5 rounded ${dev.severity === 'Critical' ? 'bg-red-200 text-red-800' : dev.severity === 'Major' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'}`}>{dev.severity}</span>
                   </Link>
                   {dev.batches && (
-                    <Link href={`/batches/${dev.batches.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white text-slate-700 text-[9px] font-black rounded border border-slate-100 hover:bg-slate-50 transition-colors">
+                    <Link href={`/batches/${dev.batches.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white text-slate-700 text-xs font-black rounded border border-slate-100 hover:bg-slate-50 transition-colors">
                       Batch {dev.batches.batch_id}
                     </Link>
                   )}
@@ -482,7 +482,7 @@ export default function AdminDashboard({ employeeId }) {
             <h2 className="text-base font-bold text-amber-900 tracking-tight flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-amber-600" />
               Pending Leave Approvals
-              <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-black">{pendingLeaves.length}</span>
+              <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-black">{pendingLeaves.length}</span>
             </h2>
             <Link href="/leave" className="text-xs font-bold text-amber-700 hover:underline">Manage All →</Link>
           </div>
@@ -495,7 +495,7 @@ export default function AdminDashboard({ employeeId }) {
                     {l.leave_type} · {new Date(l.start_date).toLocaleDateString('en-IN')} – {new Date(l.end_date).toLocaleDateString('en-IN')}
                   </p>
                 </div>
-                <Link href="/leave" className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                <Link href="/leave" className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-lg shadow-sm transition-colors whitespace-nowrap">
                   Review →
                 </Link>
               </div>
@@ -522,7 +522,7 @@ export default function AdminDashboard({ employeeId }) {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{log.employees?.full_name}</p>
-                      <p className="text-[10px] text-slate-500 font-medium">Log Date: {new Date(log.date).toLocaleDateString()} | Requested: <strong className="text-navy">{log.mispunch_requested_hours}h</strong></p>
+                      <p className="text-xs text-slate-500 font-medium">Log Date: {new Date(log.date).toLocaleDateString()} | Requested: <strong className="text-navy">{log.mispunch_requested_hours}h</strong></p>
                       <p className="text-xs text-slate-600 mt-1 italic">&quot;{log.mispunch_reason}&quot;</p>
                     </div>
                   </div>
@@ -569,7 +569,7 @@ export default function AdminDashboard({ employeeId }) {
               
               <div className="p-6 space-y-6">
                  <div className="bg-navy/5 p-4 rounded-xl border border-navy/10">
-                    <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-1.5">User Statement</p>
+                    <p className="text-xs font-black text-navy uppercase tracking-widest mb-1.5">User Statement</p>
                     <p className="text-sm text-slate-700 italic">&quot;{reviewingMispunch.mispunch_reason}&quot;</p>
                     <div className="mt-4 flex items-center justify-between">
                        <span className="text-xs font-bold text-slate-500">Requested Hours:</span>
@@ -578,7 +578,7 @@ export default function AdminDashboard({ employeeId }) {
                  </div>
 
                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Rejection Remark (Required only for rejection)</label>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">Rejection Remark (Required only for rejection)</label>
                     <textarea 
                       placeholder="e.g. Employee actually left early per CCTV evidence..."
                       className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none text-sm min-h-[100px] resize-none"
@@ -624,15 +624,15 @@ export default function AdminDashboard({ employeeId }) {
               <p className="text-xs text-slate-500 mb-4">Set operational boundaries for automated alerts.</p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Minimum pH Warning</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Minimum pH Warning</label>
                   <input type="number" step="0.1" value={thresholds.minPh} onChange={e => setThresholds({...thresholds, minPh: parseFloat(e.target.value)})} className="w-full border border-slate-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Maximum pH Warning</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Maximum pH Warning</label>
                   <input type="number" step="0.1" value={thresholds.maxPh} onChange={e => setThresholds({...thresholds, maxPh: parseFloat(e.target.value)})} className="w-full border border-slate-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Max Temperature Limit (┬░C)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Max Temperature Limit (┬░C)</label>
                   <input type="number" value={thresholds.tempMax} onChange={e => setThresholds({...thresholds, tempMax: parseInt(e.target.value)})} className="w-full border border-slate-200 rounded-lg p-2 outline-none font-semibold text-sm"/>
                 </div>
                 <button onClick={saveThresholds} disabled={actionLoading} className="w-full py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm mt-2 flex items-center justify-center gap-2">

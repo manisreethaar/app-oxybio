@@ -89,7 +89,7 @@ export default function EditRequestButton({
 
   if (hasPending) {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-black uppercase tracking-widest">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-black uppercase tracking-widest">
         <Loader2 className="w-3 h-3 animate-spin" />
         Pending Review
       </span>
@@ -148,7 +148,7 @@ export default function EditRequestButton({
               <div className="space-y-4">
                 {fields.map(f => (
                   <div key={f.key}>
-                    <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
                       {f.label}
                     </label>
                     {f.type === 'select' ? (
@@ -195,7 +195,7 @@ export default function EditRequestButton({
                   </p>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
                     Reason for archive
                   </label>
                   <textarea

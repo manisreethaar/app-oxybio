@@ -291,7 +291,7 @@ export default function LnbEntryPage() {
         {/* Sidebar Signatures */}
         <div className="space-y-6">
            <div className="card p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Chain of Custody</h3>
+              <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Chain of Custody</h3>
               
               <div className="mb-6">
                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">Primary Author</p>
@@ -315,7 +315,7 @@ export default function LnbEntryPage() {
                       </div>
                       <div>
                          <p className="text-sm font-bold text-slate-900">{entry.countersigner.full_name}</p>
-                         <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{new Date(entry.countersigned_at).toLocaleDateString()}</p>
+                         <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{new Date(entry.countersigned_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                  ) : (
@@ -451,13 +451,13 @@ function RichToolbar({ taRef, value, onChange }) {
             type="button"
             title={t.title}
             onMouseDown={(e) => { e.preventDefault(); apply(t); }}
-            className={`px-2 py-1 rounded text-[11px] text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors select-none ${t.cls}`}
+            className={`px-2 py-1 rounded text-xs text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors select-none ${t.cls}`}
           >
             {t.label}
           </button>
         )
       )}
-      <span className="ml-auto text-[9px] font-bold text-slate-300 uppercase tracking-widest hidden sm:block">Markdown</span>
+      <span className="ml-auto text-xs font-bold text-slate-300 uppercase tracking-widest hidden sm:block">Markdown</span>
     </div>
   );
 }
@@ -567,7 +567,7 @@ function SnapshotRows({ data, formulationMap = {} }) {
             : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
           return (
             <div key={key} className="flex items-start justify-between gap-3 min-w-0">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide shrink-0 mt-0.5 min-w-[80px]">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wide shrink-0 mt-0.5 min-w-[80px]">
                 {FIELD_LABELS[key] || key.replace(/_/g, ' ')}
               </span>
               <span className="text-xs font-bold text-slate-700 text-right break-words min-w-0 flex-1">
@@ -578,7 +578,7 @@ function SnapshotRows({ data, formulationMap = {} }) {
         })}
       {data.tests && (
         <div className="mt-2 space-y-1">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1">QC Test Results</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-wide mb-1">QC Test Results</p>
           {data.tests.map((t, i) => (
             <div key={i} className="flex items-start justify-between gap-2 text-xs py-0.5 border-b border-slate-50 last:border-0">
               <span className="text-slate-600 break-words flex-1">{t.test}</span>
@@ -613,9 +613,9 @@ function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
         onClick={() => setOpen(v => !v)}
         className={`w-full px-4 py-2.5 flex items-center justify-between border-b border-slate-100 ${open ? headerClass : 'bg-slate-50 text-slate-600'} transition-colors`}
       >
-        <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-black uppercase tracking-widest">{label}</span>
         <div className="flex items-center gap-2">
-          {syncDate && <span className="text-[9px] opacity-60">{new Date(syncDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+          {syncDate && <span className="text-xs opacity-60">{new Date(syncDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
           {open ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
         </div>
       </button>
@@ -625,7 +625,7 @@ function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
             <div className="space-y-4">
               {Object.entries(data).map(([flask, flaskData]) => (
                 <div key={flask}>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-50 pb-1">Trial {flask}</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-50 pb-1">Trial {flask}</p>
                   <SnapshotRows data={flaskData} formulationMap={formulationMap} />
                 </div>
               ))}
@@ -666,12 +666,12 @@ function StageLogPanel({ snapshots, formulationMap = {}, entryId, role, onResync
       <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
         <FlaskConical className="w-4 h-4 text-slate-500" />
         <h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">Auto-Synced Stage Data</h3>
-        <span className="ml-auto text-[9px] font-semibold text-slate-400">Read-only · Updated as stages complete</span>
+        <span className="ml-auto text-xs font-semibold text-slate-400">Read-only · Updated as stages complete</span>
         {canResync && (
           <button
             onClick={handleResync}
             disabled={resyncing}
-            className="ml-2 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            className="ml-2 px-2.5 py-1 text-xs font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50"
           >
             {resyncing ? 'Syncing...' : 'Re-sync Flasks'}
           </button>

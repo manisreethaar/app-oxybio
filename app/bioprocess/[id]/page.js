@@ -80,7 +80,7 @@ function RSMHeatmap({ heatmap, factors }) {
     <div>
       <p className="text-xs text-slate-500 mb-2">2D surface — Factor C held at centre level</p>
       <div className="flex items-start gap-2">
-        <div className="text-[10px] text-slate-400 flex flex-col justify-between h-full pr-1" style={{ minHeight: '200px' }}>
+        <div className="text-xs text-slate-400 flex flex-col justify-between h-full pr-1" style={{ minHeight: '200px' }}>
           <span>{fA ? fA.high_value : '+1'}</span>
           <span className="rotate-90 whitespace-nowrap" style={{ writingMode: 'vertical-rl' }}>{fA ? fA.variable : 'Factor A'}</span>
           <span>{fA ? fA.low_value : '-1'}</span>
@@ -99,16 +99,16 @@ function RSMHeatmap({ heatmap, factors }) {
               ))
             )}
           </div>
-          <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-0.5">
+          <div className="flex justify-between text-xs text-slate-400 mt-1 px-0.5">
             <span>{fB ? fB.low_value : '-1'}</span>
             <span>{fB ? fB.variable : 'Factor B'}</span>
             <span>{fB ? fB.high_value : '+1'}</span>
           </div>
         </div>
         <div className="ml-2 flex flex-col items-center gap-1" style={{ minHeight: '200px', justifyContent: 'space-between' }}>
-          <span className="text-[10px] text-slate-500">{max.toFixed(2)}</span>
+          <span className="text-xs text-slate-500">{max.toFixed(2)}</span>
           <div style={{ width: 12, height: 120, background: 'linear-gradient(to bottom, rgb(220,38,127), rgb(34,139,34))', borderRadius: 4 }} />
-          <span className="text-[10px] text-slate-500">{min.toFixed(2)}</span>
+          <span className="text-xs text-slate-500">{min.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -190,12 +190,12 @@ function PredictiveModelsTab({ supabase, toast }) {
                   {m.feature_weights && Object.keys(m.feature_weights).length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {Object.entries(m.feature_weights).map(([feat, weight]) => (
-                        <span key={feat} className="px-2 py-0.5 bg-slate-50 text-slate-700 border border-slate-100 rounded text-[9px] font-bold">{feat}: {weight}</span>
+                        <span key={feat} className="px-2 py-0.5 bg-slate-50 text-slate-700 border border-slate-100 rounded text-xs font-bold">{feat}: {weight}</span>
                       ))}
                     </div>
                   )}
                 </div>
-                <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase ${m.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                <span className={`text-xs font-black px-2 py-1 rounded-lg border uppercase ${m.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                   {m.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
@@ -834,7 +834,7 @@ export default function BioprocessDetailPage() {
                 {localFactors.map(f => (
                   <th key={f.code} className="px-2 py-3 text-center font-bold text-slate-600 min-w-[56px]">
                     <div className="font-mono text-navy">{f.code}</div>
-                    <div className="text-[10px] font-normal text-slate-400 mt-0.5 max-w-[64px] truncate">{f.variable}</div>
+                    <div className="text-xs font-normal text-slate-400 mt-0.5 max-w-[64px] truncate">{f.variable}</div>
                   </th>
                 ))}
                 {nFactors === 0 && <th className="px-2 py-3 text-center text-slate-400">Define factors in Setup tab</th>}
@@ -852,7 +852,7 @@ export default function BioprocessDetailPage() {
                 return (
                   <tr key={ri} className={`${isCenter ? 'bg-amber-50/40' : 'hover:bg-slate-50'}`}>
                     <td className="px-3 py-2 font-bold text-slate-700">
-                      {ri + 1} {isCenter && <span className="text-[10px] text-amber-600">CP</span>}
+                      {ri + 1} {isCenter && <span className="text-xs text-amber-600">CP</span>}
                     </td>
                     {localFactors.map((f, fi) => {
                       const level = row[fi];
@@ -865,7 +865,7 @@ export default function BioprocessDetailPage() {
                           <div className={`text-xs font-black ${isHigh ? 'text-emerald-700' : isLow ? 'text-red-700' : 'text-slate-600'}`}>
                             {actual !== '' && actual !== undefined ? actual : (level === 1 ? '+1' : level === -1 ? '−1' : '0')}
                           </div>
-                          <div className={`text-[9px] mt-0.5 font-semibold ${isHigh ? 'text-emerald-400' : isLow ? 'text-red-400' : 'text-slate-400'}`}>
+                          <div className={`text-xs mt-0.5 font-semibold ${isHigh ? 'text-emerald-400' : isLow ? 'text-red-400' : 'text-slate-400'}`}>
                             {level === 1 ? '+1' : level === -1 ? '−1' : '0'}
                           </div>
                         </td>
@@ -993,7 +993,7 @@ export default function BioprocessDetailPage() {
                 </ResponsiveContainer>
               );
             })()}
-            <p className="text-[11px] text-slate-400 text-center mt-2">Green = significant, high level benefits response · Red = significant, low level benefits response · Grey = not significant</p>
+            <p className="text-xs text-slate-400 text-center mt-2">Green = significant, high level benefits response · Red = significant, low level benefits response · Grey = not significant</p>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -1084,7 +1084,7 @@ export default function BioprocessDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {localFactors.slice(0, 3).map((f, i) => (
                   <div key={f.code} className="bg-white rounded-xl p-3 border border-navy/10">
-                    <div className="text-[10px] font-bold text-slate-500 uppercase">{f.code} — {f.variable}</div>
+                    <div className="text-xs font-bold text-slate-500 uppercase">{f.code} — {f.variable}</div>
                     <div className="text-xl font-black text-navy mt-1">
                       {result.actualOpt[i]} <span className="text-sm font-normal text-slate-500">{f.unit}</span>
                     </div>
@@ -1133,20 +1133,20 @@ export default function BioprocessDetailPage() {
                     <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
                   </tr>
                   <tr className="bg-amber-50/40">
-                    <td className="px-4 py-2 text-slate-600 pl-12 text-[11px]">Lack of Fit</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.SS}</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.df}</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.MS}</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.F}</td>
-                    <td className="px-4 py-2 text-right text-[11px]">{pValue(result.anova.lof.p)}</td>
+                    <td className="px-4 py-2 text-slate-600 pl-12 text-xs">Lack of Fit</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.MS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.F}</td>
+                    <td className="px-4 py-2 text-right text-xs">{pValue(result.anova.lof.p)}</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-2 text-slate-600 pl-12 text-[11px]">Pure Error</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.SS}</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.df}</td>
-                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.MS}</td>
-                    <td className="px-4 py-2 text-right text-slate-400 text-[11px]">--</td>
-                    <td className="px-4 py-2 text-right text-slate-400 text-[11px]">--</td>
+                    <td className="px-4 py-2 text-slate-600 pl-12 text-xs">Pure Error</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.pureErr.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.pureErr.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.pureErr.MS}</td>
+                    <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
+                    <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
                   </tr>
                   <tr className="bg-slate-50 font-bold">
                     <td className="px-4 py-2.5 text-slate-700">Total (Corrected)</td>
@@ -1353,7 +1353,7 @@ export default function BioprocessDetailPage() {
                   <Scatter data={result.lwb} fill="#dc2626" />
                 </ScatterChart>
               </ResponsiveContainer>
-              <p className="text-[11px] text-slate-400 text-center mt-2">Slope = Km/Vmax · y-intercept = 1/Vmax · x-intercept = −1/Km</p>
+              <p className="text-xs text-slate-400 text-center mt-2">Slope = Km/Vmax · y-intercept = 1/Vmax · x-intercept = −1/Km</p>
             </div>
           )}
         </div>
@@ -1447,7 +1447,7 @@ export default function BioprocessDetailPage() {
             {experiment.creator && (
               <div className="flex items-center gap-1.5 mt-1">
                 <CreatorBadge initials={experiment.creator.initials} fullName={experiment.creator.full_name} />
-                <span className="text-[11px] text-slate-400">{experiment.creator.full_name}</span>
+                <span className="text-xs text-slate-400">{experiment.creator.full_name}</span>
               </div>
             )}
           </div>

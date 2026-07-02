@@ -74,12 +74,12 @@ function CharacterizationPanel({ strain, isAdmin, onSaved }) {
     <div className="mt-2 border-t border-slate-100 pt-2">
       <div className="flex items-center gap-2 mb-1.5">
         <span className={`w-2 h-2 rounded-full ${characterized ? 'bg-emerald-500' : 'bg-slate-300'}`}/>
-        <span className={`text-[10px] font-bold ${characterized ? 'text-emerald-700' : 'text-slate-400'}`}>
+        <span className={`text-xs font-bold ${characterized ? 'text-emerald-700' : 'text-slate-400'}`}>
           {characterized ? 'Characterized' : 'Not characterized'}
         </span>
         {isAdmin && !editing && (
           <button onClick={() => { setForm(strain.characterization || {}); setEditing(true); }}
-            className="ml-auto text-[10px] text-slate-500 hover:text-slate-700 font-bold flex items-center gap-0.5">
+            className="ml-auto text-xs text-slate-500 hover:text-slate-700 font-bold flex items-center gap-0.5">
             <Pencil className="w-2.5 h-2.5"/> {characterized ? 'Edit' : 'Fill in'}
           </button>
         )}
@@ -94,8 +94,8 @@ function CharacterizationPanel({ strain, isAdmin, onSaved }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pl-4">
           {CHAR_FIELDS.filter(f => char[f.key]).map(f => (
             <div key={f.key} className="p-1.5 bg-slate-50 rounded-lg">
-              <p className="text-[8px] font-black text-slate-400 uppercase">{f.label}</p>
-              <p className="text-[10px] font-bold text-slate-700 truncate">{char[f.key]}</p>
+              <p className="text-xs font-black text-slate-400 uppercase">{f.label}</p>
+              <p className="text-xs font-bold text-slate-700 truncate">{char[f.key]}</p>
             </div>
           ))}
         </div>
@@ -163,7 +163,7 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
             <option value="">No linked recipe yet</option>
             {formulations.map(f => <option key={f.id} value={f.id}>{recipeLabel(f)} ({f.category})</option>)}
           </select>
-          <p className="text-[10px] text-slate-400 mt-0.5">This keeps strain lineage tied back to the recipe or media definition it belongs with.</p>
+          <p className="text-xs text-slate-400 mt-0.5">This keeps strain lineage tied back to the recipe or media definition it belongs with.</p>
         </div>
         <div><label className="field-label">Source</label>
           <select value={form.source_type} onChange={e => set('source_type', e.target.value)} className="field-input bg-white">
@@ -174,7 +174,7 @@ function StrainForm({ formulations, initialFormulationId, onSave, onCancel }) {
         <div>
           <label className="field-label">Strain Short Code <span className="text-red-500">*</span></label>
           <input required maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
-          <p className="text-[9px] text-slate-400 mt-0.5">2-4 letters used in vial codes e.g. <strong>MCB-26-LB-001</strong></p>
+          <p className="text-xs text-slate-400 mt-0.5">2-4 letters used in vial codes e.g. <strong>MCB-26-LB-001</strong></p>
         </div>
         <div><label className="field-label">Isolation Source</label>
           <input value={form.isolation_source} onChange={e => set('isolation_source', e.target.value)} className="field-input" placeholder="Fermented rice"/></div>
@@ -268,9 +268,9 @@ function EditStrainForm({ strain, formulations, onSave, onCancel }) {
           <label className="field-label">Strain Short Code</label>
           <input maxLength={4} value={form.strain_short_code} onChange={e => set('strain_short_code', e.target.value.toUpperCase())} className="field-input font-mono" placeholder="LB"/>
           {form.strain_short_code ? (
-            <p className="text-[9px] text-slate-400 mt-0.5">2-4 letters used in vial codes</p>
+            <p className="text-xs text-slate-400 mt-0.5">2-4 letters used in vial codes</p>
           ) : (
-            <p className="text-[9px] text-amber-600 font-semibold mt-0.5">Short code is recommended for vial code generation.</p>
+            <p className="text-xs text-amber-600 font-semibold mt-0.5">Short code is recommended for vial code generation.</p>
           )}
         </div>
         <div><label className="field-label">Isolation Source</label>
@@ -407,7 +407,7 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
             <option value="">Use strain default / not linked</option>
             {formulations.map(f => <option key={f.id} value={f.id}>{recipeLabel(f)} ({f.category})</option>)}
           </select>
-          <p className="text-[10px] text-slate-400 mt-0.5">This recipe appears on the Cell Bank prep and can be opened from Recipe Management.</p>
+          <p className="text-xs text-slate-400 mt-0.5">This recipe appears on the Cell Bank prep and can be opened from Recipe Management.</p>
         </div>
         <div><label className="field-label">Type</label>
           <select value={form.type} onChange={e => handleTypeChange(e.target.value)} className="field-input bg-white">
@@ -443,7 +443,7 @@ function NewPrepForm({ strains, formulations, initialFormulationId, initialStrai
                   </select>
                 )}
                 {parentVials.length === 0 && !loadingVials && (
-                  <p className="text-[10px] text-amber-600 mt-0.5">No available vials found for the selected MCB.</p>
+                  <p className="text-xs text-amber-600 mt-0.5">No available vials found for the selected MCB.</p>
                 )}
               </div>
             )}
@@ -766,37 +766,37 @@ export default function CellBankPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-black text-slate-900">{p.prep_code}</p>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLOR[p.status] || 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-600">P{passageNum}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${STATUS_COLOR[p.status] || 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
+                      <span className="px-1.5 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-600">P{passageNum}</span>
                       {p.qc_released ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5"/> QC Released
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
                           Awaiting QC
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5 truncate">{p.cell_bank_strains?.name}</p>
                     {(p.linked_formulation || p.cell_bank_strains?.linked_formulation) && (
-                      <p className="text-[10px] text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
+                      <p className="text-xs text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
                         <BookOpen className="w-3 h-3 shrink-0"/>
                         {recipeLabel(p.linked_formulation || p.cell_bank_strains?.linked_formulation)}
                       </p>
                     )}
-                    {p.type === 'WCB' && p.parent && <p className="text-[10px] text-slate-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
+                    {p.type === 'WCB' && p.parent && <p className="text-xs text-slate-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
                   </div>
                   <div className="text-right shrink-0 mr-2 flex flex-col items-end gap-1">
                     {p.vial_count > 0 && <p className="text-xs font-black text-slate-700">{p.vial_count} vials</p>}
-                    <p className="text-[10px] text-slate-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
+                    <p className="text-xs text-slate-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
                     {p.employees && (
                       <CreatorBadge initials={p.employees.initials} fullName={p.employees.full_name} />
                     )}
                     {isAdmin && !p.qc_released && (
                       <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmReleaseId(p.id); }}
-                        className="text-[10px] text-amber-600 hover:text-amber-800 font-bold border border-amber-200 rounded px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 transition-colors"
+                        className="text-xs text-amber-600 hover:text-amber-800 font-bold border border-amber-200 rounded px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 transition-colors"
                       >
                         Release
                       </button>
@@ -834,13 +834,13 @@ export default function CellBankPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-black text-slate-900">{s.name}</p>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${SOURCE_COLOR[s.source_type] || 'bg-slate-100 text-slate-600'}`}>{s.source_type}</span>
-                        {s.accession_number && <span className="text-[10px] text-slate-500 font-semibold">{s.accession_number}</span>}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${SOURCE_COLOR[s.source_type] || 'bg-slate-100 text-slate-600'}`}>{s.source_type}</span>
+                        {s.accession_number && <span className="text-xs text-slate-500 font-semibold">{s.accession_number}</span>}
                       </div>
                       {s.taxonomy && <p className="text-xs text-slate-500 mt-0.5 truncate">{s.taxonomy}</p>}
-                      {s.isolation_source && <p className="text-[10px] text-slate-400">Source: {s.isolation_source}</p>}
+                      {s.isolation_source && <p className="text-xs text-slate-400">Source: {s.isolation_source}</p>}
                       {s.linked_formulation && (
-                        <p className="text-[10px] text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
+                        <p className="text-xs text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
                           <BookOpen className="w-3 h-3 shrink-0"/>
                           {recipeLabel(s.linked_formulation)}
                         </p>
@@ -853,18 +853,18 @@ export default function CellBankPage() {
                       />
                     </div>
                     <div className="text-right shrink-0 space-y-1">
-                      <p className="text-[10px] text-slate-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '--'}</p>
+                      <p className="text-xs text-slate-400">{s.received_date ? new Date(s.received_date).toLocaleDateString('en-IN') : '--'}</p>
                       <button onClick={() => { setPrepStrainId(s.id); setTab('preparations'); setShowPrepForm(true); setShowStrainForm(false); }}
-                        className="text-[10px] text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
+                        className="text-xs text-navy font-bold hover:underline flex items-center gap-1 ml-auto">
                         <Plus className="w-3 h-3"/> New Prep
                       </button>
                       {isAdmin && (
                         <button onClick={() => setEditingStrainId(editingStrainId === s.id ? null : s.id)}
-                          className="text-[10px] text-slate-500 hover:text-slate-700 font-bold flex items-center gap-1 ml-auto">
+                          className="text-xs text-slate-500 hover:text-slate-700 font-bold flex items-center gap-1 ml-auto">
                           <Pencil className="w-3 h-3"/> Edit
                         </button>
                       )}
-                      {canDelete && <button onClick={() => setConfirmDeleteStrainId(s.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">Delete</button>}
+                      {canDelete && <button onClick={() => setConfirmDeleteStrainId(s.id)} className="text-xs text-red-400 hover:text-red-600 font-bold">Delete</button>}
                     </div>
                   </div>
 
@@ -887,7 +887,7 @@ export default function CellBankPage() {
                   <div className="px-4 pb-3 border-t border-slate-100 pt-2">
                     <button
                       onClick={() => handleToggleStrainBatches(s.id)}
-                      className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 hover:text-slate-800 transition-colors"
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 transition-colors"
                     >
                       <Beaker className="w-3 h-3"/>
                       {batchList === undefined && !isExpanded
@@ -901,7 +901,7 @@ export default function CellBankPage() {
                     {isExpanded && batchList !== undefined && (
                       <div className="mt-2 space-y-1">
                         {batchList.length === 0 ? (
-                          <p className="text-[10px] text-slate-400 pl-1">No batches have used a vial from this strain&apos;s preparations.</p>
+                          <p className="text-xs text-slate-400 pl-1">No batches have used a vial from this strain&apos;s preparations.</p>
                         ) : (
                           batchList.map(item => (
                             <Link
@@ -909,15 +909,15 @@ export default function CellBankPage() {
                               href={`/batches/${item.batch_id}`}
                               className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors group"
                             >
-                              <span className="text-[10px] font-black text-slate-700 font-mono">{item.batches.batch_id}</span>
+                              <span className="text-xs font-black text-slate-700 font-mono">{item.batches.batch_id}</span>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                                   item.batches.status === 'released' ? 'bg-emerald-100 text-emerald-700' :
                                   item.batches.status === 'rejected' ? 'bg-red-100 text-red-600' :
                                   'bg-slate-100 text-slate-700'
                                 }`}>{item.batches.status}</span>
                                 {item.batches.start_time && (
-                                  <span className="text-[9px] text-slate-400">{new Date(item.batches.start_time).toLocaleDateString('en-IN')}</span>
+                                  <span className="text-xs text-slate-400">{new Date(item.batches.start_time).toLocaleDateString('en-IN')}</span>
                                 )}
                                 <ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover:text-slate-600"/>
                               </div>

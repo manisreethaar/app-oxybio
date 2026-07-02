@@ -259,12 +259,12 @@ export default function CompliancePage() {
         <button onClick={() => setActiveTab('audits')}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'audits' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <ClipboardList className="w-4 h-4" /> Internal Audits
-          {audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length > 0 && <span className="text-[9px] bg-amber-100 text-amber-700 font-black px-1.5 py-0.5 rounded-full">{audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length}</span>}
+          {audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length > 0 && <span className="text-xs bg-amber-100 text-amber-700 font-black px-1.5 py-0.5 rounded-full">{audits.filter(a=>a.status==='Planned'||a.status==='In Progress').length}</span>}
         </button>
         <button onClick={() => setActiveTab('complaints')}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'complaints' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <MessageSquare className="w-4 h-4" /> Complaints
-          {complaints.filter(c=>c.status==='Open').length > 0 && <span className="text-[9px] bg-red-100 text-red-700 font-black px-1.5 py-0.5 rounded-full">{complaints.filter(c=>c.status==='Open').length}</span>}
+          {complaints.filter(c=>c.status==='Open').length > 0 && <span className="text-xs bg-red-100 text-red-700 font-black px-1.5 py-0.5 rounded-full">{complaints.filter(c=>c.status==='Open').length}</span>}
         </button>
         <button onClick={() => setActiveTab('milestones')}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'milestones' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
@@ -387,7 +387,7 @@ export default function CompliancePage() {
                               <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded border ${badgeColor}`}>
                                 {item.calculated_status === 'overdue' ? 'OVERDUE' : item.calculated_status === 'done' ? 'DONE' : `${daysTo} days left`}
                               </span>
-                              {item.is_recurring && <span className="text-[10px] font-bold uppercase text-slate-700 tracking-widest bg-slate-50 px-2 py-0.5 rounded">{item.recurrence}</span>}
+                              {item.is_recurring && <span className="text-xs font-bold uppercase text-slate-700 tracking-widest bg-slate-50 px-2 py-0.5 rounded">{item.recurrence}</span>}
                             </div>
                             <h3 className={`text-lg font-bold ${item.calculated_status === 'done' ? 'line-through text-slate-500' : 'text-slate-900'}`}>{item.title}</h3>
                             <div className="flex flex-wrap items-center mt-2 text-sm text-slate-500 gap-4">
@@ -456,7 +456,7 @@ export default function CompliancePage() {
                     <p className="text-xs text-slate-500 mt-0.5">{a.audit_date} · Auditor: {a.employees?.full_name || '—'}</p>
                     {a.findings && <p className="text-xs text-slate-600 mt-2 border-t border-slate-100 pt-2">{a.findings}</p>}
                   </div>
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase ${a.status==='Completed'||a.status==='Closed'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{a.status}</span>
+                  <span className={`text-xs font-black px-2 py-1 rounded-lg border uppercase ${a.status==='Completed'||a.status==='Closed'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{a.status}</span>
                 </div>
               ))}
             </div>
@@ -503,10 +503,10 @@ export default function CompliancePage() {
                     <div>
                       <p className="font-black text-slate-900 text-sm">{c.customer_name}</p>
                       <p className="text-xs text-slate-600 mt-1">{c.complaint_details}</p>
-                      {c.batches && <p className="text-[10px] text-slate-400 mt-1">Batch: {c.batches.batch_id}</p>}
-                      <p className="text-[10px] text-slate-400 mt-1">{new Date(c.created_at).toLocaleDateString('en-IN')}</p>
+                      {c.batches && <p className="text-xs text-slate-400 mt-1">Batch: {c.batches.batch_id}</p>}
+                      <p className="text-xs text-slate-400 mt-1">{new Date(c.created_at).toLocaleDateString('en-IN')}</p>
                     </div>
-                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase shrink-0 ${c.status==='Open'?'bg-red-50 text-red-700 border-red-200':c.status==='Resolved'||c.status==='Closed'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{c.status}</span>
+                    <span className={`text-xs font-black px-2 py-1 rounded-lg border uppercase shrink-0 ${c.status==='Open'?'bg-red-50 text-red-700 border-red-200':c.status==='Resolved'||c.status==='Closed'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{c.status}</span>
                   </div>
                 </div>
               ))}
@@ -568,8 +568,8 @@ export default function CompliancePage() {
                   <div key={m.id} className={`card p-4 flex items-start gap-4 ${isOverdue?'border-l-4 border-l-red-500':daysLeft !== null && daysLeft <= 30 && m.status!=='Completed'?'border-l-4 border-l-amber-400':''}`}>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">{m.category}</span>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${m.priority==='Critical'?'bg-red-100 text-red-700':m.priority==='High'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-500'}`}>{m.priority}</span>
+                        <span className="text-xs font-black px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">{m.category}</span>
+                        <span className={`text-xs font-black px-2 py-0.5 rounded uppercase ${m.priority==='Critical'?'bg-red-100 text-red-700':m.priority==='High'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-500'}`}>{m.priority}</span>
                       </div>
                       <p className="font-black text-slate-900 text-sm">{m.title}</p>
                       {m.description && <p className="text-xs text-slate-600 mt-1">{m.description}</p>}
@@ -578,7 +578,7 @@ export default function CompliancePage() {
                         {daysLeft !== null && m.status !== 'Completed' && ` (${isOverdue?`${Math.abs(daysLeft)}d overdue`:`${daysLeft}d left`})`}
                       </p>
                     </div>
-                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase shrink-0 ${m.status==='Completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':isOverdue?'bg-red-50 text-red-700 border-red-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{m.status}</span>
+                    <span className={`text-xs font-black px-2 py-1 rounded-lg border uppercase shrink-0 ${m.status==='Completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':isOverdue?'bg-red-50 text-red-700 border-red-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>{m.status}</span>
                   </div>
                 );
               })}

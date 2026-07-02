@@ -174,7 +174,7 @@ export default function NotificationsPage() {
                         <h3 className="text-sm font-bold text-slate-800 truncate">{notif.title}</h3>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed">{notif.message}</p>
-                      <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                      <p className="text-xs text-slate-400 mt-1 font-medium">
                         {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                       </p>
                     </div>
@@ -204,11 +204,11 @@ export default function NotificationsPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${alert.isOverdue ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                            <span className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded border ${alert.isOverdue ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                               {alert.isOverdue ? 'Overdue' : 'Pending'}
                             </span>
                             {alert.priority && (
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${alert.priority === 'urgent' ? 'text-red-600' : 'text-slate-400'}`}>
+                              <span className={`text-xs font-black uppercase tracking-widest ${alert.priority === 'urgent' ? 'text-red-600' : 'text-slate-400'}`}>
                                 {alert.priority} Priority
                               </span>
                             )}

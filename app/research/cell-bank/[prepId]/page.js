@@ -108,7 +108,7 @@ function ShipVialModal({ vial, onClose, onShipped }) {
             <div><label className="field-label text-xs">Transit Days</label><input type="number" value={transitDays} onChange={e=>setTransitDays(e.target.value)} className="field-input text-xs" placeholder="1"/></div>
           </div>
           {transitTempC && (parseFloat(transitTempC) > 8 || parseFloat(transitTempC) < -100) && (
-            <p className="text-[10px] text-amber-700 font-bold">⚠ Temp outside typical cell bank range (−80°C dry ice or 2–8°C). Verify cold chain.</p>
+            <p className="text-xs text-amber-700 font-bold">⚠ Temp outside typical cell bank range (−80°C dry ice or 2–8°C). Verify cold chain.</p>
           )}
         </div>
         <div className="flex gap-3">
@@ -200,13 +200,13 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
           <p className="font-black text-slate-900 font-mono">{vial.vial_code}</p>
           <p className="text-slate-500 mt-0.5">{vial.storage_temp} | {[vial.freezer_id, vial.rack && `Rack ${vial.rack}`, vial.box && `Box ${vial.box}`].filter(Boolean).join(' / ') || 'No location'}</p>
           {vial.expires_at && (
-            <p className={`text-[10px] font-semibold mt-0.5 ${expiryWarning === 'expired' ? 'text-red-600' : expiryWarning === 'soon' ? 'text-amber-600' : 'text-slate-400'}`}>
+            <p className={`text-xs font-semibold mt-0.5 ${expiryWarning === 'expired' ? 'text-red-600' : expiryWarning === 'soon' ? 'text-amber-600' : 'text-slate-400'}`}>
               Expires: {new Date(vial.expires_at).toLocaleDateString('en-IN')}
               {expiryWarning === 'expired' && ' -- EXPIRED'}
               {expiryWarning === 'soon' && ' -- expiring soon'}
             </p>
           )}
-          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-bold ${
             vial.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
             vial.status === 'Used' ? 'bg-amber-100 text-amber-700' :
             vial.status === 'Shipped' ? 'bg-slate-100 text-slate-700' :
@@ -214,32 +214,32 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
           }`}>
             {vial.status}
           </span>
-          {vial.used_in_batch_id && <p className="text-[10px] text-amber-700 font-semibold mt-0.5">Used in: <Link href={`/batches/${vial.used_in_batch_id}`} className="hover:underline text-navy font-bold">{vial.batches?.batch_id || 'Batch'}</Link></p>}
+          {vial.used_in_batch_id && <p className="text-xs text-amber-700 font-semibold mt-0.5">Used in: <Link href={`/batches/${vial.used_in_batch_id}`} className="hover:underline text-navy font-bold">{vial.batches?.batch_id || 'Batch'}</Link></p>}
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           {isAdmin && vial.status === 'Available' && (
             <div className="flex gap-1 flex-wrap justify-end">
-              <button onClick={() => handleActionClick('thaw')} disabled={acting} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold hover:bg-slate-200 disabled:opacity-50">Thaw</button>
-              <button onClick={() => setShowShipModal(true)} disabled={acting} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold hover:bg-slate-200 disabled:opacity-50">Ship</button>
-              <button onClick={() => handleActionClick('discard')} disabled={acting} className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-200 disabled:opacity-50">Discard</button>
+              <button onClick={() => handleActionClick('thaw')} disabled={acting} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 disabled:opacity-50">Thaw</button>
+              <button onClick={() => setShowShipModal(true)} disabled={acting} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 disabled:opacity-50">Ship</button>
+              <button onClick={() => handleActionClick('discard')} disabled={acting} className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-xs font-bold hover:bg-red-200 disabled:opacity-50">Discard</button>
             </div>
           )}
-          <button onClick={loadLogs} className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 font-semibold">
+          <button onClick={loadLogs} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 font-semibold">
             {expanded ? <ChevronUp className="w-3 h-3"/> : <ChevronDown className="w-3 h-3"/>} Log
           </button>
         </div>
       </div>
       {expanded && (
         <div className="border-t border-dashed px-3 py-2 bg-white/60 space-y-1">
-          {loadingLogs ? <p className="text-[10px] text-slate-400">Loading...</p> :
-           !logs?.length ? <p className="text-[10px] text-slate-400">No log entries.</p> :
+          {loadingLogs ? <p className="text-xs text-slate-400">Loading...</p> :
+           !logs?.length ? <p className="text-xs text-slate-400">No log entries.</p> :
            logs.map(l => (
             <div key={l.id} className="flex items-center gap-2">
-              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${ACTION_COLOR[l.action] || 'bg-slate-100 text-slate-500'}`}>{l.action.replace(/_/g,' ')}</span>
-              {l.batches?.batch_id && <Link href={`/batches/${l.batch_id}`} className="text-[10px] text-navy font-semibold hover:underline flex items-center gap-0.5">{l.batches.batch_id}<ExternalLink className="w-2.5 h-2.5"/></Link>}
-              {l.destination && <span className="text-[10px] text-slate-700 font-semibold">{l.destination}</span>}
-              {l.recovery_pct != null && <span className="text-[10px] text-slate-700 font-semibold">{l.recovery_pct}% recovery</span>}
-              <span className="text-[10px] text-slate-400 ml-auto">{new Date(l.created_at).toLocaleString('en-IN')}</span>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase ${ACTION_COLOR[l.action] || 'bg-slate-100 text-slate-500'}`}>{l.action.replace(/_/g,' ')}</span>
+              {l.batches?.batch_id && <Link href={`/batches/${l.batch_id}`} className="text-xs text-navy font-semibold hover:underline flex items-center gap-0.5">{l.batches.batch_id}<ExternalLink className="w-2.5 h-2.5"/></Link>}
+              {l.destination && <span className="text-xs text-slate-700 font-semibold">{l.destination}</span>}
+              {l.recovery_pct != null && <span className="text-xs text-slate-700 font-semibold">{l.recovery_pct}% recovery</span>}
+              <span className="text-xs text-slate-400 ml-auto">{new Date(l.created_at).toLocaleString('en-IN')}</span>
             </div>
           ))}
         </div>
@@ -263,7 +263,7 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
                   <div><label className="field-label text-xs">Duration (min)</label><input type="number" step="0.5" value={thawDurationMin} onChange={e=>setThawDurationMin(e.target.value)} className="field-input text-xs" placeholder="2"/></div>
                 </div>
                 <div><label className="field-label text-xs">Recovery Media</label><input value={thawMedia} onChange={e=>setThawMedia(e.target.value)} className="field-input text-xs" placeholder="e.g. MRS broth"/></div>
-                <p className="text-[9px] text-slate-600 font-semibold">Standard: 37°C water bath, 2 min, transfer to MRS broth immediately</p>
+                <p className="text-xs text-slate-600 font-semibold">Standard: 37°C water bath, 2 min, transfer to MRS broth immediately</p>
               </div>
             )}
             <div className="flex gap-3">
@@ -577,18 +577,18 @@ function CoaModal({ prep, onClose }) {
           </div>
 
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Prep Code</span><p className="font-bold font-mono">{prep?.prep_code}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Type</span><p className="font-bold">{prep?.type}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Strain</span><p className="font-bold">{strain?.name}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Passage</span><p className="font-bold">P{passageNum}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Created</span><p className="font-bold">{prep?.created_at ? new Date(prep.created_at).toLocaleDateString('en-IN') : '--'}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Completed</span><p className="font-bold">{prep?.completed_at ? new Date(prep.completed_at).toLocaleDateString('en-IN') : 'In Progress'}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Vial Count</span><p className="font-bold">{prep?.vial_count ?? '--'}</p></div>
-            <div><span className="font-black text-slate-500 uppercase text-[10px]">Storage Temp</span><p className="font-bold">{prep?.cell_bank_vials?.[0]?.storage_temp || '--'}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Prep Code</span><p className="font-bold font-mono">{prep?.prep_code}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Type</span><p className="font-bold">{prep?.type}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Strain</span><p className="font-bold">{strain?.name}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Passage</span><p className="font-bold">P{passageNum}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Created</span><p className="font-bold">{prep?.created_at ? new Date(prep.created_at).toLocaleDateString('en-IN') : '--'}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Completed</span><p className="font-bold">{prep?.completed_at ? new Date(prep.completed_at).toLocaleDateString('en-IN') : 'In Progress'}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Vial Count</span><p className="font-bold">{prep?.vial_count ?? '--'}</p></div>
+            <div><span className="font-black text-slate-500 uppercase text-xs">Storage Temp</span><p className="font-bold">{prep?.cell_bank_vials?.[0]?.storage_temp || '--'}</p></div>
             {/* A-22: Stability schedule */}
             {prep?.next_stability_test_date && (
               <div className={`col-span-2 p-2 rounded-lg border text-xs ${new Date(prep.next_stability_test_date) < new Date() ? 'bg-red-50 border-red-300' : new Date(prep.next_stability_test_date) < new Date(Date.now()+30*86400000) ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
-                <span className="font-black uppercase text-[10px]">Next Stability Test</span>
+                <span className="font-black uppercase text-xs">Next Stability Test</span>
                 <p className={`font-bold ${new Date(prep.next_stability_test_date) < new Date() ? 'text-red-700' : 'text-amber-700'}`}>
                   {new Date(prep.next_stability_test_date).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})}
                   {new Date(prep.next_stability_test_date) < new Date() ? ' — OVERDUE' : ''}
@@ -599,7 +599,7 @@ function CoaModal({ prep, onClose }) {
 
           {/* QC Release */}
           <div className={`p-3 rounded-xl border text-xs ${prep?.qc_released ? 'bg-emerald-50 border-emerald-300' : 'bg-amber-50 border-amber-200'}`}>
-            <p className="font-black text-slate-700 uppercase text-[10px]">QC Release Status</p>
+            <p className="font-black text-slate-700 uppercase text-xs">QC Release Status</p>
             {prep?.qc_released ? (
               <>
                 <p className="font-bold text-emerald-700 mt-0.5">RELEASED</p>
@@ -614,7 +614,7 @@ function CoaModal({ prep, onClose }) {
           {/* Strain characterization */}
           {Object.keys(char).some(k => char[k]) && (
             <div>
-              <p className="font-black text-slate-700 uppercase text-[10px] mb-1.5">Strain Characterization</p>
+              <p className="font-black text-slate-700 uppercase text-xs mb-1.5">Strain Characterization</p>
               <div className="grid grid-cols-2 gap-1.5 text-xs">
                 {[
                   { k: 'gram_stain', l: 'Gram Stain' },
@@ -625,20 +625,20 @@ function CoaModal({ prep, onClose }) {
                   { k: 'rna_16s_accession', l: '16S rRNA Accession' },
                 ].filter(f => char[f.k]).map(f => (
                   <div key={f.k} className="p-1.5 bg-slate-50 rounded">
-                    <p className="text-[9px] font-black text-slate-400 uppercase">{f.l}</p>
+                    <p className="text-xs font-black text-slate-400 uppercase">{f.l}</p>
                     <p className="font-bold text-slate-700">{char[f.k]}</p>
                   </div>
                 ))}
               </div>
-              {char.biochemical_notes && <div className="mt-1.5 p-1.5 bg-slate-50 rounded"><p className="text-[9px] font-black text-slate-400 uppercase">Biochemical Notes</p><p className="text-xs text-slate-700">{char.biochemical_notes}</p></div>}
-              {char.genome_notes && <div className="mt-1 p-1.5 bg-slate-50 rounded"><p className="text-[9px] font-black text-slate-400 uppercase">Genome / Plasmid Notes</p><p className="text-xs text-slate-700">{char.genome_notes}</p></div>}
+              {char.biochemical_notes && <div className="mt-1.5 p-1.5 bg-slate-50 rounded"><p className="text-xs font-black text-slate-400 uppercase">Biochemical Notes</p><p className="text-xs text-slate-700">{char.biochemical_notes}</p></div>}
+              {char.genome_notes && <div className="mt-1 p-1.5 bg-slate-50 rounded"><p className="text-xs font-black text-slate-400 uppercase">Genome / Plasmid Notes</p><p className="text-xs text-slate-700">{char.genome_notes}</p></div>}
             </div>
           )}
 
           {/* Stability tests */}
           {stabilityTests.length > 0 && (
             <div>
-              <p className="font-black text-slate-700 uppercase text-[10px] mb-1.5">Stability Test Results</p>
+              <p className="font-black text-slate-700 uppercase text-xs mb-1.5">Stability Test Results</p>
               <table className="w-full text-xs border-collapse border border-slate-200">
                 <thead>
                   <tr className="bg-slate-50">
@@ -664,7 +664,7 @@ function CoaModal({ prep, onClose }) {
             </div>
           )}
 
-          <div className="border-t border-slate-200 pt-4 text-[10px] text-slate-400 text-center">
+          <div className="border-t border-slate-200 pt-4 text-xs text-slate-400 text-center">
             Generated by OxyBio Cell Bank Management System
           </div>
         </div>
@@ -718,7 +718,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
       case 'broth_culture_2':
         return (
           <div className="space-y-3">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Media Preparation</p>
+            <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Media Preparation</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="field-label">Broth / Media Recipe</label>
@@ -758,7 +758,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
               <div className="col-span-2"><label className="field-label">Media Lot / Batch Notes</label>
                 <input value={form.media_lot_notes||''} onChange={e=>set('media_lot_notes',e.target.value)} className="field-input" placeholder="MRS powder lot #XYZ, expiry MM/YYYY"/></div>
             </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider pt-1">Incubation and OD Check</p>
+            <p className="text-xs font-black text-slate-500 uppercase tracking-wider pt-1">Incubation and OD Check</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Incubation Temp (degC)</label>
                 <input type="number" value={form.incubation_temp||''} onChange={e=>set('incubation_temp',e.target.value)} className="field-input" placeholder="37"/></div>
@@ -781,7 +781,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
       case 'plating':
         return (
           <div className="space-y-3">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Agar Preparation</p>
+            <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Agar Preparation</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="field-label">Agar Media Recipe</label>
@@ -813,7 +813,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
               <div><label className="field-label">Agar Batch / Lot Notes</label>
                 <input value={form.agar_batch_notes||''} onChange={e=>set('agar_batch_notes',e.target.value)} className="field-input" placeholder="Lot #, expiry..."/></div>
             </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider pt-1">Plating and Incubation</p>
+            <p className="text-xs font-black text-slate-500 uppercase tracking-wider pt-1">Plating and Incubation</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Dilution Factor</label>
                 <select value={form.dilution||''} onChange={e=>set('dilution',e.target.value)} className="field-input bg-white">
@@ -837,7 +837,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
             </div>
             {incubations?.filter(i => i.sample_type === 'Agar Plate').length > 0 && (
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                <p className="text-[10px] font-black text-slate-700 uppercase">Incubation Results (from Incubation module)</p>
+                <p className="text-xs font-black text-slate-700 uppercase">Incubation Results (from Incubation module)</p>
                 {incubations.filter(i => i.sample_type === 'Agar Plate').map(i => (
                   <div key={i.id} className="text-xs text-slate-800 font-semibold flex gap-4 flex-wrap">
                     <span>{i.sample_name}</span>
@@ -911,7 +911,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
         <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
           {Object.entries(data).filter(([k]) => !['completed'].includes(k) && data[k]).map(([k, v]) => (
             <div key={k} className="p-2 bg-slate-50 rounded-lg">
-              <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">{k.replace(/_/g,' ')}</p>
+              <p className="text-xs font-black text-slate-400 uppercase mb-0.5">{k.replace(/_/g,' ')}</p>
               <p className="text-xs font-bold text-slate-800 truncate">{String(v)}</p>
             </div>
           ))}
@@ -1021,15 +1021,15 @@ export default function CellBankDetailPage() {
             <>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-black text-slate-900">{prep?.prep_code}</h1>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${prep?.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : prep?.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>{prep?.type}</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">P{passageNum}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLOR[prep?.status] || 'bg-slate-100 text-slate-600'}`}>{prep?.status}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${prep?.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : prep?.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>{prep?.type}</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-black bg-slate-100 text-slate-600">P{passageNum}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${STATUS_COLOR[prep?.status] || 'bg-slate-100 text-slate-600'}`}>{prep?.status}</span>
               </div>
               <p className="text-xs text-slate-500">{prep?.cell_bank_strains?.name} | {prep?.cell_bank_strains?.source_type} {prep?.cell_bank_strains?.accession_number}</p>
               {(prep?.linked_formulation || prep?.cell_bank_strains?.linked_formulation) && (
                 <Link
                   href={`/formulations?highlight=${prep?.linked_formulation?.id || prep?.cell_bank_strains?.linked_formulation?.id}`}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-navy hover:underline mt-1"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-navy hover:underline mt-1"
                 >
                   <ExternalLink className="w-3 h-3"/>
                   {prep?.linked_formulation?.code || prep?.cell_bank_strains?.linked_formulation?.code} - {prep?.linked_formulation?.name || prep?.cell_bank_strains?.linked_formulation?.name}
@@ -1038,7 +1038,7 @@ export default function CellBankDetailPage() {
               {prep?.lnb_entry_id && (
                 <Link
                   href={`/lab-notebook/${prep.lnb_entry_id}`}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:underline mt-1 ml-3"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:underline mt-1 ml-3"
                 >
                   <BookOpen className="w-3 h-3"/>
                   View Linked LNB
@@ -1142,7 +1142,7 @@ export default function CellBankDetailPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-slate-700">{vials.length} vials registered</p>
                   {isAdmin && (
-                    <button onClick={() => {}} className="text-[10px] text-navy font-bold hover:underline">+ Register more</button>
+                    <button onClick={() => {}} className="text-xs text-navy font-bold hover:underline">+ Register more</button>
                   )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

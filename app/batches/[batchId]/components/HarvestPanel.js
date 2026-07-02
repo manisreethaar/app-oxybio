@@ -114,7 +114,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
           <h2 className="text-base font-bold text-slate-900">Harvest: <span className="text-amber-600">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-slate-500">Post-fermentation biomass collection — cooling, transfer, and cell viability record.</p>
         </div>
-        {record && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Saved</span>}
+        {record && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black rounded-lg uppercase">Saved</span>}
       </div>
 
       <div className="card p-5 space-y-4">
@@ -148,7 +148,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
               <label className="field-label">Harvest Temp (°C)</label>
               <input type="number" step="0.1" value={harvestTempC} onChange={e => setHarvestTempC(e.target.value)} className="field-input" placeholder="e.g. 8"/>
               {harvestTempC && parseFloat(harvestTempC) > 10 && (
-                <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Above 10°C — cold chain risk</p>
+                <p className="text-xs text-amber-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Above 10°C — cold chain risk</p>
               )}
             </div>
             <div>
@@ -159,7 +159,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
               <label className="field-label">Cooling Time (min)</label>
               <input type="number" value={coolingTimeMins} onChange={e => setCoolingTimeMins(e.target.value)} className="field-input" placeholder="e.g. 90"/>
               {coolingTimeMins && parseFloat(coolingTimeMins) > 120 && (
-                <p className="text-[10px] text-red-600 font-bold mt-1">Exceeds 2-hour cold-chain target</p>
+                <p className="text-xs text-red-600 font-bold mt-1">Exceeds 2-hour cold-chain target</p>
               )}
             </div>
             {/* A-52: Cooling rate checkpoints */}
@@ -213,7 +213,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
               <label className="field-label text-slate-800">Viability (%)</label>
               <input type="number" step="0.1" min="0" max="100" value={cellViabilityPct} onChange={e => setCellViabilityPct(e.target.value)} className="field-input" placeholder="e.g. 92.5"/>
               {cellViabilityPct && parseFloat(cellViabilityPct) < 80 && (
-                <p className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low viability — verify harvest conditions</p>
+                <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low viability — verify harvest conditions</p>
               )}
             </div>
           </div>

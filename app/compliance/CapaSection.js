@@ -184,11 +184,11 @@ export default function CapaSection() {
         <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider ${SEVERITY_STYLE[selected.severity]}`}>{selected.severity}</span>
-              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border tracking-wider ${STATUS_STYLE[selected.status]}`}>{selected.status}</span>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-black border uppercase tracking-wider ${SEVERITY_STYLE[selected.severity]}`}>{selected.severity}</span>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border tracking-wider ${STATUS_STYLE[selected.status]}`}>{selected.status}</span>
             </div>
             <h1 className="text-lg font-bold text-slate-900 tracking-tight">{selected.title}</h1>
-            <p className="text-[11px] text-slate-400 font-bold uppercase mt-0.5">{selected.source} · Reported by {selected.reporter?.full_name} · {new Date(selected.created_at).toLocaleDateString()}</p>
+            <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">{selected.source} · Reported by {selected.reporter?.full_name} · {new Date(selected.created_at).toLocaleDateString()}</p>
           </div>
           {isAdmin && selected.status !== 'Closed' && <button onClick={handleClose} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs"><CheckCircle2 className="w-3.5 h-3.5"/> Close NCR</button>}
         </div>
@@ -207,7 +207,7 @@ export default function CapaSection() {
               <div className="space-y-2">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">5-Why Analysis</h3>
                 {['why_1','why_2','why_3','why_4','why_5'].map((k, i) => investigation[k] && (
-                  <div key={k} className="flex gap-2 items-start text-xs text-slate-700 font-medium"><span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-black text-[10px] flex items-center justify-center shrink-0">{i+1}</span><p className="pt-0.5">{investigation[k]}</p></div>
+                  <div key={k} className="flex gap-2 items-start text-xs text-slate-700 font-medium"><span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center shrink-0">{i+1}</span><p className="pt-0.5">{investigation[k]}</p></div>
                 ))}
               </div>
             )}
@@ -218,7 +218,7 @@ export default function CapaSection() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {['man','machine','material','method','measurement','environment'].map(cat => investigation.ishikawa_data[cat] && (
                     <div key={cat} className="p-2 border border-slate-100 bg-slate-50 rounded-lg">
-                      <p className="text-[10px] font-bold text-slate-700 uppercase mb-1">{cat}</p>
+                      <p className="text-xs font-bold text-slate-700 uppercase mb-1">{cat}</p>
                       <p className="text-xs text-slate-700">{investigation.ishikawa_data[cat]}</p>
                     </div>
                   ))}
@@ -226,7 +226,7 @@ export default function CapaSection() {
               </div>
             )}
             
-            {investigation.root_cause_identified && <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-100"><p className="text-[9px] font-black text-amber-700 uppercase mb-0.5">Root Cause</p><p className="text-xs text-amber-900 font-bold">{investigation.root_cause_identified}</p></div>}
+            {investigation.root_cause_identified && <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-100"><p className="text-xs font-black text-amber-700 uppercase mb-0.5">Root Cause</p><p className="text-xs text-amber-900 font-bold">{investigation.root_cause_identified}</p></div>}
           </div>
         ) : <p className="text-xs text-slate-400 font-medium text-center py-4">No analysis recorded.</p>}
       </div>
@@ -242,14 +242,14 @@ export default function CapaSection() {
               <div key={a.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 gap-2">
                 <div>
                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${a.action_type === 'Corrective' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700 border-slate-100'}`}>{a.action_type}</span>
-                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">{a.task?.status}</span>
-                    {a.effectiveness_verified && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-0.5"><ShieldCheck className="w-3 h-3"/> Verified</span>}
+                    <span className={`text-xs font-bold uppercase px-1.5 py-0.5 rounded border ${a.action_type === 'Corrective' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700 border-slate-100'}`}>{a.action_type}</span>
+                    <span className="text-xs font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">{a.task?.status}</span>
+                    {a.effectiveness_verified && <span className="text-xs font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-0.5"><ShieldCheck className="w-3 h-3"/> Verified</span>}
                   </div>
                   <span className="text-xs font-bold text-slate-800">{a.task?.title?.replace('[CAPA] ','')}</span>
                 </div>
                 {isAdmin && a.task?.status === 'done' && !a.effectiveness_verified && (
-                  <button onClick={() => handleVerifyEffectiveness(a.id)} className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-navy hover:bg-slate-50 flex items-center justify-center shrink-0 gap-0.5">Verify Effectiveness</button>
+                  <button onClick={() => handleVerifyEffectiveness(a.id)} className="px-2 py-1 bg-white border border-slate-200 rounded text-xs font-bold text-navy hover:bg-slate-50 flex items-center justify-center shrink-0 gap-0.5">Verify Effectiveness</button>
                 )}
               </div>
             ))}
@@ -270,7 +270,7 @@ export default function CapaSection() {
             {analysisMethod === '5why' && (
               <div className="space-y-3">
                 {['why_1','why_2','why_3','why_4','why_5'].map((k,i) => (
-                  <div key={k}><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Why {i+1}</label><input {...regWhy(k)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-slate-300" /></div>
+                  <div key={k}><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Why {i+1}</label><input {...regWhy(k)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-slate-300" /></div>
                 ))}
               </div>
             )}
@@ -279,21 +279,21 @@ export default function CapaSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 {['man','machine','material','method','measurement','environment'].map((cat) => (
                   <div key={cat}>
-                    <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">{cat}</label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">{cat}</label>
                     <input {...regWhy(`ishikawa_data.${cat}`)} placeholder={`Issues related to ${cat}...`} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-slate-300" />
                   </div>
                 ))}
               </div>
             )}
 
-            <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Identified Root Cause *</label><textarea {...regWhy('root_cause_identified')} rows="2" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold resize-none focus:border-slate-300" placeholder="Final statement..." />{whyErrors.root_cause_identified && <p className="text-red-500 text-[10px] mt-1">{whyErrors.root_cause_identified.message}</p>}</div>
+            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Identified Root Cause *</label><textarea {...regWhy('root_cause_identified')} rows="2" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold resize-none focus:border-slate-300" placeholder="Final statement..." />{whyErrors.root_cause_identified && <p className="text-red-500 text-xs mt-1">{whyErrors.root_cause_identified.message}</p>}</div>
             
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Affected SOPs (Triggers Retraining)</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Affected SOPs (Triggers Retraining)</label>
               <select multiple {...regWhy('affected_sops')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-slate-300" size={4}>
                 {sops.map(sop => <option key={sop.id} value={sop.id}>{sop.title} v{sop.version}</option>)}
               </select>
-              <p className="text-[9px] text-slate-400 mt-1">Hold Ctrl/Cmd to select multiple. Selected SOPs will require retraining on CAPA closure.</p>
+              <p className="text-xs text-slate-400 mt-1">Hold Ctrl/Cmd to select multiple. Selected SOPs will require retraining on CAPA closure.</p>
             </div>
 
             <button type="submit" disabled={investigating} className="w-full py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1 mt-2">{investigating ? <Loader2 className="w-4 h-4 animate-spin"/> : <Microscope className="w-4 h-4"/>} Save Analysis</button>
@@ -305,12 +305,12 @@ export default function CapaSection() {
         <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form onSubmit={handAction(handleSpawnAction)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-slate-900">Assign Action</h3><button type="button" onClick={() => setShowAction(false)}><X className="w-4 h-4 text-slate-400"/></button></div>
-            <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Type</label><select {...regAction('action_type')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
-            <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Title *</label><input {...regAction('title')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none" />{actionErrors.title && <p className="text-red-500 text-[10px] mt-1">{actionErrors.title.message}</p>}</div>
-            <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Description</label><textarea {...regAction('description')} rows="2" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold resize-none" /></div>
+            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Type</label><select {...regAction('action_type')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Title *</label><input {...regAction('title')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none" />{actionErrors.title && <p className="text-red-500 text-xs mt-1">{actionErrors.title.message}</p>}</div>
+            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Description</label><textarea {...regAction('description')} rows="2" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold resize-none" /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Assign To</label><select {...regAction('assigned_to')} className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs bg-white font-semibold"><option value="">Select...</option>{employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}</select>{actionErrors.assigned_to && <p className="text-red-500 text-[10px] mt-1">{actionErrors.assigned_to.message}</p>}</div>
-              <div><label className="block text-[10px] font-bold text-slate-400 mb-1">Due</label><input type="date" {...regAction('due_date')} className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs" />{actionErrors.due_date && <p className="text-red-500 text-[10px] mt-1">{actionErrors.due_date.message}</p>}</div>
+              <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Assign To</label><select {...regAction('assigned_to')} className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs bg-white font-semibold"><option value="">Select...</option>{employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}</select>{actionErrors.assigned_to && <p className="text-red-500 text-xs mt-1">{actionErrors.assigned_to.message}</p>}</div>
+              <div><label className="block text-xs font-bold text-slate-400 mb-1">Due</label><input type="date" {...regAction('due_date')} className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs" />{actionErrors.due_date && <p className="text-red-500 text-xs mt-1">{actionErrors.due_date.message}</p>}</div>
             </div>
             <button type="submit" disabled={actioning} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg text-xs uppercase shadow-sm">Spawn Task</button>
           </form>
@@ -350,7 +350,7 @@ export default function CapaSection() {
         {[{ label: 'Open NCRs', value: openCount, bg: 'bg-red-50 text-red-600 border-red-100' }, { label: 'Critical', value: criticalCount, bg: 'bg-red-50 text-red-700 border-red-100' }, { label: 'Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, bg: 'bg-amber-50 text-amber-700 border-amber-100' }].map(k => (
           <div key={k.label} className={`card p-4 border ${k.bg}`}>
             <p className="text-2xl font-black">{k.value}</p>
-            <p className="text-[9px] font-black uppercase tracking-wider mt-1 opacity-80">{k.label}</p>
+            <p className="text-xs font-black uppercase tracking-wider mt-1 opacity-80">{k.label}</p>
           </div>
         ))}
       </div>
@@ -392,14 +392,14 @@ export default function CapaSection() {
                 <div className={`w-1 h-10 rounded-full shrink-0 ${dev.severity === 'Critical' ? 'bg-red-500' : dev.severity === 'Major' ? 'bg-amber-500' : 'bg-slate-400'}`}/>
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                    <span className={`px-1.5 py-0.5 rounded border text-[9px] font-black uppercase tracking-wider ${SEVERITY_STYLE[dev.severity]}`}>{dev.severity}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${STATUS_STYLE[dev.status]}`}>{dev.status}</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">{dev.source}</span>
+                    <span className={`px-1.5 py-0.5 rounded border text-xs font-black uppercase tracking-wider ${SEVERITY_STYLE[dev.severity]}`}>{dev.severity}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${STATUS_STYLE[dev.status]}`}>{dev.status}</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase">{dev.source}</span>
                   </div>
                   <h3 className="text-sm font-bold text-slate-800">{dev.title}</h3>
-                  <p className="text-[10px] text-slate-400 font-semibold">{dev.reporter?.full_name} · {new Date(dev.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-slate-400 font-semibold">{dev.reporter?.full_name} · {new Date(dev.created_at).toLocaleDateString()}</p>
                   {dev.batches && (
-                    <Link href={`/batches/${dev.batches.id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 mt-1 text-[9px] font-bold bg-slate-50 text-slate-700 border border-slate-100 px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors">
+                    <Link href={`/batches/${dev.batches.id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 mt-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-100 px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors">
                       <FlaskConical className="w-3 h-3"/> {dev.batches.batch_id}
                     </Link>
                   )}
@@ -433,21 +433,21 @@ export default function CapaSection() {
         <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form onSubmit={handRaise(handleRaise)} className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-xl p-6 w-full max-w-md shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-slate-900 flex items-center gap-1"><FileWarning className="w-4 h-4 text-red-600"/> Raise NCR</h3><button type="button" onClick={() => setShowRaise(false)}><X className="w-4 h-4 text-slate-400"/></button></div>
-            <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.title.message}</p>}</div>
+            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-xs mt-1">{raiseErrors.title.message}</p>}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div><label className="block text-[10px] font-bold text-slate-400 mb-1">Severity</label><select {...regRaise('severity')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold">{SEVERITIES.map(s => <option key={s}>{s}</option>)}</select></div>
-              <div><label className="block text-[10px] font-bold text-slate-400 mb-1">Source</label><select {...regRaise('source')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold">{SOURCES.map(s => <option key={s}>{s}</option>)}</select></div>
+              <div><label className="block text-xs font-bold text-slate-400 mb-1">Severity</label><select {...regRaise('severity')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold">{SEVERITIES.map(s => <option key={s}>{s}</option>)}</select></div>
+              <div><label className="block text-xs font-bold text-slate-400 mb-1">Source</label><select {...regRaise('source')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold">{SOURCES.map(s => <option key={s}>{s}</option>)}</select></div>
             </div>
-            <div><label className="block text-[10px] font-bold text-slate-400 mb-1">Description *</label><textarea {...regRaise('description')} rows="3" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold resize-none" />{raiseErrors.description && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.description.message}</p>}</div>
+            <div><label className="block text-xs font-bold text-slate-400 mb-1">Description *</label><textarea {...regRaise('description')} rows="3" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold resize-none" />{raiseErrors.description && <p className="text-red-500 text-xs mt-1">{raiseErrors.description.message}</p>}</div>
             
             <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-2">
-              <h4 className="text-[10px] font-bold text-slate-600 uppercase">FMEA Risk Assessment (1-10)</h4>
+              <h4 className="text-xs font-bold text-slate-600 uppercase">FMEA Risk Assessment (1-10)</h4>
               <div className="grid grid-cols-3 gap-2">
-                <div><label className="block text-[9px] font-bold text-slate-400 mb-1">Severity (S)</label><input type="number" min="1" max="10" {...regRaise('fmea_severity')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
-                <div><label className="block text-[9px] font-bold text-slate-400 mb-1">Occurrence (O)</label><input type="number" min="1" max="10" {...regRaise('fmea_occurrence')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
-                <div><label className="block text-[9px] font-bold text-slate-400 mb-1">Detection (D)</label><input type="number" min="1" max="10" {...regRaise('fmea_detection')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
+                <div><label className="block text-xs font-bold text-slate-400 mb-1">Severity (S)</label><input type="number" min="1" max="10" {...regRaise('fmea_severity')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
+                <div><label className="block text-xs font-bold text-slate-400 mb-1">Occurrence (O)</label><input type="number" min="1" max="10" {...regRaise('fmea_occurrence')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
+                <div><label className="block text-xs font-bold text-slate-400 mb-1">Detection (D)</label><input type="number" min="1" max="10" {...regRaise('fmea_detection')} className="w-full px-2 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-semibold text-center" /></div>
               </div>
-              <div className="text-[10px] font-bold text-slate-500 text-right">Calculated RPN: <span className="text-navy">{Number(watchRaise('fmea_severity')||1) * Number(watchRaise('fmea_occurrence')||1) * Number(watchRaise('fmea_detection')||1)}</span></div>
+              <div className="text-xs font-bold text-slate-500 text-right">Calculated RPN: <span className="text-navy">{Number(watchRaise('fmea_severity')||1) * Number(watchRaise('fmea_occurrence')||1) * Number(watchRaise('fmea_detection')||1)}</span></div>
             </div>
 
             <button type="submit" disabled={raising} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs uppercase shadow-sm">Submit NCR</button>

@@ -440,7 +440,7 @@ export default function ConsumerResearchPage() {
           </h2>
           <div className="flex flex-wrap gap-3 mb-4">
             {compareSessions.map((s, i) => (
-              <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase border" style={{ borderColor: COMPARE_COLORS[i], color: COMPARE_COLORS[i] }}>
+              <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold uppercase border" style={{ borderColor: COMPARE_COLORS[i], color: COMPARE_COLORS[i] }}>
                 <span className="w-2 h-2 rounded-full inline-block" style={{ background: COMPARE_COLORS[i] }}/>
                 {s.session_title}
               </span>
@@ -485,7 +485,7 @@ export default function ConsumerResearchPage() {
                     });
                     setShowNew(true);
                   }}
-                  className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-all"
+                  className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 text-xs font-bold rounded-lg hover:bg-amber-100 transition-all"
                 >
                   {batch.batch_id}{flask.flask_label ? ` | ${flask.flask_label}` : ''}{batch.variant ? ` | ${batch.variant}` : ''}
                 </button>
@@ -535,14 +535,14 @@ export default function ConsumerResearchPage() {
                   style={isSelected ? { background: COMPARE_COLORS[colorIdx], borderColor: COMPARE_COLORS[colorIdx] } : {}}
                   title={isSelected ? 'Deselect' : 'Select for comparison'}
                 >
-                  {isSelected && <span className="text-[10px] font-black">{colorIdx + 1}</span>}
+                  {isSelected && <span className="text-xs font-black">{colorIdx + 1}</span>}
                 </button>
               )}
 
               {/* Batch tag */}
               {s.batches && (
                 <div className="mb-3">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-slate-100">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-navy rounded text-xs font-bold uppercase tracking-wider border border-slate-100">
                     <FlaskConical className="w-3 h-3"/> {s.batches.batch_id}
                     {s.batches.variant ? ` - ${s.batches.variant}` : ''}
                   </span>
@@ -551,14 +551,14 @@ export default function ConsumerResearchPage() {
 
               {/* Meta row */}
               <div className="flex items-center justify-between mb-4">
-                <span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-100 flex items-center gap-1">
+                <span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-xs font-bold uppercase tracking-wider border border-slate-100 flex items-center gap-1">
                   <Users className="w-3 h-3"/> {s.panelist_count} Panelists
                 </span>
                 <div className="flex items-center gap-2">
                   {s.creator && (
                     <CreatorBadge initials={s.creator.initials} fullName={s.creator.full_name}/>
                   )}
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     {new Date(s.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -590,7 +590,7 @@ export default function ConsumerResearchPage() {
 
               <p className="text-xs font-bold text-navy font-mono mb-1">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
               {sessionIdentity(s) && (
-                <p className="text-[10px] font-semibold text-slate-500 mb-5">{sessionIdentity(s)}</p>
+                <p className="text-xs font-semibold text-slate-500 mb-5">{sessionIdentity(s)}</p>
               )}
 
               {/* Radar chart */}
@@ -601,7 +601,7 @@ export default function ConsumerResearchPage() {
               {/* Per-attribute stats table (only when scores exist) */}
               {hasScores && (
                 <div className="mb-4 overflow-x-auto">
-                  <table className="w-full text-[10px] font-semibold">
+                  <table className="w-full text-xs font-semibold">
                     <thead>
                       <tr className="text-slate-400 uppercase tracking-wider">
                         <th className="text-left py-1 pr-2">Attr</th>
@@ -640,7 +640,7 @@ export default function ConsumerResearchPage() {
               {/* Composite score row */}
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Composite Score</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Composite Score</p>
                   <div className="flex items-baseline gap-2">
                     <span className={`text-3xl font-black tracking-tight ${(s.avg_score || 0) >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
                       {s.avg_score || '-'}
@@ -685,7 +685,7 @@ export default function ConsumerResearchPage() {
 
             {/* Modal header */}
             <div className="p-6 border-b border-slate-100">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-navy mb-1">Sensory Score Entry</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-navy mb-1">Sensory Score Entry</p>
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">{activeSession.session_title}</h2>
               {activeSession.batches && (
                 <p className="text-xs font-semibold text-slate-500 mt-1">
@@ -727,7 +727,7 @@ export default function ConsumerResearchPage() {
                       <div className="flex items-center gap-2">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">{criterion}</label>
                         {threshold != null && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${passing ? 'bg-slate-50 text-slate-700' : 'bg-red-50 text-red-600'}`}>
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${passing ? 'bg-slate-50 text-slate-700' : 'bg-red-50 text-red-600'}`}>
                             min {threshold}
                           </span>
                         )}
@@ -771,7 +771,7 @@ export default function ConsumerResearchPage() {
             {/* Footer */}
             <div className="px-6 pb-6 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Composite Average</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Composite Average</p>
                 <p className={`text-3xl font-black tracking-tight ${scoreAverage >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
                   {scoreAverage}<span className="text-sm font-semibold text-slate-400"> / 10</span>
                 </p>
@@ -824,7 +824,7 @@ export default function ConsumerResearchPage() {
                 </select>
                 {errors.batch_id && <p className="text-red-500 text-xs mt-1">{errors.batch_id.message}</p>}
                 {batches.length === 0 && (
-                  <p className="text-amber-600 text-[10px] font-semibold mt-1">No released batches found. Release a batch first to link it here.</p>
+                  <p className="text-amber-600 text-xs font-semibold mt-1">No released batches found. Release a batch first to link it here.</p>
                 )}
               </div>
 
@@ -843,7 +843,7 @@ export default function ConsumerResearchPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-slate-500 font-semibold mt-1">Use one sensory session per flask when F1, F2, F3 have different results.</p>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">Use one sensory session per flask when F1, F2, F3 have different results.</p>
                 </div>
               )}
 
@@ -882,11 +882,11 @@ export default function ConsumerResearchPage() {
               {/* Pass thresholds */}
               <div className="pt-2 border-t border-slate-100">
                 <label className="block text-xs font-bold text-slate-700 mb-3">Pass Thresholds (optional)</label>
-                <p className="text-[10px] text-slate-500 font-semibold mb-3">Set minimum mean score required per attribute (0-10). Leave blank to skip.</p>
+                <p className="text-xs text-slate-500 font-semibold mb-3">Set minimum mean score required per attribute (0-10). Leave blank to skip.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {ATTRS.map(a => (
                     <div key={a}>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">{ATTR_LABELS[a]}</label>
+                      <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">{ATTR_LABELS[a]}</label>
                       <input
                         type="number"
                         min="0"

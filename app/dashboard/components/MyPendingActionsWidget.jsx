@@ -71,7 +71,7 @@ export default function MyPendingActionsWidget() {
         <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
           My Pending Actions
           {actions.length > 0 && (
-            <span className="text-[10px] font-black text-white bg-navy px-1.5 py-0.5 rounded-full">{actions.length}</span>
+            <span className="text-xs font-black text-white bg-navy px-1.5 py-0.5 rounded-full">{actions.length}</span>
           )}
         </h2>
       </div>
@@ -100,10 +100,10 @@ export default function MyPendingActionsWidget() {
                   <p className="text-xs text-slate-500 font-medium mt-0.5">{action.subtitle}</p>
                 </div>
                 {action.priority === 'urgent' && (
-                  <span className="shrink-0 text-[9px] font-black uppercase tracking-widest text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">Urgent</span>
+                  <span className="shrink-0 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">Urgent</span>
                 )}
                 {action.priority === 'high' && action.type !== 'urgent' && (
-                  <span className="shrink-0 text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">High</span>
+                  <span className="shrink-0 text-xs font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">High</span>
                 )}
                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0 self-center opacity-0 group-hover:opacity-100 -ml-2 transform group-hover:translate-x-2" />
               </Link>

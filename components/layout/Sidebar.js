@@ -140,10 +140,10 @@ export default function Sidebar() {
           filter: active ? `drop-shadow(0 0 2px ${V.activeBg})` : undefined }}
         />
         {expanded && (
-          <span className="text-[13px] font-semibold whitespace-nowrap leading-none">{item.name}</span>
+          <span className="text-sm font-semibold whitespace-nowrap leading-none">{item.name}</span>
         )}
         {expanded && item.badge > 0 && (
-          <span className="ml-auto text-[10px] font-black text-white px-1.5 py-0.5 rounded-full shadow-sm"
+          <span className="ml-auto text-xs font-black text-white px-1.5 py-0.5 rounded-full shadow-sm"
             style={{ background: V.grad }}>{item.badge > 99 ? '99+' : item.badge}</span>
         )}
         {!expanded && item.badge > 0 && (
@@ -169,12 +169,12 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <div className="flex items-center h-16 px-3 shrink-0" style={{ borderBottom: `1px solid ${V.border}` }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-[12px] font-black"
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-black"
             style={{ background: V.grad, boxShadow: V.glow }}>
             O₂
           </div>
           {expanded && (
-            <span className="ml-3 text-[15px] font-black tracking-tight whitespace-nowrap" style={{ color: V.text }}>OxyOS</span>
+            <span className="ml-3 text-base font-black tracking-tight whitespace-nowrap" style={{ color: V.text }}>OxyOS</span>
           )}
         </div>
 
@@ -186,7 +186,7 @@ export default function Sidebar() {
             return (
               <div key={i}>
                 {expanded && (
-                  <p className="px-4 pb-1 text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: '#94a3b8' }}>{sec.title}</p>
+                  <p className="px-4 pb-1 text-xs font-black uppercase tracking-[0.18em]" style={{ color: '#94a3b8' }}>{sec.title}</p>
                 )}
                 {!expanded && i > 0 && <div className="mx-auto mb-2" style={{ width: 28, borderTop: `1px solid ${V.border}` }} />}
                 {vis.map(item => <DesktopItem key={item.href} item={item} />)}
@@ -199,13 +199,13 @@ export default function Sidebar() {
         <div className="shrink-0 p-3" style={{ borderTop: `1px solid ${V.border}` }}>
           {expanded ? (
             <div className="flex items-center gap-3 px-2 py-2 rounded-xl" style={{ background: V.hoverBg, border: `1px solid ${V.border}` }}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 shadow-sm"
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0 shadow-sm"
                 style={{ background: V.grad }}>
                 {initials(employeeProfile?.full_name)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-bold truncate" style={{ color: V.text }}>{employeeProfile?.full_name || '—'}</p>
-                <p className="text-[10px] capitalize truncate" style={{ color: V.textLight }}>{employeeProfile?.role || ''}</p>
+                <p className="text-xs font-bold truncate" style={{ color: V.text }}>{employeeProfile?.full_name || '—'}</p>
+                <p className="text-xs capitalize truncate" style={{ color: V.textLight }}>{employeeProfile?.role || ''}</p>
               </div>
               <button onClick={signOut} title="Sign out"
                 className="p-1.5 rounded-lg transition-colors hover:bg-red-50" style={{ color: V.textLight }}>
@@ -232,11 +232,11 @@ export default function Sidebar() {
             {/* Sheet Header */}
             <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: `1px solid ${V.border}` }}>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-black shadow-md"
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-md"
                   style={{ background: V.grad }}>
                   O₂
                 </div>
-                <span className="text-[15px] font-black" style={{ color: V.text }}>OxyOS</span>
+                <span className="text-base font-black" style={{ color: V.text }}>OxyOS</span>
               </div>
               <button onClick={() => setSheet(false)}
                 className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
@@ -248,13 +248,13 @@ export default function Sidebar() {
             {/* User Strip */}
             {employeeProfile && (
               <div className="flex items-center gap-3 mx-4 my-3 px-4 py-3 rounded-2xl shadow-sm" style={{ background: V.hoverBg, border: `1px solid ${V.border}` }}>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-black text-white shrink-0 shadow-sm"
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0 shadow-sm"
                   style={{ background: V.grad }}>
                   {initials(employeeProfile.full_name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-black truncate" style={{ color: V.text }}>{employeeProfile.full_name}</p>
-                  <p className="text-[11px] capitalize truncate" style={{ color: V.textLight }}>{employeeProfile.designation || employeeProfile.role}</p>
+                  <p className="text-sm font-black truncate" style={{ color: V.text }}>{employeeProfile.full_name}</p>
+                  <p className="text-xs capitalize truncate" style={{ color: V.textLight }}>{employeeProfile.designation || employeeProfile.role}</p>
                 </div>
               </div>
             )}
@@ -266,7 +266,7 @@ export default function Sidebar() {
                 if (!vis.length) return null;
                 return (
                   <div key={i} className="mb-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] mb-2 px-1" style={{ color: '#94a3b8' }}>{sec.title}</p>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] mb-2 px-1" style={{ color: '#94a3b8' }}>{sec.title}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {vis.map(item => {
                         const active = isActive(item);
@@ -297,7 +297,7 @@ export default function Sidebar() {
 
               {/* Sign out */}
               <button onClick={signOut}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[13px] mt-2 active:scale-95 transition-all shadow-sm"
+                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-sm mt-2 active:scale-95 transition-all shadow-sm"
                 style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444' }}>
                 <LogOut style={{ width: '1rem', height: '1rem' }} /> Sign Out
               </button>

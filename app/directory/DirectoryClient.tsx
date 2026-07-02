@@ -46,7 +46,7 @@ function generateEmployeeCode(existingCodes: string[], designationCode: string) 
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{label}</label>
+      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -70,7 +70,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
         {/* ── Header gradient strip ── */}
         <div className="relative shrink-0 bg-gradient-to-br from-slate-800 via-navy to-slate-700 pt-5 pb-16 px-6 rounded-t-[2rem]">
           <div className="flex items-center justify-between">
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+            <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-widest border ${
               emp.is_active
                 ? 'bg-emerald-400/20 text-emerald-200 border-emerald-300/30'
                 : 'bg-red-400/20 text-red-200 border-red-300/30'
@@ -102,17 +102,17 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
         {/* ── Pill row ── */}
         <div className="px-6 pt-3 pb-4 flex flex-wrap gap-2 shrink-0">
           {emp.employee_code && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-navy/5 text-navy rounded-full text-[11px] font-black border border-navy/10">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-navy/5 text-navy rounded-full text-xs font-black border border-navy/10">
               <Hash className="w-3 h-3"/>{emp.employee_code}
             </span>
           )}
           {emp.department && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-[11px] font-bold border border-slate-200">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
               <Building2 className="w-3 h-3"/>{emp.department}
             </span>
           )}
           {emp.blood_group && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-[11px] font-bold border border-red-100">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-bold border border-red-100">
               <Droplets className="w-3 h-3"/>{emp.blood_group}
             </span>
           )}
@@ -124,7 +124,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {/* Contact */}
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
             <div className="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
-              <Mail className="w-3.5 h-3.5 text-slate-400"/><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact</span>
+              <Mail className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-black uppercase tracking-widest text-slate-400">Contact</span>
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center gap-3 px-4 py-3">
@@ -141,7 +141,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {/* Dates */}
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
             <div className="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-slate-400"/><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Important Dates</span>
+              <Calendar className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-black uppercase tracking-widest text-slate-400">Important Dates</span>
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between px-4 py-3">
@@ -158,7 +158,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {/* Emergency */}
           <div className="rounded-2xl border border-red-100 overflow-hidden">
             <div className="bg-red-50 px-4 py-2.5 flex items-center gap-2">
-              <AlertCircle className="w-3.5 h-3.5 text-red-400"/><span className="text-[10px] font-black uppercase tracking-widest text-red-400">Emergency Contact</span>
+              <AlertCircle className="w-3.5 h-3.5 text-red-400"/><span className="text-xs font-black uppercase tracking-widest text-red-400">Emergency Contact</span>
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between px-4 py-3">
@@ -176,7 +176,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {emp.address && (
             <div className="rounded-2xl border border-slate-100 overflow-hidden">
               <div className="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-slate-400"/><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Address</span>
+                <MapPin className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-black uppercase tracking-widest text-slate-400">Address</span>
               </div>
               <p className="px-4 py-3 text-sm font-medium text-slate-700 leading-relaxed">{emp.address}</p>
             </div>
@@ -187,7 +187,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
             <>
               {emp.base_salary && (
                 <div className="rounded-2xl border border-slate-200 bg-slate-100/40 px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-800">
                     <CreditCard className="w-3.5 h-3.5"/>Base Salary
                   </div>
                   <span className="text-lg font-black text-slate-900">
@@ -199,7 +199,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
               {/* Status toggle */}
               <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${emp.is_active ? 'border-red-100 bg-red-50/40' : 'border-emerald-100 bg-emerald-50/40'}`}>
                 <div>
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${emp.is_active ? 'text-red-500' : 'text-emerald-600'}`}>
+                  <p className={`text-xs font-black uppercase tracking-widest ${emp.is_active ? 'text-red-500' : 'text-emerald-600'}`}>
                     {emp.is_active ? 'Deactivate Account' : 'Reactivate Account'}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -272,9 +272,9 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           <div className="w-full relative z-10 flex justify-between items-start mb-8">
             <div>
               <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
-              <p className="text-slate-200 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
+              <p className="text-slate-200 font-bold tracking-widest text-xs uppercase">Bioinnovations</p>
             </div>
-            <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
+            <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-xs font-black uppercase tracking-widest border ${
               emp.is_active ? 'bg-white/20 text-white border-white/30' : 'bg-red-500/40 text-white border-red-300/50'
             }`}>
               <CheckSquare className="w-3 h-3"/> {emp.is_active ? 'Active' : 'Inactive'}
@@ -297,36 +297,36 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           <p className="text-xs font-bold text-navy tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
           
           <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
             <p className="font-mono text-2xl font-black text-slate-800 tracking-widest">{emp.employee_code || 'PENDING'}</p>
           </div>
 
-          <div className="w-full space-y-2 mt-2 px-2 text-[10px] font-semibold text-slate-500">
+          <div className="w-full space-y-2 mt-2 px-2 text-xs font-semibold text-slate-500">
             {emp.phone && <p className="flex items-center"><Phone className="w-3 h-3 mr-2" />{emp.phone}</p>}
             {emp.email && <p className="flex items-center"><Mail className="w-3 h-3 mr-2" />{emp.email}</p>}
             {emp.blood_group && <p className="flex items-center"><Droplets className="w-3 h-3 mr-2 text-red-500" />Blood Group: <span className="ml-1 text-red-600 font-bold">{emp.blood_group}</span></p>}
           </div>
 
           {showFullProfile && (
-            <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-[10px] text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
-                {emp.date_of_birth && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Birth</span> {new Date(emp.date_of_birth).toLocaleDateString('en-IN')}</p>}
-                {emp.joined_date && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Joining</span> {new Date(emp.joined_date).toLocaleDateString('en-IN')}</p>}
-                {emp.address && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Address</span> {emp.address}</p>}
+            <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-xs text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
+                {emp.date_of_birth && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Date of Birth</span> {new Date(emp.date_of_birth).toLocaleDateString('en-IN')}</p>}
+                {emp.joined_date && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Date of Joining</span> {new Date(emp.joined_date).toLocaleDateString('en-IN')}</p>}
+                {emp.address && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Address</span> {emp.address}</p>}
                 {(emp.emergency_contact || emp.emergency_contact_name) && (
-                  <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Emergency Contact</span> {emp.emergency_contact_name} {emp.emergency_contact ? `(${emp.emergency_contact})` : ''}</p>
+                  <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Emergency Contact</span> {emp.emergency_contact_name} {emp.emergency_contact ? `(${emp.emergency_contact})` : ''}</p>
                 )}
             </div>
           )}
 
-          <button onClick={() => setShowFullProfile(!showFullProfile)} className="mt-4 text-[9px] font-black text-slate-800 hover:text-slate-900 transition-colors uppercase tracking-widest">
+          <button onClick={() => setShowFullProfile(!showFullProfile)} className="mt-4 text-xs font-black text-slate-800 hover:text-slate-900 transition-colors uppercase tracking-widest">
             {showFullProfile ? 'Hide Profile' : 'View Full Profile'}
           </button>
 
           {/* QR Code Section */}
           <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
             <div className="text-left pr-4">
-              <p className="text-[9px] font-black text-navy uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
-              <p className="text-[10px] font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
+              <p className="text-xs font-black text-navy uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
             </div>
             <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
               <QRCodeSVG value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com'}/verify/${emp.id}`} size={64} level="M" />
@@ -847,7 +847,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                                         className={`rounded focus:ring-2 w-4 h-4 ${isOverridden ? 'text-amber-600 focus:ring-amber-500 border-amber-400' : 'text-slate-800 focus:ring-slate-700 border-slate-300'}`}
                                                     />
                                                     <span className="capitalize">{actionName.replace('_', ' ')}</span>
-                                                    {isOverridden && <span className="text-[9px] font-black uppercase ml-auto bg-amber-200/50 px-1.5 py-0.5 rounded text-amber-800">Override</span>}
+                                                    {isOverridden && <span className="text-xs font-black uppercase ml-auto bg-amber-200/50 px-1.5 py-0.5 rounded text-amber-800">Override</span>}
                                                 </label>
                                             );
                                         })}
@@ -944,7 +944,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 )}
 
                 <div>
-                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
                   <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
                     <span className="font-mono font-black text-slate-900 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
                   </div>

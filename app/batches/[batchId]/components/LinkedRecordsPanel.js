@@ -48,10 +48,10 @@ function InventoryTab({ rows }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800 truncate">{item?.name || '—'}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-slate-400">Lot: {stock?.supplier_batch_number || 'N/A'}</span>
-                <span className="text-[10px] font-bold text-navy">{r.quantity_used} {item?.unit}</span>
+                <span className="text-xs text-slate-400">Lot: {stock?.supplier_batch_number || 'N/A'}</span>
+                <span className="text-xs font-bold text-navy">{r.quantity_used} {item?.unit}</span>
                 {expiry && (
-                  <span className={`text-[10px] font-bold ${isExpired ? 'text-red-600' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-bold ${isExpired ? 'text-red-600' : 'text-slate-400'}`}>
                     Exp: {expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 )}
@@ -81,15 +81,15 @@ function EquipmentTab({ rows }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800">{eq.name}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-slate-400">{eq.model || '—'}</span>
+                <span className="text-xs text-slate-400">{eq.model || '—'}</span>
                 {calOverdue ? (
-                  <span className="text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Cal Overdue</span>
+                  <span className="text-xs font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Cal Overdue</span>
                 ) : dueDate ? (
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-xs text-slate-400">
                     Cal due: {dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                   </span>
                 ) : null}
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${eq.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${eq.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                   {eq.status}
                 </span>
               </div>
@@ -115,13 +115,13 @@ function NotebookTab({ rows }) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-800 truncate">{entry.title || 'Untitled Entry'}</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+              <span className={`text-xs font-black px-1.5 py-0.5 rounded ${
                 entry.status === 'signed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
               }`}>
                 {entry.status || 'draft'}
               </span>
               {entry.employees?.full_name && (
-                <span className="text-[10px] text-slate-400">by {entry.employees.full_name}</span>
+                <span className="text-xs text-slate-400">by {entry.employees.full_name}</span>
               )}
             </div>
           </div>
@@ -147,10 +147,10 @@ function DeviationsTab({ rows }) {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${SEV[dev.severity] || 'bg-slate-100 text-slate-600'}`}>
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${SEV[dev.severity] || 'bg-slate-100 text-slate-600'}`}>
                   {dev.severity}
                 </span>
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
                   dev.status === 'closed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                 }`}>
                   {dev.status}
@@ -158,10 +158,10 @@ function DeviationsTab({ rows }) {
               </div>
               <p className="text-sm font-bold text-slate-800 truncate">{dev.title}</p>
               <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-400">
                   Investigation: {inv ? (inv.root_cause_identified ? '✓ Done' : 'In progress') : 'Pending'}
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-400">
                   CAPA: {capa ? (capa.effectiveness_verified ? '✓ Verified' : 'Open') : 'Pending'}
                 </span>
               </div>
@@ -188,13 +188,13 @@ function ShelfLifeTab({ rows }) {
             <p className="text-sm font-bold text-slate-800">{study.storage_condition || 'Study'}</p>
             <div className="flex items-center gap-2 mt-0.5">
               {study.status && (
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded uppercase ${
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
                   study.status === 'complete' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-700'
                 }`}>
                   {study.status}
                 </span>
               )}
-              <span className="text-[10px] text-slate-400">
+              <span className="text-xs text-slate-400">
                 {new Date(study.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             </div>
@@ -222,20 +222,20 @@ function IncubationTab({ rows }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800 truncate">{r.sample_name}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-slate-400">{r.sample_type}</span>
+                <span className="text-xs text-slate-400">{r.sample_type}</span>
                 {r.batch_flasks?.flask_label && (
-                  <span className="text-[10px] font-bold text-navy">{r.batch_flasks.flask_label}</span>
+                  <span className="text-xs font-bold text-navy">{r.batch_flasks.flask_label}</span>
                 )}
                 {r.source_stage && (
-                  <span className="text-[10px] text-slate-400 capitalize">{r.source_stage.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-slate-400 capitalize">{r.source_stage.replace(/_/g, ' ')}</span>
                 )}
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
                   ongoing ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {ongoing ? 'Ongoing' : `${Number(r.duration_hours || 0).toFixed(1)}h`}
                 </span>
                 {sterility && sterility !== 'Pending' && (
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                  <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
                     sterility === 'Sterile' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
                   }`}>
                     {sterility}
@@ -267,19 +267,19 @@ function TasksTab({ rows }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800 truncate">{task.title}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${PRI[task.priority] || 'bg-slate-100 text-slate-600'}`}>
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${PRI[task.priority] || 'bg-slate-100 text-slate-600'}`}>
                   {task.priority}
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded uppercase ${
                   task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {task.status}
                 </span>
                 {task.employees?.full_name && (
-                  <span className="text-[10px] text-slate-400">→ {task.employees.full_name}</span>
+                  <span className="text-xs text-slate-400">→ {task.employees.full_name}</span>
                 )}
                 {dueDate && (
-                  <span className={`text-[10px] font-bold ${overdue ? 'text-red-600' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-bold ${overdue ? 'text-red-600' : 'text-slate-400'}`}>
                     {overdue ? '⚠ Overdue' : `Due ${dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
                   </span>
                 )}
@@ -332,11 +332,11 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
     <div className="card mt-6">
       <div className="px-5 pt-5 pb-3 border-b border-slate-100">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Linked Records</h3>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Linked Records</h3>
           {(() => {
             const tab = TABS.find(t => t.id === activeTab);
             return tab ? (
-              <Link href={tab.href} className="flex items-center gap-1 text-[10px] font-black text-navy hover:text-navy-hover transition-colors">
+              <Link href={tab.href} className="flex items-center gap-1 text-xs font-black text-navy hover:text-navy-hover transition-colors">
                 Open {tab.label} <ExternalLink className="w-3 h-3"/>
               </Link>
             ) : null;
@@ -357,7 +357,7 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
                 <Icon className="w-3 h-3" />
                 {tab.label}
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-black ${
                     active ? 'bg-white/25 text-white' : 'bg-navy text-white'
                   }`}>
                     {tab.count}

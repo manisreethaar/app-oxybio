@@ -266,7 +266,7 @@ export default function ShelfLifePage() {
               <div key={study.id} className="card p-6 hover:shadow-md transition-all">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-navy bg-slate-50 px-2 py-0.5 rounded border border-slate-100 mb-2 inline-block">Study ID: {study.id.slice(0,8).toUpperCase()}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-navy bg-slate-50 px-2 py-0.5 rounded border border-slate-100 mb-2 inline-block">Study ID: {study.id.slice(0,8).toUpperCase()}</span>
                     {study.batches?.id ? (
                       <Link href={`/batches/${study.batches.id}`} className="text-lg font-bold text-slate-900 hover:text-navy hover:underline transition-colors">
                         {study.batches.batch_id}
@@ -277,15 +277,15 @@ export default function ShelfLifePage() {
                     <p className="text-xs font-semibold text-slate-500 mt-1">{study.batches?.variant} | {study.storage_condition}{study.flask_id ? ' | Flask: ' + study.flask_id : ''}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Status</p>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${study.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-700 border-slate-100'}`}>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Status</p>
+                    <span className={`px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider border ${study.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-700 border-slate-100'}`}>
                       {study.status}
                     </span>
                   </div>
                 </div>
 
                 <div className="h-44 w-full mb-6 bg-slate-50/50 rounded-xl p-3 border border-slate-100">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-3 flex justify-between">
+                  <p className="text-xs font-black text-slate-400 uppercase mb-3 flex justify-between">
                     Stability Analytics <span>{study.status}</span>
                   </p>
                   <ShelfLifeLineChart data={displayData} />
@@ -299,7 +299,7 @@ export default function ShelfLifePage() {
                     const dateStr = tpDate ? tpDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
                     return (
                       <div key={tp} className="text-center">
-                        <p className={`text-[9px] font-black uppercase mb-1 ${status==='overdue'?'text-red-500':status==='due'?'text-amber-600':'text-slate-400'}`}>D{tp}</p>
+                        <p className={`text-xs font-black uppercase mb-1 ${status==='overdue'?'text-red-500':status==='due'?'text-amber-600':'text-slate-400'}`}>D{tp}</p>
                         <div className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${
                           status==='done'    ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
                           status==='overdue' ? 'bg-red-50 border-red-200 text-red-500' :
@@ -308,7 +308,7 @@ export default function ShelfLifePage() {
                         }`}>
                           {status==='done' ? <CheckCircle2 className="w-4 h-4"/> : status==='overdue' ? <AlertCircle className="w-4 h-4"/> : <Clock className="w-4 h-4"/>}
                         </div>
-                        <p className="text-[8px] text-slate-400 mt-0.5 leading-tight">{dateStr}</p>
+                        <p className="text-xs text-slate-400 mt-0.5 leading-tight">{dateStr}</p>
                       </div>
                     );
                   })}
@@ -333,7 +333,7 @@ export default function ShelfLifePage() {
                     <div className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                       <p className="font-black text-slate-800 mb-0.5">ASLT Shelf Life Prediction (Q10 = {study.q10_factor})</p>
                       <p className="text-slate-700">Based on {study.accel_temp_c}°C accelerated data → predicted real shelf life at {study.temperature_c}°C: <span className="font-black text-slate-900">{predicted} days</span></p>
-                      <p className="text-[9px] text-slate-400 mt-0.5">Formula: Real SL = Accel test days × Q10^((T_acc − T_real)/10)</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Formula: Real SL = Accel test days × Q10^((T_acc − T_real)/10)</p>
                     </div>
                   ) : null;
                 })()}
@@ -357,11 +357,11 @@ export default function ShelfLifePage() {
                   const shelfLifeDays = b < 0 ? Math.round((spec - a) / b) : null;
                   return (
                     <div className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                      <p className="font-black text-[10px] uppercase text-slate-800 mb-1">A-24 ICH Q1E pH Shelf-Life Regression ({n} datapoints)</p>
+                      <p className="font-black text-xs uppercase text-slate-800 mb-1">A-24 ICH Q1E pH Shelf-Life Regression ({n} datapoints)</p>
                       <p className="text-slate-700 font-semibold">pH = {a.toFixed(3)} {b>=0?'+':''}{b.toFixed(5)}×day · R² slope: {Math.abs(b).toFixed(5)}/day</p>
                       {shelfLifeDays && <p className="font-black text-slate-900 mt-0.5">Projected shelf life (pH hits {spec}): <span className="text-lg">{shelfLifeDays} days</span></p>}
                       {!shelfLifeDays && <p className="text-slate-600 font-semibold mt-0.5">pH is stable or rising — no lower limit breach projected</p>}
-                      <p className="text-[9px] text-slate-400 mt-0.5">Based on pH lower spec limit {spec}. Confirm with stability study data.</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Based on pH lower spec limit {spec}. Confirm with stability study data.</p>
                     </div>
                   );
                 })()}
@@ -378,22 +378,22 @@ export default function ShelfLifePage() {
                   const meetsSpec = cfuAt90 >= 1e5;
                   return (
                     <div className={`mb-3 p-3 rounded-xl border text-xs ${meetsSpec ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                      <p className={`font-black text-[10px] uppercase mb-1 ${meetsSpec ? 'text-emerald-800' : 'text-red-800'}`}>A-37 Viability Prediction at 90d EoSL</p>
+                      <p className={`font-black text-xs uppercase mb-1 ${meetsSpec ? 'text-emerald-800' : 'text-red-800'}`}>A-37 Viability Prediction at 90d EoSL</p>
                       <p className={`font-semibold ${meetsSpec ? 'text-emerald-700' : 'text-red-700'}`}>
                         D0 CFU: {cfuVal.toExponential(1)} → Est. Day 90: ~{cfuAt90.toExponential(1)} CFU/g
                       </p>
                       <p className={`font-black mt-0.5 ${meetsSpec ? 'text-emerald-900' : 'text-red-900'}`}>
                         {meetsSpec ? '✓ Projects to meet ≥10⁵ CFU/g at EoSL' : '⚠ May fall below ≥10⁵ CFU/g — review storage conditions or shorten shelf life claim'}
                       </p>
-                      <p className="text-[9px] text-slate-400 mt-0.5">A-56 D-value model: D₃₀ = 30d at {study.temperature_c || 4}°C (1-log reduction). Validate with actual timepoint CFU data.</p>
+                      <p className="text-xs text-slate-400 mt-0.5">A-56 D-value model: D₃₀ = 30d at {study.temperature_c || 4}°C (1-log reduction). Validate with actual timepoint CFU data.</p>
                     {/* A-56: Viability curve mini table */}
                     <div className="mt-2 grid grid-cols-5 gap-1">
                       {[0,14,30,60,90].map(day => {
                         const pred = cfuVal * Math.pow(10, -day/30);
                         return (
                           <div key={day} className={`p-1 rounded text-center ${pred >= 1e6 ? 'bg-emerald-100' : pred >= 1e5 ? 'bg-amber-100' : 'bg-red-100'}`}>
-                            <p className="text-[8px] font-black text-slate-500">D{day}</p>
-                            <p className="text-[9px] font-black text-slate-800">{pred.toExponential(0)}</p>
+                            <p className="text-xs font-black text-slate-500">D{day}</p>
+                            <p className="text-xs font-black text-slate-800">{pred.toExponential(0)}</p>
                           </div>
                         );
                       })}
@@ -405,7 +405,7 @@ export default function ShelfLifePage() {
                 {/* A-44: Temperature excursion impact */}
                 {study.temperature_c && study.q10_factor && (
                   <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs">
-                    <p className="font-black text-[10px] uppercase text-amber-800 mb-1">A-44 Temperature Excursion Calculator</p>
+                    <p className="font-black text-xs uppercase text-amber-800 mb-1">A-44 Temperature Excursion Calculator</p>
                     <p className="text-amber-700 font-semibold">If product exposed to 25°C for 1 day (cold chain break):</p>
                     {(() => {
                       const q10 = parseFloat(study.q10_factor) || 2.0;
@@ -418,7 +418,7 @@ export default function ShelfLifePage() {
                         </p>
                       );
                     })()}
-                    <p className="text-[9px] text-amber-500 mt-0.5">Formula: equivalent_days = excursion_days × Q10^((T_excursion − T_storage)/10)</p>
+                    <p className="text-xs text-amber-500 mt-0.5">Formula: equivalent_days = excursion_days × Q10^((T_excursion − T_storage)/10)</p>
                   </div>
                 )}
 
@@ -426,12 +426,12 @@ export default function ShelfLifePage() {
               {study.creator && (
                 <div className="flex items-center gap-1.5 mb-3">
                   <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm"/>
-                  <span className="text-[10px] text-slate-400 font-medium">by {study.creator.full_name}</span>
+                  <span className="text-xs text-slate-400 font-medium">by {study.creator.full_name}</span>
                 </div>
               )}
               <div className="flex gap-2">
                 {study.status !== 'Completed' && isAdmin && (
-                  <button onClick={() => concludeStudy(study.id)} className="flex-1 py-2.5 bg-white border border-red-100 text-[10px] font-bold uppercase tracking-wider text-red-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all focus:outline-none">
+                  <button onClick={() => concludeStudy(study.id)} className="flex-1 py-2.5 bg-white border border-red-100 text-xs font-bold uppercase tracking-wider text-red-500 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all focus:outline-none">
                     Conclude
                   </button>
                 )}
@@ -454,7 +454,7 @@ export default function ShelfLifePage() {
                     onSuccess={() => { fetchData(); fetchPendingIds(); }}
                   />
                 )}
-                <button onClick={() => openLogModal(study)} className="flex-[2] py-2.5 bg-navy text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-navy-hover transition-all flex items-center justify-center gap-2">
+                <button onClick={() => openLogModal(study)} className="flex-[2] py-2.5 bg-navy text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-navy-hover transition-all flex items-center justify-center gap-2">
                   Open Log &amp; Parameters <ChevronRight className="w-4 h-4 opacity-50" />
                 </button>
               </div>
@@ -494,7 +494,7 @@ export default function ShelfLifePage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-slate-500 font-semibold mt-1">Create separate stability records for F1, F2, F3 when results differ by flask.</p>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">Create separate stability records for F1, F2, F3 when results differ by flask.</p>
                 </div>
               ) : (
                 <div>
@@ -513,7 +513,7 @@ export default function ShelfLifePage() {
                     </button>
                   ))}
                 </div>
-                {studyType === 'ASLT' && <p className="text-[9px] text-slate-600 font-semibold mt-1">Accelerated Shelf Life Testing — uses elevated temperature to extrapolate real shelf life</p>}
+                {studyType === 'ASLT' && <p className="text-xs text-slate-600 font-semibold mt-1">Accelerated Shelf Life Testing — uses elevated temperature to extrapolate real shelf life</p>}
               </div>
               {/* G-46: Temperature conditions */}
               <div className="grid grid-cols-2 gap-3">
@@ -530,7 +530,7 @@ export default function ShelfLifePage() {
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">Q10 Factor</label>
                       <input type="number" step="0.5" min="1" max="5" value={q10Factor} onChange={e=>setQ10Factor(e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy" placeholder="2.0"/>
-                      <p className="text-[9px] text-slate-400 mt-0.5">Default 2.0 (reaction rate doubles per 10°C)</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Default 2.0 (reaction rate doubles per 10°C)</p>
                     </div>
                   </>
                 )}
@@ -539,7 +539,7 @@ export default function ShelfLifePage() {
                 <label className="block text-xs font-bold text-slate-700 mb-1">Storage Condition Label</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {['Refrigerated (4°C)', 'Ambient (25°C)', 'Accelerated (40°C)'].map(c => (
-                    <button key={c} type="button" onClick={() => setValue('storage_condition', c, { shouldValidate: true })} className={`px-3 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${watchedCondition === c ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                    <button key={c} type="button" onClick={() => setValue('storage_condition', c, { shouldValidate: true })} className={`px-3 py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all ${watchedCondition === c ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
                       {c.split(' ')[0]}
                     </button>
                   ))}
@@ -581,7 +581,7 @@ export default function ShelfLifePage() {
                   ))}
                 </div>
                 {activeDayLog && !isAdmin && (
-                  <p className="text-[10px] font-semibold text-amber-600 mt-2">This day is already logged. Only admins can modify existing stability data.</p>
+                  <p className="text-xs font-semibold text-amber-600 mt-2">This day is already logged. Only admins can modify existing stability data.</p>
                 )}
               </div>
 

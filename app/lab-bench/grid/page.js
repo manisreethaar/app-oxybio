@@ -302,7 +302,7 @@ export default function GridEntryPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
           <h1 className="text-xl font-black text-slate-800">Grid Entry</h1>
         </div>
       </div>
@@ -335,7 +335,7 @@ export default function GridEntryPage() {
         <div className={clsx('grid gap-3', isBatch ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-3')}>
           {/* Source dropdown */}
           <div className={isBatch ? 'col-span-2 md:col-span-2' : 'md:col-span-1'}>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
               {isBatch ? 'Batch' : 'Growth Study'}
             </label>
             {sourcesLoading ? (
@@ -366,7 +366,7 @@ export default function GridEntryPage() {
           {/* Log hour — batch only (GS uses per-row hours from time points) */}
           {isBatch && (
             <div>
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
                 Log Hour (T+)
               </label>
               <div className="relative">
@@ -384,7 +384,7 @@ export default function GridEntryPage() {
 
           {/* OD wavelength */}
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
               OD Wavelength
             </label>
             <div className="relative">
@@ -394,13 +394,13 @@ export default function GridEntryPage() {
                 value={odWavelength}
                 onChange={e => setOdWavelength(Number(e.target.value))}
               />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">nm</span>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">nm</span>
             </div>
           </div>
 
           {/* Logged at */}
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
               Logged At
             </label>
             <input
@@ -419,7 +419,7 @@ export default function GridEntryPage() {
           <Activity className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-black text-slate-700">No time point schedule — ad-hoc entry</p>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               This study has no formal time points. Enter measurements at any hour. The hour is editable per row.
             </p>
           </div>
@@ -431,7 +431,7 @@ export default function GridEntryPage() {
                 : 0;
               setRows(prev => [...prev, blankAdHocRow(lastHour)]);
             }}
-            className="shrink-0 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-[11px] font-black rounded-lg transition-colors"
+            className="shrink-0 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-black rounded-lg transition-colors"
           >
             + Add row
           </button>
@@ -473,30 +473,30 @@ export default function GridEntryPage() {
             <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="px-3 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-20 sm:w-28 sticky left-0 bg-slate-50 z-10">
+                  <th className="px-3 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-20 sm:w-28 sticky left-0 bg-slate-50 z-10">
                     {isBatch ? 'Flask' : 'Timepoint'}
                   </th>
-                  <th className="px-2 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider w-16">
+                  <th className="px-2 py-3 text-center text-xs font-black text-slate-400 uppercase tracking-wider w-16">
                     Skip
                   </th>
-                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-24">
+                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-24">
                     pH
                   </th>
-                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-24">
+                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-24">
                     OD{odWavelength}
                   </th>
                   {isBatch && (
-                    <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-24">
+                    <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-24">
                       Temp °C
                     </th>
                   )}
-                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-28">
+                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-28">
                     Sterility
                   </th>
-                  <th className="px-2 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider w-16">
+                  <th className="px-2 py-3 text-center text-xs font-black text-slate-400 uppercase tracking-wider w-16">
                     Plate
                   </th>
-                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider">
                     Notes
                   </th>
                 </tr>
@@ -540,15 +540,15 @@ export default function GridEntryPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                 <div>
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">pH</label>
+                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">pH</label>
                   <input type="number" step="0.01" value={row.ph} onChange={e => updateRow(i, 'ph', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">OD</label>
+                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">OD</label>
                   <input type="number" step="0.001" value={row.od} onChange={e => updateRow(i, 'od', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Temp °C</label>
+                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Temp °C</label>
                   <input type="number" step="0.1" value={row.incubator_temp_c || ''} onChange={e => updateRow(i, 'incubator_temp_c', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
               </div>
@@ -624,7 +624,7 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
         )}>
           {row.is_adhoc ? (
             <div className="flex items-center gap-1">
-              <span className="text-[10px] font-black text-slate-500">T+</span>
+              <span className="text-xs font-black text-slate-500">T+</span>
               <input
                 type="number"
                 step="0.5"
@@ -634,7 +634,7 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
                 value={row.log_hour}
                 onChange={e => updateRow(idx, 'log_hour', e.target.value)}
               />
-              <span className="text-[10px] font-bold text-slate-400">h</span>
+              <span className="text-xs font-bold text-slate-400">h</span>
             </div>
           ) : (
             <span className={clsx(
@@ -754,7 +754,7 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
         <tr className="bg-amber-50/60">
           <td colSpan={isBatch ? 8 : 7} className="px-3 py-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-xs font-black text-amber-600 uppercase tracking-wider whitespace-nowrap">
                 Skip reason
               </span>
               <select

@@ -195,8 +195,8 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Extract initial pH</label><input type="number" step="0.01" value={exPh} onChange={e=>setExPh(e.target.value)} className="field-input p-2" placeholder="e.g. 6.5"/></div>
           {/* A-36, A-54: Bioactive markers */}
-          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-slate-400 text-[9px]">A-36</span></label><input type="number" step="0.1" value={polyphenolMgG} onChange={e=>setPolyphenolMgG(e.target.value)} className="field-input p-2" placeholder="e.g. 12.5"/></div>
-          <div><label className="field-label">β-Glucan Content (%) <span className="text-slate-400 text-[9px]">A-54</span></label><input type="number" step="0.01" value={betaGlucanPct} onChange={e=>setBetaGlucanPct(e.target.value)} className="field-input p-2" placeholder="e.g. 0.35"/></div>
+          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-slate-400 text-xs">A-36</span></label><input type="number" step="0.1" value={polyphenolMgG} onChange={e=>setPolyphenolMgG(e.target.value)} className="field-input p-2" placeholder="e.g. 12.5"/></div>
+          <div><label className="field-label">β-Glucan Content (%) <span className="text-slate-400 text-xs">A-54</span></label><input type="number" step="0.01" value={betaGlucanPct} onChange={e=>setBetaGlucanPct(e.target.value)} className="field-input p-2" placeholder="e.g. 0.35"/></div>
           <div><label className="field-label">Bioactive Specification</label><input value={extractBioSpec} onChange={e=>setExtractBioSpec(e.target.value)} className="field-input p-2" placeholder="e.g. ≥10mg/g polyphenols"/></div>
             <div className="flex flex-col justify-center">
               <label className="flex items-center gap-2 cursor-pointer mt-4">
@@ -251,7 +251,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
           {/* G-36: Mixing parameters */}
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <p className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Mixing & Integration Parameters</p>
+            <p className="text-xs font-black uppercase text-slate-500 tracking-wider">Mixing & Integration Parameters</p>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="field-label">Mixing Time (min)</label>
                 <input type="number" step="0.5" value={mixingTimeMin} onChange={e=>setMixingTimeMin(e.target.value)} className="field-input p-2" placeholder="e.g. 10"/>
@@ -261,7 +261,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               </div>
             </div>
             {/* G-38: Actual addition temperature */}
-            <div><label className="field-label">Actual Addition Temp (°C) <span className="text-slate-400 font-normal text-[9px]">(measured)</span></label>
+            <div><label className="field-label">Actual Addition Temp (°C) <span className="text-slate-400 font-normal text-xs">(measured)</span></label>
               <input type="number" step="0.1" value={addTempActual} onChange={e=>setAddTempActual(e.target.value)} className="field-input p-2" placeholder="e.g. 24.5"/>
             </div>
             {/* G-37: Blend homogeneity */}
@@ -269,7 +269,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               <div className="flex gap-2">
                 {['Homogeneous','Slight separation','Phase separation observed'].map(o=>(
                   <button key={o} type="button" onClick={()=>setBlendHomogeneity(o)}
-                    className={`flex-1 py-1.5 text-[9px] font-black rounded-lg border transition-all ${blendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${blendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
                     {o}
                   </button>
                 ))}
@@ -290,7 +290,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-amber-900">⚠ Allergen Declaration</span>
-              <span className="text-[10px] text-amber-600 font-semibold">Mandatory before advance — FSSAI requirement</span>
+              <span className="text-xs text-amber-600 font-semibold">Mandatory before advance — FSSAI requirement</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {ALLERGEN_OPTIONS.map(al => (
@@ -309,7 +309,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               <span className="text-xs font-bold text-amber-900">None of the above allergens present in this batch</span>
             </label>
             {(noneAllergens || allergens.length > 0) && (
-              <p className="text-[10px] text-amber-700 font-semibold">
+              <p className="text-xs text-amber-700 font-semibold">
                 Declared: <strong>{noneAllergens ? 'None' : allergens.join(', ')}</strong>
               </p>
             )}

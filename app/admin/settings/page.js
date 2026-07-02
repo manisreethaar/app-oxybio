@@ -41,7 +41,7 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
           </div>
           <div>
             <p className="text-sm font-black text-slate-900">{title}</p>
-            <p className="text-[11px] text-slate-400">{description}</p>
+            <p className="text-xs text-slate-400">{description}</p>
           </div>
         </div>
         {dirty && (
@@ -103,8 +103,8 @@ function OptionsEditor({ title, description, icon: Icon, optionKey, options, onS
           <Plus className="w-3.5 h-3.5" /> Add
         </button>
       </div>
-      <p className="text-[10px] text-slate-400">
-        Press <kbd className="px-1 py-0.5 bg-slate-100 rounded text-slate-500 text-[9px]">Enter</kbd> in the label field or click Add. Edit labels inline. Click Save Changes when done.
+      <p className="text-xs text-slate-400">
+        Press <kbd className="px-1 py-0.5 bg-slate-100 rounded text-slate-500 text-xs">Enter</kbd> in the label field or click Add. Edit labels inline. Click Save Changes when done.
       </p>
     </div>
   );

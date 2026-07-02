@@ -27,7 +27,7 @@ function RetentionBadge({ archivedAt }) {
                 days > 30 ? 'bg-amber-50 text-amber-700 border-amber-200' :
                             'bg-slate-50 text-slate-500 border-slate-200';
   return (
-    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${color}`}>
+    <span className={`text-xs font-black uppercase px-1.5 py-0.5 rounded border ${color}`}>
       {days}d ago{days > 90 ? ' · review' : ''}
     </span>
   );
@@ -129,16 +129,16 @@ function ArchiveMobileCard({ row, tabId, canRestore, onRestore, onDelete }) {
     <div className="mobile-card p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {card.eyebrow && <p className="text-[10px] font-black uppercase tracking-wider text-navy truncate">{card.eyebrow}</p>}
+          {card.eyebrow && <p className="text-xs font-black uppercase tracking-wider text-navy truncate">{card.eyebrow}</p>}
           <h3 className="text-sm font-black text-slate-900 mt-1 line-clamp-2">{card.title}</h3>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {card.issue && <span className="text-[9px] font-black text-red-700 bg-red-50 border border-red-100 rounded px-1.5 py-0.5">ISSUE</span>}
+            {card.issue && <span className="text-xs font-black text-red-700 bg-red-50 border border-red-100 rounded px-1.5 py-0.5">ISSUE</span>}
             <RetentionBadge archivedAt={archivedAt} />
           </div>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Archived</p>
-          <p className="text-[11px] font-bold text-slate-600 mt-1">{formatArchiveDate(archivedAt)}</p>
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">Archived</p>
+          <p className="text-xs font-bold text-slate-600 mt-1">{formatArchiveDate(archivedAt)}</p>
         </div>
       </div>
       <div className="space-y-1">
@@ -334,12 +334,12 @@ export default function ArchivePage() {
           const active = tab === t.id;
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-navy text-white border-navy' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+              className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-navy text-white border-navy' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
             >
               <Icon className="w-3.5 h-3.5"/>
               {t.label}
               {count > 0 && (
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black min-w-[18px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-black min-w-[18px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {count}
                 </span>
               )}
@@ -368,7 +368,7 @@ export default function ArchivePage() {
             <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-xs font-bold text-slate-500 hover:text-slate-700">Clear</button>
           )}
         </div>
-        <p className="text-[10px] font-bold text-slate-400 shrink-0">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</p>
+        <p className="text-xs font-bold text-slate-400 shrink-0">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Content */}
@@ -401,7 +401,7 @@ export default function ArchivePage() {
               <thead className="bg-slate-50">
                 <tr>
                   {['Employee', 'Role', 'ID', 'Email', 'Dept', 'Joined', ''].map(h => (
-                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -427,7 +427,7 @@ export default function ArchivePage() {
           {tab === 'batches' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Batch', 'Recipe', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Batch', 'Recipe', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(b => (
@@ -453,7 +453,7 @@ export default function ArchivePage() {
           {tab === 'formulations' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Name', 'Code', 'Category', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Name', 'Code', 'Category', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(f => (
@@ -475,7 +475,7 @@ export default function ArchivePage() {
           {tab === 'equipment' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Name', 'Model', 'Serial', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Name', 'Model', 'Serial', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(e => (
@@ -497,13 +497,13 @@ export default function ArchivePage() {
           {tab === 'tasks' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Title', 'Priority', 'Assigned To', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Title', 'Priority', 'Assigned To', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(t => (
                   <tr key={t.id} className="hover:bg-slate-50/50">
                     <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[240px] truncate">{t.title}</td>
-                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${t.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-200' : t.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{t.priority}</span></td>
+                    <td className="px-5 py-3"><span className={`text-xs font-black uppercase px-1.5 py-0.5 rounded border ${t.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-200' : t.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{t.priority}</span></td>
                     <td className="px-5 py-3 text-xs text-slate-600">{t.assigned_user?.full_name || '—'}</td>
                     <td className="px-5 py-3 text-xs text-slate-500">{t.creator?.full_name || '—'}</td>
                     <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(t.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={t.archived_at}/></td>
@@ -519,7 +519,7 @@ export default function ArchivePage() {
           {tab === 'lnb' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Title', 'Batch', 'Author', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Title', 'Batch', 'Author', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(e => (
@@ -541,7 +541,7 @@ export default function ArchivePage() {
           {tab === 'inventory' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Name', 'Category', 'Unit', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Name', 'Category', 'Unit', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(i => (
@@ -562,7 +562,7 @@ export default function ArchivePage() {
           {tab === 'shelf_life' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Batch', 'Type', 'Condition', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Batch', 'Type', 'Condition', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(s => (
@@ -584,14 +584,14 @@ export default function ArchivePage() {
           {tab === 'deviations' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Title', 'Source', 'Severity', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Title', 'Source', 'Severity', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(d => (
                   <tr key={d.id} className="hover:bg-slate-50/50">
                     <td className="px-5 py-3 text-sm font-bold text-slate-900 max-w-[240px] truncate">{d.title}</td>
                     <td className="px-5 py-3 text-xs text-slate-600">{d.source || '—'}</td>
-                    <td className="px-5 py-3"><span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${d.severity === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' : d.severity === 'Major' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{d.severity}</span></td>
+                    <td className="px-5 py-3"><span className={`text-xs font-black uppercase px-1.5 py-0.5 rounded border ${d.severity === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' : d.severity === 'Major' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{d.severity}</span></td>
                     <td className="px-5 py-3 text-xs text-slate-500">{d.status}</td>
                     <td className="px-5 py-3 text-xs text-slate-400 flex items-center gap-1.5">{new Date(d.archived_at).toLocaleDateString()} <RetentionBadge archivedAt={d.archived_at}/></td>
                     <td className="px-5 py-3 text-right"><button onClick={() => setConfirmAction({ type: 'restore', item: d, tabId: tab })} className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"><RotateCcw className="w-3 h-3"/>Restore</button></td>
@@ -606,7 +606,7 @@ export default function ArchivePage() {
           {tab === 'capa' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Title', 'Type', 'Status', 'Assigned To', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Title', 'Type', 'Status', 'Assigned To', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(c => (
@@ -628,7 +628,7 @@ export default function ArchivePage() {
           {tab === 'growth_studies' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Title', 'Status', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Title', 'Status', 'Created By', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(g => (
@@ -649,7 +649,7 @@ export default function ArchivePage() {
           {tab === 'research' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Session', 'Batch', 'Panelists', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Session', 'Batch', 'Panelists', 'Status', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(r => (
@@ -671,7 +671,7 @@ export default function ArchivePage() {
           {tab === 'samples' && (
             <table className="hidden md:table min-w-full divide-y divide-gray-100">
               <thead className="bg-slate-50"><tr>
-                {['Label', 'Type', 'Source', 'Batch', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-black text-slate-400 uppercase">{h}</th>)}
+                {['Label', 'Type', 'Source', 'Batch', 'Archived', '', ''].map(h => <th key={h} className="px-5 py-3 text-left text-xs font-black text-slate-400 uppercase">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map(s => (
@@ -698,11 +698,11 @@ export default function ArchivePage() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-sm font-black text-slate-900">{a.employees?.full_name || 'Unknown'}</span>
                       <span className="text-xs text-slate-400">{a.start_time} – {a.end_time}</span>
-                      {a.issue_observed && <span className="text-[9px] font-black text-red-700 bg-red-50 border border-red-100 rounded px-1.5 py-0.5">ISSUE</span>}
+                      {a.issue_observed && <span className="text-xs font-black text-red-700 bg-red-50 border border-red-100 rounded px-1.5 py-0.5">ISSUE</span>}
                       <RetentionBadge archivedAt={a.archived_at}/>
                     </div>
                     <p className="text-xs text-slate-700 line-clamp-2">{a.activity_description}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Archived {new Date(a.archived_at).toLocaleString()}</p>
+                    <p className="text-xs text-slate-400 mt-1">Archived {new Date(a.archived_at).toLocaleString()}</p>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => setConfirmAction({ type: 'restore', item: a, tabId: tab })} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold hover:bg-emerald-100"><RotateCcw className="w-3 h-3"/>Restore</button>

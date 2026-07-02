@@ -477,28 +477,28 @@ export default function AttendancePage() {
                 <TrendingUp className="w-5 h-5 text-slate-600" />
               </div>
               <p className="text-3xl font-black text-slate-800">{weeklyTotalHours}h</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">This Week</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">This Week</p>
             </div>
             <div className="glass-card rounded-2xl p-5">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center mb-4">
                 <Clock className="w-5 h-5 text-slate-600" />
               </div>
               <p className="text-3xl font-black text-slate-800">{myHistory.length}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Logged (30d)</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Logged (30d)</p>
             </div>
             <div className="glass-card rounded-2xl p-5">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               </div>
               <p className="text-3xl font-black text-slate-800">{onTimeCount}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">On Time</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">On Time</p>
             </div>
             <div className="glass-card rounded-2xl p-5">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center mb-4">
                 <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
               <p className="text-3xl font-black text-slate-800">{lateCount}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Late Arrivals</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Late Arrivals</p>
             </div>
           </div>
 
@@ -509,7 +509,7 @@ export default function AttendancePage() {
             ) : (
               <AttendanceChart data={weeklyChartData} />
             )}
-            <div className="flex gap-6 mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex gap-6 mt-4 text-xs font-bold uppercase tracking-wider text-slate-400">
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-600 inline-block"></span> On Time</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 inline-block"></span> Late</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-500 inline-block"></span> Early</span>
@@ -533,7 +533,7 @@ export default function AttendancePage() {
                   </div>
                   <h3 className="text-xl font-black text-slate-800 mb-2">On Approved Leave</h3>
                   <p className="text-xs text-slate-500 font-medium text-center">You have approved leave for today.</p>
-                  <span className="mt-4 px-4 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-black rounded-xl uppercase tracking-widest">Leave Day</span>
+                  <span className="mt-4 px-4 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-black rounded-xl uppercase tracking-widest">Leave Day</span>
                 </div>
               ) : (
               <div className="w-full max-w-xs relative z-10 pt-8">
@@ -559,7 +559,7 @@ export default function AttendancePage() {
             ) : !todayLog.check_out_time ? (
               <div className="w-full max-w-[280px] pt-8">
                 {getShiftStatus(todayLog.check_in_time) && (
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border mb-4 ${getShiftStatus(todayLog.check_in_time).color}`}>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider border mb-4 ${getShiftStatus(todayLog.check_in_time).color}`}>
                     {getShiftStatus(todayLog.check_in_time).label}
                   </span>
                 )}
@@ -567,7 +567,7 @@ export default function AttendancePage() {
                   <div className="absolute inset-[-6px] border-[6px] border-slate-200 rounded-full animate-ping opacity-30"></div>
                   <div className="text-center">
                     <p className="text-4xl font-black text-slate-800 mb-0.5 tabular-nums tracking-tighter">{elapsedHours}<span className="text-xl">h</span></p>
-                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Elapsed</p>
+                    <p className="text-xs font-black text-slate-600 uppercase tracking-[0.2em] mt-1">Elapsed</p>
                   </div>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 flex items-center justify-center gap-3">
@@ -601,11 +601,11 @@ export default function AttendancePage() {
                 <p className="text-sm text-slate-500 mb-8 font-medium">Great work today.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100">
                   <div>
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Total Hours</span>
+                    <span className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Total Hours</span>
                     <span className="text-2xl font-black text-slate-800 tabular-nums">{elapsedHours}h</span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Check Out</span>
+                    <span className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Check Out</span>
                     <span className="text-2xl font-black text-slate-800 tabular-nums">{formatTime(todayLog.check_out_time)}</span>
                   </div>
                 </div>
@@ -636,11 +636,11 @@ export default function AttendancePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {getShiftStatus(log.check_in_time) && (
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getShiftStatus(log.check_in_time).color}`}>
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${getShiftStatus(log.check_in_time).color}`}>
                             {getShiftStatus(log.check_in_time).label}
                           </span>
                         )}
-                        {log.in_geofence && <span className="text-[8px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/>GPS</span>}
+                        {log.in_geofence && <span className="text-xs font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/>GPS</span>}
                       </div>
                     </div>
                   )
@@ -686,7 +686,7 @@ export default function AttendancePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-slate-800 truncate">{emp.full_name}</p>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mt-0.5">{emp.role}</p>
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest truncate mt-0.5">{emp.role}</p>
                       <div className="mt-2.5">
                         {status === 'active' && <span className="text-xs font-bold text-slate-700 bg-slate-50 px-2.5 py-1 rounded inline-flex items-center border border-slate-100"><Clock className="w-3 h-3 mr-1"/> IN: {formatTime(emp.attendance.check_in_time)}</span>}
                         {status === 'completed' && <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded inline-flex items-center border border-slate-200">{emp.attendance.total_hours}h completed</span>}
@@ -695,8 +695,8 @@ export default function AttendancePage() {
                       {status !== 'absent' && (
                         <div className="mt-1.5 flex gap-1 items-center">
                           {emp.attendance?.in_geofence 
-                            ? <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/> GPS Verified</span>
-                            : <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider flex items-center"><AlertCircle className="w-2.5 h-2.5 mr-0.5"/> Manual Override</span>
+                            ? <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center"><MapPin className="w-2.5 h-2.5 mr-0.5"/> GPS Verified</span>
+                            : <span className="text-xs font-bold text-amber-600 uppercase tracking-wider flex items-center"><AlertCircle className="w-2.5 h-2.5 mr-0.5"/> Manual Override</span>
                           }
                         </div>
                       )}
@@ -716,7 +716,7 @@ export default function AttendancePage() {
             <div className="p-5 text-center border-b border-slate-100">
               <h3 className="text-xl font-black text-slate-800">Live Face Verification</h3>
               <p className="text-sm text-slate-500 font-medium mt-1">Keep your face in the oval and move slightly.</p>
-              <div className="mt-2 text-[10px] font-bold text-slate-700 bg-slate-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
+              <div className="mt-2 text-xs font-bold text-slate-700 bg-slate-50 py-1.5 px-3 rounded-full inline-flex items-center uppercase tracking-wider">
                 <MapPin className="w-3 h-3 mr-1" /> GPS Verified ({geoData?.distance}m / {geofence.radius}m)
               </div>
             </div>
@@ -732,7 +732,7 @@ export default function AttendancePage() {
                 faceStatus === 'detected' ? 'border-slate-400' :
                 faceStatus === 'missing' ? 'border-red-400' : 'border-white/40 border-dashed'
               }`} />
-              <div className={`absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+              <div className={`absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                 captureReady ? 'bg-emerald-500 text-white' :
                 faceStatus === 'detected' ? 'bg-slate-500 text-white' :
                 faceStatus === 'missing' ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300'
@@ -741,14 +741,14 @@ export default function AttendancePage() {
               </div>
             </div>
             <div className="px-6 pt-4 pb-1">
-              <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                 <span>Liveness Check</span><span>{livenessProgress}%</span>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-300 ${captureReady ? 'bg-emerald-500' : 'bg-slate-500'}`} style={{ width: `${livenessProgress}%` }} />
               </div>
               {!captureReady && (
-                <p className="text-[10px] text-slate-400 mt-1.5 text-center">
+                <p className="text-xs text-slate-400 mt-1.5 text-center">
                   {faceStatus === 'missing' ? 'Centre your face in the oval' : 'Keep still, then move your head slightly'}
                 </p>
               )}

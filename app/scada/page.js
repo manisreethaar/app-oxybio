@@ -88,7 +88,7 @@ export default function ScadaDashboardPage() {
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">SCADA / Sensor Streams</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time sensor data ingestion · POST endpoint: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">/api/scada</code>
+            Real-time sensor data ingestion · POST endpoint: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">/api/scada</code>
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -107,7 +107,7 @@ export default function ScadaDashboardPage() {
       <div className="card p-5 bg-slate-50 space-y-2">
         <p className="text-xs font-black text-slate-700 uppercase tracking-wider">Device Integration</p>
         <p className="text-xs text-slate-600 font-semibold">Send POST requests to <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">/api/scada</code> with header <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">Authorization: Bearer {'{CRON_SECRET}'}</code></p>
-        <pre className="bg-white p-3 rounded-lg border border-slate-200 text-[10px] font-mono text-slate-700 overflow-x-auto">{`// Example: pH controller POST
+        <pre className="bg-white p-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-700 overflow-x-auto">{`// Example: pH controller POST
 {
   "equipment_id": "<uuid from Equipment module>",
   "batch_id": "<optional batch uuid>",
@@ -158,12 +158,12 @@ export default function ScadaDashboardPage() {
             <div key={type} className={`card p-4 ${latest ? 'border-l-4 border-l-slate-500' : ''}`}>
               <div className="flex items-center gap-2 mb-2">
                 <Icon className={`w-4 h-4 ${latest ? 'text-slate-600' : 'text-slate-300'}`}/>
-                <span className="text-[10px] font-black uppercase text-slate-500">{type}</span>
+                <span className="text-xs font-black uppercase text-slate-500">{type}</span>
               </div>
               {latest ? (
                 <>
                   <p className="text-2xl font-black text-slate-900 tabular-nums">{latest.sensor_value}<span className="text-sm font-semibold text-slate-400 ml-1">{latest.unit}</span></p>
-                  <p className="text-[10px] text-slate-400 mt-1">{latest.equipment?.name || 'Unknown'} · {age === 0 ? 'Just now' : `${age}m ago`}</p>
+                  <p className="text-xs text-slate-400 mt-1">{latest.equipment?.name || 'Unknown'} · {age === 0 ? 'Just now' : `${age}m ago`}</p>
                 </>
               ) : (
                 <p className="text-sm text-slate-300 font-bold">No data</p>
@@ -189,17 +189,17 @@ export default function ScadaDashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[500px] text-xs">
               <thead><tr className="bg-slate-50">
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Timestamp</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Equipment</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Sensor</th>
-                <th className="px-4 py-2 text-right font-black text-slate-400 uppercase text-[9px]">Value</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Timestamp</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Equipment</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Sensor</th>
+                <th className="px-4 py-2 text-right font-black text-slate-400 uppercase text-xs">Value</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {streams.slice(0, 100).map(s => (
                   <tr key={s.id} className="hover:bg-slate-50/30">
                     <td className="px-4 py-2 text-slate-500 whitespace-nowrap font-mono">{new Date(s.timestamp).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</td>
                     <td className="px-4 py-2 font-semibold text-slate-700">{s.equipment?.name || '—'}</td>
-                    <td className="px-4 py-2"><span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-[9px] font-black">{s.sensor_type}</span></td>
+                    <td className="px-4 py-2"><span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-xs font-black">{s.sensor_type}</span></td>
                     <td className="px-4 py-2 text-right font-black text-slate-900 tabular-nums">{s.sensor_value} <span className="text-slate-400 font-semibold">{s.unit}</span></td>
                   </tr>
                 ))}

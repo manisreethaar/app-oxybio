@@ -47,7 +47,7 @@ function StatusBadge({ status }) {
     completed: 'bg-slate-50 text-slate-700 border-slate-200',
     analysed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
-  return <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${map[status] || map.setup}`}>{status}</span>;
+  return <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${map[status] || map.setup}`}>{status}</span>;
 }
 
 export default function GrowthStudyDetailPage() {
@@ -339,7 +339,7 @@ export default function GrowthStudyDetailPage() {
   };
 
   const InputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500';
-  const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1';
+  const LabelCls = 'block text-xs font-black text-slate-500 uppercase tracking-wider mb-1';
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading study…</div>;
   if (!data?.study) return <div className="p-8 text-center text-red-500">Study not found.</div>;
@@ -425,16 +425,16 @@ export default function GrowthStudyDetailPage() {
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <StatusBadge status={study.status} />
-            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${isFermentation ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${isFermentation ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
               {isFermentation ? 'Fermentation' : 'Growth Curve'}
             </span>
             {study.study_code && (
-              <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
+              <span className="text-xs font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
                 {study.study_code}
               </span>
             )}
             {isActive && (
-              <span className="text-[10px] font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
+              <span className="text-xs font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
                 T + {elapsed.toFixed(1)}h elapsed
               </span>
             )}
@@ -524,20 +524,20 @@ export default function GrowthStudyDetailPage() {
             ...(study.completed_at ? [{ label: 'Completed', value: new Date(study.completed_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }] : []),
           ].map(({ label, value, mono }) => (
             <div key={label}>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
               <p className={`font-bold text-slate-700 ${mono ? 'font-mono' : ''}`}>{value}</p>
             </div>
           ))}
         </div>
         {study.objective && (
           <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
             <p className="text-xs font-medium text-slate-600 italic">{study.objective}</p>
           </div>
         )}
         {study.notes && (
           <div className="mt-3">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Notes</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Notes</p>
             <p className="text-xs font-medium text-slate-600">{study.notes}</p>
           </div>
         )}
@@ -587,10 +587,10 @@ export default function GrowthStudyDetailPage() {
                         </p>
                         {/* 2A: Inline overdue badge */}
                         {isOverdue && (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">OVERDUE</span>
+                          <span className="text-xs font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">OVERDUE</span>
                         )}
                       </div>
-                      <p className="text-[9px] text-slate-400 font-medium truncate">
+                      <p className="text-xs text-slate-400 font-medium truncate">
                         {tp.sample_types.map(t => t.replace(/_/g, ' ')).join(' · ')}
                       </p>
                     </div>
@@ -600,7 +600,7 @@ export default function GrowthStudyDetailPage() {
                           if (tp.sample_types.includes('od_ph') || tp.sample_types.includes('biochemistry')) openMeasurementModal(tp);
                           else openPlateModal(tp);
                         }}
-                        className="text-[10px] font-black text-slate-600 hover:text-slate-800 shrink-0"
+                        className="text-xs font-black text-slate-600 hover:text-slate-800 shrink-0"
                       >
                         Record
                       </button>
@@ -622,13 +622,13 @@ export default function GrowthStudyDetailPage() {
                   <div key={obs.id} className="bg-white/60 border border-white rounded-xl p-3">
                     <div className="flex justify-between items-start">
                       <span className="text-xs font-black text-slate-700">T+{obs.time_point_hours}h — {obs.observation_type === 'sterility' ? 'Sterility' : 'Colony Count'}</span>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                      <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
                         {obs.result || 'pending'}
                       </span>
                     </div>
-                    {obs.plate_media && <p className="text-[10px] text-slate-400 mt-0.5">{obs.plate_media} {obs.dilution ? `· ${obs.dilution}` : ''}</p>}
+                    {obs.plate_media && <p className="text-xs text-slate-400 mt-0.5">{obs.plate_media} {obs.dilution ? `· ${obs.dilution}` : ''}</p>}
                     {obs.colony_count !== null && obs.colony_count !== undefined && (
-                      <p className="text-[10px] text-slate-500 font-medium mt-0.5">{obs.colony_count} CFU</p>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">{obs.colony_count} CFU</p>
                     )}
                   </div>
                 ))}
@@ -658,7 +658,7 @@ export default function GrowthStudyDetailPage() {
                     {study.cell_bank_vials.freezer_id}{study.cell_bank_vials.rack ? ` · Rack ${study.cell_bank_vials.rack}` : ''}{study.cell_bank_vials.position ? ` · Pos ${study.cell_bank_vials.position}` : ''}
                   </p>
                 )}
-                <span className="inline-block text-[9px] font-black px-1.5 py-0.5 rounded border bg-red-50 text-red-600 border-red-200">Used</span>
+                <span className="inline-block text-xs font-black px-1.5 py-0.5 rounded border bg-red-50 text-red-600 border-red-200">Used</span>
               </div>
             </div>
           )}
@@ -692,11 +692,11 @@ export default function GrowthStudyDetailPage() {
               <div className="flex gap-2 flex-wrap">
                 {availableLines.map(l => (
                   <button key={l.key} onClick={() => setShowLines(prev => prev.includes(l.key) ? prev.filter(k => k !== l.key) : [...prev, l.key])}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${showLines.includes(l.key) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-colors ${showLines.includes(l.key) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}
                   >{l.label}</button>
                 ))}
                 <button onClick={() => setLogScale(p => !p)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${logScale ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-400 border-slate-200'}`}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-colors ${logScale ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-400 border-slate-200'}`}
                 >log₁₀</button>
               </div>
             </div>
@@ -719,9 +719,9 @@ export default function GrowthStudyDetailPage() {
                   { label: 'Peak OD', value: kinetics.peakOD, desc: `OD${study.od_wavelength || 600} maximum`, color: 'emerald' },
                 ].map(({ label, value, desc, color }) => (
                   <div key={label} className={`p-4 bg-${color}-50 border border-${color}-100 rounded-xl`}>
-                    <p className={`text-[9px] font-black uppercase tracking-wider text-${color}-500 mb-1`}>{label}</p>
+                    <p className={`text-xs font-black uppercase tracking-wider text-${color}-500 mb-1`}>{label}</p>
                     <p className={`text-xl font-black text-${color}-800 tabular-nums`}>{value}</p>
-                    <p className={`text-[9px] text-${color}-400 font-semibold mt-0.5`}>{desc}</p>
+                    <p className={`text-xs text-${color}-400 font-semibold mt-0.5`}>{desc}</p>
                   </div>
                 ))}
               </div>
@@ -729,9 +729,9 @@ export default function GrowthStudyDetailPage() {
               {kinetics.ms && (
                 <div className="mt-3 pt-3 border-t border-slate-100">
                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
                     <p className="text-xl font-black text-slate-800 tabular-nums">{kinetics.ms}</p>
-                    <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
+                    <p className="text-xs text-slate-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
                   </div>
                 </div>
               )}
@@ -741,16 +741,16 @@ export default function GrowthStudyDetailPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
                   {kinetics.ks && (
                     <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-amber-500 mb-1">Ks (g/L)</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-amber-500 mb-1">Ks (g/L)</p>
                       <p className="text-xl font-black text-amber-800 tabular-nums">{kinetics.ks}</p>
-                      <p className="text-[9px] text-amber-400 font-semibold mt-0.5">Half-saturation constant</p>
+                      <p className="text-xs text-amber-400 font-semibold mt-0.5">Half-saturation constant</p>
                     </div>
                   )}
                   {kinetics.yxs && (
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Yx/s (g/g)</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Yx/s (g/g)</p>
                       <p className="text-xl font-black text-slate-800 tabular-nums">{kinetics.yxs}</p>
-                      <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
                     </div>
                   )}
                 </div>
@@ -762,7 +762,7 @@ export default function GrowthStudyDetailPage() {
                   <p className="text-red-700 font-semibold">OD is declining in the last 3 readings — culture has entered the death/decline phase. Harvest immediately if not already done.</p>
                 </div>
               )}
-              <p className="text-[9px] text-slate-400 font-semibold mt-3">
+              <p className="text-xs text-slate-400 font-semibold mt-3">
                 Calculated from {kinetics.dataPoints} OD data points · µ = (ln OD₂ − ln OD₁) / (t₂ − t₁) per interval
               </p>
             </div>
@@ -779,7 +779,7 @@ export default function GrowthStudyDetailPage() {
                   <thead>
                     <tr className="border-b border-slate-100">
                       {['Study', 'Status', 'Media', 'Temp', 'Date', ''].map(h => (
-                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-[9px]">{h}</th>
+                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-xs">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -788,7 +788,7 @@ export default function GrowthStudyDetailPage() {
                       <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                         <td className="py-2 pr-4 font-bold text-slate-800">{s.study_code || s.name}</td>
                         <td className="py-2 pr-4">
-                          <span className={`px-1.5 py-0.5 text-[9px] font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`px-1.5 py-0.5 text-xs font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-500'}`}>
                             {s.status}
                           </span>
                         </td>
@@ -796,7 +796,7 @@ export default function GrowthStudyDetailPage() {
                         <td className="py-2 pr-4 text-slate-500">{s.temperature_c ? `${s.temperature_c}°C` : '—'}</td>
                         <td className="py-2 pr-4 text-slate-400">{s.created_at ? new Date(s.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '—'}</td>
                         <td className="py-2">
-                          <a href={`/growth-studies/${s.id}`} className="text-[9px] font-black text-slate-600 hover:underline">View →</a>
+                          <a href={`/growth-studies/${s.id}`} className="text-xs font-black text-slate-600 hover:underline">View →</a>
                         </td>
                       </tr>
                     ))}
@@ -835,7 +835,7 @@ export default function GrowthStudyDetailPage() {
                   <thead>
                     <tr className="border-b border-slate-100">
                       {['Hour', `OD${study.od_wavelength || 600}`, 'pH', 'Temp (°C)', 'Glucose (g/L)', 'Protein (mg/mL)', ...(isFermentation ? ['DO%'] : []), 'Turbidity', 'Notes', ''].map(h => (
-                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-[9px] whitespace-nowrap">{h}</th>
+                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-xs whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -887,13 +887,13 @@ export default function GrowthStudyDetailPage() {
                       <span className="text-xs font-bold text-slate-500">T+{m.actual_hour}h</span>
                       <div className="flex items-center gap-1.5">
                         {m.recorder && <CreatorBadge initials={m.recorder.initials} fullName={m.recorder.full_name} size="sm"/>}
-                        <span className="text-[10px] text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                        <span className="text-xs text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div><p className="text-[10px] text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
-                      <div><p className="text-[10px] text-slate-400 font-bold">pH</p><p className="text-sm font-bold text-slate-700">{m.ph_value ?? '—'}</p></div>
-                      <div><p className="text-[10px] text-slate-400 font-bold">Temp</p><p className="text-sm font-bold text-slate-700">{m.temperature_actual_c ? `${m.temperature_actual_c}°C` : '—'}</p></div>
+                      <div><p className="text-xs text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
+                      <div><p className="text-xs text-slate-400 font-bold">pH</p><p className="text-sm font-bold text-slate-700">{m.ph_value ?? '—'}</p></div>
+                      <div><p className="text-xs text-slate-400 font-bold">Temp</p><p className="text-sm font-bold text-slate-700">{m.temperature_actual_c ? `${m.temperature_actual_c}°C` : '—'}</p></div>
                     </div>
                   </div>
                 ))}
@@ -953,7 +953,7 @@ export default function GrowthStudyDetailPage() {
                     </div>
                   </div>
                   <details className="group">
-                    <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-slate-600 transition-colors list-none flex items-center gap-1">
+                    <summary className="text-xs font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-slate-600 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span> More fields
                     </summary>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -987,7 +987,7 @@ export default function GrowthStudyDetailPage() {
                   {/* A-42: VFA profile (for heterofermenters) */}
                   {(study?.study_type === 'fermentation' || study?.study_type === 'vfa_profile') && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
-                      <p className="text-[10px] font-black uppercase text-red-800">A-42 VFA Profile (mmol/L)</p>
+                      <p className="text-xs font-black uppercase text-red-800">A-42 VFA Profile (mmol/L)</p>
                       <div className="grid grid-cols-3 gap-2">
                         <div><label className={LabelCls}>Acetate</label><input className={InputCls} type="number" step="0.01" value={mForm.acetate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, acetate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
                         <div><label className={LabelCls}>Propionate</label><input className={InputCls} type="number" step="0.01" value={mForm.propionate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, propionate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
@@ -998,7 +998,7 @@ export default function GrowthStudyDetailPage() {
                   {/* A-43: Temperature optima study — multiple temp readings */}
                   {study?.study_type === 'temperature_optima' && (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                      <p className="text-[10px] font-black uppercase text-amber-800 mb-2">A-43 Temperature Optima — Test Temp</p>
+                      <p className="text-xs font-black uppercase text-amber-800 mb-2">A-43 Temperature Optima — Test Temp</p>
                       <div><label className={LabelCls}>Test Temperature (°C)</label>
                         <input className={InputCls} type="number" step="0.5" value={mForm.test_temperature_c || ''} onChange={e => setMForm(f => ({ ...f, test_temperature_c: e.target.value }))} placeholder="e.g. 30, 37, 42"/>
                       </div>
@@ -1106,7 +1106,7 @@ export default function GrowthStudyDetailPage() {
                 <>
                   {/* Study identity */}
                   <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Study</p>
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Study</p>
                     <p className="font-black text-slate-800">{study.name}</p>
                     {study.study_code && <p className="text-xs font-mono text-slate-500 mt-0.5">{study.study_code}</p>}
                   </div>
@@ -1114,14 +1114,14 @@ export default function GrowthStudyDetailPage() {
                   {/* Vial section */}
                   {startInfo?.has_vial && startInfo?.vial ? (
                     <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Vial to be used</p>
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Vial to be used</p>
                       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
                         <TestTube2 className="w-4 h-4 text-slate-600 shrink-0" />
                         <div>
                           <p className="text-sm font-black text-slate-800 font-mono">{startInfo.vial.vial_code}</p>
                           <p className="text-xs text-slate-500">{startInfo.vial.storage_temp || ''}{startInfo.vial.freezer_id ? ` · ${startInfo.vial.freezer_id}` : ''}</p>
                         </div>
-                        <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded border bg-slate-50 text-slate-700 border-slate-200">→ Will be marked Used</span>
+                        <span className="ml-auto text-xs font-black px-1.5 py-0.5 rounded border bg-slate-50 text-slate-700 border-slate-200">→ Will be marked Used</span>
                       </div>
                     </div>
                   ) : startInfo?.has_vial && !startInfo?.vial ? (
@@ -1133,7 +1133,7 @@ export default function GrowthStudyDetailPage() {
                   {/* Ingredients / lot selection */}
                   {startInfo?.has_formulation && startInfo?.ingredients?.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
                         Media ingredients — scaled to {study.volume_ml} mL
                       </p>
                       <div className="space-y-3">
@@ -1146,7 +1146,7 @@ export default function GrowthStudyDetailPage() {
                               </span>
                             </div>
                             {ing.available_lots.length === 0 ? (
-                              <p className="text-[10px] text-red-600 font-bold">No available lots — proceed without deduction or restock first.</p>
+                              <p className="text-xs text-red-600 font-bold">No available lots — proceed without deduction or restock first.</p>
                             ) : (
                               <select
                                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white"
@@ -1170,7 +1170,7 @@ export default function GrowthStudyDetailPage() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium mt-2">Skipped ingredients will not be deducted from inventory.</p>
+                      <p className="text-xs text-slate-400 font-medium mt-2">Skipped ingredients will not be deducted from inventory.</p>
                     </div>
                   )}
 
@@ -1182,7 +1182,7 @@ export default function GrowthStudyDetailPage() {
 
                   {/* Actual inoculation time — defaults to now, editable */}
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
                       Actual Inoculation Time
                     </label>
                     <input
@@ -1192,7 +1192,7 @@ export default function GrowthStudyDetailPage() {
                       max={nowDatetimeLocal()}
                       onChange={e => setActualInocTime(e.target.value)}
                     />
-                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                    <p className="text-xs text-slate-400 mt-1 font-medium">
                       Defaults to now. Correct this if you inoculated earlier and are entering data retroactively.
                     </p>
                   </div>
@@ -1335,7 +1335,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Identity ── */}
                 <div className="space-y-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Identity</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Identity</p>
                   <div>
                     <label className={LabelCls}>Study Name *</label>
                     <input className={InputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
@@ -1360,7 +1360,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Isolate ── */}
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
                   <div className="flex gap-3">
                     {[['strain','Cell Bank Strain'],['prep','Preparation / Vial']].map(([v,l]) => (
                       <button key={v} type="button"
@@ -1393,7 +1393,7 @@ export default function GrowthStudyDetailPage() {
                               </option>
                             ))}
                           </select>
-                          <p className="text-[10px] text-slate-400 mt-1">Changing vial restores the previous one to Available.</p>
+                          <p className="text-xs text-slate-400 mt-1">Changing vial restores the previous one to Available.</p>
                         </div>
                       )}
                     </>
@@ -1404,7 +1404,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Media ── */}
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
                   <select className={InputCls} value={editForm.formulation_id} onChange={e => setEditForm(f => ({ ...f, formulation_id: e.target.value, media_name: '' }))}>
                     <option value="">Select from Formulation Library…</option>
                     {editMeta.formulations.map(fm => <option key={fm.id} value={fm.id}>{fm.name} ({fm.code})</option>)}
@@ -1418,7 +1418,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Conditions ── */}
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Vessel Type</label>
@@ -1501,7 +1501,7 @@ export default function GrowthStudyDetailPage() {
             </div>
             <div className="bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-xs font-black text-red-700">{study.study_code} — {study.name}</p>
-              {study.cell_bank_vials && <p className="text-[10px] text-red-500 mt-0.5">Vial {study.cell_bank_vials.vial_code} will be restored to Available.</p>}
+              {study.cell_bank_vials && <p className="text-xs text-red-500 mt-0.5">Vial {study.cell_bank_vials.vial_code} will be restored to Available.</p>}
             </div>
             {deleteErr && <p className="text-xs text-red-600 font-bold">{deleteErr}</p>}
             <div className="flex gap-3">

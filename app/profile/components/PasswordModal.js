@@ -24,7 +24,7 @@ export default function PasswordModal({
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Security Access Control</p>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">New Password</label>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">New Password</label>
             <input
               required type="password"
               value={passwordForm.password}
@@ -33,7 +33,7 @@ export default function PasswordModal({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Confirm Password</label>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Confirm Password</label>
             <input
               required type="password"
               value={passwordForm.confirm}
@@ -43,7 +43,7 @@ export default function PasswordModal({
           </div>
           <button
             disabled={passwordLoading} type="submit"
-            className="w-full py-4 bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-slate-800 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Update Password'}
           </button>

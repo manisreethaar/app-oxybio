@@ -261,7 +261,7 @@ export default function StaffDashboard({ employeeProfile }) {
           <div className="card border-l-4 border-navy p-6 flex flex-col space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">My Active Batches</h2>
-              <span className="bg-navy text-white text-[10px] font-black px-2 py-0.5 rounded">ACTION REQUIRED</span>
+              <span className="bg-navy text-white text-xs font-black px-2 py-0.5 rounded">ACTION REQUIRED</span>
             </div>
             {activeBatches.map(batch => (
               <div key={batch.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-navy transition-all">
@@ -269,7 +269,7 @@ export default function StaffDashboard({ employeeProfile }) {
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Batch {batch.batch_id} · {batch.product_name || 'Generic'}</p>
                   <p className="text-sm font-black text-slate-900">Next: {nextStepMap[batch.current_stage] || 'Monitor Process Status'}</p>
                 </div>
-                <Link href={`/batches/${batch.id}`} className="text-[10px] font-black text-navy bg-white border border-slate-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
+                <Link href={`/batches/${batch.id}`} className="text-xs font-black text-navy bg-white border border-slate-200 px-3 py-2 rounded-lg group-hover:bg-navy group-hover:text-white group-hover:border-navy transition-all">
                   GO TO BATCH
                 </Link>
               </div>
@@ -284,7 +284,7 @@ export default function StaffDashboard({ employeeProfile }) {
               <div className="flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-navy" />
                 <h2 className="text-sm font-black text-slate-900">Active Fermentations</h2>
-                <span className="text-[10px] font-black text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full">{activeFermentations.length}</span>
+                <span className="text-xs font-black text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full">{activeFermentations.length}</span>
               </div>
               <Link href="/batches" className="text-xs font-bold text-slate-500 hover:text-navy transition-colors">View All →</Link>
             </div>
@@ -312,17 +312,17 @@ export default function StaffDashboard({ employeeProfile }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-black text-slate-900 font-mono">{b.batch_id}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">
+                      <p className="text-xs text-slate-400 font-semibold">
                         pH {b.lr?.ph?.toFixed(2) ?? '—'} · Last log: {hrsLabel}
                       </p>
                     </div>
                     {b.hasAlarm && (
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${statusColors.badge} flex items-center gap-1`}>
+                      <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${statusColors.badge} flex items-center gap-1`}>
                         <AlertTriangle className="w-2.5 h-2.5" /> ALARM
                       </span>
                     )}
                     {!b.hasAlarm && (
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${statusColors.badge}`}>
+                      <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${statusColors.badge}`}>
                         {b.hrsSinceLog === null ? 'LOG NOW' : b.status === 'red' ? 'OVERDUE' : b.status === 'amber' ? 'DUE SOON' : 'OK'}
                       </span>
                     )}
@@ -355,7 +355,7 @@ export default function StaffDashboard({ employeeProfile }) {
                     <p className="text-xs text-slate-400 mt-0.5">{act.start_time} – {act.end_time}</p>
                   </div>
                   {act.issue_observed && (
-                    <span className="text-[10px] font-black text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded shrink-0">ISSUE</span>
+                    <span className="text-xs font-black text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded shrink-0">ISSUE</span>
                   )}
                 </li>
               ))}
@@ -403,7 +403,7 @@ export default function StaffDashboard({ employeeProfile }) {
               <Link key={href} href={href} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group">
                 <span className="text-sm font-semibold text-slate-700 group-hover:text-navy">{label}</span>
                 <div className="flex items-center gap-2">
-                  {badge > 0 && <span className="text-[10px] font-black text-white bg-red-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
+                  {badge > 0 && <span className="text-xs font-black text-white bg-red-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
                   <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-navy" />
                 </div>
               </Link>
