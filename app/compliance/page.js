@@ -425,7 +425,7 @@ export default function CompliancePage() {
             )}
           </div>
           {showAuditForm && (
-            <div className="surface p-5 space-y-3 border-l-4 border-l-indigo-500">
+            <div className="card p-5 space-y-3 border-l-4 border-l-indigo-500">
               <h3 className="text-sm font-black text-slate-900">Log Internal Audit</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="field-label">Audit Title *</label><input value={auditForm.audit_title} onChange={e=>setAuditForm(p=>({...p,audit_title:e.target.value}))} className="field-input" placeholder="e.g. Production Area GMP Audit Q2"/></div>
@@ -446,11 +446,11 @@ export default function CompliancePage() {
             </div>
           )}
           {audits.length === 0 ? (
-            <div className="surface p-12 text-center text-slate-400"><ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No internal audit records yet.</p></div>
+            <div className="card p-12 text-center text-slate-400"><ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No internal audit records yet.</p></div>
           ) : (
             <div className="space-y-3">
               {audits.map(a => (
-                <div key={a.id} className="surface p-4 flex items-start gap-4">
+                <div key={a.id} className="card p-4 flex items-start gap-4">
                   <div className="flex-1">
                     <p className="font-black text-slate-900 text-sm">{a.audit_title}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{a.audit_date} · Auditor: {a.employees?.full_name || '—'}</p>
@@ -474,7 +474,7 @@ export default function CompliancePage() {
             </button>
           </div>
           {showComplaintForm && (
-            <div className="surface p-5 space-y-3 border-l-4 border-l-red-500">
+            <div className="card p-5 space-y-3 border-l-4 border-l-red-500">
               <h3 className="text-sm font-black text-slate-900">Log Customer Complaint</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="field-label">Customer Name *</label><input value={complaintForm.customer_name} onChange={e=>setComplaintForm(p=>({...p,customer_name:e.target.value}))} className="field-input" placeholder="Customer / distributor name"/></div>
@@ -494,11 +494,11 @@ export default function CompliancePage() {
             </div>
           )}
           {complaints.length === 0 ? (
-            <div className="surface p-12 text-center text-slate-400"><MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No customer complaints logged.</p></div>
+            <div className="card p-12 text-center text-slate-400"><MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No customer complaints logged.</p></div>
           ) : (
             <div className="space-y-3">
               {complaints.map(c => (
-                <div key={c.id} className={`surface p-4 border-l-4 ${c.status==='Open'?'border-l-red-500':c.status==='Resolved'||c.status==='Closed'?'border-l-emerald-500':'border-l-amber-400'}`}>
+                <div key={c.id} className={`card p-4 border-l-4 ${c.status==='Open'?'border-l-red-500':c.status==='Resolved'||c.status==='Closed'?'border-l-emerald-500':'border-l-amber-400'}`}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-black text-slate-900 text-sm">{c.customer_name}</p>
@@ -527,7 +527,7 @@ export default function CompliancePage() {
             )}
           </div>
           {showMilestoneForm && (
-            <div className="surface p-5 space-y-3 border-l-4 border-l-blue-500">
+            <div className="card p-5 space-y-3 border-l-4 border-l-blue-500">
               <h3 className="text-sm font-black text-slate-900">Add Regulatory Milestone</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="field-label">Milestone Title *</label><input value={milestoneForm.title} onChange={e=>setMilestoneForm(p=>({...p,title:e.target.value}))} className="field-input" placeholder="e.g. FSSAI Licence Renewal"/></div>
@@ -558,14 +558,14 @@ export default function CompliancePage() {
             </div>
           )}
           {milestones.length === 0 ? (
-            <div className="surface p-12 text-center text-slate-400"><Flag className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No regulatory milestones tracked yet.</p></div>
+            <div className="card p-12 text-center text-slate-400"><Flag className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-semibold">No regulatory milestones tracked yet.</p></div>
           ) : (
             <div className="space-y-3">
               {milestones.map(m => {
                 const daysLeft = m.deadline ? differenceInDays(new Date(m.deadline), new Date()) : null;
                 const isOverdue = daysLeft !== null && daysLeft < 0 && m.status !== 'Completed';
                 return (
-                  <div key={m.id} className={`surface p-4 flex items-start gap-4 ${isOverdue?'border-l-4 border-l-red-500':daysLeft !== null && daysLeft <= 30 && m.status!=='Completed'?'border-l-4 border-l-amber-400':''}`}>
+                  <div key={m.id} className={`card p-4 flex items-start gap-4 ${isOverdue?'border-l-4 border-l-red-500':daysLeft !== null && daysLeft <= 30 && m.status!=='Completed'?'border-l-4 border-l-amber-400':''}`}>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">{m.category}</span>

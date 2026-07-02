@@ -433,7 +433,7 @@ function StabilitySection({ prep, prepId, isAdmin, onSaved }) {
   if (!tests) return null;
 
   return (
-    <div className="surface p-5 space-y-3">
+    <div className="card p-5 space-y-3">
       <button onClick={() => setOpen(v => !v)} className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
           <Thermometer className="w-4 h-4 text-slate-600"/>
@@ -887,7 +887,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
   };
 
   return (
-    <div className={`surface p-4 border-l-4 transition-all ${isDone ? 'border-l-emerald-500' : editing ? 'border-l-navy' : 'border-l-gray-200'}`}>
+    <div className={`card p-4 border-l-4 transition-all ${isDone ? 'border-l-emerald-500' : editing ? 'border-l-navy' : 'border-l-gray-200'}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           {isDone
@@ -1095,7 +1095,7 @@ export default function CellBankDetailPage() {
           )}
 
           {/* Progress bar */}
-          <div className="surface p-4">
+          <div className="card p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-slate-700">Progress</p>
               <p className="text-xs font-bold text-slate-500">{completedSteps}/{STEPS.length} steps done</p>
@@ -1122,7 +1122,7 @@ export default function CellBankDetailPage() {
           </div>
 
           {/* Vial Registration -- dedicated section */}
-          <div className="surface p-5 space-y-4 border-l-4 border-l-indigo-400">
+          <div className="card p-5 space-y-4 border-l-4 border-l-indigo-400">
             <div className="flex items-center gap-3">
               <Snowflake className="w-5 h-5 text-slate-600"/>
               <div>

@@ -44,7 +44,7 @@ export default function MyPendingActionsWidget() {
 
   if (loading) {
     return (
-      <div className="surface overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-base font-bold text-slate-900 tracking-tight">My Pending Actions</h2>
         </div>
@@ -59,14 +59,14 @@ export default function MyPendingActionsWidget() {
 
   if (error) {
     return (
-      <div className="surface p-6 text-center text-red-500 font-medium text-sm">
+      <div className="card p-6 text-center text-red-500 font-medium text-sm">
         Failed to load pending actions.
       </div>
     );
   }
 
   return (
-    <div className="surface overflow-hidden flex flex-col h-full">
+    <div className="card overflow-hidden flex flex-col h-full">
       <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
           My Pending Actions

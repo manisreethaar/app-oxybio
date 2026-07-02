@@ -144,7 +144,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 border-l-4 border-l-fuchsia-500">
+      <div className="card p-5 border-l-4 border-l-fuchsia-500">
         <div className="flex items-center gap-2 mb-1">
           <Leaf className="w-5 h-5 text-slate-600"/>
           <h2 className="text-base font-bold text-slate-900">Extract Addition: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
@@ -158,7 +158,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         )}
       </div>
 
-      <div className="surface overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <h3 className="text-sm font-bold text-slate-900">Decoction / Extract Prep</h3>
         </div>
@@ -213,7 +213,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         </div>
       </div>
 
-      <div className="surface overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <h3 className="text-sm font-bold text-slate-900">Integration into Fermentate</h3>
         </div>

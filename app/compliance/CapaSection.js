@@ -180,7 +180,7 @@ export default function CapaSection() {
   if (selected) return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24">
       <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-navy transition-colors"><ArrowLeft className="w-4 h-4"/> Back to NCR Dashboard</button>
-      <div className="surface p-6">
+      <div className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -195,7 +195,7 @@ export default function CapaSection() {
         <p className="text-slate-700 font-medium text-xs leading-relaxed bg-slate-50 rounded-lg p-3 border border-slate-100">{selected.description}</p>
       </div>
 
-      <div className="surface p-6">
+      <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5"><Microscope className="w-4 h-4 text-slate-600"/> Root Cause Analysis</h2>
           {isAdmin && selected.status !== 'Closed' && <button onClick={() => setShowInvestigate(true)} className="px-3 py-1 bg-slate-50 border border-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-100">{investigation ? 'Update' : 'Investigate'}</button>}
@@ -231,7 +231,7 @@ export default function CapaSection() {
         ) : <p className="text-xs text-slate-400 font-medium text-center py-4">No analysis recorded.</p>}
       </div>
 
-      <div className="surface p-6">
+      <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5"><Wrench className="w-4 h-4 text-navy"/> Actions</h2>
           {isAdmin && selected.status !== 'Closed' && <button onClick={() => setShowAction(true)} disabled={!investigation} className="px-3 py-1 bg-navy text-white font-bold rounded-lg text-xs hover:bg-navy-hover disabled:opacity-40"><Plus className="w-3.5 h-3.5 inline"/> Spawn</button>}
@@ -348,7 +348,7 @@ export default function CapaSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[{ label: 'Open NCRs', value: openCount, bg: 'bg-red-50 text-red-600 border-red-100' }, { label: 'Critical', value: criticalCount, bg: 'bg-red-50 text-red-700 border-red-100' }, { label: 'Assigned', value: deviations.filter(d => d.status === 'CAPA Assigned').length, bg: 'bg-amber-50 text-amber-700 border-amber-100' }].map(k => (
-          <div key={k.label} className={`surface p-4 border ${k.bg}`}>
+          <div key={k.label} className={`card p-4 border ${k.bg}`}>
             <p className="text-2xl font-black">{k.value}</p>
             <p className="text-[9px] font-black uppercase tracking-wider mt-1 opacity-80">{k.label}</p>
           </div>
@@ -357,8 +357,8 @@ export default function CapaSection() {
 
       {isAdmin && deviations.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="surface p-4"><h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Severity Breakdown</h3><CapaSeverityChart deviations={deviations} /></div>
-          <div className="surface p-4"><h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Status Breakdown</h3><CapaStatusChart pieData={pieData} /></div>
+          <div className="card p-4"><h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Severity Breakdown</h3><CapaSeverityChart deviations={deviations} /></div>
+          <div className="card p-4"><h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Status Breakdown</h3><CapaStatusChart pieData={pieData} /></div>
         </div>
       )}
 

@@ -293,7 +293,7 @@ export default function ArchivePage() {
   if (authLoading) return <div className="page-container flex items-center justify-center min-h-[50vh] text-slate-400"><Loader2 className="w-5 h-5 animate-spin mr-2"/>Loading...</div>;
   if (!isAdmin) return (
     <div className="page-container">
-      <div className="surface p-8 text-center">
+      <div className="card p-8 text-center">
         <Archive className="w-10 h-10 mx-auto text-slate-300 mb-3"/>
         <p className="text-sm text-slate-500">Only admins, CEO, and CTO can access archived records.</p>
       </div>
@@ -349,7 +349,7 @@ export default function ArchivePage() {
       </div>
 
       {/* Filters */}
-      <div className="surface p-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+      <div className="card p-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
@@ -373,16 +373,16 @@ export default function ArchivePage() {
 
       {/* Content */}
       {loading ? (
-        <div className="surface p-12 text-center text-slate-400 flex items-center justify-center gap-2">
+        <div className="card p-12 text-center text-slate-400 flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin"/> Loading {currentTab?.label}…
         </div>
       ) : filtered.length === 0 ? (
-        <div className="surface p-12 text-center">
+        <div className="card p-12 text-center">
           <Archive className="w-10 h-10 mx-auto text-slate-200 mb-3"/>
           <p className="text-sm text-slate-400">{data.length === 0 ? `No archived ${currentTab?.label?.toLowerCase()}.` : 'No results match your search.'}</p>
         </div>
       ) : (
-        <div className="surface overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="md:hidden p-3 space-y-3">
             {filtered.map(row => (
               <ArchiveMobileCard

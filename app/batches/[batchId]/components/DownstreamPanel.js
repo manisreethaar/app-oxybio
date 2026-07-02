@@ -91,7 +91,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-slate-500">
+      <div className="card p-5 flex items-center gap-3 border-l-4 border-l-slate-500">
         <Layers className="w-5 h-5 text-slate-600"/>
         <div>
           <h2 className="text-base font-bold text-slate-900">Downstream Processing: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
@@ -103,7 +103,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
       </div>
 
       {/* Process steps checklist */}
-      <div className="surface p-5 space-y-3">
+      <div className="card p-5 space-y-3">
         <h3 className="text-sm font-black text-slate-900">Process Steps Completed</h3>
         {PROCESS_STEPS.map(step => (
           <div key={step.key} className={`p-3 rounded-xl border transition-all ${stepsCompleted[step.key] ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
@@ -124,7 +124,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
       </div>
 
       {/* Output specifications */}
-      <div className="surface p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <h3 className="text-sm font-black text-slate-900">Output Specifications</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>

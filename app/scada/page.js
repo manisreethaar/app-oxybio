@@ -104,7 +104,7 @@ export default function ScadaDashboardPage() {
       </div>
 
       {/* API Integration instructions */}
-      <div className="surface p-5 bg-slate-50 space-y-2">
+      <div className="card p-5 bg-slate-50 space-y-2">
         <p className="text-xs font-black text-slate-700 uppercase tracking-wider">Device Integration</p>
         <p className="text-xs text-slate-600 font-semibold">Send POST requests to <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">/api/scada</code> with header <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">Authorization: Bearer {'{CRON_SECRET}'}</code></p>
         <pre className="bg-white p-3 rounded-lg border border-slate-200 text-[10px] font-mono text-slate-700 overflow-x-auto">{`// Example: pH controller POST
@@ -120,7 +120,7 @@ export default function ScadaDashboardPage() {
 
       {/* Manual ingestion form */}
       {showManual && (
-        <div className="surface p-5 border-l-4 border-l-slate-500 space-y-4">
+        <div className="card p-5 border-l-4 border-l-slate-500 space-y-4">
           <h3 className="text-sm font-black text-slate-900">Log Manual Sensor Reading</h3>
           <form onSubmit={handleManualLog} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div><label className="field-label">Equipment *</label>
@@ -155,7 +155,7 @@ export default function ScadaDashboardPage() {
           const Icon = SENSOR_ICONS[type] || Activity;
           const age = latest ? Math.round((Date.now() - new Date(latest.timestamp).getTime()) / 60000) : null;
           return (
-            <div key={type} className={`surface p-4 ${latest ? 'border-l-4 border-l-slate-500' : ''}`}>
+            <div key={type} className={`card p-4 ${latest ? 'border-l-4 border-l-slate-500' : ''}`}>
               <div className="flex items-center gap-2 mb-2">
                 <Icon className={`w-4 h-4 ${latest ? 'text-slate-600' : 'text-slate-300'}`}/>
                 <span className="text-[10px] font-black uppercase text-slate-500">{type}</span>
@@ -174,7 +174,7 @@ export default function ScadaDashboardPage() {
       </div>
 
       {/* Stream log */}
-      <div className="surface overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900">Recent Sensor Readings</h3>
           <button onClick={fetchAll} className="text-xs text-slate-500 hover:text-navy font-bold">Refresh</button>

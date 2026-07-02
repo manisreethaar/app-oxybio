@@ -123,7 +123,7 @@ export default function RegulatoryCalendarPage() {
         ) : filteredMilestones.length === 0 ? (
           <div className="py-16 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm font-medium text-slate-400">No milestones match the current search.</div>
         ) : filteredMilestones.map(m => (
-          <div key={m.id} className="surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all group">
+          <div key={m.id} className="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all group">
             <div className="flex items-center gap-6 flex-1">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${m.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-navy'}`}>
                 {m.status === 'Completed' ? <CheckCircle2 className="w-6 h-6"/> : <CalendarIcon className="w-6 h-6"/>}

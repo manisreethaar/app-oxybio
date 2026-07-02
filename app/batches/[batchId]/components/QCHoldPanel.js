@@ -767,14 +767,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         </div>
       )}
 
-      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-rose-500">
+      <div className="card p-5 flex items-center gap-3 border-l-4 border-l-rose-500">
         <Clock className="w-5 h-5 text-red-600"/>
         <div><h2 className="text-base font-bold text-slate-900">QC Hold: <span className="text-red-600">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-slate-500">All standard tests must be recorded before this trial can be released or rejected.</p></div>
       </div>
 
       {!sample ? (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <h3 className="text-sm font-bold text-slate-900">Create QC Sample Record for {activeFlask.flask_label}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Sampling Date</label><input type="date" value={samplingDate} onChange={e=>setSamplingDate(e.target.value)} className="field-input"/></div>
@@ -805,7 +805,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="surface p-4 flex items-center justify-between">
+          <div className="card p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Sample ID</p>
               <p className="text-base font-black font-mono text-slate-900 mt-0.5">{sample.sample_id}</p>
@@ -828,7 +828,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           </div>
 
           {/* Plating & Incubation section */}
-          <div className="surface p-4 border border-slate-100 bg-slate-50/20">
+          <div className="card p-4 border border-slate-100 bg-slate-50/20">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -961,7 +961,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
           {/* External lab result entry */}
           {sample?.testing_location === 'NABL external lab' && (
-            <div className="surface p-4 border border-amber-100 bg-amber-50/20">
+            <div className="card p-4 border border-amber-100 bg-amber-50/20">
               <p className="text-xs font-black text-amber-900 uppercase tracking-wider mb-3">
                 External Lab Results — {sample.external_lab || 'NABL Lab'}
               </p>
@@ -997,7 +997,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           )}
 
           {sample && tests.length === 0 && (
-            <div className="surface p-5 flex flex-col items-center gap-3 border border-amber-200 bg-amber-50/40 text-center">
+            <div className="card p-5 flex flex-col items-center gap-3 border border-amber-200 bg-amber-50/40 text-center">
               <span className="text-3xl">⚠️</span>
               <div>
                 <p className="text-sm font-black text-amber-900">Standard tests are missing</p>
@@ -1015,7 +1015,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
           {/* G-63: Custom test add */}
           {sample && (
-            <div className="surface p-4">
+            <div className="card p-4">
               {showCustomTest ? (
                 <div className="space-y-3">
                   <p className="text-xs font-black text-slate-700">Add Custom Test</p>
@@ -1040,7 +1040,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           )}
 
           {tests.length > 0 && (
-            <div className="surface overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-100">
                   <thead><tr className="bg-slate-50/50">
@@ -1100,13 +1100,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           )}
 
           {!allDone && (
-            <div className="surface p-4 bg-slate-50 flex items-center gap-2 text-xs text-slate-500">
+            <div className="card p-4 bg-slate-50 flex items-center gap-2 text-xs text-slate-500">
               <Lock className="w-4 h-4 text-slate-400"/>
               <span className="font-semibold">{pendingCount} test(s) still pending — all tests must be recorded before trial can be released or rejected.</span>
             </div>
           )}
           {allDone && (
-            <div className="surface p-5 space-y-3">
+            <div className="card p-5 space-y-3">
               {anyFail && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-800">
                   <XCircle className="w-4 h-4 text-red-600"/>{failCount} test(s) FAILED — trial should be rejected unless deviation approved.

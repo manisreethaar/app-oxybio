@@ -115,14 +115,14 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3">
+      <div className="card p-5 flex items-center gap-3">
         <XCircle className="w-5 h-5 text-red-600"/>
         <div><h2 className="text-base font-bold text-slate-900">Trial Rejected: <span className="text-red-500">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-slate-500">Document the root cause for rejection and secure audit trail.</p></div>
       </div>
 
       {record && (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-center">
             <XCircle className="w-8 h-8 text-red-600 mx-auto mb-2"/>
             <p className="text-sm font-black text-red-800">Trial Rejected</p>
@@ -145,7 +145,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       )}
 
       {!record && (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           {!isCeo ? (
             <div className="p-6 bg-slate-50 rounded-2xl text-center">
               <Lock className="w-8 h-8 text-slate-300 mx-auto mb-3"/>

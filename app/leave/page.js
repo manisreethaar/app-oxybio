@@ -208,7 +208,7 @@ export default function LeavePage() {
       </div>
 
       {['admin', 'ceo', 'cto'].includes(role) && pendingLeaves.length > 0 && (
-        <section className="surface p-6 bg-amber-50/30 border-amber-200">
+        <section className="card p-6 bg-amber-50/30 border-amber-200">
           <h2 className="text-base font-bold text-amber-900 mb-6 flex items-center tracking-tight">
             <CalendarOff className="w-5 h-5 mr-2 text-amber-700" /> Approval Queue ({pendingLeaves.length})
           </h2>
@@ -260,7 +260,7 @@ export default function LeavePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1">
-          <div className="surface p-6">
+          <div className="card p-6">
             <h2 className="text-base font-bold text-slate-900 mb-6 tracking-tight">Apply for Leave</h2>
             {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-100 flex items-start"><AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />{errorMsg}</div>}
             <form onSubmit={handleSubmit(handleApplyForm)} className="space-y-4">
@@ -331,7 +331,7 @@ export default function LeavePage() {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="surface overflow-hidden flex flex-col h-full">
+          <div className="card overflow-hidden flex flex-col h-full">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <h2 className="text-base font-bold text-slate-900 tracking-tight">Leave Ledger</h2>
             </div>

@@ -436,7 +436,7 @@ export default function BatchDetailPage() {
       )}
 
       {overtimeFlasksComputed.length > 0 && (
-        <div className="surface p-4 bg-amber-50 border-amber-300 border flex items-center gap-3 mb-4">
+        <div className="card p-4 bg-amber-50 border-amber-300 border flex items-center gap-3 mb-4">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0"/>
           <div>
             <p className="text-sm font-bold text-amber-800">Fermentation overtime: {overtimeFlasksComputed.map(f => f.label).join(', ')}</p>
@@ -446,7 +446,7 @@ export default function BatchDetailPage() {
       )}
 
       {/* Batch Header — always at top on all screen sizes */}
-      <div className="surface p-4 md:p-5">
+      <div className="card p-4 md:p-5">
         <div className="flex items-start justify-between mb-3">
           <div>
             <p className="font-mono text-lg font-black text-slate-900 tracking-wider">{batch.batch_id}</p>
@@ -515,7 +515,7 @@ export default function BatchDetailPage() {
         <div className="space-y-4 order-2 lg:order-1">
 
           {/* Stage Timeline */}
-          <div className="surface p-4">
+          <div className="card p-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Stage Timeline</p>
             <div className="space-y-0.5">
               {STAGES.filter(s => !['released','rejected'].includes(s.id)).map((stage, idx) => {
@@ -565,7 +565,7 @@ export default function BatchDetailPage() {
           </div>
 
           {/* Flask Cards */}
-          <div className="surface p-4 border-2 border-navy/10 relative overflow-hidden">
+          <div className="card p-4 border-2 border-navy/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-navy/5 rounded-bl-[100px] -z-10"/>
             <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
             <div className="space-y-2">
@@ -596,7 +596,7 @@ export default function BatchDetailPage() {
           </div>
 
           {/* Linked Records (compact — Lab Notebook + BMR only) */}
-          <div className="surface p-4">
+          <div className="card p-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Quick Links</p>
             <div className="space-y-2">
               <Link href={lnbEntryId ? `/lab-notebook/${lnbEntryId}` : '/lab-notebook'} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
@@ -630,7 +630,7 @@ export default function BatchDetailPage() {
           </div>
 
           {/* Stage History */}
-          <div className="surface p-4">
+          <div className="card p-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Stage History</p>
             <div className="space-y-2.5">
               {transitions.length===0 && <p className="text-xs text-slate-400 text-center py-2">No transitions yet.</p>}
@@ -715,7 +715,7 @@ export default function BatchDetailPage() {
           )}
 
           {isScheduled ? (
-            <div className="surface p-8 text-center">
+            <div className="card p-8 text-center">
               <Clock className="w-8 h-8 text-navy mx-auto mb-3" />
               <p className="text-sm font-black text-slate-900 uppercase tracking-wider">Batch Scheduled</p>
               <p className="text-xs text-slate-500 mt-1 mb-5">Start this batch when production begins. The first active stage will be Media Prep.</p>
@@ -747,7 +747,7 @@ export default function BatchDetailPage() {
               />
             </div>
           ) : (
-            <div className="surface p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>
+            <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>
           )}
         </div>
       </div>

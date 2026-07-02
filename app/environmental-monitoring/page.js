@@ -157,7 +157,7 @@ export default function EnvironmentalMonitoringPage() {
           { label: 'Alert Limit',   value: alertCount,    color: 'text-amber-700',   bg: 'bg-amber-50' },
           { label: 'Action Limit',  value: actionCount,   color: 'text-red-700',     bg: 'bg-red-50' },
         ].map(s => (
-          <div key={s.label} className={`surface p-4 ${s.bg} text-center`}>
+          <div key={s.label} className={`card p-4 ${s.bg} text-center`}>
             <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
             <p className="text-xs font-bold text-slate-500 uppercase mt-1">{s.label}</p>
           </div>
@@ -166,7 +166,7 @@ export default function EnvironmentalMonitoringPage() {
 
       {/* Log Sample Form */}
       {showSampleForm && (
-        <div className="surface p-5 border-l-4 border-l-slate-500 space-y-4">
+        <div className="card p-5 border-l-4 border-l-slate-500 space-y-4">
           <h3 className="text-sm font-black text-slate-900 flex items-center gap-2"><Wind className="w-4 h-4 text-slate-600"/>Log EMP Sample</h3>
           <form onSubmit={handleSubmitSample} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -227,7 +227,7 @@ export default function EnvironmentalMonitoringPage() {
 
       {/* Add Location Form */}
       {showLocForm && isAdmin && (
-        <div className="surface p-5 border-l-4 border-l-indigo-500 space-y-4">
+        <div className="card p-5 border-l-4 border-l-indigo-500 space-y-4">
           <h3 className="text-sm font-black text-slate-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-600"/>Add Sampling Location</h3>
           <form onSubmit={handleSubmitLocation} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Location Name *</label><input value={lName} onChange={e => setLName(e.target.value)} className="field-input" placeholder="e.g. LAF-01 Left Corner" required/></div>
@@ -247,7 +247,7 @@ export default function EnvironmentalMonitoringPage() {
 
       {/* Locations summary */}
       {locations.length > 0 && (
-        <div className="surface p-4">
+        <div className="card p-4">
           <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3">Registered Sampling Locations ({locations.length})</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {locations.map(l => (
@@ -264,7 +264,7 @@ export default function EnvironmentalMonitoringPage() {
       )}
 
       {/* Sample log */}
-      <div className="surface overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900">Sample Log</h3>
           <span className="text-xs text-slate-400 font-semibold">{samples.length} total records</span>
