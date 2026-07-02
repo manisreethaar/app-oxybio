@@ -532,10 +532,11 @@ export default function CellBankPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
+      const ts = Date.now();
       const [sRes, pRes, fRes] = await Promise.all([
-        fetch('/api/research/cell-bank?view=strains'),
-        fetch('/api/research/cell-bank?view=preparations'),
-        fetch('/api/formulations'),
+        fetch(`/api/research/cell-bank?view=strains&t=${ts}`),
+        fetch(`/api/research/cell-bank?view=preparations&t=${ts}`),
+        fetch(`/api/formulations?t=${ts}`),
       ]);
       const [sJson, pJson, fJson] = await Promise.all([sRes.json(), pRes.json(), fRes.json()]);
       if (sJson.success) setStrains(sJson.data || []);
