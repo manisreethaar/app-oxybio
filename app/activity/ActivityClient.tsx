@@ -881,11 +881,11 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{isAdmin ? act.employees?.full_name : 'You'}</span>
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
-                    {act.batch_id && <span className="px-2 py-0.5 bg-violet-50 text-violet-700 text-xs font-mono font-bold rounded border border-violet-100">{act.batch_id}</span>}
+                    {act.batch_id && <span className="px-2 py-0.5 bg-slate-100 text-slate-900 text-xs font-mono font-bold rounded border border-slate-200">{act.batch_id}</span>}
                     {act.severity && (
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${
                         act.severity === 'high' ? 'bg-red-50 text-red-700 border-red-100' : 
-                        act.severity === 'normal' ? 'bg-violet-50 text-violet-700 border-violet-100' :
+                        act.severity === 'normal' ? 'bg-slate-100 text-slate-900 border-slate-200' :
                         'bg-slate-50 text-slate-500 border-slate-200'
                       }`}>
                         {act.severity}
@@ -895,7 +895,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/messages?pin_type=activity&pin_id=${act.id}&pin_title=${encodeURIComponent('Activity: ' + (act.activity_description.length > 20 ? act.activity_description.substring(0, 20) + '...' : act.activity_description))}`)}
-                      className="p-1.5 rounded-lg border border-violet-200 text-violet-500 hover:text-violet-700 hover:bg-violet-50"
+                      className="p-1.5 rounded-lg border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
                       title="Discuss activity"
                     >
                       <MessageSquare className="w-3.5 h-3.5"/>
@@ -916,7 +916,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                         <>
                           <button
                             onClick={() => openEditModal(act)}
-                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-violet-600 hover:bg-violet-50 hover:border-violet-200"
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-800 hover:bg-slate-100 hover:border-slate-300"
                             title="Request edit"
                           >
                             <Edit2 className="w-3.5 h-3.5"/>

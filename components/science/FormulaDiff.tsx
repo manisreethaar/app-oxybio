@@ -66,8 +66,8 @@ export default function FormulaDiff({ v1, v2 }) {
           }
 
           return (
-            <div key={key} className="flex items-center justify-between p-2 bg-violet-50 border border-violet-100 rounded-lg text-xs font-bold">
-              <span className="text-violet-900">{key.toUpperCase()}</span>
+            <div key={key} className="flex items-center justify-between p-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold">
+              <span className="text-slate-950">{key.toUpperCase()}</span>
               <span className={diff > 0 ? 'text-emerald-600' : 'text-amber-600'}>
                 {item1.value}{item1.unit} → {item2.value}{item2.unit} ({diff > 0 ? '+' : ''}{diff.toFixed(2)}{item2.unit})
               </span>

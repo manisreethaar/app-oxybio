@@ -1475,7 +1475,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
                 {/* A-09: Vendor qualification badge */}
                 <div className={`ml-1 px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded inline-block ${
-                  vendor.qualification_status === 'Approved' ? 'bg-violet-50 text-violet-700' :
+                  vendor.qualification_status === 'Approved' ? 'bg-slate-100 text-slate-900' :
                   vendor.qualification_status === 'Under Review' ? 'bg-amber-50 text-amber-700' :
                   vendor.qualification_status === 'Suspended' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'
                 }`}>
@@ -1725,9 +1725,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
               {/* A-08: AQL Sampling Plan */}
               {selectedStock.received_quantity && (
-                <div className="mt-2 p-2 bg-violet-50 border border-violet-200 rounded-xl text-[10px]">
-                  <p className="font-black text-violet-800 uppercase mb-0.5">A-08 AQL Level II Incoming Sample Guide</p>
-                  <p className="text-violet-700 font-semibold">
+                <div className="mt-2 p-2 bg-slate-100 border border-slate-300 rounded-xl text-[10px]">
+                  <p className="font-black text-slate-900 uppercase mb-0.5">A-08 AQL Level II Incoming Sample Guide</p>
+                  <p className="text-slate-900 font-semibold">
                     Lot qty: {selectedStock.received_quantity} → Sample: {Math.max(1, Math.round(parseFloat(String(selectedStock.received_quantity)) * 0.1))} units · Accept ≤0 defects · Reject ≥1
                   </p>
                 </div>
@@ -1756,8 +1756,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     />
                   </div>
                   {/* A-45: CoA verification */}
-                  <div className="flex items-center justify-between p-2 bg-violet-50 border border-violet-200 rounded-lg">
-                    <span className="text-[10px] font-black text-violet-800">A-45 CoA Verified</span>
+                  <div className="flex items-center justify-between p-2 bg-slate-100 border border-slate-300 rounded-lg">
+                    <span className="text-[10px] font-black text-slate-900">A-45 CoA Verified</span>
                     <input type="checkbox"
                       defaultChecked={!!selectedStock.coa_url}
                       onChange={async (e) => {
@@ -1768,7 +1768,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         setSelectedStock({ ...selectedStock, coa_url: url });
                         toast.success('CoA URL saved.');
                       }}
-                      className="w-4 h-4 rounded border-violet-300"
+                      className="w-4 h-4 rounded border-slate-400"
                     />
                   </div>
                   {/* A-47: Rejection workflow */}
