@@ -22,9 +22,10 @@ export default function SecureViewerModal({ url, title, onClose }) {
   }, []);
 
   // Determine file type and URL
-  const isPdf = url?.toLowerCase().endsWith('.pdf');
-  const isImage = url?.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-  const isOfficeDoc = url?.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
+  const urlWithoutParams = url?.split('?')[0].split('#')[0];
+  const isPdf = urlWithoutParams?.toLowerCase().endsWith('.pdf');
+  const isImage = urlWithoutParams?.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+  const isOfficeDoc = urlWithoutParams?.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
 
   let viewerUrl = url;
   if (isPdf) {
