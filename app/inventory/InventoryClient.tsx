@@ -70,7 +70,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [registrySearch, setRegistrySearch] = useState('');
   const [registrySort, setRegistrySort] = useState('name');
   const [stockSort, setStockSort] = useState('expiry');
-  const [isSelectMode, setIsSelectMode] = useState(false); // 'name' | 'stock' | 'newest'
+  // removed isSelectMode
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteType, setDeleteType] = useState<'item' | 'vendor'>('item');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -80,7 +80,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
   // Multi-select state
-  const [isSelectMode, setIsSelectMode] = useState(false);
+
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
@@ -252,7 +252,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     // Grouping
     const groups: { [key: string]: any[] } = {};
     result.forEach(item => {
-      const cat = item.category || 'Uncategorized';
+      let cat = item.category || 'UNCATEGORIZED';
+      if (cat.toUpperCase() === 'RAW MATERIAL' || cat.toUpperCase() === 'RAW MATERIALS') cat = 'RAW MATERIALS';
+      else if (cat.toUpperCase() === 'REAGENTS & STAINS') cat = 'REAGENTS & STAINS';
+      else if (cat.toUpperCase() === 'CHEMICALS & BIOCHEMICALS') cat = 'CHEMICALS & BIOCHEMICALS';
+      else cat = cat.toUpperCase();
+      
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(item);
     });
@@ -1091,80 +1096,104 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </button>
               )}
             </div>
-          ) : filteredStock.map((s) => {
-            const risk = getStockRisk(s);
-            
-            return (
-              <div
-                key={s.id}
-                onClick={() => setSelectedStock(s)}
-                className={`bg-white rounded-xl border ${risk.isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} px-4 py-3 hover:shadow-sm hover:border-slate-100 transition-all flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group cursor-pointer`}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${s.inventory_items?.category === 'Raw Material' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {s.inventory_items?.category}
-                    </span>
-                    {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                      <span className={`flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                        <AlertTriangle className="w-3 h-3 mr-1" /> {risk.isOut ? 'Out of Stock' : risk.isExpired ? 'Expired' : risk.isLow ? 'Low Stock' : 'Near Expiry'}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-sm font-black text-slate-950 mb-0.5 leading-tight">{s.inventory_items?.name}</h3>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <Truck className="w-3.5 h-3.5 mr-1.5" /> Lot: <span className="text-slate-900 ml-1">{s.supplier_batch_number || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-slate-900 ml-1">{s.location || 'Central Store'}</span>
-                    </div>
-                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                  </div>
+          ) : (
+            Object.entries(
+              filteredStock.reduce((acc: Record<string, any[]>, s: any) => {
+                let cat = s.inventory_items?.category || 'UNCATEGORIZED';
+                if (cat.toUpperCase() === 'RAW MATERIAL' || cat.toUpperCase() === 'RAW MATERIALS') cat = 'RAW MATERIALS';
+                else if (cat.toUpperCase() === 'REAGENTS & STAINS') cat = 'REAGENTS & STAINS';
+                else if (cat.toUpperCase() === 'CHEMICALS & BIOCHEMICALS') cat = 'CHEMICALS & BIOCHEMICALS';
+                else cat = cat.toUpperCase();
+                
+                if (!acc[cat]) acc[cat] = [];
+                acc[cat].push(s);
+                return acc;
+              }, {})
+            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => (
+              <div key={category} className="space-y-4 pb-4">
+                <div className="flex items-center gap-3 px-2">
+                  <div className="h-px flex-1 bg-gray-100"></div>
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                    {category} ({catStock.length})
+                  </h2>
+                  <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
-
-                <div className="flex flex-row items-center gap-3 sm:gap-4 shrink-0">
-                  <div className="text-right">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
-                    <p className={`text-base font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                      {s.current_quantity}<span className="text-[10px] ml-0.5">{s.inventory_items?.unit}</span>
-                    </p>
-                    {risk.minLevel > 0 && (
-                      <p className="text-[9px] font-bold uppercase text-gray-400">min {risk.minLevel}{s.inventory_items?.unit}</p>
-                    )}
-                  </div>
-                  <div className="hidden sm:block text-right">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Vendor</p>
-                    <p className="text-xs font-black text-gray-700 max-w-[100px] truncate">{s.vendors?.name || 'Local supplier'}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); setSelectedStock(s); }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-800 border border-slate-100 text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all whitespace-nowrap"
-                  >
-                    Details <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              {batchUsageMap[s.id]?.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 pt-3 mt-1 border-t border-gray-50">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Used in:</span>
-                  {batchUsageMap[s.id].map(b => (
-                    <Link
-                      key={b.id}
-                      href={`/batches/${b.id}`}
-                      onClick={e => e.stopPropagation()}
-                      className="px-2 py-0.5 bg-slate-50 text-slate-700 text-[10px] font-black rounded border border-slate-100 hover:bg-slate-100 transition-colors"
+                {catStock.map((s: any) => {
+                  const risk = getStockRisk(s);
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedStock(s)}
+                      className={`bg-white rounded-xl border ${risk.isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} px-4 py-3 hover:shadow-sm hover:border-slate-100 transition-all flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group cursor-pointer`}
                     >
-                      {b.batch_id}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-            );
-          })}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${category === 'RAW MATERIALS' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {category}
+                          </span>
+                          {(risk.isExpired || risk.isExpiring || risk.isLow) && (
+                            <span className={`flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
+                              <AlertTriangle className="w-3 h-3 mr-1" /> {risk.isOut ? 'Out of Stock' : risk.isExpired ? 'Expired' : risk.isLow ? 'Low Stock' : 'Near Expiry'}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-sm font-black text-slate-950 mb-0.5 leading-tight">{s.inventory_items?.name}</h3>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <Truck className="w-3.5 h-3.5 mr-1.5" /> Lot: <span className="text-slate-900 ml-1">{s.supplier_batch_number || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-slate-900 ml-1">{s.location || 'Central Store'}</span>
+                          </div>
+                          <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-row items-center gap-3 sm:gap-4 shrink-0">
+                        <div className="text-right">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
+                          <p className={`text-base font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
+                            {s.current_quantity}<span className="text-[10px] ml-0.5">{s.inventory_items?.unit}</span>
+                          </p>
+                          {risk.minLevel > 0 && (
+                            <p className="text-[9px] font-bold uppercase text-gray-400">min {risk.minLevel}{s.inventory_items?.unit}</p>
+                          )}
+                        </div>
+                        <div className="hidden sm:block text-right">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Vendor</p>
+                          <p className="text-xs font-black text-gray-700 max-w-[100px] truncate">{s.vendors?.name || 'Local supplier'}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(event) => { event.stopPropagation(); setSelectedStock(s); }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-800 border border-slate-100 text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all whitespace-nowrap"
+                        >
+                          Details <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    {batchUsageMap[s.id]?.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 pt-3 mt-1 border-t border-gray-50">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Used in:</span>
+                        {batchUsageMap[s.id].map(b => (
+                          <Link
+                            key={b.id}
+                            href={`/batches/${b.id}`}
+                            onClick={e => e.stopPropagation()}
+                            className="px-2 py-0.5 bg-slate-50 text-slate-700 text-[10px] font-black rounded border border-slate-100 hover:bg-slate-100 transition-colors"
+                          >
+                            {b.batch_id}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            ))
+          )}
           
           {loading ? (
             <div className="space-y-4">
