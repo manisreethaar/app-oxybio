@@ -267,48 +267,47 @@ export default function EquipmentPage() {
           const isNearDue = device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
 
           return (
-            <div key={device.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-slate-950/5 transition-all">
-              <div className={`p-6 ${device.status === 'Operational' ? 'bg-slate-50/50' : 'bg-red-50/50'}`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-slate-800 border border-slate-100">
-                    <Database className="w-6 h-6" />
+            <div key={device.id} className="bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm border-gray-100 hover:border-slate-200 flex flex-col h-full">
+              <div className={`absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity ${device.status === 'Operational' ? 'bg-slate-600' : 'bg-red-500'}`}></div>
+              
+              <div className="flex justify-between items-start mb-2">
+                <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-widest ${device.status === 'Operational' ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-700'}`}>
+                  {device.status}
+                </span>
+                {isAdmin && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button 
+                      onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}
+                      className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm"
+                    >
+                      <Settings className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => setDeletingId(device.id)}
+                      className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest ${device.status === 'Operational' ? 'bg-slate-700 text-white' : 'bg-red-600 text-white'}`}>
-                      {device.status}
-                    </span>
-                    {isAdmin && (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}
-                          className="text-xs font-black text-slate-600 hover:text-slate-800 uppercase tracking-widest bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm transition-all"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => setDeletingId(device.id)}
-                          className="p-1 rounded-lg bg-red-50 text-red-400 hover:text-red-600 transition-all border border-red-100"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <h3 className="text-xl font-black text-slate-950 mb-1 leading-tight">{device.name}</h3>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
-                  {(() => {
-                    const logs = device.calibration_logs || [];
-                    const latest = logs.sort((a, b) => new Date(b.calibration_date || 0) - new Date(a.calibration_date || 0))[0];
-                    return latest?.employees ? (
-                      <CreatorBadge initials={latest.employees.initials} fullName={latest.employees.full_name} />
-                    ) : null;
-                  })()}
-                </div>
+                )}
+              </div>
+              
+              <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight group-hover:text-indigo-800 transition-colors mb-1 line-clamp-2">{device.name}</h3>
+              
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">{device.model || 'Standard Unit'} — {device.serial_number || 'SN-UNKNOWN'}</p>
+                {(() => {
+                  const logs = device.calibration_logs || [];
+                  const latest = logs.sort((a, b) => new Date(b.calibration_date || 0) - new Date(a.calibration_date || 0))[0];
+                  return latest?.employees ? (
+                    <div className="shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <CreatorBadge initials={latest.employees.initials} fullName={latest.employees.full_name} size="sm" />
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
-              <div className="p-6 flex-1 flex flex-col gap-4">
+              <div className="flex-1 flex flex-col gap-4 mt-auto pt-2 border-t border-gray-50">
                 <div className="grid grid-cols-2 gap-3">
                   {device.requires_calibration && (
                     <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
