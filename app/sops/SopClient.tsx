@@ -287,7 +287,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         {filteredSops.length === 0 ? (
           <div className="md:col-span-2 lg:col-span-3 py-16 text-center text-sm font-bold text-gray-400">No SOPs match the current search.</div>
         ) : filteredSops.map((sop: any) => (
-          <div key={sop.id} className={`card p-5 flex flex-col hover:border-gray-300 transition-colors ${!sop.is_acknowledged ? 'border-violet-200 bg-violet-50/10' : ''}`}>
+          <div key={sop.id} className={`card p-5 flex flex-col hover:border-gray-300 transition-colors ${!sop.is_acknowledged ? 'border-slate-300 bg-slate-100/10' : ''}`}>
             <div className="flex justify-between items-start mb-3">
               <span className="font-mono text-xs font-bold tracking-wider text-navy bg-gray-100 px-1.5 py-0.5 rounded-md border border-gray-200">{sop.sop_id}</span>
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{sop.category}</span>
@@ -305,7 +305,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
               )}
               <div className="flex gap-2">
                 {['admin','ceo','cto'].includes(role) && (
-                  <button onClick={() => handleViewSignatures(sop.id)} className="p-1 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-md border border-transparent hover:border-violet-200 transition-colors" title="View Acknowledgements">
+                  <button onClick={() => handleViewSignatures(sop.id)} className="p-1 text-slate-800 hover:text-slate-900 hover:bg-slate-100 rounded-md border border-transparent hover:border-slate-300 transition-colors" title="View Acknowledgements">
                     <Users className="w-4 h-4" />
                   </button>
                 )}
