@@ -308,7 +308,7 @@ export default function EquipmentPage() {
                 </div>
               </div>
 
-              <div className="p-6 flex-1 space-y-4">
+              <div className="p-6 flex-1 flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-3">
                   {device.requires_calibration && (
                     <div className={`p-4 rounded-2xl border ${isCalibrationDue ? 'bg-red-50 border-red-100' : isNearDue ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
@@ -373,27 +373,29 @@ export default function EquipmentPage() {
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <button
-                    disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                    onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setMaintValue('log_type', device.requires_calibration ? 'Calibration' : 'Maintenance'); setIsMaintenanceOpen(true); }}
-                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                      Log Maintenance
-                  </button>
-                  {device.requires_calibration && (
-                    <button 
+                <div className="mt-auto flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
                       disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                      onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setMaintValue('log_type', 'Calibration'); setIsMaintenanceOpen(true); }} 
-                      className="flex-1 py-3 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Calibrate Now
+                      onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setMaintValue('log_type', device.requires_calibration ? 'Calibration' : 'Maintenance'); setIsMaintenanceOpen(true); }}
+                      className="flex-1 py-3 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        Log Maintenance
                     </button>
-                  )}
+                    {device.requires_calibration && (
+                      <button 
+                        disabled={!['admin', 'ceo', 'cto'].includes(role)}
+                        onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setMaintValue('log_type', 'Calibration'); setIsMaintenanceOpen(true); }} 
+                        className="flex-1 py-3 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                          Calibrate Now
+                      </button>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => { setActiveDevice(device); setTicketValue('equipment_id', device.id); setIsTicketOpen(true); }} 
+                    className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Report Issue
+                  </button>
                 </div>
-                <button 
-                  onClick={() => { setActiveDevice(device); setTicketValue('equipment_id', device.id); setIsTicketOpen(true); }} 
-                  className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Report Issue
-                </button>
               </div>
             </div>
           );

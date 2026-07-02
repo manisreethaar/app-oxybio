@@ -1139,11 +1139,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         )}
                       </div>
                       
-                      <h3 className="text-xs font-black text-slate-950 leading-tight mb-0.5 line-clamp-2">{s.inventory_items?.name}</h3>
+                      <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight mb-2 line-clamp-2 group-hover:text-indigo-800 transition-colors">{s.inventory_items?.name}</h3>
                       
-                      <div className="flex flex-col gap-0.5 mb-2 mt-1">
+                      <div className="flex items-center gap-x-4 gap-y-1 mb-2 mt-1 flex-wrap">
                         <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                          <Truck className="w-3 h-3 mr-1" /> Lot: <span className="text-slate-900 ml-1 truncate">{s.supplier_batch_number || 'N/A'}</span>
+                          <Truck className="w-3 h-3 mr-1" /> Lot: <span className="text-slate-900 ml-1 truncate max-w-[80px]">{s.supplier_batch_number || 'N/A'}</span>
                         </div>
                         <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
                           <Calendar className="h-3 w-3 mr-1" /> Exp: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
@@ -1342,7 +1342,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         )}
                       </div>
                       
-                      <h3 className="text-xs font-black text-slate-950 leading-tight">{item.name}</h3>
+                      <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight group-hover:text-indigo-800 transition-colors">{item.name}</h3>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-0.5">
                         {item.unit}{(item as any).hazardous && <span className="ml-1 text-orange-500">⚠</span>}
                       </p>
