@@ -25,7 +25,7 @@ const STEPS = [
 const STABILITY_MONTHS = [3, 6, 12, 24];
 
 const STATUS_COLOR = {
-  'In Progress': 'bg-slate-100 text-slate-700',
+  'In Progress': 'bg-cyan-50 text-cyan-700 border border-cyan-200',
   'Completed':   'bg-emerald-100 text-emerald-700',
   'Discarded':   'bg-red-100 text-red-600',
 };

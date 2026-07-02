@@ -188,7 +188,7 @@ export default function DigitalLnbPage() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      'Draft':         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200">DRAFT</span>,
+      'Draft':         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">DRAFT</span>,
       'Submitted':     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200">SUBMITTED</span>,
       'Countersigned': <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">COUNTERSIGNED</span>,
     };

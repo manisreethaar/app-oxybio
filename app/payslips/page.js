@@ -106,7 +106,7 @@ function StatusPill({ status }) {
     present:      { label: 'Present',  cls: 'bg-emerald-100 text-emerald-700' },
     absent:       { label: 'Absent',   cls: 'bg-red-100 text-red-600' },
     on_leave:     { label: 'Leave',    cls: 'bg-amber-100 text-amber-700' },
-    leave_pending:{ label: 'Pending',  cls: 'bg-slate-100 text-slate-700' },
+    leave_pending:{ label: 'Pending',  cls: 'bg-cyan-50 text-cyan-700 border border-cyan-200' },
     not_applicable: { label: '—',      cls: 'bg-slate-50 text-slate-300' },
   };
   const { label, cls } = map[status] || { label: status, cls: '' };
