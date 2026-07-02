@@ -25,7 +25,7 @@ export default function RecipeFormModal({
   if (!showNew) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 bg-transparent z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
       <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 transition-all">
           <X className="w-5 h-5 text-slate-400"/>

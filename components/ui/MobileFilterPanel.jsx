@@ -14,7 +14,7 @@ export default function MobileFilterPanel({ open, onOpen, onClose, children, sum
         {summary}
       </button>
       {open && (
-        <div className="md:hidden fixed inset-0 z-[170] bg-slate-900/40 backdrop-blur-sm flex items-end" onClick={onClose}>
+        <div className="md:hidden fixed inset-0 z-[170] bg-transparent flex items-end" onClick={onClose}>
           <div
             className="bg-white w-full border-t border-slate-100 shadow-2xl p-4 pb-8 animate-in slide-in-from-bottom duration-200"
             onClick={event => event.stopPropagation()}

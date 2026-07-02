@@ -1083,7 +1083,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── DELETE CONFIRMATION (inline, non-admin) ───────────────── */}
       {requestingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl border border-red-100 max-w-sm w-full p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div>
@@ -1108,7 +1108,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── EDIT REQUEST MODAL (non-admin) ────────────────────────── */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-0 sm:p-4">
           <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 space-y-4 h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div>

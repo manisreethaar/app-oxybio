@@ -221,7 +221,7 @@ export default function BioprocessPage() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-transparent flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <h2 className="text-lg font-black text-slate-900">New Experiment</h2>

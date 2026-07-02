@@ -258,7 +258,7 @@ export default function CapaSection() {
       </div>
 
       {showInvestigate && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4">
           <form onSubmit={handWhy(handleSaveInvestigation)} className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl space-y-4">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-slate-900">Root Cause Analysis</h3><button type="button" onClick={() => setShowInvestigate(false)}><X className="w-4 h-4 text-slate-400"/></button></div>
             
@@ -302,7 +302,7 @@ export default function CapaSection() {
       )}
 
       {showAction && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4">
           <form onSubmit={handAction(handleSpawnAction)} className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl p-6 w-full max-w-sm shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-slate-900">Assign Action</h3><button type="button" onClick={() => setShowAction(false)}><X className="w-4 h-4 text-slate-400"/></button></div>
             <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Type</label><select {...regAction('action_type')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-semibold outline-none">{ACTION_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
@@ -430,7 +430,7 @@ export default function CapaSection() {
       )}
 
       {showRaise && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4">
           <form onSubmit={handRaise(handleRaise)} className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-xl p-6 w-full max-w-md shadow-xl space-y-3">
             <div className="flex items-center justify-between"><h3 className="text-base font-bold text-slate-900 flex items-center gap-1"><FileWarning className="w-4 h-4 text-red-600"/> Raise NCR</h3><button type="button" onClick={() => setShowRaise(false)}><X className="w-4 h-4 text-slate-400"/></button></div>
             <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Title *</label><input {...regRaise('title')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none" />{raiseErrors.title && <p className="text-red-500 text-[10px] mt-1">{raiseErrors.title.message}</p>}</div>

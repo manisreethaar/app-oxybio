@@ -15,7 +15,7 @@ export default function PasswordModal({
   if (!showPasswordModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
       <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200 p-5 md:p-8">
         <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-all">
           <X className="w-5 h-5 text-slate-400"/>

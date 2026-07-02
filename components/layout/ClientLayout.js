@@ -125,7 +125,7 @@ export default function ClientLayout({ children }) {
         <Sidebar />
 
         {/* Main content column */}
-        <div className="flex flex-col flex-1 min-w-0 md:ml-[64px] transition-all duration-300 relative z-10">
+        <div className="flex flex-col flex-1 min-w-0 md:ml-[64px] relative z-10">
           <TopBar />
           {shellExtrasReady && <PushManager />}
 
@@ -178,7 +178,7 @@ export default function ClientLayout({ children }) {
                 </div>
               </div>
             ) : (
-              <div key={pathname} className="animate-page-enter max-w-7xl mx-auto">
+              <div key={pathname} className="max-w-7xl mx-auto">
                 {children}
               </div>
             )}
