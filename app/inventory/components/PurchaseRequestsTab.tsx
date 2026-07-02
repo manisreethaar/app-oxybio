@@ -79,7 +79,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
               <div className="flex items-center gap-3 mb-1">
                 <span className="font-bold text-gray-900">{r.item_name}</span>
                 <span className="text-xs font-black px-2 py-0.5 rounded bg-gray-100 text-gray-600">Qty: {r.requested_quantity} {r.unit}</span>
-                {r.urgency === 'High' && <span className="flex items-center text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded uppercase"><AlertTriangle className="w-3 h-3 mr-1" /> High Urgency</span>}
+                {r.urgency === 'High' && <span className="flex items-center text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded uppercase"><AlertTriangle className="w-3 h-3 mr-1" /> High Urgency</span>}
               </div>
               <p className="text-xs font-semibold text-gray-500 mb-2">Requested by {r.requester?.full_name} • {new Date(r.created_at).toLocaleDateString()}</p>
               {r.reason && <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg italic">"{r.reason}"</p>}
@@ -97,16 +97,16 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
               
               {canApprove && r.status === 'Pending' && (
                 <div className="flex gap-2 mt-2">
-                  <button onClick={() => handleStatus(r.id, 'Approved')} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-[10px] font-black uppercase flex items-center">
+                  <button onClick={() => handleStatus(r.id, 'Approved')} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-black uppercase flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> Approve
                   </button>
-                  <button onClick={() => handleStatus(r.id, 'Rejected')} className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-[10px] font-black uppercase flex items-center">
+                  <button onClick={() => handleStatus(r.id, 'Rejected')} className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-black uppercase flex items-center">
                     <XCircle className="w-3 h-3 mr-1" /> Reject
                   </button>
                 </div>
               )}
               {canApprove && r.status === 'Approved' && (
-                <button onClick={() => handleStatus(r.id, 'Fulfilled')} className="mt-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg text-[10px] font-black uppercase flex items-center">
+                <button onClick={() => handleStatus(r.id, 'Fulfilled')} className="mt-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg text-xs font-black uppercase flex items-center">
                   <ShoppingCart className="w-3 h-3 mr-1" /> Mark Fulfilled
                 </button>
               )}

@@ -389,7 +389,7 @@ export default function FormulationsPage() {
               >
                 {s}
                 {s === 'In Review' && pendingReview.length > 0 && (
-                  <span className="ml-1.5 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{pendingReview.length}</span>
+                  <span className="ml-1.5 bg-amber-500 text-white text-xs font-black px-1.5 py-0.5 rounded-full">{pendingReview.length}</span>
                 )}
               </button>
             ))}
@@ -441,9 +441,9 @@ export default function FormulationsPage() {
                     
                     {/* Top row: version + status badge */}
                     <div className="flex justify-between items-start mb-3">
-                      <span className="px-2 py-0.5 bg-slate-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-slate-100">V{f.version}</span>
+                      <span className="px-2 py-0.5 bg-slate-50 text-navy rounded text-xs font-bold uppercase tracking-wider border border-slate-100">V{f.version}</span>
                       <div className="flex items-center gap-1">
-                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.color}`}>
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${statusCfg.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
                           {statusCfg.label}
                         </span>
@@ -497,7 +497,7 @@ export default function FormulationsPage() {
                               fetchBatchHistory(f.id);
                             }
                           }}
-                          className="inline-flex items-center gap-1 text-[9px] font-bold bg-slate-50 text-slate-700 border border-slate-100 px-2 py-0.5 rounded-full hover:bg-slate-100 transition-colors"
+                          className="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-100 px-2 py-0.5 rounded-full hover:bg-slate-100 transition-colors"
                         >
                           <FlaskConical className="w-2.5 h-2.5"/>
                           {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} {'>'}
@@ -511,10 +511,10 @@ export default function FormulationsPage() {
                     {/* Ingredients */}
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 mb-3">
                       <div className="flex justify-between items-center mb-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ingredients</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Ingredients</p>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-bold text-slate-400">Vol (mL):</span>
-                          <input type="number" value={scaleFactors[f.id] || f.base_volume_ml || 1000} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || f.base_volume_ml || 1000})} step="10" min="1" className="w-16 px-1 py-0.5 text-center border border-slate-200 rounded bg-white text-[10px] font-black"/>
+                          <span className="text-xs font-bold text-slate-400">Vol (mL):</span>
+                          <input type="number" value={scaleFactors[f.id] || f.base_volume_ml || 1000} onChange={e => setScaleFactors({...scaleFactors, [f.id]: parseFloat(e.target.value) || f.base_volume_ml || 1000})} step="10" min="1" className="w-16 px-1 py-0.5 text-center border border-slate-200 rounded bg-white text-xs font-black"/>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -523,7 +523,7 @@ export default function FormulationsPage() {
                           const targetVol = scaleFactors[f.id] || baseVol;
                           const factor = targetVol / baseVol;
                           return (
-                            <span key={idx} className="bg-white px-2 py-0.5 border border-slate-200 rounded text-[10px] font-bold text-slate-700">
+                            <span key={idx} className="bg-white px-2 py-0.5 border border-slate-200 rounded text-xs font-bold text-slate-700">
                               {ing.name}: {((parseFloat(ing.quantity) || 0) * factor).toFixed(2)}{ing.unit}
                             </span>
                           );
@@ -535,7 +535,7 @@ export default function FormulationsPage() {
                     {f.creator && (
                       <div className="flex items-center gap-1.5 mb-2">
                         <CreatorBadge initials={f.creator.initials} fullName={f.creator.full_name} size="sm"/>
-                        <span className="text-[10px] text-slate-400 font-medium">by {f.creator.full_name}</span>
+                        <span className="text-xs text-slate-400 font-medium">by {f.creator.full_name}</span>
                       </div>
                     )}
 
@@ -543,22 +543,22 @@ export default function FormulationsPage() {
                     {f.status === 'Approved' && f.approver && (
                       <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0"/>
-                        <p className="text-[10px] font-bold text-emerald-700">
+                        <p className="text-xs font-bold text-emerald-700">
                           Approved by {f.approver.full_name} · {f.approved_at ? new Date(f.approved_at).toLocaleDateString() : ''}
                         </p>
                       </div>
                     )}
 
                     {f.notes && (
-                      <p className="text-[10px] text-slate-400 italic mb-3 line-clamp-2">&quot;{f.notes}&quot;</p>
+                      <p className="text-xs text-slate-400 italic mb-3 line-clamp-2">&quot;{f.notes}&quot;</p>
                     )}
 
                     {f.rejection_reason && f.status === 'Draft' && (
                       <div className="mb-3 p-3 bg-red-50 border border-red-100 rounded-lg">
-                        <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <p className="text-xs font-black text-red-600 uppercase tracking-widest mb-1 flex items-center gap-1">
                           <XCircle className="w-3 h-3" /> Rejection Remark
                         </p>
-                        <p className="text-[11px] text-red-700 font-medium italic">&quot;{f.rejection_reason}&quot;</p>
+                        <p className="text-xs text-red-700 font-medium italic">&quot;{f.rejection_reason}&quot;</p>
                       </div>
                     )}
 
@@ -569,7 +569,7 @@ export default function FormulationsPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button 
                           onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))}
-                          className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
                             compareIds.includes(f.id) ? 'bg-navy text-white border-navy' : 'bg-white text-slate-400 border-slate-200 hover:border-navy hover:text-navy'
                           }`}
                         >
@@ -578,7 +578,7 @@ export default function FormulationsPage() {
                         </button>
                         <button 
                           onClick={() => handleForwardRevision(f)}
-                          className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-white text-navy border-navy/20 hover:bg-navy/5 transition-all flex items-center justify-center gap-1.5"
+                          className="py-2 rounded-lg text-xs font-black uppercase tracking-widest border bg-white text-navy border-navy/20 hover:bg-navy/5 transition-all flex items-center justify-center gap-1.5"
                         >
                           <Plus className="w-3.5 h-3.5"/> Revision
                         </button>
@@ -591,7 +591,7 @@ export default function FormulationsPage() {
                         <button
                           disabled={isLoading}
                           onClick={() => handleStatusChange(f.id, 'In Review')}
-                          className="w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                         >
                           {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Send className="w-3.5 h-3.5"/>}
                           Submit for Review
@@ -606,7 +606,7 @@ export default function FormulationsPage() {
                               <button
                                 disabled={isLoading}
                                 onClick={() => handleStatusChange(f.id, 'Approved')}
-                                className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                               >
                                 {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <CheckCircle2 className="w-3.5 h-3.5"/>}
                                 Approve
@@ -614,7 +614,7 @@ export default function FormulationsPage() {
                               <button
                                 disabled={isLoading}
                                 onClick={() => handleStatusChange(f.id, 'Draft')}
-                                className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-red-200 bg-white text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-red-200 bg-white text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                               >
                                 <XCircle className="w-3.5 h-3.5"/> Reject
                               </button>
@@ -623,7 +623,7 @@ export default function FormulationsPage() {
                             <button
                                 disabled={isLoading}
                                 onClick={() => handleStatusChange(f.id, 'Draft')}
-                                className="col-span-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="col-span-2 py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
                                 <ArrowRight className="w-3.5 h-3.5 rotate-180"/> Recall to Draft
                             </button>
@@ -636,14 +636,14 @@ export default function FormulationsPage() {
                         <div className={`grid gap-2 ${isApprover ? 'grid-cols-3' : 'grid-cols-1'}`}>
                           <Link
                             href={`/batches?formula_code=${f.code}`}
-                            className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-wide border bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${isApprover ? '' : 'col-span-1'}`}
+                            className={`py-2 rounded-lg text-xs font-black uppercase tracking-wide border bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${isApprover ? '' : 'col-span-1'}`}
                           >
                             Launch Batch
                           </Link>
                           {isApprover && (
                             <button
                               onClick={() => handleArchive(f.id)}
-                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-400 hover:text-amber-600 hover:border-amber-200 transition-all flex items-center justify-center"
+                              className="py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-400 hover:text-amber-600 hover:border-amber-200 transition-all flex items-center justify-center"
                             >
                               Archive
                             </button>
@@ -651,7 +651,7 @@ export default function FormulationsPage() {
                           {isApprover && (
                             <button
                               onClick={() => handleDeleteRecipe(f.id)}
-                              className="py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-400 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1"
+                              className="py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-400 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1"
                             >
                               <Trash2 className="w-3 h-3"/> Delete
                             </button>
@@ -661,7 +661,7 @@ export default function FormulationsPage() {
 
                       {/* Non-approved: Show disabled Launch Batch as hint */}
                       {f.status !== 'Approved' && (
-                        <div className="w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-dashed border-slate-200 text-center text-slate-300 cursor-not-allowed select-none">
+                        <div className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border border-dashed border-slate-200 text-center text-slate-300 cursor-not-allowed select-none">
                           Batch locked until Approved
                         </div>
                       )}
@@ -678,7 +678,7 @@ export default function FormulationsPage() {
                           className="overflow-hidden mt-3"
                         >
                           <div className="border-t border-slate-100 pt-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
                               <History className="w-3 h-3"/> Batch History
                             </p>
                             {!batchHistory[f.id] ? (
@@ -686,7 +686,7 @@ export default function FormulationsPage() {
                                 <Loader2 className="w-4 h-4 animate-spin text-slate-300"/>
                               </div>
                             ) : batchHistory[f.id].length === 0 ? (
-                              <p className="text-[10px] text-slate-400 italic text-center py-2">No batches yet.</p>
+                              <p className="text-xs text-slate-400 italic text-center py-2">No batches yet.</p>
                             ) : (
                               <div className="space-y-1.5">
                                 {batchHistory[f.id].map(b => {
@@ -703,11 +703,11 @@ export default function FormulationsPage() {
                                       href={`/batches/${b.id}`}
                                       className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-navy/30 hover:bg-slate-50/40 transition-all group/batch"
                                     >
-                                      <span className="font-mono text-[10px] font-bold text-slate-800 truncate">{b.batch_id || b.id.slice(0, 8)}</span>
-                                      <span className={`shrink-0 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${bStatusColor}`}>
+                                      <span className="font-mono text-xs font-bold text-slate-800 truncate">{b.batch_id || b.id.slice(0, 8)}</span>
+                                      <span className={`shrink-0 text-xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${bStatusColor}`}>
                                         {b.status || 'Unknown'}
                                       </span>
-                                      <span className="shrink-0 text-[9px] text-slate-400">
+                                      <span className="shrink-0 text-xs text-slate-400">
                                         {b.start_time ? new Date(b.start_time).toLocaleDateString() : '?????"'}
                                       </span>
                                       <ChevronRight className="w-3 h-3 text-slate-300 group-hover/batch:text-navy shrink-0 transition-colors"/>

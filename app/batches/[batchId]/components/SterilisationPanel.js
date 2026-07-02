@@ -219,7 +219,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         <ShieldCheck className="w-5 h-5 text-slate-600"/>
         <div><h2 className="text-base font-bold text-slate-900">Sterilisation</h2>
           <p className="text-xs text-slate-500">CCP — autoclave/pressure cooker record. Pass required to proceed.</p></div>
-        <span className={`ml-auto px-2 py-1 text-[10px] font-black rounded-lg border uppercase ${passFail==='Pass'?'bg-emerald-50 text-emerald-700 border-emerald-200':passFail==='Fail'?'bg-red-50 text-red-700 border-red-200':'bg-slate-100 text-slate-500 border-slate-200'}`}>{passFail}</span>
+        <span className={`ml-auto px-2 py-1 text-xs font-black rounded-lg border uppercase ${passFail==='Pass'?'bg-emerald-50 text-emerald-700 border-emerald-200':passFail==='Fail'?'bg-red-50 text-red-700 border-red-200':'bg-slate-100 text-slate-500 border-slate-200'}`}>{passFail}</span>
       </div>
 
       {passFail === 'Fail' && (
@@ -259,7 +259,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
               <option key={e.id} value={e.id}>{e.name} — {e.status}{e.calibration_due_date&&new Date(e.calibration_due_date)<new Date()?' ⚠ CALIB EXPIRED':''}</option>
             ))}
           </select>
-          {isEquipBad && <p className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Equipment non-compliant — check Equipment module before proceeding.</p>}
+          {isEquipBad && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Equipment non-compliant — check Equipment module before proceeding.</p>}
         </div>
 
         {/* Cycle params */}
@@ -299,7 +299,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">Positive = colour change confirmed = sterilisation indicator passed</p>
+          <p className="text-xs text-slate-400 mt-1">Positive = colour change confirmed = sterilisation indicator passed</p>
         </div>
 
         {/* G-01: Biological Indicator */}
@@ -309,7 +309,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
               <input type="checkbox" checked={biUsed} onChange={e=>setBiUsed(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
               <span className="text-xs font-black text-slate-900">Biological Indicator (BI) used in this cycle</span>
             </label>
-            <span className="text-[10px] text-slate-500 font-semibold ml-1">Geobacillus stearothermophilus spore strip</span>
+            <span className="text-xs text-slate-500 font-semibold ml-1">Geobacillus stearothermophilus spore strip</span>
           </div>
           {biUsed && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -327,7 +327,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
               <div>
                 <label className="field-label text-slate-800">BI Strip Incubation Date</label>
                 <input type="date" value={biIncDate} onChange={e=>setBiIncDate(e.target.value)} className="field-input"/>
-                <p className="text-[9px] text-slate-400 mt-0.5">Incubate at 55–60°C for 48 hrs — record result date</p>
+                <p className="text-xs text-slate-400 mt-0.5">Incubate at 55–60°C for 48 hrs — record result date</p>
               </div>
             </div>
           )}
@@ -345,7 +345,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             <div className="flex gap-2">
               {['Dry saturated','Wet steam','Not checked'].map(o=>(
                 <button key={o} type="button" onClick={()=>setSteamQuality(steamQuality===o?'':o)}
-                  className={`flex-1 py-1.5 text-[9px] font-black rounded-xl border transition-all ${steamQuality===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200'}`}>
+                  className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${steamQuality===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200'}`}>
                   {o}
                 </button>
               ))}
@@ -356,7 +356,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             <div className="flex gap-2">
               {['Pass','Fail','N/A'].map(o=>(
                 <button key={o} type="button" onClick={()=>setCondensateCheck(condensateCheck===o?'':o)}
-                  className={`flex-1 py-1.5 text-[9px] font-black rounded-xl border transition-all ${condensateCheck===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
+                  className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${condensateCheck===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
                   {o}
                 </button>
               ))}
@@ -367,7 +367,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         {/* G-59: Cooling time */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="field-label">Cooling Time (min) <span className="text-slate-400 text-[9px]">autoclave end → LAF transfer</span></label>
+            <label className="field-label">Cooling Time (min) <span className="text-slate-400 text-xs">autoclave end → LAF transfer</span></label>
             <input type="number" step="1" value={coolingMin} onChange={e=>setCoolingMin(e.target.value)} className="field-input" placeholder="e.g. 30"/>
           </div>
         </div>
@@ -404,7 +404,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
         {/* Pass / Fail — gate */}
         <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
-          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-2">
+          <label className="block text-xs font-black uppercase tracking-wider text-slate-600 mb-2">
             Overall Result <span className="text-red-500">★ Gate — Fail blocks advance to Inoculation</span>
           </label>
           <div className="flex gap-3">
@@ -416,17 +416,17 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             ))}
           </div>
           {passFail === 'Fail' && !capaDevId && (
-            <p className="text-[10px] text-red-600 font-bold mt-2">Saving will auto-raise a CAPA deviation record.</p>
+            <p className="text-xs text-red-600 font-bold mt-2">Saving will auto-raise a CAPA deviation record.</p>
           )}
         </div>
 
         {/* A-48: IQ/OQ/PQ validation document linkage */}
         {selectedEquip && (
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-            <p className="font-black text-slate-700 uppercase text-[10px] mb-1">Equipment Validation Status (A-48)</p>
+            <p className="font-black text-slate-700 uppercase text-xs mb-1">Equipment Validation Status (A-48)</p>
             <div className="flex flex-wrap gap-3">
               {[['IQ','iq_doc_url'],['OQ','oq_doc_url'],['PQ','pq_doc_url']].map(([label, field]) => (
-                <span key={label} className={`px-2 py-1 rounded-lg border text-[10px] font-black ${selectedEquip[field] ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                <span key={label} className={`px-2 py-1 rounded-lg border text-xs font-black ${selectedEquip[field] ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
                   {label}: {selectedEquip[field] ? '✓' : 'Missing'}
                   {selectedEquip[field] && <a href={selectedEquip[field]} target="_blank" rel="noreferrer" className="ml-1 underline">View</a>}
                 </span>
@@ -440,7 +440,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
         {/* A-28: Autoclave load configuration */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-slate-700">Load Configuration <span className="text-slate-400 font-semibold text-[10px]">(A-28 — affects heat penetration)</span></p>
+          <p className="text-xs font-black text-slate-700">Load Configuration <span className="text-slate-400 font-semibold text-xs">(A-28 — affects heat penetration)</span></p>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="field-label">Total Load Volume (ml)</label><input type="number" value={loadTotalVol} onChange={e=>setLoadTotalVol(e.target.value)} className="field-input" placeholder="e.g. 750"/></div>
             <div><label className="field-label">Flask Sizes (comma-separated)</label><input value={flaskSizes} onChange={e=>setFlaskSizes(e.target.value)} className="field-input" placeholder="e.g. 250ml, 500ml, 100ml"/></div>

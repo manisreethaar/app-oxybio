@@ -113,7 +113,7 @@ export default function GlobalSearch() {
             onKeyDown={handleKeyDown}
             className="flex-1 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 bg-transparent"
           />
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 rounded">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 rounded">
             ESC
           </kbd>
           <button onClick={() => setOpen(false)} className="p-1 text-slate-300 hover:text-slate-500 transition-colors">
@@ -147,7 +147,7 @@ export default function GlobalSearch() {
           )}
         </div>
 
-        <div className="px-4 py-2 border-t border-slate-50 flex items-center gap-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+        <div className="px-4 py-2 border-t border-slate-50 flex items-center gap-4 text-xs font-bold text-slate-300 uppercase tracking-widest">
           <span>↑↓ Navigate</span>
           <span>↵ Open</span>
           <span>Esc Close</span>

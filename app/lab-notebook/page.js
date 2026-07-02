@@ -188,9 +188,9 @@ export default function DigitalLnbPage() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      'Draft':         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">DRAFT</span>,
-      'Submitted':     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200">SUBMITTED</span>,
-      'Countersigned': <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">COUNTERSIGNED</span>,
+      'Draft':         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">DRAFT</span>,
+      'Submitted':     <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200">SUBMITTED</span>,
+      'Countersigned': <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">COUNTERSIGNED</span>,
     };
     return badges[status] || null;
   };
@@ -327,7 +327,7 @@ export default function DigitalLnbPage() {
                     {getStatusBadge(entry.status)}
                     <span className="text-xs font-bold text-slate-400">{new Date(entry.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     {entry.attachment_url && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                      <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
                         <Paperclip className="w-3 h-3"/> Attachment
                       </span>
                     )}
@@ -372,7 +372,7 @@ export default function DigitalLnbPage() {
                   )}
                   {/* G-25: Version badge */}
                   {(entry.entry_version > 1 || entry.previous_version_id) && (
-                    <span className="px-1.5 py-0.5 bg-slate-50 text-slate-600 text-[9px] font-black rounded border border-slate-100 uppercase">
+                    <span className="px-1.5 py-0.5 bg-slate-50 text-slate-600 text-xs font-black rounded border border-slate-100 uppercase">
                       v{entry.entry_version || 1}
                     </span>
                   )}
@@ -382,7 +382,7 @@ export default function DigitalLnbPage() {
                       <button
                         onClick={() => handleCountersign(entry.id)}
                         disabled={countersigning === entry.id}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] rounded-lg uppercase tracking-wider disabled:opacity-50">
+                        className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-lg uppercase tracking-wider disabled:opacity-50">
                         {countersigning === entry.id ? '...' : '✓ Countersign'}
                       </button>
                     </div>
@@ -391,7 +391,7 @@ export default function DigitalLnbPage() {
                   {entry.status !== 'Draft' && entry.created_by === employeeProfile?.id && (
                     <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
                       <button onClick={() => handleNewVersion(entry)}
-                        className="flex items-center gap-1 px-2 py-1 bg-slate-50 hover:bg-slate-50 text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-200 font-bold text-[9px] rounded-lg uppercase">
+                        className="flex items-center gap-1 px-2 py-1 bg-slate-50 hover:bg-slate-50 text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-200 font-bold text-xs rounded-lg uppercase">
                         <History className="w-3 h-3"/>New Ver
                       </button>
                     </div>
@@ -431,7 +431,7 @@ export default function DigitalLnbPage() {
               const groupColor = groupName === 'Cell Bank' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : groupName === 'Active Batches' ? 'text-slate-700 bg-slate-50 border-slate-200' : groupName === 'Completed Batches' ? 'text-slate-600 bg-slate-50 border-slate-200' : 'text-slate-600 bg-slate-50 border-slate-200';
               return (
                 <div key={groupName}>
-                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black border mb-3 ${groupColor}`}>
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border mb-3 ${groupColor}`}>
                     {groupIcon} {groupName} <span className="opacity-60">({sorted.length})</span>
                   </div>
                   <div className="grid gap-3">
@@ -462,8 +462,8 @@ export default function DigitalLnbPage() {
                 {suggestedTags.length > 0 && (
                   <div className="mt-3 flex items-center gap-2">
                     <Sparkles className="w-3 h-3 text-amber-500"/>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Suggested Tags:</span>
-                    {suggestedTags.map(tag => <span key={tag} className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-[9px] font-black">{tag}</span>)}
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Suggested Tags:</span>
+                    {suggestedTags.map(tag => <span key={tag} className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-xs font-black">{tag}</span>)}
                   </div>
                 )}
               </div>
@@ -514,7 +514,7 @@ export default function DigitalLnbPage() {
                 <label className="block text-xs font-bold text-slate-700 mb-1">SOP References <span className="text-slate-400 font-normal">(Optional — comma-separated)</span></label>
                 <input type="text" value={sopRefs} onChange={e=>setSopRefs(e.target.value)} placeholder="e.g. SOP-FERM-001, SOP-QC-003"
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
-                <p className="text-[10px] text-slate-400 mt-1">Link to standard operating procedures that govern this experiment</p>
+                <p className="text-xs text-slate-400 mt-1">Link to standard operating procedures that govern this experiment</p>
               </div>
 
               {/* G-90: Sketch / Diagram attachment URL */}
@@ -522,7 +522,7 @@ export default function DigitalLnbPage() {
                 <label className="block text-xs font-bold text-slate-700 mb-1">Sketch / Diagram URL <span className="text-slate-400 font-normal">(Optional)</span></label>
                 <input type="url" value={sketchUrl} onChange={e=>setSketchUrl(e.target.value)} placeholder="https://... (link to sketch, diagram, or annotated image)"
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
-                <p className="text-[10px] text-slate-400 mt-1">Upload sketch to cloud storage (Drive, Supabase) and paste the link here</p>
+                <p className="text-xs text-slate-400 mt-1">Upload sketch to cloud storage (Drive, Supabase) and paste the link here</p>
               </div>
 
               {/* G-25: version source indicator */}
@@ -552,7 +552,7 @@ export default function DigitalLnbPage() {
                     <Upload className="w-4 h-4"/> Click to attach PDF, image, or data file
                   </button>
                 )}
-                <p className="text-[10px] text-slate-400 mt-1">Accepted: PDF, PNG, JPG, XLSX, CSV, DOCX</p>
+                <p className="text-xs text-slate-400 mt-1">Accepted: PDF, PNG, JPG, XLSX, CSV, DOCX</p>
               </div>
 
               {uploadProgress && (

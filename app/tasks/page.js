@@ -502,26 +502,26 @@ export default function TasksPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Task Title *</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Task Title *</label>
               <input type="text" {...regTask('title')} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-semibold" placeholder="Title..."/>
               {taskErrors.title && <p className="text-red-500 text-xs mt-1">{taskErrors.title.message}</p>}
             </div>
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
               <textarea {...regTask('description')} rows="2" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Instructions..."/>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assign To *</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Assign To *</label>
               {isAdmin ? (
                 <div className="max-h-28 overflow-y-auto bg-slate-50 border border-slate-100 rounded-lg p-2 space-y-1">
                   {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).map(e => (
                     <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-slate-700">
                       <input type="checkbox" checked={watchedAssignees.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...watchedAssignees, e.id] : watchedAssignees.filter(id => id !== e.id); setValue('assigned_user_ids', ids); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
-                      {e.full_name} <span className="text-[9px] text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
+                      {e.full_name} <span className="text-xs text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
                     </label>
                   ))}
                   {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).length === 0 && (
-                    <p className="text-[10px] text-slate-400 p-2 italic text-center">No authorized colleagues below your role.</p>
+                    <p className="text-xs text-slate-400 p-2 italic text-center">No authorized colleagues below your role.</p>
                   )}
                 </div>
               ) : <div className="bg-slate-100 px-3 py-2 rounded-lg text-xs font-bold text-slate-600">Self</div>}
@@ -529,19 +529,19 @@ export default function TasksPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Due Date *</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Due Date *</label>
                 <input type="date" {...regTask('due_date')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none"/>
                 {taskErrors.due_date && <p className="text-red-500 text-xs mt-1">{taskErrors.due_date.message}</p>}
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Priority</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Priority</label>
                 <select {...regTask('priority')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
                   <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
                 </select>
               </div>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Steps</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Steps</label>
               <div className="flex gap-2 mb-2">
                 <input value={checklistInput} onChange={e => setChecklistInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-medium" placeholder="Step title..."/>
                 <button type="button" onClick={addChecklistItem} className="px-3 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200">Add</button>
@@ -632,14 +632,14 @@ export default function TasksPage() {
               <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`card p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${progress === 100 ? 'bg-emerald-500' : group.priority === 'urgent' ? 'bg-red-500' : group.priority === 'high' ? 'bg-amber-500' : 'bg-slate-400'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${group.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{group.priority}</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-slate-100 text-slate-600">{group.completedCount}/{group.totalCount} Done</span>
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${group.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{group.priority}</span>
+                  <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase bg-slate-100 text-slate-600">{group.completedCount}/{group.totalCount} Done</span>
                 </div>
                 <h3 className="text-sm font-bold mb-1 pl-1 text-slate-900">{group.title}</h3>
-                <p className="text-[10px] text-slate-500 mb-3 pl-1 line-clamp-1">{group.description}</p>
+                <p className="text-xs text-slate-500 mb-3 pl-1 line-clamp-1">{group.description}</p>
                 
                 <div className="pl-1 mb-4">
-                  <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-1">
+                  <div className="flex justify-between text-xs font-black text-slate-400 uppercase mb-1">
                     <span>Overall Progress</span>
                     <span>{progress}%</span>
                   </div>
@@ -648,20 +648,20 @@ export default function TasksPage() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-400">
+                <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
                   <div className="flex -space-x-1.5">
                     {group.assignees.slice(0, 3).map((a, i) => (
-                      <div key={i} className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-[8px] text-slate-800 font-black shadow-sm" title={a.assigned_user?.full_name}>
+                      <div key={i} className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-xs text-slate-800 font-black shadow-sm" title={a.assigned_user?.full_name}>
                         {a.assigned_user?.full_name?.[0]}
                       </div>
                     ))}
-                    {group.totalCount > 3 && <div className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-[8px] text-slate-400 font-black">+ {group.totalCount - 3}</div>}
+                    {group.totalCount > 3 && <div className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-black">+ {group.totalCount - 3}</div>}
                   </div>
                   <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{group.due_date ? new Date(group.due_date).toLocaleDateString() : '\u2014'}</span>
                 </div>
                 <div className="mt-3 flex flex-col gap-1">
-                  {group.pendingReviewCount > 0 && <div className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase border border-amber-100 bg-amber-50 text-amber-700 text-center animate-pulse">{group.pendingReviewCount} Pending Review</div>}
-                  {group.unacknowledgedCount > 0 && <div className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase border border-amber-200 bg-amber-50 text-amber-700 text-center">{group.unacknowledgedCount} Not Yet Seen</div>}
+                  {group.pendingReviewCount > 0 && <div className="px-1.5 py-0.5 rounded text-xs font-black uppercase border border-amber-100 bg-amber-50 text-amber-700 text-center animate-pulse">{group.pendingReviewCount} Pending Review</div>}
+                  {group.unacknowledgedCount > 0 && <div className="px-1.5 py-0.5 rounded text-xs font-black uppercase border border-amber-200 bg-amber-50 text-amber-700 text-center">{group.unacknowledgedCount} Not Yet Seen</div>}
                 </div>
               </div>
             );
@@ -684,25 +684,25 @@ export default function TasksPage() {
                 <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${task.status === 'done' ? 'bg-emerald-500' : task.priority === 'urgent' ? 'bg-red-500' : task.priority === 'high' ? 'bg-amber-500' : task.priority === 'medium' ? 'bg-slate-400' : 'bg-slate-300'}`}></div>
                 <div className="flex justify-between items-start mb-2 pl-1">
                   <div className="flex gap-1.5 items-center">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-700 border-slate-50'}`}>{task.priority}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-700 border-slate-50'}`}>{task.priority}</span>
                     {task.is_acknowledged
                       ? <Eye className="w-3 h-3 text-emerald-500" title={`Acknowledged: ${task.acknowledged_at ? new Date(task.acknowledged_at).toLocaleString() : ''}`} />
                       : String(task.assigned_to) === String(employeeProfile?.id) && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 animate-pulse">Unread</span>
+                          <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 animate-pulse">Unread</span>
                         )
                     }
                   </div>
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : task.status === 'in-progress' ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-600'}`}>{task.status}</span>
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase ${task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : task.status === 'in-progress' ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-600'}`}>{task.status}</span>
                 </div>
                 <h3 className={`text-sm font-bold mb-1 pl-1 ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{task.title}</h3>
                 {capaTaskBatchMap[task.id] && (
-                  <Link href={`/batches/${capaTaskBatchMap[task.id].id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 text-[9px] font-bold bg-slate-50 text-slate-700 border border-slate-100 px-1.5 py-0.5 rounded-full hover:bg-slate-100 transition-colors mb-1">
+                  <Link href={`/batches/${capaTaskBatchMap[task.id].id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-100 px-1.5 py-0.5 rounded-full hover:bg-slate-100 transition-colors mb-1">
                     <FlaskConical className="w-2.5 h-2.5"/> CAPA: {capaTaskBatchMap[task.id].batch_id}
                   </Link>
                 )}
 
                 <div className="pl-1 mb-2">
-                  <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-0.5">
+                  <div className="flex justify-between text-xs font-black text-slate-400 uppercase mb-0.5">
                     <span>Progress</span>
                     <span>{displayPct}%</span>
                   </div>
@@ -717,21 +717,21 @@ export default function TasksPage() {
                     className="mt-1 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-2"
                     onClick={e => { e.stopPropagation(); handleAcknowledge(task.id); }}
                   >
-                    <span className="text-[10px] font-bold text-amber-700">???? Tap to acknowledge this task</span>
-                    <button className="px-2 py-1 bg-amber-500 text-white text-[9px] font-black uppercase rounded-md hover:bg-amber-600 transition-colors whitespace-nowrap">Acknowledge</button>
+                    <span className="text-xs font-bold text-amber-700">???? Tap to acknowledge this task</span>
+                    <button className="px-2 py-1 bg-amber-500 text-white text-xs font-black uppercase rounded-md hover:bg-amber-600 transition-colors whitespace-nowrap">Acknowledge</button>
                   </div>
                 )}
 
-                <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-400">
+                <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
                   <div className="flex items-center gap-1.5">
                     <CreatorBadge initials={task.assigned_user?.initials} fullName={task.assigned_user?.full_name} />
                     <span>{task.assigned_user?.full_name || 'Staff'}</span>
                   </div>
                   <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{task.due_date ? new Date(task.due_date).toLocaleDateString() : '\u2014'}</span>
                 </div>
-                {approvalBadge && <div className={`mt-2 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border text-center ${approvalBadge.cls}`}>{approvalBadge.label}</div>}
+                {approvalBadge && <div className={`mt-2 px-1.5 py-0.5 rounded text-xs font-black uppercase border text-center ${approvalBadge.cls}`}>{approvalBadge.label}</div>}
                 {task.status !== 'done' && task.status !== 'cancelled' && (
-                  <div className="mt-2 text-center text-[9px] text-slate-300 font-semibold">Tap to view &amp; update {`>`}</div>
+                  <div className="mt-2 text-center text-xs text-slate-300 font-semibold">Tap to view &amp; update {`>`}</div>
                 )}
               </div>
             );

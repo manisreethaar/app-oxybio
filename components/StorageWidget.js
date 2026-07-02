@@ -98,11 +98,11 @@ export default function StorageWidget() {
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-navy" />
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">System Storage Health</h3>
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded border border-slate-100">Supabase Free</span>
+          <span className="text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded border border-slate-100">Supabase Free</span>
         </div>
         <div className="flex items-center gap-2">
           {lastRefreshed && (
-            <span className="text-[9px] text-slate-400 font-medium">
+            <span className="text-xs text-slate-400 font-medium">
               {lastRefreshed.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
@@ -111,7 +111,7 @@ export default function StorageWidget() {
           </button>
           <button
             onClick={() => setShowArchivePanel(!showArchivePanel)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 text-slate-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 text-slate-700 rounded-lg text-xs font-black uppercase tracking-wider hover:bg-slate-100 transition-colors"
           >
             <Archive className="w-3 h-3" /> Manage
           </button>
@@ -134,10 +134,10 @@ export default function StorageWidget() {
             <span className="text-xl font-black text-slate-900">
               {db?.usedMB != null ? `${db.usedMB} MB` : '—'}
             </span>
-            <span className="text-[10px] font-bold text-slate-400">/ {db?.limitMB} MB limit</span>
+            <span className="text-xs font-bold text-slate-400">/ {db?.limitMB} MB limit</span>
           </div>
           <GaugeBar percent={db?.percentUsed} />
-          <p className="text-[9px] text-slate-500 mt-1.5 font-semibold">
+          <p className="text-xs text-slate-500 mt-1.5 font-semibold">
             {db?.percentUsed != null ? `${db.percentUsed}% used` : 'Run SQL function to enable'} · {db?.limitMB - (db?.usedMB || 0)} MB free
           </p>
         </div>
@@ -153,10 +153,10 @@ export default function StorageWidget() {
           </div>
           <div className="flex items-end justify-between mb-2">
             <span className="text-xl font-black text-slate-900">{stor?.usedMB} MB</span>
-            <span className="text-[10px] font-bold text-slate-400">/ {stor?.limitMB} MB limit</span>
+            <span className="text-xs font-bold text-slate-400">/ {stor?.limitMB} MB limit</span>
           </div>
           <GaugeBar percent={stor?.percentUsed} />
-          <p className="text-[9px] text-slate-500 mt-1.5 font-semibold">
+          <p className="text-xs text-slate-500 mt-1.5 font-semibold">
             {stor?.percentUsed}% used · {stor?.buckets?.length || 0} bucket{stor?.buckets?.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -165,7 +165,7 @@ export default function StorageWidget() {
       {/* Bucket Breakdown */}
       {stor?.buckets?.length > 0 && (
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Storage Buckets</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Storage Buckets</p>
           <div className="space-y-1.5">
             {stor.buckets.map(b => (
               <div key={b.name} className="flex items-center justify-between text-xs px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
@@ -179,7 +179,7 @@ export default function StorageWidget() {
 
       {/* Table Row Counts */}
       <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Record Counts by Module</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Record Counts by Module</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {tables
             .sort((a, b) => (b.count || 0) - (a.count || 0))
@@ -235,7 +235,7 @@ export default function StorageWidget() {
             ))}
           </div>
 
-          <p className="text-[9px] text-slate-600 font-semibold">
+          <p className="text-xs text-slate-600 font-semibold">
             💡 Tip: Schedule monthly archival of attendance logs (6+ months old) to keep your database well under the 500 MB limit.
           </p>
         </div>
@@ -247,14 +247,14 @@ export default function StorageWidget() {
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-bold text-amber-800">Approaching storage limit</p>
-            <p className="text-[10px] text-amber-700 mt-0.5">
+            <p className="text-xs text-amber-700 mt-0.5">
               Consider archiving old records using the Manage panel above, or upgrade to <strong>Supabase Pro (~$25/month)</strong> for 8 GB database + 100 GB file storage.
             </p>
             <a
               href="https://supabase.com/dashboard/project/ttikqclvbewkollnjvza/settings/billing"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 mt-2 text-[10px] font-black text-amber-800 underline hover:text-amber-900"
+              className="inline-flex items-center gap-1 mt-2 text-xs font-black text-amber-800 underline hover:text-amber-900"
             >
               Open Supabase Billing →
             </a>

@@ -24,7 +24,7 @@ function DiffRow({ label, original, proposed }) {
   const changed = JSON.stringify(original) !== JSON.stringify(proposed);
   return (
     <tr className={changed ? 'bg-amber-50/60' : ''}>
-      <td className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400 w-36 align-top">{label}</td>
+      <td className="px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-400 w-36 align-top">{label}</td>
       <td className="px-3 py-2 text-xs text-slate-500 align-top max-w-[180px] break-words">
         {original === null || original === undefined ? <span className="italic text-slate-300">—</span> : String(original)}
       </td>
@@ -73,8 +73,8 @@ function ChangeCard({ change, onAction, isAdmin }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-black text-slate-800 text-sm">{change.requester?.full_name || 'Unknown'}</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{change.requester?.role}</span>
-            <span className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${STATUS_COLORS[change.status]}`}>
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{change.requester?.role}</span>
+            <span className={`flex items-center gap-1 text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${STATUS_COLORS[change.status]}`}>
               {CHANGE_TYPE_ICON[change.change_type]}
               {change.change_type}
             </span>
@@ -84,7 +84,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-widest rounded-xl border ${STATUS_COLORS[change.status]}`}>
+          <span className={`px-2.5 py-1 text-xs font-black uppercase tracking-widest rounded-xl border ${STATUS_COLORS[change.status]}`}>
             {change.status}
           </span>
           <button
@@ -101,7 +101,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
         <div className="border-t border-white/40 px-5 py-4 space-y-4">
           {isDelete ? (
             <div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Record to Delete</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Record to Delete</p>
               <div className="rounded-xl overflow-hidden border border-slate-100">
                 <table className="w-full">
                   <tbody className="divide-y divide-slate-50">
@@ -114,15 +114,15 @@ function ChangeCard({ change, onAction, isAdmin }) {
             </div>
           ) : (
             <div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Proposed Changes</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Proposed Changes</p>
               <div className="rounded-xl overflow-hidden border border-slate-100">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-50">
-                      <th className="px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-slate-300">Field</th>
-                      <th className="px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-slate-300">Original</th>
+                      <th className="px-3 py-1.5 text-left text-xs font-black uppercase tracking-widest text-slate-300">Field</th>
+                      <th className="px-3 py-1.5 text-left text-xs font-black uppercase tracking-widest text-slate-300">Original</th>
                       <th className="px-2 py-1.5" />
-                      <th className="px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-amber-400">Proposed</th>
+                      <th className="px-3 py-1.5 text-left text-xs font-black uppercase tracking-widest text-amber-400">Proposed</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -143,7 +143,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
           {/* Review note (for history) */}
           {change.review_note && (
             <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1">Review Note</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Review Note</p>
               <p className="text-sm text-slate-600 font-medium">{change.review_note}</p>
               {change.reviewer && (
                 <p className="text-xs text-slate-400 mt-1">— {change.reviewer.full_name}</p>

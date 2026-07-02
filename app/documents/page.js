@@ -241,11 +241,11 @@ export default function DocumentsPage() {
                           <p>Version <span className="font-semibold text-slate-700">{doc.version || '1.0'}</span></p>
                           <p>Effective: {doc.effective_date ? new Date(doc.effective_date).toLocaleDateString() : 'N/A'}</p>
                           <div className="flex items-center gap-1.5 mt-2">
-                            <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Uploaded By:</span>
+                            <span className="text-xs text-slate-600 font-bold uppercase tracking-wider">Uploaded By:</span>
                             {doc.employees && (
                               <CreatorBadge initials={doc.employees.initials} fullName={doc.employees.full_name} />
                             )}
-                            <span className="text-[10px] text-slate-700">{doc.employees?.full_name || 'System / Admin'}</span>
+                            <span className="text-xs text-slate-700">{doc.employees?.full_name || 'System / Admin'}</span>
                           </div>
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-slate-100">

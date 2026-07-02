@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
           O₂
         </div>
         <h1 className="text-3xl font-black text-navy tracking-tight mb-1">OxyOS</h1>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Operational Neural Cloud</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Operational Neural Cloud</p>
       </motion.div>
 
       <motion.div 
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-[11px] font-bold border border-red-100 flex items-center gap-2"
+            className="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-xs font-bold border border-red-100 flex items-center gap-2"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
             {error}
@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-100 flex items-center gap-2"
+            className="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 flex items-center gap-2"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
             {message}
@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleReset} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">New Password</label>
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">New Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -129,7 +129,7 @@ export default function ResetPasswordPage() {
             <button 
               type="button" 
               onClick={() => router.push('/login')}
-              className="text-[10px] font-bold text-slate-400 hover:text-navy transition-all uppercase tracking-widest"
+              className="text-xs font-bold text-slate-400 hover:text-navy transition-all uppercase tracking-widest"
             >
               Back to Sign In
             </button>
@@ -138,10 +138,10 @@ export default function ResetPasswordPage() {
       </motion.div>
       
       <div className="text-center mt-10 space-y-2">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
           Powered by Oxygen Bioinnovations
         </p>
-        <div className="flex justify-center gap-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">
+        <div className="flex justify-center gap-4 text-xs font-black text-slate-300 uppercase tracking-widest">
            <span>Terms</span>
            <span>Privacy</span>
            <span>Security</span>

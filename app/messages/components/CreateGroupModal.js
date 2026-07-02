@@ -156,12 +156,12 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
         <form onSubmit={handleCreate} className="p-4 md:p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Type</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Type</label>
               <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={() => { setType('individual'); setSelectedIds([]); }}
-                  className={`flex-1 min-w-[30%] py-2 text-[11px] font-bold rounded-lg border transition-colors ${type === 'individual' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                  className={`flex-1 min-w-[30%] py-2 text-xs font-bold rounded-lg border transition-colors ${type === 'individual' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                 >
                   Direct Message
                 </button>
@@ -170,14 +170,14 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
                     <button
                       type="button"
                       onClick={() => { setType('group'); setSelectedIds([]); }}
-                      className={`flex-1 min-w-[30%] py-2 text-[11px] font-bold rounded-lg border transition-colors ${type === 'group' ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                      className={`flex-1 min-w-[30%] py-2 text-xs font-bold rounded-lg border transition-colors ${type === 'group' ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                     >
                       Group Chat
                     </button>
                     <button
                       type="button"
                       onClick={() => { setType('announcement'); setSelectedIds([]); }}
-                      className={`flex-1 min-w-[30%] py-2 text-[11px] font-bold rounded-lg border transition-colors ${type === 'announcement' ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                      className={`flex-1 min-w-[30%] py-2 text-xs font-bold rounded-lg border transition-colors ${type === 'announcement' ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                     >
                       Announcement
                     </button>
@@ -188,7 +188,7 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
 
             {type !== 'individual' && (
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Group Name *</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Group Name *</label>
                 <input
                   type="text"
                   value={name}
@@ -202,12 +202,12 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
 
             <div>
               <div className="flex justify-between items-end mb-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select {type === 'individual' ? 'User' : 'Members'} *</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Select {type === 'individual' ? 'User' : 'Members'} *</label>
                 {type !== 'individual' && (
                   <button
                     type="button"
                     onClick={() => setSelectedIds(employees.map(e => e.id))}
-                    className="text-[9px] font-bold text-navy hover:underline uppercase"
+                    className="text-xs font-bold text-navy hover:underline uppercase"
                   >
                     Select All
                   </button>
@@ -235,7 +235,7 @@ export default function CreateGroupModal({ onClose, onSuccess, isAdmin }) {
                         }}
                         className="rounded text-navy focus:ring-navy flex-shrink-0 w-4 h-4"
                       />
-                      {e.full_name} <span className="text-[9px] text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
+                      {e.full_name} <span className="text-xs text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
                     </label>
                   ))
                 )}

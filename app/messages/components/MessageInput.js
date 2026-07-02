@@ -145,7 +145,7 @@ export default function MessageInput({
               <p className="text-xs font-bold text-navy">
                 {editingMessage ? 'Editing Message' : `Replying to ${replyingToMessage.sender?.full_name || 'someone'}`}
               </p>
-              <p className="text-[11px] text-slate-500 truncate">
+              <p className="text-xs text-slate-500 truncate">
                 {(editingMessage?.content || replyingToMessage?.content || 'Attachment')}
               </p>
             </div>

@@ -97,7 +97,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
           <h2 className="text-base font-bold text-slate-900">Downstream Processing: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-slate-500">Concentration, drying, packaging and fill/finish record.</p>
         </div>
-        <span className="ml-auto text-[10px] font-black text-slate-700 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+        <span className="ml-auto text-xs font-black text-slate-700 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
           {completedCount}/{PROCESS_STEPS.length} steps
         </span>
       </div>

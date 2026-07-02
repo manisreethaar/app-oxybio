@@ -183,7 +183,7 @@ export default function ShiftHandoverPage() {
                   <p className="text-xs font-black text-slate-500 uppercase mb-2 flex items-center gap-1"><FlaskConical className="w-3.5 h-3.5"/>Active Batches at Handover ({h.batch_summaries.length})</p>
                   <div className="flex flex-wrap gap-2">
                     {h.batch_summaries.map((b, i) => (
-                      <span key={i} className="px-2.5 py-1 bg-navy/5 border border-navy/20 rounded-lg text-[10px] font-black text-navy">
+                      <span key={i} className="px-2.5 py-1 bg-navy/5 border border-navy/20 rounded-lg text-xs font-black text-navy">
                         {b.batch_id} · {b.stage?.replace(/_/g,' ')}
                         {b.flasks?.length > 0 && ` (${b.flasks.length} flask${b.flasks.length>1?'s':''})`}
                       </span>

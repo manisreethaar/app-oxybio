@@ -57,7 +57,7 @@ function parseMorphologyChips(raw) {
       return (
         <div className="flex flex-wrap gap-1 mt-1">
           {Object.entries(p).map(([trait, choice]) => (
-            <span key={trait} className={`px-2 py-0.5 rounded text-[8px] font-black border ${CHIP_COLORS[trait] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+            <span key={trait} className={`px-2 py-0.5 rounded text-xs font-black border ${CHIP_COLORS[trait] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               {choice}
             </span>
           ))}
@@ -65,7 +65,7 @@ function parseMorphologyChips(raw) {
       );
     }
   } catch {}
-  return <span className="text-[9px] text-slate-500">{raw}</span>;
+  return <span className="text-xs text-slate-500">{raw}</span>;
 }
 
 /** Format ms duration as "2h 15min" */
@@ -123,7 +123,7 @@ function ReadsDuePanel({ samples, onLogRead }) {
           <span className="text-sm font-black text-amber-800">
             Reads Due Soon ({dueItems.length})
           </span>
-          <span className="text-[10px] font-bold text-amber-600">
+          <span className="text-xs font-bold text-amber-600">
             -- samples with plate reads due in the next 4 hours
           </span>
         </div>
@@ -138,7 +138,7 @@ function ReadsDuePanel({ samples, onLogRead }) {
             <div key={`${record.id}-${hour}`} className="flex items-center justify-between px-5 py-2.5 gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-black text-amber-900 truncate">{record.sample_name}</p>
-                <p className="text-[10px] text-amber-700 mt-0.5">
+                <p className="text-xs text-amber-700 mt-0.5">
                   {record.batches?.batch_id || record.source_label || 'No batch'}
                   {' -- '}
                   <span className="font-black">{hour}h read due in {formatDue(msUntilDue)}</span>
@@ -147,7 +147,7 @@ function ReadsDuePanel({ samples, onLogRead }) {
               <button
                 type="button"
                 onClick={() => onLogRead(record)}
-                className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-black uppercase tracking-wider transition-colors"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider transition-colors"
               >
                 Log Read
               </button>
@@ -180,7 +180,7 @@ function GrowthCurveChart({ observation }) {
 
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
-      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Growth Curve</p>
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Growth Curve</p>
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -226,7 +226,7 @@ function ODTrendChart({ observation }) {
 
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
-      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">OD Trend</p>
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">OD Trend</p>
       <ResponsiveContainer width="100%" height={100}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -256,14 +256,14 @@ function ExpandedPlateDetail({ record }) {
       {/* Colony morphology chips */}
       {record.colony_morphology && (
         <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Morphology</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Morphology</p>
           {parseMorphologyChips(record.colony_morphology)}
         </div>
       )}
 
       {/* Dilution info */}
       {(record.dilution_factor != null || record.volume_plated_ml != null || record.replicate_label) && (
-        <div className="flex flex-wrap gap-2 text-[9px] font-mono text-slate-500">
+        <div className="flex flex-wrap gap-2 text-xs font-mono text-slate-500">
           {record.dilution_factor != null && (
             <span className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
               Dilution: {record.dilution_factor}
@@ -285,12 +285,12 @@ function ExpandedPlateDetail({ record }) {
       {/* Reads summary */}
       {reads.length > 0 && (
         <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Plate Reads</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Plate Reads</p>
           <div className="space-y-0.5">
             {reads.map(r => (
-              <div key={r.hour} className="flex items-center gap-2 text-[9px]">
+              <div key={r.hour} className="flex items-center gap-2 text-xs">
                 <span className="font-mono text-slate-500 w-10 shrink-0">T+{r.hour}h</span>
-                <span className={`font-black px-1.5 py-0.5 rounded border text-[8px] ${
+                <span className={`font-black px-1.5 py-0.5 rounded border text-xs ${
                   r.status === 'growing'      ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
                   r.status === 'contaminated' ? 'text-red-700 bg-red-50 border-red-200' :
                   r.status === 'tntc'         ? 'text-amber-700 bg-amber-50 border-amber-200' :
@@ -313,7 +313,7 @@ function ExpandedPlateDetail({ record }) {
       <ODTrendChart observation={record.observation} />
 
       {notes && (
-        <p className="text-[9px] text-slate-500 italic border-t border-slate-100 pt-2">{notes}</p>
+        <p className="text-xs text-slate-500 italic border-t border-slate-100 pt-2">{notes}</p>
       )}
     </div>
   );
@@ -359,13 +359,13 @@ function ContaminationCard({ samples }) {
     <div className="card p-4 col-span-2 md:col-span-4">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contamination Rate</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Contamination Rate</p>
           <div className="flex items-center gap-2 mt-1">
             <p className={`text-2xl font-black font-mono ${stats.overall > 0 ? 'text-red-700' : 'text-slate-900'}`}>
               {stats.overall}%
             </p>
             {stats.trend !== null && (
-              <span className={`flex items-center gap-0.5 text-[10px] font-black ${
+              <span className={`flex items-center gap-0.5 text-xs font-black ${
                 stats.trend > 0 ? 'text-red-600' : stats.trend < 0 ? 'text-emerald-600' : 'text-slate-400'
               }`}>
                 {stats.trend > 0
@@ -385,15 +385,15 @@ function ContaminationCard({ samples }) {
         <div className="space-y-1.5">
           {stats.byCategory.map(({ cat, total, pct }) => (
             <div key={cat} className="flex items-center gap-2">
-              <span className="text-[9px] text-slate-500 w-28 shrink-0 truncate">{cat}</span>
+              <span className="text-xs text-slate-500 w-28 shrink-0 truncate">{cat}</span>
               <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${pct > 0 ? 'bg-red-400' : 'bg-emerald-300'}`}
                   style={{ width: `${Math.max(pct, 2)}%` }}
                 />
               </div>
-              <span className="text-[9px] font-black text-slate-600 w-8 text-right">{pct}%</span>
-              <span className="text-[9px] text-slate-400 w-10 text-right">({total})</span>
+              <span className="text-xs font-black text-slate-600 w-8 text-right">{pct}%</span>
+              <span className="text-xs text-slate-400 w-10 text-right">({total})</span>
             </div>
           ))}
         </div>
@@ -450,7 +450,7 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
       {/* Replicate chips */}
       <div className="flex items-center gap-1 mb-2 flex-wrap">
         {labels.map((lbl, i) => (
-          <span key={lbl} className={`px-2 py-0.5 rounded text-[9px] font-black border ${
+          <span key={lbl} className={`px-2 py-0.5 rounded text-xs font-black border ${
             sorted[i].sterility_status === 'Contaminated'
               ? 'bg-red-50 text-red-700 border-red-200'
               : sorted[i].sterility_status === 'Sterile'
@@ -460,26 +460,26 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
             {lbl}
           </span>
         ))}
-        <span className="text-[9px] text-slate-400 ml-1">triplicate</span>
+        <span className="text-xs text-slate-400 ml-1">triplicate</span>
       </div>
 
       {/* Mean count */}
       {meanCount !== null && (
-        <p className="text-[9px] font-mono text-slate-500 mb-1">
+        <p className="text-xs font-mono text-slate-500 mb-1">
           Mean colonies: {meanCount}
         </p>
       )}
 
       {/* Media lot */}
       {first.media_lot && (
-        <p className="text-[9px] text-slate-400 mb-1">Media: {first.media_lot}</p>
+        <p className="text-xs text-slate-400 mb-1">Media: {first.media_lot}</p>
       )}
 
       {/* Sterility summary + creator */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 flex-wrap">
           {sorted.map(r => (
-            <span key={r.id} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${sterileChip(r.sterility_status || 'Pending')}`}>
+            <span key={r.id} className={`text-xs font-black uppercase px-1.5 py-0.5 rounded border ${sterileChip(r.sterility_status || 'Pending')}`}>
               {r.replicate_label}: {r.sterility_status || 'Pending'}
             </span>
           ))}
@@ -500,7 +500,7 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
                 <button
                   type="button"
                   onClick={e => { e.stopPropagation(); onEdit(r); }}
-                  className="px-2 py-1 rounded-md text-[9px] font-black text-navy hover:bg-navy/10 transition-colors"
+                  className="px-2 py-1 rounded-md text-xs font-black text-navy hover:bg-navy/10 transition-colors"
                 >
                   Edit {r.replicate_label}
                 </button>
@@ -551,31 +551,31 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
 
       {/* Manual entry number */}
       {record.manual_entry_no && (
-        <p className="text-[9px] font-mono text-navy/60 mb-1">{record.manual_entry_no}</p>
+        <p className="text-xs font-mono text-navy/60 mb-1">{record.manual_entry_no}</p>
       )}
 
       {/* Flask */}
       {record.batch_flasks?.flask_label && (
-        <p className="text-[10px] font-mono text-slate-500 mb-1">
+        <p className="text-xs font-mono text-slate-500 mb-1">
           Flask: {record.batch_flasks.flask_label}
         </p>
       )}
 
       {/* Media lot */}
       {record.media_lot && (
-        <p className="text-[9px] text-slate-400 mb-1">Media: {record.media_lot}</p>
+        <p className="text-xs text-slate-400 mb-1">Media: {record.media_lot}</p>
       )}
 
       {/* Replicate label chip */}
       {record.replicate_label && record.replicate_label !== 'None' && (
-        <span className="inline-block text-[8px] font-black px-1.5 py-0.5 rounded border bg-slate-50 text-slate-700 border-slate-200 mb-1">
+        <span className="inline-block text-xs font-black px-1.5 py-0.5 rounded border bg-slate-50 text-slate-700 border-slate-200 mb-1">
           Rep {record.replicate_label}
         </span>
       )}
 
       {/* Observation snippet */}
       {record.observation && !expanded && (
-        <p className="text-[9px] text-slate-400 truncate mb-1.5">
+        <p className="text-xs text-slate-400 truncate mb-1.5">
           {(() => {
             try {
               const p = JSON.parse(record.observation);
@@ -592,17 +592,17 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
 
       {/* Sterility chip + creator */}
       <div className="flex items-center justify-between">
-        <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${sterileChip(record.sterility_status || 'Pending')}`}>
+        <span className={`text-xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${sterileChip(record.sterility_status || 'Pending')}`}>
           {record.sterility_status || 'Pending'}
         </span>
         <div className="flex items-center gap-1.5">
           {record.employees ? (
             <CreatorBadge initials={record.employees.initials} fullName={record.employees.full_name} />
           ) : record.logged_by ? null : (
-            <span className="text-[8px] text-slate-300 font-mono">auto</span>
+            <span className="text-xs text-slate-300 font-mono">auto</span>
           )}
           {record.end_time && record.duration_hours != null && (
-            <span className="text-[9px] font-mono text-slate-400">
+            <span className="text-xs font-mono text-slate-400">
               {Number(record.duration_hours).toFixed(0)}h
             </span>
           )}
@@ -611,7 +611,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
 
       {/* Results */}
       {(record.colony_count != null || record.cfu_per_ml != null) && (
-        <div className="mt-1.5 text-[9px] font-mono text-slate-500 space-y-0.5">
+        <div className="mt-1.5 text-xs font-mono text-slate-500 space-y-0.5">
           {record.colony_count != null && <p>Colonies: {record.colony_count}</p>}
           {record.cfu_per_ml  != null && <p>CFU/mL: {record.cfu_per_ml}</p>}
         </div>
@@ -625,7 +625,7 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onEdit(record); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black bg-navy text-white hover:bg-navy/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black bg-navy text-white hover:bg-navy/90 transition-colors"
             >
               Log Read / Edit
             </button>
@@ -858,7 +858,7 @@ export default function SampleIncubationPage() {
           ['Contaminated',      stats.contaminated,    stats.contaminated ? 'text-red-700'   : 'text-slate-900'],
         ].map(([label, value, color]) => (
           <div key={label} className="card p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+            <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
             <p className={`mt-1 text-2xl font-black font-mono ${color}`}>{value}</p>
           </div>
         ))}
@@ -930,7 +930,7 @@ export default function SampleIncubationPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-black text-slate-900">{src.label}</span>
                         {src.batch_status && (
-                          <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                          <span className={`text-xs font-black uppercase px-1.5 py-0.5 rounded border ${
                             src.batch_status === 'released'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                             src.batch_status === 'rejected'   ? 'bg-red-50 text-red-700 border-red-200' :
                             src.batch_status === 'fermenting' ? 'bg-slate-50 text-slate-700 border-slate-200' :
@@ -941,21 +941,21 @@ export default function SampleIncubationPage() {
                           <Link
                             href={`/batches/${src.batch_id}`}
                             onClick={e => e.stopPropagation()}
-                            className="text-[10px] font-mono text-navy hover:underline border border-navy/20 px-1.5 py-0.5 rounded"
+                            className="text-xs font-mono text-navy hover:underline border border-navy/20 px-1.5 py-0.5 rounded"
                           >
                             View Batch
                           </Link>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-slate-400">
+                        <span className="text-xs font-bold text-slate-400">
                           {allRecords.length} plate{allRecords.length !== 1 ? 's' : ''} -- {src.timepoints.size} timepoint{src.timepoints.size !== 1 ? 's' : ''}
                         </span>
                         {ongoingCount > 0 && (
-                          <span className="text-[10px] font-bold text-slate-600">{ongoingCount} ongoing</span>
+                          <span className="text-xs font-bold text-slate-600">{ongoingCount} ongoing</span>
                         )}
                         {contaminatedCount > 0 && (
-                          <span className="text-[10px] font-bold text-red-600">{contaminatedCount} contaminated</span>
+                          <span className="text-xs font-bold text-red-600">{contaminatedCount} contaminated</span>
                         )}
                       </div>
                     </div>
@@ -965,7 +965,7 @@ export default function SampleIncubationPage() {
                       <Link
                         href="/lab-bench/log"
                         onClick={e => e.stopPropagation()}
-                        className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider rounded-lg border border-slate-200 transition-colors"
+                        className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-lg border border-slate-200 transition-colors"
                       >
                         <Plus className="w-3 h-3" /> Log Sample
                       </Link>
@@ -1032,16 +1032,16 @@ export default function SampleIncubationPage() {
                             <div className="flex items-center gap-3 flex-wrap">
                               <div className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                               <span className="text-sm font-black text-slate-700">{tp.label}</span>
-                              <span className="text-[10px] font-bold text-slate-400">
+                              <span className="text-xs font-bold text-slate-400">
                                 {tp.records.length} plate{tp.records.length !== 1 ? 's' : ''}
                               </span>
                               {tpOngoing > 0 && (
-                                <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                                <span className="text-xs font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
                                   {tpOngoing} ongoing
                                 </span>
                               )}
                               {tpDone > 0 && (
-                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                                   {tpDone} done
                                 </span>
                               )}
@@ -1099,11 +1099,11 @@ export default function SampleIncubationPage() {
                                   });
                                   setShowModal(true);
                                 }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black border border-dashed border-navy/30 text-navy hover:bg-navy/5 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black border border-dashed border-navy/30 text-navy hover:bg-navy/5 transition-colors"
                               >
                                 <Plus className="w-3 h-3" /> Add plate for this timepoint
                               </button>
-                              <span className="text-[9px] text-slate-400">
+                              <span className="text-xs text-slate-400">
                                 Use Replicate A / B / C to group plates from the same sample
                               </span>
                             </div>

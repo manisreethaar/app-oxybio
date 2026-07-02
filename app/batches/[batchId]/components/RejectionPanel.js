@@ -129,10 +129,10 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
             <p className="text-xs text-red-600">{record.rejection_date ? new Date(record.rejection_date).toLocaleString('en-IN') : ''}</p>
           </div>
           <div className="grid grid-cols-1 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-[9px] mb-1">Reason / Root Cause</p><p className="font-semibold text-slate-800">{record.rejection_reason}</p></div>
+            <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-xs mb-1">Reason / Root Cause</p><p className="font-semibold text-slate-800">{record.rejection_reason}</p></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-[9px] mb-1">Failed Stage</p><p className="font-bold text-slate-800">{record.rejection_stage?.replace(/_/g,' ') || '—'}</p></div>
-              <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-[9px] mb-1">Disposal Method</p><p className="font-bold text-slate-800">{record.disposal_method}</p></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-xs mb-1">Failed Stage</p><p className="font-bold text-slate-800">{record.rejection_stage?.replace(/_/g,' ') || '—'}</p></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-xs mb-1">Disposal Method</p><p className="font-bold text-slate-800">{record.disposal_method}</p></div>
             </div>
             {record.supplier_defect && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">🏭 Supplier defect flagged — Critical deviation raised.</div>

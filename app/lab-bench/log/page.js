@@ -86,7 +86,7 @@ function autoSampleLabel(sourceType, batch, study, cellPrep, flaskLabel, logHour
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 const InputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
-const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5';
+const LabelCls = 'block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5';
 
 function SkipPanel({ reason, onChange }) {
   return (
@@ -119,7 +119,7 @@ function TestCard({ title, icon: Icon, color, skipped, onSkipToggle, children, s
           </div>
           <span className="font-black text-slate-700 text-sm">{title}</span>
           {skipped && (
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200 uppercase tracking-wide">
+            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-black rounded-full border border-amber-200 uppercase tracking-wide">
               Skipped
             </span>
           )}
@@ -128,7 +128,7 @@ function TestCard({ title, icon: Icon, color, skipped, onSkipToggle, children, s
           type="button"
           onClick={onSkipToggle}
           className={clsx(
-            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
+            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border transition-all',
             skipped
               ? 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
@@ -442,7 +442,7 @@ export default function QuickLogPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
           <h1 className="text-xl font-black text-slate-800">Quick Log</h1>
         </div>
       </div>
@@ -474,7 +474,7 @@ export default function QuickLogPage() {
 
         {/* ── Source Selection ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">
             {sourceType === 'batch'
               ? 'Select Batch & Flask'
               : sourceType === 'growth_study'
@@ -581,7 +581,7 @@ export default function QuickLogPage() {
                         >
                           <span>T+{tp.planned_hour}h</span>
                           {tp.sample_types?.length > 0 && (
-                            <span className="text-[9px] font-bold text-slate-400 mt-0.5 truncate max-w-full px-1">
+                            <span className="text-xs font-bold text-slate-400 mt-0.5 truncate max-w-full px-1">
                               {tp.sample_types.slice(0, 2).join(', ')}
                             </span>
                           )}
@@ -615,7 +615,7 @@ export default function QuickLogPage() {
                     ))}
                   </select>
                   {selectedCellPrep && (
-                    <p className="text-[10px] text-slate-500 font-semibold mt-2">
+                    <p className="text-xs text-slate-500 font-semibold mt-2">
                       {selectedCellPrep.cell_bank_strains?.strain_short_code || selectedCellPrep.cell_bank_strains?.accession_number || 'Strain'} · Passage {selectedCellPrep.passage_number ?? '-'}
                     </p>
                   )}
@@ -627,7 +627,7 @@ export default function QuickLogPage() {
 
         {/* ── Hour & Time ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-4">Sample Timepoint</h3>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4">Sample Timepoint</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={LabelCls}>Log Hour (T+)</label>
@@ -656,7 +656,7 @@ export default function QuickLogPage() {
 
         {/* ── Tests ── */}
         <div className="space-y-3">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider px-1">Common Tests</h3>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider px-1">Common Tests</h3>
 
           {/* pH */}
           <TestCard
@@ -796,7 +796,7 @@ export default function QuickLogPage() {
                 </div>
                 <span className="font-black text-slate-700 text-sm">Plate Analysis</span>
                 {tests.plate_analysis.skipped && (
-                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200 uppercase tracking-wide">
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-black rounded-full border border-amber-200 uppercase tracking-wide">
                     Skipped
                   </span>
                 )}
@@ -808,7 +808,7 @@ export default function QuickLogPage() {
                     type="button"
                     onClick={() => updateTest('plate_analysis', { active: !tests.plate_analysis.active })}
                     className={clsx(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border transition-all',
                       tests.plate_analysis.active
                         ? 'border-red-400 bg-red-50 text-red-700'
                         : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
@@ -829,7 +829,7 @@ export default function QuickLogPage() {
                     skip_reason: '',
                   })}
                   className={clsx(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border transition-all',
                     tests.plate_analysis.skipped
                       ? 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
@@ -923,7 +923,7 @@ export default function QuickLogPage() {
 
         {/* G-20 + G-21 + G-22: Lab safety & contamination flags */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Lab Safety & Traceability</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Lab Safety & Traceability</p>
           {/* G-22: batch linkage already shown via source selector above */}
           {sourceType === 'batch' && sourceId && (
             <p className="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -950,16 +950,16 @@ export default function QuickLogPage() {
           )}
           {/* G-74: Reagents/consumables used */}
           <div>
-            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Reagents / Consumables Used <span className="font-normal normal-case">(comma-separated)</span></label>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Reagents / Consumables Used <span className="font-normal normal-case">(comma-separated)</span></label>
             <input type="text" value={reagentsUsed} onChange={e=>setReagentsUsed(e.target.value)}
               className={InputCls} placeholder="e.g. MRS Broth, Tryptone, Loop, Pipette tips"/>
           </div>
           {/* G-75: Cold storage temperature */}
           <div>
-            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cold Item Storage Temp (°C)</label>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Cold Item Storage Temp (°C)</label>
             <input type="number" step="0.5" value={coldTempC} onChange={e=>setColdTempC(e.target.value)}
               className={InputCls} placeholder="e.g. 4.2"/>
-            <p className="text-[9px] text-slate-400 mt-0.5">Temperature of bench-top cold items (media, reagents) at time of use</p>
+            <p className="text-xs text-slate-400 mt-0.5">Temperature of bench-top cold items (media, reagents) at time of use</p>
           </div>
         </div>
 

@@ -502,7 +502,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'issues' ? 'border-red-600 text-red-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               Issue Tracker
               {issues.filter(i => !i.founder_comment).length > 0 && (
-                <span className="bg-red-500 text-white py-0.5 px-1.5 rounded-full text-[10px] font-black">
+                <span className="bg-red-500 text-white py-0.5 px-1.5 rounded-full text-xs font-black">
                   {issues.filter(i => !i.founder_comment).length}
                 </span>
               )}
@@ -513,7 +513,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'archived' ? 'border-slate-700 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Archive className="w-4 h-4"/> Archived
               {archivedActivities.length > 0 && (
-                <span className="bg-slate-200 text-slate-700 py-0.5 px-1.5 rounded-full text-[10px] font-black">
+                <span className="bg-slate-200 text-slate-700 py-0.5 px-1.5 rounded-full text-xs font-black">
                   {archivedActivities.length}
                 </span>
               )}
@@ -601,7 +601,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 <kpi.icon className={`w-7 h-7 ${kpi.color} shrink-0`}/>
                 <div>
                   <p className="text-2xl font-black text-slate-800">{kpi.value}</p>
-                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{kpi.label}</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{kpi.label}</p>
                 </div>
               </div>
             ))}
@@ -623,7 +623,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <div key={s.id} className="flex items-center gap-2 text-sm">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                       <span className="font-bold text-slate-800">{s.full_name}</span>
-                      <span className="text-slate-400 text-[11px]">{s.designation || s.role}</span>
+                      <span className="text-slate-400 text-xs">{s.designation || s.role}</span>
                     </div>
                   ))}
                 </div>
@@ -632,7 +632,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {brief.checkedOutToday && brief.checkedOutToday.length > 0 && (
                 <>
                   <div className="border-t border-slate-100 mt-3 pt-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><LogOut className="w-3 h-3 text-slate-400"/> Checked out</p>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><LogOut className="w-3 h-3 text-slate-400"/> Checked out</p>
                     {brief.checkedOutToday.map(s => (
                       <div key={s.id} className="flex items-center gap-2 text-sm mb-1.5 opacity-60">
                         <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
@@ -646,7 +646,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {brief.absentToday.length > 0 && (
                 <>
                   <div className="border-t border-slate-100 mt-3 pt-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Not yet checked in</p>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Not yet checked in</p>
                     {brief.absentToday.map(s => (
                       <div key={s.id} className="flex items-center gap-2 text-sm mb-1.5">
                         <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
@@ -670,9 +670,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                       <div key={t.id} className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-bold text-red-800 truncate max-w-[180px]">{t.title}</p>
-                          <p className="text-[11px] text-red-500">{t.assigned_user?.full_name} · Due {new Date(t.due_date).toLocaleDateString()}</p>
+                          <p className="text-xs text-red-500">{t.assigned_user?.full_name} · Due {new Date(t.due_date).toLocaleDateString()}</p>
                         </div>
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${t.priority === 'urgent' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{t.priority}</span>
+                        <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${t.priority === 'urgent' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{t.priority}</span>
                       </div>
                     ))}
                   </div>
@@ -688,7 +688,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     {brief.pendingApprovals.map(t => (
                       <div key={t.id} className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                         <p className="text-sm font-bold text-amber-800 truncate">{t.title}</p>
-                        <p className="text-[11px] text-amber-600">Submitted by {t.assigned_user?.full_name}</p>
+                        <p className="text-xs text-amber-600">Submitted by {t.assigned_user?.full_name}</p>
                       </div>
                     ))}
                   </div>
@@ -716,7 +716,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <span className="w-2 h-2 rounded-full bg-navy animate-pulse"></span>
                     <span className="text-sm font-black text-slate-800 font-mono">{b.batch_id}</span>
                     {b.product_name && <span className="text-xs text-slate-600">{b.product_name}</span>}
-                    <span className="text-[10px] font-bold uppercase text-navy bg-slate-200 px-1.5 py-0.5 rounded">{b.status}</span>
+                    <span className="text-xs font-bold uppercase text-navy bg-slate-200 px-1.5 py-0.5 rounded">{b.status}</span>
                   </div>
                 ))}
               </div>
@@ -734,7 +734,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div key={issue.id} className="bg-red-50 border border-red-200 rounded-xl p-3">
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-red-800 text-sm">{issue.employees?.full_name}</span>
-                      <span className="text-[10px] text-red-500">{new Date(issue.created_at).toLocaleDateString()}</span>
+                      <span className="text-xs text-red-500">{new Date(issue.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-xs text-red-700 font-medium">{issue.issue_description}</p>
                   </div>
@@ -760,7 +760,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <Activity className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Logged Effort (7D)</p>
+                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Logged Effort (7D)</p>
                        <p className="text-2xl font-black text-gray-900 leading-none mt-1">
                           {analyticsData.velocity.reduce((acc,v) => acc + v.hours, 0).toFixed(1)} <span className="text-xs font-bold text-gray-400">HRS</span>
                        </p>
@@ -774,13 +774,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <AlertTriangle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Deviation Rate</p>
+                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Deviation Rate</p>
                        <p className="text-2xl font-black text-gray-900 leading-none mt-1">
                           {((analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0) / (activities.length || 1)) * 100).toFixed(1)}%
                        </p>
                     </div>
                  </div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
+                 <p className="text-xs font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
               </div>
 
               <div className="card p-6">
@@ -789,13 +789,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <CheckCircle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Issues Logged (7D)</p>
+                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Issues Logged (7D)</p>
                        <p className="text-2xl font-black text-gray-900 leading-none mt-1">
                           {analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0)}
                        </p>
                     </div>
                  </div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase">Across all team members</p>
+                 <p className="text-xs font-bold text-gray-400 uppercase">Across all team members</p>
               </div>
            </div>
 
@@ -841,12 +841,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                           </div>
                           <div>
                              <p className="text-xs font-bold text-gray-900">{act.employees?.full_name}</p>
-                             <p className="text-[10px] text-gray-500">{act.activity_description.slice(0, 60)}...</p>
+                             <p className="text-xs text-gray-500">{act.activity_description.slice(0, 60)}...</p>
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className="text-[10px] font-black uppercase text-gray-400">{new Date(act.created_at).toLocaleDateString()}</p>
-                          <button onClick={() => {setTab('feed'); setPriorityOnly(true);}} className="text-[10px] font-black text-navy uppercase hover:underline">Review</button>
+                          <p className="text-xs font-black uppercase text-gray-400">{new Date(act.created_at).toLocaleDateString()}</p>
+                          <button onClick={() => {setTab('feed'); setPriorityOnly(true);}} className="text-xs font-black text-navy uppercase hover:underline">Review</button>
                        </div>
                     </div>
                  ))}
@@ -883,7 +883,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
                     {act.batch_id && <span className="px-2 py-0.5 bg-slate-100 text-slate-900 text-xs font-mono font-bold rounded border border-slate-200">{act.batch_id}</span>}
                     {act.severity && (
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${
                         act.severity === 'high' ? 'bg-red-50 text-red-700 border-red-100' : 
                         act.severity === 'normal' ? 'bg-slate-100 text-slate-900 border-slate-200' :
                         'bg-slate-50 text-slate-500 border-slate-200'
@@ -911,7 +911,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                       </button>
                     ) : act.employee_id === employeeProfile?.id && !act.is_optimistic && (
                       myPendingIds.has(act.id) ? (
-                        <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Pending Review</span>
+                        <span className="text-xs font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Pending Review</span>
                       ) : (
                         <>
                           <button
@@ -989,7 +989,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{act.employees?.full_name}</span>
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase border bg-slate-100 text-slate-600 border-slate-200">
+                    <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase border bg-slate-100 text-slate-600 border-slate-200">
                       Archived
                     </span>
                   </div>
@@ -1041,7 +1041,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <AlertTriangle className="w-4 h-4"/>
                   <p className="text-xs font-black uppercase">Calibration Lock Active</p>
                 </div>
-                <p className="text-[11px] text-red-600">This equipment passed its calibration due date ({new Date(selectedEquipment.calibration_due_date).toLocaleDateString()}). Logging is disabled for compliance safety.</p>
+                <p className="text-xs text-red-600">This equipment passed its calibration due date ({new Date(selectedEquipment.calibration_due_date).toLocaleDateString()}). Logging is disabled for compliance safety.</p>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1195,8 +1195,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <span className="text-xs text-red-600 font-bold">{new Date(act.created_at).toLocaleDateString()}</span>
                   </div>
                   {!act.founder_comment 
-                    ? <span className="bg-red-600 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded animate-pulse">Needs Review</span>
-                    : <span className="bg-emerald-100 text-emerald-800 text-[10px] uppercase font-black px-2 py-0.5 rounded">Reviewed</span>}
+                    ? <span className="bg-red-600 text-white text-xs uppercase font-black px-2 py-0.5 rounded animate-pulse">Needs Review</span>
+                    : <span className="bg-emerald-100 text-emerald-800 text-xs uppercase font-black px-2 py-0.5 rounded">Reviewed</span>}
                 </div>
                 <div className="mb-3 text-sm text-slate-600 border-l-2 border-slate-300 pl-3">{act.activity_description}</div>
                 <div className="p-3 bg-red-100 border border-red-200 rounded-xl text-sm text-red-900 mb-3 font-medium">

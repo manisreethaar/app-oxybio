@@ -182,7 +182,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
           <Paperclip className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">{msg.pinned_item_type}</p>
+          <p className="text-xs uppercase font-bold text-slate-400 mb-0.5">{msg.pinned_item_type}</p>
           <p className="text-xs font-semibold truncate text-slate-700">Ref: {msg.pinned_item_id}</p>
         </div>
         <ExternalLink className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -216,7 +216,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
           <div>
             <h2 className="text-base font-bold text-slate-900 truncate">{chatName}</h2>
             {isGroup && (
-              <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+              <p className="text-xs uppercase tracking-wider font-bold text-slate-400">
                 {chat.type} • {chat.members?.length || 0} Members
               </p>
             )}
@@ -276,7 +276,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
             return (
               <div key={msg.id} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
                 {showName && (
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 ml-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 ml-1">
                     {msg.sender?.full_name || 'Unknown'}
                   </span>
                 )}
@@ -338,7 +338,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
 
                         {renderPinnedItem(msg)}
 
-                        <div className={`text-[9px] font-bold mt-1.5 opacity-60 flex items-center gap-1 ${isMe ? 'justify-end text-white/80' : 'justify-start text-slate-400'}`}>
+                        <div className={`text-xs font-bold mt-1.5 opacity-60 flex items-center gap-1 ${isMe ? 'justify-end text-white/80' : 'justify-start text-slate-400'}`}>
                           {msg.is_edited && <span className="mr-1 italic">(edited)</span>}
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           {isMe && msg.read_by && msg.read_by.length > 0 && (

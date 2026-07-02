@@ -452,10 +452,10 @@ export default function BatchDetailPage() {
             <p className="font-mono text-lg font-black text-slate-900 tracking-wider">{batch.batch_id}</p>
             <div className="flex gap-1.5 mt-1 flex-wrap">
               {batch.sku_target && batch.sku_target !== 'Unassigned' && (
-                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-slate-50 text-slate-700 border-slate-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-slate-50 text-slate-700 border-slate-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
               )}
-              <span className="px-2 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-600 border border-slate-200 uppercase">{batch.experiment_type}</span>
-              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='processing' ? 'bg-slate-50 text-slate-700 border-slate-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>{derivedStatus}</span>
+              <span className="px-2 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-600 border border-slate-200 uppercase">{batch.experiment_type}</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='processing' ? 'bg-slate-50 text-slate-700 border-slate-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>{derivedStatus}</span>
             </div>
           </div>
           <div className="text-right flex flex-col items-end gap-2">
@@ -471,7 +471,7 @@ export default function BatchDetailPage() {
                   : (new Date() - new Date(batch.start_time)) / 3600000;
                 return (
                   <>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase">{isScheduled ? 'Scheduled' : maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase">{isScheduled ? 'Scheduled' : maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
                     <p className="text-xl font-black text-slate-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-slate-400"> hr</span></p>
                   </>
                 );
@@ -480,7 +480,7 @@ export default function BatchDetailPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => router.push(`/messages?pin_type=batch&pin_id=${batch.batch_id}&pin_title=${encodeURIComponent('Batch ' + batch.batch_id)}`)}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-slate-600 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
                 title="Discuss this batch"
               >
                 <MessageSquare className="w-3 h-3"/> Discuss
@@ -488,7 +488,7 @@ export default function BatchDetailPage() {
               {!isTerminal && ['admin','ceo','cto'].includes(role) && (
                 <button
                   onClick={handleCancelBatch}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
                   title="Archive this batch"
                 >
                   <Trash2 className="w-3 h-3"/> Archive Batch
@@ -499,13 +499,13 @@ export default function BatchDetailPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
           <div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Recipe</p>
+            <p className="text-xs text-slate-400 font-bold uppercase mb-0.5">Recipe</p>
             <Link href="/formulations" className="font-bold text-slate-800 hover:text-navy hover:underline block">
               {batch.formulations?.name}
             </Link>
             <p className="text-slate-400">v{batch.formulations?.version}</p>
           </div>
-          <div><p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-slate-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
+          <div><p className="text-xs text-slate-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-slate-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
         </div>
       </div>
 
@@ -516,7 +516,7 @@ export default function BatchDetailPage() {
 
           {/* Stage Timeline */}
           <div className="card p-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Stage Timeline</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Stage Timeline</p>
             <div className="space-y-0.5">
               {STAGES.filter(s => !['released','rejected'].includes(s.id)).map((stage, idx) => {
                 let done, curr;
@@ -549,9 +549,9 @@ export default function BatchDetailPage() {
                         : <Icon className={`w-2.5 h-2.5 ${curr ? stage.color : 'text-slate-300'}`}/>}
                     </div>
                     <span className={`text-xs font-bold ${isViewing ? 'text-navy' : curr ? 'text-slate-900' : done ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{stage.label}</span>
-                    {isViewing && <span className="ml-auto text-[9px] font-black text-slate-600">VIEWING</span>}
-                    {curr && !isViewing && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
-                    {done && !isViewing && <span className="ml-auto text-[9px] text-slate-300 font-bold">↩</span>}
+                    {isViewing && <span className="ml-auto text-xs font-black text-slate-600">VIEWING</span>}
+                    {curr && !isViewing && <span className="ml-auto text-xs font-black text-navy">ACTIVE</span>}
+                    {done && !isViewing && <span className="ml-auto text-xs text-slate-300 font-bold">↩</span>}
                   </div>
                 );
               })}
@@ -567,7 +567,7 @@ export default function BatchDetailPage() {
           {/* Flask Cards */}
           <div className="card p-4 border-2 border-navy/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-navy/5 rounded-bl-[100px] -z-10"/>
-            <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
+            <p className="text-xs font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
             <div className="space-y-2">
               {flasks.map(f => (
                 <button
@@ -580,11 +580,11 @@ export default function BatchDetailPage() {
                     {selectedFlaskId===f.id && <div className="w-1.5 h-1.5 bg-navy rounded-full animate-pulse"/>}
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <p className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-slate-200 text-slate-500'}`}>
+                    <p className={`text-xs font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-slate-200 text-slate-500'}`}>
                       {f.status==='rejected' ? 'REJECTED' : isScheduled ? 'PLANNED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
                     </p>
                     {lnbByFlask[f.id] > 0 && (
-                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 flex items-center gap-0.5">
+                      <span className="text-xs font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 flex items-center gap-0.5">
                         <BookOpen className="w-2.5 h-2.5"/>{lnbByFlask[f.id]}
                       </span>
                     )}
@@ -592,12 +592,12 @@ export default function BatchDetailPage() {
                 </button>
               ))}
             </div>
-            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-[10px] text-amber-700 font-bold">{isScheduled ? 'Start batch to unlock stage tracking.' : 'Complete Sterilisation to unlock individual trial tracking.'}</span></div>}
+            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-xs text-amber-700 font-bold">{isScheduled ? 'Start batch to unlock stage tracking.' : 'Complete Sterilisation to unlock individual trial tracking.'}</span></div>}
           </div>
 
           {/* Linked Records (compact — Lab Notebook + BMR only) */}
           <div className="card p-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Quick Links</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Quick Links</p>
             <div className="space-y-2">
               <Link href={lnbEntryId ? `/lab-notebook/${lnbEntryId}` : '/lab-notebook'} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
                 <div className="flex items-center gap-2"><BookOpen className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-semibold text-slate-700">Lab Notebook</span></div>
@@ -615,13 +615,13 @@ export default function BatchDetailPage() {
                       {bmrLoading ? <Loader className="w-3.5 h-3.5 text-navy animate-spin"/> : <FileText className="w-3.5 h-3.5 text-navy"/>}
                       <span className="text-xs font-black text-navy">{bmrLoading ? 'Generating…' : bmrUrl ? 'Regenerate BMR' : 'Export BMR PDF'}</span>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">GMP</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase">GMP</span>
                   </button>
                   {bmrUrl && (
                     <a href={`/api/batches/${batchId}/bmr?download=true`} target="_blank"
                       className="w-full flex items-center justify-between p-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors">
                       <div className="flex items-center gap-2"><Download className="w-3.5 h-3.5 text-emerald-600"/><span className="text-xs font-black text-emerald-700">Download BMR</span></div>
-                      <span className="text-[9px] font-bold text-emerald-500 uppercase">PDF</span>
+                      <span className="text-xs font-bold text-emerald-500 uppercase">PDF</span>
                     </a>
                   )}
                 </div>
@@ -631,7 +631,7 @@ export default function BatchDetailPage() {
 
           {/* Stage History */}
           <div className="card p-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Stage History</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Stage History</p>
             <div className="space-y-2.5">
               {transitions.length===0 && <p className="text-xs text-slate-400 text-center py-2">No transitions yet.</p>}
               {(() => {
@@ -648,9 +648,9 @@ export default function BatchDetailPage() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-bold text-slate-700">{t.from_stage?.replace(/_/g,' ')} → {t.to_stage?.replace(/_/g,' ')}</p>
-                          {dur && <span className="text-[9px] font-black text-navy bg-navy/5 px-1.5 py-0.5 rounded">{dur}</span>}
+                          {dur && <span className="text-xs font-black text-navy bg-navy/5 px-1.5 py-0.5 rounded">{dur}</span>}
                         </div>
-                        <p className="text-slate-400 text-[10px]">{t.employees?.full_name} · {t.created_at ? new Date(t.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
+                        <p className="text-slate-400 text-xs">{t.employees?.full_name} · {t.created_at ? new Date(t.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
                       </div>
                     </div>
                   );
@@ -671,12 +671,12 @@ export default function BatchDetailPage() {
                   {editingStage === viewingStage ? (
                     <>
                       <p className="text-xs font-black text-amber-800">Editing Past Stage — Admin Mode</p>
-                      <p className="text-[10px] text-amber-600">Editing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. Save within the panel to update.</p>
+                      <p className="text-xs text-amber-600">Editing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. Save within the panel to update.</p>
                     </>
                   ) : (
                     <>
                       <p className="text-xs font-black text-slate-800">Viewing Past Stage — Read Only</p>
-                      <p className="text-[10px] text-slate-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
+                      <p className="text-xs text-slate-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
                     </>
                   )}
                 </div>
@@ -685,7 +685,7 @@ export default function BatchDetailPage() {
                 {['admin','ceo','cto'].includes(role) && editingStage !== viewingStage && (
                   <button
                     onClick={() => setEditingStage(viewingStage)}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-colors"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-lg transition-colors"
                   >
                     Edit Stage
                   </button>
@@ -693,14 +693,14 @@ export default function BatchDetailPage() {
                 {editingStage === viewingStage && (
                   <button
                     onClick={() => setEditingStage(null)}
-                    className="px-3 py-1.5 bg-slate-100 text-slate-700 text-[10px] font-black rounded-lg hover:bg-slate-200 transition-colors"
+                    className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-black rounded-lg hover:bg-slate-200 transition-colors"
                   >
                     Stop Editing
                   </button>
                 )}
                 <button
                   onClick={() => { setViewingStage(null); setEditingStage(null); }}
-                  className="px-3 py-1.5 bg-navy text-white text-[10px] font-black rounded-lg hover:bg-navy-hover transition-colors"
+                  className="px-3 py-1.5 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover transition-colors"
                 >
                   ← Return to Current Stage
                 </button>
@@ -710,7 +710,7 @@ export default function BatchDetailPage() {
 
           {!viewingStage && isPostSterilisation && selectedFlask && !['released','rejected'].includes(selectedFlask.current_stage) && selectedFlask.status !== 'rejected' && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => setPendingFlaskReject(true)} className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 font-black rounded-lg text-[10px] uppercase tracking-wider transition-all hover:scale-105">Abort / Reject Trial {selectedFlask.flask_label}</button>
+              <button onClick={() => setPendingFlaskReject(true)} className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 font-black rounded-lg text-xs uppercase tracking-wider transition-all hover:scale-105">Abort / Reject Trial {selectedFlask.flask_label}</button>
             </div>
           )}
 
@@ -856,7 +856,7 @@ export default function BatchDetailPage() {
 
             {/* Flask selector */}
             <div className="mb-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Flask</label>
+              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Flask</label>
               <select
                 value={quickLogFlaskId}
                 onChange={e => setQuickLogFlaskId(e.target.value)}
@@ -870,7 +870,7 @@ export default function BatchDetailPage() {
 
             {/* pH — required */}
             <div className="mb-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">pH <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">pH <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 step="0.01"
@@ -882,13 +882,13 @@ export default function BatchDetailPage() {
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
               />
               {quickPh && (parseFloat(quickPh) < 3.8 || parseFloat(quickPh) > 5.5) && (
-                <p className="text-[10px] text-red-600 font-bold mt-0.5">⚠ pH out of range — alarm will be flagged</p>
+                <p className="text-xs text-red-600 font-bold mt-0.5">⚠ pH out of range — alarm will be flagged</p>
               )}
             </div>
 
             {/* Incubator Temp */}
             <div className="mb-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Incubator Temp °C <span className="text-slate-300">(optional)</span></label>
+              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Incubator Temp °C <span className="text-slate-300">(optional)</span></label>
               <input
                 type="number"
                 step="0.1"
@@ -901,7 +901,7 @@ export default function BatchDetailPage() {
 
             {/* OD 600nm */}
             <div className="mb-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">OD 600nm <span className="text-slate-300">(optional)</span></label>
+              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">OD 600nm <span className="text-slate-300">(optional)</span></label>
               <input
                 type="number"
                 step="0.01"
@@ -915,7 +915,7 @@ export default function BatchDetailPage() {
 
             {/* Visual */}
             <div className="mb-5">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Visual Appearance</label>
+              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Visual Appearance</label>
               <select
                 value={quickVisual}
                 onChange={e => setQuickVisual(e.target.value)}

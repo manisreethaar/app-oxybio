@@ -129,7 +129,7 @@ export default function GrowthStudiesPage() {
             </div>
             <div>
               <p className="text-2xl font-black text-slate-800">{c.value}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{c.label}</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{c.label}</p>
             </div>
           </div>
         ))}
@@ -207,22 +207,22 @@ export default function GrowthStudiesPage() {
                 <Link href={`/growth-studies/${study.id}`} className="p-6 block">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex gap-2 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${sm.color}`}>{sm.label}</span>
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${tm.color}`}>{tm.label}</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider border ${sm.color}`}>{sm.label}</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider border ${tm.color}`}>{tm.label}</span>
                     </div>
                     {study.status === 'active' && (
-                      <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                      <span className="text-xs font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
                         {elapsedLabel(study.inoculation_time)}
                       </span>
                     )}
                   </div>
 
                   <h3 className="font-black text-slate-800 text-base group-hover:text-slate-700 transition-colors mb-1">{study.name}</h3>
-                  <p className="text-[10px] font-mono text-slate-400 mb-0.5">{study.study_code || '—'}</p>
+                  <p className="text-xs font-mono text-slate-400 mb-0.5">{study.study_code || '—'}</p>
                   <p className="text-xs text-slate-500 font-medium mb-4">{isolateName} · {mediaName}</p>
 
                   {study.temperature_c && (
-                    <div className="flex gap-3 text-[11px] font-bold text-slate-500 mb-4">
+                    <div className="flex gap-3 text-xs font-bold text-slate-500 mb-4">
                       <span>{study.temperature_c}°C</span>
                       {study.agitation_rpm && <span>{study.agitation_rpm} rpm</span>}
                       {study.vessel_type && <span>{study.vessel_type.replace(/_/g, ' ')}</span>}
@@ -231,7 +231,7 @@ export default function GrowthStudiesPage() {
 
                   {total > 0 && (
                     <div>
-                      <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                      <div className="flex justify-between text-xs font-bold text-slate-400 mb-1">
                         <span>Time points</span>
                         <span>{done}/{total}</span>
                       </div>
@@ -247,7 +247,7 @@ export default function GrowthStudiesPage() {
                   <div className="px-6 pb-4 flex items-center justify-between border-t border-white/40 pt-3">
                     <div className="flex items-center gap-1.5">
                       {study.creator && <CreatorBadge initials={study.creator.initials} fullName={study.creator.full_name} size="sm" showTooltip={false}/>}
-                      {study.creator && <span className="text-[10px] text-slate-400 font-medium">{study.creator.full_name}</span>}
+                      {study.creator && <span className="text-xs text-slate-400 font-medium">{study.creator.full_name}</span>}
                     </div>
                     {!isAdmin && study.created_by === employeeProfile?.id && (
                       <EditRequestButton

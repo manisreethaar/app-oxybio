@@ -117,7 +117,7 @@ export default async function VerifyEmployeePage({ params }) {
                   <span className="font-bold text-slate-400">ID</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Verification ID</p>
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-wider">Verification ID</p>
                   <p className="font-bold text-slate-800 italic">
                     {emp.verification_token 
                       ? `${emp.verification_token.slice(0,8)}...${emp.verification_token.slice(-4)}` 
@@ -131,7 +131,7 @@ export default async function VerifyEmployeePage({ params }) {
                   <Calendar className="w-4 h-4 text-slate-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Since</p>
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-wider">Since</p>
                   <p className="font-bold text-slate-800">{emp.joined_date ? new Date(emp.joined_date).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>

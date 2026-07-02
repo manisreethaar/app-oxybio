@@ -34,7 +34,7 @@ export default function FormulaDiff({ v1, v2 }) {
   return (
     <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
       <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Visual Delta: V{v1.version} → V{v2.version}</span>
+        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Visual Delta: V{v1.version} → V{v2.version}</span>
       </div>
       <div className="p-4 space-y-2">
         {allKeys.map(key => {

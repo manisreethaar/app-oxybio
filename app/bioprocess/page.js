@@ -208,7 +208,7 @@ export default function BioprocessPage() {
                 {exp.creator && (
                   <div className="flex items-center gap-1.5 mt-2 border-t border-slate-50 pt-2">
                     <CreatorBadge initials={exp.creator.initials} fullName={exp.creator.full_name} />
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-xs text-slate-400">
                       {exp.creator.full_name} · {new Date(exp.created_at).toLocaleDateString('en-IN')}
                     </p>
                   </div>

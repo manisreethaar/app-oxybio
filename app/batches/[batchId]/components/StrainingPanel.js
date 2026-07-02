@@ -10,10 +10,10 @@ function CalibrationBadge({ equipment }) {
   const due = equipment.calibration_due_date ? new Date(equipment.calibration_due_date) : null;
   const today = new Date();
   const daysLeft = due ? Math.ceil((due - today) / 86400000) : null;
-  if (!due)          return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">No Cal. Data</span>;
-  if (daysLeft < 0)  return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-1"><AlertTriangle className="w-2.5 h-2.5"/>OVERDUE</span>;
-  if (daysLeft <= 30) return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Due in {daysLeft}d</span>;
-  return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Cal. OK</span>;
+  if (!due)          return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">No Cal. Data</span>;
+  if (daysLeft < 0)  return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-1"><AlertTriangle className="w-2.5 h-2.5"/>OVERDUE</span>;
+  if (daysLeft <= 30) return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Due in {daysLeft}d</span>;
+  return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Cal. OK</span>;
 }
 
 function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
@@ -31,7 +31,7 @@ function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
         ))}
       </select>
       {selected?.calibration_due_date && new Date(selected.calibration_due_date) < new Date() && (
-        <p className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1">
+        <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1">
           <AlertTriangle className="w-3 h-3"/>Calibration overdue — raise a deviation before use.
         </p>
       )}
@@ -235,7 +235,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Equipment Traceability */}
       <div className="card p-5 space-y-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
           <Wrench className="w-3 h-3"/>Equipment Used
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -247,7 +247,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* G-67: Method selection */}
       <div className="card p-5 space-y-3">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Separation Method</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Separation Method</p>
         <div className="flex gap-2">
           {['Centrifugation','Membrane Filtration','Gravity Filtration','Depth Filtration'].map(m=>(
             <button key={m} type="button" onClick={()=>setMethod(m)}
@@ -260,7 +260,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Centrifuge Run Parameters */}
       <div className="card p-5 space-y-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
           {method === 'Centrifugation' ? 'Centrifuge Run Parameters' : 'Filtration Parameters'}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -290,7 +290,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
             RCF (Relative Centrifugal Force): <span className="font-black text-amber-900">
               {Math.round(1.118 * parseFloat(rotorRadius) * Math.pow(parseFloat(rpm)/1000, 2))} × g
             </span>
-            <span className="ml-2 text-amber-500 font-normal text-[9px]">= 1.118 × r × (RPM/1000)²</span>
+            <span className="ml-2 text-amber-500 font-normal text-xs">= 1.118 × r × (RPM/1000)²</span>
           </div>
         )}
         {/* G-66: Second pass */}
@@ -312,7 +312,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Mass Balance */}
       <div className="card p-5 space-y-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mass Balance (g)</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Mass Balance (g)</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="field-label">Total Broth Before (g) *</label>
@@ -341,7 +341,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       {/* Supernatant Quality + Volume */}
       <div className="card p-5 space-y-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Supernatant / Filtrate Quality</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Supernatant / Filtrate Quality</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="field-label">Colour</label>
@@ -361,25 +361,25 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <div>
             <label className="field-label">Turbidity (NTU)</label>
             <input type="number" step="0.1" value={turbidityNtu} onChange={e=>setTurbidityNtu(e.target.value)} className="field-input" placeholder="e.g. 5.2"/>
-            <p className="text-[9px] text-slate-400 mt-0.5">Objective clarity measurement</p>
+            <p className="text-xs text-slate-400 mt-0.5">Objective clarity measurement</p>
           </div>
         </div>
         {/* G-69: Volume after */}
         <div>
           <label className="field-label">Volume After Separation (ml)</label>
           <input type="number" step="0.1" value={volAfterMl} onChange={e=>setVolAfterMl(e.target.value)} className="field-input" placeholder="e.g. 400"/>
-          <p className="text-[9px] text-slate-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
+          <p className="text-xs text-slate-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
         </div>
         {/* A-53: Hold time before centrifuge */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-          <label className="block text-xs font-black text-slate-900 mb-1">Hold Time Before Centrifuge (min) <span className="text-slate-400 text-[10px]">(A-53 — time between fermentation end and centrifuge start)</span></label>
+          <label className="block text-xs font-black text-slate-900 mb-1">Hold Time Before Centrifuge (min) <span className="text-slate-400 text-xs">(A-53 — time between fermentation end and centrifuge start)</span></label>
           <input type="number" step="1" value={holdTimeBefore} onChange={e=>setHoldTimeBefore(e.target.value)} className="field-input" placeholder="e.g. 30"/>
-          {holdTimeBefore && parseFloat(holdTimeBefore) > 120 && <p className="text-[10px] text-amber-700 font-bold mt-1">⚠ Hold &gt;2h at room temp — risk of culture quality degradation</p>}
+          {holdTimeBefore && parseFloat(holdTimeBefore) > 120 && <p className="text-xs text-amber-700 font-bold mt-1">⚠ Hold &gt;2h at room temp — risk of culture quality degradation</p>}
         </div>
 
         {/* A-29: Cell wash step */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-slate-900">Cell Wash Steps <span className="text-slate-400 text-[10px]">(A-29)</span></p>
+          <p className="text-xs font-black text-slate-900">Cell Wash Steps <span className="text-slate-400 text-xs">(A-29)</span></p>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="field-label">Number of Washes</label><input type="number" min="0" max="5" value={washSteps} onChange={e=>setWashSteps(e.target.value)} className="field-input" placeholder="0"/></div>
             <div><label className="field-label">Wash Buffer</label><input value={washBuffer} onChange={e=>setWashBuffer(e.target.value)} className="field-input" placeholder="e.g. 0.9% saline"/></div>
@@ -389,7 +389,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
         {/* A-30: Post-centrifuge viability */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-slate-900">Post-Centrifuge Cell Viability <span className="text-slate-400 text-[10px]">(A-30)</span></p>
+          <p className="text-xs font-black text-slate-900">Post-Centrifuge Cell Viability <span className="text-slate-400 text-xs">(A-30)</span></p>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="field-label text-slate-800">Viability (%)</label><input type="number" step="0.1" min="0" max="100" value={postCentVia} onChange={e=>setPostCentVia(e.target.value)} className="field-input" placeholder="e.g. 85"/></div>
             <div><label className="field-label text-slate-800">Method</label>
@@ -403,7 +403,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         {/* G-70: Pellet resuspension */}
         {pelletWt && (
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-            <p className="text-[10px] font-black text-slate-500 uppercase">Pellet Resuspension (if applicable)</p>
+            <p className="text-xs font-black text-slate-500 uppercase">Pellet Resuspension (if applicable)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Resuspension Buffer</label>
                 <input value={resuspBuffer} onChange={e=>setResuspBuffer(e.target.value)} className="field-input" placeholder="e.g. PBS, distilled water, media"/>

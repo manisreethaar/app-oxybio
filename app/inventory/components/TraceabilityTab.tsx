@@ -92,10 +92,10 @@ export default function TraceabilityTab() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-gray-100">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Date Logged</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Raw Material (Lot)</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Link</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Final Product Batch</th>
+                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Date Logged</th>
+                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Raw Material (Lot)</th>
+                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Link</th>
+                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Final Product Batch</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -103,11 +103,11 @@ export default function TraceabilityTab() {
                   <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <p className="text-sm font-bold text-slate-700">{new Date(r.date).toLocaleDateString()}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(r.date).toLocaleTimeString()}</p>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(r.date).toLocaleTimeString()}</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-black text-slate-900">{r.item_name}</p>
-                      <p className="text-[10px] font-bold text-slate-700/70 uppercase tracking-widest mt-0.5">Lot: {r.lot_number}</p>
+                      <p className="text-xs font-bold text-slate-700/70 uppercase tracking-widest mt-0.5">Lot: {r.lot_number}</p>
                       <p className="text-xs font-semibold text-slate-500 mt-1">Used: {r.quantity_used}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -118,8 +118,8 @@ export default function TraceabilityTab() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-black text-slate-800">{r.product_name}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Batch: {r.batch_id}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Batch: {r.batch_id}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-black uppercase tracking-wider">
                         {r.batch_status}
                       </span>
                     </td>

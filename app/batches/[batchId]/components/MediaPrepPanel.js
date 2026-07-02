@@ -246,10 +246,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           <p className="text-xs text-slate-500">Record all raw material BOM fulfillment and substrate setup.</p></div>
         <div className="ml-auto flex items-center gap-2">
           {/* G-17: BOM Report */}
-          <button onClick={()=>setShowBomReport(true)} className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-black rounded-lg uppercase flex items-center gap-1">
+          <button onClick={()=>setShowBomReport(true)} className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-black rounded-lg uppercase flex items-center gap-1">
             <ClipboardList className="w-3 h-3"/>BOM Report
           </button>
-          {data?.is_complete && <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Complete</span>}
+          {data?.is_complete && <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black rounded-lg uppercase">Complete</span>}
         </div>
       </div>
 
@@ -258,10 +258,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           <div className="flex justify-between items-end mb-4">
             <div>
               <h3 className="text-xs font-black uppercase text-slate-800 mb-1">BOM Traceability</h3>
-              <p className="text-[11px] font-medium text-slate-500">Recipe: <span className="text-slate-600 font-bold">{batch.formulations?.name}</span> | Base: {baseVol}ml | Target: {targetVol}ml</p>
+              <p className="text-xs font-medium text-slate-500">Recipe: <span className="text-slate-600 font-bold">{batch.formulations?.name}</span> | Base: {baseVol}ml | Target: {targetVol}ml</p>
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-black uppercase text-slate-400">Scale Factor</span>
+              <span className="text-xs font-black uppercase text-slate-400">Scale Factor</span>
               <p className="text-sm font-black text-slate-600">{scaleFactor.toFixed(2)}x</p>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                  <div key={ing.item_id} className="p-4 border border-slate-100 bg-slate-50/20 rounded-xl">
                    <div className="flex justify-between items-center mb-3">
                      <span className="font-bold text-sm text-slate-900">{ing.name}</span>
-                     <span className="text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-1 rounded">Target: {parseFloat(scaledQty)} {ing.unit}</span>
+                     <span className="text-xs font-black text-slate-600 bg-slate-100 px-2 py-1 rounded">Target: {parseFloat(scaledQty)} {ing.unit}</span>
                    </div>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                      <div>
@@ -289,7 +289,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                          {/* G-18: Clear lot selection */}
                          {usage.lotId && (
                            <button type="button" onClick={() => setBomUsage(p=>({...p, [ing.item_id]: {lotId:'', usedQty:''}}))}
-                             className="text-[9px] text-amber-600 font-black uppercase hover:underline flex items-center gap-0.5">
+                             className="text-xs text-amber-600 font-black uppercase hover:underline flex items-center gap-0.5">
                              <X className="w-2.5 h-2.5"/>Clear Lot
                            </button>
                          )}
@@ -317,13 +317,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                          if (!usage.usedQty || isNaN(actual) || target === 0) return null;
                          const pct = Math.abs((actual - target) / target) * 100;
                          if (pct > 10) return (
-                           <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1">
+                           <p className="text-xs font-bold text-amber-600 mt-1 flex items-center gap-1">
                              <AlertTriangle className="w-3 h-3 shrink-0"/>
                              {actual > target ? '+' : ''}{(actual - target).toFixed(2)} {ing.unit} deviation ({pct.toFixed(1)}% from target)
                            </p>
                          );
                          if (pct > 0) return (
-                           <p className="text-[10px] font-semibold text-slate-400 mt-1">
+                           <p className="text-xs font-semibold text-slate-400 mt-1">
                              ±{pct.toFixed(1)}% from target — within tolerance
                            </p>
                          );
@@ -369,13 +369,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </div>
             {/* G-53: Water Activity */}
             <div>
-              <label className="field-label">Water Activity (aW) <span className="text-slate-400 text-[9px]">substrate</span></label>
+              <label className="field-label">Water Activity (aW) <span className="text-slate-400 text-xs">substrate</span></label>
               <input type="number" step="0.01" min="0" max="1" value={awValue} onChange={e=>setAwValue(e.target.value)} className="field-input" placeholder="0.95"/>
-              {awValue && parseFloat(awValue) > 0.97 && <p className="text-[10px] text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
+              {awValue && parseFloat(awValue) > 0.97 && <p className="text-xs text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
             </div>
             {/* A-25: Starch Gelatinization */}
             <div>
-              <label className="field-label">Starch Gelatinization Temp (°C) <span className="text-slate-400 text-[9px]">A-25</span></label>
+              <label className="field-label">Starch Gelatinization Temp (°C) <span className="text-slate-400 text-xs">A-25</span></label>
               <input type="number" step="0.1" value={starchGelTemp} onChange={e=>setStarchGelTemp(e.target.value)} className="field-input" placeholder="65–70°C (grain substrates)"/>
             </div>
             <div className="flex flex-col justify-end pb-0.5">
@@ -386,22 +386,22 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </div>
             {/* A-58: Buffer Capacity */}
             <div>
-              <label className="field-label">Buffer Capacity (mmol/L) <span className="text-slate-400 text-[9px]">A-58</span></label>
+              <label className="field-label">Buffer Capacity (mmol/L) <span className="text-slate-400 text-xs">A-58</span></label>
               <input type="number" step="0.1" value={bufferCapacity} onChange={e=>setBufferCapacity(e.target.value)} className="field-input" placeholder="e.g. 25"/>
-              <p className="text-[9px] text-slate-400 mt-0.5">Resistance to pH change — affects fermentation rate variability</p>
+              <p className="text-xs text-slate-400 mt-0.5">Resistance to pH change — affects fermentation rate variability</p>
             </div>
             {/* A-59: Viscosity */}
             <div>
-              <label className="field-label">Substrate Viscosity (cP) <span className="text-slate-400 text-[9px]">A-59</span></label>
+              <label className="field-label">Substrate Viscosity (cP) <span className="text-slate-400 text-xs">A-59</span></label>
               <input type="number" step="0.1" value={viscosityCp} onChange={e=>setViscosityCp(e.target.value)} className="field-input" placeholder="e.g. 120"/>
-              <p className="text-[9px] text-slate-400 mt-0.5">Affects mixing efficiency and mass transfer</p>
+              <p className="text-xs text-slate-400 mt-0.5">Affects mixing efficiency and mass transfer</p>
             </div>
           </div>
           {/* G-85: Substrate photo URL */}
           <div>
-            <label className="field-label">Substrate Photo URL <span className="text-slate-400 text-[9px]">optional — colour/texture traceability</span></label>
+            <label className="field-label">Substrate Photo URL <span className="text-slate-400 text-xs">optional — colour/texture traceability</span></label>
             <input type="url" value={substratePhotoUrl} onChange={e=>setSubstratePhotoUrl(e.target.value)} className="field-input" placeholder="https://... (link to substrate photo)"/>
-            {substratePhotoUrl && <a href={substratePhotoUrl} target="_blank" rel="noreferrer" className="text-[10px] text-navy underline font-bold mt-0.5 inline-block">View photo →</a>}
+            {substratePhotoUrl && <a href={substratePhotoUrl} target="_blank" rel="noreferrer" className="text-xs text-navy underline font-bold mt-0.5 inline-block">View photo →</a>}
           </div>
         </div>
 
@@ -410,7 +410,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           <div className="flex items-center justify-between">
             <label className="field-label mb-0">Pre-treatment Steps</label>
             <button type="button" onClick={()=>setPretreatSteps(p=>[...p,{type:'Heat',target_temp:'',duration_min:'',notes:''}])}
-              className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-[9px] font-black rounded-lg uppercase hover:bg-slate-100">
+              className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-black rounded-lg uppercase hover:bg-slate-100">
               + Add Step
             </button>
           </div>
@@ -424,7 +424,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               <button type="button" onClick={()=>setPretreatSteps(p=>p.filter((_,i)=>i!==idx))} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
             </div>
           ))}
-          {pretreatSteps.length === 0 && <p className="text-[10px] text-slate-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
+          {pretreatSteps.length === 0 && <p className="text-xs text-slate-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
         </div>
 
         <div className="border-t border-slate-100 pt-5">
@@ -499,7 +499,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                       <tr key={ing.item_id} className={Math.abs(devNum)>10 ? 'bg-amber-50' : ''}>
                         <td className="border border-slate-100 px-3 py-1.5 font-semibold text-slate-800">{ing.name}</td>
                         <td className="border border-slate-100 px-3 py-1.5 text-right text-slate-600">{parseFloat(target)} {ing.unit}</td>
-                        <td className="border border-slate-100 px-3 py-1.5 font-mono text-[10px] text-slate-700">{lot?.supplier_batch_number || (usage.lotId ? '—' : 'Not selected')}</td>
+                        <td className="border border-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">{lot?.supplier_batch_number || (usage.lotId ? '—' : 'Not selected')}</td>
                         <td className="border border-slate-100 px-3 py-1.5 text-right font-bold text-slate-900">{isNaN(actual) ? '—' : `${actual} ${ing.unit}`}</td>
                         <td className={`border border-slate-100 px-3 py-1.5 text-right font-black ${Math.abs(devNum)>10 ? 'text-amber-700' : 'text-slate-500'}`}>{dev === '—' ? '—' : `${devNum > 0 ? '+' : ''}${dev}%`}</td>
                       </tr>

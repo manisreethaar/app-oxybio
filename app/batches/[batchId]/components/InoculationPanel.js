@@ -299,26 +299,26 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
                 setSamplingPlanHrs(suggested);
               }
             }} className="field-input" placeholder="e.g. 12"/>
-            <p className="text-[9px] text-slate-400 mt-1">User-defined threshold for alerting</p>
+            <p className="text-xs text-slate-400 mt-1">User-defined threshold for alerting</p>
           </div>
         </div>
 
         {/* G-55: Flask temperature at inoculation */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="field-label">Flask Temp at Inoculation (°C) <span className="text-slate-400 text-[9px]">must be &lt;40°C for LAB</span></label>
+            <label className="field-label">Flask Temp at Inoculation (°C) <span className="text-slate-400 text-xs">must be &lt;40°C for LAB</span></label>
             <input type="number" step="0.5" value={flaskTempC} onChange={e=>setFlaskTempC(e.target.value)} className="field-input" placeholder="e.g. 35.0"/>
-            {flaskTempC && parseFloat(flaskTempC) > 42 && <p className="text-[10px] text-red-600 font-bold mt-0.5">⚠ Temperature exceeds 42°C — LAB may not survive inoculation</p>}
+            {flaskTempC && parseFloat(flaskTempC) > 42 && <p className="text-xs text-red-600 font-bold mt-0.5">⚠ Temperature exceeds 42°C — LAB may not survive inoculation</p>}
           </div>
           {/* G-54: Inoculation rate auto-calc */}
           <div>
-            <label className="field-label">Inoculation Rate (% v/v) <span className="text-slate-400 text-[9px]">auto-calculated</span></label>
+            <label className="field-label">Inoculation Rate (% v/v) <span className="text-slate-400 text-xs">auto-calculated</span></label>
             <div className="field-input bg-slate-50 font-black text-navy text-sm">
               {inVol && batch.planned_volume_ml
                 ? `${((parseFloat(inVol) / (batch.planned_volume_ml)) * 100).toFixed(2)}%`
                 : '—'}
             </div>
-            <p className="text-[9px] text-slate-400 mt-0.5">= vol_inocu / vol_flask × 100</p>
+            <p className="text-xs text-slate-400 mt-0.5">= vol_inocu / vol_flask × 100</p>
           </div>
         </div>
 
@@ -327,7 +327,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           <div>
             <label className="field-label">Back-Slop Ratio (% v/v of previous batch)</label>
             <input type="number" step="0.5" min="0" max="100" value={backSlopPct} onChange={e=>setBackSlopPct(e.target.value)} className="field-input" placeholder="e.g. 10"/>
-            <p className="text-[9px] text-slate-400 mt-0.5">Typical back-slop ratio: 3–15% v/v</p>
+            <p className="text-xs text-slate-400 mt-0.5">Typical back-slop ratio: 3–15% v/v</p>
           </div>
         )}
 
@@ -336,7 +336,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           <div className="flex items-center justify-between">
             <label className="field-label mb-0">Co-Culture / Additional Starters</label>
             <button type="button" onClick={()=>setCoStarters(p=>[...p,{source_type:'other',source:'',vol_ml:''}])}
-              className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-[9px] font-black rounded-lg uppercase hover:bg-slate-100">
+              className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-black rounded-lg uppercase hover:bg-slate-100">
               + Add Organism
             </button>
           </div>
@@ -344,16 +344,16 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
             <div key={idx} className="p-3 bg-slate-50/30 border border-slate-100 rounded-xl grid grid-cols-3 gap-2">
               <input value={cs.source} onChange={e=>setCoStarters(p=>p.map((s,i)=>i===idx?{...s,source:e.target.value}:s))} placeholder="e.g. Saccharomyces cerevisiae" className="field-input text-xs col-span-2 p-1.5"/>
               <input type="number" value={cs.vol_ml} onChange={e=>setCoStarters(p=>p.map((s,i)=>i===idx?{...s,vol_ml:e.target.value}:s))} placeholder="ml" className="field-input text-xs p-1.5"/>
-              <button type="button" onClick={()=>setCoStarters(p=>p.filter((_,i)=>i!==idx))} className="col-span-3 text-right text-[9px] text-red-400 hover:text-red-600 font-black">✕ Remove</button>
+              <button type="button" onClick={()=>setCoStarters(p=>p.filter((_,i)=>i!==idx))} className="col-span-3 text-right text-xs text-red-400 hover:text-red-600 font-black">✕ Remove</button>
             </div>
           ))}
-          {coStarters.length === 0 && <p className="text-[10px] text-slate-400 italic">No co-cultures. Single-starter inoculation.</p>}
+          {coStarters.length === 0 && <p className="text-xs text-slate-400 italic">No co-cultures. Single-starter inoculation.</p>}
         </div>
 
         {/* G-34: Sampling plan */}
         <div className="p-3 bg-navy/5 border border-navy/15 rounded-xl">
-          <label className="block text-[11px] font-black uppercase tracking-wider text-navy/80 mb-1.5">
-            Fermentation Sampling Schedule <span className="text-slate-400 font-normal normal-case text-[10px]">(comma-separated hours)</span>
+          <label className="block text-xs font-black uppercase tracking-wider text-navy/80 mb-1.5">
+            Fermentation Sampling Schedule <span className="text-slate-400 font-normal normal-case text-xs">(comma-separated hours)</span>
           </label>
           <input value={samplingPlanHrs} onChange={e=>setSamplingPlanHrs(e.target.value)}
             className="w-full px-3 py-2 border border-navy/20 rounded-xl text-xs font-semibold outline-none bg-white focus:border-navy"
@@ -361,7 +361,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           {samplingPlanHrs && (
             <div className="flex flex-wrap gap-1 mt-2">
               {samplingPlanHrs.split(',').map(h=>h.trim()).filter(Boolean).map(hr => (
-                <span key={hr} className="px-2 py-0.5 bg-navy/10 text-navy text-[9px] font-black rounded border border-navy/15">T+{hr}h</span>
+                <span key={hr} className="px-2 py-0.5 bg-navy/10 text-navy text-xs font-black rounded border border-navy/15">T+{hr}h</span>
               ))}
             </div>
           )}
@@ -369,7 +369,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
         {/* G-19: Pre-inoculation pH check */}
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
-          <label className="block text-[11px] font-black uppercase tracking-wider text-amber-900">
+          <label className="block text-xs font-black uppercase tracking-wider text-amber-900">
             Pre-Inoculation Substrate pH <span className="text-amber-500">(check before adding starter)</span>
           </label>
           <input type="number" step="0.01" value={preInocuPh} onChange={e=>setPreInocuPh(e.target.value)}
@@ -385,7 +385,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
         {/* A-26: Inoculum viability at point of use */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-slate-900">Inoculum Viability at Point of Use <span className="text-slate-500 font-semibold text-[10px]">(A-26)</span></p>
+          <p className="text-xs font-black text-slate-900">Inoculum Viability at Point of Use <span className="text-slate-500 font-semibold text-xs">(A-26)</span></p>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="field-label text-slate-800">Viability (%)</label>
@@ -399,14 +399,14 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
             </div>
           </div>
           {inoculumViabilityPct && parseFloat(inoculumViabilityPct) < 80 && (
-            <p className="text-[10px] text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low inoculum viability — extended lag phase expected</p>
+            <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low inoculum viability — extended lag phase expected</p>
           )}
         </div>
 
         {/* A-49: Back-slop prep log */}
         {sourceType === 'back_slop' && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-            <p className="text-xs font-black text-amber-900">Back-Slop Preparation Record <span className="text-amber-500 font-semibold text-[10px]">(A-49)</span></p>
+            <p className="text-xs font-black text-amber-900">Back-Slop Preparation Record <span className="text-amber-500 font-semibold text-xs">(A-49)</span></p>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="field-label">Source Batch ID</label><input value={backSlopSourceBatch} onChange={e=>setBackSlopSourceBatch(e.target.value)} className="field-input text-xs" placeholder="e.g. OXY-2026-001"/></div>
               <div><label className="field-label">Source Final pH</label><input type="number" step="0.01" value={backSlopFinalPh} onChange={e=>setBackSlopFinalPh(e.target.value)} className="field-input text-xs" placeholder="4.2"/></div>
@@ -417,10 +417,10 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
         {/* A-27: Post-inoculation pH at 15 min */}
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-          <label className="block text-xs font-black text-emerald-900 mb-1">Post-Inoculation pH at 15 min <span className="text-emerald-500 font-semibold text-[10px]">(A-27)</span></label>
+          <label className="block text-xs font-black text-emerald-900 mb-1">Post-Inoculation pH at 15 min <span className="text-emerald-500 font-semibold text-xs">(A-27)</span></label>
           <input type="number" step="0.01" value={postInocuPh15min} onChange={e=>setPostInocuPh15min(e.target.value)} className="field-input" placeholder="Measure pH 15 min after adding starter to confirm activity"/>
           {postInocuPh15min && preInocuPh && (
-            <p className="text-[10px] text-emerald-700 font-semibold mt-1">
+            <p className="text-xs text-emerald-700 font-semibold mt-1">
               ΔpH = {(parseFloat(postInocuPh15min) - parseFloat(preInocuPh)).toFixed(2)} {parseFloat(postInocuPh15min) < parseFloat(preInocuPh) ? '✓ Starter is active' : '⚠ No acidification — check starter viability'}
             </p>
           )}
@@ -428,17 +428,17 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
         {/* T=0 */}
         <div className="p-4 border-2 border-navy/30 rounded-2xl bg-navy/5">
-          <label className="block text-[11px] font-black uppercase tracking-wider text-navy mb-2">
+          <label className="block text-xs font-black uppercase tracking-wider text-navy mb-2">
             ⏱ T=0 — Inoculation Time for {activeFlask.flask_label}
           </label>
           <input type="datetime-local" value={tZero} onChange={e=>setTZero(e.target.value)}
             className="w-full px-4 py-3 border-2 border-navy/30 rounded-xl text-sm font-black font-mono text-navy bg-white outline-none focus:border-navy"/>
           {tZero && new Date(tZero) < new Date(batch.created_at || batch.start_time) ? (
-            <p className="text-[10px] text-amber-600 font-bold mt-1.5 flex items-center gap-1">
+            <p className="text-xs text-amber-600 font-bold mt-1.5 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3"/>Retrospective entry — T=0 is before this batch was created in OxyOS. This is valid for historical data.
             </p>
           ) : (
-            <p className="text-[10px] text-navy/60 font-semibold mt-1.5">This sets the clock specifically for this trial.</p>
+            <p className="text-xs text-navy/60 font-semibold mt-1.5">This sets the clock specifically for this trial.</p>
           )}
         </div>
 
@@ -472,7 +472,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
               <textarea value={contNotes} onChange={e=>setContNotes(e.target.value)} rows={2} placeholder="Describe suspected contamination (visual signs, odour, timing)..." className="w-full px-3 py-2 border border-red-200 rounded-lg text-xs font-semibold outline-none resize-none bg-white"/>
               {capaDevId
                 ? <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>CAPA raised. <a href="/compliance" className="underline">Review in Compliance →</a></p>
-                : <p className="text-[10px] text-red-600 font-bold">Saving will auto-raise a CAPA deviation for this contamination event.</p>
+                : <p className="text-xs text-red-600 font-bold">Saving will auto-raise a CAPA deviation for this contamination event.</p>
               }
             </div>
           )}

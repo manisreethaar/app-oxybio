@@ -146,15 +146,15 @@ export default function ClientLayout({ children }) {
           {sessionExpired && (
             <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-bottom duration-300"
               style={{ background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <span className="text-[13px] font-semibold text-white/80">Session expired.</span>
+              <span className="text-sm font-semibold text-white/80">Session expired.</span>
               <button onClick={() => { clearSessionExpired(); window.location.href = '/login'; }}
-                className="text-[12px] font-black text-slate-400 hover:text-slate-300 transition-colors">Sign In →</button>
+                className="text-xs font-black text-slate-400 hover:text-slate-300 transition-colors">Sign In →</button>
             </div>
           )}
 
           {/* Offline banner */}
           {isOffline && (
-            <div className="fixed top-0 left-0 right-0 z-[80] flex items-center justify-center gap-2 py-2 text-[11px] font-black uppercase tracking-widest text-white"
+            <div className="fixed top-0 left-0 right-0 z-[80] flex items-center justify-center gap-2 py-2 text-xs font-black uppercase tracking-widest text-white"
               style={{ background: 'linear-gradient(90deg,#ef4444,#dc2626)' }}>
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
               Offline — Some features unavailable

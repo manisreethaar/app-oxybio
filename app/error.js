@@ -68,7 +68,7 @@ export default function GlobalError({ error, reset }) {
           </button>
         </div>
         
-        <p className="mt-6 text-[10px] font-mono text-slate-400 bg-slate-50 p-2 rounded block whitespace-normal break-all">
+        <p className="mt-6 text-xs font-mono text-slate-400 bg-slate-50 p-2 rounded block whitespace-normal break-all">
           {error?.message || "Unknown rendering exception"}
         </p>
       </div>

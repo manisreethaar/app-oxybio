@@ -177,7 +177,7 @@ export default function MispunchContent() {
           <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-400" /> Pending Admin Approvals
             {adminMispunches.length > 0 && (
-              <span className="ml-1 bg-amber-400/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30">
+              <span className="ml-1 bg-amber-400/20 text-amber-300 text-xs px-2 py-0.5 rounded-full border border-amber-500/30">
                 {adminMispunches.length} pending
               </span>
             )}
@@ -196,7 +196,7 @@ export default function MispunchContent() {
                       <p className="text-white font-bold">{log.employees?.full_name}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
+                    <span className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
                       {log.mispunch_requested_hours}H Requested
                     </span>
                   </div>
@@ -267,7 +267,7 @@ export default function MispunchContent() {
                     <p className="font-bold text-slate-900">
                       {new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
-                    <p className="text-[10px] font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
+                    <p className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
                       Shift Still Open — Not Checked Out
                     </p>
                   </div>
@@ -281,7 +281,7 @@ export default function MispunchContent() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-slate-400 flex items-start gap-1.5">
+          <p className="text-xs text-slate-400 flex items-start gap-1.5">
             <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
             Your shift will be closed with 0 hours and submitted for admin approval with the hours you enter.
           </p>
@@ -307,7 +307,7 @@ export default function MispunchContent() {
                   </div>
                   <div>
                     <p className="font-bold text-slate-900">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                    <p className="text-[10px] font-medium text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
+                    <p className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
                       Auto-Zeroed Log
                     </p>
                   </div>
@@ -338,8 +338,8 @@ export default function MispunchContent() {
                   <span className="text-slate-500">{log.mispunch_reason}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase">{log.mispunch_requested_hours}H Requested</span>
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
+                  <span className="text-xs font-black text-slate-500 uppercase">{log.mispunch_requested_hours}H Requested</span>
+                  <span className={`text-xs font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
                     log.mispunch_status === 'pending'  ? 'bg-amber-100 text-amber-700 border-amber-200' :
                     log.mispunch_status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                     'bg-red-100 text-red-700 border-red-200'

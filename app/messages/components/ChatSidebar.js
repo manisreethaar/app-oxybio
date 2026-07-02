@@ -88,13 +88,13 @@ export default function ChatSidebar({ chats, activeChat, onSelectChat, onCreateG
                       {chatName}
                     </h3>
                     {unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-2">
+                      <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-2">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </div>
                   {isGroup && (
-                    <p className="text-[10px] text-slate-400 truncate uppercase tracking-wider font-bold">
+                    <p className="text-xs text-slate-400 truncate uppercase tracking-wider font-bold">
                       {chat.type} • {chat.members?.length || 0} Members
                     </p>
                   )}

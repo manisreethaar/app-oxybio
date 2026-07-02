@@ -251,7 +251,7 @@ export default function QuickLogOverlay() {
                       <div className="flex-1 min-w-0 mr-3">
                         <p className="text-sm font-black text-slate-900 font-mono truncate">{b.batch_id}</p>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                             isFermentation
                               ? 'bg-emerald-100 text-emerald-700'
                               : 'bg-slate-100 text-slate-500'
@@ -259,7 +259,7 @@ export default function QuickLogOverlay() {
                             {STAGE_LABELS[b.current_stage] || b.current_stage}
                           </span>
                           {b.sku && (
-                            <span className="text-[10px] text-slate-400 font-semibold truncate">{b.sku}</span>
+                            <span className="text-xs text-slate-400 font-semibold truncate">{b.sku}</span>
                           )}
                         </div>
                       </div>
@@ -269,7 +269,7 @@ export default function QuickLogOverlay() {
                         <button
                           onClick={() => handlePickBatch(b)}
                           disabled={loadingFlasks}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-navy text-white text-[11px] font-black rounded-lg hover:bg-navy-hover transition-colors disabled:opacity-50 shrink-0"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover transition-colors disabled:opacity-50 shrink-0"
                         >
                           {isLoading
                             ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -280,7 +280,7 @@ export default function QuickLogOverlay() {
                         <Link
                           href={`/batches/${b.id}`}
                           onClick={handleClose}
-                          className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 text-slate-500 text-[11px] font-bold rounded-lg hover:bg-slate-50 transition-colors shrink-0"
+                          className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 text-slate-500 text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors shrink-0"
                         >
                           Open <ExternalLink className="w-3 h-3" />
                         </Link>
@@ -294,7 +294,7 @@ export default function QuickLogOverlay() {
             {/* ── Step 2: Flask picker (FIX 2) ── */}
             {step === 'flask' && (
               <div className="p-3 space-y-1.5">
-                <p className="text-[11px] text-slate-400 font-semibold px-2 py-1">
+                <p className="text-xs text-slate-400 font-semibold px-2 py-1">
                   Multiple active flasks — select one:
                 </p>
                 {flasks.map(f => (
@@ -325,7 +325,7 @@ export default function QuickLogOverlay() {
 
                 {/* pH — large, prominent */}
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">
                     pH Value <span className="text-red-500">★ CCP</span>
                   </label>
                   <input
@@ -340,7 +340,7 @@ export default function QuickLogOverlay() {
                     }`}
                     onKeyDown={enterKey}
                   />
-                  <p className={`text-[10px] mt-1 font-semibold ${
+                  <p className={`text-xs mt-1 font-semibold ${
                     phInAlarm   ? 'text-red-600' :
                     phOffTarget ? 'text-amber-600' :
                     'text-slate-400'
@@ -354,7 +354,7 @@ export default function QuickLogOverlay() {
                 {/* Temp + Brix + OD — compact grid */}
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Temp °C</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Temp °C</label>
                     <input
                       type="number" step="0.1"
                       value={temp} onChange={e => setTemp(e.target.value)}
@@ -365,11 +365,11 @@ export default function QuickLogOverlay() {
                       onKeyDown={enterKey}
                     />
                     {tempInAlarm && (
-                      <p className="text-[9px] text-amber-600 font-bold mt-0.5 text-center">⚠ Out of range</p>
+                      <p className="text-xs text-amber-600 font-bold mt-0.5 text-center">⚠ Out of range</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Brix °Bx</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Brix °Bx</label>
                     <input
                       type="number" step="0.1"
                       value={brix} onChange={e => setBrix(e.target.value)}
@@ -379,7 +379,7 @@ export default function QuickLogOverlay() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">OD 600</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">OD 600</label>
                     <input
                       type="number" step="0.001"
                       value={od} onChange={e => setOd(e.target.value)}
@@ -392,13 +392,13 @@ export default function QuickLogOverlay() {
 
                 {/* Foam — quick toggle row */}
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Foam</label>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Foam</label>
                   <div className="flex gap-1.5">
                     {FOAM_OPTS.map(opt => (
                       <button
                         key={opt} type="button"
                         onClick={() => setFoam(opt)}
-                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg border transition-all ${
+                        className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${
                           foam === opt
                             ? 'bg-navy text-white border-navy'
                             : 'bg-white text-slate-500 border-slate-200 hover:border-navy/40'
@@ -457,13 +457,13 @@ export default function QuickLogOverlay() {
                 {(alarms?.ph || alarms?.temp) && (
                   <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                    <p className="text-[11px] font-bold text-red-700">
+                    <p className="text-xs font-bold text-red-700">
                       {[alarms.ph && 'pH alarm', alarms.temp && 'Temp alarm']
                         .filter(Boolean).join(' + ')} — task auto-created
                     </p>
                   </div>
                 )}
-                <p className="text-[10px] text-slate-400">Closing automatically…</p>
+                <p className="text-xs text-slate-400">Closing automatically…</p>
               </div>
             )}
           </div>

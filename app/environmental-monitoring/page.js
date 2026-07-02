@@ -255,7 +255,7 @@ export default function EnvironmentalMonitoringPage() {
                 <p className="font-black text-slate-900">{l.name} {l.location_code && <span className="text-slate-400 font-mono">[{l.location_code}]</span>}</p>
                 <p className="text-slate-500 font-semibold">{l.area} · {l.sampling_method} · {l.frequency}</p>
                 {(l.alert_limit_cfu || l.action_limit_cfu) && (
-                  <p className="text-[10px] text-slate-400 mt-0.5">Alert: {l.alert_limit_cfu || '—'} · Action: {l.action_limit_cfu || '—'} CFU</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Alert: {l.alert_limit_cfu || '—'} · Action: {l.action_limit_cfu || '—'} CFU</p>
                 )}
               </div>
             ))}
@@ -279,22 +279,22 @@ export default function EnvironmentalMonitoringPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-xs">
               <thead><tr className="bg-slate-50">
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Location</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Method</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Date</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">CFU</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">Result</th>
-                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-[9px]">By</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Location</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Method</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Date</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">CFU</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Result</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">By</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {samples.map(s => (
                   <tr key={s.id} className={s.result === 'Action' ? 'bg-red-50' : s.result === 'Alert' ? 'bg-amber-50/40' : 'hover:bg-slate-50/30'}>
-                    <td className="px-4 py-2.5 font-semibold text-slate-800">{s.emp_sampling_locations?.name || '—'}<br/><span className="text-[10px] text-slate-400">{s.emp_sampling_locations?.area}</span></td>
+                    <td className="px-4 py-2.5 font-semibold text-slate-800">{s.emp_sampling_locations?.name || '—'}<br/><span className="text-xs text-slate-400">{s.emp_sampling_locations?.area}</span></td>
                     <td className="px-4 py-2.5 text-slate-600">{s.emp_sampling_locations?.sampling_method || '—'}</td>
                     <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap">{new Date(s.sampled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
                     <td className="px-4 py-2.5 font-black text-slate-800">{s.colony_count ?? <span className="text-slate-300 font-semibold">Pending</span>}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase ${RESULT_STYLE[s.result] || RESULT_STYLE.Pending}`}>{s.result}</span>
+                      <span className={`px-2 py-0.5 rounded border text-xs font-black uppercase ${RESULT_STYLE[s.result] || RESULT_STYLE.Pending}`}>{s.result}</span>
                     </td>
                     <td className="px-4 py-2.5">
                       {s.sampler && <CreatorBadge initials={s.sampler.initials} fullName={s.sampler.full_name} size="sm"/>}

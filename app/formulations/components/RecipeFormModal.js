@@ -53,7 +53,7 @@ export default function RecipeFormModal({
                 onChange={e => setNewForm({...newForm, code: e.target.value.toUpperCase().slice(0,8)})}
                 className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm font-mono outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
               />
-              <p className="text-[10px] text-slate-400 mt-1">1–5 uppercase letters + up to 3 digits</p>
+              <p className="text-xs text-slate-400 mt-1">1–5 uppercase letters + up to 3 digits</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Common Name</label>
@@ -72,15 +72,15 @@ export default function RecipeFormModal({
                 onChange={e => setNewForm({...newForm, base_volume_ml: parseInt(e.target.value) || ''})}
                 className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
               />
-              <p className="text-[10px] text-slate-400 mt-1">Scaling baseline.</p>
+              <p className="text-xs text-slate-400 mt-1">Scaling baseline.</p>
             </div>
           </div>
 
-          {fetchError && <div className="p-2 bg-red-50 text-red-600 font-bold text-[10px] rounded-lg border border-red-100">{fetchError}</div>}
+          {fetchError && <div className="p-2 bg-red-50 text-red-600 font-bold text-xs rounded-lg border border-red-100">{fetchError}</div>}
 
           {/* BOM */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Bill of Materials (BOM)</label>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Bill of Materials (BOM)</label>
             <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <select className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold" value={selectedItem} onChange={e => setSelectedItem(e.target.value)}>
                 <option value="">Select Ingredient...</option>
@@ -93,12 +93,12 @@ export default function RecipeFormModal({
             </div>
             <div className="flex flex-wrap gap-2">
               {newForm.ingredients.map((ing, idx) => (
-                <span key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1 border border-slate-200 rounded-md text-[10px] font-black text-slate-700 shadow-sm">
+                <span key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1 border border-slate-200 rounded-md text-xs font-black text-slate-700 shadow-sm">
                   {ing.name}: {ing.quantity}{ing.unit}
                   <button type="button" onClick={() => setNewForm(p => ({...p, ingredients: p.ingredients.filter((_, i) => i !== idx)}))} className="text-red-400 hover:text-red-600"><X className="w-3 h-3"/></button>
                 </span>
               ))}
-              {newForm.ingredients.length === 0 && <p className="text-[10px] text-slate-400 italic">No ingredients added yet.</p>}
+              {newForm.ingredients.length === 0 && <p className="text-xs text-slate-400 italic">No ingredients added yet.</p>}
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export default function RecipeFormModal({
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               {newForm.category === 'Fermentation' ? 'Product recipe — used to create fermentation batches.' : 'Lab media recipe (MRS broth, LB agar, etc.) — available in Cell Bank module.'}
             </p>
           </div>
@@ -131,7 +131,7 @@ export default function RecipeFormModal({
               value={newForm.yield_predicted_ml || ''}
               onChange={e => setNewForm({...newForm, yield_predicted_ml: e.target.value ? parseFloat(e.target.value) : ''})}
               className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
-            <p className="text-[10px] text-slate-400 mt-0.5">Expected product yield from base volume</p>
+            <p className="text-xs text-slate-400 mt-0.5">Expected product yield from base volume</p>
           </div>
 
           {/* G-78: Nutritional info (per 100g) */}
@@ -140,7 +140,7 @@ export default function RecipeFormModal({
             <div className="grid grid-cols-2 gap-2">
               {[['energy_kcal','Energy (kcal)'],['protein_g','Protein (g)'],['carbohydrate_g','Carbs (g)'],['fat_g','Fat (g)'],['fibre_g','Fibre (g)'],['sodium_mg','Sodium (mg)']].map(([key,label])=>(
                 <div key={key}>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">{label}</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-0.5">{label}</label>
                   <input type="number" step="0.1" placeholder="0"
                     value={(newForm.nutritional_info||{})[key] || ''}
                     onChange={e=>setNewForm(p=>({...p, nutritional_info: {...(p.nutritional_info||{}), [key]: e.target.value?parseFloat(e.target.value):undefined}}))}
@@ -157,7 +157,7 @@ export default function RecipeFormModal({
               {['Probiotic','Contains Live Cultures ≥10⁶/ml','Gluten-Free','Organic','FSSAI Compliant','Export Grade'].map(claim=>(
                 <button key={claim} type="button"
                   onClick={()=>setNewForm(p=>({...p, regulatory_claims: (p.regulatory_claims||[]).includes(claim) ? (p.regulatory_claims||[]).filter(c=>c!==claim) : [...(p.regulatory_claims||[]),claim]}))}
-                  className={`px-2.5 py-1 text-[9px] font-black rounded-lg border transition-all ${(newForm.regulatory_claims||[]).includes(claim)?'bg-emerald-600 text-white border-emerald-600':'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'}`}>
+                  className={`px-2.5 py-1 text-xs font-black rounded-lg border transition-all ${(newForm.regulatory_claims||[]).includes(claim)?'bg-emerald-600 text-white border-emerald-600':'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'}`}>
                   {claim}
                 </button>
               ))}
@@ -166,7 +166,7 @@ export default function RecipeFormModal({
 
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-2">
             <Clock className="w-4 h-4 text-slate-500 shrink-0 mt-0.5"/>
-            <p className="text-[10px] font-bold text-slate-700">Recipe will be saved as <strong>Draft</strong>. Submit for Review → get it Approved → then launch batches.</p>
+            <p className="text-xs font-bold text-slate-700">Recipe will be saved as <strong>Draft</strong>. Submit for Review → get it Approved → then launch batches.</p>
           </div>
 
           <button disabled={submitting} type="submit" className="w-full py-2.5 bg-navy text-white font-bold rounded-lg shadow-sm hover:bg-navy-hover transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">

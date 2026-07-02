@@ -47,7 +47,7 @@ export default function SecureViewerModal({ url, title, onClose }) {
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4 text-emerald-600" />
             <span className="font-bold text-sm text-gray-800">{title || 'Secure Document Viewer'}</span>
-            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-widest ml-2">Protected Mode</span>
+            <span className="bg-emerald-100 text-emerald-800 text-xs font-black uppercase px-2 py-0.5 rounded tracking-widest ml-2">Protected Mode</span>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
             <X className="w-5 h-5" />

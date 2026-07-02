@@ -61,7 +61,7 @@ export default function TaskDetailModal({
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-start justify-between sticky top-0 bg-white z-10">
           <div>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{selectedTask.priority}</span>
+            <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{selectedTask.priority}</span>
             <h3 className="text-base font-bold text-slate-900 mt-1">{selectedTask.title}</h3>
           </div>
           <div className="flex gap-1 text-slate-400 items-center">
@@ -111,17 +111,17 @@ export default function TaskDetailModal({
                 <Eye className="w-5 h-5 text-emerald-600" />
                 <span className="text-xs font-bold">New Task assigned. Please acknowledge.</span>
               </div>
-              <button onClick={() => onAcknowledge(selectedTask.id)} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-sm transition-colors">Acknowledge</button>
+              <button onClick={() => onAcknowledge(selectedTask.id)} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm transition-colors">Acknowledge</button>
             </div>
           )}
 
           {/* Meta */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-center">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mb-1">Assignees</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter mb-1">Assignees</p>
               <div className="flex flex-wrap gap-1">
                 {groupedTasks.find(g => g.title === selectedTask.title && g.description === selectedTask.description)?.assignees.map((a, idx) => (
-                  <span key={idx} className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold text-slate-700 text-[10px] flex items-center gap-1">
+                  <span key={idx} className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold text-slate-700 text-xs flex items-center gap-1">
                     <CreatorBadge initials={a.assigned_user?.initials} fullName={a.assigned_user?.full_name} />
                     {a.assigned_user?.full_name?.split(' ')[0] || 'Staff'}
                   </span>
@@ -129,7 +129,7 @@ export default function TaskDetailModal({
               </div>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Due Date</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Due Date</p>
               <p className="font-bold text-slate-800">{selectedTask.due_date ? new Date(selectedTask.due_date).toLocaleDateString() : '—'}</p>
             </div>
           </div>
@@ -138,13 +138,13 @@ export default function TaskDetailModal({
           {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
             <div className="space-y-4 border-y border-slate-100 py-5">
               <div className="flex items-center justify-between mb-1">
-                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5"/> Work Progress</h4>
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5"/> Work Progress</h4>
                 <span className="text-sm font-black text-navy">{progressPercentage}%</span>
               </div>
               <input type="range" min="0" max="100" value={progressPercentage} onChange={(e) => setProgressPercentage(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-navy" />
               <form onSubmit={onUpdateProgress} className="flex gap-2">
                 <input type="text" value={progressNote} onChange={(e) => setProgressNote(e.target.value)} placeholder="What are you working on?..." className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-navy outline-none" />
-                <button type="submit" disabled={actionLoading} className="px-4 bg-navy hover:bg-navy-hover text-white text-[10px] font-bold rounded-lg shadow-sm transition-all whitespace-nowrap">Log Note</button>
+                <button type="submit" disabled={actionLoading} className="px-4 bg-navy hover:bg-navy-hover text-white text-xs font-bold rounded-lg shadow-sm transition-all whitespace-nowrap">Log Note</button>
               </form>
             </div>
           )}
@@ -152,7 +152,7 @@ export default function TaskDetailModal({
           {/* Activity Timeline */}
           {selectedTask.progress_logs?.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><Activity className="w-3.5 h-3.5"/> Activity Timeline</h4>
+              <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><Activity className="w-3.5 h-3.5"/> Activity Timeline</h4>
               <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
                 {selectedTask.progress_logs.map((log, i) => (
                   <div key={i} className="flex gap-3 relative pb-2 group">
@@ -160,8 +160,8 @@ export default function TaskDetailModal({
                     <div className={`w-3 h-3 rounded-full mt-1 shrink-0 z-10 ${log.percentage === 100 ? 'bg-emerald-500' : 'bg-navy'}`}></div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
-                        <p className="text-[9px] font-black text-slate-400">{new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
-                        <span className="text-[9px] font-black text-navy px-1 bg-slate-100 rounded">{log.percentage}%</span>
+                        <p className="text-xs font-black text-slate-400">{new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
+                        <span className="text-xs font-black text-navy px-1 bg-slate-100 rounded">{log.percentage}%</span>
                       </div>
                       <p className="text-xs font-semibold text-slate-700 leading-snug">{log.note}</p>
                     </div>
@@ -174,7 +174,7 @@ export default function TaskDetailModal({
           {/* Checklist */}
           {selectedTask.checklist?.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Checklist</p>
+              <p className="text-xs font-bold text-slate-400 uppercase mb-1.5">Checklist</p>
               <ul className="space-y-1.5">
                 {selectedTask.checklist.map((item, i) => (
                   <li key={i} onClick={() => selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && onToggleChecklist(selectedTask, i)} className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${item.done ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-white border-slate-100 cursor-pointer'}`}>
@@ -190,7 +190,7 @@ export default function TaskDetailModal({
           {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-slate-400 mb-1">Cumulative Time Spent</span>
+                <span className="text-xs font-black uppercase text-slate-400 mb-1">Cumulative Time Spent</span>
                 <span className="text-2xl font-black tabular-nums text-slate-900 tracking-tight">
                   {String(Math.floor(((selectedTask.logged_minutes || 0) * 60 + elapsedSeconds) / 3600)).padStart(2,'0')}:
                   {String(Math.floor((((selectedTask.logged_minutes || 0) * 60 + elapsedSeconds) % 3600) / 60)).padStart(2,'0')}:
@@ -220,7 +220,7 @@ export default function TaskDetailModal({
 
           {/* Proof & Completion Note */}
           {selectedTask.proof_url && <div className="pt-2"><a href={selectedTask.proof_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-600 font-bold text-xs"><Paperclip className="w-3.5 h-3.5"/> View Proof</a></div>}
-          {selectedTask.completion_note && <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><p className="text-[9px] font-bold text-slate-400 uppercase">Completion Notes</p><p className="text-xs text-slate-700 font-medium">{selectedTask.completion_note}</p></div>}
+          {selectedTask.completion_note && <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><p className="text-xs font-bold text-slate-400 uppercase">Completion Notes</p><p className="text-xs text-slate-700 font-medium">{selectedTask.completion_note}</p></div>}
 
           {/* Approve / Reject */}
           {canApprove && selectedTask.approval_status === 'pending_review' && (
