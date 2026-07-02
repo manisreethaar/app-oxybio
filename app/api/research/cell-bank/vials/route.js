@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { requireResearchAccess } from '@/lib/research/access';
 
@@ -14,11 +15,12 @@ export async function GET(request) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
+    const adminSupabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const prepId = searchParams.get('preparation_id');
 
-    let query = supabase
+    let query = adminSupabase
       .from('cell_bank_vials')
       .select(`
         id, vial_code, storage_temp, freezer_id, rack, box, position, status,
