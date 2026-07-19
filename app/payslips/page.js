@@ -573,16 +573,16 @@ function EmployeeItem({ emp, isSelected, onClick }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-black truncate ${isSelected ? 'text-white' : 'text-slate-800'}`}>{emp.full_name}</p>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className={`text-xs font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest ${isSelected ? 'bg-white/20 text-white' : (roleColors[emp.role] || 'bg-slate-100 text-slate-600')}`}>
-            {emp.role}
+        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest truncate max-w-[130px] sm:max-w-none ${isSelected ? 'bg-white/20 text-white' : (roleColors[emp.role] || 'bg-slate-100 text-slate-600')}`}>
+            {emp.role?.replace(/_/g, ' ')}
           </span>
           {emp.base_salary ? (
-            <span className={`text-xs font-bold ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
+            <span className={`text-xs font-bold whitespace-nowrap shrink-0 ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
               ₹{Number(emp.base_salary).toLocaleString('en-IN')}
             </span>
           ) : (
-            <span className="text-xs font-bold text-red-400">No salary</span>
+            <span className="text-xs font-bold text-red-400 whitespace-nowrap shrink-0">No salary</span>
           )}
         </div>
       </div>

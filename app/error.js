@@ -8,6 +8,16 @@ export default function GlobalError({ error, reset }) {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error("Next.js Fatal Boundary Caught:", error);
+
+    // Automatically reload on chunk loading errors (often happens after deployments)
+    if (error?.message && error.message.includes('Loading chunk')) {
+      const reloadCount = parseInt(sessionStorage.getItem('chunkReloadCount') || '0', 10);
+      if (reloadCount < 2) {
+        sessionStorage.setItem('chunkReloadCount', String(reloadCount + 1));
+        window.location.reload();
+        return;
+      }
+    }
     
     // Attempt to forcefully clear caches to un-stick the app if it's a chunk error
     if (typeof window !== 'undefined') {
