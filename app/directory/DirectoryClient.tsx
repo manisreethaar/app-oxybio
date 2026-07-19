@@ -82,8 +82,8 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
         </div>
 
         {/* ── Avatar overlapping header ── */}
-        <div className="px-6 -mt-12 flex items-end gap-4 shrink-0">
-          <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-xl shrink-0">
+        <div className="px-6 -mt-12 shrink-0">
+          <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-xl">
             {emp.photo_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
@@ -93,10 +93,11 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
               </div>
             )}
           </div>
-          <div className="pb-2 flex-1 min-w-0">
-            <h2 className="text-xl font-black text-slate-800 leading-tight truncate">{emp.full_name}</h2>
-            <p className="text-xs font-bold text-navy mt-0.5">{emp.designation || emp.role?.replace(/_/g, ' ')}</p>
-          </div>
+        </div>
+        
+        <div className="px-6 pt-3 shrink-0">
+          <h2 className="text-xl font-black text-slate-800 leading-tight truncate">{emp.full_name}</h2>
+          <p className="text-xs font-bold text-navy mt-0.5">{emp.designation || emp.role?.replace(/_/g, ' ')}</p>
         </div>
 
         {/* ── Pill row ── */}
