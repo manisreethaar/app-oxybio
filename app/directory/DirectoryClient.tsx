@@ -82,7 +82,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
         </div>
 
         {/* ── Avatar overlapping header ── */}
-        <div className="px-6 -mt-12 shrink-0">
+        <div className="px-6 -mt-12 shrink-0 relative z-10">
           <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-xl">
             {emp.photo_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
