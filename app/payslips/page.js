@@ -596,7 +596,7 @@ export default function PayrollPage() {
   const toast = useToast();
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [payslips, setPayslips] = useState([]);       // all payslips (admin) or own (staff)
@@ -647,8 +647,8 @@ export default function PayrollPage() {
   }, [isAdmin, employeeProfile, supabase]);
 
   useEffect(() => {
-    if (!authLoading && (isAdmin || employeeProfile)) fetchInitial();
-  }, [authLoading, isAdmin, employeeProfile, fetchInitial]);
+    if (!authLoading) fetchInitial();
+  }, [authLoading, fetchInitial]);
 
   // ── Fetch attendance detail when employee/month changes ──────────────────────
   const fetchCalendarData = useCallback(async (empId, month, year) => {
