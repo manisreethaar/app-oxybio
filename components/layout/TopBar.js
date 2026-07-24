@@ -210,7 +210,7 @@ export default function TopBar() {
                 {notifications.length === 0 ? (
                   <div className="px-4 py-10 text-center">
                     <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                    <p className="text-xs font-bold text-slate-400">You're all caught up!</p>
+                    <p className="text-xs font-bold text-slate-400">You&apos;re all caught up!</p>
                   </div>
                 ) : notifications.map(n => (
                   <div key={n.id} onClick={() => markAsRead(n.id, n.link || '/notifications')}
