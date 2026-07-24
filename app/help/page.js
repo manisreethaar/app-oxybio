@@ -405,7 +405,7 @@ export default function HelpPage() {
       {/* Search result count */}
       {searchQuery && (
         <div className="text-sm text-slate-500 print:hidden">
-          Showing results for <span className="font-semibold text-slate-800">"{searchQuery}"</span>
+          Showing results for <span className="font-semibold text-slate-800">&quot;{searchQuery}&quot;</span>
           {' — '}
           {visibleSections.reduce((count, s) => {
             const q = searchQuery.toLowerCase();
@@ -462,7 +462,7 @@ export default function HelpPage() {
             </div>
             <h3 className="text-base font-bold text-slate-900 mb-1">No results found</h3>
             <p className="text-sm text-slate-500 mb-4">
-              No articles match <span className="font-semibold">"{searchQuery}"</span>
+              No articles match <span className="font-semibold">&quot;{searchQuery}&quot;</span>
             </p>
             <button
               onClick={() => setSearchQuery('')}

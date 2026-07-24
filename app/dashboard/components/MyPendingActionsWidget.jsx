@@ -81,7 +81,7 @@ export default function MyPendingActionsWidget() {
             <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
               <CheckSquare className="w-5 h-5 text-slate-300" />
             </div>
-            <p className="text-sm font-bold text-slate-700">You're all caught up!</p>
+            <p className="text-sm font-bold text-slate-700">You&apos;re all caught up!</p>
             <p className="text-xs text-slate-400 mt-1">No pending actions assigned to you.</p>
           </div>
         ) : (

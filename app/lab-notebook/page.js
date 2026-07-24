@@ -529,7 +529,7 @@ export default function DigitalLnbPage() {
               {versionSourceEntry && (
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center gap-2">
                   <History className="w-4 h-4 shrink-0"/>
-                  Creating Version {(versionSourceEntry.entry_version||1)+1} from: <span className="font-black">"{versionSourceEntry.title}"</span>
+                  Creating Version {(versionSourceEntry.entry_version||1)+1} from: <span className="font-black">&quot;{versionSourceEntry.title}&quot;</span>
                   <button type="button" onClick={()=>setVersionSourceEntry(null)} className="ml-auto text-slate-400 hover:text-slate-700"><X className="w-3.5 h-3.5"/></button>
                 </div>
               )}
