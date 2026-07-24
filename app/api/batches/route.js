@@ -386,14 +386,36 @@ export async function DELETE(request) {
     }
 
     // Explicitly delete child records to satisfy constraints without needing ON DELETE CASCADE
-    await adminSupabase.from('stage_transitions').delete().eq('batch_id', id);
-    await adminSupabase.from('batch_stage_media_prep').delete().eq('batch_id', id);
-    await adminSupabase.from('batch_stage_sterilisation').delete().eq('batch_id', id);
-    await adminSupabase.from('batch_flasks').delete().eq('batch_id', id);
+    const childTables = [
+      'batch_stage_rejected',
+      'batch_stage_released',
+      'batch_stage_qc_hold',
+      'batch_stage_extract_addition',
+      'batch_stage_straining',
+      'batch_stage_inoculation',
+      'batch_stage_sterilisation',
+      'batch_stage_media_prep',
+      'stage_transitions',
+      'batch_flask_qc_tests',
+      'batch_qc_tests',
+      'batch_fermentation_readings',
+      'batch_flask_endpoints',
+      'batch_flasks',
+      'lab_notebook_entries',
+      'tasks',
+      'batch_comments',
+      'taste_panels',
+      'batch_yield_metrics',
+      'incubation_records'
+    ];
+
+    for (const table of childTables) {
+      await adminSupabase.from(table).delete().eq('batch_id', id);
+    }
     
-    await adminSupabase.from('lab_notebook_entries').delete().eq('batch_id', id);
-    
-    await adminSupabase.from('tasks').delete().eq('batch_id', id);
+    await adminSupabase.from('edit_requests').delete().eq('record_id', id);
+    await adminSupabase.from('scale_up_records').delete().eq('bench_scale_batch_id', id);
+    await adminSupabase.from('scale_up_records').delete().eq('production_scale_batch_id', id);
 
     const { error: deleteErr } = await adminSupabase.from('batches').delete().eq('id', id);
     if (deleteErr) throw deleteErr;
@@ -403,6 +425,5 @@ export async function DELETE(request) {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
 
 
