@@ -70,7 +70,7 @@ export async function middleware(request) {
   // The CEO is exempt from this rule.
   if (user && isApiRoute && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
     const exemptedApiPrefixes = [
-      '/api/attendance', '/api/mispunch', '/api/leave', '/api/auth', '/api/cron'
+      '/api/attendance', '/api/mispunch', '/api/leave', '/api/auth', '/api/cron', '/api/push'
     ];
     const isExempted = exemptedApiPrefixes.some(p => pathname.startsWith(p));
     
