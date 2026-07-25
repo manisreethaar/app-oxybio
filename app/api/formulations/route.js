@@ -44,7 +44,7 @@ export async function POST(request) {
     const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();
-    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml } = body;
+    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
 
     const codeErr = validateCode(code);
     if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
@@ -67,14 +67,22 @@ export async function POST(request) {
     const createAccess = canCreateFormulation(emp, user.email);
     if (!createAccess.allowed) return NextResponse.json({ error: createAccess.error }, { status: 403 });
 
+    let parsedIngredients = ingredients;
+    if (typeof parsedIngredients === 'string') {
+      try { parsedIngredients = JSON.parse(parsedIngredients); } catch (e) { parsedIngredients = []; }
+    }
+
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations').insert({
-      code: normCode, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000,
+      code: normCode, name, ingredients: parsedIngredients, notes, base_volume_ml: base_volume_ml || 1000,
       version: nextVersion,
       created_by: emp?.id || null,
       base_version_id: base_version_id || null,
       status: 'Draft',
       category: category || 'Fermentation',
+      nutritional_info: nutritional_info || null,
+      yield_predicted_ml: yield_predicted_ml || null,
+      regulatory_claims: regulatory_claims || null,
     }).select().single();
 
     if (error) throw error;
@@ -157,7 +165,7 @@ export async function PUT(request) {
     const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();
-    const { id, name, ingredients, notes, category, base_volume_ml } = body;
+    const { id, name, ingredients, notes, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
     let { code } = body;
 
     const codeErr = validateCode(code);
@@ -168,9 +176,24 @@ export async function PUT(request) {
     const editAccess = canEditFormulation(current, emp, user.email);
     if (!editAccess.allowed) return NextResponse.json({ error: editAccess.error }, { status: 403 });
 
+    let parsedIngredients = ingredients;
+    if (typeof parsedIngredients === 'string') {
+      try { parsedIngredients = JSON.parse(parsedIngredients); } catch (e) { parsedIngredients = []; }
+    }
+
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations')
-      .update({ code, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000, ...(category ? { category } : {}) })
+      .update({ 
+        code, 
+        name, 
+        ingredients: parsedIngredients, 
+        notes, 
+        base_volume_ml: base_volume_ml || 1000, 
+        ...(category ? { category } : {}),
+        nutritional_info: nutritional_info || null,
+        yield_predicted_ml: yield_predicted_ml || null,
+        regulatory_claims: regulatory_claims || null
+      })
       .eq('id', id)
       .select()
       .single();
