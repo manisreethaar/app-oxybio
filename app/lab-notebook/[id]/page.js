@@ -12,6 +12,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import { markdownToHtml } from '@/utils/markdown';
 import BlockEditor from '@/components/lnb/BlockEditor';
+import ESignatureModal from '@/components/ui/ESignatureModal';
 
 export default function LnbEntryPage() {
   const params = useParams();
@@ -25,7 +26,10 @@ export default function LnbEntryPage() {
   const [saving, setSaving] = useState(false);
   const [signing, setSigning] = useState(false);
   const [pendingSubmitReview, setPendingSubmitReview] = useState(false);
-  const [pendingCountersign, setPendingCountersign] = useState(false);
+  
+  // E-Signature state
+  const [esigConfig, setEsigConfig] = useState({ isOpen: false });
+  
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingIds, setPendingIds] = useState(new Set());
@@ -119,11 +123,11 @@ export default function LnbEntryPage() {
   };
 
   const handleCountersign = () => {
-    setPendingCountersign(true);
+    setEsigConfig({ isOpen: true });
   };
 
-  const confirmCountersign = async () => {
-    setPendingCountersign(false);
+  const handleEsigSuccess = async () => {
+    setEsigConfig({ isOpen: false });
     setSigning(true);
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, {
@@ -374,30 +378,13 @@ export default function LnbEntryPage() {
       )}
 
       {/* Countersign Modal */}
-      {pendingCountersign && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Countersign Document</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">
-              By countersigning, you legally verify this document&apos;s contents and attest to its accuracy. Proceed?
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setPendingCountersign(false)}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmCountersign}
-                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
-              >
-                ✓ Countersign
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ESignatureModal
+        isOpen={esigConfig.isOpen}
+        onClose={() => setEsigConfig({ isOpen: false })}
+        onSuccess={handleEsigSuccess}
+        title="Countersign Document"
+        message="By countersigning, you legally verify this document's contents and attest to its accuracy under 21 CFR Part 11. Proceed?"
+      />
     </div>
   );
 }
