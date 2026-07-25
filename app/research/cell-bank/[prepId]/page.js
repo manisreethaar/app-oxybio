@@ -282,6 +282,7 @@ function VialRow({ vial, isAdmin, onAction, availableCount = 0 }) {
         title="Discard Vial"
         message={`Are you sure you want to discard vial ${vial.vial_code}? This cannot be undone.`}
         confirmText="Discard"
+        loadingText="Discarding..."
         variant="danger"
       />
 
