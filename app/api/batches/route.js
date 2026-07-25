@@ -100,7 +100,7 @@ export async function POST(request) {
     // ── Gate 2: Creator role check ──────────────────────────────────────
     const { data: creator, error: creatorErr } = await supabase
       .from('employees')
-      .select('id, full_name, role')
+      .select('id, full_name, role, custom_permissions')
       .eq('email', user.email)
       .single();
 
@@ -108,7 +108,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Employee profile not found' }, { status: 403 });
     }
 
-    if (!can(creator.role, 'batches', 'create') && !isMasterAdmin(user.email)) {
+    if (!can(creator.role, 'batches', 'create', creator.custom_permissions) && !isMasterAdmin(user.email)) {
       return NextResponse.json({ error: 'Insufficient permissions to create a batch.' }, { status: 403 });
     }
 
@@ -329,10 +329,10 @@ export async function DELETE(request) {
 
     const { data: currentUser } = await supabase
       .from('employees')
-      .select('id, role')
+      .select('id, role, custom_permissions')
       .eq('email', user.email)
       .single();
-    if (!currentUser || (!can(currentUser.role, 'batches', 'delete') && !isMasterAdmin(user.email))) {
+    if (!currentUser || (!can(currentUser.role, 'batches', 'delete', currentUser.custom_permissions) && !isMasterAdmin(user.email))) {
       return NextResponse.json({ error: 'Insufficient permissions to archive or delete batches.' }, { status: 403 });
     }
 

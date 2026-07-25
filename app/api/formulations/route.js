@@ -100,7 +100,7 @@ export async function PATCH(request) {
     const { id, status, rejection_reason } = await request.json();
     if (!id || !status) return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
 
-    const isApprover = emp && (can(emp.role, 'recipes', 'approve') || isMasterAdmin(user.email));
+    const isApprover = emp && (can(emp.role, 'recipes', 'approve', emp.custom_permissions) || isMasterAdmin(user.email));
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
     if (!current) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
 
