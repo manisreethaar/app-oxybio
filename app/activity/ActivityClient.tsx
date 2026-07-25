@@ -27,7 +27,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const toast = useToast();
   const [activities, setActivities] = useState<any[]>(initialLogs || []);
   const [archivedActivities, setArchivedActivities] = useState<any[]>([]);
-  const [issues, setIssues] = useState<any[]>(initialLogs ? initialLogs.filter((a: any) => a.issue_observed) : []);
+  const [issues, setIssues] = useState<any[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(false);
   const [activeBatches, setActiveBatches] = useState(initialBatches || []);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('feed'); 
@@ -125,7 +126,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             if (!isMounted.current) return;
             // For staff: only show own entries. For admin: show all.
             if (!isExecUser && payload.new.employee_id !== employeeProfile?.id) return;
-            setActivities(prev => [{ ...payload.new, employees: { full_name: payload.new.employees?.full_name || '...' } }, ...prev]);
+            // Realtime INSERT payloads don't include joined data — resolve name locally
+            const resolvedName =
+              allEmployees.find((e: any) => e.id === payload.new.employee_id)?.full_name ||
+              (payload.new.employee_id === employeeProfile?.id ? employeeProfile?.full_name : null) ||
+              '...';
+            setActivities(prev => [{ ...payload.new, employees: { full_name: resolvedName } }, ...prev]);
           }
         )
         .subscribe();
@@ -201,9 +207,25 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         if (!isMounted.current) return;
         setArchivedActivities(archived || []);
 
-        const today = new Date().toISOString().split('T')[0];
+        // Bug A fix: Dedicated Issue Tracker query — not limited to loaded page
+        setIssuesLoading(true);
+        const issuesQuery = supabase
+          .from('activity_log')
+          .select('id, created_at, activity_description, issue_description, founder_comment, employee_id, employees(full_name), batch_id, equipment_id')
+          .eq('issue_observed', true)
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        const { data: allIssues } = await issuesQuery;
+        if (isMounted.current) {
+          setIssues(allIssues || []);
+          setIssuesLoading(false);
+        }
+
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // IST-safe date
         const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
-          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin').neq('role', 'ceo'),
+          // Bug B fix: exclude admin, ceo AND cto from the staff attendance list
+          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin').neq('role', 'ceo').neq('role', 'cto'),
           supabase.from('attendance_log').select('employee_id, check_out_time').eq('date', today),
           supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
           supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
@@ -223,7 +245,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const present = allStaff.filter((s: any) => logMap.has(s.id) && !logMap.get(s.id).check_out_time);
         const checkedOut = allStaff.filter((s: any) => logMap.has(s.id) && logMap.get(s.id).check_out_time);
         const absent = allStaff.filter((s: any) => !logMap.has(s.id));
-        const openIssues = newLogs.filter((a: any) => a.issue_observed && !a.founder_comment);
+        // Open issues for morning brief — from the dedicated issues query
+        const openIssues = (allIssues || []).filter((a: any) => !a.founder_comment).slice(0, 5);
 
         setBrief({ presentToday: present, absentToday: absent, checkedOutToday: checkedOut, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
       }
@@ -556,7 +579,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               const headers = ['Date', 'Employee', 'Start', 'End', 'Description', 'Issue?', 'Issue Detail'];
               const rows = activities.map((a: any) => [
                 a.created_at?.split('T')[0] || '',
-                a.employees?.full_name || '',
+                a.employees?.full_name || employeeProfile?.full_name || '',
                 a.start_time || '',
                 a.end_time || '',
                 `"${(a.activity_description || '').replace(/"/g, '""')}"`,
@@ -660,36 +683,40 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
             {/* Overdue Tasks + Pending Approvals */}
             <div className="glass-card rounded-2xl p-5 space-y-4">
+              {/* Bug C fix: Overdue tasks — now clickable, navigate to /tasks */}
               {brief.overdueTasks.length > 0 && (
                 <div>
                   <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500"/> Overdue Tasks
+                    <button onClick={() => router.push('/tasks')} className="ml-auto text-xs font-bold text-navy hover:underline">View all →</button>
                   </h2>
                   <div className="space-y-2">
                     {brief.overdueTasks.map(t => (
-                      <div key={t.id} className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                      <button key={t.id} onClick={() => router.push('/tasks')} className="w-full text-left bg-red-50 border border-red-100 rounded-xl px-3 py-2 flex items-center justify-between hover:bg-red-100 transition-colors">
                         <div>
                           <p className="text-sm font-bold text-red-800 truncate max-w-[180px]">{t.title}</p>
                           <p className="text-xs text-red-500">{t.assigned_user?.full_name} · Due {new Date(t.due_date).toLocaleDateString()}</p>
                         </div>
                         <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${t.priority === 'urgent' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{t.priority}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
+              {/* Bug C fix: Pending approvals — now clickable, navigate to /tasks */}
               {brief.pendingApprovals.length > 0 && (
                 <div>
                   <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <CheckSquare className="w-4 h-4 text-amber-500"/> Pending Your Approval
+                    <button onClick={() => router.push('/tasks')} className="ml-auto text-xs font-bold text-navy hover:underline">View all →</button>
                   </h2>
                   <div className="space-y-2">
                     {brief.pendingApprovals.map(t => (
-                      <div key={t.id} className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                      <button key={t.id} onClick={() => router.push('/tasks')} className="w-full text-left bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 hover:bg-amber-100 transition-colors">
                         <p className="text-sm font-bold text-amber-800 truncate">{t.title}</p>
                         <p className="text-xs text-amber-600">Submitted by {t.assigned_user?.full_name}</p>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -704,40 +731,42 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             </div>
           </div>
 
-          {/* Active Experiments */}
+          {/* Bug C fix: Active Experiments — now clickable, each batch links to /batches/[id] */}
           {brief.activeExperiments.length > 0 && (
             <div className="glass-card rounded-2xl p-5">
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-navy"/> Active Experiments
+                <button onClick={() => router.push('/batches')} className="ml-auto text-xs font-bold text-navy hover:underline">View all →</button>
               </h2>
               <div className="flex flex-wrap gap-2">
                 {brief.activeExperiments.map(b => (
-                  <div key={b.batch_id} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-2">
+                  <button key={b.batch_id} onClick={() => router.push(`/batches/${b.batch_id}`)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-slate-100 hover:border-navy/30 transition-colors">
                     <span className="w-2 h-2 rounded-full bg-navy animate-pulse"></span>
                     <span className="text-sm font-black text-slate-800 font-mono">{b.batch_id}</span>
                     {b.product_name && <span className="text-xs text-slate-600">{b.product_name}</span>}
                     <span className="text-xs font-bold uppercase text-navy bg-slate-200 px-1.5 py-0.5 rounded">{b.status}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Open Issues */}
+          {/* Bug C fix: Open Issues — now clickable, each issue navigates to the Issue Tracker tab */}
           {brief.openIssues.length > 0 && (
             <div className="glass-card rounded-2xl p-5 border border-red-100">
               <h2 className="text-xs font-black text-red-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4"/> Unreviewed Lab Issues
+                <button onClick={() => setTab('issues')} className="ml-auto text-xs font-bold text-red-600 hover:underline">Review all →</button>
               </h2>
               <div className="space-y-2">
                 {brief.openIssues.map(issue => (
-                  <div key={issue.id} className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <button key={issue.id} onClick={() => setTab('issues')} className="w-full text-left bg-red-50 border border-red-200 rounded-xl p-3 hover:bg-red-100 transition-colors">
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-red-800 text-sm">{issue.employees?.full_name}</span>
                       <span className="text-xs text-red-500">{new Date(issue.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-xs text-red-700 font-medium">{issue.issue_description}</p>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -841,7 +870,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                           </div>
                           <div>
                              <p className="text-xs font-bold text-gray-900">{act.employees?.full_name}</p>
-                             <p className="text-xs text-gray-500">{act.activity_description.slice(0, 60)}...</p>
+                             <p className="text-xs text-gray-500">{act.activity_description.length > 60 ? act.activity_description.slice(0, 60) + '...' : act.activity_description}</p>
                           </div>
                        </div>
                        <div className="text-right">
@@ -1178,10 +1207,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         </div>
       )}
 
-      {/* ── ISSUE TRACKER (Admin only) ─────────────────────────────── */}
+      {/* ── ISSUE TRACKER (Admin only) — Bug A fix: dedicated DB query, not in-memory filter ── */}
       {tab === 'issues' && isAdmin && (
         <div className="space-y-4">
-          {issues.length === 0 ? (
+          {issuesLoading ? (
+            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="glass-card p-5 rounded-2xl border border-red-100 h-24 animate-pulse bg-red-50/30" />)}</div>
+          ) : issues.length === 0 ? (
             <div className="glass-card p-8 rounded-2xl text-center">
               <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-3"/>
               <p className="text-slate-500 font-medium">No issues reported. All running smoothly.</p>
@@ -1200,49 +1231,4 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 </div>
                 <div className="mb-3 text-sm text-slate-600 border-l-2 border-slate-300 pl-3">{act.activity_description}</div>
                 <div className="p-3 bg-red-100 border border-red-200 rounded-xl text-sm text-red-900 mb-3 font-medium">
-                  <span className="font-black flex items-center mb-1"><AlertTriangle className="w-3.5 h-3.5 mr-1"/> Issue: </span> 
-                  {act.issue_description}
-                </div>
-                {act.founder_comment ? (
-                  <div className="mt-3 p-3 bg-white border border-slate-200 rounded-xl">
-                    <p className="text-xs font-black text-navy mb-1">RESOLUTION NOTE</p>
-                    <p className="text-sm text-slate-700">{act.founder_comment}</p>
-                  </div>
-                ) : (
-                  <div className="mt-4 pt-3 border-t border-red-100">
-                    {activeCommentId === act.id ? (
-                      <div className="flex gap-2">
-                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy"/>
-                        <button onClick={() => handleAddComment(act.id)} className="bg-navy text-white px-4 py-1.5 rounded-lg text-sm font-black hover:bg-navy-hover">Resolve</button>
-                        <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-3 text-sm font-medium">Cancel</button>
-
-                      </div>
-                    ) : (
-                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm py-2 px-4 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 flex items-center">
-
-                        <CheckCircle className="w-4 h-4 mr-2"/> Mark as Reviewed
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-      <ConfirmModal
-        isOpen={!!archiveConfirmId}
-        onClose={() => setArchiveConfirmId(null)}
-        onConfirm={handleArchiveActivity}
-        title="Archive Activity"
-        message="This activity will be hidden from the active log."
-        confirmText="Archive Activity"
-        loadingText="Archiving..."
-        variant="danger"
-        requireInput={true}
-        inputPlaceholder="Reason for archiving..."
-        inputLabel="Please provide a reason for archiving:"
-      />
-    </div>
-  );
-}
+                  <span className="font-black flex items-center mb-1">
