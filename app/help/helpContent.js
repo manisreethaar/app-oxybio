@@ -83,6 +83,82 @@ Click any item to go directly to that module. Use **Global Search** (magnifying 
         ],
       },
       {
+        id: 'whats-new',
+        title: "What's New",
+        articles: [
+          {
+            id: 'admin-esignature',
+            title: 'Electronic Signatures (21 CFR Part 11)',
+            tags: ['e-signature', 'esignature', 'pin', 'sign', 'capa close', 'batch release', 'part 11'],
+            content: `Key actions now require an **Electronic Signature PIN** instead of a plain confirmation click — this makes the action a legally binding, 21 CFR Part 11 compliant signature.
+
+**Setting up your PIN:**
+1. Go to **Profile** → click **Set E-Signature PIN**
+2. Enter a 4–6 digit PIN and confirm it
+3. Click **Set PIN** — you only need to do this once
+
+**Where it's used:**
+- **CAPA / NCR:** Closing a CAPA (Close CAPA)
+- **Batches:** Releasing or Rejecting a batch from QC Hold
+- **Lab Notebook:** Countersigning an entry
+
+**Signing an action:** When you click Close, Release, Reject, or Countersign, a PIN prompt appears. Enter your PIN and click **Sign & Authorize** — the action only completes once the PIN is verified.
+
+**Forgot your PIN?** Click "Forgot PIN? Send reset link" in the signature prompt — a reset link is emailed to you, the same as a password reset.`,
+          },
+          {
+            id: 'admin-view-toggle',
+            title: 'New View Modes — List, Grid, Kanban & Table',
+            tags: ['view', 'toggle', 'kanban', 'grid', 'table', 'list', 'layout'],
+            content: `**Tasks, Equipment, Inventory, Compliance, and Formulations** now have a view switcher (icon buttons, top of the page) so you can browse data the way that suits you:
+
+- **List / Grouped** — the original layout, grouped by status or category
+- **Grid** — card-based layout, good for scanning many items visually
+- **Kanban** — drag-and-drop columns by status (e.g., To Do / In Progress / Done for Tasks)
+- **Table** — dense spreadsheet-style rows, good for exporting or scanning many fields at once
+
+Your chosen view is remembered per module the next time you visit.
+
+**Research → Incubation Hub** also gained the same switcher, including a **Kanban board** for dragging cell-bank prep records between stages.`,
+          },
+          {
+            id: 'admin-session-lock',
+            title: 'Auto Session Lock (Security)',
+            tags: ['session', 'timeout', 'auto logout', 'security', 'inactivity', 'lock'],
+            content: `For security, you are now **automatically signed out after 30 minutes of inactivity** (no mouse movement, clicks, scrolling, or typing).
+
+**What happens:** You'll see a toast warning that your session was locked, and you'll be returned to the login screen. Simply sign in again to continue.
+
+**To avoid losing work:** Save forms as you go — the timer resets the moment you interact with the page, so normal active use is never interrupted.`,
+          },
+          {
+            id: 'admin-attendance-reminders',
+            title: 'Automatic Attendance Reminders',
+            tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
+            content: `The system now sends automatic reminders so nobody forgets to punch in or out:
+
+- **Checkout Reminder:** Everyone with an open shift (clocked in but not yet clocked out) receives a push/in-app notification at **4:00 PM** reminding them to check out.
+- **Check-in reminder:** The morning check-in reminder time has also been updated — check the Notifications module for the current schedule.
+
+Tapping either reminder takes you straight to the Attendance page. These are sent automatically — no setup required.`,
+          },
+          {
+            id: 'admin-reason-for-change',
+            title: 'Reason for Change on Signed/Locked Records',
+            tags: ['reason', 'audit', 'justification', 'qc', 'locked', 'correction'],
+            content: `When you edit a record that has already been signed off or locked (for example, a QC test result at QC Hold), you'll now be prompted for a **written justification** before the change is allowed.
+
+**How it works:**
+1. Make your correction as normal
+2. A "Reason for Change Required" popup appears
+3. Enter a justification (minimum 5 characters, e.g., "Correcting a transcription error")
+4. Click **Confirm Change**
+
+This reason is written permanently into the system audit log alongside the change — it cannot be edited or removed afterward, ensuring a full GMP-compliant audit trail.`,
+          },
+        ],
+      },
+      {
         id: 'people-hr',
         title: 'People & HR',
         articles: [
@@ -530,6 +606,81 @@ Notifications alert you to: leave requests, mispunch requests, batch stage chang
 - Delete users or change roles
 
 If you believe your access is incorrect, contact your admin.`,
+          },
+        ],
+      },
+      {
+        id: 'whats-new',
+        title: "What's New",
+        articles: [
+          {
+            id: 'fellow-esignature',
+            title: 'Electronic Signatures (21 CFR Part 11)',
+            tags: ['e-signature', 'esignature', 'pin', 'sign', 'countersign', 'part 11'],
+            content: `Countersigning a Lab Notebook entry, and other sign-off actions, now use an **Electronic Signature PIN** instead of a plain confirmation click — making the action a legally binding, 21 CFR Part 11 compliant signature.
+
+**Setting up your PIN:**
+1. Go to **Profile** → click **Set E-Signature PIN**
+2. Enter a 4–6 digit PIN and confirm it
+3. Click **Set PIN** — a one-time setup
+
+**Where it's used:**
+- **Lab Notebook:** Countersigning an intern's/team member's entry
+- **CAPA:** Contributing actions where a signature is required
+
+**Signing an action:** When you click Countersign (or another signature-required action), a PIN prompt appears. Enter your PIN and click **Sign & Authorize**.
+
+**Forgot your PIN?** Click "Forgot PIN? Send reset link" in the prompt — a reset link is emailed to you.`,
+          },
+          {
+            id: 'fellow-view-toggle',
+            title: 'New View Modes — List, Grid, Kanban & Table',
+            tags: ['view', 'toggle', 'kanban', 'grid', 'table', 'list', 'layout'],
+            content: `**Tasks, Equipment, Inventory, Compliance, and Formulations** now have a view switcher (icon buttons, top of the page):
+
+- **List / Grouped** — the original layout, grouped by status or category
+- **Grid** — card-based layout for visually scanning many items
+- **Kanban** — drag-and-drop columns by status (e.g., To Do / In Progress / Done for Tasks)
+- **Table** — dense spreadsheet-style rows
+
+Your chosen view is remembered per module.
+
+**Research → Incubation Hub** also gained the same switcher, including a **Kanban board** for dragging cell-bank prep records between stages.`,
+          },
+          {
+            id: 'fellow-session-lock',
+            title: 'Auto Session Lock (Security)',
+            tags: ['session', 'timeout', 'auto logout', 'security', 'inactivity', 'lock'],
+            content: `For security, you are now **automatically signed out after 30 minutes of inactivity** (no mouse movement, clicks, scrolling, or typing).
+
+**What happens:** A toast warning appears and you're returned to the login screen. Sign in again to continue.
+
+**To avoid losing work:** Save entries as you go — normal active use (typing, clicking, scrolling) resets the timer and is never interrupted.`,
+          },
+          {
+            id: 'fellow-attendance-reminders',
+            title: 'Automatic Attendance Reminders',
+            tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
+            content: `The system now sends automatic reminders:
+
+- **Checkout Reminder:** Anyone with an open shift (clocked in, not yet out) gets a push/in-app notification at **4:00 PM** reminding them to check out.
+- **Check-in reminder:** The morning check-in reminder time has also been updated.
+
+Tapping either reminder takes you straight to the Attendance page — no setup required.`,
+          },
+          {
+            id: 'fellow-reason-for-change',
+            title: 'Reason for Change on Signed/Locked Records',
+            tags: ['reason', 'audit', 'justification', 'qc', 'locked', 'correction'],
+            content: `Editing a record that's already been signed off or locked (e.g., a QC test result at QC Hold) now requires a **written justification** before the change is allowed.
+
+**How it works:**
+1. Make your correction
+2. A "Reason for Change Required" popup appears
+3. Enter a reason (minimum 5 characters)
+4. Click **Confirm Change**
+
+The reason is written permanently into the audit log alongside the change and cannot be edited or removed afterward.`,
           },
         ],
       },
@@ -1041,6 +1192,54 @@ The greeting at the top changes by time of day (Good Morning / Afternoon / Eveni
 **Supervised entry:** When you log data in a batch stage, you must select a supervising Research Fellow or Scientist from the dropdown. This person's name is recorded alongside your entry.
 
 If you need access to something you don't have, ask your supervising scientist or admin.`,
+          },
+        ],
+      },
+      {
+        id: 'whats-new',
+        title: "What's New",
+        articles: [
+          {
+            id: 'intern-esignature',
+            title: 'Electronic Signatures — What the PIN Prompt Means',
+            tags: ['e-signature', 'esignature', 'pin', 'sign', 'countersign', 'part 11'],
+            content: `You may notice your supervising Research Fellow or Scientist is asked to enter a **PIN** when they countersign your Lab Notebook entries or approve certain records. This is a new **Electronic Signature** feature — it makes their sign-off a legally binding, 21 CFR Part 11 compliant signature.
+
+**This does not usually apply to you** unless a future task requires you to sign something — in that case, set your own PIN in **Profile → Set E-Signature PIN** first.`,
+          },
+          {
+            id: 'intern-view-toggle',
+            title: 'New View Modes for Tasks',
+            tags: ['view', 'toggle', 'kanban', 'grid', 'table', 'list', 'layout'],
+            content: `**Tasks** now has a view switcher (icon buttons at the top of the page) so you can browse your to-do list the way you prefer:
+
+- **Grouped** — the original layout, grouped by status
+- **Grid** — card-based layout
+- **Kanban** — drag your tasks between To Do / In Progress / Done columns
+- **Table** — compact spreadsheet-style rows
+
+Your chosen view is remembered the next time you open Tasks.`,
+          },
+          {
+            id: 'intern-session-lock',
+            title: 'Auto Session Lock (Security)',
+            tags: ['session', 'timeout', 'auto logout', 'security', 'inactivity', 'lock'],
+            content: `For security, you'll now be **automatically signed out after 30 minutes of inactivity** (no mouse movement, clicks, scrolling, or typing).
+
+**What happens:** A warning message appears and you're returned to the login screen — just sign in again to continue.
+
+**Tip:** Save your Lab Notebook entries and other work as you go. Normal active use resets the timer, so it won't interrupt you while you're working.`,
+          },
+          {
+            id: 'intern-attendance-reminders',
+            title: 'Automatic Attendance Reminders',
+            tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
+            content: `You'll now automatically receive:
+
+- A **Checkout Reminder** notification at **4:00 PM** if you're still clocked in and haven't checked out yet
+- A morning check-in reminder (the time has recently been updated)
+
+Tap the notification to go straight to the Attendance page. No setup is needed — these are sent automatically.`,
           },
         ],
       },
