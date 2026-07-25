@@ -81,7 +81,10 @@
       "Bash(git -C \"E:\\\\OXYBIO\" log --oneline --all --since=\"2 weeks ago\")",
       "Bash(git -C \"E:\\\\OXYBIO\" show 221ff6e --stat)",
       "Bash(git -C \"E:\\\\OXYBIO\" show 221ff6e --name-only)",
-      "Bash(xargs grep -l \"batch_stage_harvest\\\\|batch_stage_downstream\")"
+      "Bash(xargs grep -l \"batch_stage_harvest\\\\|batch_stage_downstream\")",
+      "Bash(node --input-type=module -e \"import\\('./app/help/helpContent.js'\\).then\\(m => { const g = m.HELP_CONTENT; ['admin','fellow','intern'].forEach\\(r => { const s = g[r].sections.find\\(s=>s.id==='whats-new'\\); console.log\\(r, 'whats-new articles:', s.articles.length\\); }\\); console.log\\('OK'\\); }\\).catch\\(e=>{console.error\\('ERR',e\\); process.exit\\(1\\)}\\);\")",
+      "Bash(git add *)",
+      "Bash(git push *)"
     ]
   }
 }

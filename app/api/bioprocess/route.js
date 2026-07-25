@@ -10,6 +10,7 @@ const createSchema = z.object({
   response_variable: z.string().default('OD600 at 24h'),
   response_unit:     z.string().default(''),
   config:            z.record(z.any()).optional(),
+  sop_id:            z.string().uuid().optional().nullable(),
 });
 
 export async function GET() {
@@ -42,13 +43,14 @@ export async function POST(req) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { title, description, type, response_variable, response_unit, config } = parsed.data;
+  const { title, description, type, response_variable, response_unit, config, sop_id } = parsed.data;
 
   const { data: experiment, error } = await supabase
     .from('bioprocess_experiments')
     .insert({
       title, description, type, response_variable, response_unit,
       config: config || {},
+      sop_id: sop_id || null,
       created_by: employee.id,
       status: 'setup',
     })

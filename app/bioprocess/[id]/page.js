@@ -291,6 +291,7 @@ export default function BioprocessDetailPage() {
   const [kineticConfig, setKineticConfig] = useState({});
   const [batches, setBatches] = useState([]);
   const [creatingRSM, setCreatingRSM] = useState(false);
+  const [sopBlock, setSopBlock] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -453,9 +454,10 @@ export default function BioprocessDetailPage() {
   // ── Save ──────────────────────────────────────────────────────────────────
   const saveAll = async () => {
     setSaving(true);
+    setSopBlock(null);
     try {
       // Save factors + responses
-      await fetch(`/api/bioprocess/${id}/runs`, {
+      const res = await fetch(`/api/bioprocess/${id}/runs`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -468,6 +470,11 @@ export default function BioprocessDetailPage() {
           kineticData: experiment?.type === 'kinetics' ? localKinetics : undefined,
         }),
       });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (json.sop_violation) setSopBlock(json);
+        throw new Error(json.error || 'Failed to save run data');
+      }
       // Save kinetics config
       if (experiment?.type === 'kinetics') {
         await fetch(`/api/bioprocess/${id}`, {
@@ -707,6 +714,15 @@ export default function BioprocessDetailPage() {
       
       return (
         <div className="space-y-5">
+          {sopBlock && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+              <div>
+                <strong>SOP completion required:</strong>
+                <p>{sopBlock.error} <a href="/sops" className="underline font-semibold">Go sign it</a>.</p>
+              </div>
+            </div>
+          )}
           {isLinkedToBatch ? (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-2">
               <CheckCircle className="w-5 h-5 mt-0.5 shrink-0" />

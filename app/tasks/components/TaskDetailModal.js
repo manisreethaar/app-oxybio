@@ -18,6 +18,7 @@ import EditRequestButton from '@/components/ui/EditRequestButton';
  */
 export default function TaskDetailModal({
   selectedTask,
+  linkedSop,
   groupedTasks,
   employeeProfile,
   isMaster,
@@ -63,6 +64,11 @@ export default function TaskDetailModal({
           <div>
             <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{selectedTask.priority}</span>
             <h3 className="text-base font-bold text-slate-900 mt-1">{selectedTask.title}</h3>
+            {linkedSop && (
+              <a href="/sops" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100">
+                Requires SOP: {linkedSop.title}
+              </a>
+            )}
           </div>
           <div className="flex gap-1 text-slate-400 items-center">
             <button

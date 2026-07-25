@@ -83,8 +83,13 @@ CREATE TABLE activity_log (
     end_time TIME,
     issue_observed BOOLEAN DEFAULT false,
     issue_description TEXT,
+    equipment_id UUID REFERENCES equipment(id) ON DELETE SET NULL,
+    severity TEXT DEFAULT 'normal',
     founder_comment TEXT,
     reviewed_by UUID REFERENCES employees(id),
+    archived_at TIMESTAMPTZ,
+    archived_by UUID REFERENCES employees(id),
+    archive_reason TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 

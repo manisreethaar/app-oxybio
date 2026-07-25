@@ -2,13 +2,14 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { toast } from 'react-toastify';
+import { useToast } from '@/context/ToastContext';
 import { createClient } from '@/utils/supabase/client';
 
 export default function SessionTimeoutProvider({ children, timeoutMinutes = 30 }) {
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const toast = useToast();
   const timeoutId = useRef(null);
   
   const resetTimeout = useCallback(() => {

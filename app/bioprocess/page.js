@@ -31,6 +31,7 @@ const createSchema = z.object({
   type:              z.enum(['pbd', 'rsm', 'kinetics']),
   response_variable: z.string().min(1, 'Response variable required'),
   response_unit:     z.string().optional(),
+  sop_id:            z.string().optional(),
 });
 
 export default function BioprocessPage() {
@@ -40,6 +41,7 @@ export default function BioprocessPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [experiments, setExperiments] = useState([]);
+  const [sops, setSops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
@@ -48,9 +50,14 @@ export default function BioprocessPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm({
     resolver: zodResolver(createSchema),
-    defaultValues: { title: '', description: '', type: 'pbd', response_variable: 'OD600 at 24h', response_unit: '' },
+    defaultValues: { title: '', description: '', type: 'pbd', response_variable: 'OD600 at 24h', response_unit: '', sop_id: '' },
   });
   const watchedType = watch('type');
+
+  useEffect(() => {
+    supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title')
+      .then(({ data }) => setSops(data || []));
+  }, [supabase]);
 
   const fetchExperiments = useCallback(async () => {
     setLoading(true);
@@ -73,7 +80,7 @@ export default function BioprocessPage() {
       const res = await fetch('/api/bioprocess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, sop_id: data.sop_id || null }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -271,6 +278,15 @@ export default function BioprocessPage() {
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Unit</label>
                   <input {...register('response_unit')} placeholder="AU, g/L, mM/min…" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Requires SOP (optional)</label>
+                <select {...register('sop_id')} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy">
+                  <option value="">No SOP required</option>
+                  {sops.map(s => <option key={s.id} value={s.id}>{s.sop_id ? `${s.sop_id} — ` : ''}{s.title}</option>)}
+                </select>
+                <p className="text-xs text-slate-400 mt-1">Data entry is blocked until the performer has e-signed this SOP.</p>
               </div>
 
               <div className="flex gap-3 pt-2">
