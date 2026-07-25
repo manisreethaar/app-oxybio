@@ -7,7 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import { 
   Beaker, Plus, History, ChevronRight, Loader2, Save, X, FlaskConical, 
   GitCompare, CheckCircle2, Clock, Send, ShieldCheck, XCircle, AlertTriangle, Trash2, ArrowRight,
-  Search, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, CalendarDays
+  Search, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, CalendarDays, LayoutGrid, Columns, Table as TableIcon
 } from 'lucide-react';
 import FormulaDiff from '@/components/science/FormulaDiff';
 import Skeleton from '@/components/Skeleton';
@@ -40,6 +40,19 @@ export default function FormulationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // id of recipe being actioned
   const [items, setItems] = useState([]);
+  const [viewMode, setViewMode] = useState('grid');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('formulations_view_mode');
+    if (saved && ['kanban', 'grid', 'table'].includes(saved)) {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('formulations_view_mode', mode);
+  };
   const [newForm, setNewForm] = useState({ code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000,
     nutritional_info: {}, yield_predicted_ml: '', regulatory_claims: [] });
   
@@ -304,126 +317,7 @@ export default function FormulationsPage() {
     return 0;
   });
 
-  if (loading && formulations.length === 0) {
-    return (
-      <div className="page-container space-y-8">
-        <div className="flex justify-between items-center"><Skeleton width={250} height={32}/> <Skeleton width={180} height={40}/></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
-        </div>
-      </div>
-    );
-  }
-  if (!employeeProfile) return null;
-
-  return (
-    <div className="page-container text-slate-900">
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Recipe Management</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Scientific Formula Registry & Version Control</p>
-        </div>
-        <button onClick={handleOpenNewRecipe} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
-          <Plus className="w-4 h-4 mr-1.5" /> New Recipe
-        </button>
-      </div>
-
-      {/* Pending Approval Banner ?????" shown to approvers only */}
-      {isApprover && pendingReview.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
-          <div>
-            <p className="text-sm font-bold text-amber-800">{pendingReview.length} recipe{pendingReview.length > 1 ? 's' : ''} pending your approval</p>
-            <p className="text-xs text-amber-600 mt-0.5">Review and approve below to unlock batch production.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Controls: Search, Sort, Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-2">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"/>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search by recipe name or code..."
-            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <X className="w-4 h-4"/>
-            </button>
-          )}
-        </div>
-
-        {/* Sort & Filter */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            {[
-              { key: 'newest', label: 'Newest', Icon: CalendarDays },
-              { key: 'oldest', label: 'Oldest', Icon: CalendarDays },
-              { key: 'name_asc', label: 'A-Z', Icon: ArrowDownAZ },
-              { key: 'name_desc', label: 'Z-A', Icon: ArrowUpAZ },
-            ].map(({ key, label, Icon }) => (
-              <button
-                key={key}
-                onClick={() => setSortOrder(key)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortOrder === key ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <Icon className="w-3 h-3"/> <span className="hidden sm:inline">{label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            {['All', 'Draft', 'In Review', 'Approved'].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-                  statusFilter === s 
-                    ? 'bg-white text-navy shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {s}
-                {s === 'In Review' && pendingReview.length > 0 && (
-                  <span className="ml-1.5 bg-amber-500 text-white text-xs font-black px-1.5 py-0.5 rounded-full">{pendingReview.length}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Formula Diff */}
-      {compareIds.length === 2 && (
-        <div className="max-w-xl mx-auto relative">
-           <button onClick={() => setCompareIds([])} className="absolute -top-3 -right-3 bg-white border border-slate-200 rounded-full p-1 shadow-md z-10 hover:text-red-500"><X className="w-4 h-4"/></button>
-           <FormulaDiff 
-             v1={formulations.find(f => f.id === compareIds[0])} 
-             v2={formulations.find(f => f.id === compareIds[1])} 
-           />
-        </div>
-      )}
-
-      {/* Recipe Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
-             {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
-          </div>
-        ) : filteredFormulations.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-sm font-medium text-slate-400">
-            {statusFilter === 'All' ? 'No recipes registered yet.' : `No recipes with status "${statusFilter}".`}
-          </div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {filteredFormulations.map((f, i) => {
+  const renderRecipeCard = (f, i = 0) => {
               let parsedIng = [];
               try { parsedIng = typeof f.ingredients === 'string' ? JSON.parse(f.ingredients) : (f.ingredients || []); } catch(e) { parsedIng = []; }
               const statusKey = f.status in STATUS_CONFIG ? f.status : 'Draft';
@@ -725,9 +619,258 @@ export default function FormulationsPage() {
                     </AnimatePresence>
                   </div>
                 </motion.div>
-              );
-            })}
-          </AnimatePresence>
+              )
+  };
+
+  if (loading && formulations.length === 0) {
+    return (
+      <div className="page-container space-y-8">
+        <div className="flex justify-between items-center"><Skeleton width={250} height={32}/> <Skeleton width={180} height={40}/></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
+        </div>
+      </div>
+    );
+  }
+  if (!employeeProfile) return null;
+
+  return (
+    <div className="page-container text-slate-900">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Recipe Management</h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">Scientific Formula Registry & Version Control</p>
+        </div>
+        <button onClick={handleOpenNewRecipe} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all active:scale-95">
+          <Plus className="w-4 h-4 mr-1.5" /> New Recipe
+        </button>
+      </div>
+
+      {/* Pending Approval Banner ?????" shown to approvers only */}
+      {isApprover && pendingReview.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
+          <div>
+            <p className="text-sm font-bold text-amber-800">{pendingReview.length} recipe{pendingReview.length > 1 ? 's' : ''} pending your approval</p>
+            <p className="text-xs text-amber-600 mt-0.5">Review and approve below to unlock batch production.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Controls: Search, Sort, Filter */}
+      <div className="flex flex-col md:flex-row gap-4 mb-2">
+        <div className="flex gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-10 lg:h-[42px] shrink-0">
+          {[
+            { id: 'kanban', icon: Columns, label: 'Kanban' },
+            { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
+            { id: 'table',  icon: TableIcon, label: 'Table' },
+          ].map(v => {
+            const Icon = v.icon;
+            return (
+              <button
+                key={v.id}
+                onClick={() => handleViewModeChange(v.id)}
+                className={`flex items-center justify-center px-3 rounded-lg transition-all h-full ${
+                  viewMode === v.id
+                    ? 'bg-slate-100 text-slate-800'
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+                title={v.label}
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            );
+          })}
+        </div>
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"/>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search by recipe name or code..."
+            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4"/>
+            </button>
+          )}
+        </div>
+
+        {/* Sort & Filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            {[
+              { key: 'newest', label: 'Newest', Icon: CalendarDays },
+              { key: 'oldest', label: 'Oldest', Icon: CalendarDays },
+              { key: 'name_asc', label: 'A-Z', Icon: ArrowDownAZ },
+              { key: 'name_desc', label: 'Z-A', Icon: ArrowUpAZ },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={() => setSortOrder(key)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortOrder === key ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <Icon className="w-3 h-3"/> <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            {['All', 'Draft', 'In Review', 'Approved'].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  statusFilter === s 
+                    ? 'bg-white text-navy shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {s}
+                {s === 'In Review' && pendingReview.length > 0 && (
+                  <span className="ml-1.5 bg-amber-500 text-white text-xs font-black px-1.5 py-0.5 rounded-full">{pendingReview.length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Formula Diff */}
+      {compareIds.length === 2 && (
+        <div className="max-w-xl mx-auto relative">
+           <button onClick={() => setCompareIds([])} className="absolute -top-3 -right-3 bg-white border border-slate-200 rounded-full p-1 shadow-md z-10 hover:text-red-500"><X className="w-4 h-4"/></button>
+           <FormulaDiff 
+             v1={formulations.find(f => f.id === compareIds[0])} 
+             v2={formulations.find(f => f.id === compareIds[1])} 
+           />
+        </div>
+      )}
+
+      {/* Recipe Views */}
+      <div className="w-full pb-8">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl"/>)}
+          </div>
+        ) : filteredFormulations.length === 0 ? (
+          <div className="py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-sm font-medium text-slate-400">
+            {statusFilter === 'All' ? 'No recipes registered yet.' : `No recipes with status "${statusFilter}".`}
+          </div>
+        ) : (
+          <>
+            {viewMode === 'kanban' && (
+              <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+                {['Draft', 'In Review', 'Approved'].map(statusCol => {
+                  const colItems = filteredFormulations.filter(f => {
+                    const s = f.status === 'active' ? 'Draft' : f.status;
+                    return s === statusCol;
+                  });
+                  return (
+                    <div key={statusCol} className="w-[360px] shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
+                      <div className={`rounded-t-xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
+                        statusCol === 'Approved' ? 'bg-emerald-50 border-emerald-200' :
+                        statusCol === 'In Review' ? 'bg-amber-50 border-amber-200' :
+                        'bg-slate-50 border-slate-200'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-black text-slate-900 truncate uppercase">{statusCol}</span>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-white shadow-sm ${
+                            statusCol === 'Approved' ? 'text-emerald-700' :
+                            statusCol === 'In Review' ? 'text-amber-700' :
+                            'text-slate-700'
+                          }`}>{colItems.length}</span>
+                        </div>
+                      </div>
+                      <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-3 flex-1 overflow-y-auto flex flex-col gap-4">
+                        {colItems.length === 0 ? (
+                          <div className="text-center p-4 text-xs font-bold text-slate-400">No recipes</div>
+                        ) : (
+                          <AnimatePresence mode="popLayout">
+                            {colItems.map((f, idx) => renderRecipeCard(f, idx))}
+                          </AnimatePresence>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <AnimatePresence mode="popLayout">
+                  {filteredFormulations.map((f, i) => renderRecipeCard(f, i))}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {viewMode === 'table' && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[900px]">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Code</th>
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Name</th>
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Category</th>
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Version</th>
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Batches</th>
+                      <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredFormulations.map(f => {
+                      const statusKey = f.status in STATUS_CONFIG ? f.status : 'Draft';
+                      const statusCfg = STATUS_CONFIG[statusKey];
+                      return (
+                        <tr key={f.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 text-xs font-bold text-navy font-mono">{f.code}</td>
+                          <td className="px-4 py-3 text-sm font-bold text-slate-900">{f.name}</td>
+                          <td className="px-4 py-3 text-xs font-bold text-slate-500 uppercase">{f.category || 'Fermentation'}</td>
+                          <td className="px-4 py-3 text-xs font-bold text-slate-500">V{f.version}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusCfg.color}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`}/>
+                              {statusCfg.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs font-bold text-slate-600">
+                            {batchCounts[f.id] || 0}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {f.status === 'Approved' && (
+                                <Link
+                                  href={`/batches?formula_code=${f.code}`}
+                                  className="px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 transition-all whitespace-nowrap"
+                                >
+                                  Launch
+                                </Link>
+                              )}
+                              {(f.status === 'Draft' || f.status === 'active' || isApprover) && (
+                                <button onClick={() => handleEditRecipe(f)} className="p-1 rounded bg-slate-100 text-slate-400 hover:text-navy hover:bg-slate-200 transition-all" title="Edit Recipe">
+                                  <Plus className="w-3.5 h-3.5 rotate-45"/>
+                                </button>
+                              )}
+                              <button onClick={() => setCompareIds(prev => prev.includes(f.id) ? prev.filter(id => id !== f.id) : [...prev, f.id].slice(-2))} className={`p-1 rounded transition-all ${compareIds.includes(f.id) ? 'bg-navy text-white' : 'bg-slate-100 text-slate-400 hover:text-navy hover:bg-slate-200'}`} title="Compare">
+                                <GitCompare className="w-3.5 h-3.5"/>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </div>
 
