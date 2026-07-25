@@ -111,7 +111,7 @@ export default function AdminDashboard({ employeeId }) {
       const [stockRes, calibRes, capaRes, qcHoldRes, leavesRes] = await Promise.all([
         // Server-side filter low stock directly — no more limit(50) then slice(5)
         supabase.from('inventory_stock').select('id, current_quantity, min_stock_level, unit, item:inventory_items(id, name)').not('min_stock_level', 'is', null).gt('min_stock_level', 0).filter('current_quantity', 'lt', 'min_stock_level').limit(5),
-        supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).limit(5),
+        supabase.from('equipment').select('id, name, calibration_due_date').lte('calibration_due_date', sevenDaysFromNow.toISOString().split('T')[0]).not('calibration_due_date', 'is', null).neq('requires_calibration', false).limit(5),
         supabase.from('deviations').select('id, title, severity, status, batch_id, batches(id, batch_id)').neq('status', 'Closed').is('archived_at', null).order('created_at', { ascending: false }).limit(5),
         supabase.from('batches').select('id, batch_id, current_stage, status, formulations(name)').is('archived_at', null).eq('current_stage', 'qc_hold').not('status', 'in', '("released","rejected")').order('created_at', { ascending: false }),
         supabase.from('leave_applications').select('id, leave_type, start_date, end_date, employee:employees!leave_applications_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at', { ascending: true }).limit(5),

@@ -7,7 +7,7 @@ const CLARITY_OPTS = ['Very clear, transparent', 'Slightly cloudy', 'Moderately 
 
 function CalibrationBadge({ equipment }) {
   if (!equipment) return null;
-  const due = equipment.calibration_due_date ? new Date(equipment.calibration_due_date) : null;
+  const due = equipment.requires_calibration !== false && equipment.calibration_due_date ? new Date(equipment.calibration_due_date) : null;
   const today = new Date();
   const daysLeft = due ? Math.ceil((due - today) / 86400000) : null;
   if (!due)          return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">No Cal. Data</span>;
@@ -30,8 +30,8 @@ function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
           <option key={e.id} value={e.id}>{e.name}{e.model ? ` (${e.model})` : ''}</option>
         ))}
       </select>
-      {selected?.calibration_due_date && new Date(selected.calibration_due_date) < new Date() && (
-        <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1">
+      {selected?.requires_calibration !== false && selected?.calibration_due_date && new Date(selected.calibration_due_date) < new Date() && (
+        <p className="text-xs text-red-600 font-bold flex items-center gap-1 mt-1">
           <AlertTriangle className="w-3 h-3"/>Calibration overdue — raise a deviation before use.
         </p>
       )}
@@ -95,7 +95,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
     let isCurrent = true;
     const [{ data }, { data: eqData }] = await Promise.all([
       supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('equipment').select('id, name, model, status, calibration_due_date').order('name'),
+      supabase.from('equipment').select('id, name, model, status, requires_calibration, calibration_due_date').order('name'),
     ]);
     if (!isCurrent) return;
     if (eqData) setEquipment(eqData);
@@ -147,7 +147,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
     const checkEquip = (id) => {
       const e = equipment.find(eq => eq.id === id);
-      return e && e.calibration_due_date && new Date(e.calibration_due_date) < new Date();
+      return e && e.requires_calibration !== false && e.calibration_due_date && new Date(e.calibration_due_date) < new Date();
     };
     if (checkEquip(centEqId) || checkEquip(phEqId) || checkEquip(scaleEqId)) {
       toast.error('Cannot save — One or more selected equipment items have expired calibration.');

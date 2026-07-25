@@ -70,7 +70,7 @@ function EquipmentTab({ rows }) {
   return (
     <div className="space-y-2">
       {rows.map(eq => {
-        const dueDate   = eq.calibration_due_date ? new Date(eq.calibration_due_date) : null;
+        const dueDate   = eq.requires_calibration !== false && eq.calibration_due_date ? new Date(eq.calibration_due_date) : null;
         const calOverdue = dueDate && dueDate < new Date();
         return (
           <Link
