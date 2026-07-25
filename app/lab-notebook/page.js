@@ -322,7 +322,7 @@ export default function DigitalLnbPage() {
           <Link key={entry.id} href={`/lab-notebook/${entry.id}`} className="block group">
             <div className="card p-5 hover:shadow-md transition-all border border-slate-100 hover:border-navy/20 cursor-pointer">
               <div className="flex justify-between items-start">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     {getStatusBadge(entry.status)}
                     <span className="text-xs font-bold text-slate-400">{new Date(entry.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
@@ -332,7 +332,7 @@ export default function DigitalLnbPage() {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base font-black text-slate-900 group-hover:text-navy transition-colors">{entry.title}</h2>
+                  <h2 className="text-base font-black text-slate-900 group-hover:text-navy transition-colors break-words">{entry.title}</h2>
                   <div className="flex items-center gap-3 mt-3 flex-wrap">
                     <div className="flex items-center text-sm text-slate-600">
                       <FileSignature className="w-4 h-4 mr-1.5 text-slate-400"/>

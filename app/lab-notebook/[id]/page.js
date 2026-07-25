@@ -187,15 +187,20 @@ export default function LnbEntryPage() {
       </Link>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div className="flex-1 w-full">
+        <div className="flex-1 w-full min-w-0">
           {canEdit ? (
-             <input 
-               type="text" value={title} onChange={(e) => setTitle(e.target.value)} 
-               className="text-3xl font-black text-slate-900 tracking-tight w-full bg-transparent border-b border-transparent hover:border-slate-200 outline-none focus:border-navy transition-colors pb-1"
+             <textarea 
+               value={title} onChange={(e) => setTitle(e.target.value)} 
+               className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight w-full bg-transparent border-b border-transparent hover:border-slate-200 outline-none focus:border-navy transition-colors pb-1 resize-none overflow-hidden break-words"
                placeholder="Experiment Title..."
+               rows={title.length > 40 ? 2 : 1}
+               onInput={(e) => {
+                 e.target.style.height = 'auto';
+                 e.target.style.height = e.target.scrollHeight + 'px';
+               }}
              />
           ) : (
-             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{entry.title}</h1>
+             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight break-words">{entry.title}</h1>
           )}
           
           <div className="flex flex-wrap items-center gap-4 mt-3">
