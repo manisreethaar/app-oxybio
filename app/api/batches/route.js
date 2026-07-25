@@ -362,9 +362,7 @@ export async function DELETE(request) {
       });
     }
 
-    if (!batch.archived_at) {
-      return NextResponse.json({ error: 'Archive this batch before permanently deleting it.' }, { status: 409 });
-    }
+    // Removed the check that blocked permanent deletion if not archived.
 
     // Reverse any inventory movements already recorded
     const { data: movements } = await supabase

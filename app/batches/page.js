@@ -11,7 +11,7 @@ import { useToast } from '@/context/ToastContext';
 import {
   FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X,
   CheckCircle2, Trash2, Clock, Beaker, Activity, Users, Calendar,
-  ChevronRight, Zap, Search
+  ChevronRight, Zap, Search, Archive
 } from 'lucide-react';
 import { format, differenceInHours, differenceInDays } from 'date-fns';
 import Link from 'next/link';
@@ -359,12 +359,14 @@ export default function BatchesPage() {
   };
 
   const handlePermanentDeleteBatch = async (id) => {
+    if (!window.confirm('Are you sure you want to permanently delete this batch? This action cannot be undone.')) return;
     try {
       const res  = await fetch(`/api/batches?id=${id}&permanent=true`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setArchivedBatches(prev => prev.filter(b => b.id !== id));
-      toast.success(data.message || 'Archived batch permanently deleted.');
+      fetchBatches(); // Refresh active batches in case it was deleted from there
+      toast.success(data.message || 'Batch permanently deleted.');
     } catch (err) {
       toast.error('Failed to permanently delete batch: ' + err.message);
     }
@@ -634,13 +636,22 @@ export default function BatchesPage() {
                       <p className="text-xs text-slate-400 font-bold uppercase mb-0.5">{hrsLabel}</p>
                       <p className="text-xl font-black text-slate-800 tabular-nums">{hours}<span className="text-xs font-bold text-slate-400"> hr</span></p>
                       {isAdmin ? (
-                        <button
-                          onClick={e => { e.preventDefault(); setArchiveReason(''); setCancelConfirmId(batch.id); }}
-                          className="p-1 rounded bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all border border-slate-200"
-                          title="Archive Batch"
-                        >
-                          <Trash2 className="w-3 h-3"/>
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={e => { e.preventDefault(); setArchiveReason(''); setCancelConfirmId(batch.id); }}
+                            className="p-1.5 rounded bg-slate-100 text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all border border-slate-200"
+                            title="Archive Batch"
+                          >
+                            <Archive className="w-3.5 h-3.5"/>
+                          </button>
+                          <button
+                            onClick={e => { e.preventDefault(); handlePermanentDeleteBatch(batch.id); }}
+                            className="p-1.5 rounded bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all border border-slate-200"
+                            title="Permanently Delete Batch"
+                          >
+                            <Trash2 className="w-3.5 h-3.5"/>
+                          </button>
+                        </div>
                       ) : batch.created_by === employeeProfile?.id ? (
                         <EditRequestButton
                           tableName="batches"
@@ -814,7 +825,22 @@ export default function BatchesPage() {
                       {l.start_time ? format(new Date(l.start_time), 'MMM d, yyyy') : '—'}
                     </td>
                     <td className="px-6 py-3.5 text-right space-x-3">
-                      {statusFilter === 'archived' && isAdmin ? (
+                      {isAdmin && statusFilter !== 'archived' ? (
+                        <>
+                          <button
+                            onClick={(e) => { e.preventDefault(); setArchiveReason(''); setCancelConfirmId(l.id); }}
+                            className="text-xs font-bold text-amber-600 hover:underline"
+                          >
+                            Archive
+                          </button>
+                          <button
+                            onClick={() => handlePermanentDeleteBatch(l.id)}
+                            className="text-xs font-bold text-red-600 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : isAdmin && statusFilter === 'archived' ? (
                         <button
                           onClick={() => handlePermanentDeleteBatch(l.id)}
                           className="text-xs font-bold text-red-600 hover:underline"
