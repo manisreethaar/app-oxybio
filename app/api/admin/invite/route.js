@@ -12,7 +12,7 @@ async function claimReleasedCode(supabaseAdmin, prefix) {
     .from('released_employee_codes')
     .select('employee_code')
     .ilike('employee_code', `${prefix}%`)
-    .order('released_at', { ascending: true })
+    .order('employee_code', { ascending: true })
     .limit(1);
   
   if (released && released.length > 0) {
