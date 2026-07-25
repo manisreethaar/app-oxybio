@@ -151,6 +151,7 @@ export default function LeavePage() {
 
       // Notifications are handled by the backend API route.
 
+      toast.success(isPermission ? 'Permission requested successfully.' : 'Leave requested successfully.');
       reset();
       fetchLeaves();
     } catch (err) {
@@ -190,6 +191,7 @@ export default function LeavePage() {
 
       // Notification is handled by the backend
 
+      toast.success(`Leave request ${status}.`);
       setRejectionId(null);
       setRejectionReason('');
       fetchLeaves();

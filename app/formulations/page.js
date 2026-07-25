@@ -191,6 +191,7 @@ export default function FormulationsPage() {
       setRejectingId(null);
       setRejectionReason('');
       setFormulations(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
+      toast.success(data.message || `Status updated to ${newStatus}.`);
     } catch (err) { toast.error('Network Error'); }
     finally { setActionLoading(null); }
   };
@@ -276,6 +277,7 @@ export default function FormulationsPage() {
         setShowNew(false);
         setNewForm({ id: null, code: '', name: '', ingredients: [], notes: '', base_version_id: null, category: 'Fermentation', base_volume_ml: 1000, nutritional_info: {}, yield_predicted_ml: '', regulatory_claims: [] });
         fetchFormulations();
+        toast.success(isEdit ? "Recipe updated successfully." : "Recipe created successfully.");
       } else { 
         const errData = await res.json();
         toast.error(`Failed: ${errData.error || 'Unknown error'}`);
