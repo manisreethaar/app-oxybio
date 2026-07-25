@@ -41,12 +41,12 @@ DROP POLICY IF EXISTS "capa_auth_all" ON public.capa_actions;
 
 CREATE POLICY "capa_read_all" ON public.capa_actions FOR SELECT USING (true);
 CREATE POLICY "capa_insert_all" ON public.capa_actions FOR INSERT WITH CHECK (auth.role() = 'authenticated');
--- Allow update only if status is Open, or user is admin
+-- Allow update only if effectiveness_verified is false, or user is admin
 CREATE POLICY "capa_update_lock" ON public.capa_actions
   FOR UPDATE USING (
-    status = 'Open' OR public.is_admin()
+    effectiveness_verified = false OR public.is_admin()
   ) WITH CHECK (
-    status = 'Open' OR public.is_admin()
+    effectiveness_verified = false OR public.is_admin()
   );
 CREATE POLICY "capa_delete_admin" ON public.capa_actions FOR DELETE USING (public.is_admin());
 
