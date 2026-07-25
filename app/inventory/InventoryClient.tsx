@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -30,6 +30,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
+  const [viewMode, setViewMode] = useState('grid');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('inventory_view_mode');
+    if (saved && ['kanban', 'grid', 'table'].includes(saved)) {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: string) => {
+    setViewMode(mode);
+    localStorage.setItem('inventory_view_mode', mode);
+  };
   const [stock, setStock] = useState(initialStock || []);
   const [items, setItems] = useState(initialItems || []);
   const [vendors, setVendors] = useState(initialVendors || []);
@@ -1049,6 +1062,31 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           />
         </div>
         <div className="flex items-center gap-2">
+          {activeTab === 'stock' && (
+            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm mr-1 h-[54px]">
+              {[
+                { id: 'kanban', icon: Columns, label: 'Kanban' },
+                { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
+                { id: 'table',  icon: TableIcon, label: 'Table' },
+              ].map(v => {
+                const Icon = v.icon;
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => handleViewModeChange(v.id)}
+                    className={`flex items-center justify-center px-4 rounded-xl transition-all h-full ${
+                      viewMode === v.id
+                        ? 'bg-slate-100 text-slate-800'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                    }`}
+                    title={v.label}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <select
             value={stockSort}
             onChange={(e) => setStockSort(e.target.value)}
@@ -1102,7 +1140,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               )}
             </div>
           ) : (
-            Object.entries(
+            <>
+              {/* GRID VIEW (LEGACY) */}
+              {viewMode === 'grid' && (
+                <div className="space-y-4">
+                  {Object.entries(
               filteredStock.reduce((acc: Record<string, any[]>, s: any) => {
                 let cat = s.inventory_items?.category || 'UNCATEGORIZED';
                 if (cat.toUpperCase() === 'RAW MATERIAL' || cat.toUpperCase() === 'RAW MATERIALS') cat = 'RAW MATERIALS';
@@ -1187,9 +1229,137 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 })}
                 </div>
               </div>
-            ))
+            ))}
+                </div>
+              )}
+
+              {/* KANBAN VIEW (TRIAGE BOARD) */}
+              {viewMode === 'kanban' && (
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+                  {['Healthy', 'Low Stock', 'Expiring Soon / Expired'].map(statusColumn => {
+                    const columnItems = filteredStock.filter(s => {
+                      const risk = getStockRisk(s);
+                      if (statusColumn === 'Healthy') return !risk.isExpired && !risk.isExpiring && !risk.isLow && !risk.isOut;
+                      if (statusColumn === 'Low Stock') return risk.isLow || risk.isOut;
+                      if (statusColumn === 'Expiring Soon / Expired') return risk.isExpired || risk.isExpiring;
+                      return false;
+                    });
+                    
+                    return (
+                      <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
+                        <div className={`rounded-t-xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
+                          statusColumn === 'Healthy' ? 'bg-emerald-50 border-emerald-200' :
+                          statusColumn === 'Low Stock' ? 'bg-amber-50 border-amber-200' :
+                          'bg-red-50 border-red-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-black text-slate-900 truncate uppercase">{statusColumn}</span>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-white shadow-sm ${
+                              statusColumn === 'Healthy' ? 'text-emerald-700' :
+                              statusColumn === 'Low Stock' ? 'text-amber-700' :
+                              'text-red-700'
+                            }`}>{columnItems.length}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+                          {columnItems.length === 0 ? (
+                            <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn.toLowerCase()} items</div>
+                          ) : columnItems.map(s => {
+                            const risk = getStockRisk(s);
+                            return (
+                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-200'}`}>
+                                <div className="flex justify-between items-start gap-2">
+                                  <h3 className="text-xs font-black text-indigo-700 line-clamp-2">{s.inventory_items?.name}</h3>
+                                  {(risk.isExpired || risk.isExpiring || risk.isLow) && (
+                                    <span className={`shrink-0 flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
+                                      <AlertTriangle className="w-2.5 h-2.5 mr-1" /> {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider shrink min-w-0">
+                                  <Truck className="w-3 h-3 mr-1 shrink-0" /> Lot: <span className="text-slate-900 ml-1 truncate" title={s.supplier_batch_number || 'N/A'}>{s.supplier_batch_number || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-gray-50">
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
+                                    <p className={`text-[10px] font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
+                                      {s.current_quantity} <span className="text-[9px] text-gray-500">{s.inventory_items?.unit}</span>
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Expiry</p>
+                                    <p className={`text-[10px] font-bold ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* TABLE VIEW */}
+              {viewMode === 'table' && (
+                <div className="card overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Item Name</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Lot Number</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Expiry Date</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-right">Balance</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Vendor</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Location</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredStock.map(s => {
+                        const risk = getStockRisk(s);
+                        return (
+                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
+                            <td className="px-4 py-3">
+                              <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                {s.inventory_items?.name}
+                                {(risk.isExpired || risk.isExpiring || risk.isLow) && (
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase">{s.inventory_items?.category || 'Uncategorized'}</div>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-mono text-slate-600">{s.supplier_batch_number || 'N/A'}</td>
+                            <td className="px-4 py-3 text-sm font-mono">
+                              <span className={risk.isExpired ? 'text-red-600 font-bold' : 'text-slate-600'}>
+                                {s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`text-sm font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
+                                {s.current_quantity}
+                              </span>
+                              <span className="text-[10px] text-gray-500 ml-1">{s.inventory_items?.unit}</span>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-slate-700">{s.vendors?.name || 'Local'}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">
+                                {s.location || 'Central'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
-          
+
           {loading ? (
             <div className="space-y-4">
               {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 w-full rounded-3xl"/>)}
