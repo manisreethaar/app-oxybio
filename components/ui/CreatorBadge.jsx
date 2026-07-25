@@ -22,7 +22,7 @@ export default function CreatorBadge({ initials, fullName, size = 'sm', showTool
   const display = initials || (fullName ? derivedInitials(fullName) : null);
   if (!display) return null;
 
-  const dim = size === 'md' ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-xs';
+  const dim = size === 'md' ? 'w-8 h-8 text-xs leading-none tracking-tight' : 'w-6 h-6 text-[10px] leading-none tracking-tighter';
   const color = colorFor(display);
 
   return (

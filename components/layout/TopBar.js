@@ -234,7 +234,7 @@ export default function TopBar() {
               onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
               className="flex items-center gap-2 pl-1.5 pr-2.5 h-9 rounded-xl hover:bg-slate-100 transition-all"
             >
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] leading-none tracking-tight font-black text-white shrink-0"
                 style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
                 {getInitials(employeeProfile.full_name)}
               </div>
@@ -247,7 +247,7 @@ export default function TopBar() {
               <div className="absolute right-0 mt-2 w-52 z-50 animate-in fade-in zoom-in-95 duration-150"
                 style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(24px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '1.25rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)' }}>
                 <div className="px-4 py-4 border-b border-slate-100">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white mb-2"
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm leading-none tracking-tight font-black text-white mb-2"
                     style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
                     {getInitials(employeeProfile.full_name)}
                   </div>
