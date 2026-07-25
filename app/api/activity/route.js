@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { notifyAdmins } from '@/utils/serverNotify';
 
 const postSchema = z.object({
   action: z.enum(['log_activity']),
@@ -72,6 +73,14 @@ export async function POST(request) {
       }
 
       if (error) throw error;
+
+      // Notify all admins/CEO/CTO that a new activity was logged (fire-and-forget)
+      const notifTitle = payload.issue_observed ? '🚨 Issue Reported' : '📋 Activity Logged';
+      const notifMsg = payload.issue_observed
+        ? `${emp.full_name} reported an issue: ${(payload.issue_description || '').slice(0, 100)}`
+        : `${emp.full_name} logged: ${payload.activity_description.slice(0, 100)}`;
+      notifyAdmins(notifTitle, notifMsg, '/activity', payload.issue_observed ? 'warning' : 'info').catch(() => {});
+
       return NextResponse.json({ success: true, data });
     }
 
