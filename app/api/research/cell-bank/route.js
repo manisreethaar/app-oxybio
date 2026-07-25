@@ -7,11 +7,12 @@ import { requireResearchAccess } from '@/lib/research/access';
 
 async function generatePrepCode(adminSupabase, type) {
   const yy = String(new Date().getFullYear()).slice(-2);
-  const prefix = `OB-CB-${yy}-`;
+  // Search across ALL years (OB-CB-%) so the sequence never resets when the
+  // calendar year changes. The current year is still stamped on the new code.
   const { data: last } = await adminSupabase
     .from('cell_bank_preparations')
     .select('prep_code')
-    .like('prep_code', `${prefix}%`)
+    .like('prep_code', 'OB-CB-%')
     .order('prep_code', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -20,7 +21,7 @@ async function generatePrepCode(adminSupabase, type) {
     const n = parseInt(last.prep_code.split('-').pop(), 10);
     if (!isNaN(n)) seq = n + 1;
   }
-  return `${prefix}${String(seq).padStart(3, '0')}`;
+  return `OB-CB-${yy}-${String(seq).padStart(3, '0')}`;
 }
 
 export const dynamic = 'force-dynamic';
