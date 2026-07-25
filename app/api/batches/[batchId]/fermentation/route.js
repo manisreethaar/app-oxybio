@@ -22,7 +22,7 @@ async function getRequester(supabase) {
 
   const { data: employee } = await supabase
     .from('employees')
-    .select('id, role')
+    .select('id, role, custom_permissions')
     .eq('email', user.email)
     .maybeSingle();
 
@@ -334,7 +334,7 @@ export async function PATCH(request, { params }) {
     const requester = await getRequester(supabase);
     if (requester.error) return requester.error;
 
-    if (!can(requester.employee.role, 'batches', 'release') && !isMasterAdmin(requester.user.email)) {
+    if (!can(requester.employee.role, 'batches', 'release', requester.employee.custom_permissions) && !isMasterAdmin(requester.user.email)) {
       return NextResponse.json({ error: 'Only admin, CEO, or CTO can edit fermentation readings.' }, { status: 403 });
     }
 
@@ -381,7 +381,7 @@ export async function DELETE(request, { params }) {
     const requester = await getRequester(supabase);
     if (requester.error) return requester.error;
 
-    if (!can(requester.employee.role, 'batches', 'release') && !isMasterAdmin(requester.user.email)) {
+    if (!can(requester.employee.role, 'batches', 'release', requester.employee.custom_permissions) && !isMasterAdmin(requester.user.email)) {
       return NextResponse.json({ error: 'Only admin, CEO, or CTO can delete fermentation readings.' }, { status: 403 });
     }
 
