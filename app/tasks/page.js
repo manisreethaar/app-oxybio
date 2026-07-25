@@ -11,7 +11,7 @@ import {
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2,
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp,
   ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
-  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search
+  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search, Columns, Table as TableIcon, Layers
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -34,7 +34,19 @@ export default function TasksPage() {
   const [assigneeFilter, setAssigneeFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('due_asc');
-  const [viewMode, setViewMode] = useState('grouped'); // 'grouped' or 'individual'
+  const [viewMode, setViewMode] = useState('grouped');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('tasks_view_mode');
+    if (saved && ['kanban', 'grid', 'table', 'grouped'].includes(saved)) {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('tasks_view_mode', mode);
+  };
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const isAdmin = canDo('tasks', 'assign') || isMaster;
@@ -485,13 +497,30 @@ export default function TasksPage() {
           <p className="text-sm text-slate-500 mt-1">Assign, track, and complete Node operations.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner mr-2">
-            <button onClick={() => setViewMode('grouped')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grouped' ? 'bg-white text-navy shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Grouped View">
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button onClick={() => setViewMode('individual')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'individual' ? 'bg-white text-navy shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Individual View">
-              <List className="w-4 h-4" />
-            </button>
+          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg mr-2">
+            {[
+              { id: 'kanban', icon: Columns, label: 'Kanban' },
+              { id: 'grouped', icon: Layers, label: 'Grouped' },
+              { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
+              { id: 'table',  icon: TableIcon, label: 'Table' },
+            ].map(v => {
+              const Icon = v.icon;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => handleViewModeChange(v.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    viewMode === v.id
+                      ? 'bg-white text-navy shadow-sm border border-slate-200'
+                      : 'text-slate-500 hover:bg-slate-200 border border-transparent'
+                  }`}
+                  title={v.label}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">{v.label}</span>
+                </button>
+              );
+            })}
           </div>
           <button onClick={() => setShowCreate(!showCreate)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
             <Plus className="w-4 h-4 mr-1.5" /> {isAdmin ? 'Assign Task' : 'Add Reminder'}
@@ -627,11 +656,18 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {viewMode === 'grouped' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-          {groupedTasks.map(group => {
-            const isOverdue = group.status !== 'done' && group.due_date && differenceInDays(new Date(group.due_date), new Date()) < 0;
-            const progress = Math.round((group.completedCount / group.totalCount) * 100);
+      {/* VIEWS */}
+
+      {/* GROUPED VIEW */}
+      {viewMode === 'grouped' && (
+        <>
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 font-medium text-sm">No tasks assigned.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+              {groupedTasks.map(group => {
+                const isOverdue = group.status !== 'done' && group.due_date && differenceInDays(new Date(group.due_date), new Date()) < 0;
+                const progress = Math.round((group.completedCount / group.totalCount) * 100);
             
             return (
               <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`card p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
@@ -672,14 +708,21 @@ export default function TasksPage() {
             );
           })}
         </div>
-      ) : filteredTasks.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 font-medium text-sm">No tasks assigned.</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-          {filteredTasks.map(task => {
-            const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && differenceInDays(new Date(task.due_date), new Date()) < 0;
-            const checklistTotal = task.checklist?.length || 0;
-            const checklistDone = task.checklist?.filter(c => c.done).length || 0;
+          )}
+        </>
+      )}
+
+      {/* GRID VIEW */}
+      {viewMode === 'grid' && (
+        <>
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 font-medium text-sm">No tasks assigned.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+              {filteredTasks.map(task => {
+                const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && differenceInDays(new Date(task.due_date), new Date()) < 0;
+                const checklistTotal = task.checklist?.length || 0;
+                const checklistDone = task.checklist?.filter(c => c.done).length || 0;
             const checklistPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
             const displayPct = task.progress_percentage > 0 ? task.progress_percentage : checklistPct;
             const approvalBadge = { 'pending_review': { label: 'Review', cls: 'bg-amber-50 text-amber-700 border-amber-100' }, 'approved': { label: 'Approved OK', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' }, 'rejected': { label: 'Returned', cls: 'bg-red-50 text-red-700 border-red-100' } }[task.approval_status];
@@ -741,6 +784,139 @@ export default function TasksPage() {
               </div>
             );
           })}
+        </div>
+          )}
+        </>
+      )}
+
+      {/* KANBAN VIEW */}
+      {viewMode === 'kanban' && (
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+          {['open', 'in-progress', 'done'].map(statusColumn => {
+            const columnItems = filteredTasks.filter(t => t.status === statusColumn);
+            
+            return (
+              <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
+                <div className="bg-slate-200/50 rounded-t-xl p-3 border border-b-0 border-slate-200 flex flex-col gap-1.5 shrink-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-900 truncate uppercase">{statusColumn.replace('-', ' ')}</span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                      statusColumn === 'done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                      statusColumn === 'in-progress' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}>{columnItems.length}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+                  {columnItems.length === 0 ? (
+                    <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn} tasks</div>
+                  ) : columnItems.map(task => {
+                    const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && (new Date(task.due_date) < new Date(new Date().setHours(0,0,0,0)));
+                    
+                    return (
+                      <div key={task.id} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${isOverdue ? 'border-red-200 bg-red-50/10' : 'border-slate-200'}`} onClick={() => setSelectedTask(task)}>
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className={`text-xs font-black line-clamp-2 ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.title}</h3>
+                          <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>{task.priority}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mt-1 pt-2 border-t border-slate-50">
+                          <div className="flex items-center gap-1.5 text-xs">
+                             <div className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-[10px] text-slate-800 font-black shadow-sm" title={task.assigned_user?.full_name}>
+                                {task.assigned_user?.full_name?.[0] || '?'}
+                             </div>
+                             <span className="text-slate-500 font-semibold truncate max-w-[100px]">{task.assigned_user?.full_name?.split(' ')[0]}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold flex items-center gap-1 ${isOverdue ? 'text-red-600' : 'text-slate-400'}`}>
+                            <Clock className="w-3 h-3"/>
+                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
+                          </span>
+                        </div>
+                        
+                        {task.approval_status === 'pending_review' && (
+                           <div className="mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border border-amber-100 bg-amber-50 text-amber-700 text-center">Review Pending</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TABLE VIEW */}
+      {viewMode === 'table' && (
+        <div className="card overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Task Title</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Assignee</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Priority</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Due Date</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-center">Progress</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredTasks.length === 0 ? (
+                <tr><td colSpan="6" className="text-center p-8 text-sm font-bold text-slate-400">No tasks match current search.</td></tr>
+              ) : filteredTasks.map(task => {
+                const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && (new Date(task.due_date) < new Date(new Date().setHours(0,0,0,0)));
+                const checklistTotal = task.checklist?.length || 0;
+                const checklistDone = task.checklist?.filter(c => c.done).length || 0;
+                const checklistPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+                const displayPct = task.progress_percentage > 0 ? task.progress_percentage : checklistPct;
+                
+                return (
+                  <tr key={task.id} onClick={() => setSelectedTask(task)} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="px-4 py-2">
+                      <div className={`text-sm font-semibold ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.title}</div>
+                      {task.approval_status === 'pending_review' && <span className="text-[10px] font-bold text-amber-600 uppercase">Review Pending</span>}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-700 font-black border border-slate-200">
+                          {task.assigned_user?.full_name?.[0] || '?'}
+                        </div>
+                        <span className="text-sm font-medium text-slate-600">{task.assigned_user?.full_name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                        task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' :
+                        task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        'bg-slate-50 text-slate-600 border-slate-100'
+                      }`}>{task.priority}</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                        task.status === 'done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        task.status === 'in-progress' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                        'bg-slate-50 text-slate-600 border-slate-200'
+                      }`}>{task.status.replace('-', ' ')}</span>
+                    </td>
+                    <td className="px-4 py-2 text-sm font-mono">
+                      <span className={isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}>
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 w-32">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div className={`h-full rounded-full ${displayPct === 100 ? 'bg-emerald-500' : 'bg-navy'}`} style={{ width: `${displayPct}%` }}></div>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-500 w-6 text-right">{displayPct}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
