@@ -910,7 +910,7 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
 
       {isDone && !editing && (
         <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
-          {Object.entries(data).filter(([k]) => !['completed'].includes(k) && data[k]).map(([k, v]) => (
+          {Object.entries(data).filter(([k]) => !['completed', 'media_formulation_id', 'agar_formulation_id'].includes(k) && data[k]).map(([k, v]) => (
             <div key={k} className="p-2 bg-slate-50 rounded-lg">
               <p className="text-xs font-black text-slate-400 uppercase mb-0.5">{k.replace(/_/g,' ')}</p>
               <p className="text-xs font-bold text-slate-800 truncate">{String(v)}</p>
