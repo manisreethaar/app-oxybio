@@ -76,6 +76,7 @@ export default function MessageInput({
         }).eq('id', editingMessage.id);
 
         if (error) throw error;
+        toast.success("Message updated successfully.");
         onCancelEdit();
         setContent('');
       } else {
@@ -116,6 +117,7 @@ export default function MessageInput({
           }).catch(err => console.error('Failed to trigger push notifications:', err));
         }
 
+        toast.success("Message sent.");
         setContent('');
         setSelectedFile(null);
         setPinnedItem(null);

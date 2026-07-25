@@ -191,6 +191,7 @@ export default function CompliancePage() {
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create item');
       setShowAdd(false); 
       reset(); 
+      toast.success("Compliance item created.");
       fetchCompliance();
     } catch (error) {
       toast.error('Failed to save item: ' + error.message);
@@ -203,6 +204,7 @@ export default function CompliancePage() {
     try {
       const res = await fetch('/api/compliance', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_done', item_id: item.id }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to mark done');
+      toast.success("Item marked as done.");
       fetchCompliance();
     } catch (err) {
       toast.error(err.message);

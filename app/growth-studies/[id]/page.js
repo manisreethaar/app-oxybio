@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { createClient } from '@/utils/supabase/client';
 import {
   Clock, AlertCircle, Play, Square, BarChart2,
@@ -54,6 +55,7 @@ export default function GrowthStudyDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { role, employeeProfile } = useAuth();
+  const toast = useToast();
   const [pendingIds, setPendingIds] = useState(new Set());
 
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
@@ -140,6 +142,7 @@ export default function GrowthStudyDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     });
+    toast.success(`Status updated to ${newStatus}.`);
     setActionLoading(false);
     load();
   };
@@ -180,6 +183,7 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setActionLoading(false);
     if (!res.ok) { setStartErr(json.error); return; }
+    toast.success("Study started successfully.");
     setStartModal(false);
     load();
   };
@@ -274,6 +278,7 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setEditSaving(false);
     if (!res.ok) { setEditErr(json.error); return; }
+    toast.success("Study updated successfully.");
     setEditModal(false);
     load();
   };
@@ -285,6 +290,7 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setDeleteLoading(false);
     if (!res.ok) { setDeleteErr(json.error); return; }
+    toast.success("Study deleted successfully.");
     router.push('/growth-studies');
   };
 
@@ -317,6 +323,7 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setModalSaving(false);
     if (!res.ok) { setModalErr(json.error); return; }
+    toast.success("Measurement recorded successfully.");
     setModal(null);
     load();
   };
@@ -334,6 +341,7 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setModalSaving(false);
     if (!res.ok) { setModalErr(json.error); return; }
+    toast.success("Plate observation recorded successfully.");
     setModal(null);
     load();
   };

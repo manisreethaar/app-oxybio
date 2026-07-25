@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
 import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
@@ -38,6 +39,7 @@ const getShiftStatus = (checkInTime) => {
 
 export default function AttendancePage() {
   const { role, employeeProfile, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [todayLog, setTodayLog] = useState(null);
   const [myHistory, setMyHistory] = useState([]);
   const [teamToday, setTeamToday] = useState([]);
@@ -357,6 +359,7 @@ export default function AttendancePage() {
       setShowWebcam(false);
       setOverrideLocation(false);
       setCheckInError('');
+      toast.success("Successfully checked in.");
       fetchAttendanceData();
     } catch (err) {
       setCheckInError(err.message || 'Check-in failed');
@@ -377,6 +380,7 @@ export default function AttendancePage() {
         const res = await fetch('/api/attendance/check-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Check-out failed');
+        toast.success("Successfully checked out.");
         await fetchAttendanceData();
       } catch (err) {
         setCheckInError('Check-out failed: ' + err.message);
@@ -535,6 +539,26 @@ export default function AttendancePage() {
                   <p className="text-xs text-slate-500 font-medium text-center">You have approved leave for today.</p>
                   <span className="mt-4 px-4 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-black rounded-xl uppercase tracking-widest">Leave Day</span>
                 </div>
+              ) : role === 'ceo' ? (
+              <div className="w-full max-w-xs relative z-10 pt-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-white">
+                  <ShieldCheck className="w-10 h-10 text-emerald-600" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">Check-in Exempt</h3>
+                <p className="text-sm text-slate-500 mb-6 font-medium">As CEO, your check-in is optional.</p>
+                {checkInError && (
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-xs font-bold border border-red-200 flex items-start text-left shadow-sm">
+                    <AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />
+                    <span>{checkInError}</span>
+                  </div>
+                )}
+                <button 
+                  onClick={initiateCheckIn} disabled={actionLoading}
+                  className="w-full py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-bold text-sm shadow-sm transition-all flex items-center justify-center disabled:opacity-50 active:scale-95"
+                >
+                  <Camera className="w-4 h-4 mr-2" /> Optional Check-in
+                </button>
+              </div>
               ) : (
               <div className="w-full max-w-xs relative z-10 pt-8">
                 <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-white">

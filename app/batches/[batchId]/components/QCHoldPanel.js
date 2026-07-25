@@ -328,6 +328,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     const updatedTests = tests.map(t => t.id === testId ? { ...t, [field]: value } : t);
     setTests(updatedTests);
     await supabase.from('batch_flask_qc_tests').update({ [field]: value }).eq('id', testId);
+    toast.success("Test updated successfully.");
 
     // Sync full QC state to LNB after every test update
     if (sample && activeFlask) {
@@ -406,6 +407,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
     setSample(prev => ({ ...prev, plating_config: cfg }));
     await supabase.from('batch_flask_qc_samples').update({ plating_config: cfg }).eq('id', sample.id);
+    toast.success("Plating config updated.");
   };
 
   const handleTogglePlating = async () => {
@@ -413,6 +415,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     const next = !platingEnabled;
     setPlatingEnabled(next);
     await supabase.from('batch_flask_qc_samples').update({ plating_enabled: next }).eq('id', sample.id);
+    toast.success(next ? "Plating enabled." : "Plating disabled.");
   };
 
   const handleStartPlating = async () => {

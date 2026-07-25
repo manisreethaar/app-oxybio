@@ -210,6 +210,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
       const dbResData = await dbRes.json();
       if (!dbRes.ok) throw new Error(dbResData.error || "Database insert failed");
 
+      toast.success("SOP uploaded successfully.");
       setShowUploadModal(false); 
       resetUpload(); 
       fetchSOPs(); 

@@ -243,6 +243,7 @@ export default function TasksPage() {
         }
       }
       
+      toast.success(isEdit ? "Task updated successfully." : "Task created successfully.");
       setShowCreate(false); setEditingTaskId(null); resetTask(); setChecklistBuffer([]); fetchTasks();
     } catch(err) { toast.error(err.message); }
     finally { setActionLoading(false); }
@@ -306,6 +307,7 @@ export default function TasksPage() {
       }
       setProgressNote('');
       fetchTasks(); 
+      toast.success("Progress updated.");
     }
     setActionLoading(false);
   };
@@ -364,18 +366,21 @@ export default function TasksPage() {
         completion_note: completionNote, proof_url: proofUrl, logged_minutes: finalMins, is_personal_reminder: selectedTask.is_personal_reminder
       });
 
-      if (success) { setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); }
+      if (success) { 
+        toast.success("Task submitted for review.");
+        setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); 
+      }
     } finally { setUploading(false); setActionLoading(false); }
   };
 
   const handleApprove = async (taskId) => {
     const success = await executeTaskPatch('approve', taskId);
-    if (success) { setSelectedTask(null); fetchTasks(); }
+    if (success) { toast.success("Task approved."); setSelectedTask(null); fetchTasks(); }
   };
 
   const handleReject = async (taskId) => {
     const success = await executeTaskPatch('reject', taskId, { reject_note: rejectNote });
-    if (success) { setRejectNote(''); setSelectedTask(null); fetchTasks(); }
+    if (success) { toast.success("Task rejected."); setRejectNote(''); setSelectedTask(null); fetchTasks(); }
   };
 
   const filteredTasks = useMemo(() => {

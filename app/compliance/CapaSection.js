@@ -142,14 +142,14 @@ export default function CapaSection() {
   const handleRaise = async (data) => {
     setRaising(true);
     const res = await executeApi('POST', 'raise', data);
-    if (res?.success) { resetRaise(); setShowRaise(false); fetchAll(); }
+    if (res?.success) { toast.success("NCR raised successfully."); resetRaise(); setShowRaise(false); fetchAll(); }
     setRaising(false);
   };
 
   const handleSaveInvestigation = async (data) => {
     setInvestigating(true);
     const res = await executeApi('POST', 'investigate', { deviation_id: selected.id, investigation_id: investigation?.id, ...data });
-    if (res?.success) { setInvestigation(res.data); setSelected(s => ({ ...s, status: 'Investigating' })); setShowInvestigate(false); }
+    if (res?.success) { toast.success("Investigation saved."); setInvestigation(res.data); setSelected(s => ({ ...s, status: 'Investigating' })); setShowInvestigate(false); }
     setInvestigating(false);
   };
 
@@ -159,6 +159,7 @@ export default function CapaSection() {
     if (res?.success) {
       fetch('/api/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: data.assigned_to, title: `CAPA: ${data.action_type}`, body: data.title, url: '/tasks' }) }).catch(() => {});
       resetAction(); setShowAction(false); setSelected(s => ({ ...s, status: 'CAPA Assigned' }));
+      toast.success("Action spawned successfully.");
       const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []);
     }
     setActioning(false);
@@ -166,13 +167,13 @@ export default function CapaSection() {
 
   const handleVerifyEffectiveness = async (actionId) => {
     const res = await executeApi('PATCH', 'verify_effectiveness', { action_id: actionId });
-    if (res?.success) { const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []); }
+    if (res?.success) { toast.success("Effectiveness verified."); const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []); }
   };
 
   const handleClose = async () => {
     if (capaActions.some(a => !a.effectiveness_verified)) { toast.warn("Cannot close. Unverified actions exist."); return; }
     const res = await executeApi('PATCH', 'close_deviation', { deviation_id: selected.id });
-    if (res?.success) { setSelected(s => ({ ...s, status: 'Closed' })); fetchAll(); }
+    if (res?.success) { toast.success("NCR closed successfully."); setSelected(s => ({ ...s, status: 'Closed' })); fetchAll(); }
   };
 
   if (loading) return <div className="p-8 text-center text-slate-400 font-medium">Synchronizing CAPA Registry...</div>;
