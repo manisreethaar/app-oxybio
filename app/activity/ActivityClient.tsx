@@ -1231,4 +1231,49 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                 </div>
                 <div className="mb-3 text-sm text-slate-600 border-l-2 border-slate-300 pl-3">{act.activity_description}</div>
                 <div className="p-3 bg-red-100 border border-red-200 rounded-xl text-sm text-red-900 mb-3 font-medium">
-                  <span className="font-black flex items-center mb-1">
+                  <span className="font-black flex items-center mb-1"><AlertTriangle className="w-3.5 h-3.5 mr-1"/> Issue: </span> 
+                  {act.issue_description}
+                </div>
+                {act.founder_comment ? (
+                  <div className="mt-3 p-3 bg-white border border-slate-200 rounded-xl">
+                    <p className="text-xs font-black text-navy mb-1">RESOLUTION NOTE</p>
+                    <p className="text-sm text-slate-700">{act.founder_comment}</p>
+                  </div>
+                ) : (
+                  <div className="mt-4 pt-3 border-t border-red-100">
+                    {activeCommentId === act.id ? (
+                      <div className="flex gap-2">
+                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy"/>
+                        <button onClick={() => handleAddComment(act.id)} className="bg-navy text-white px-4 py-1.5 rounded-lg text-sm font-black hover:bg-navy-hover">Resolve</button>
+                        <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-3 text-sm font-medium">Cancel</button>
+
+                      </div>
+                    ) : (
+                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm py-2 px-4 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 flex items-center">
+
+                        <CheckCircle className="w-4 h-4 mr-2"/> Mark as Reviewed
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+      <ConfirmModal
+        isOpen={!!archiveConfirmId}
+        onClose={() => setArchiveConfirmId(null)}
+        onConfirm={handleArchiveActivity}
+        title="Archive Activity"
+        message="This activity will be hidden from the active log."
+        confirmText="Archive Activity"
+        loadingText="Archiving..."
+        variant="danger"
+        requireInput={true}
+        inputPlaceholder="Reason for archiving..."
+        inputLabel="Please provide a reason for archiving:"
+      />
+    </div>
+  );
+}
