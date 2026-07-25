@@ -45,6 +45,4 @@ ALTER TABLE hr_holidays
 ALTER TABLE hr_delegations
   ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES employees(id);
 
--- 8. Formulation
-ALTER TABLE formulation_ingredients
-  ADD COLUMN IF NOT EXISTS added_by uuid REFERENCES employees(id);
+
