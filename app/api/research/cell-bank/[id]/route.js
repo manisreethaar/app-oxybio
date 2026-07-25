@@ -24,7 +24,6 @@ export async function GET(request, { params }) {
         cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, characterization, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type, step_data, formulation_id),
         employees!cell_bank_preparations_created_by_fkey(full_name),
-        qc_released_employee:employees!cell_bank_preparations_qc_released_by_fkey(full_name),
         cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status, expires_at, used_in_batch_id, used_at, notes)
       `)
       .eq('id', params.id)
@@ -32,6 +31,17 @@ export async function GET(request, { params }) {
 
     if (error) throw error;
     if (!data) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+
+    // Fetch QC releaser name separately to avoid FK constraint name ambiguity
+    let qcReleasedEmployee = null;
+    if (data.qc_released_by) {
+      const { data: qcEmp } = await adminSupabase
+        .from('employees')
+        .select('full_name')
+        .eq('id', data.qc_released_by)
+        .maybeSingle();
+      qcReleasedEmployee = qcEmp || null;
+    }
 
     // Fetch linked incubation records for this preparation
     const { data: incubations } = await adminSupabase
@@ -49,7 +59,7 @@ export async function GET(request, { params }) {
       .limit(1)
       .maybeSingle();
 
-    return NextResponse.json({ success: true, data: { ...data, incubations: incubations || [], lnb_entry_id: lnbEntry?.id || null } });
+    return NextResponse.json({ success: true, data: { ...data, qc_released_employee: qcReleasedEmployee, incubations: incubations || [], lnb_entry_id: lnbEntry?.id || null } });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
