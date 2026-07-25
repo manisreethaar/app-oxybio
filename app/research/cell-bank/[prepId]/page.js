@@ -725,12 +725,12 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
                 <label className="field-label">Broth / Media Recipe</label>
                 {labMediaFormulations?.length > 0 ? (
                   <select value={form.media_formulation_id||''} onChange={e => {
-                    const f = labMediaFormulations.find(f => f.id === e.target.value);
+                    const f = labMediaFormulations.find(f => String(f.id) === String(e.target.value));
                     set('media_formulation_id', e.target.value);
                     set('media', f?.name || '');
                   }} className="field-input bg-white">
                     <option value="">Select from Recipe module...</option>
-                    {labMediaFormulations.map(f => <option key={f.id} value={f.id}>{f.name} (v{f.version})</option>)}
+                    {labMediaFormulations.map(f => <option key={f.id} value={f.id}>{f.code ? `${f.code} - ` : ''}{f.name} (v{f.version})</option>)}
                     <option value="custom">Other (enter manually)</option>
                   </select>
                 ) : (
@@ -788,12 +788,12 @@ function StepCard({ step, data, incubations, prepId, onSave, isAdmin, labMediaFo
                 <label className="field-label">Agar Media Recipe</label>
                 {labMediaFormulations?.length > 0 ? (
                   <select value={form.agar_formulation_id||''} onChange={e => {
-                    const f = labMediaFormulations.find(f => f.id === e.target.value);
+                    const f = labMediaFormulations.find(f => String(f.id) === String(e.target.value));
                     set('agar_formulation_id', e.target.value);
                     set('agar_media', f?.name || '');
                   }} className="field-input bg-white">
                     <option value="">Select from Recipe module...</option>
-                    {labMediaFormulations.map(f => <option key={f.id} value={f.id}>{f.name} (v{f.version})</option>)}
+                    {labMediaFormulations.map(f => <option key={f.id} value={f.id}>{f.code ? `${f.code} - ` : ''}{f.name} (v{f.version})</option>)}
                     <option value="custom">Other (enter manually)</option>
                   </select>
                 ) : (
