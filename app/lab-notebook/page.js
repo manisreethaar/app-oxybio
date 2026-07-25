@@ -11,6 +11,7 @@ import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
+import ESignatureModal from '@/components/ui/ESignatureModal';
 
 const STAGE_LABELS = {
   media_prep: 'Media Prep', sterilisation: 'Sterilisation', inoculation: 'Inoculation',
@@ -38,7 +39,10 @@ export default function DigitalLnbPage() {
   const [filterGroup,      setFilterGroup]      = useState('all'); // all, cell_bank, fermentation
   const [pendingIds,       setPendingIds]       = useState(new Set());
   // G-24: countersign
-  const [countersigning,   setCountersigning]   = useState(null); // entry id
+  const [countersigning, setCountersigning] = useState(null); // entry id
+  
+  // E-Signature state
+  const [esigConfig, setEsigConfig] = useState({ isOpen: false, entryId: null });
   // G-25: new version prefill
   const [versionSourceEntry, setVersionSourceEntry] = useState(null);
   // G-26: SOP references in create form
@@ -161,8 +165,15 @@ export default function DigitalLnbPage() {
   // G-24: Countersign an entry (supervisor/CEO only)
   const isApprover = ['ceo','admin','cto','research_fellow','scientist'].includes(employeeProfile?.role);
 
-  const handleCountersign = async (entryId) => {
+  const handleCountersign = (entryId) => {
     if (!isApprover || countersigning) return;
+    setEsigConfig({ isOpen: true, entryId });
+  };
+  
+  const handleEsigSuccess = async () => {
+    const entryId = esigConfig.entryId;
+    setEsigConfig({ isOpen: false, entryId: null });
+    
     setCountersigning(entryId);
     try {
       const { error } = await supabase.from('lab_notebook_entries').update({
@@ -559,6 +570,14 @@ export default function DigitalLnbPage() {
           </div>
         </div>
       )}
+      
+      <ESignatureModal
+        isOpen={esigConfig.isOpen}
+        onClose={() => setEsigConfig({ isOpen: false, entryId: null })}
+        onSuccess={handleEsigSuccess}
+        title="Countersign Document"
+        message="By countersigning, you legally verify this document's contents and attest to its accuracy under 21 CFR Part 11."
+      />
     </div>
   );
 }

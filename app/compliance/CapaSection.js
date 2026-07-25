@@ -16,6 +16,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import ESignatureModal from '@/components/ui/ESignatureModal';
 const CapaSeverityChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaSeverityChart })), { ssr: false });
 const CapaStatusChart = dynamic(() => import('@/components/charts/CapaCharts').then(m => ({ default: m.CapaStatusChart })), { ssr: false });
 
@@ -46,6 +47,9 @@ export default function CapaSection() {
   const [pendingIds, setPendingIds] = useState(new Set());
   const [showRaise, setShowRaise] = useState(false);
   const [raising, setRaising] = useState(false);
+  
+  // E-Signature state
+  const [esigConfig, setEsigConfig] = useState({ isOpen: false, type: null, payload: null, title: '', message: '' });
   const { register: regRaise, handleSubmit: handRaise, formState: { errors: raiseErrors }, reset: resetRaise, watch: watchRaise } = useForm({
     resolver: zodResolver(z.object({ 
       title: z.string().min(1), severity: z.enum(['Minor', 'Major', 'Critical']), source: z.string(), description: z.string().min(1),
@@ -165,15 +169,46 @@ export default function CapaSection() {
     setActioning(false);
   };
 
-  const handleVerifyEffectiveness = async (actionId) => {
-    const res = await executeApi('PATCH', 'verify_effectiveness', { action_id: actionId });
-    if (res?.success) { toast.success("Effectiveness verified."); const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); setCapaActions(reloaded || []); }
+  const handleVerifyEffectiveness = (actionId) => {
+    setEsigConfig({
+      isOpen: true,
+      type: 'verify_capa',
+      payload: actionId,
+      title: 'Verify CAPA Effectiveness',
+      message: 'By signing, you legally attest that this Preventive/Corrective action has been fully implemented and verified.'
+    });
   };
 
-  const handleClose = async () => {
+  const handleClose = () => {
     if (capaActions.some(a => !a.effectiveness_verified)) { toast.warn("Cannot close. Unverified actions exist."); return; }
-    const res = await executeApi('PATCH', 'close_deviation', { deviation_id: selected.id });
-    if (res?.success) { toast.success("NCR closed successfully."); setSelected(s => ({ ...s, status: 'Closed' })); fetchAll(); }
+    setEsigConfig({
+      isOpen: true,
+      type: 'close_deviation',
+      payload: selected.id,
+      title: 'Close NCR / Deviation',
+      message: 'By signing, you attest that all investigations and CAPA actions are completed, and this incident is formally closed.'
+    });
+  };
+  
+  const handleEsigSuccess = async () => {
+    const { type, payload } = esigConfig;
+    setEsigConfig({ isOpen: false, type: null, payload: null, title: '', message: '' });
+    
+    if (type === 'verify_capa') {
+      const res = await executeApi('PATCH', 'verify_effectiveness', { action_id: payload });
+      if (res?.success) { 
+        toast.success("Effectiveness verified."); 
+        const { data: reloaded } = await supabase.from('capa_actions').select('*, task:tasks(title, status)').eq('investigation_id', investigation.id); 
+        setCapaActions(reloaded || []); 
+      }
+    } else if (type === 'close_deviation') {
+      const res = await executeApi('PATCH', 'close_deviation', { deviation_id: payload });
+      if (res?.success) { 
+        toast.success("NCR closed successfully."); 
+        setSelected(s => ({ ...s, status: 'Closed' })); 
+        fetchAll(); 
+      }
+    }
   };
 
   if (loading) return <div className="p-8 text-center text-slate-400 font-medium">Synchronizing CAPA Registry...</div>;
@@ -455,6 +490,14 @@ export default function CapaSection() {
           </form>
         </div>
       )}
+
+      <ESignatureModal
+        isOpen={esigConfig.isOpen}
+        onClose={() => setEsigConfig({ isOpen: false, type: null, payload: null, title: '', message: '' })}
+        onSuccess={handleEsigSuccess}
+        title={esigConfig.title}
+        message={esigConfig.message}
+      />
     </div>
   );
 }
