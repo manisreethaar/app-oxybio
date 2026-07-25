@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -40,7 +40,7 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from('hr_shifts')
-      .insert({ name, start_time, end_time, is_night_shift: is_night_shift || false, grace_period_mins: grace_period_mins || 15 })
+      .insert({ name, start_time, end_time, is_night_shift: is_night_shift || false, grace_period_mins: grace_period_mins || 15, created_by: emp.id })
       .select()
       .single();
 

@@ -513,7 +513,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { data, error } = await (supabase.from('vendors').insert([newVendor] as any) as any).select().single();
+      const payload = { ...newVendor, created_by: employeeProfile?.id };
+      const { data, error } = await (supabase.from('vendors').insert([payload] as any) as any).select().single();
       if (!error) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });

@@ -325,9 +325,18 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   };
 
   const handleUpdateTest = async (testId, field, value) => {
-    const updatedTests = tests.map(t => t.id === testId ? { ...t, [field]: value } : t);
+    let updates = { [field]: value };
+    const currentTest = tests.find(t => t.id === testId);
+    
+    // Auto-fill attribution and contemporaneous timestamp if entering a result
+    if ((field === 'result_value' || field === 'pass_fail') && value) {
+      if (!currentTest.tested_by) updates.tested_by = employeeProfile?.id;
+      if (!currentTest.tested_at) updates.tested_at = new Date().toISOString();
+    }
+
+    const updatedTests = tests.map(t => t.id === testId ? { ...t, ...updates } : t);
     setTests(updatedTests);
-    await supabase.from('batch_flask_qc_tests').update({ [field]: value }).eq('id', testId);
+    await supabase.from('batch_flask_qc_tests').update(updates).eq('id', testId);
     toast.success("Test updated successfully.");
 
     // Sync full QC state to LNB after every test update
@@ -1071,7 +1080,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400">{t.result_unit||'—'}</td>
                       <td className="px-4 py-3">
-                        <input type="date" value={t.tested_at||''} onChange={e=>handleUpdateTest(t.id,'tested_at',e.target.value)}
+                        <input type="datetime-local" value={t.tested_at ? new Date(t.tested_at).toISOString().slice(0,16) : ''} onChange={e=>handleUpdateTest(t.id,'tested_at', new Date(e.target.value).toISOString())}
                           className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-navy"/>
                       </td>
                       <td className="px-4 py-3">

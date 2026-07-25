@@ -137,6 +137,7 @@ export default function CompliancePage() {
         customer_name: complaintForm.customer_name,
         complaint_details: complaintForm.complaint_details,
         status: complaintForm.status,
+        logged_by: employeeProfile?.id,
       });
       if (error) throw error;
       toast.success('Complaint logged.');

@@ -19,7 +19,7 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!['admin','ceo','cto','research_fellow'].includes(emp?.role)) {
       return NextResponse.json({ error: 'Permission Denied: Leadership role required' }, { status: 403 });
     }
@@ -53,7 +53,8 @@ export async function POST(request) {
         target_roles: target_roles || [],
         target_departments: target_departments || [],
         target_employees: target_employees || [],
-        is_active: true 
+        is_active: true,
+        uploaded_by: emp?.id || null
       })
       .select()
       .single();

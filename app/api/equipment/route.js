@@ -37,7 +37,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { error: accessError } = await requireAccess(supabase, 'equipment', 'create');
+    const { error: accessError, employee: emp } = await requireAccess(supabase, 'equipment', 'create');
     if (accessError) return accessError;
 
     const body = await request.json();
@@ -51,7 +51,7 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from('equipment')
-      .insert({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
+      .insert({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null, registered_by: emp?.id || null })
       .select()
       .single();
 

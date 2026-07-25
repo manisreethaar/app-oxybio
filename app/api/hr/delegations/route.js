@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -21,7 +21,8 @@ export async function POST(request) {
       delegatee_id,
       start_date,
       end_date,
-      status: 'Active'
+      status: 'Active',
+      created_by: emp.id
     }).select().single();
 
     if (error) throw error;
