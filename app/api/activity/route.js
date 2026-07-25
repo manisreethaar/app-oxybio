@@ -52,7 +52,7 @@ export async function POST(request) {
       if (desc.includes('delete') || desc.includes('remove') || desc.includes('fail')) severity = 'high';
       if (desc.includes('viewed') || desc.includes('read')) severity = 'info';
 
-      const { data, error } = await supabase.from('activity_log').insert({
+      let insertPayload = {
         ...payload,
         batch_id: payload.batch_id || null,
         equipment_id: payload.equipment_id || null,
@@ -60,7 +60,16 @@ export async function POST(request) {
         employee_id: emp.id,
         severity: severity,
         log_date: new Date().toISOString().split('T')[0],
-      }).select().single();
+      };
+
+      let { data, error } = await supabase.from('activity_log').insert(insertPayload).select().single();
+
+      if (error && error.message && error.message.includes('equipment_id')) {
+        delete insertPayload.equipment_id;
+        const retry = await supabase.from('activity_log').insert(insertPayload).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return NextResponse.json({ success: true, data });
