@@ -43,6 +43,8 @@ export default function LnbEntryPage() {
   const [stageSnapshots, setStageSnapshots] = useState({});
   // Lookup map: formulation UUID → "CODE — Name" for display in snapshots
   const [formulationMap, setFormulationMap] = useState({});
+  // Linked SOPs — read-only reference, not retyped into Methodology
+  const [linkedSops, setLinkedSops] = useState([]);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -74,6 +76,20 @@ export default function LnbEntryPage() {
   useEffect(() => {
     if (id) fetchEntry();
   }, [id, fetchEntry]);
+
+  // Load linked SOPs + this employee's acknowledgement status — read-only reference panel
+  useEffect(() => {
+    const sopIds = entry?.sop_ids;
+    if (!sopIds?.length || !employeeProfile?.id) { setLinkedSops([]); return; }
+    (async () => {
+      const [{ data: sopRows }, { data: ackRows }] = await Promise.all([
+        supabase.from('sop_library').select('id, sop_id, title, version, document_url').in('id', sopIds),
+        supabase.from('sop_acknowledgements').select('sop_id, acknowledged_at').eq('employee_id', employeeProfile.id).in('sop_id', sopIds),
+      ]);
+      const ackMap = Object.fromEntries((ackRows || []).map(a => [a.sop_id, a.acknowledged_at]));
+      setLinkedSops((sopRows || []).map(s => ({ ...s, acknowledgedAt: ackMap[s.id] || null })));
+    })();
+  }, [entry?.sop_ids, employeeProfile?.id, supabase]);
 
   useEffect(() => {
     fetch('/api/edit-request').then(res => res.ok ? res.json() : null).then(d => {
@@ -282,7 +298,7 @@ export default function LnbEntryPage() {
              onResync={fetchEntry}
            />
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
-           <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
+           <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder={linkedSops.length ? 'Note any deviations from the linked SOP(s), if applicable...' : 'Detail the steps, reagents, and equipment used...'} isLarge />
            
            <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
              <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
@@ -299,6 +315,31 @@ export default function LnbEntryPage() {
 
         {/* Sidebar Signatures */}
         <div className="space-y-6">
+           {linkedSops.length > 0 && (
+             <div className="card p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
+               <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Linked SOPs</h3>
+               <div className="space-y-3">
+                 {linkedSops.map(s => (
+                   <div key={s.id} className="border border-slate-100 rounded-lg p-3">
+                     <p className="text-sm font-bold text-slate-800">{s.sop_id ? `${s.sop_id} — ` : ''}{s.title}</p>
+                     <p className="text-xs text-slate-400 mb-1.5">{s.version ? `v${s.version}` : ''}</p>
+                     {s.acknowledgedAt ? (
+                       <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                         <FileCheck className="w-3.5 h-3.5" /> Signed {new Date(s.acknowledgedAt).toLocaleDateString()}
+                       </span>
+                     ) : (
+                       <Link href="/sops" className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:underline">
+                         <AlertCircle className="w-3.5 h-3.5" /> Not yet completed — sign it
+                       </Link>
+                     )}
+                     {s.document_url && (
+                       <a href={s.document_url} target="_blank" rel="noreferrer" className="block text-xs text-slate-400 hover:text-navy mt-1 underline">View procedure document</a>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             </div>
+           )}
            <div className="card p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
               <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Chain of Custody</h3>
               

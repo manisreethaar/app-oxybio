@@ -45,8 +45,9 @@ export default function DigitalLnbPage() {
   const [esigConfig, setEsigConfig] = useState({ isOpen: false, entryId: null });
   // G-25: new version prefill
   const [versionSourceEntry, setVersionSourceEntry] = useState(null);
-  // G-26: SOP references in create form
-  const [sopRefs,          setSopRefs]          = useState('');
+  // SOP linkage in create form — proper FK array (sop_ids), replaces free-text sop_references
+  const [sops,             setSops]             = useState([]);
+  const [sopIds,           setSopIds]           = useState([]);
   // G-90: sketch/diagram URL
   const [sketchUrl,        setSketchUrl]        = useState('');
 
@@ -102,6 +103,11 @@ export default function DigitalLnbPage() {
     finally { setLoading(false); }
   }, [supabase]);
 
+  useEffect(() => {
+    supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title')
+      .then(({ data }) => setSops(data || []));
+  }, [supabase]);
+
   const fetchPendingIds = async () => {
     const res = await fetch('/api/edit-request');
     if (res.ok) {
@@ -135,8 +141,8 @@ export default function DigitalLnbPage() {
           flask_id:             selectedFlaskId || null,
           batch_stage:          selectedStage   || null,
           attachment_url,
-          // G-26: SOP references
-          sop_references: sopRefs.trim() ? sopRefs.split(',').map(s => s.trim()).filter(Boolean) : [],
+          // SOP linkage — real FK array into sop_library
+          sop_ids: sopIds,
           // G-25: version linkage
           previous_version_id: versionSourceEntry?.id || null,
           entry_version: versionSourceEntry ? (versionSourceEntry.entry_version || 1) + 1 : 1,
@@ -154,7 +160,7 @@ export default function DigitalLnbPage() {
       setSelectedFlaskId('');
       setSelectedStage('');
       setBatchFlasks([]);
-      setSopRefs('');
+      setSopIds([]);
       setSketchUrl('');
       setVersionSourceEntry(null);
       fetchData();
@@ -191,7 +197,7 @@ export default function DigitalLnbPage() {
   // G-25: Start a new version from an existing entry
   const handleNewVersion = (entry) => {
     setVersionSourceEntry(entry);
-    setSopRefs(entry.sop_references?.join(', ') || '');
+    setSopIds(entry.sop_ids || []);
     reset({ title: `${entry.title} (v${(entry.entry_version||1)+1})`, batch_id: entry.batch_id || '' });
     setShowNew(true);
   };
@@ -509,12 +515,21 @@ export default function DigitalLnbPage() {
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy resize-none transition-all"/>
               </div>
 
-              {/* G-26: SOP References */}
+              {/* Linked SOPs — real link into sop_library, not retyped */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">SOP References <span className="text-slate-400 font-normal">(Optional — comma-separated)</span></label>
-                <input type="text" value={sopRefs} onChange={e=>setSopRefs(e.target.value)} placeholder="e.g. SOP-FERM-001, SOP-QC-003"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy transition-all"/>
-                <p className="text-xs text-slate-400 mt-1">Link to standard operating procedures that govern this experiment</p>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Linked SOPs <span className="text-slate-400 font-normal">(Optional)</span></label>
+                <div className="max-h-32 overflow-y-auto bg-slate-50 border border-slate-100 rounded-lg p-2 space-y-1">
+                  {sops.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-slate-700">
+                      <input type="checkbox" checked={sopIds.includes(s.id)}
+                        onChange={(ev) => setSopIds(ev.target.checked ? [...sopIds, s.id] : sopIds.filter(id => id !== s.id))}
+                        className="rounded text-navy focus:ring-navy flex-shrink-0" />
+                      {s.sop_id ? `${s.sop_id} — ` : ''}{s.title}
+                    </label>
+                  ))}
+                  {sops.length === 0 && <p className="text-xs text-slate-400 p-2 italic text-center">No active SOPs.</p>}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">The procedure is referenced here, not retyped — see it read-only after saving. Submitting is blocked until the linked SOP(s) are e-signed.</p>
               </div>
 
               {/* G-90: Sketch / Diagram attachment URL */}

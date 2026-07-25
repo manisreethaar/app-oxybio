@@ -716,7 +716,7 @@ export default function BioprocessDetailPage() {
         <div className="space-y-5">
           {sopBlock && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
               <div>
                 <strong>SOP completion required:</strong>
                 <p>{sopBlock.error} <a href="/sops" className="underline font-semibold">Go sign it</a>.</p>
@@ -823,6 +823,15 @@ export default function BioprocessDetailPage() {
 
     return (
       <div className="space-y-5">
+        {sopBlock && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
+            <div>
+              <strong>SOP completion required:</strong>
+              <p>{sopBlock.error} <a href="/sops" className="underline font-semibold">Go sign it</a>.</p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-slate-700">
@@ -1456,6 +1465,9 @@ export default function BioprocessDetailPage() {
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${experiment.status === 'complete' ? 'bg-emerald-50 text-emerald-700' : experiment.status === 'collecting' ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-600'}`}>
                 {experiment.status}
               </span>
+              {experiment.sop_id && (
+                <a href="/sops" className="text-xs font-bold px-2 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100">Requires SOP</a>
+              )}
             </div>
             <h1 className="text-xl font-black text-slate-900">{experiment.title}</h1>
             {experiment.description && <p className="text-sm text-slate-500 mt-0.5">{experiment.description}</p>}

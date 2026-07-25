@@ -85,7 +85,7 @@ export async function PATCH(request) {
     let updateData = {};
 
     const { data: task, error: taskError } = await supabase.from('tasks')
-      .select('title, assigned_by, assigned_to, progress_logs, is_personal_reminder, sop_id, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+      .select('title, assigned_by, assigned_to, progress_logs, is_personal_reminder, sop_id, is_routine, routine_interval, description, due_date, priority, checklist, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
       .eq('id', task_id).single();
     if (taskError || !task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
@@ -166,11 +166,21 @@ export async function PATCH(request) {
         updateData = { checklist: safePayload.checklist };
         break;
       case 'submit_review':
+        if (task.is_routine) {
+          if (!safePayload.pin) return NextResponse.json({ error: 'E-Signature PIN required for routine tasks.' }, { status: 400 });
+          const { data: validPin, error: pinError } = await supabase.rpc('verify_pin', { user_id: currentUser.id, pin: safePayload.pin });
+          if (pinError || !validPin) {
+            return NextResponse.json({ error: 'Invalid E-Signature PIN.' }, { status: 403 });
+          }
+          updateData.esignature_used = true;
+        }
         updateData = {
+          ...updateData,
           status: 'done',
-          approval_status: task.is_personal_reminder ? 'approved' : 'pending_review',
+          approval_status: (task.is_personal_reminder || task.is_routine) ? 'approved' : 'pending_review',
           completion_note: safePayload.completion_note,
           completed_at: new Date().toISOString(),
+          completed_by: currentUser.id,
           proof_url: safePayload.proof_url || null,
           logged_minutes: safePayload.logged_minutes,
           time_started_at: null,
@@ -180,9 +190,34 @@ export async function PATCH(request) {
           await sendServerNotification(
             task.assigned_by,
             'Task Ready for Review',
-            `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}". Pending your approval.`,
+            `${task.assigned_user?.full_name || 'An employee'} completed "${task.title}".${task.is_routine ? '' : ' Pending your approval.'}`,
             '/tasks'
           );
+        }
+        
+        // Auto-clone routine tasks
+        if (task.is_routine && task.routine_interval) {
+          let nextDate = new Date(task.due_date || new Date());
+          if (task.routine_interval === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+          else if (task.routine_interval === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+          else if (task.routine_interval === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+          
+          await supabase.from('tasks').insert({
+            title: task.title,
+            description: task.description,
+            assigned_to: task.assigned_to,
+            assigned_by: task.assigned_by,
+            due_date: nextDate.toISOString().split('T')[0],
+            priority: task.priority,
+            checklist: task.checklist ? task.checklist.map(c => ({...c, done: false})) : null,
+            sop_id: task.sop_id,
+            status: 'open',
+            approval_status: 'not_required',
+            is_personal_reminder: task.is_personal_reminder,
+            is_routine: true,
+            routine_interval: task.routine_interval,
+            logged_minutes: 0
+          });
         }
         break;
       case 'approve':
@@ -273,7 +308,7 @@ export async function PUT(request) {
     if (accessError) return accessError;
 
     const body = await request.json();
-    const { id, title, description, assigned_to, due_date, priority, checklist, is_personal_reminder } = body;
+    const { id, title, description, assigned_to, due_date, priority, checklist, is_personal_reminder, is_routine, routine_interval } = body;
 
     if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
 
@@ -294,7 +329,7 @@ export async function PUT(request) {
 
     const { data: updated, error } = await supabase.from('tasks')
       .update({ 
-        title, description, assigned_to, due_date, priority, checklist, is_personal_reminder 
+        title, description, assigned_to, due_date, priority, checklist, is_personal_reminder, is_routine, routine_interval
       })
       .eq('id', id)
       .select()

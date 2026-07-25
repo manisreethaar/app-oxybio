@@ -56,6 +56,10 @@ CREATE TABLE tasks (
     status TEXT CHECK (status IN ('open', 'in-progress', 'done', 'cancelled')),
     completion_note TEXT,
     completed_at TIMESTAMPTZ,
+    completed_by UUID REFERENCES employees(id),
+    is_routine BOOLEAN DEFAULT false,
+    routine_interval TEXT,
+    esignature_used BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
