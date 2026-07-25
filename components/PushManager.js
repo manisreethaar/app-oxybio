@@ -40,8 +40,8 @@ export default function PushManager() {
             setSubscribed(true);
             const sessionKey = `push_saved_${user.id}`;
             if (!sessionStorage.getItem(sessionKey)) {
-              const ok = await saveSubscription(sub, reg);
-              if (ok) sessionStorage.setItem(sessionKey, '1');
+              const res = await saveSubscription(sub, reg);
+              if (res.success) sessionStorage.setItem(sessionKey, '1');
             }
           } else if (Notification.permission === 'granted') {
             // Permission already granted but no active subscription (e.g. after SW update)
@@ -51,8 +51,8 @@ export default function PushManager() {
               try {
                 const applicationServerKey = urlBase64ToUint8Array(vapidKey);
                 const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
-                const ok = await saveSubscription(newSub, reg);
-                if (ok) {
+                const res = await saveSubscription(newSub, reg);
+                if (res.success) {
                   sessionStorage.setItem(`push_saved_${user.id}`, '1');
                   setSubscribed(true);
                 }
@@ -86,20 +86,20 @@ export default function PushManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription })
       });
-      if (res.ok) return true;
-      if (res.status === 401) return false; // not logged in yet, skip silently
-      // Any other server error means the subscription is rejected — clean up browser side
-      console.warn('[PushManager] Server rejected subscription, unsubscribing browser:', res.status);
+      if (res.ok) return { success: true };
+      
+      const text = await res.text();
+      console.warn('[PushManager] Server rejected subscription:', res.status, text);
       if (reg) {
         const existing = await reg.pushManager.getSubscription();
         if (existing) await existing.unsubscribe();
       }
       setSubscribed(false);
       setShowBanner(Notification.permission !== 'denied');
-      return false;
+      return { success: false, error: `HTTP ${res.status}: ${text}` };
     } catch (err) {
       console.error('Failed to save subscription:', err);
-      return false;
+      return { success: false, error: err.message };
     }
   };
 
@@ -124,14 +124,14 @@ export default function PushManager() {
           userVisibleOnly: true,
           applicationServerKey,
         });
-        const ok = await saveSubscription(sub, reg);
-        if (ok) {
+        const res = await saveSubscription(sub, reg);
+        if (res.success) {
           const sessionKey = `push_saved_${user?.id}`;
           sessionStorage.setItem(sessionKey, '1');
           setSubscribed(true);
           setShowBanner(false);
         } else {
-          setError('Failed to save push subscription on server.');
+          setError(res.error || 'Failed to save push subscription on server.');
         }
       } else if (permission === 'denied') {
         setShowBanner(false);
@@ -182,8 +182,8 @@ export default function PushManager() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1"/> : "Enable"}
             </button>
             {error && (
-              <span className="text-xs text-red-300 max-w-[150px]" title={error}>
-                {error.includes('not configured') ? '⚠️ Config' : '⚠️ Error'}
+              <span className="text-xs text-red-300 max-w-[200px] truncate" title={error}>
+                {error.includes('not configured') ? '⚠️ Config' : `⚠️ ${error}`}
               </span>
             )}
           </>
