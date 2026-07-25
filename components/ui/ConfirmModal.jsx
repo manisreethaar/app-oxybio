@@ -12,7 +12,8 @@ export default function ConfirmModal({
   variant = 'danger',
   requireInput = false,
   inputPlaceholder = 'Reason...',
-  inputLabel = 'Please provide a reason:'
+  inputLabel = 'Please provide a reason:',
+  loadingText = 'Processing...'
 }) {
   const [confirming, setConfirming] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -79,7 +80,7 @@ export default function ConfirmModal({
             className={`px-4 py-2 text-white font-bold rounded-lg text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-navy hover:bg-navy-hover'}`}
           >
             {confirming ? (
-              <><Loader2 className="w-4 h-4 animate-spin"/> Deleting...</>
+              <><Loader2 className="w-4 h-4 animate-spin"/> {loadingText}</>
             ) : confirmText}
           </button>
         </div>

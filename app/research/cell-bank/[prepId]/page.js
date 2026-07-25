@@ -1199,7 +1199,8 @@ export default function CellBankDetailPage() {
         onConfirm={handleQcRelease}
         title="QC Release Preparation"
         message="Mark this preparation as QC released? This confirms it is approved for production use. Your name and timestamp will be recorded."
-        confirmText={releasing ? 'Releasing...' : 'Confirm Release'}
+        confirmText="Confirm Release"
+        loadingText="Releasing..."
         variant="primary"
       />
 
