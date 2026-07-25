@@ -959,8 +959,12 @@ export default function CellBankDetailPage() {
       ]);
       const [prepJson, vialsJson, mediaJson] = await Promise.all([prepRes.json(), vialsRes.json(), mediaRes.json()]);
       if (!prepJson.success) throw new Error(prepJson.error);
-      setPrep(prepJson.data);
-      if (vialsJson.success) setVials(vialsJson.data || []);
+      const fetchedPrep = prepJson.data;
+      if (vialsJson.success) {
+        setVials(vialsJson.data || []);
+        fetchedPrep.cell_bank_vials = vialsJson.data || [];
+      }
+      setPrep(fetchedPrep);
       if (Array.isArray(mediaJson)) setLabMedia(mediaJson.filter(f => f.status === 'Approved'));
     } catch (err) { toast.error(err.message); }
     finally { setLoading(false); }
