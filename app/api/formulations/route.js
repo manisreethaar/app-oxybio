@@ -41,7 +41,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { supabase, emp, user } = await requireAuth();
+    const supabase = createClient();
+    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
+    if (authErr) return authErr;
 
     const body = await request.json();
     const { code, name, ingredients, notes, base_version_id, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
@@ -95,7 +97,9 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const { supabase, emp, user } = await requireAuth();
+    const supabase = createClient();
+    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
+    if (authErr) return authErr;
 
     const { id, status, rejection_reason } = await request.json();
     if (!id || !status) return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
@@ -163,7 +167,9 @@ export async function PATCH(request) {
 
 export async function PUT(request) {
   try {
-    const { supabase, emp, user } = await requireAuth();
+    const supabase = createClient();
+    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
+    if (authErr) return authErr;
 
     const body = await request.json();
     const { id, name, ingredients, notes, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
@@ -209,7 +215,9 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const { supabase, emp, user } = await requireAuth();
+    const supabase = createClient();
+    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
+    if (authErr) return authErr;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
