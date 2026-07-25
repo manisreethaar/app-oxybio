@@ -203,7 +203,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
         const today = new Date().toISOString().split('T')[0];
         const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
-          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin'),
+          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin').neq('role', 'ceo'),
           supabase.from('attendance_log').select('employee_id, check_out_time').eq('date', today),
           supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
           supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
