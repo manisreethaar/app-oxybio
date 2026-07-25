@@ -4,6 +4,7 @@ import { useToast } from '@/context/ToastContext';
 import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microscope, ArrowDownToLine } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import ESignatureModal from '@/components/ui/ESignatureModal';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                    result_unit: 'pH units' },
@@ -128,6 +129,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const [ppPh,            setPpPh]            = useState('');
   const [ppCfu,           setPpCfu]           = useState('');
   const [savingPostPack,  setSavingPostPack]  = useState(false);
+
+  // E-Signature Modal
+  const [eSigModal, setESigModal] = useState({ isOpen: false, targetAction: null });
 
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
@@ -1212,11 +1216,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               {!isCeo && <p className="text-xs text-slate-400 text-center font-semibold">Release / Reject authority is restricted to the CEO.</p>}
               {isCeo && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button onClick={()=>onAdvanceFlaskStage('released')} disabled={actionLoading}
+                  <button onClick={()=>setESigModal({ isOpen: true, targetAction: 'released' })} disabled={actionLoading}
                     className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-sm disabled:opacity-50">
                     ✓ Release Trial
                   </button>
-                  <button onClick={()=>onAdvanceFlaskStage('rejected')} disabled={actionLoading}
+                  <button onClick={()=>setESigModal({ isOpen: true, targetAction: 'rejected' })} disabled={actionLoading}
                     className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm shadow-sm disabled:opacity-50">
                     ✗ Reject Trial
                   </button>
@@ -1234,6 +1238,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         message="Are you sure you want to delete this incubation record? This cannot be undone."
         confirmText="Delete"
         variant="danger"
+      />
+      <ESignatureModal
+        isOpen={eSigModal.isOpen}
+        onClose={() => setESigModal({ isOpen: false, targetAction: null })}
+        onSuccess={() => {
+          onAdvanceFlaskStage(eSigModal.targetAction);
+          setESigModal({ isOpen: false, targetAction: null });
+        }}
+        title={`Authorize Batch ${eSigModal.targetAction === 'released' ? 'Release' : 'Rejection'}`}
       />
     </div>
   );

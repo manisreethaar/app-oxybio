@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { CalendarDays, AlertTriangle, CheckCircle2, Plus, Clock, Search, MessageSquare, ClipboardList, Flag, ArrowRight, Loader2 } from 'lucide-react';
+import { MessageSquare, Calendar, FolderCheck, Plus, Link2, Shield, Edit, Trash2, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Users, Flag, AlertTriangle, Clock, Search, ClipboardList, ArrowRight, Loader2, LayoutList, Columns, Table as TableIcon } from 'lucide-react';
+import Link from 'next/link';
 import { differenceInDays, format, addMonths, addYears, addWeeks } from 'date-fns';
 import dynamic from 'next/dynamic';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -25,6 +26,19 @@ export default function CompliancePage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [activeTab, setActiveTab] = useState('calendar');
+  const [viewMode, setViewMode] = useState('list');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('compliance_view_mode');
+    if (saved && ['kanban', 'list', 'table'].includes(saved)) {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('compliance_view_mode', mode);
+  };
 
   // A-11: Customer Complaints
   const [complaints,       setComplaints]       = useState([]);
@@ -239,11 +253,16 @@ export default function CompliancePage() {
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Compliance & CAPA</h1>
           <p className="text-slate-500 mt-1">Regulatory deadlines, renewals, and non-conformance actions.</p>
         </div>
-        {activeTab === 'calendar' && ['admin', 'ceo', 'cto'].includes(role) && (
-          <button onClick={() => setShowAdd(!showAdd)} className="flex items-center px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 shadow-sm transition-colors">
-            <Plus className="w-5 h-5 mr-1" /> Add Compliance Item
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <Link href="/compliance/audit" className="flex items-center px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
+            <Shield className="w-5 h-5 mr-1" /> View Audit Logs
+          </Link>
+          {activeTab === 'calendar' && ['admin', 'ceo', 'cto'].includes(role) && (
+            <button onClick={() => setShowAdd(!showAdd)} className="flex items-center px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 shadow-sm transition-colors">
+              <Plus className="w-5 h-5 mr-1" /> Add Compliance Item
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex border-b border-slate-200">
@@ -349,6 +368,29 @@ export default function CompliancePage() {
               )}
 
               <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+                <div className="flex gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-10 lg:h-[42px] shrink-0">
+                  {[
+                    { id: 'kanban', icon: Columns, label: 'Kanban' },
+                    { id: 'list',   icon: LayoutList, label: 'List' },
+                    { id: 'table',  icon: TableIcon, label: 'Table' },
+                  ].map(v => {
+                    const Icon = v.icon;
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => handleViewModeChange(v.id)}
+                        className={`flex items-center justify-center px-3 rounded-lg transition-all h-full ${
+                          viewMode === v.id
+                            ? 'bg-slate-100 text-slate-800'
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                        }`}
+                        title={v.label}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </button>
+                    );
+                  })}
+                </div>
                 <div className="relative flex-1 min-w-[220px]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search compliance title, category, or owner..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100 focus:border-slate-500" />
@@ -367,48 +409,191 @@ export default function CompliancePage() {
                 </select>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                {filteredItems.length === 0 ? (
-                  <div className="py-16 text-center text-sm font-bold text-slate-400">No compliance items match the current search.</div>
-                ) : (
-                  <ul className="divide-y divide-gray-100">
-                    {filteredItems.map((item) => {
-                      const daysTo = differenceInDays(new Date(item.due_date), new Date());
-                      const statusColor = 
-                        item.calculated_status === 'overdue' ? 'bg-red-50' :
-                        item.calculated_status === 'done' ? 'bg-slate-50 opacity-60' : '';
-                      const badgeColor = 
-                        item.calculated_status === 'overdue' ? 'bg-red-100 text-red-800 border-red-200' :
-                        item.calculated_status === 'done' ? 'bg-slate-200 text-slate-600 border-slate-300' :
-                        daysTo <= 7 ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                        daysTo <= 30 ? 'bg-slate-100 text-slate-800 border-slate-200' :
-                        'bg-emerald-100 text-emerald-800 border-emerald-200';
-                      return (
-                        <li key={item.id} className={`p-6 transition-colors hover:bg-slate-50 flex flex-col md:flex-row justify-between md:items-center ${statusColor}`}>
-                          <div className="mb-4 md:mb-0">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded border ${badgeColor}`}>
-                                {item.calculated_status === 'overdue' ? 'OVERDUE' : item.calculated_status === 'done' ? 'DONE' : `${daysTo} days left`}
-                              </span>
-                              {item.is_recurring && <span className="text-xs font-bold uppercase text-slate-700 tracking-widest bg-slate-50 px-2 py-0.5 rounded">{item.recurrence}</span>}
-                            </div>
-                            <h3 className={`text-lg font-bold ${item.calculated_status === 'done' ? 'line-through text-slate-500' : 'text-slate-900'}`}>{item.title}</h3>
-                            <div className="flex flex-wrap items-center mt-2 text-sm text-slate-500 gap-4">
-                              <div className="flex items-center"><CalendarDays className="w-4 h-4 mr-1.5" /> Due: {format(new Date(item.due_date), 'MMM d, yyyy')}</div>
-                              {item.employees && <div className="flex items-center border-l border-slate-300 pl-4 text-slate-700">Assigned: <strong className="ml-1">{item.employees.full_name}</strong></div>}
-                            </div>
+              {viewMode === 'kanban' && (
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+                  {['overdue', 'open', 'done'].map(statusColumn => {
+                    const columnItems = filteredItems.filter(item => {
+                      if (statusColumn === 'overdue') return item.calculated_status === 'overdue';
+                      if (statusColumn === 'open') return item.calculated_status !== 'overdue' && item.calculated_status !== 'done';
+                      if (statusColumn === 'done') return item.calculated_status === 'done';
+                      return false;
+                    });
+                    
+                    return (
+                      <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
+                        <div className={`rounded-t-xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
+                          statusColumn === 'done' ? 'bg-emerald-50 border-emerald-200' :
+                          statusColumn === 'open' ? 'bg-amber-50 border-amber-200' :
+                          'bg-red-50 border-red-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-black text-slate-900 truncate uppercase">{statusColumn}</span>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-white shadow-sm ${
+                              statusColumn === 'done' ? 'text-emerald-700' :
+                              statusColumn === 'open' ? 'text-amber-700' :
+                              'text-red-700'
+                            }`}>{columnItems.length}</span>
                           </div>
-                          {['admin', 'ceo', 'cto'].includes(role) && item.calculated_status !== 'done' && (
-                            <button onClick={() => markDone(item)} className="px-4 py-2 mt-2 md:mt-0 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 font-semibold text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center shrink-0">
-                              <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-600" /> Mark Done
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
+                        </div>
+                        
+                        <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+                          {columnItems.length === 0 ? (
+                            <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn} items</div>
+                          ) : columnItems.map(item => {
+                            const daysTo = differenceInDays(new Date(item.due_date), new Date());
+                            const badgeColor = 
+                              item.calculated_status === 'overdue' ? 'bg-red-100 text-red-800' :
+                              item.calculated_status === 'done' ? 'bg-slate-200 text-slate-600' :
+                              daysTo <= 7 ? 'bg-amber-100 text-amber-800' :
+                              daysTo <= 30 ? 'bg-slate-100 text-slate-800' :
+                              'bg-emerald-100 text-emerald-800';
+                            
+                            return (
+                              <div key={item.id} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 ${
+                                item.calculated_status === 'overdue' ? 'border-red-300 bg-red-50/20' : 
+                                item.calculated_status === 'done' ? 'border-slate-200 bg-slate-50/50 opacity-80' : 'border-slate-200'
+                              }`}>
+                                <div className="flex justify-between items-start gap-2">
+                                  <h3 className={`text-sm font-black ${item.calculated_status === 'done' ? 'line-through text-slate-500' : 'text-slate-900'}`}>{item.title}</h3>
+                                  <span className={`shrink-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded ${badgeColor}`}>
+                                    {item.calculated_status === 'overdue' ? 'OVERDUE' : item.calculated_status === 'done' ? 'DONE' : `${daysTo}d`}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-100 px-1.5 py-0.5 rounded">{item.category}</span>
+                                  {item.is_recurring && <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{item.recurrence}</span>}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-gray-50">
+                                  <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Due Date</p>
+                                    <p className={`text-[10px] font-bold ${item.calculated_status === 'overdue' ? 'text-red-600' : 'text-slate-700'}`}>{format(new Date(item.due_date), 'MMM d, yyyy')}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Owner</p>
+                                    <p className="text-[10px] font-bold text-slate-700 truncate">{item.employees?.full_name || 'Unassigned'}</p>
+                                  </div>
+                                </div>
+                                {['admin', 'ceo', 'cto'].includes(role) && item.calculated_status !== 'done' && (
+                                  <button onClick={() => markDone(item)} className="mt-2 py-1.5 w-full bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 rounded text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" /> Mark Done
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {viewMode === 'table' && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Task Title</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Category</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Due Date</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Owner</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredItems.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="py-8 text-center text-sm font-bold text-slate-400">No compliance items match the current search.</td>
+                        </tr>
+                      ) : (
+                        filteredItems.map(item => {
+                          const daysTo = differenceInDays(new Date(item.due_date), new Date());
+                          const isOverdue = item.calculated_status === 'overdue';
+                          const isDone = item.calculated_status === 'done';
+                          
+                          return (
+                            <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${isOverdue ? 'bg-red-50/20' : isDone ? 'opacity-70 bg-slate-50/50' : ''}`}>
+                              <td className="px-4 py-3">
+                                <div className={`text-sm font-bold ${isDone ? 'line-through text-slate-500' : 'text-slate-900'}`}>{item.title}</div>
+                                {item.is_recurring && <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.recurrence}</div>}
+                              </td>
+                              <td className="px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">{item.category}</td>
+                              <td className="px-4 py-3">
+                                <div className={`text-sm font-medium ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-700'}`}>
+                                  {format(new Date(item.due_date), 'MMM d, yyyy')}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm font-medium text-slate-700">{item.employees?.full_name || 'Unassigned'}</td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
+                                  isOverdue ? 'bg-red-100 text-red-700' :
+                                  isDone ? 'bg-slate-200 text-slate-600' :
+                                  daysTo <= 7 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                                }`}>
+                                  {isOverdue ? 'OVERDUE' : isDone ? 'DONE' : `${daysTo} days`}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {['admin', 'ceo', 'cto'].includes(role) && !isDone && (
+                                  <button onClick={() => markDone(item)} className="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 hover:text-emerald-700 hover:border-emerald-300 rounded text-[10px] font-black uppercase tracking-widest transition-colors inline-flex items-center">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" /> Done
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {viewMode === 'list' && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  {filteredItems.length === 0 ? (
+                    <div className="py-16 text-center text-sm font-bold text-slate-400">No compliance items match the current search.</div>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
+                      {filteredItems.map((item) => {
+                        const daysTo = differenceInDays(new Date(item.due_date), new Date());
+                        const statusColor = 
+                          item.calculated_status === 'overdue' ? 'bg-red-50' :
+                          item.calculated_status === 'done' ? 'bg-slate-50 opacity-60' : '';
+                        const badgeColor = 
+                          item.calculated_status === 'overdue' ? 'bg-red-100 text-red-800 border-red-200' :
+                          item.calculated_status === 'done' ? 'bg-slate-200 text-slate-600 border-slate-300' :
+                          daysTo <= 7 ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                          daysTo <= 30 ? 'bg-slate-100 text-slate-800 border-slate-200' :
+                          'bg-emerald-100 text-emerald-800 border-emerald-200';
+                        return (
+                          <li key={item.id} className={`p-6 transition-colors hover:bg-slate-50 flex flex-col md:flex-row justify-between md:items-center ${statusColor}`}>
+                            <div className="mb-4 md:mb-0">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded border ${badgeColor}`}>
+                                  {item.calculated_status === 'overdue' ? 'OVERDUE' : item.calculated_status === 'done' ? 'DONE' : `${daysTo} days left`}
+                                </span>
+                                {item.is_recurring && <span className="text-xs font-bold uppercase text-slate-700 tracking-widest bg-slate-50 px-2 py-0.5 rounded">{item.recurrence}</span>}
+                              </div>
+                              <h3 className={`text-lg font-bold ${item.calculated_status === 'done' ? 'line-through text-slate-500' : 'text-slate-900'}`}>{item.title}</h3>
+                              <div className="flex flex-wrap items-center mt-2 text-sm text-slate-500 gap-4">
+                                <div className="flex items-center"><CalendarDays className="w-4 h-4 mr-1.5" /> Due: {format(new Date(item.due_date), 'MMM d, yyyy')}</div>
+                                {item.employees && <div className="flex items-center border-l border-slate-300 pl-4 text-slate-700">Assigned: <strong className="ml-1">{item.employees.full_name}</strong></div>}
+                              </div>
+                            </div>
+                            {['admin', 'ceo', 'cto'].includes(role) && item.calculated_status !== 'done' && (
+                              <button onClick={() => markDone(item)} className="px-4 py-2 mt-2 md:mt-0 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 font-semibold text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-600" /> Mark Done
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
             </>
           )}
         </>
