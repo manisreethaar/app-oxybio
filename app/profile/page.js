@@ -17,6 +17,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import PasswordModal from './components/PasswordModal';
+import PinSetupModal from './components/PinSetupModal';
 
 function DigitalIDCard({ emp }) {
   return (
@@ -117,6 +118,11 @@ export default function ProfilePage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
+  
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinForm, setPinForm] = useState({ pin: '', confirm: '' });
+  const [pinLoading, setPinLoading] = useState(false);
+  
   const fileRef = useRef();
 
   useEffect(() => {
@@ -256,6 +262,30 @@ export default function ProfilePage() {
     finally { setPasswordLoading(false); }
   };
 
+  const handlePinSetup = async () => {
+    if (pinForm.pin !== pinForm.confirm) { toast.warn("PINs do not match!"); return; }
+    if (pinForm.pin.length < 4 || pinForm.pin.length > 6) { toast.warn("PIN must be 4-6 digits!"); return; }
+    
+    setPinLoading(true);
+    try {
+      const res = await fetch('/api/auth/pin/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pinForm.pin })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to setup PIN');
+      
+      toast.success("E-Signature PIN configured successfully!");
+      setShowPinModal(false);
+      setPinForm({ pin: '', confirm: '' });
+    } catch (err) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
   if (!emp) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
@@ -296,13 +326,22 @@ export default function ProfilePage() {
         </div>
         <div className="flex items-center gap-3">
           {!isAdminView && (
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
-            >
-              <Lock className="w-4 h-4"/>
-              Password
-            </button>
+            <>
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
+              >
+                <Lock className="w-4 h-4"/>
+                Password
+              </button>
+              <button
+                onClick={() => setShowPinModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
+              >
+                <Lock className="w-4 h-4"/>
+                E-Sig PIN
+              </button>
+            </>
           )}
           <button
             onClick={() => setView(view === 'info' ? 'card' : 'info')}
@@ -521,6 +560,15 @@ export default function ProfilePage() {
             passwordLoading={passwordLoading}
             onSubmit={handlePasswordUpdate}
             onClose={() => setShowPasswordModal(false)}
+          />
+
+          <PinSetupModal
+            showModal={showPinModal}
+            pinForm={pinForm}
+            setPinForm={setPinForm}
+            pinLoading={pinLoading}
+            onSubmit={handlePinSetup}
+            onClose={() => setShowPinModal(false)}
           />
         </>
       )}
