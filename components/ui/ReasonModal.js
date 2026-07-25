@@ -1,11 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { FileWarning, X, Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useToast } from '@/context/ToastContext';
 
 export default function ReasonModal({ isOpen, onClose, onSuccess, title = "Reason for Change Required", message = "Please provide a justification for this modification." }) {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   if (!isOpen) return null;
 

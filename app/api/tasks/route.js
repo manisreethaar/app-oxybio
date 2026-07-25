@@ -8,6 +8,9 @@ import { canAssignTo, isMasterAdmin } from '@/lib/permissions';
 import { createTaskSchema, ACTION_PAYLOAD_SCHEMAS, patchSchema } from '@/lib/schemas/tasks';
 import { canPatchTaskAction } from '@/lib/tasks/access';
 import { requireAccess } from '@/lib/access';
+import { checkSopCompletion } from '@/lib/sop/gate';
+
+const SOP_GATED_ACTIONS = new Set(['start_timer', 'update_progress', 'update_checklist', 'submit_review']);
 
 
 
@@ -82,7 +85,7 @@ export async function PATCH(request) {
     let updateData = {};
 
     const { data: task, error: taskError } = await supabase.from('tasks')
-      .select('title, assigned_by, assigned_to, progress_logs, is_personal_reminder, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
+      .select('title, assigned_by, assigned_to, progress_logs, is_personal_reminder, sop_id, assigned_user:employees!tasks_assigned_to_fkey(full_name)')
       .eq('id', task_id).single();
     if (taskError || !task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
@@ -92,6 +95,17 @@ export async function PATCH(request) {
     const access = canPatchTaskAction({ action, task, currentUser, userEmail: user.email });
     if (!access.allowed) {
       return NextResponse.json({ error: access.error }, { status: 403 });
+    }
+
+    if (SOP_GATED_ACTIONS.has(action) && !isMasterAdmin(user.email)) {
+      const sopStatus = await checkSopCompletion(supabase, task.sop_id, currentUser.id);
+      if (sopStatus.required && !sopStatus.completed) {
+        return NextResponse.json({
+          error: `You must complete SOP "${sopStatus.sop.title}" before starting this task.`,
+          sop_violation: true,
+          sop: sopStatus.sop,
+        }, { status: 403 });
+      }
     }
 
     switch (action) {

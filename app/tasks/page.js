@@ -29,6 +29,7 @@ export default function TasksPage() {
   const toast = useToast();
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [sops, setSops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
   const [assigneeFilter, setAssigneeFilter] = useState('All');
@@ -62,9 +63,10 @@ export default function TasksPage() {
       description: z.string().optional(),
       assigned_user_ids: z.array(z.string()),
       due_date: z.string().min(1, 'Date required'),
-      priority: z.enum(['low', 'medium', 'high', 'urgent'])
+      priority: z.enum(['low', 'medium', 'high', 'urgent']),
+      sop_id: z.string().optional()
     })),
-    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium' }
+    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', sop_id: '' }
   });
   const watchedAssignees = watch('assigned_user_ids') || [];
 
@@ -156,11 +158,14 @@ export default function TasksPage() {
         empsPromise = supabase.from('employees').select('id, full_name, role').eq('is_active', true);
       }
 
-      const [empsRes, tasksRes] = await Promise.all([empsPromise, query]);
+      const sopsPromise = supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title');
+
+      const [empsRes, tasksRes, sopsRes] = await Promise.all([empsPromise, query, sopsPromise]);
       if (tasksRes.error) throw tasksRes.error;
 
       setEmployees(empsRes.data || []);
       setTasks(tasksRes.data || []);
+      setSops(sopsRes.data || []);
       if (selectedTask) {
         const updated = tasksRes.data?.find(t => t.id === selectedTask.id);
         if (updated) { setSelectedTask(updated); setTimerRunning(!!updated.time_started_at); }
@@ -235,6 +240,7 @@ export default function TasksPage() {
         const insertPayload = assignees.map(uid => ({
           title: data.title, description: data.description, assigned_to: uid,
           due_date: data.due_date, priority: data.priority, checklist: checklistBuffer,
+          sop_id: data.sop_id || null,
           is_personal_reminder: !isAdmin
         }));
         const res = await fetch('/api/tasks', { 
@@ -573,6 +579,14 @@ export default function TasksPage() {
                   <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
                 </select>
               </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Requires SOP</label>
+              <select {...regTask('sop_id')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
+                <option value="">No SOP required</option>
+                {sops.map(s => <option key={s.id} value={s.id}>{s.sop_id ? `${s.sop_id} — ` : ''}{s.title}</option>)}
+              </select>
+              <p className="text-xs text-slate-400 mt-1">The assignee must e-sign this SOP before they can start the task.</p>
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Steps</label>
@@ -922,6 +936,7 @@ export default function TasksPage() {
 
       <TaskDetailModal
         selectedTask={selectedTask}
+        linkedSop={sops.find(s => s.id === selectedTask?.sop_id)}
         groupedTasks={groupedTasks}
         employeeProfile={employeeProfile}
         isMaster={isMaster}
