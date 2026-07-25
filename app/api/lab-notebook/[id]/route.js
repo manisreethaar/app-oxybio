@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { notifyAdmins, sendServerNotification } from '@/utils/serverNotify';
 import {
@@ -93,7 +94,8 @@ export async function PUT(request, { params }) {
     if (batch_id !== undefined) updates.batch_id = batch_id || null;
     if (status) updates.status = statusAccess.status; // Allows transitioning from Draft to Submitted
 
-    const { data, error } = await supabase
+    const adminSupabase = createAdminClient();
+    const { data, error } = await adminSupabase
       .from('lab_notebook_entries')
       .update(updates)
       .eq('id', id)
@@ -148,7 +150,8 @@ export async function PATCH(request, { params }) {
     const countersignAccess = canCountersignLabNotebookEntry(currentEntry, emp, user.email);
     if (!countersignAccess.allowed) return NextResponse.json({ success: false, error: countersignAccess.error }, { status: 403 });
 
-    const { data, error } = await supabase
+    const adminSupabase = createAdminClient();
+    const { data, error } = await adminSupabase
       .from('lab_notebook_entries')
       .update({
         status: 'Countersigned',
@@ -205,13 +208,15 @@ export async function DELETE(request, { params }) {
     const { searchParams } = new URL(request.url);
     const permanent = searchParams.get('permanent') === 'true';
 
+    const adminSupabase = createAdminClient();
+
     if (permanent) {
-      const { error } = await supabase.from('lab_notebook_entries').delete().eq('id', id);
+      const { error } = await adminSupabase.from('lab_notebook_entries').delete().eq('id', id);
       if (error) throw error;
       return NextResponse.json({ success: true, message: 'LNB entry permanently deleted.' });
     }
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('lab_notebook_entries')
       .update({ archived_at: new Date().toISOString(), archived_by: emp.id })
       .eq('id', id);
