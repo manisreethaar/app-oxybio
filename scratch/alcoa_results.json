@@ -1,0 +1,504 @@
+{
+  "BatchManufacturing": [
+    {
+      "name": "batch_flask_inoculations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id                       uuid primary key default gen_random_uuid(),\n  flask_id                 uuid not null references batch_flasks(id) on delete cascade,\n  batch_id                 uuid not null references batches(id)      on delete cascade,\n  inoculum_source          text,\n  inoculum_vol_ml          numeric,\n  planned_fermentation_hrs numeric,\n  t_zero_time              timestamptz,        -- *** fermentation clock anchor ***\n  transfer_method          text check (transfer_method in ('pipette', 'syringe', 'sterile spoon')),\n  laf_used                 boolean    default false,\n  contamination_check      text check (contamination_check in ('clear', 'suspected')) default 'clear',\n  contamination_notes      text,\n  operator_id              uuid references employees(id),\n  created_at               timestamptz default now(),\n  updated_at               timestamptz default now(),\n  unique (flask_id)\n"
+    },
+    {
+      "name": "batch_flask_endpoints",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id              uuid primary key default gen_random_uuid(),\n  flask_id        uuid not null references batch_flasks(id) on delete cascade,\n  batch_id        uuid not null references batches(id)      on delete cascade,\n  total_hours     numeric,\n  final_ph        numeric(4,2),\n  aroma           text,\n  colour_desc     text,\n  texture         text,\n  sensory_overall text check (sensory_overall in ('pass', 'fail')),\n  gram_stain      text,\n  notes           text,\n  declared_by     uuid references employees(id),\n  declared_at     timestamptz default now(),\n  unique (flask_id)\n"
+    },
+    {
+      "name": "batch_flask_straining",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id                    uuid primary key default gen_random_uuid(),\n  flask_id              uuid not null references batch_flasks(id) on delete cascade,\n  batch_id              uuid not null references batches(id)      on delete cascade,\n  method                text,\n  straining_temp        text,\n  filtrate_colour       text,\n  filtrate_clarity      text,\n  pre_straining_vol_ml  numeric,\n  post_straining_vol_ml numeric,\n  recovery_pct          numeric(5,2),\n  filtrate_ph           numeric(4,2),\n  notes                 text,\n  operator_id           uuid references employees(id),\n  supervised_by         uuid references employees(id),\n  created_at            timestamptz default now(),\n  updated_at            timestamptz default now(),\n  unique (flask_id)\n"
+    },
+    {
+      "name": "batch_flask_extract_addition",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id                      uuid primary key default gen_random_uuid(),\n  flask_id                uuid not null references batch_flasks(id) on delete cascade,\n  batch_id                uuid not null references batches(id)      on delete cascade,\n  mushroom_species        text,\n  mushroom_lot_id         uuid references inventory_stock(id),\n  mushroom_weight_g       numeric,\n  extraction_water_ml     numeric,\n  extraction_temp_c       numeric(5,2),\n  extraction_duration_min numeric,\n  extract_recovered_ml    numeric,\n  extract_ph              numeric(4,2),\n  ph_adjustment_done      boolean default false,\n  ph_adjustment_notes     text,\n  extract_vol_added_ml    numeric,\n  addition_pct            numeric(5,2),\n  final_product_ph        numeric(4,2),\n  addition_temp           text,\n  addition_method         text,\n  colour_before           text,\n  colour_after            text,\n  laf_used                boolean default true,\n  notes                   text,\n  operator_id             uuid references employees(id),\n  created_at              timestamptz default now(),\n  updated_at              timestamptz default now(),\n  unique (flask_id)\n"
+    },
+    {
+      "name": "batch_flask_qc_samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id                uuid primary key default gen_random_uuid(),\n  flask_id          uuid not null references batch_flasks(id) on delete cascade,\n  batch_id          uuid          references batches(id)      on delete cascade,\n  sample_id         text not null,        -- qcs-yyyy-mm-xxxx auto-generated in qcholdpanel\n  sampling_date     date default current_date,\n  sampling_operator uuid references employees(id),\n  volume_ml         numeric,\n  testing_location  text check (testing_location in ('in-house', 'nabl external lab')),\n  external_lab      text,\n  ext_ref_number    text,\n  sample_sent_date  date,\n  expected_date     date,\n  created_at        timestamptz default now(),\n  unique (flask_id)                        -- one sample record per flask\n"
+    },
+    {
+      "name": "batch_flask_qc_tests",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id           uuid primary key default gen_random_uuid(),\n  sample_id    uuid not null references batch_flask_qc_samples(id) on delete cascade,\n  flask_id     uuid          references batch_flasks(id) on delete cascade,\n  test_name    text not null,\n  target_spec  text,\n  result_value text,\n  result_unit  text,\n  pass_fail    text check (pass_fail in ('pass', 'fail', 'pending', 'n/a')) default 'pending',\n  tested_at    date,\n  created_at   timestamptz default now()\n"
+    },
+    {
+      "name": "batch_flask_release_record",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id               uuid primary key default gen_random_uuid(),\n  flask_id         uuid not null references batch_flasks(id) on delete cascade,\n  batch_id         uuid not null references batches(id)      on delete cascade,\n  released_by      uuid references employees(id),\n  release_date     timestamptz default now(),\n  yield_volume_ml  numeric,\n  bottles_produced integer,\n  bottle_volume_ml numeric,\n  release_notes    text,\n  bmr_url          text,\n  created_at       timestamptz default now(),\n  unique (flask_id)\n"
+    },
+    {
+      "name": "batch_flask_rejection_record",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id               uuid primary key default gen_random_uuid(),\n  flask_id         uuid not null references batch_flasks(id) on delete cascade,\n  batch_id         uuid not null references batches(id)      on delete cascade,\n  rejected_by      uuid references employees(id),\n  rejection_date   timestamptz default now(),\n  root_cause       text not null,\n  rejection_stage  text,\n  disposal_method  text check (disposal_method in (\n    'autoclave + drain', 'incineration', 'return for reprocessing', 'other'\n  )),\n  capa_required    boolean default false,\n  notes            text,\n  created_at       timestamptz default now(),\n  unique (flask_id)\n"
+    },
+    {
+      "name": "batch_fermentation_feeds",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id          uuid primary key default gen_random_uuid(),\n  batch_id    uuid,\n  flask_id    uuid,\n  flask_label text,\n  feed_type   text not null,\n  volume_ml   numeric,\n  ph_before   numeric,\n  ph_after    numeric,\n  reason      text,\n  logged_by   uuid,\n  logged_at   timestamptz default now(),\n  created_at  timestamptz default now()\n"
+    },
+    {
+      "name": "stage_transitions",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  batch_id uuid references batches(id) on delete cascade,\n  from_stage text,\n  to_stage text not null,\n  changed_by uuid references employees(id),\n  notes text,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "batch_costs",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  batch_id uuid references batches(id) unique,\n  material_costs numeric default 0,\n  labor_costs numeric default 0,\n  overhead_costs numeric default 0,\n  total_cost numeric default 0,\n  calculated_at timestamp with time zone default now()\n"
+    }
+  ],
+  "Inventory": [
+    {
+      "name": "inventory_movements",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default gen_random_uuid() primary key,\n  stock_id uuid references inventory_stock(id) on delete cascade,\n  type varchar(20) not null, -- 'receive', 'issue', 'adjust'\n  quantity decimal(12,2) not null,\n  purpose varchar(100), -- 'production use', 'qc testing', 'r&d', 'internal use', 'sample', 'disposal'\n  notes text,\n  issued_by uuid references auth.users(id), -- tracks logging user\n  created_at timestamp with time zone default timezone('utc'::text, now()) not null\n"
+    },
+    {
+      "name": "vendors",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  name text not null,\n  category text, \n  status text default 'approved', \n  contact_info jsonb,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "inventory_items",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  name text not null,\n  category text not null, \n  unit text not null,\n  min_stock_level numeric default 0,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "inventory_stock",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  item_id uuid references inventory_items(id) on delete cascade,\n  vendor_id uuid references vendors(id),\n  supplier_batch_number text,\n  received_quantity numeric not null,\n  current_quantity numeric not null,\n  expiry_date date,\n  coa_expiry_date date,\n  sds_expiry_date date,\n  location text,\n  status text default 'available', \n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "inventory_usage",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  stock_id uuid references inventory_stock(id) on delete cascade,\n  batch_id uuid references batches(id) on delete cascade, -- made optional for equipment maintenance\n  equipment_id uuid, -- for maintenance parts\n  ticket_id uuid, -- for maintenance parts\n  quantity_used numeric not null,\n  logged_by uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    }
+  ],
+  "QualityCompliance": [
+    {
+      "name": "emp_sampling_locations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  area text not null,\n  location_code text,\n  sampling_method text check (sampling_method in ('settle plate','contact plate','active air','personnel','surface swab')),\n  frequency text default 'weekly',\n  alert_limit_cfu numeric,\n  action_limit_cfu numeric,\n  is_active boolean default true,\n  created_at timestamptz default now()\n"
+    },
+    {
+      "name": "emp_samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid primary key default gen_random_uuid(),\n  location_id uuid references emp_sampling_locations(id) on delete cascade,\n  sampled_by uuid references employees(id) on delete set null,\n  sampled_at timestamptz not null default now(),\n  incubation_temp_c numeric,\n  incubation_hours integer default 48,\n  colony_count integer,\n  organism_identified text,\n  result text check (result in ('pass','alert','action','pending')) default 'pending',\n  notes text,\n  capa_deviation_id uuid references deviations(id) on delete set null,\n  created_at timestamptz default now()\n"
+    },
+    {
+      "name": "deviations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  batch_id uuid references batches(id) on delete cascade,\n  title text not null,\n  severity text not null, \n  source text not null, \n  description text not null,\n  reported_by uuid references employees(id),\n  status text default 'open', \n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "capa_actions",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  investigation_id uuid references investigations(id) on delete cascade,\n  action_type text not null, \n  task_id uuid references tasks(id) on delete cascade,\n  effectiveness_verified boolean default false,\n  verified_by uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "customer_complaints",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  customer_name text not null,\n  product_batch uuid, -- can't easily reference batches if they are in another schema context, but assume batches(id) exists\n  complaint_details text not null,\n  capa_id uuid, \n  status text default 'open',\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "internal_audits",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  audit_title text not null,\n  auditor_id uuid references employees(id),\n  audit_date date,\n  status text default 'planned',\n  findings text,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "sops",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  title text not null,\n  category text not null,\n  file_url text not null,\n  version text default '1.0',\n  is_active boolean default true,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "sop_quizzes",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  sop_id uuid references sops(id) on delete cascade,\n  questions jsonb, \n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "sop_quiz_results",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  quiz_id uuid references sop_quizzes(id) on delete cascade,\n  employee_id uuid references employees(id),\n  score numeric not null,\n  passed boolean not null,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "sop_targets",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  sop_id uuid references sops(id) on delete cascade, \n  target_role text not null, \n  created_at timestamp with time zone default now()\n"
+    }
+  ],
+  "HR_Admin": [
+    {
+      "name": "released_employee_codes",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id serial primary key,\n  employee_code text not null unique,\n  released_at timestamptz default now(),\n  released_by uuid references employees(id),\n  reason text default 'designation_change'\n"
+    },
+    {
+      "name": "hr_shifts",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  name text not null,\n  start_time time not null,\n  end_time time not null,\n  is_night_shift boolean default false,\n  grace_period_mins integer default 15,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "hr_holidays",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  name text not null,\n  holiday_date date not null,\n  is_mandatory boolean default true,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "leave_encashments",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  employee_id uuid references employees(id),\n  leave_type text not null,\n  days_encashed numeric not null,\n  amount numeric not null,\n  status text default 'pending', -- pending, approved, paid\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "hr_delegations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  delegator_id uuid references employees(id),\n  delegatee_id uuid references employees(id),\n  start_date date not null,\n  end_date date not null,\n  status text default 'active',\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "hr_tax_profiles",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  employee_id uuid references employees(id) unique,\n  pan_number text,\n  uan_number text,\n  esi_number text,\n  pf_applicable boolean default true,\n  esi_applicable boolean default false,\n  pt_applicable boolean default true,\n  tds_percentage numeric default 0,\n  standard_deduction numeric default 50000,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "hr_expenses",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  employee_id uuid references employees(id),\n  title text not null,\n  amount numeric not null,\n  receipt_url text,\n  status text default 'pending', -- pending, approved, rejected, paid\n  payslip_id uuid, -- will link to payslips when processed\n  created_at timestamp with time zone default now()\n"
+    }
+  ],
+  "Equipment": [
+    {
+      "name": "equipment",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  name text not null,\n  model text,\n  serial_number text unique,\n  calibration_due_date date,\n  status text default 'operational',\n  iq_doc_url text,\n  oq_doc_url text,\n  pq_doc_url text,\n  pm_frequency_days integer,\n  next_pm_date date,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "calibration_logs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  equipment_id uuid references equipment(id) on delete cascade,\n  log_type text default 'calibration',\n  calibration_date date default current_date,\n  next_due_date date,\n  result text, \n  certificate_url text,\n  logged_by uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "equipment_tickets",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  equipment_id uuid references equipment(id) on delete cascade,\n  title text not null,\n  description text,\n  severity text default 'medium',\n  status text default 'open',\n  reported_by uuid references employees(id),\n  resolved_by uuid references employees(id),\n  resolution_notes text,\n  created_at timestamp with time zone default now(),\n  resolved_at timestamp with time zone\n"
+    }
+  ],
+  "Research": [
+    {
+      "name": "sample_incubation_records",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\r\n    id uuid primary key default gen_random_uuid(),\r\n    batch_id uuid references batches(id) on delete set null,\r\n    sample_name text not null,\r\n    sample_category text check (sample_category in ('fermentation ipc', 'cell bank', 'passage', 'subculture', 'other')),\r\n    sample_type text check (sample_type in ('agar plate', 'broth')),\r\n    incubation_date date default current_date,\r\n    incubation_temp_c numeric(5,2),\r\n    start_time timestamptz,\r\n    end_time timestamptz,\r\n    duration_hours numeric,\r\n    od_value numeric(6,3),\r\n    ph_value numeric(4,2),\r\n    staining_method text,\r\n    microscopic_morphology text,\r\n    colony_morphology text,\r\n    sterility_status text check (sterility_status in ('pending', 'sterile', 'contaminated')),\r\n    observation text,\r\n    logged_by uuid references employees(id),\r\n    created_at timestamptz default now()\r\n"
+    }
+  ],
+  "Other": [
+    {
+      "name": "app_settings",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": true,
+      "body": "\n  id uuid default gen_random_uuid() primary key,\n  key varchar(255) unique not null,\n  value jsonb not null default '{}',\n  description text,\n  updated_by uuid references employees(id),\n  updated_at timestamptz default now(),\n  created_at timestamptz default now()\n"
+    },
+    {
+      "name": "formulation_ingredients",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n    id uuid primary key default gen_random_uuid(),\n    formulation_id uuid references formulations(id) on delete cascade,\n    inventory_item_id uuid references inventory_items(id),\n    quantity numeric not null,\n    unit text,\n    notes text,\n    created_at timestamptz default now()\n"
+    },
+    {
+      "name": "samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id               uuid        primary key default gen_random_uuid(),\n  source_type      text        not null\n                     check (source_type in ('batch','growth_study','cell_bank','bioprocess','other')),\n  source_id        text        not null,   -- uuid of batch/growth_study/etc stored as text\n  source_label     text,                  -- \"batch oxy-b-001\", \"growth study gs-007\"\n  flask_id         uuid        references batch_flasks(id) on delete set null,\n  flask_label      text,                  -- denormalised for display speed\n  log_hour         numeric,              -- elapsed hours at collection\n  timepoint_label  text,                 -- \"t+24h\", \"day 3\", \"passage p2\"\n  sample_label     text        not null,  -- full label: \"batch oxy-b-001 · flask a t+24h\"\n  collected_by     uuid        references employees(id) on delete set null,\n  collected_at     timestamptz not null default now(),\n  status           text        not null default 'pending'\n                     check (status in ('pending','partial','complete')),\n  notes            text,\n  created_at       timestamptz not null default now()\n"
+    },
+    {
+      "name": "test_results",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id                              uuid        primary key default gen_random_uuid(),\n  sample_id                       uuid        not null references samples(id) on delete cascade,\n  test_type                       text        not null\n                                    check (test_type in ('ph','od','sterility','plate_analysis','custom')),\n  numeric_value                   numeric,\n  text_value                      text,\n  unit                            text,\n  skipped                         boolean     not null default false,\n  skip_reason                     text,\n  -- test-specific fields: wavelength, dilution, media_type, colony_count,\n  --   incubation_temp_c, expected_hours, culture_turbidity, culture_color, etc.\n  detail                          jsonb       default '{}',\n  -- bridge fks — point to the synced record in the existing module table\n  synced_fermentation_reading_id  uuid        references batch_fermentation_readings(id) on delete set null,\n  synced_growth_measurement_id    uuid,       -- uuid only, avoids hard dep on growth_measurements pk type\n  synced_incubation_record_id     uuid        references sample_incubation_records(id) on delete set null,\n  entered_by                      uuid        references employees(id) on delete set null,\n  entered_at                      timestamptz not null default now(),\n  notes                           text,\n  created_at                      timestamptz not null default now()\n"
+    },
+    {
+      "name": "aql_sampling_plans",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id             uuid primary key default gen_random_uuid(),\n  item_id        uuid references inventory_items(id) on delete cascade,\n  aql_level      text default 'ii',\n  sample_size_pct numeric default 10,\n  accept_number  integer default 0,\n  reject_number  integer default 1,\n  tests_required text[] default '{}',\n  created_at     timestamptz default now()\n"
+    },
+    {
+      "name": "lab_logs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  batch_id uuid references batches(id) on delete cascade,\n  process_type text not null, \n  parameter_name text not null, \n  parameter_value numeric not null,\n  logged_by uuid references employees(id),\n  notes text,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "investigations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  deviation_id uuid references deviations(id) on delete cascade,\n  why_1 text,\n  why_2 text,\n  why_3 text,\n  why_4 text,\n  why_5 text,\n  root_cause_identified text,\n  investigator_id uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "system_config",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n    id uuid primary key default gen_random_uuid(),\n    key varchar(255) unique not null,\n    value jsonb not null,\n    description text,\n    updated_at timestamptz default now()\n"
+    },
+    {
+      "name": "lookup_categories",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n    id uuid primary key default gen_random_uuid(),\n    type varchar(50) not null, -- e.g., 'compliance', 'sop', 'calendar'\n    name varchar(255) not null,\n    color varchar(50), -- optional ui color string\n    created_at timestamptz default now(),\n    unique(type, name)\n"
+    },
+    {
+      "name": "stability_timepoints",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  study_id uuid references shelf_life_studies(id) on delete cascade,\n  timepoint_days integer not null,\n  test_results jsonb,\n  evidence_photo_url text,\n  is_oos boolean default false, \n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "tasks",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  title text not null,\n  description text,\n  status text default 'open',\n  due_date date,\n  assigned_to uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "rbac_matrix",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  role_name text not null,\n  module_name text not null,\n  can_read boolean default true,\n  can_write boolean default false,\n  can_delete boolean default false,\n  created_at timestamp with time zone default now(),\n  unique(role_name, module_name)\n"
+    },
+    {
+      "name": "system_logs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  event_type text not null,\n  event_details jsonb,\n  user_id uuid references employees(id),\n  ip_address text,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "sso_configurations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  provider_name text not null,\n  client_id text not null,\n  client_secret text,\n  domain_hint text,\n  is_active boolean default true,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "api_keys",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  key_name text not null,\n  key_hash text not null,\n  scopes jsonb,\n  is_revoked boolean default false,\n  created_by uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "ip_whitelist",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  cidr_block text not null,\n  description text,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "bioprocess_statistics",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  experiment_id uuid, -- references whatever bioprocess experiment table exists (e.g. bioprocess_experiments)\n  anova_results jsonb,\n  r_squared numeric,\n  doe_matrix jsonb,\n  contour_plot_data jsonb,\n  calculated_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "scale_down_models",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  bench_scale_batch_id uuid references batches(id),\n  production_scale_batch_id uuid references batches(id),\n  scaling_factor numeric not null,\n  comparability_score numeric,\n  notes text,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "predictive_models",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  model_name text not null,\n  version text not null,\n  target_variable text not null,\n  confidence_interval numeric,\n  feature_weights jsonb,\n  is_active boolean default true,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "chat_retention_policies",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  context_type text not null, -- e.g., 'batch', 'general', 'hr'\n  retention_days integer not null,\n  auto_archive boolean default true,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "chat_attachments",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  message_id uuid, -- references whatever chat message table exists (e.g., messages(id))\n  file_name text not null,\n  file_url text not null,\n  encryption_status text default 'unencrypted', -- 'encrypted', 'unencrypted'\n  uploaded_by uuid references employees(id),\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "shift_handovers",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  outgoing_shift_id uuid references employees(id),\n  incoming_shift_id uuid references employees(id),\n  handover_notes text not null,\n  critical_alerts text,\n  signed_off_at timestamp with time zone,\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "user_preferences",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  user_id uuid references employees(id) unique,\n  dashboard_layout jsonb, -- stores widget positioning and toggles\n  created_at timestamp with time zone default now()\n"
+    },
+    {
+      "name": "scada_streams",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": false,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": false,
+      "body": "\n  id uuid default uuid_generate_v4() primary key,\n  equipment_id uuid references equipment(id),\n  batch_id uuid references batches(id),\n  sensor_type text not null, -- e.g., 'ph', 'do', 'temperature', 'agitation'\n  sensor_value numeric not null,\n  unit text,\n  timestamp timestamp with time zone default now()\n"
+    }
+  ]
+}
