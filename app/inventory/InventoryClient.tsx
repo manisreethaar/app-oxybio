@@ -1303,18 +1303,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                             {(item as any).creator && (
                               <CreatorBadge initials={(item as any).creator.initials} fullName={(item as any).creator.full_name} size="sm" />
                             )}
-                            {isAdmin ? (
+                            {canEditItems ? (
                               <>
                                 <button
                                   onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
                                   className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm">
                                   <FileText className="w-3.5 h-3.5" />
                                 </button>
-                                <button
-                                  onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
-                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
+                                    className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </>
                             ) : (item as any).created_by === employeeProfile?.id ? (
                               <EditRequestButton
@@ -1335,12 +1337,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                                 allowDelete
                                 onSuccess={() => fetchData(0, false)}
                               />
-                            ) : canEditItems ? (
-                              <button
-                                onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm">
-                                <FileText className="w-3.5 h-3.5" />
-                              </button>
                             ) : null}
                           </div>
                         )}
