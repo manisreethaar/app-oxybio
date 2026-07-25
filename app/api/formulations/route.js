@@ -44,10 +44,16 @@ export async function POST(request) {
     const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();
-    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml } = body;
+    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
 
     const codeErr = validateCode(code);
     if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
+
+    let parsedYield = null;
+    if (yield_predicted_ml !== undefined && yield_predicted_ml !== '') {
+      const val = parseFloat(yield_predicted_ml);
+      if (!isNaN(val)) parsedYield = val;
+    }
     const normCode = code.trim().toUpperCase();
 
     let nextVersion = 1;
@@ -75,6 +81,9 @@ export async function POST(request) {
       base_version_id: base_version_id || null,
       status: 'Draft',
       category: category || 'Fermentation',
+      nutritional_info: nutritional_info || {},
+      yield_predicted_ml: parsedYield,
+      regulatory_claims: regulatory_claims || []
     }).select().single();
 
     if (error) throw error;
@@ -157,11 +166,17 @@ export async function PUT(request) {
     const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();
-    const { id, name, ingredients, notes, category, base_volume_ml } = body;
+    const { id, name, ingredients, notes, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
     let { code } = body;
 
     const codeErr = validateCode(code);
     if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
+
+    let parsedYield = null;
+    if (yield_predicted_ml !== undefined && yield_predicted_ml !== '') {
+      const val = parseFloat(yield_predicted_ml);
+      if (!isNaN(val)) parsedYield = val;
+    }
     code = code.trim().toUpperCase();
 
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
@@ -176,7 +191,10 @@ export async function PUT(request) {
         ingredients, 
         notes, 
         base_volume_ml: base_volume_ml || 1000, 
-        ...(category ? { category } : {})
+        ...(category ? { category } : {}),
+        nutritional_info: nutritional_info || {},
+        yield_predicted_ml: parsedYield,
+        regulatory_claims: regulatory_claims || []
       })
       .eq('id', id)
       .select()
