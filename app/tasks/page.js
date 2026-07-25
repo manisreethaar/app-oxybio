@@ -64,9 +64,11 @@ export default function TasksPage() {
       assigned_user_ids: z.array(z.string()),
       due_date: z.string().min(1, 'Date required'),
       priority: z.enum(['low', 'medium', 'high', 'urgent']),
-      sop_id: z.string().optional()
+      sop_id: z.string().optional(),
+      is_routine: z.boolean().default(false),
+      routine_interval: z.string().optional()
     })),
-    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', sop_id: '' }
+    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', sop_id: '', is_routine: false, routine_interval: '' }
   });
   const watchedAssignees = watch('assigned_user_ids') || [];
 
@@ -231,7 +233,9 @@ export default function TasksPage() {
             assigned_to: assignees[0], // Edit currently supports 1-to-1
             due_date: data.due_date, 
             priority: data.priority, 
-            checklist: checklistBuffer
+            checklist: checklistBuffer,
+            is_routine: data.is_routine,
+            routine_interval: data.is_routine ? data.routine_interval : null
           }) 
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Failed to update task');
@@ -241,7 +245,9 @@ export default function TasksPage() {
           title: data.title, description: data.description, assigned_to: uid,
           due_date: data.due_date, priority: data.priority, checklist: checklistBuffer,
           sop_id: data.sop_id || null,
-          is_personal_reminder: !isAdmin
+          is_personal_reminder: !isAdmin,
+          is_routine: data.is_routine,
+          routine_interval: data.is_routine ? data.routine_interval : null
         }));
         const res = await fetch('/api/tasks', { 
           method: 'POST', 
@@ -274,7 +280,9 @@ export default function TasksPage() {
       description: task.description || '',
       assigned_user_ids: [task.assigned_to],
       due_date: task.due_date ? task.due_date.split('T')[0] : '',
-      priority: task.priority || 'medium'
+      priority: task.priority || 'medium',
+      is_routine: task.is_routine || false,
+      routine_interval: task.routine_interval || ''
     });
     setChecklistBuffer(task.checklist || []);
     setShowCreate(true);
@@ -363,7 +371,7 @@ export default function TasksPage() {
     if (success) { if (selectedTask?.id === task.id) setSelectedTask(t => ({ ...t, checklist: updated })); fetchTasks(); }
   };
 
-  const handleSubmitForReview = async (e) => {
+  const handleSubmitForReview = async (e, submittedPin = '') => {
     e.preventDefault(); if (actionLoading) return;
     setActionLoading(true); setUploading(true);
     let proofUrl = null;
@@ -381,7 +389,7 @@ export default function TasksPage() {
       }
 
       const success = await executeTaskPatch('submit_review', selectedTask.id, {
-        completion_note: completionNote, proof_url: proofUrl, logged_minutes: finalMins, is_personal_reminder: selectedTask.is_personal_reminder
+        completion_note: completionNote, proof_url: proofUrl, logged_minutes: finalMins, is_personal_reminder: selectedTask.is_personal_reminder, pin: submittedPin
       });
 
       if (success) { 
@@ -588,6 +596,24 @@ export default function TasksPage() {
               </select>
               <p className="text-xs text-slate-400 mt-1">The assignee must e-sign this SOP before they can start the task.</p>
             </div>
+            <div className="md:col-span-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
+                <input type="checkbox" {...regTask('is_routine')} className="rounded text-navy focus:ring-navy w-4 h-4" />
+                This is a Routine Task
+              </label>
+              {watch('is_routine') && (
+                <div className="mt-3">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Recurrence Interval</label>
+                  <select {...regTask('routine_interval')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
+                    <option value="">Select interval...</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly (Every 7 Days)</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Steps</label>
               <div className="flex gap-2 mb-2">

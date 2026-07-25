@@ -1,5 +1,5 @@
 'use client';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   CheckSquare, Timer, Eye, CheckCircle2, Paperclip,
   Trash2, X, Activity, BarChart2, MessageSquare
@@ -53,8 +53,14 @@ export default function TaskDetailModal({
 }) {
   const fileRef = useRef(null);
   const router = useRouter();
+  const [pin, setPin] = useState('');
 
   if (!selectedTask) return null;
+
+  const handleLocalSubmitForReview = (e) => {
+    e.preventDefault();
+    onSubmitForReview(e, pin);
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -62,7 +68,10 @@ export default function TaskDetailModal({
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-start justify-between sticky top-0 bg-white z-10">
           <div>
-            <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{selectedTask.priority}</span>
+            <div className="flex gap-2 items-center">
+              <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{selectedTask.priority}</span>
+              {selectedTask.is_routine && <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase border bg-blue-50 text-blue-700 border-blue-100 flex items-center gap-1"><Activity className="w-3 h-3"/> Routine ({selectedTask.routine_interval})</span>}
+            </div>
             <h3 className="text-base font-bold text-slate-900 mt-1">{selectedTask.title}</h3>
             {linkedSop && (
               <a href="/sops" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100">
@@ -213,8 +222,14 @@ export default function TaskDetailModal({
 
           {/* Submit for Review */}
           {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status === 'in-progress' && selectedTask.approval_status !== 'pending_review' && (
-            <form onSubmit={onSubmitForReview} className="space-y-3 border-t border-slate-100 pt-4">
+            <form onSubmit={handleLocalSubmitForReview} className="space-y-3 border-t border-slate-100 pt-4">
               <textarea required value={completionNote} onChange={e => setCompletionNote(e.target.value)} rows="2" placeholder="Describe work done..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-accent outline-none bg-white resize-none"/>
+              {selectedTask.is_routine && (
+                 <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">E-Signature PIN (Required for ALCOA++)</label>
+                    <input type="password" required value={pin} onChange={e => setPin(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono tracking-widest focus:ring-1 focus:ring-accent outline-none bg-white" placeholder="••••" />
+                 </div>
+              )}
               <div className="flex gap-2">
                 <input type="file" ref={fileRef} className="hidden" onChange={e => setProofFile(e.target.files[0])} />
                 <button type="button" onClick={() => fileRef.current.click()} className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 bg-white"><Paperclip className="w-3.5 h-3.5"/> {proofFile ? 'File Attached' : 'Attach Proof'}</button>

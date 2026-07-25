@@ -9,6 +9,8 @@ import {
   canEditLabNotebookEntry,
   validateLabNotebookStatusUpdate,
 } from '@/lib/labNotebook/access';
+import { checkSopCompletionMany } from '@/lib/sop/gate';
+import { isMasterAdmin } from '@/lib/permissions';
 
 async function getEmployeeForUser(supabase, user) {
   const { data } = await supabase
@@ -31,7 +33,7 @@ export async function GET(request, { params }) {
       .from('lab_notebook_entries')
       .select(`
         id, title, objective, methodology, observations, conclusions, status, created_at, countersigned_at,
-        stage_snapshots, batch_stage, attachment_url,
+        stage_snapshots, batch_stage, attachment_url, sop_ids,
         batches (
           id, batch_id, variant
         ),
@@ -73,7 +75,7 @@ export async function PUT(request, { params }) {
     // Verify ownership and current status
     const { data: currentEntry, error: fetchErr } = await supabase
       .from('lab_notebook_entries')
-      .select('created_by, status')
+      .select('created_by, status, sop_ids')
       .eq('id', id)
       .single();
 
@@ -86,6 +88,17 @@ export async function PUT(request, { params }) {
 
     const statusAccess = validateLabNotebookStatusUpdate(currentEntry.status, status);
     if (!statusAccess.allowed) return NextResponse.json({ success: false, error: statusAccess.error }, { status: 400 });
+
+    if (statusAccess.status === 'Submitted' && !isMasterAdmin(user.email)) {
+      const unmet = await checkSopCompletionMany(supabase, currentEntry.sop_ids, emp?.id);
+      if (unmet) {
+        return NextResponse.json({
+          error: `You must complete SOP "${unmet.sop.title}" before submitting this entry.`,
+          sop_violation: true,
+          sop: unmet.sop,
+        }, { status: 403 });
+      }
+    }
 
     const updates = { 
       title, objective, methodology, observations, conclusions, updated_at: new Date().toISOString() 
