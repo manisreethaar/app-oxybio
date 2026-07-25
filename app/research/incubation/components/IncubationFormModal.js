@@ -276,7 +276,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     const hour = Number(h);
     if (!hour || plateReads.some(r => r.hour === hour)) return;
     setPlateReads(prev =>
-      [...prev, { hour, status: 'no_growth', colony_count: '', notes: '', recorded_by: employeeProfile?.full_name || 'Unknown' }]
+      [...prev, { hour, status: 'no_growth', colony_count: '', od_value: '', ph_value: '', notes: '', recorded_by: employeeProfile?.full_name || 'Unknown' }]
         .sort((a, b) => a.hour - b.hour)
     );
     setCustomHour('');
@@ -293,7 +293,9 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     try {
       const readsPayload = plateReads.map(r => ({
         ...r,
-        colony_count: r.colony_count !== '' ? Number(r.colony_count) : null,
+        colony_count: r.colony_count !== '' && r.colony_count != null ? Number(r.colony_count) : null,
+        od_value: r.od_value !== '' && r.od_value != null ? Number(r.od_value) : null,
+        ph_value: r.ph_value !== '' && r.ph_value != null ? Number(r.ph_value) : null,
       }));
       const observation = readsPayload.length > 0
         ? JSON.stringify({ reads: readsPayload, notes: finalNote || '' })
@@ -734,17 +736,44 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Colony Count</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={read.colony_count}
-                              onChange={e => updateRead(read.hour, 'colony_count', e.target.value)}
-                              placeholder="e.g. 50"
-                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
-                            />
-                          </div>
+                          {sampleType === 'Agar Plate' ? (
+                            <div>
+                              <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Colony Count</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={read.colony_count}
+                                onChange={e => updateRead(read.hour, 'colony_count', e.target.value)}
+                                placeholder="e.g. 50"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
+                              />
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">OD Value</label>
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={read.od_value || ''}
+                                  onChange={e => updateRead(read.hour, 'od_value', e.target.value)}
+                                  placeholder="0.500"
+                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">pH Value</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={read.ph_value || ''}
+                                  onChange={e => updateRead(read.hour, 'ph_value', e.target.value)}
+                                  placeholder="4.2"
+                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <div>
                             <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Notes</label>
                             <input

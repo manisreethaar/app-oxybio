@@ -125,6 +125,7 @@ export default function DocumentsPage() {
       setShowUploadModal(false);
       reset();
       fetchDocuments();
+      toast.success("Document uploaded successfully.");
     } catch (err) {
       toast.error("Error: " + err.message);
     } finally {

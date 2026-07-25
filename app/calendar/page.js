@@ -63,6 +63,7 @@ export default function RegulatoryCalendarPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to add milestone');
       setShowNew(false); reset(); fetchMilestones();
+      toast.success('Milestone added successfully');
     } catch (err) { toast.error(err.message); }
     finally { setSubmitting(false); }
   };
