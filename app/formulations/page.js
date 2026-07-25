@@ -129,6 +129,7 @@ export default function FormulationsPage() {
         .from('formulations')
         .select('*, approver:employees!formulations_approved_by_fkey(full_name), creator:employees!formulations_created_by_fkey(id, full_name, initials)')
         .neq('status', 'Archived')
+        .is('archived_at', null)
         .order('created_at', { ascending: false });
       if (!error) setFormulations(data || []);
       if (!error && data?.length > 0) {
