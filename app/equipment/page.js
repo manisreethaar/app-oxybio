@@ -129,6 +129,7 @@ export default function EquipmentPage() {
       });
       const resData = await res.json();
       if (res.ok) {
+        toast.success(isEdit ? "Equipment updated successfully." : "Equipment registered successfully.");
         setIsModalOpen(false);
         resetEquip();
         setActiveDevice(null);
@@ -189,6 +190,7 @@ export default function EquipmentPage() {
 
       setEquipment(equipment.filter((d) => d.id !== deletingId));
       setDeletingId(null);
+      toast.success("Equipment deleted successfully.");
     } catch (err) {
       toast.error("Failed to delete: " + err.message);
     } finally {

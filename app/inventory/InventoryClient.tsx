@@ -275,6 +275,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       setItems(items.filter(i => i.id !== deletingId));
       setStock(stock.filter(s => s.item_id !== deletingId));
       setDeletingId(null);
+      toast.success("Item deleted successfully.");
     } catch (err: any) {
       toast.error("Failed to delete: " + err.message);
     } finally {
@@ -473,6 +474,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       if (!error) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
+        toast.success("Vendor updated successfully.");
         fetchData(0, false);
       } else { toast.error(error.message || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
@@ -498,6 +500,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       // Update items list to reflect unlinked suppliers
       setItems(items.map(i => i.preferred_supplier === deletingId ? { ...i, preferred_supplier: null } : i));
       setDeletingId(null);
+      toast.success("Vendor deleted successfully.");
     } catch (err: any) {
       toast.error('Failed to delete vendor: ' + err.message);
     } finally {
@@ -514,6 +517,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       if (!error) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
+        toast.success("Vendor registered successfully.");
         fetchData(0, false);
       } else { toast.error(error.message || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
