@@ -17,19 +17,29 @@ async function generateBatchId(supabase) {
   const yy = String(now.getFullYear()).slice(-2);
   const prefix = `OB-FER-${yy}-`;
 
-  const { data: lastBatch } = await supabase
+  const { data: batches } = await supabase
     .from('batches')
     .select('batch_id')
     .like('batch_id', `${prefix}%`)
-    .order('batch_id', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('batch_id', { ascending: true });
 
   let seq = 1;
-  if (lastBatch?.batch_id) {
-    const parts = lastBatch.batch_id.split('-');
-    const lastSeq = parseInt(parts[parts.length - 1], 10);
-    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  if (batches && batches.length > 0) {
+    const usedSeqs = batches
+      .map(b => {
+        const parts = b.batch_id.split('-');
+        return parseInt(parts[parts.length - 1], 10);
+      })
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b);
+      
+    for (const num of usedSeqs) {
+      if (num === seq) {
+        seq++;
+      } else if (num > seq) {
+        break; // found a gap
+      }
+    }
   }
 
   return `${prefix}${String(seq).padStart(3, '0')}`;
