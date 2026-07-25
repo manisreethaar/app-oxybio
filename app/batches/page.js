@@ -323,8 +323,8 @@ export default function BatchesPage() {
   }, [watchFormulationId]);
 
   // ─── Data Fetching ─────────────────────────────────────────
-  const fetchBatches = useCallback(async () => {
-    setLoadingBatches(true);
+  const fetchBatches = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoadingBatches(true);
     try {
       const [activeRes, completedRes, archivedRes] = await Promise.all([
         supabase
@@ -435,8 +435,8 @@ export default function BatchesPage() {
 
     // Realtime — batch stage advances, flask updates, new batches appear live
     const channel = supabase.channel('batches_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' }, () => fetchBatches())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'batch_flasks' }, () => fetchBatches())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' }, () => fetchBatches(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batch_flasks' }, () => fetchBatches(true))
       .subscribe();
 
     return () => supabase.removeChannel(channel);

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Plus, FlaskConical, Beaker, Clock, CheckCircle2, AlertCircle,
   Search, Trash2, BookOpen, ChevronDown, ChevronRight, ExternalLink, Layers,
-  ChevronUp, TrendingUp, TrendingDown,
+  ChevronUp, TrendingUp, TrendingDown, LayoutGrid, List, Columns, Table as TableIcon
 } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import IncubationFormModal from './components/IncubationFormModal';
@@ -701,6 +701,19 @@ export default function SampleIncubationPage() {
   const [confirmDeleteId, setConfirmDeleteId]   = useState(null);
   const [expandedSources, setExpandedSources]   = useState(new Set());
   const [expandedTimepoints, setExpandedTimepoints] = useState(new Set());
+  const [viewMode, setViewMode] = useState('kanban');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('incubation_view_mode');
+    if (saved && ['list', 'kanban', 'table'].includes(saved)) {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('incubation_view_mode', mode);
+  };
 
   const canDelete = ['admin', 'ceo', 'cto'].includes(role);
 
@@ -871,8 +884,33 @@ export default function SampleIncubationPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="card p-3 flex flex-col sm:flex-row gap-3">
+      {/* Filters & Views */}
+      <div className="card p-3 flex flex-col md:flex-row gap-3 justify-between">
+        <div className="flex gap-2 bg-slate-100 p-1 rounded-lg self-start">
+          {[
+            { id: 'kanban', icon: Columns, label: 'Kanban' },
+            { id: 'list',   icon: List,    label: 'List' },
+            { id: 'table',  icon: TableIcon, label: 'Table' },
+          ].map(v => {
+            const Icon = v.icon;
+            return (
+              <button
+                key={v.id}
+                onClick={() => handleViewModeChange(v.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  viewMode === v.id
+                    ? 'bg-white text-navy shadow-sm border border-slate-200'
+                    : 'text-slate-500 hover:bg-slate-200 border border-transparent'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{v.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1 md:flex-initial">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -891,9 +929,10 @@ export default function SampleIncubationPage() {
           <option value="ongoing">Ongoing only</option>
           <option value="completed">Completed only</option>
         </select>
+        </div>
       </div>
 
-      {/* Grouped view */}
+      {/* Views */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2].map(i => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
@@ -907,8 +946,11 @@ export default function SampleIncubationPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
-          {grouped.map(src => {
+        <>
+          {/* LIST VIEW */}
+          {viewMode === 'list' && (
+            <div className="space-y-3">
+              {grouped.map(src => {
             const isExpanded        = expandedSources.has(src.key);
             const allRecords        = [...src.timepoints.values()].flatMap(tp => tp.records);
             const ongoingCount      = allRecords.filter(r => !r.end_time).length;
@@ -1117,7 +1159,144 @@ export default function SampleIncubationPage() {
               </div>
             );
           })}
-        </div>
+            </div>
+          )}
+
+          {/* KANBAN VIEW */}
+          {viewMode === 'kanban' && (
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+              {grouped.map(src => {
+                const allRecords        = [...src.timepoints.values()].flatMap(tp => tp.records);
+                const ongoingCount      = allRecords.filter(r => !r.end_time).length;
+                const contaminatedCount = allRecords.filter(r => r.sterility_status === 'Contaminated').length;
+
+                return (
+                  <div key={src.key} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
+                    <div className="bg-slate-200/50 rounded-t-xl p-3 border border-b-0 border-slate-200 flex flex-col gap-1.5 shrink-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-slate-900 truncate">{src.label}</span>
+                        {src.batch_status && (
+                          <span className={`text-[10px] font-black uppercase px-1 py-0.5 rounded border ${
+                            src.batch_status === 'released'   ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            src.batch_status === 'rejected'   ? 'bg-red-50 text-red-700 border-red-200' :
+                            src.batch_status === 'fermenting' ? 'bg-slate-50 text-slate-700 border-slate-200' :
+                            'bg-slate-50 text-slate-500 border-slate-200'
+                          }`}>{src.batch_status}</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        {ongoingCount > 0 && <span className="text-xs font-bold text-slate-600">{ongoingCount} ongoing</span>}
+                        {contaminatedCount > 0 && <span className="text-xs font-bold text-red-600">{contaminatedCount} contam</span>}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+                      {[...src.timepoints.values()].map(tp => {
+                        const replicateGroups = (() => {
+                          const groups = new Map();
+                          const singles = [];
+                          for (const r of tp.records) {
+                            if (!r.replicate_label || r.replicate_label === 'None') {
+                              singles.push(r);
+                              continue;
+                            }
+                            const gKey = `${r.batch_id || ''}|${r.log_hour}|${r.sample_name}|${r.dilution_factor || ''}`;
+                            if (!groups.has(gKey)) groups.set(gKey, []);
+                            groups.get(gKey).push(r);
+                          }
+                          const result = [];
+                          for (const grp of groups.values()) {
+                            if (grp.length > 1) result.push({ type: 'group', records: grp });
+                            else singles.push(...grp);
+                          }
+                          for (const r of singles) result.push({ type: 'single', records: [r] });
+                          result.sort((a, b) => {
+                            if (a.type === 'group' && b.type !== 'group') return -1;
+                            if (b.type === 'group' && a.type !== 'group') return 1;
+                            return (a.records[0].plate_index ?? 0) - (b.records[0].plate_index ?? 0);
+                          });
+                          return result;
+                        })();
+
+                        return (
+                          <div key={tp.key} className="space-y-2">
+                            <div className="flex items-center gap-2 sticky top-0 bg-slate-100/90 backdrop-blur-sm z-10 py-1">
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                              <span className="text-xs font-black text-slate-600">{tp.label}</span>
+                            </div>
+                            <div className="space-y-2 pl-2 border-l border-slate-200 ml-0.5">
+                              {replicateGroups.map((item, idx) => {
+                                if (item.type === 'group') {
+                                  return <ReplicateGroupTile key={`grp-${idx}`} records={item.records} onEdit={openEdit} canDelete={canDelete} deletingId={deletingId} setConfirmDeleteId={setConfirmDeleteId} />;
+                                }
+                                return <SinglePlateTile key={item.records[0].id} record={item.records[0]} onEdit={openEdit} canDelete={canDelete} deletingId={deletingId} setConfirmDeleteId={setConfirmDeleteId} />;
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* TABLE VIEW */}
+          {viewMode === 'table' && (
+            <div className="card overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Source</th>
+                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Sample</th>
+                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Timepoint</th>
+                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Sterility</th>
+                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-right">Count</th>
+                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {samples.map(r => (
+                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-4 py-2 text-sm font-semibold text-slate-700">
+                        {r.source_label || r.batches?.batch_id || 'Other'}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="text-sm font-semibold text-slate-900">{r.sample_name || 'Plate'}</div>
+                        <div className="flex gap-1 mt-0.5">
+                           {r.replicate_label && r.replicate_label !== 'None' && <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200">Rep {r.replicate_label}</span>}
+                           {r.dilution_factor != null && <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200">Dil {r.dilution_factor}</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-sm font-mono text-slate-500">
+                        {r.timepoint_label || (r.log_hour != null ? `T+${r.log_hour}h` : '-')}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className={`text-xs font-black uppercase px-2 py-0.5 rounded border ${sterileChip(r.sterility_status || 'Pending')}`}>
+                          {r.sterility_status || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-sm font-mono text-slate-600 text-right">
+                        {r.colony_count != null ? r.colony_count : '-'}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex justify-center gap-1">
+                          <button onClick={() => openEdit(r)} className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded">Edit</button>
+                          {r.linked_lnb_id && (
+                            <Link href={`/lab-notebook/${r.linked_lnb_id}`} className="px-2 py-1 bg-slate-100 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded">
+                              LNB
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {showModal && (

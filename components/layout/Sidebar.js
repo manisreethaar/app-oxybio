@@ -98,7 +98,7 @@ export default function Sidebar() {
       { name: 'Compliance',  href: '/compliance',              icon: ShieldAlert, show: eCanDo('compliance','view') },
       { name: 'Handover',    href: '/shift-handover',          icon: ArrowRight,  show: eCanDo('batches','view') },
       { name: 'Env. Monitor',href: '/environmental-monitoring', icon: Wind,       show: eCanDo('batches','view') },
-      { name: 'SCADA',       href: '/scada',                   icon: Wifi,        show: eCanDo('equipment','view') },
+      { name: 'SCADA',       href: '/scada',                   icon: Wifi,        show: false },
     ]},
     { title: 'Workspace', items: [
       { name: 'Attendance',  href: '/attendance', icon: Clock,       show: eCanDo('attendance','view') },
