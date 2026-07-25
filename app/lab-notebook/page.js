@@ -7,7 +7,6 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope, CheckCircle, History } from 'lucide-react';
-import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -397,20 +396,10 @@ export default function DigitalLnbPage() {
                     </div>
                   )}
                   {entry.status === 'Draft' && entry.created_by === employeeProfile?.id && (
-                    <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
-                      <EditRequestButton
-                        tableName="lab_notebook_entries"
-                        recordId={entry.id}
-                        moduleLabel="Lab Notebook"
-                        fields={[
-                          { key: 'title', label: 'Experiment Title' },
-                          { key: 'batch_stage', label: 'Stage', type: 'select', options: Object.entries(STAGE_LABELS).map(([v, l]) => ({ value: v, label: l })) },
-                        ]}
-                        currentData={entry}
-                        hasPending={pendingIds.has(entry.id)}
-                        allowDelete={entry.status === 'Draft'}
-                        onSuccess={() => { fetchData(); fetchPendingIds(); }}
-                      />
+                    <div onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/lab-notebook/${entry.id}`); }}>
+                      <button className="flex items-center gap-1 px-2.5 py-1.5 bg-white/70 hover:bg-navy/10 border border-slate-200 hover:border-navy/30 text-slate-500 hover:text-navy rounded-lg text-xs font-bold transition-all">
+                        Edit
+                      </button>
                     </div>
                   )}
                   <div className="p-3 rounded-full bg-slate-50 group-hover:bg-slate-50 transition-colors">

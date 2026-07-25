@@ -242,7 +242,7 @@ export default function LnbEntryPage() {
               {deleting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : 'Delete LNB'}
             </button>
           )}
-          {!isAdmin && canEdit && (
+          {canDelete && !isAdmin && !isAuthor && (
             <EditRequestButton
               tableName="lab_notebook_entries"
               recordId={entry.id}
