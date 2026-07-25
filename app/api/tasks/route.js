@@ -9,7 +9,7 @@ import { createTaskSchema, ACTION_PAYLOAD_SCHEMAS, patchSchema } from '@/lib/sch
 import { canPatchTaskAction } from '@/lib/tasks/access';
 import { requireAccess } from '@/lib/access';
 
-export { createTaskSchema, ACTION_PAYLOAD_SCHEMAS };
+
 
 export async function POST(request) {
   try {

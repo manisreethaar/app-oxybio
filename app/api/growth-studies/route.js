@@ -57,16 +57,64 @@ export async function POST(req) {
 
     const supabaseAdmin = createAdminClient();
 
-    // Generate OB-GCS-YY-NNN code atomically
-    const { data: generatedCode, error: codeErr } = await supabaseAdmin.rpc('generate_gcs_code');
-    if (codeErr) throw codeErr;
+    let study = null;
+    let retries = 5;
+    let lastErr = null;
+    let generatedCode = null;
 
-    const { data: study, error: studyErr } = await supabaseAdmin
-      .from('growth_studies')
-      .insert({ ...studyData, created_by: emp.id, study_code: generatedCode })
-      .select()
-      .single();
-    if (studyErr) throw studyErr;
+    // Try using the RPC first in case it works
+    const { data: rpcCode, error: rpcErr } = await supabaseAdmin.rpc('generate_gcs_code');
+    if (!rpcErr && rpcCode) {
+      generatedCode = rpcCode;
+    }
+
+    while (retries > 0) {
+      if (!generatedCode) {
+        // Fallback: manually find max and increment
+        const { data: latest } = await supabaseAdmin
+          .from('growth_studies')
+          .select('study_code')
+          .like('study_code', 'OB-GCS-%')
+          .order('study_code', { ascending: false })
+          .limit(1);
+          
+        let nextNum = 1;
+        const currentYear = new Date().getFullYear().toString().slice(-2);
+        
+        if (latest && latest.length > 0 && latest[0].study_code) {
+          const match = latest[0].study_code.match(new RegExp(`OB-GCS-${currentYear}-(\\d{3})`));
+          if (match) {
+            nextNum = parseInt(match[1], 10) + 1;
+          }
+        }
+        
+        generatedCode = `OB-GCS-${currentYear}-${nextNum.toString().padStart(3, '0')}`;
+      }
+
+      const { data, error: studyErr } = await supabaseAdmin
+        .from('growth_studies')
+        .insert({ ...studyData, created_by: emp.id, study_code: generatedCode })
+        .select()
+        .single();
+        
+      if (!studyErr) {
+        study = data;
+        break;
+      }
+      
+      if (studyErr.code === '23505') { // unique_violation
+         generatedCode = null;
+         retries--;
+         lastErr = studyErr;
+         continue;
+      } else {
+         throw studyErr;
+      }
+    }
+    
+    if (!study) {
+       throw lastErr || new Error("Failed to generate unique study code");
+    }
 
     if (time_points?.length && study.inoculation_time) {
       const inoc = new Date(study.inoculation_time);

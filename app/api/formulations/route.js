@@ -12,7 +12,7 @@ import {
 
 import { validateCode } from '@/lib/formulations/access';
 import { requireAuth, requireAccess } from '@/lib/access';
-export { validateCode };
+
 
 
 export async function GET(request) {
