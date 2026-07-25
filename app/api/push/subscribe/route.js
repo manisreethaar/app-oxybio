@@ -19,13 +19,15 @@ export async function POST(req) {
 
     const supabaseAdmin = createAdminClient();
 
-    // ilike = case-insensitive match; consistent with how profile lookup works in layout.js
     const { error } = await supabaseAdmin
       .from('employees')
       .update({ push_subscription: subscription })
-      .ilike('email', user.email);
+      .eq('id', user.id);
       
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase Update Error:", error);
+      throw error;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

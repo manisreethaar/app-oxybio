@@ -130,6 +130,8 @@ export default function PushManager() {
           sessionStorage.setItem(sessionKey, '1');
           setSubscribed(true);
           setShowBanner(false);
+        } else {
+          setError('Failed to save push subscription on server.');
         }
       } else if (permission === 'denied') {
         setShowBanner(false);
