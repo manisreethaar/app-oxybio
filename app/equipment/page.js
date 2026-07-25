@@ -263,8 +263,8 @@ export default function EquipmentPage() {
             No equipment matches the current search.
           </div>
         ) : filteredEquipment.map((device) => {
-          const isCalibrationDue = device.calibration_due_date && (new Date(device.calibration_due_date) < new Date());
-          const isNearDue = device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
+          const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (new Date(device.calibration_due_date) < new Date());
+          const isNearDue = device.requires_calibration !== false && device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
 
           return (
             <div key={device.id} className="bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm border-gray-100 hover:border-slate-200 flex flex-col h-full">
