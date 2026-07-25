@@ -7,6 +7,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Skeleton from '../Skeleton';
+import SessionTimeoutProvider from '../SessionTimeoutProvider';
 
 const PushManager    = dynamic(() => import('../PushManager'),    { ssr: false });
 const AIChatbot      = dynamic(() => import('../AIChatbot'),      { ssr: false });
@@ -109,8 +110,9 @@ export default function ClientLayout({ children }) {
   /* ── Main shell ──────────────────────────────────── */
   return (
     <ToastProvider>
-      {/* Root canvas */}
-      <div className="min-h-screen flex relative overflow-x-hidden" style={{ background: '#F4F6F9' }}>
+      <SessionTimeoutProvider timeoutMinutes={30}>
+        {/* Root canvas */}
+        <div className="min-h-screen flex relative overflow-x-hidden" style={{ background: '#F4F6F9' }}>
 
         {/* Decorative background blobs */}
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -193,7 +195,8 @@ export default function ClientLayout({ children }) {
         {shellExtrasReady && <GlobalSearch />}
         {shellExtrasReady && <AIChatbot />}
         {shellExtrasReady && <QuickLogOverlay />}
-      </div>
+        </div>
+      </SessionTimeoutProvider>
     </ToastProvider>
   );
 }

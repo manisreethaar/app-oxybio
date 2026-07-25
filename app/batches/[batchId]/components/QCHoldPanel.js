@@ -5,6 +5,7 @@ import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microsc
 import { syncStageToLNB } from '@/lib/lnbSync';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import ESignatureModal from '@/components/ui/ESignatureModal';
+import ReasonModal from '@/components/ui/ReasonModal';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                    result_unit: 'pH units' },
@@ -106,6 +107,8 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   // G-08: OOS (Out-of-Spec) investigation modal
   const [oosModal,    setOosModal]    = useState(null); // { testId, testName }
   const [oosDesc,     setOosDesc]     = useState('');
+  const [samplesLoaded, setSamplesLoaded] = useState(false);
+  const [rfcConfig, setRfcConfig] = useState({ isOpen: false, payload: null });
   const [raisingOos,  setRaisingOos]  = useState(false);
   // track which tests already have an OOS raised (keyed by testId)
   const [oosRaised,   setOosRaised]   = useState(new Set());
@@ -329,6 +332,24 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   };
 
   const handleUpdateTest = async (testId, field, value) => {
+    const currentTest = tests.find(t => t.id === testId);
+    
+    // Check if modifying a locked record (already submitted/passed/failed)
+    if (currentTest.pass_fail && currentTest.pass_fail !== 'Pending') {
+      setRfcConfig({ isOpen: true, payload: { testId, field, value } });
+      return;
+    }
+    
+    await commitTestUpdate(testId, field, value);
+  };
+  
+  const handleRfcSuccess = async (reason) => {
+    const { testId, field, value } = rfcConfig.payload;
+    setRfcConfig({ isOpen: false, payload: null });
+    await commitTestUpdate(testId, field, value, reason);
+  };
+
+  const commitTestUpdate = async (testId, field, value, reason = null) => {
     let updates = { [field]: value };
     const currentTest = tests.find(t => t.id === testId);
     
@@ -340,7 +361,18 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
     const updatedTests = tests.map(t => t.id === testId ? { ...t, ...updates } : t);
     setTests(updatedTests);
-    await supabase.from('batch_flask_qc_tests').update(updates).eq('id', testId);
+    
+    if (reason) {
+      // Use RPC to set session variable and perform update in same transaction
+      await supabase.rpc('update_qc_test_with_reason', {
+        test_id: testId,
+        payload: updates,
+        reason_text: reason
+      });
+    } else {
+      await supabase.from('batch_flask_qc_tests').update(updates).eq('id', testId);
+    }
+    
     toast.success("Test updated successfully.");
 
     // Sync full QC state to LNB after every test update
@@ -1247,6 +1279,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           setESigModal({ isOpen: false, targetAction: null });
         }}
         title={`Authorize Batch ${eSigModal.targetAction === 'released' ? 'Release' : 'Rejection'}`}
+      />
+      
+      <ReasonModal
+        isOpen={rfcConfig.isOpen}
+        onClose={() => setRfcConfig({ isOpen: false, payload: null })}
+        onSuccess={handleRfcSuccess}
+        title="Reason for Change Required"
+        message="This QC test has already been completed. Any modifications to historical GMP records require a recorded justification under 21 CFR Part 11."
       />
     </div>
   );
