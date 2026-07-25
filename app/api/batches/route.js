@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { can, isMasterAdmin } from '@/lib/permissions';
 import { createBatchSchema as postSchema } from '@/lib/schemas/batches';
 
-export { postSchema };
+
 
 // ─────────────────────────────────────────────────────────────
 // Generate sequential batch ID: OB-FER-YY-NNN
@@ -39,7 +39,7 @@ async function generateBatchId(supabase) {
 // Phase 0 standard QC test template — auto-created at QC Hold stage
 // (not at batch creation, but defined here for reference)
 // ─────────────────────────────────────────────────────────────
-export const STANDARD_QC_TESTS = [
+const STANDARD_QC_TESTS = [
   { test_name: 'pH — Final product',           target_spec: '4.2–4.6',                 result_unit: 'pH units' },
   { test_name: 'CFU count (Viable count)',      target_spec: '≥10⁶ CFU/ml',             result_unit: 'CFU/ml' },
   { test_name: 'Gram stain',                   target_spec: 'Gram-positive rods dominant', result_unit: '' },

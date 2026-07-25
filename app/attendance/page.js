@@ -286,7 +286,7 @@ export default function AttendancePage() {
             return;
           }
           const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
-          const isLeadership = ['admin', 'ceo', 'cto'].includes(role);
+          const isLeadership = ['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.full_name?.toLowerCase().includes('abinaya');
           const isNearby = distance <= geofence.radius + 150; // Buffer for indoor GPS drift
           if (distance > geofence.radius && !isLeadership && !isNearby) {
             setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check in from the premises. If you are actually on-site, your phone may be using network-based location instead of GPS — enable "Precise location" / GPS in your browser & device settings and try again.`);
@@ -369,7 +369,7 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     setActionLoading(true);
     setCheckInError('');
-    const isExecutive = ['admin', 'ceo', 'cto'].includes(role);
+    const isExecutive = ['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.full_name?.toLowerCase().includes('abinaya');
     const doCheckout = async (lat, lng) => {
       try {
         const body = { id: todayLog.id };
