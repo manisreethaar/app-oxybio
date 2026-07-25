@@ -724,8 +724,9 @@ export default function ArchivePage() {
           ? 'This will restore the record back to its original module and make it active again.'
           : 'This will permanently delete the record. This action cannot be undone.'
         }
-        confirmText={confirmAction?.type === 'restore' ? 'Restore' : 'Delete permanently'}
-        variant={confirmAction?.type === 'restore' ? 'default' : 'danger'}
+        confirmText={confirmAction?.type === 'restore' ? 'Restore' : 'Delete'}
+        loadingText={confirmAction?.type === 'restore' ? 'Restoring...' : 'Deleting...'}
+        variant={confirmAction?.type === 'restore' ? 'primary' : 'danger'}
         onConfirm={() => {
           if (!confirmAction) return;
           if (confirmAction.type === 'restore') handleRestore(confirmAction.item, confirmAction.tabId);

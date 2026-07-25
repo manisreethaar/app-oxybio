@@ -1237,6 +1237,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         title="Archive Activity"
         message="This activity will be hidden from the active log."
         confirmText="Archive Activity"
+        loadingText="Archiving..."
         variant="danger"
         requireInput={true}
         inputPlaceholder="Reason for archiving..."
