@@ -62,6 +62,8 @@ export default function TaskDetailModal({
     onSubmitForReview(e, pin);
   };
 
+  const isAssignee = !selectedTask.assigned_to || String(selectedTask.assigned_to) === String(employeeProfile?.id);
+
   return (
     <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white sm:rounded-xl w-full sm:max-w-md overflow-y-auto shadow-xl">
@@ -150,7 +152,7 @@ export default function TaskDetailModal({
           </div>
 
           {/* Progress Slider */}
-          {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
+          {isAssignee && selectedTask.status !== 'done' && (
             <div className="space-y-4 border-y border-slate-100 py-5">
               <div className="flex items-center justify-between mb-1">
                 <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5"/> Work Progress</h4>
@@ -192,7 +194,7 @@ export default function TaskDetailModal({
               <p className="text-xs font-bold text-slate-400 uppercase mb-1.5">Checklist</p>
               <ul className="space-y-1.5">
                 {selectedTask.checklist.map((item, i) => (
-                  <li key={i} onClick={() => selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && onToggleChecklist(selectedTask, i)} className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${item.done ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-white border-slate-100 cursor-pointer'}`}>
+                  <li key={i} onClick={() => isAssignee && onToggleChecklist(selectedTask, i)} className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${item.done ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-white border-slate-100 cursor-pointer'}`}>
                     <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>{item.done && <CheckCircle2 className="w-3 h-3 text-white"/>}</div>
                     <span className={`text-xs font-semibold ${item.done ? 'line-through opacity-70' : ''}`}>{item.text}</span>
                   </li>
@@ -202,7 +204,7 @@ export default function TaskDetailModal({
           )}
 
           {/* Timer */}
-          {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status !== 'done' && (
+          {isAssignee && selectedTask.status !== 'done' && (
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-xs font-black uppercase text-slate-400 mb-1">Cumulative Time Spent</span>
@@ -221,7 +223,7 @@ export default function TaskDetailModal({
           )}
 
           {/* Submit for Review */}
-          {selectedTask.assigned_to && String(selectedTask.assigned_to) === String(employeeProfile?.id) && selectedTask.status === 'in-progress' && selectedTask.approval_status !== 'pending_review' && (
+          {isAssignee && selectedTask.status === 'in-progress' && selectedTask.approval_status !== 'pending_review' && (
             <form onSubmit={handleLocalSubmitForReview} className="space-y-3 border-t border-slate-100 pt-4">
               <textarea required value={completionNote} onChange={e => setCompletionNote(e.target.value)} rows="2" placeholder="Describe work done..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-accent outline-none bg-white resize-none"/>
               {selectedTask.is_routine && (

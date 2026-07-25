@@ -11,7 +11,7 @@ import {
   CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2,
   ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp,
   ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
-  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search, Columns, Table as TableIcon, Layers
+  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search, Columns, Table as TableIcon, Layers, Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -65,12 +65,14 @@ export default function TasksPage() {
       due_date: z.string().min(1, 'Date required'),
       priority: z.enum(['low', 'medium', 'high', 'urgent']),
       sop_id: z.string().optional(),
+      is_team_task: z.boolean().default(false),
       is_routine: z.boolean().default(false),
       routine_interval: z.string().optional()
     })),
-    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', sop_id: '', is_routine: false, routine_interval: '' }
+    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', sop_id: '', is_team_task: false, is_routine: false, routine_interval: '' }
   });
   const watchedAssignees = watch('assigned_user_ids') || [];
+  const isTeamTask = watch('is_team_task');
 
   const [selectedTask, setSelectedTask] = useState(null);
   const [completionNote, setCompletionNote] = useState('');
@@ -155,7 +157,7 @@ export default function TasksPage() {
       let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
 
       if (!isAdmin) {
-        query = query.eq('assigned_to', employeeProfile.id);
+        query = query.or(`assigned_to.eq.${employeeProfile.id},assigned_to.is.null`);
       } else {
         empsPromise = supabase.from('employees').select('id, full_name, role').eq('is_active', true);
       }
@@ -214,9 +216,13 @@ export default function TasksPage() {
     if (actionLoading) return;
     const isEdit = !!editingTaskId;
     const isAdmin = canDo('tasks', 'assign') || isMaster;
-    let assignees = isAdmin ? data.assigned_user_ids : [employeeProfile.id];
     
-    if (isAdmin && assignees.length === 0 && !isEdit) { toast.warn('Select at least one assignee.'); return; }
+    let assignees = isAdmin ? data.assigned_user_ids : [employeeProfile.id];
+    if (data.is_team_task) {
+      assignees = [null]; // One unassigned task for the whole team
+    } else if (isAdmin && assignees.length === 0 && !isEdit) { 
+      toast.warn('Select at least one assignee or mark as a Team Task.'); return; 
+    }
 
     setActionLoading(true);
 
@@ -559,21 +565,35 @@ export default function TasksPage() {
               <textarea {...regTask('description')} rows="2" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Instructions..."/>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Assign To *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Assign To *</label>
+                {isAdmin && (
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-navy">
+                    <input type="checkbox" {...regTask('is_team_task')} className="rounded text-navy focus:ring-navy" />
+                    Team Task (Unassigned)
+                  </label>
+                )}
+              </div>
               {isAdmin ? (
-                <div className="max-h-28 overflow-y-auto bg-slate-50 border border-slate-100 rounded-lg p-2 space-y-1">
-                  {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).map(e => (
-                    <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-slate-700">
-                      <input type="checkbox" checked={watchedAssignees.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...watchedAssignees, e.id] : watchedAssignees.filter(id => id !== e.id); setValue('assigned_user_ids', ids); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
-                      {e.full_name} <span className="text-xs text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
-                    </label>
-                  ))}
-                  {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).length === 0 && (
-                    <p className="text-xs text-slate-400 p-2 italic text-center">No authorized colleagues below your role.</p>
-                  )}
-                </div>
+                isTeamTask ? (
+                  <div className="bg-slate-100 border border-slate-200 rounded-lg p-3 text-xs font-bold text-slate-500 text-center">
+                    This task will be available to all active staff members.
+                  </div>
+                ) : (
+                  <div className="max-h-28 overflow-y-auto bg-slate-50 border border-slate-100 rounded-lg p-2 space-y-1">
+                    {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).map(e => (
+                      <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-slate-700">
+                        <input type="checkbox" checked={watchedAssignees.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...watchedAssignees, e.id] : watchedAssignees.filter(id => id !== e.id); setValue('assigned_user_ids', ids); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
+                        {e.full_name} <span className="text-xs text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
+                      </label>
+                    ))}
+                    {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).length === 0 && (
+                      <p className="text-xs text-slate-400 p-2 italic text-center">No authorized colleagues below your role.</p>
+                    )}
+                  </div>
+                )
               ) : <div className="bg-slate-100 px-3 py-2 rounded-lg text-xs font-bold text-slate-600">Self</div>}
-              {taskErrors.assigned_user_ids && <p className="text-red-500 text-xs mt-1">{taskErrors.assigned_user_ids.message}</p>}
+              {!isTeamTask && taskErrors.assigned_user_ids && <p className="text-red-500 text-xs mt-1">{taskErrors.assigned_user_ids.message}</p>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -812,8 +832,17 @@ export default function TasksPage() {
 
                 <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
                   <div className="flex items-center gap-1.5">
-                    <CreatorBadge initials={task.assigned_user?.initials} fullName={task.assigned_user?.full_name} />
-                    <span>{task.assigned_user?.full_name || 'Staff'}</span>
+                    {task.assigned_to ? (
+                      <>
+                        <CreatorBadge initials={task.assigned_user?.initials} fullName={task.assigned_user?.full_name} />
+                        <span>{task.assigned_user?.full_name || 'Staff'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-5 h-5 rounded-full bg-navy text-white flex items-center justify-center text-[10px] font-black"><Users className="w-3 h-3"/></div>
+                        <span className="text-navy font-bold">Team Task</span>
+                      </>
+                    )}
                   </div>
                   <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{task.due_date ? new Date(task.due_date).toLocaleDateString() : '\u2014'}</span>
                 </div>

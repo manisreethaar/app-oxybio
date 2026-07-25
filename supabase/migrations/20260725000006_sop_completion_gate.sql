@@ -1,5 +1,9 @@
--- SOP completion gate: link bioprocess experiments and lab notebook entries to sop_library
--- tasks.sop_id already exists (see 20260525000001_unified_data_model.sql)
+-- SOP completion gate: link tasks, bioprocess experiments, and lab notebook entries to sop_library
+-- NOTE: tasks.sop_id was expected to already exist (per 20260525000001_unified_data_model.sql)
+-- but was found missing from the live database when this migration was written, hence included here too.
+
+ALTER TABLE public.tasks
+  ADD COLUMN IF NOT EXISTS sop_id UUID REFERENCES public.sop_library(id);
 
 ALTER TABLE public.bioprocess_experiments
   ADD COLUMN IF NOT EXISTS sop_id UUID REFERENCES public.sop_library(id);
