@@ -18,7 +18,8 @@ const createSchema = z.object({
 
 const patchSchema = z.object({
   action: z.enum(['mark_done']),
-  item_id: z.string().uuid()
+  item_id: z.string().uuid(),
+  reason: z.string().optional()
 });
 
 
@@ -51,14 +52,19 @@ export async function PATCH(request) {
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 400 });
 
-    const { item_id } = parsed.data;
+    const { item_id, reason } = parsed.data;
 
     // 1. Fetch current item
     const { data: item, error: fetchErr } = await supabase.from('compliance_items').select('*').eq('id', item_id).single();
     if (fetchErr) throw fetchErr;
 
-    // 2. Mark current done
-    const { error: markError } = await supabase.from('compliance_items').update({ status: 'done' }).eq('id', item_id);
+    // 2. Mark current done with Audit Reason
+    const { error: markError } = await supabase.rpc('update_record_with_reason', {
+      target_table: 'compliance_items',
+      record_id: item_id,
+      payload: { status: 'done' },
+      reason_text: reason || 'Completed compliance task'
+    });
     if (markError) throw markError;
 
     // 3. If recurring, create next iteration
