@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 
 // null-safe string: DB returns null for empty fields, z.string().optional() rejects null
@@ -256,19 +257,24 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   }, [dilutionFactor, volPlated, plateReads, colonyCount]);
 
   useEffect(() => {
-    supabase.from('batches').select('id, batch_id').order('created_at', { ascending: false }).limit(20)
+    withTimeout(supabase.from('batches').select('id, batch_id').order('created_at', { ascending: false }).limit(20), 20000, 'Batches dropdown load timed out')
       .then(({ data }) => {
         if (!data) return;
         setBatches(prev => {
           const ids = new Set(data.map(d => d.id));
           return [...prev.filter(p => !ids.has(p.id)), ...data];
         });
-      });
-    supabase.from('inventory_items').select('id, name, unit').in('category', ['Microbiological Media', 'Lab Consumables'])
-      .order('name').then(({ data }) => setMediaItems(data || []));
-    supabase.from('formulations').select('id, code, name, version, ingredients, category')
+      })
+      .catch(err => console.error('Batches dropdown fetch error:', err));
+    withTimeout(supabase.from('inventory_items').select('id, name, unit').in('category', ['Microbiological Media', 'Lab Consumables'])
+      .order('name'), 20000, 'Media items load timed out')
+      .then(({ data }) => setMediaItems(data || []))
+      .catch(err => console.error('Media items fetch error:', err));
+    withTimeout(supabase.from('formulations').select('id, code, name, version, ingredients, category')
       .eq('status', 'Approved')
-      .order('name').then(({ data }) => setMediaRecipes(data || []));
+      .order('name'), 20000, 'Media recipes load timed out')
+      .then(({ data }) => setMediaRecipes(data || []))
+      .catch(err => console.error('Media recipes fetch error:', err));
   }, [supabase]);
 
 

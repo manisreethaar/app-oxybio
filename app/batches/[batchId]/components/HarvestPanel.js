@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Package, AlertTriangle, Thermometer, CheckCircle2 } from 'lucide-react';
 
 const HARVEST_METHODS = ['Centrifugation', 'Filtration', 'Decantation', 'Gravity settling'];
@@ -38,10 +39,16 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
   const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
-    const [{ data }, { data: eq }] = await Promise.all([
-      supabase.from('batch_stage_harvest').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-      supabase.from('equipment').select('id, name, status').order('name'),
-    ]);
+    let data, eq;
+    try {
+      [{ data }, { data: eq }] = await withTimeout(Promise.all([
+        supabase.from('batch_stage_harvest').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+        supabase.from('equipment').select('id, name, status').order('name'),
+      ]), 20000, 'Harvest data load timed out');
+    } catch (err) {
+      console.error('HarvestPanel fetch error:', err);
+      return;
+    }
     if (eq) setEquipment(eq);
     if (data) {
       setRecord(data);

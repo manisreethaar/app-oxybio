@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { XCircle, Lock } from 'lucide-react';
 
 const DISPOSAL = ['Autoclave + Drain', 'Incineration', 'Return for reprocessing', 'Other'];
@@ -24,20 +25,24 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
   const fetch = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    const [{ data }, mediaPrep] = await Promise.all([
-      supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).single(),
-    ]);
-    if (!isCurrent) return;
-    if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
-    else { setRecord(null); setStage(activeFlask.current_stage || ''); }
-    // Build lot list from media prep
-    const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
-    if (lotIds.length) {
-      const { data: lots } = await supabase.from('inventory_stock')
-        .select('id, supplier_batch_number, inventory_items(name)')
-        .in('id', lotIds);
-      if (lots) setBatchLots(lots);
+    try {
+      const [{ data }, mediaPrep] = await withTimeout(Promise.all([
+        supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).single(),
+      ]), 20000, 'Rejection record load timed out');
+      if (!isCurrent) return;
+      if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
+      else { setRecord(null); setStage(activeFlask.current_stage || ''); }
+      // Build lot list from media prep
+      const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
+      if (lotIds.length) {
+        const { data: lots } = await withTimeout(supabase.from('inventory_stock')
+          .select('id, supplier_batch_number, inventory_items(name)')
+          .in('id', lotIds), 20000, 'Batch lots load timed out');
+        if (lots) setBatchLots(lots);
+      }
+    } catch (err) {
+      console.error('RejectionPanel fetch error:', err);
     }
     return () => { isCurrent = false; };
   }, [activeFlask?.id, activeFlask?.current_stage, batch.id, supabase]);

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Leaf, CheckCircle2 } from 'lucide-react';
 
 const SPECIES = ['Cordyceps militaris', 'Hericium erinaceus', 'Ganoderma lucidum', 'Inonotus obliquus', 'Tremella fuciformis'];
@@ -58,7 +59,13 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    const { data } = await supabase.from('batch_flask_extract_addition').select('*').eq('flask_id', activeFlask.id).single();
+    let data;
+    try {
+      ({ data } = await withTimeout(supabase.from('batch_flask_extract_addition').select('*').eq('flask_id', activeFlask.id).single(), 20000, 'Extract addition load timed out'));
+    } catch (err) {
+      console.error('ExtractAdditionPanel fetch error:', err);
+      return;
+    }
     if (!isCurrent) return;
     if (data) {
       setRecord(data);

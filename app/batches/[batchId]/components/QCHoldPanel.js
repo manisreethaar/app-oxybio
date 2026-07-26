@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microscope, ArrowDownToLine } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -148,8 +149,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   const fetchQcData = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    const { data: sData } = await supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).single();
+    let sData;
+    try {
+      ({ data: sData } = await withTimeout(supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).single(), 20000, 'QC sample load timed out'));
+    } catch (err) {
+      console.error('QCHoldPanel fetch error:', err);
+      return;
+    }
     if (!isCurrent) return;
+    try {
     if (sData) {
       setSample(sData);
       setResultReceivedDate(sData.result_received_date || '');
@@ -163,10 +171,10 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         if (cfg.incubation_temp_c) setPlateTemp(String(cfg.incubation_temp_c));
         if (cfg.expected_hours)   setPlateExpectedHours(String(cfg.expected_hours));
       }
-      const [tRes, incRes] = await Promise.all([
+      const [tRes, incRes] = await withTimeout(Promise.all([
         supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('test_name'),
         fetch(`/api/research/incubation?qc_sample_id=${sData.id}`).then(r => r.json()),
-      ]);
+      ]), 20000, 'QC tests load timed out');
       if (!isCurrent) return;
 
       let fetchedTests = tRes.data || [];
@@ -187,6 +195,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       setIncubations(incRes.success ? incRes.data || [] : []);
     } else {
       setSample(null); setTests([]); setIncubations([]);
+    }
+    } catch (err) {
+      console.error('QCHoldPanel fetch error:', err);
     }
     return () => { isCurrent = false; };
   }, [activeFlask?.id, supabase, toast]);

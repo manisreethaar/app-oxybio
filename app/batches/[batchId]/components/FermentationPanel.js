@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer, Droplet } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -306,16 +307,25 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const fetchData = useCallback(async () => {
     if (!activeFlask?.id) return;
     setLoadingReadings(true);
-    const [rRes, iRes, epRes] = await Promise.all([
-      supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
-      supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
-    ]);
-    if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
-    if (rRes.data) setReadings(rRes.data);
-    if (iRes.data) setInocu(iRes.data); else setInocu(null);
-    setEndpoint(epRes.data ?? null);
-    setLoadingReadings(false);
+    try {
+      // No try/catch/timeout here before meant a stalled connection left
+      // this stuck on "Loading…" forever — fermentation is one of the
+      // longest-running, most-viewed stages, so this was a major source of
+      // "batches has infinite loading."
+      const [rRes, iRes, epRes] = await withTimeout(Promise.all([
+        supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
+        supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
+      ]), 20000, 'Fermentation data load timed out');
+      if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
+      if (rRes.data) setReadings(rRes.data);
+      if (iRes.data) setInocu(iRes.data); else setInocu(null);
+      setEndpoint(epRes.data ?? null);
+    } catch (err) {
+      console.error('FermentationPanel fetch error:', err);
+    } finally {
+      setLoadingReadings(false);
+    }
   }, [batch.id, activeFlask?.id, supabase]);
 
   const fetchPendingIds = async () => {
