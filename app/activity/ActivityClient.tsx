@@ -166,7 +166,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       let query = supabase
         .from('activity_log')
-        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, archived_at, employees(full_name)')
+        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
         .is('archived_at', null)
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
@@ -201,7 +201,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       if (isExecUser) {
         const archivedQuery = supabase
           .from('activity_log')
-          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, archived_at, employees(full_name)')
+          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
           .not('archived_at', 'is', null)
           .order('archived_at', { ascending: false })
           .limit(100);
@@ -213,7 +213,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         setIssuesLoading(true);
         const issuesQuery = supabase
           .from('activity_log')
-          .select('id, created_at, activity_description, issue_description, founder_comment, employee_id, employees(full_name), batch_id, equipment_id')
+          .select('id, created_at, activity_description, issue_description, founder_comment, employee_id, employees!activity_log_employee_id_fkey(full_name), batch_id')
           .eq('issue_observed', true)
           .is('archived_at', null)
           .order('created_at', { ascending: false })
