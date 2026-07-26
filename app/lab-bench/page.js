@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import Link from 'next/link';
 import {
   Plus, Grid3x3, RefreshCw, FlaskConical, Activity,
@@ -217,7 +218,7 @@ export default function LabBenchPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res  = await fetch('/api/lab-bench/queue');
+      const res  = await withTimeout(fetch('/api/lab-bench/queue'), 20000, 'Lab bench load timed out');
       const json = await res.json();
       if (json.success) {
         setQueue(json);

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { CheckSquare, Activity, Bell, Clock, ChevronRight, FlaskConical, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
@@ -93,6 +94,10 @@ export default function StaffDashboard({ employeeProfile }) {
   const fetchStaffData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
+      // A stalled Supabase connection otherwise leaves this page spinning
+      // forever with no way out except a manual refresh — see the same
+      // pattern in app/tasks/page.js and app/profile/page.js.
+      await withTimeout((async () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
@@ -205,6 +210,7 @@ export default function StaffDashboard({ employeeProfile }) {
         if (l.leave_type === 'Earned') e += days;
       });
       setLeaveStats({ casual: c, medical: m, earned: e });
+      })(), 20000, 'Dashboard load timed out');
     } catch (error) {
       console.error('Error fetching staff dashboard:', error);
     } finally {

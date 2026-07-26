@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
@@ -533,11 +534,11 @@ export default function CellBankPage() {
     setLoading(true);
     try {
       const ts = Date.now();
-      const [sRes, pRes, fRes] = await Promise.all([
+      const [sRes, pRes, fRes] = await withTimeout(Promise.all([
         fetch(`/api/research/cell-bank?view=strains&t=${ts}`),
         fetch(`/api/research/cell-bank?view=preparations&t=${ts}`),
         fetch(`/api/formulations?t=${ts}`),
-      ]);
+      ]), 20000, 'Cell bank load timed out');
       const [sJson, pJson, fJson] = await Promise.all([sRes.json(), pRes.json(), fRes.json()]);
       
       if (sJson.success) {

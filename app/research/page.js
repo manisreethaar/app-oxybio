@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -148,7 +149,7 @@ export default function ConsumerResearchPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [panelRes, { data: batchData }] = await Promise.all([
+      const [panelRes, { data: batchData }] = await withTimeout(Promise.all([
         fetch('/api/research'),
         (async () => {
           const { createClient } = await import('@/utils/supabase/client');
@@ -159,7 +160,7 @@ export default function ConsumerResearchPage() {
             .eq('status', 'released')
             .limit(100);
         })(),
-      ]);
+      ]), 20000, 'Research load timed out');
 
       if (!panelRes.ok) throw new Error('Failed to load panels');
       const { data: panelData } = await panelRes.json();

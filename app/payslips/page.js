@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -688,6 +689,7 @@ export default function PayrollPage() {
   const fetchInitial = useCallback(async () => {
     setLoadingInit(true);
     try {
+      await withTimeout((async () => {
       if (isAdmin) {
         const [empRes, slipRes] = await Promise.all([
           supabase.from('employees')
@@ -710,6 +712,7 @@ export default function PayrollPage() {
           .order('created_at', { ascending: false });
         setPayslips(data || []);
       }
+      })(), 20000, 'Payslips load timed out');
     } catch (err) {
       console.error(err);
     } finally {

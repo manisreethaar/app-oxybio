@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
@@ -62,7 +63,7 @@ export default function BioprocessPage() {
   const fetchExperiments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/bioprocess');
+      const res = await withTimeout(fetch('/api/bioprocess'), 20000, 'Bioprocess load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setExperiments(json.data || []);

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import dynamic from 'next/dynamic';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen, Trash2 } from 'lucide-react';
@@ -80,7 +81,7 @@ export default function DocumentsPage() {
       let query = supabase.from('documents').select('*, employees(full_name, initials)');
       if (category !== 'All') { query = query.eq('category', category); }
       if (!['admin', 'ceo', 'cto'].includes(role)) { query = query.eq('access_level', 'all-staff'); }
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await withTimeout(query.order('created_at', { ascending: false }), 20000, 'Documents load timed out');
       if (error) throw error;
       setDocuments(data || []);
       setFilteredDocs(data || []);

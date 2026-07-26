@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import Link from 'next/link';
 import { FlaskConical, Plus, CheckCircle2, Activity, Search, ArrowUpDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -45,7 +46,7 @@ export default function GrowthStudiesPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const fetchStudies = () => {
-    fetch('/api/growth-studies')
+    withTimeout(fetch('/api/growth-studies'), 20000, 'Growth studies load timed out')
       .then(r => r.json())
       .then(d => { setStudies(d.data || []); setLoading(false); })
       .catch(() => setLoading(false));

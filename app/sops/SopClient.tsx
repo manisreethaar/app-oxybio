@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
@@ -52,7 +53,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const fetchSOPs = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true);
+      const { data, error } = await withTimeout(supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true), 20000, 'SOPs load timed out');
       if (error) throw error;
       const mapped = (data || []).map((sop: any) => ({ ...sop, is_acknowledged: (sop.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) }));
       setSops(mapped);
