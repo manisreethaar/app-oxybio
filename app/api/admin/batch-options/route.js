@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,9 @@ async function getAdminEmp(supabase) {
 // GET — returns both experiment_types and sku_targets (all authenticated users)
 export async function GET() {
   try {
+    const user = getApiUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const supabase = createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data, error: dbErr } = await supabase
       .from('app_settings')

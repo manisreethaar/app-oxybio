@@ -12,10 +12,12 @@ import Link from 'next/link';
 import { differenceInDays, format, addMonths, addYears, addWeeks } from 'date-fns';
 import dynamic from 'next/dynamic';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import { useAuditReason } from '@/components/useAuditReason';
 
 const CapaSection = dynamic(() => import('./CapaSection'), { ssr: false });
 
 export default function CompliancePage() {
+  const { requestReason, modal: auditModal } = useAuditReason();
   const { role, employeeProfile, loading: authLoading } = useAuth();
   const toast = useToast();
   const [items, setItems] = useState([]);
@@ -218,7 +220,13 @@ export default function CompliancePage() {
 
   const markDone = async (item) => {
     try {
-      const res = await fetch('/api/compliance', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_done', item_id: item.id }) });
+      const reason = await requestReason().catch(() => null);
+      if (!reason) return;
+      const res = await fetch('/api/compliance', { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ action: 'mark_done', item_id: item.id, reason }) 
+      });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to mark done');
       toast.success("Item marked as done.");
       fetchCompliance();
@@ -599,6 +607,7 @@ export default function CompliancePage() {
           )}
         </>
       )}
+      {auditModal}
 
       {activeTab === 'capa' && <CapaSection />}
 
