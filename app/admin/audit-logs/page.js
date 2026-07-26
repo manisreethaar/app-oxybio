@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Shield, Search, ChevronDown, ChevronRight, Filter, AlertCircle, FileText, ArrowUpDown } from 'lucide-react';
 import AuditDiffViewer from './AuditDiffViewer';
@@ -173,7 +173,7 @@ export default function AuditLogsPage() {
                 filteredLogs.map(log => {
                   const isExpanded = expandedId === log.id;
                   return (
-                    <React.Fragment key={log.id}>
+                    <Fragment key={log.id}>
                       <tr 
                         onClick={() => toggleExpand(log.id)}
                         className={`hover:bg-slate-50 cursor-pointer transition-colors ${isExpanded ? 'bg-slate-50' : ''}`}
@@ -212,7 +212,7 @@ export default function AuditLogsPage() {
                           </td>
                         </tr>
                       )}
-                    </React.Fragment>
+                    </Fragment>
                   );
                 })
               )}

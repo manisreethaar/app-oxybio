@@ -153,6 +153,11 @@ export default function StockModal({
             <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Notes</label>
             <textarea rows={2} placeholder="General receipt notes..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold resize-none" value={newStock.notes} onChange={e => setNewStock({...newStock, notes: e.target.value})} />
           </div>
+          {modalType === 'edit_stock' && (
+            <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
+              You&apos;ll be asked for a GDP correction reason and your e-signature PIN before this saves.
+            </p>
+          )}
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-gray-200 transition-all">Cancel</button>
