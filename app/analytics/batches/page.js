@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Download, Filter, RefreshCw, Layers } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController
 } from 'chart.js';
@@ -21,7 +22,7 @@ export default function BatchAnalyticsPage() {
   const [endpoints, setEndpoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
   const reportRef = useRef();
 
@@ -33,7 +34,6 @@ export default function BatchAnalyticsPage() {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        await withTimeout((async () => {
         // Build date filter
         let fromDate = new Date();
         if (dateRange === '1M') fromDate.setMonth(fromDate.getMonth() - 1);
@@ -55,18 +55,26 @@ export default function BatchAnalyticsPage() {
         if (bErr) throw bErr;
 
         const batchIds = bData.map(b => b.id);
-        
-        // Extract unique products for the dropdown (only do this once or independent of current filter)
+
+        // Extract unique products for the dropdown (independent of current filter)
         if (products.length === 0) {
-           const { data: allBData } = await supabase.from('batches').select('product_name');
-           const uniqueProds = [...new Set((allBData||[]).map(b => b.product_name).filter(Boolean))];
-           setProducts(uniqueProds);
+          const { data: allBData } = await supabase.from('batches').select('product_name');
+          const uniqueProds = [...new Set((allBData || []).map(b => b.product_name).filter(Boolean))];
+          setProducts(uniqueProds);
         }
 
         if (batchIds.length > 0) {
           const [rRes, eRes] = await Promise.all([
-            supabase.from('batch_fermentation_readings').select('batch_id, elapsed_hours, ph, incubator_temp_c').in('batch_id', batchIds),
-            supabase.from('batch_fermentation_endpoint').select('batch_id, total_hours, final_ph, sensory_overall').in('batch_id', batchIds)
+            // pH + temp readings from fermentation log
+            supabase.from('batch_fermentation_readings')
+              .select('batch_id, elapsed_hours, ph, incubator_temp_c')
+              .in('batch_id', batchIds),
+
+            // ✅ FIXED: use batch_flask_endpoints (v4 table), join to batch via batch_id
+            // Each flask has one endpoint; we aggregate to batch level in the chart transform
+            supabase.from('batch_flask_endpoints')
+              .select('batch_id, flask_id, total_hours, final_ph, sensory_overall')
+              .in('batch_id', batchIds)
           ]);
           if (rRes.data) setReadings(rRes.data);
           if (eRes.data) setEndpoints(eRes.data);
@@ -76,7 +84,6 @@ export default function BatchAnalyticsPage() {
         }
 
         setBatches(bData);
-        })(), 20000, 'Batch analytics load timed out');
       } catch (err) {
         toast.error('Failed to load batch analytics');
         console.error(err);
@@ -86,14 +93,16 @@ export default function BatchAnalyticsPage() {
     };
 
     fetchAnalytics();
-  }, [dateRange, selectedProduct, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange, selectedProduct]);
 
   // Transform data for Multi-Line pH Chart
   const phChartData = useMemo(() => {
     const datasets = [];
     batches.forEach((b, idx) => {
-      const bReadings = readings.filter(r => r.batch_id === b.id && r.ph != null && r.elapsed_hours != null)
-                                .sort((a, b) => a.elapsed_hours - b.elapsed_hours);
+      const bReadings = readings
+        .filter(r => r.batch_id === b.id && r.ph != null && r.elapsed_hours != null)
+        .sort((a, c) => a.elapsed_hours - c.elapsed_hours);
       if (bReadings.length > 0) {
         datasets.push({
           label: b.batch_id,
@@ -111,13 +120,14 @@ export default function BatchAnalyticsPage() {
   }, [batches, readings]);
 
   // Transform data for Endpoint Scatter (Duration vs Final pH)
+  // Uses batch_flask_endpoints; one point per flask, coloured by sensory_overall
   const endpointScatterData = useMemo(() => {
     const passData = [];
     const failData = [];
-    
+
     endpoints.forEach(ep => {
       const b = batches.find(bx => bx.id === ep.batch_id);
-      const label = b ? b.batch_id : 'Unknown';
+      const label = b ? `${b.batch_id} (flask)` : 'Unknown';
       if (ep.total_hours != null && ep.final_ph != null) {
         const pt = { x: Number(ep.total_hours), y: Number(ep.final_ph), batch: label };
         if (ep.sensory_overall === 'FAIL') failData.push(pt);
@@ -148,23 +158,17 @@ export default function BatchAnalyticsPage() {
     if (!reportRef.current) return;
     toast.info('Generating PDF report...');
     try {
-      // jspdf + html2canvas together are ~400KB — only worth paying for
-      // when the user actually exports, not on every page load.
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
       const canvas = await html2canvas(reportRef.current, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.setFontSize(16);
       pdf.text(`Batch Analytics Report - ${selectedProduct}`, 10, 10);
       pdf.setFontSize(10);
       pdf.text(`Generated on: ${new Date().toLocaleString()}`, 10, 15);
-      
+
       pdf.addImage(imgData, 'PNG', 0, 20, pdfWidth, pdfHeight);
       pdf.save(`OxyOS_Batch_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('Report downloaded');
@@ -192,7 +196,7 @@ export default function BatchAnalyticsPage() {
             </select>
           </div>
         </div>
-        
+
         <div className="flex-1">
           <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Date Range</label>
           <select
@@ -223,7 +227,7 @@ export default function BatchAnalyticsPage() {
         </div>
       ) : (
         <div ref={reportRef} className="space-y-6 bg-slate-50/50 p-4 rounded-3xl">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* pH Overlay Chart */}
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
@@ -232,20 +236,26 @@ export default function BatchAnalyticsPage() {
                 pH Progression Overlay
               </h3>
               <div className="h-80">
-                <Line 
-                  data={phChartData} 
-                  options={{
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                      x: { type: 'linear', title: { display: true, text: 'Elapsed Hours' } },
-                      y: { title: { display: true, text: 'pH Level' } }
-                    },
-                    plugins: {
-                      legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } },
-                      tooltip: { callbacks: { label: (ctx) => `Batch ${ctx.dataset.label}: pH ${ctx.parsed.y} @ ${ctx.parsed.x}h` } }
-                    }
-                  }} 
-                />
+                {phChartData.datasets.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-slate-400 text-sm font-medium">
+                    No fermentation reading data for this filter.
+                  </div>
+                ) : (
+                  <Line
+                    data={phChartData}
+                    options={{
+                      responsive: true, maintainAspectRatio: false,
+                      scales: {
+                        x: { type: 'linear', title: { display: true, text: 'Elapsed Hours' } },
+                        y: { title: { display: true, text: 'pH Level' } }
+                      },
+                      plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } },
+                        tooltip: { callbacks: { label: (ctx) => `Batch ${ctx.dataset.label}: pH ${ctx.parsed.y} @ ${ctx.parsed.x}h` } }
+                      }
+                    }}
+                  />
+                )}
               </div>
             </div>
 
@@ -253,26 +263,32 @@ export default function BatchAnalyticsPage() {
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center">
                 <Layers className="w-4 h-4 mr-2 text-slate-500" />
-                Endpoint Duration vs pH
+                Flask Endpoint — Duration vs pH
               </h3>
               <div className="h-80">
-                <Scatter 
-                  data={endpointScatterData}
-                  options={{
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                      x: { type: 'linear', title: { display: true, text: 'Total Hours to Endpoint' } },
-                      y: { title: { display: true, text: 'Final pH' } }
-                    },
-                    plugins: {
-                      tooltip: { callbacks: { label: (ctx) => `${ctx.raw.batch} (Duration: ${ctx.parsed.x}h, pH: ${ctx.parsed.y})` } }
-                    }
-                  }}
-                />
+                {endpoints.filter(e => e.total_hours != null && e.final_ph != null).length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-slate-400 text-sm font-medium">
+                    No flask endpoint data found. Log endpoints via Batches → Flask → Endpoint.
+                  </div>
+                ) : (
+                  <Scatter
+                    data={endpointScatterData}
+                    options={{
+                      responsive: true, maintainAspectRatio: false,
+                      scales: {
+                        x: { type: 'linear', title: { display: true, text: 'Total Hours to Endpoint' } },
+                        y: { title: { display: true, text: 'Final pH' } }
+                      },
+                      plugins: {
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.raw.batch} (${ctx.parsed.x}h, pH ${ctx.parsed.y})` } }
+                      }
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
-          
+
           {batches.length === 0 && (
             <div className="text-center py-10 text-slate-400 font-medium">
               No batch data found for the selected filters.

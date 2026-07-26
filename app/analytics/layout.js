@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
-import { getRequestUser } from '@/utils/supabase/request-user';
-import { PieChart, Filter, Activity, BarChart2, CalendarDays } from 'lucide-react';
+import { PieChart, Activity, BarChart2, TrendingUp, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata = {
@@ -10,22 +9,21 @@ export const metadata = {
 };
 
 const NAV_LINKS = [
-  { name: 'Overview', href: '/analytics', icon: PieChart },
+  { name: 'Overview',       href: '/analytics',            icon: PieChart },
   { name: 'Batch Variations', href: '/analytics/batches', icon: Activity },
-  { name: 'Lab & Growth Studies', href: '/analytics/lab', icon: BarChart2 },
+  { name: 'Lab & Growth',   href: '/analytics/lab',        icon: BarChart2 },
+  { name: 'Growth Studies', href: '/analytics/growth',     icon: TrendingUp },
+  { name: 'Stability',      href: '/analytics/stability',  icon: Clock },
 ];
 
 export default async function AnalyticsLayout({ children }) {
   const supabase = createClient();
-  // Identity already validated by middleware.js (which also gates
-  // /analytics) — no need to call supabase.auth.getUser() again here.
-  const user = getRequestUser();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (authErr || !user) {
     redirect('/login');
   }
 
-  // Double check admin/RnD at layout level
   const { data: profile } = await supabase
     .from('employees')
     .select('role, department')
