@@ -86,7 +86,7 @@ export default function ProfilePage() {
   const adminViewId = searchParams.get('id');
   const isAdminView = searchParams.get('adminView') === 'true';
 
-  const { employeeProfile, loading: authLoading, role, signOut } = useAuth();
+  const { employeeProfile, loading: authLoading, role, signOut, refreshProfile } = useAuth();
   const toast = useToast();
   const [emp, setEmp] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -210,6 +210,10 @@ export default function ProfilePage() {
         setEmp({ ...emp, ...data });
         reset(data);
       }
+      // Refresh the AuthContext-cached profile too — otherwise the next time this
+      // page mounts, its effect repopulates the form from the stale cached profile
+      // and the just-saved values (e.g. initials) appear to "reset".
+      if (!isAdminView) refreshProfile();
       setEditing(false);
       toast.success('Profile updated successfully!');
     } catch (err) { toast.error('Error: ' + err.message); }
@@ -241,6 +245,7 @@ export default function ProfilePage() {
         });
         if (!patchRes.ok) throw new Error("Failed to save profile photo binding.");
         setEmp({ ...emp, photo_url: data.url });
+        if (!isAdminView) refreshProfile();
       }
     } catch (err) {
       toast.error("Network Error: Could not connect to the upload server.");
@@ -312,7 +317,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           {isAdminView && (
             <button onClick={() => router.push('/admin/users')} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-all">
@@ -328,7 +333,7 @@ export default function ProfilePage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {!isAdminView && (
             <>
               <button
