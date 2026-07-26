@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import Link from 'next/link';
 import {
   ChevronLeft, CheckCircle2, Circle, FlaskConical, Microscope,
@@ -953,11 +954,11 @@ export default function CellBankDetailPage() {
   const fetchPrep = useCallback(async () => {
     setLoading(true);
     try {
-      const [prepRes, vialsRes, mediaRes] = await Promise.all([
+      const [prepRes, vialsRes, mediaRes] = await withTimeout(Promise.all([
         fetch(`/api/research/cell-bank/${prepId}`),
         fetch(`/api/research/cell-bank/vials?preparation_id=${prepId}`),
         fetch('/api/formulations?category=Lab%20Media'),
-      ]);
+      ]), 20000, 'Cell bank preparation load timed out');
       const [prepJson, vialsJson, mediaJson] = await Promise.all([prepRes.json(), vialsRes.json(), mediaRes.json()]);
       if (!prepJson.success) throw new Error(prepJson.error);
       const fetchedPrep = prepJson.data;

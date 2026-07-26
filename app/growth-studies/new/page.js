@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Plus, Trash2, FlaskConical } from 'lucide-react';
 
@@ -59,15 +60,15 @@ export default function NewGrowthStudyPage() {
   const [newHour, setNewHour] = useState('');
 
   useEffect(() => {
-    Promise.all([
+    withTimeout(Promise.all([
       supabase.from('cell_bank_strains').select('id, name, accession_number').order('name'),
       supabase.from('cell_bank_preparations').select('id, prep_code, type, passage_number').order('created_at', { ascending: false }),
       supabase.from('formulations').select('id, name, code').eq('status', 'Approved').order('name'),
-    ]).then(([s, p, f]) => {
+    ]), 20000, 'New study form data load timed out').then(([s, p, f]) => {
       setStrains(s.data || []);
       setPreps(p.data || []);
       setFormulations(f.data || []);
-    });
+    }).catch(err => console.error('New study form load error:', err));
   }, [supabase]);
 
   // Fetch available vials when a preparation is selected

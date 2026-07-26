@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useParams, useRouter } from 'next/navigation';
@@ -124,8 +125,12 @@ function PredictiveModelsTab({ supabase, toast }) {
   const [form, setForm] = useState({ model_name: '', version: '1.0', target_variable: '', confidence_interval: '', feature_weights: '{}' });
 
   useEffect(() => {
-    supabase.from('predictive_models').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => { setModels(data || []); setLoading(false); });
+    withTimeout(
+      supabase.from('predictive_models').select('*').order('created_at', { ascending: false }),
+      20000, 'Predictive models load timed out'
+    )
+      .then(({ data }) => { setModels(data || []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [supabase]);
 
   const handleSave = async () => {
@@ -296,7 +301,7 @@ export default function BioprocessDetailPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/bioprocess/${id}`);
+      const res = await withTimeout(fetch(`/api/bioprocess/${id}`), 20000, 'Bioprocess experiment load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setExperiment(json.experiment);

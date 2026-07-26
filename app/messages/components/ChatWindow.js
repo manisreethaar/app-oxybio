@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, User, Users, Hash, Paperclip, ExternalLink, CheckCheck, MoreVertical, Edit2, Reply, Trash2, File, Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import MessageInput from './MessageInput';
 import Link from 'next/link';
@@ -114,11 +115,11 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withTimeout(supabase
         .from('messages')
         .select('*, sender:employees!messages_sender_id_fkey(full_name)')
         .eq('chat_id', chat.id)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }), 20000, 'Messages load timed out');
 
       if (error) throw error;
       setMessages(data || []);
