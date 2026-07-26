@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { MessageSquare, Calendar, FolderCheck, Plus, Link2, Shield, Edit, Trash2, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Users, Flag, AlertTriangle, Clock, Search, ClipboardList, ArrowRight, Loader2, LayoutList, Columns, Table as TableIcon } from 'lucide-react';
@@ -100,7 +101,7 @@ export default function CompliancePage() {
         fetchPromises.push(supabase.from('employees').select('id, full_name').eq('is_active', true));
       }
 
-      const results = await Promise.all(fetchPromises);
+      const results = await withTimeout(Promise.all(fetchPromises), 20000, 'Compliance load timed out');
       const compItems = results[0].data || [];
 
       const processedItems = compItems.map(i => {

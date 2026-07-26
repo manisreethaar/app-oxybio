@@ -9,6 +9,7 @@ import {
   ClipboardList, Microscope, TestTube2, Beaker,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -213,7 +214,7 @@ export default function ArchivePage() {
     setLoading(true);
     setData([]);
     try {
-      const res = await fetch(`/api/archive?tab=${tabId}`);
+      const res = await withTimeout(fetch(`/api/archive?tab=${tabId}`), 20000, 'Archive load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setData(json.data || []);

@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Wind, Plus, AlertTriangle, CheckCircle2, X, MapPin, BarChart2, Loader2 } from 'lucide-react';
@@ -53,10 +54,10 @@ export default function EnvironmentalMonitoringPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [sRes, lRes] = await Promise.all([
+      const [sRes, lRes] = await withTimeout(Promise.all([
         fetch('/api/environmental-monitoring?view=samples').then(r => r.json()),
         fetch('/api/environmental-monitoring?view=locations').then(r => r.json()),
-      ]);
+      ]), 20000, 'Environmental monitoring load timed out');
       if (sRes.success) setSamples(sRes.data || []);
       if (lRes.success) setLocations(lRes.data || []);
     } catch { /* silent */ }

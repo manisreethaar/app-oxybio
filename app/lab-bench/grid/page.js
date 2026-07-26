@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Loader2,
@@ -108,7 +109,7 @@ export default function GridEntryPage() {
   //   ?source_type=growth_study&source_id=uuid
   useEffect(() => {
     setSourcesLoading(true);
-    fetch('/api/lab-bench/sources')
+    withTimeout(fetch('/api/lab-bench/sources'), 20000, 'Lab bench sources load timed out')
       .then(r => r.json())
       .then(json => {
         if (json.success) {

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { notifyEmployee } from '@/lib/notifyEmployee';
@@ -103,11 +104,11 @@ export default function CapaSection() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [{ data: devs }, { data: emps }, { data: sopsData }] = await Promise.all([
+      const [{ data: devs }, { data: emps }, { data: sopsData }] = await withTimeout(Promise.all([
         supabase.from('deviations').select('*, reported_by, created_by, reporter:employees!deviations_reported_by_fkey(full_name), creator:employees!deviations_created_by_fkey(id, full_name, initials), batches(id, batch_id)').is('archived_at', null).order('created_at', { ascending: false }),
         supabase.from('employees').select('id, full_name').eq('is_active', true),
         supabase.from('sop_library').select('id, title, version').order('title')
-      ]);
+      ]), 20000, 'CAPA load timed out');
       setDeviations(devs || []); setEmployees(emps || []); setSops(sopsData || []);
     } catch (err) { console.error('CAPA fetch error:', err); }
     finally { setLoading(false); }

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import {
   FlaskConical, Activity, ChevronDown, CheckCircle2,
@@ -192,7 +193,7 @@ export default function QuickLogPage() {
   const loadSources = useCallback(async () => {
     setSourcesLoading(true);
     try {
-      const res  = await fetch('/api/lab-bench/sources');
+      const res  = await withTimeout(fetch('/api/lab-bench/sources'), 20000, 'Lab bench sources load timed out');
       const json = await res.json();
       if (json.success) {
         setSources(json);

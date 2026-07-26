@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X, Search, LayoutGrid, List, Columns, Table as TableIcon } from 'lucide-react';
@@ -112,10 +113,10 @@ export default function EquipmentPage() {
   const fetchEquipment = async () => {
     setLoading(true);
     try {
-      const [{ data: eqData, error: eqErr }, { data: sterilData }] = await Promise.all([
+      const [{ data: eqData, error: eqErr }, { data: sterilData }] = await withTimeout(Promise.all([
         supabase.from('equipment').select('*, calibration_logs(*, employees:logged_by(full_name, initials))').order('name'),
         supabase.from('batch_stage_sterilisation').select('equipment_id, batches(id, batch_id, status)').order('created_at', { ascending: false }).limit(300)
-      ]);
+      ]), 20000, 'Equipment load timed out');
       if (eqErr) throw eqErr;
       setEquipment(eqData || []);
       const usageMap = {};

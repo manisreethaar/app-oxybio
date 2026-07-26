@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { ArrowRight, AlertTriangle, Clock, FlaskConical, CheckCircle2, Plus, Loader2 } from 'lucide-react';
@@ -26,12 +27,14 @@ export default function ShiftHandoverPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [hRes, eRes] = await Promise.all([
+      const [hRes, eRes] = await withTimeout(Promise.all([
         fetch('/api/shift-handover').then(r => r.json()),
         supabase.from('employees').select('id, full_name, initials, role').eq('is_active', true).order('full_name'),
-      ]);
+      ]), 20000, 'Shift handover load timed out');
       if (hRes.success) setHandovers(hRes.data || []);
       if (eRes.data) setEmployees(eRes.data);
+    } catch (err) {
+      console.error('Shift handover fetch error:', err);
     } finally { setLoading(false); }
   }, [supabase]);
 

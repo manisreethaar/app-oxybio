@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 // import removed as notifications are handled by the backend API route
@@ -91,14 +92,14 @@ export default function LeavePage() {
     setLoading(true);
     try {
       if (['admin', 'ceo', 'cto'].includes(role)) {
-        const [myLeavesRes, pLeavesRes] = await Promise.all([
+        const [myLeavesRes, pLeavesRes] = await withTimeout(Promise.all([
           supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }),
           supabase.from('leave_applications').select('*, employees!leave_applications_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
-        ]);
+        ]), 20000, 'Leave load timed out');
         setLeaves(myLeavesRes.data || []);
         setPendingLeaves(pLeavesRes.data || []);
       } else {
-        const { data: myLeaves } = await supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false });
+        const { data: myLeaves } = await withTimeout(supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }), 20000, 'Leave load timed out');
         setLeaves(myLeaves || []);
       }
     } catch (err) { console.error('Leave fetch error:', err); }

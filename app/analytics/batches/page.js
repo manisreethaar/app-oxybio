@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Download, Filter, RefreshCw, Layers } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -34,6 +35,7 @@ export default function BatchAnalyticsPage() {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
+        await withTimeout((async () => {
         // Build date filter
         let fromDate = new Date();
         if (dateRange === '1M') fromDate.setMonth(fromDate.getMonth() - 1);
@@ -76,6 +78,7 @@ export default function BatchAnalyticsPage() {
         }
 
         setBatches(bData);
+        })(), 20000, 'Batch analytics load timed out');
       } catch (err) {
         toast.error('Failed to load batch analytics');
         console.error(err);

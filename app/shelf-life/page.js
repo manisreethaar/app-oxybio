@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Calendar, Thermometer, FlaskConical, Plus, ChevronRight, Loader2, AlertCircle, CheckCircle2, Clock, Trash2 } from 'lucide-react';
@@ -53,7 +54,7 @@ export default function ShelfLifePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: studyData, error: studyErr }, { data: batchData }, { data: stabTps }] = await Promise.all([
+      const [{ data: studyData, error: studyErr }, { data: batchData }, { data: stabTps }] = await withTimeout(Promise.all([
         supabase
           .from('shelf_life_studies')
           .select('*, created_by, creator:employees!shelf_life_studies_created_by_fkey(id, full_name, initials), batches(id, batch_id, variant, experiment_type), shelf_life_logs(id, day_number, test_data, logged_by, created_at)')
@@ -66,7 +67,7 @@ export default function ShelfLifePage() {
           .limit(100),
         // A-23: also fetch stability_timepoints (secondary table) and merge into shelf_life_logs
         supabase.from('stability_timepoints').select('*').order('timepoint_days', { ascending: true }),
-      ]);
+      ]), 20000, 'Shelf-life load timed out');
       if (studyErr) throw studyErr;
       // A-23 reconciliation: convert stability_timepoints to shelf_life_log format and merge
       const tpByStudy = {};
