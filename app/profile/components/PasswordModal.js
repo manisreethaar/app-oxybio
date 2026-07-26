@@ -24,6 +24,15 @@ export default function PasswordModal({
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Security Access Control</p>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Current Password</label>
+            <input
+              required type="password" autoComplete="current-password"
+              value={passwordForm.currentPassword}
+              onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+              className="w-full px-4 py-3 bg-slate-50 rounded-xl font-bold text-sm border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-600 transition-all outline-none"
+            />
+          </div>
+          <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">New Password</label>
             <input
               required type="password"
