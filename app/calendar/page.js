@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Calendar as CalendarIcon, Flag, Clock, CheckCircle2, AlertTriangle, Plus, ChevronRight, Loader2, Info, Search } from 'lucide-react';
@@ -46,7 +47,7 @@ export default function RegulatoryCalendarPage() {
   const fetchMilestones = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('regulatory_milestones').select('*').order('deadline', { ascending: true });
+      const { data, error } = await withTimeout(supabase.from('regulatory_milestones').select('*').order('deadline', { ascending: true }), 20000, 'Calendar load timed out');
       if (error) throw error;
       setMilestones(data || []);
     } catch (err) { console.error('Fetch milestones error:', err); }

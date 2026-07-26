@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { BellRing, CheckSquare, AlertTriangle, FileWarning, Bell, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -37,7 +38,9 @@ export default function NotificationsPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      await Promise.all([fetchAlerts(), fetchDirectNotifs()]);
+      await withTimeout(Promise.all([fetchAlerts(), fetchDirectNotifs()]), 20000, 'Notifications load timed out');
+    } catch (err) {
+      console.error('Notifications fetch error:', err);
     } finally {
       setLoading(false);
     }

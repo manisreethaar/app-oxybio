@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { BarChart2, Download, Filter, RefreshCw, FlaskConical } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -28,6 +29,7 @@ export default function LabAnalyticsPage() {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
+        await withTimeout((async () => {
         let fromDate = new Date();
         if (dateRange === '1M') fromDate.setMonth(fromDate.getMonth() - 1);
         else if (dateRange === '3M') fromDate.setMonth(fromDate.getMonth() - 3);
@@ -58,6 +60,7 @@ export default function LabAnalyticsPage() {
         }
 
         setSamples(sampleData);
+        })(), 20000, 'Lab analytics load timed out');
       } catch (err) {
         toast.error('Failed to load lab analytics');
         console.error(err);

@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { AlertTriangle, FlaskConical, CalendarOff, CheckSquare, CalendarDays, Settings, X, Users, Download, ShieldAlert, Calendar, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -74,9 +75,11 @@ export default function AdminDashboard({ employeeId }) {
   const fetchDashboardData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      const res = await fetch('/api/admin/dashboard-stats');
+      // A stalled request otherwise leaves this page spinning forever with
+      // no way out except a manual refresh.
+      const res = await withTimeout(fetch('/api/admin/dashboard-stats'), 20000, 'Dashboard load timed out');
       const result = await res.json();
-      
+
       if (result.success) {
         const { stats, leaves, mispunches, activeBatches, chartData } = result.data;
         

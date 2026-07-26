@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
@@ -234,6 +235,9 @@ export default function AttendancePage() {
     if (!employeeProfile) return;
     setLoading(true);
     try {
+      // A stalled Supabase connection otherwise leaves this page spinning
+      // forever with no way out except a manual refresh.
+      await withTimeout((async () => {
       if (employeeProfile.id) {
         // Use IST date (UTC+5:30) to match what the check-in API stores in the DB
         const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
@@ -259,6 +263,7 @@ export default function AttendancePage() {
           setTeamToday(rosterData.data || []);
         }
       }
+      })(), 20000, 'Attendance load timed out');
     } catch (err) {
       console.error('Attendance fetch error:', err);
     } finally {

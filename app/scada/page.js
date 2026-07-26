@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Plus, Loader2, Wifi, WifiOff, Thermometer, Droplets, Wind } from 'lucide-react';
@@ -29,13 +30,21 @@ export default function ScadaDashboardPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [sRes, eqRes] = await Promise.all([
-      fetch('/api/scada').then(r => r.json()),
-      supabase.from('equipment').select('id, name, model, status').order('name'),
-    ]);
-    if (sRes.success) setStreams(sRes.data || []);
-    if (eqRes.data) setEquipment(eqRes.data);
-    setLoading(false);
+    try {
+      // No try/catch/finally here before meant any error — or a stalled
+      // connection — left this page spinning forever with no way out
+      // except a manual refresh.
+      const [sRes, eqRes] = await withTimeout(Promise.all([
+        fetch('/api/scada').then(r => r.json()),
+        supabase.from('equipment').select('id, name, model, status').order('name'),
+      ]), 20000, 'SCADA load timed out');
+      if (sRes.success) setStreams(sRes.data || []);
+      if (eqRes.data) setEquipment(eqRes.data);
+    } catch (err) {
+      console.error('SCADA fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [supabase]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);

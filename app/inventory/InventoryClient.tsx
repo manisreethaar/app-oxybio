@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon } from 'lucide-react';
@@ -141,11 +142,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         stockQuery = stockQuery.or(`supplier_batch_number.ilike.%${searchTerm}%,inventory_items.name.ilike.%${searchTerm}%`);
       }
 
-      const [stockRes, itemsRes, vendorsRes] = await Promise.all([
+      const [stockRes, itemsRes, vendorsRes] = await withTimeout(Promise.all([
         stockQuery,
         pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').order('name').limit(1000) : Promise.resolve({ data: null }),
         pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: null })
-      ]);
+      ]), 20000, 'Inventory load timed out');
 
       if (stockRes.error) throw stockRes.error;
 

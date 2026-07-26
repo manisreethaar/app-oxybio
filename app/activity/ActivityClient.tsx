@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -146,6 +147,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     setError(null);
 
     try {
+      await withTimeout((async () => {
       // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches')
         .select('batch_id, product_name, status')
@@ -250,6 +252,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
         setBrief({ presentToday: present, absentToday: absent, checkedOutToday: checkedOut, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
       }
+      })(), 20000, 'Activity load timed out');
     } catch (err) {
       console.error("Activity page fetch error:", err);
       if (isMounted.current) setError("Failed to load activity data. Please try again.");

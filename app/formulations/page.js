@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { 
@@ -138,12 +139,12 @@ export default function FormulationsPage() {
   const fetchFormulations = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withTimeout(supabase
         .from('formulations')
         .select('*, approver:employees!formulations_approved_by_fkey(full_name), creator:employees!formulations_created_by_fkey(id, full_name, initials)')
         .neq('status', 'Archived')
         .is('archived_at', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }), 20000, 'Formulations load timed out');
       if (!error) setFormulations(data || []);
       if (!error && data?.length > 0) {
         const ids = data.map(f => f.id);
