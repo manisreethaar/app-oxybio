@@ -75,23 +75,26 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en">
-      {/* Service Worker registered as early as possible so push works even when logged out */}
-      <Script
-        id="sw-register"
-        strategy="beforeInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                  .catch(function(err) { console.warn('SW registration failed:', err); });
-              });
-            }
-          `
-        }}
-      />
       {/* No manual <head> needed — Next.js generates viewport meta from the export above */}
       <body className={jakarta.className}>
+        {/* Service Worker registered as early as possible so push works even when logged out.
+            Must be inside <body> — <script> is not a valid direct child of <html>, and having
+            it there caused the browser to silently restructure the parsed HTML, which made
+            React's hydration disagree with the server output on literally every page load. */}
+        <Script
+          id="sw-register"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .catch(function(err) { console.warn('SW registration failed:', err); });
+                });
+              }
+            `
+          }}
+        />
         <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>

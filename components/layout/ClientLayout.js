@@ -90,8 +90,11 @@ export default function ClientLayout({ children }) {
     if (typeof window !== 'undefined') {
       window.addEventListener('unhandledrejection', handleUnhandledRejection);
       if ('serviceWorker' in navigator) {
+        // Registration itself already happens once, as early as possible, via
+        // the beforeInteractive <Script> in the root layout — registering
+        // again here raced it and threw a benign but noisy InvalidStateError.
+        // Just check for updates to whatever's already registered.
         navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.update()));
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
       }
     }
     return () => { if (typeof window !== 'undefined') window.removeEventListener('unhandledrejection', handleUnhandledRejection); };
