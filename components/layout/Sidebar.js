@@ -69,7 +69,6 @@ export default function Sidebar() {
   const sections = [
     { title: 'Overview', items: [
       { name: 'Dashboard',   href: '/dashboard', icon: LayoutDashboard, show: eCanDo('dashboard','view') },
-      { name: 'Analytics',   href: '/analytics', icon: PieChart,        show: ['admin','ceo','cto'].includes(eRole) || employeeProfile?.department === 'RnD' },
       { name: 'Messages',    href: '/messages',  icon: MessageSquare,   show: true, badge: unread },
       { name: 'Activity',    href: '/activity',  icon: Activity,        show: eCanDo('activity','view') },
       { name: 'Tasks',       href: '/tasks',     icon: CheckSquare,     show: eCanDo('tasks','view') },
@@ -92,6 +91,9 @@ export default function Sidebar() {
       { name: 'Inventory',   href: '/inventory', icon: Package,      show: eCanDo('inventory','view') },
       { name: 'Equipment',   href: '/equipment', icon: Wrench,       show: eCanDo('equipment','view') },
       { name: 'Calendar',    href: '/calendar',  icon: CalendarDays, show: eCanDo('batches','view') },
+    ]},
+    { title: 'Reports & Analytics', items: [
+      { name: 'Analytics Hub', href: '/analytics', icon: PieChart, show: ['admin','ceo','cto'].includes(eRole) || employeeProfile?.department === 'RnD' },
     ]},
     { title: 'Compliance', items: [
       { name: 'Documents',   href: '/documents',               icon: FileText,    show: eCanDo('documents','view') },
