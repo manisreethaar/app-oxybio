@@ -31,6 +31,7 @@ export default function TasksPage() {
   const [employees, setEmployees] = useState([]);
   const [sops, setSops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [assigneeFilter, setAssigneeFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,6 +153,7 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
       let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
@@ -164,7 +166,11 @@ export default function TasksPage() {
 
       const sopsPromise = supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title');
 
-      const [empsRes, tasksRes, sopsRes] = await Promise.all([empsPromise, query, sopsPromise]);
+      // A stalled network/DB connection otherwise leaves this page spinning
+      // forever with no way out except a manual refresh — bound it like the
+      // timeout pattern already used in app/profile/page.js.
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Loading tasks timed out')), 20000));
+      const [empsRes, tasksRes, sopsRes] = await Promise.race([Promise.all([empsPromise, query, sopsPromise]), timeout]);
       if (tasksRes.error) throw tasksRes.error;
 
       setEmployees(empsRes.data || []);
@@ -193,7 +199,10 @@ export default function TasksPage() {
           }
         } catch(e) { /* silent - cross-module linking is best-effort */ }
       }
-    } catch (err) { console.error('Fetch tasks error:', err); }
+    } catch (err) {
+      console.error('Fetch tasks error:', err);
+      setLoadError(true);
+    }
     finally { setLoading(false); }
   };
 
@@ -481,6 +490,12 @@ export default function TasksPage() {
     <div className="page-container">
       {/* Alerts */}
       <div className="space-y-3">
+        {loadError && (
+          <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center justify-between text-red-800 shadow-sm text-sm gap-3">
+            <span className="font-bold">Couldn&apos;t load tasks. Your connection may be slow or unavailable.</span>
+            <button onClick={fetchTasks} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shrink-0">Retry</button>
+          </div>
+        )}
         {overdueCount > 0 && (
           <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center text-red-800 shadow-sm text-sm">
             <AlertTriangle className="w-5 h-5 mr-3 shrink-0 text-red-600" />
