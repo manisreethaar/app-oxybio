@@ -129,14 +129,14 @@ function DayCell({ dayData }) {
   };
 
   return (
-    <div className={`relative rounded-2xl border p-1 sm:p-2 min-h-[72px] sm:min-h-[80px] flex flex-col gap-1 transition-all overflow-hidden ${bgMap[status] || 'bg-white border-slate-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
+    <div className={`relative rounded-2xl border p-2 min-h-[80px] flex flex-col gap-1 transition-all overflow-hidden ${bgMap[status] || 'bg-white border-slate-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 min-w-0">
           <span className={`text-xs font-black shrink-0 ${status === 'not_applicable' ? 'text-slate-200' : is_sunday && status !== 'present' ? 'text-slate-400' : 'text-slate-700'}`}>
             {dayNum}
           </span>
           {is_sunday && (
-            <span className={`hidden sm:inline text-xs font-bold truncate ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
+            <span className={`text-xs font-bold truncate ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
           )}
         </div>
         {is_joining_day && <Star className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />}
@@ -147,37 +147,101 @@ function DayCell({ dayData }) {
         <div className="space-y-0.5 flex-1 min-w-0">
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-[10px] sm:text-xs font-bold text-emerald-700 font-mono whitespace-nowrap">
+            <span className="text-xs font-bold text-emerald-700 font-mono whitespace-nowrap">
               {new Date(log.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
             </span>
           </div>
           {log.check_out_time && log.mispunch_status !== 'required' ? (
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-bold text-slate-500 font-mono whitespace-nowrap">
+              <span className="text-xs font-bold text-slate-500 font-mono whitespace-nowrap">
                 {new Date(log.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-1 mt-1 min-w-0">
               <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
-              <span className="text-[9px] sm:text-xs font-black text-red-600 uppercase tracking-widest truncate">Missed</span>
+              <span className="text-xs font-black text-red-600 uppercase tracking-widest truncate">Missed</span>
             </div>
           )}
           {log.total_hours && (
-            <span className="block text-[10px] sm:text-xs font-black text-slate-600 mt-0.5 whitespace-nowrap">
+            <span className="block text-xs font-black text-slate-600 mt-0.5 whitespace-nowrap">
               {log.total_hours}h
             </span>
           )}
           {log.manual_entry && (
-            <span className="block text-[9px] sm:text-xs font-black text-slate-500 uppercase tracking-wide truncate">Manual</span>
+            <span className="block text-xs font-black text-slate-500 uppercase tracking-wide truncate">Manual</span>
           )}
         </div>
       )}
 
       {(status === 'on_leave' || status === 'leave_pending') && leave && (
-        <span className="text-[10px] sm:text-xs font-black text-amber-600 leading-tight truncate block">{leave.leave_type}</span>
+        <span className="text-xs font-black text-amber-600 leading-tight truncate block">{leave.leave_type}</span>
       )}
+    </div>
+  );
+}
+
+// ── Calendar Day Row (mobile agenda view) ─────────────────────────────────────
+// A 7-column grid gives each day ~45px on a phone — not enough room for
+// "HH:MM" check-in/out text. Below `sm`, show a full-width row per day instead.
+function DayAgendaRow({ dayData }) {
+  const { date, status, log, leave, is_joining_day, is_sunday } = dayData;
+  const d = new Date(date + 'T00:00:00');
+  const dayNum = d.getDate();
+  const weekday = d.toLocaleDateString('en-IN', { weekday: 'short' });
+  const isToday = date === new Date().toISOString().split('T')[0];
+
+  const bgMap = {
+    present:       log && (!log.check_out_time || log.mispunch_status === 'required') ? 'bg-red-50/30 border-red-300' : 'bg-emerald-50 border-emerald-200',
+    absent:        'bg-red-50/60 border-red-100',
+    on_leave:      'bg-amber-50 border-amber-200',
+    leave_pending: 'bg-slate-50 border-slate-100',
+    not_applicable:'bg-white border-slate-50',
+  };
+
+  const fmtTime = (ts) => new Date(ts).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  return (
+    <div className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all ${bgMap[status] || 'bg-white border-slate-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
+      <div className="flex flex-col items-center w-9 shrink-0">
+        <span className={`text-[10px] font-black uppercase ${status === 'not_applicable' ? 'text-slate-200' : is_sunday ? 'text-slate-300' : 'text-slate-400'}`}>{weekday}</span>
+        <span className={`text-base font-black ${status === 'not_applicable' ? 'text-slate-300' : 'text-slate-800'}`}>{dayNum}</span>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        {status === 'present' && log ? (
+          <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold font-mono">
+            <span className="text-emerald-700">{fmtTime(log.check_in_time)}</span>
+            {log.check_out_time && log.mispunch_status !== 'required' ? (
+              <>
+                <span className="text-slate-300">&rarr;</span>
+                <span className="text-slate-500">{fmtTime(log.check_out_time)}</span>
+              </>
+            ) : (
+              <span className="flex items-center gap-1 text-red-600 font-black uppercase text-[10px] tracking-wide font-sans">
+                <AlertTriangle className="w-3 h-3 shrink-0" /> Missed checkout
+              </span>
+            )}
+          </div>
+        ) : status === 'on_leave' || status === 'leave_pending' ? (
+          <span className="text-xs font-black text-amber-600">{leave?.leave_type || 'Leave'}</span>
+        ) : status === 'absent' ? (
+          <span className="text-xs font-bold text-red-500 uppercase tracking-wide">Absent</span>
+        ) : is_sunday ? (
+          <span className="text-xs font-medium text-slate-300">Sunday</span>
+        ) : (
+          <span className="text-xs font-medium text-slate-300">&mdash;</span>
+        )}
+        {log?.manual_entry && <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wide mt-0.5">Manual Entry</span>}
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {is_joining_day && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />}
+        {status === 'present' && log?.total_hours && (
+          <span className="text-xs font-black text-slate-700 tabular-nums">{log.total_hours}h</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -230,17 +294,24 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
         </div>
       </div>
 
-      {/* Day labels header */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+      {/* Mobile: vertical agenda list — a 7-col grid has no room for full check-in/out times on a phone */}
+      <div className="sm:hidden space-y-1.5">
+        {calendarDays.map(day => (
+          <DayAgendaRow key={day.date} dayData={day} />
+        ))}
+      </div>
+
+      {/* Tablet/desktop: 7-column calendar grid */}
+      <div className="hidden sm:grid grid-cols-7 gap-1.5">
         {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-          <div key={d} className={`text-center text-[10px] sm:text-xs font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
+          <div key={d} className={`text-center text-xs font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
             {d}
           </div>
         ))}
 
         {/* Padding cells */}
         {Array.from({ length: padCount }).map((_, i) => (
-          <div key={`pad-${i}`} className="min-h-[72px] sm:min-h-[80px]" />
+          <div key={`pad-${i}`} className="min-h-[80px]" />
         ))}
 
         {/* Actual day cells */}
