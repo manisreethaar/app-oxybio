@@ -32,6 +32,7 @@ const ALL_ROUTES = [
   { name: 'Staff Directory',        href: '/directory',                  category: 'Workspace',  keywords: ['employees', 'team', 'contacts', 'people'] },
   { name: 'User Management',        href: '/admin/users',                category: 'Admin',      keywords: ['users', 'roles', 'permissions', 'access'] },
   { name: 'Edit Approvals',         href: '/admin/approvals',            category: 'Admin',      keywords: ['approvals', 'requests', 'edits'] },
+  { name: 'Audit Logs (ALCOA)',     href: '/admin/audit-logs',           category: 'Admin',      keywords: ['audit', 'logs', 'alcoa', 'gdp', 'compliance', 'history', 'changes'] },
   { name: 'System Settings',        href: '/admin/settings',             category: 'Admin',      keywords: ['config', 'system', 'preferences'] },
 ];
 
