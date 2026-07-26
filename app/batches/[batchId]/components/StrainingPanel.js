@@ -255,7 +255,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
       {/* G-67: Method selection */}
       <div className="card p-5 space-y-3">
         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Separation Method</p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {['Centrifugation','Membrane Filtration','Gravity Filtration','Depth Filtration'].map(m=>(
             <button key={m} type="button" onClick={()=>setMethod(m)}
               className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${method===m?'bg-amber-600 text-white border-amber-600':'bg-white text-slate-600 border-slate-200 hover:border-amber-300'}`}>
