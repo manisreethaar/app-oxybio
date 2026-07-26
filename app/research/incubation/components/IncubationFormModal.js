@@ -526,7 +526,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     <div className={`rounded-lg px-3 py-2 flex items-center gap-2 text-[10px] font-semibold ${selectedMediaItemId ? 'bg-emerald-50 border border-emerald-100 text-emerald-700' : 'bg-amber-50 border border-amber-100 text-amber-700'}`}>
                       {selectedMediaItemId
                         ? <><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Will deduct from inventory: {mediaItems.find(m => m.id === selectedMediaItemId)?.name}</>
-                        : <><AlertCircle className="w-3.5 h-3.5 shrink-0" /> No matching inventory item found — stock won't be deducted</>
+                        : <><AlertCircle className="w-3.5 h-3.5 shrink-0" /> No matching inventory item found — stock won&apos;t be deducted</>
                       }
                     </div>
                   ) : (

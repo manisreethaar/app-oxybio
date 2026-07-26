@@ -254,7 +254,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
             {searchQuery ? (
               <>
                 <Search className="w-8 h-8 mb-3 opacity-20" />
-                No messages found for "{searchQuery}"
+                No messages found for &quot;{searchQuery}&quot;
               </>
             ) : (
               <>

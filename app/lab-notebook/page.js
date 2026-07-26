@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope, CheckCircle } from 'lucide-react';
+import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope, CheckCircle, History } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import Link from 'next/link';
@@ -541,7 +541,7 @@ export default function DigitalLnbPage() {
               {versionSourceEntry && (
                 <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-semibold text-indigo-800 flex items-center gap-2">
                   <History className="w-4 h-4 shrink-0"/>
-                  Creating Version {(versionSourceEntry.entry_version||1)+1} from: <span className="font-black">"{versionSourceEntry.title}"</span>
+                  Creating Version {(versionSourceEntry.entry_version||1)+1} from: <span className="font-black">&quot;{versionSourceEntry.title}&quot;</span>
                   <button type="button" onClick={()=>setVersionSourceEntry(null)} className="ml-auto text-indigo-400 hover:text-indigo-700"><X className="w-3.5 h-3.5"/></button>
                 </div>
               )}

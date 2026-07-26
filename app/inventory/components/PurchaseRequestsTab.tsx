@@ -78,7 +78,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
                 {r.urgency === 'High' && <span className="flex items-center text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded uppercase"><AlertTriangle className="w-3 h-3 mr-1" /> High Urgency</span>}
               </div>
               <p className="text-xs font-semibold text-gray-500 mb-2">Requested by {r.requester?.full_name} • {new Date(r.created_at).toLocaleDateString()}</p>
-              {r.reason && <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg italic">"{r.reason}"</p>}
+              {r.reason && <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg italic">&quot;{r.reason}&quot;</p>}
             </div>
             
             <div className="flex flex-col items-end gap-2">

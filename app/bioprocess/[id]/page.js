@@ -1410,7 +1410,7 @@ export default function BioprocessDetailPage() {
         {experiment?.type === 'rsm' && (experiment?.status === 'complete' || experiment?.status === 'completed') && (
           <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
             <p className="text-sm font-bold text-blue-800 mb-1">Ready for production?</p>
-            <p className="text-xs text-blue-600 mb-3">Use the predicted optimal conditions to start a production batch. The "Create Batch" button in the top-right pre-fills the batch notes with optimal factor values.</p>
+            <p className="text-xs text-blue-600 mb-3">Use the predicted optimal conditions to start a production batch. The &quot;Create Batch&quot; button in the top-right pre-fills the batch notes with optimal factor values.</p>
           </div>
         )}
       </div>
