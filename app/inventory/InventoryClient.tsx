@@ -10,7 +10,6 @@ import { Package, AlertTriangle, Search, Plus, Calendar, Truck, Loader2, Filter,
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
-import ESignatureModal from '@/components/ui/ESignatureModal';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +17,7 @@ import StockModal from './components/StockModal';
 import ItemVendorModal from './components/ItemVendorModal';
 import PurchaseRequestsTab from './components/PurchaseRequestsTab';
 import TraceabilityTab from './components/TraceabilityTab';
+import { useAuditReason } from '@/components/useAuditReason';
 import {
   filterStock,
   getItemStats,
@@ -41,6 +41,7 @@ function getCategoryMeta(category?: string) {
 }
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
+  const { requestReason, modal: auditModal } = useAuditReason();
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
@@ -69,12 +70,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   
   const [newStock, setNewStock] = useState({
     item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
+    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
   });
   const [newIssue, setNewIssue] = useState({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
   const [showOptions, setShowOptions] = useState(false);
   
-  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '', edit_reason: '' });
+  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '' });
   const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved', qualification_status: 'Unqualified', qualified_at: '', qualification_notes: '', audit_due_date: '' });
   
   const [modalType, setModalType] = useState('stock'); // 'stock' | 'items' | 'vendors'
@@ -89,11 +90,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   const [selectedStock, setSelectedStock] = useState<any>(null);
   const [showQR, setShowQR] = useState(false);
-  // GDP e-signature gate for QC disposition decisions (release/reject) —
-  // the actual mutation only fires after ESignatureModal's onSuccess, i.e.
-  // after the user's PIN has been verified server-side.
-  const [qcSigModal, setQcSigModal] = useState<{ isOpen: boolean; action: 'release' | 'reject' | null; reason: string; stockId: string | null }>({ isOpen: false, action: null, reason: '', stockId: null });
-  const [qcActionLoading, setQcActionLoading] = useState(false);
   const [movements, setMovements] = useState<any[]>([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [uploadingCoA, setUploadingCoA] = useState(false);
@@ -418,7 +414,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewStock({
           item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
         });
         setPage(0); await fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -432,11 +428,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       toast.warn("Please wait for files to finish uploading.");
       return;
     }
+    // GDP: correcting an existing stock record requires a reason + e-signature,
+    // same as QC release/reject — captured via the shared AuditReasonModal.
+    const auditResult = await requestReason().catch(() => null);
+    if (!auditResult) return;
     setIsSubmitting(true);
     try {
       const payload = {
         ...newStock,
-        current_quantity: newStock.received_quantity // reuse the input field logic
+        current_quantity: newStock.received_quantity, // reuse the input field logic
+        reason: auditResult.reason,
+        pin: auditResult.pin,
       };
       const res = await fetch('/api/inventory/stock', {
         method: 'PUT',
@@ -447,7 +449,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewStock({
           item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
         });
         setPage(0); await fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -469,7 +471,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setNewItem({ 
           name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
           storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
-          coa_required: false, allergen: false, organic_certified: '', item_code: '', edit_reason: '' 
+          coa_required: false, allergen: false, organic_certified: '', item_code: '' 
         });
         fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -479,19 +481,22 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const handleUpdateItem = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+    // GDP: correcting an existing item record requires a reason + e-signature.
+    const auditResult = await requestReason().catch(() => null);
+    if (!auditResult) return;
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/items', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newItem)
+        body: JSON.stringify({ ...newItem, reason: auditResult.reason, pin: auditResult.pin })
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setNewItem({ 
-          name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
-          storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
-          coa_required: false, allergen: false, organic_certified: '', item_code: '', edit_reason: '' 
+        setNewItem({
+          name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '',
+          storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false,
+          coa_required: false, allergen: false, organic_certified: '', item_code: ''
         });
         fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -1215,7 +1220,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <button onClick={() => {
                    setNewStock({
                     item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
+                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
                   });
                    setModalType('stock'); setIsModalOpen(true);
                 }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
@@ -1968,10 +1973,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </div>
                 ) : selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine' ? (
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                        const qcNotes = window.prompt('QC Release Notes (identity test result, sampling method, observations):');
-                       if (!qcNotes || !qcNotes.trim()) return; // user cancelled or left it blank
-                       setQcSigModal({ isOpen: true, action: 'release', reason: qcNotes.trim(), stockId: selectedStock.id });
+                       if (qcNotes === null || !qcNotes.trim()) return; // user cancelled or left it blank
+                       const auditResult = await requestReason().catch(() => null);
+                       if (!auditResult) return;
+                       try {
+                         await runQcAction(selectedStock.id, 'release', { notes: qcNotes.trim(), reason: auditResult.reason, pin: auditResult.pin });
+                         toast.success('Stock QC Released — status updated to Available');
+                         setSelectedStock({...selectedStock, status: 'Available', qc_status: 'Released'});
+                         fetchData(0, false);
+                       } catch (err: any) {
+                         toast.error(err.message);
+                       }
                     }}
                     className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
                   >
@@ -2016,9 +2030,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       placeholder="Storage location (e.g. QC Cage 1)"
                       className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
                       onBlur={async (e) => {
+                        if (e.target.value === (selectedStock.quarantine_location || '')) return;
+                        const auditResult = await requestReason().catch(() => null);
+                        if (!auditResult) { e.target.value = selectedStock.quarantine_location || ''; return; }
                         try {
-                          await runQcAction(selectedStock.id, 'quarantine_location', { location: e.target.value || null });
-                        } catch (err: any) { toast.error(err.message); }
+                          await runQcAction(selectedStock.id, 'quarantine_location', { location: e.target.value || null, reason: auditResult.reason, pin: auditResult.pin });
+                        } catch (err: any) {
+                          e.target.value = selectedStock.quarantine_location || '';
+                          toast.error(err.message);
+                        }
                       }}
                     />
                     <input
@@ -2026,9 +2046,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       placeholder="Rack / shelf"
                       className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
                       onBlur={async (e) => {
+                        if (e.target.value === (selectedStock.quarantine_rack || '')) return;
+                        const auditResult = await requestReason().catch(() => null);
+                        if (!auditResult) { e.target.value = selectedStock.quarantine_rack || ''; return; }
                         try {
-                          await runQcAction(selectedStock.id, 'quarantine_location', { rack: e.target.value || null });
-                        } catch (err: any) { toast.error(err.message); }
+                          await runQcAction(selectedStock.id, 'quarantine_location', { rack: e.target.value || null, reason: auditResult.reason, pin: auditResult.pin });
+                        } catch (err: any) {
+                          e.target.value = selectedStock.quarantine_rack || '';
+                          toast.error(err.message);
+                        }
                       }}
                     />
                   </div>
@@ -2041,8 +2067,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         if (!e.target.checked) return;
                         const url = window.prompt('Enter CoA document URL (from supplier):');
                         if (!url) { e.target.checked = false; return; }
+                        const auditResult = await requestReason().catch(() => null);
+                        if (!auditResult) { e.target.checked = false; return; }
                         try {
-                          await runQcAction(selectedStock.id, 'coa_verify', { coa_url: url });
+                          await runQcAction(selectedStock.id, 'coa_verify', { coa_url: url, reason: auditResult.reason, pin: auditResult.pin });
                           setSelectedStock({ ...selectedStock, coa_url: url });
                           toast.success('CoA URL saved.');
                         } catch (err: any) {
@@ -2057,10 +2085,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   {canDo('inventory', 'qc_release') && (
                     <button
                       className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-red-100"
-                      onClick={() => {
+                      onClick={async () => {
                         const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
                         if (!reason || !reason.trim()) return;
-                        setQcSigModal({ isOpen: true, action: 'reject', reason: reason.trim(), stockId: selectedStock.id });
+                        const auditResult = await requestReason().catch(() => null);
+                        if (!auditResult) return;
+                        try {
+                          await runQcAction(selectedStock.id, 'reject', { notes: reason.trim(), reason: auditResult.reason, pin: auditResult.pin });
+                          toast.success('Lot rejected and marked as Discarded.');
+                          setSelectedStock(null);
+                          fetchData(0, false);
+                        } catch (err: any) {
+                          toast.error(err.message);
+                        }
                       }}
                     >
                       ✗ Reject Lot (A-47)
@@ -2089,35 +2126,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
         </div>
       )}
-
-      {/* GDP e-signature gate for QC Release / Reject Lot — the mutation
-          only fires from onSuccess, i.e. after the PIN has been verified. */}
-      <ESignatureModal
-        isOpen={qcSigModal.isOpen}
-        onClose={() => setQcSigModal({ isOpen: false, action: null, reason: '', stockId: null })}
-        onSuccess={async () => {
-          if (qcActionLoading || !qcSigModal.stockId || !qcSigModal.action) return;
-          setQcActionLoading(true);
-          try {
-            await runQcAction(qcSigModal.stockId, qcSigModal.action, { reason: qcSigModal.reason });
-            if (qcSigModal.action === 'release') {
-              toast.success('Stock QC Released — status updated to Available');
-              setSelectedStock((prev: any) => prev ? { ...prev, status: 'Available', qc_status: 'Released' } : prev);
-            } else {
-              toast.success('Lot rejected and marked as Discarded.');
-              setSelectedStock(null);
-            }
-            fetchData(0, false);
-          } catch (err: any) {
-            toast.error(err.message);
-          } finally {
-            setQcActionLoading(false);
-            setQcSigModal({ isOpen: false, action: null, reason: '', stockId: null });
-          }
-        }}
-        title={`Authorize ${qcSigModal.action === 'reject' ? 'Lot Rejection' : 'QC Release'}`}
-        message="Please enter your 4-6 digit PIN to authorize this GMP quality decision. This constitutes a legally binding electronic signature under 21 CFR Part 11."
-      />
 
       {/* Auto-Load Modal */}
       {pendingSeed && (
@@ -2148,6 +2156,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
         </div>
       )}
+      {auditModal}
     </div>
   );
 }

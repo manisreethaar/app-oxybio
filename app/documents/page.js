@@ -62,9 +62,13 @@ export default function DocumentsPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (employeeProfile) fetchDocuments();
+    // Guard: wait until auth has fully resolved. employeeProfile can be null for a
+    // few hundred ms after mount (session hydration gap), so also watch authLoading.
+    // Previously this only triggered on employeeProfile, so if auth resolved after
+    // the first render no refetch ever fired → page stuck showing nothing.
+    if (!authLoading) fetchDocuments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile, category]);
+  }, [authLoading, category]);
 
   useEffect(() => {
     const query = searchQuery.toLowerCase();

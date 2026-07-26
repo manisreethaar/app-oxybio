@@ -104,10 +104,9 @@ export default function ItemVendorModal({
         </div>
 
         {modalType === 'edit_item' && (
-          <div>
-            <label className="block text-xs font-black uppercase text-amber-600 tracking-widest mb-2">Reason for Correction (GDP requirement)</label>
-            <textarea required rows={2} placeholder="Why is this record being corrected?" className="w-full px-4 py-3 rounded-xl bg-amber-50 border-none ring-1 ring-amber-200 focus:ring-amber-400 text-sm font-bold resize-none" value={newItem.edit_reason || ''} onChange={e => setNewItem({...newItem, edit_reason: e.target.value})} />
-          </div>
+          <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
+            You&apos;ll be asked for a GDP correction reason and your e-signature PIN before this saves.
+          </p>
         )}
 
         <div className="flex gap-3 pt-4 border-t border-gray-100">

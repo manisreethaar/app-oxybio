@@ -154,10 +154,9 @@ export default function StockModal({
             <textarea rows={2} placeholder="General receipt notes..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 text-sm font-bold resize-none" value={newStock.notes} onChange={e => setNewStock({...newStock, notes: e.target.value})} />
           </div>
           {modalType === 'edit_stock' && (
-            <div>
-              <label className="block text-xs font-black uppercase text-amber-600 tracking-widest mb-2">Reason for Correction (GDP requirement)</label>
-              <textarea required rows={2} placeholder="Why is this record being corrected? e.g. Data entry error — expiry date was mis-keyed at receipt." className="w-full px-4 py-3 rounded-xl bg-amber-50 border-none ring-1 ring-amber-200 focus:ring-amber-400 text-sm font-bold resize-none" value={newStock.edit_reason || ''} onChange={e => setNewStock({...newStock, edit_reason: e.target.value})} />
-            </div>
+            <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
+              You&apos;ll be asked for a GDP correction reason and your e-signature PIN before this saves.
+            </p>
           )}
         </div>
         <div className="flex gap-3 pt-2">

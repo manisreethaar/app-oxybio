@@ -10,19 +10,22 @@ export const dynamic = 'force-dynamic';
 // "authenticated" RLS policy — any logged-in user (intern included) could
 // release or reject quarantined GMP raw materials. This route:
 //   - enforces `inventory.qc_release` (Scientist+) for the two disposition
-//     decisions (release / reject), matching how the rest of the module
-//     already gates item/vendor edits to that same role group
+//     decisions (release / reject) — the app-wide update_record_with_reason
+//     RPC has no role check of its own (only e-signature identity), so this
+//     server-side check is the only real authorization boundary
 //   - records every action in the Movement Ledger (previously these were
 //     silent from the ledger's point of view)
-//   - stamps `updated_by` and threads the reason through set_audit_reason
-//     so the row-level audit log captures who did it and why
+//   - uses the shared update_record_with_reason RPC (the same one
+//     RejectionPanel.js / batch release use) so the correction reason +
+//     e-signature PIN land in the same transaction as the update, and every
+//     table's audit trail goes through one canonical mechanism
 //
-// e-signature: for 'release' and 'reject' the caller is expected to have
-// already verified the user's PIN via <ESignatureModal> (POST
-// /api/auth/pin/verify) before calling this route — same pattern already
-// used for batch release/rejection in QCHoldPanel.js. This route does not
-// re-verify the PIN itself; it trusts the permission check + the reason
-// text captured alongside the e-signature prompt.
+// Request body: { stock_id, action, notes, reason, pin, location?, rack?, coa_url? }
+//   - notes:  the domain-specific record (QC observations / rejection cause /
+//             what changed) — stored on the row itself (qc_notes,
+//             rejection_reason, etc.)
+//   - reason: the GDP correction-reason category from <AuditReasonModal>
+//   - pin:    the e-signature PIN, verified inside update_record_with_reason
 
 const DISPOSITION_ACTIONS = new Set(['release', 'reject']);
 
@@ -30,7 +33,7 @@ export async function POST(request) {
   try {
     const supabase = createClient();
     const body = await request.json();
-    const { stock_id, action, reason, location: quarantineLocation, rack, coa_url } = body;
+    const { stock_id, action, notes, reason, pin, location: quarantineLocation, rack, coa_url } = body;
 
     if (!stock_id || !action) {
       return NextResponse.json({ success: false, error: 'stock_id and action are required' }, { status: 400 });
@@ -42,6 +45,10 @@ export async function POST(request) {
     );
     if (permission.error) return permission.error;
 
+    if (!reason || !reason.trim() || !pin) {
+      return NextResponse.json({ success: false, error: 'A GDP reason and e-signature PIN are required.' }, { status: 400 });
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).maybeSingle();
     const empId = emp?.id || null;
@@ -52,7 +59,7 @@ export async function POST(request) {
     let movementNotes;
 
     if (action === 'release') {
-      if (!reason || !reason.trim()) {
+      if (!notes || !notes.trim()) {
         return NextResponse.json({ success: false, error: 'QC release notes are required' }, { status: 400 });
       }
       updates = {
@@ -60,31 +67,29 @@ export async function POST(request) {
         qc_status: 'Released',
         qc_released_by: empId,
         qc_released_at: nowIso,
-        qc_notes: reason.trim(),
+        qc_notes: notes.trim(),
         updated_by: empId,
       };
       movementType = 'QC Release';
-      movementNotes = reason.trim();
+      movementNotes = notes.trim();
     } else if (action === 'reject') {
-      if (!reason || !reason.trim()) {
+      if (!notes || !notes.trim()) {
         return NextResponse.json({ success: false, error: 'Rejection reason is required' }, { status: 400 });
       }
       updates = {
         status: 'Discarded',
         qc_status: 'Rejected',
-        rejection_reason: reason.trim(),
+        rejection_reason: notes.trim(),
         rejected_by: empId,
         rejected_at: nowIso,
         updated_by: empId,
       };
       movementType = 'Rejection';
-      movementNotes = reason.trim();
+      movementNotes = notes.trim();
     } else if (action === 'quarantine_location') {
       // Each field is edited independently (separate onBlur handlers), so
       // only touch the ones actually present in the request — otherwise a
-      // blur on "location" would blank out "rack" and vice versa (the RPC's
-      // COALESCE only preserves a field when its key is entirely absent
-      // from the jsonb payload, not when it's present-but-undefined).
+      // blur on "location" would blank out "rack" and vice versa.
       updates = { updated_by: empId };
       if (Object.prototype.hasOwnProperty.call(body, 'location')) updates.quarantine_location = quarantineLocation || null;
       if (Object.prototype.hasOwnProperty.call(body, 'rack')) updates.quarantine_rack = rack || null;
@@ -101,14 +106,14 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: `Unknown action: ${action}` }, { status: 400 });
     }
 
-    const { data: rows, error } = await supabase.rpc('update_inventory_stock_with_reason', {
-      p_id: stock_id,
-      p_updates: updates,
-      p_reason: (reason && reason.trim()) || `${movementType} action`
+    const { error } = await supabase.rpc('update_record_with_reason', {
+      target_table: 'inventory_stock',
+      record_id: stock_id,
+      payload: updates,
+      reason_text: reason.trim(),
+      esignature_pin: pin,
     });
     if (error) throw error;
-    const data = rows?.[0];
-    if (!data) return NextResponse.json({ success: false, error: 'Stock record not found' }, { status: 404 });
 
     // Every QC disposition/verification action now shows up in the Movement
     // Ledger, not just as a raw audit-log JSON diff.
@@ -124,7 +129,7 @@ export async function POST(request) {
       });
     if (movementError) throw movementError;
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

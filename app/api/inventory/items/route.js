@@ -73,23 +73,25 @@ export async function PUT(request) {
     if (permission.error) return permission.error;
 
     const body = await request.json();
-    const { id, name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code, edit_reason } = body;
+    const { id, name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code, reason, pin } = body;
 
     if (!id || !name || !category || !unit) {
       return NextResponse.json({ success: false, error: 'Missing required validation fields' }, { status: 400 });
     }
-    if (!edit_reason || !edit_reason.trim()) {
-      return NextResponse.json({ success: false, error: 'A reason is required to correct an existing item record (GDP requirement).' }, { status: 400 });
+    if (!reason || !reason.trim() || !pin) {
+      return NextResponse.json({ success: false, error: 'A GDP reason and e-signature PIN are required to correct an existing item record.' }, { status: 400 });
     }
 
     const { data: { user } } = await supabase.auth.getUser();
     const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).maybeSingle();
 
-    // Single RPC call (one DB transaction) — see stock PUT for why the
-    // reason and the update must happen in the same round-trip.
-    const { data: rows, error } = await supabase.rpc('update_inventory_items_with_reason', {
-      p_id: id,
-      p_updates: {
+    // Shared app-wide RPC (also used by batches/compliance/etc.) — verifies
+    // the e-signature PIN and records the correction reason in the same
+    // transaction as the update.
+    const { error } = await supabase.rpc('update_record_with_reason', {
+      target_table: 'inventory_items',
+      record_id: id,
+      payload: {
         name,
         category,
         sub_category,
@@ -105,13 +107,12 @@ export async function PUT(request) {
         item_code,
         updated_by: emp?.id || null
       },
-      p_reason: edit_reason.trim()
+      reason_text: reason.trim(),
+      esignature_pin: pin,
     });
-    const data = rows?.[0];
 
     if (error) throw error;
-    if (!data) return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
