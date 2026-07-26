@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Beaker, CheckCircle2, AlertTriangle, Wrench } from 'lucide-react';
 
 const CLARITY_OPTS = ['Very clear, transparent', 'Slightly cloudy', 'Moderately turbid', 'Highly turbid / opaque'];
@@ -93,10 +94,16 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    const [{ data }, { data: eqData }] = await Promise.all([
-      supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('equipment').select('id, name, model, status, requires_calibration, calibration_due_date').order('name'),
-    ]);
+    let data, eqData;
+    try {
+      [{ data }, { data: eqData }] = await withTimeout(Promise.all([
+        supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('equipment').select('id, name, model, status, requires_calibration, calibration_due_date').order('name'),
+      ]), 20000, 'Straining data load timed out');
+    } catch (err) {
+      console.error('StrainingPanel fetch error:', err);
+      return;
+    }
     if (!isCurrent) return;
     if (eqData) setEquipment(eqData);
     if (data) {

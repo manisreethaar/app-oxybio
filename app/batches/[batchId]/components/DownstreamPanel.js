@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Layers, CheckCircle2 } from 'lucide-react';
 
 const PACKAGING_TYPES = ['Glass bottle', 'HDPE bottle', 'Foil pouch', 'PET bottle', 'Sachet', 'Drum', 'Other'];
@@ -33,7 +34,13 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
   const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
-    const { data } = await supabase.from('batch_stage_downstream').select('*').eq('flask_id', activeFlask.id).maybeSingle();
+    let data;
+    try {
+      ({ data } = await withTimeout(supabase.from('batch_stage_downstream').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 20000, 'Downstream record load timed out'));
+    } catch (err) {
+      console.error('DownstreamPanel fetch error:', err);
+      return;
+    }
     if (data) {
       setRecord(data);
       const s = data.steps || {};

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { withTimeout } from '@/lib/withTimeout';
 import {
   Package, Wrench, BookOpen, AlertTriangle, Clock, CheckSquare,
   ChevronRight, Loader, FlaskConical, ExternalLink,
@@ -302,7 +303,10 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
     let active = true;
     setLoading(true);
     setAll(null);
-    Promise.all([
+    // This section renders on every batch detail page regardless of stage —
+    // no try/catch/timeout before meant a stalled connection left it
+    // spinning forever with no recovery, on every single batch.
+    withTimeout(Promise.all([
       getLinkedInventory(supabase, batch.id),
       getLinkedEquipment(supabase, batch.id),
       getLinkedLabNotebook(supabase, batch.id),
@@ -310,10 +314,14 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
       getLinkedShelfLife(supabase, batch.id),
       getLinkedTasks(supabase, batch.id),
       getLinkedIncubation(supabase, batch.id),
-    ]).then(([inventory, equipment, notebook, deviations, shelflife, tasks, incubation]) => {
+    ]), 20000, 'Linked records load timed out').then(([inventory, equipment, notebook, deviations, shelflife, tasks, incubation]) => {
       if (!active) return;
       setAll({ inventory, equipment, notebook, deviations, shelflife, tasks, incubation });
-      setLoading(false);
+    }).catch(err => {
+      console.error('LinkedRecordsPanel fetch error:', err);
+      if (active) setAll({ inventory: [], equipment: [], notebook: [], deviations: [], shelflife: [], tasks: [], incubation: [] });
+    }).finally(() => {
+      if (active) setLoading(false);
     });
     return () => { active = false; };
   }, [batch.id, supabase]);

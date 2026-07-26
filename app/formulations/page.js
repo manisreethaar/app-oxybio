@@ -163,13 +163,21 @@ export default function FormulationsPage() {
   };
 
   const fetchBatchHistory = async (formulationId) => {
-    const { data } = await supabase
-      .from('batches')
-      .select('id, batch_id, status, experiment_type, start_time, current_stage')
-      .eq('formulation_id', formulationId)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    setBatchHistory(prev => ({ ...prev, [formulationId]: data || [] }));
+    try {
+      // No try/catch/timeout here before meant expanding a formulation card
+      // could leave the "Batch History" section spinning forever with no
+      // way out — this is what "formulation batches" infinite loading was.
+      const { data } = await withTimeout(supabase
+        .from('batches')
+        .select('id, batch_id, status, experiment_type, start_time, current_stage')
+        .eq('formulation_id', formulationId)
+        .order('created_at', { ascending: false })
+        .limit(10), 20000, 'Batch history load timed out');
+      setBatchHistory(prev => ({ ...prev, [formulationId]: data || [] }));
+    } catch (err) {
+      console.error('Batch history fetch error:', err);
+      setBatchHistory(prev => ({ ...prev, [formulationId]: [] }));
+    }
   };
 
   const handleForwardRevision = (f) => {
