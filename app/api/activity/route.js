@@ -133,14 +133,6 @@ export async function DELETE(request) {
     const permanent = searchParams.get('permanent') === 'true';
     if (!id) return NextResponse.json({ error: 'Missing activity ID' }, { status: 400 });
 
-    let archive_reason = null;
-    try {
-      const body = await request.json();
-      archive_reason = body.archive_reason;
-    } catch (e) {
-      // Ignored
-    }
-
     const { data: emp, error: empError } = await supabase
       .from('employees')
       .select('id, role')
@@ -149,14 +141,18 @@ export async function DELETE(request) {
     if (empError || !emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
     const isAdmin = ['admin', 'ceo', 'cto'].includes(emp.role);
-    if (!isAdmin) return NextResponse.json({ error: 'Forbidden: Admin access required.' }, { status: 403 });
 
     const { data: log, error: fetchErr } = await supabaseAdmin
       .from('activity_log')
-      .select('id, archived_at')
+      .select('id, archived_at, employee_id')
       .eq('id', id)
       .single();
     if (fetchErr || !log) return NextResponse.json({ error: 'Activity not found' }, { status: 404 });
+
+    // Allow admins to delete anything, users to delete their own
+    if (!isAdmin && log.employee_id !== emp.id) {
+      return NextResponse.json({ error: 'Forbidden: You can only delete your own activity.' }, { status: 403 });
+    }
 
     if (!permanent) {
       if (log.archived_at) {
@@ -168,21 +164,17 @@ export async function DELETE(request) {
         .update({
           archived_at: new Date().toISOString(),
           archived_by: emp.id,
-          archive_reason: archive_reason,
+          archive_reason: 'Archived by user/admin',
         })
         .eq('id', id);
       if (error) throw error;
       return NextResponse.json({ success: true, archived: true, message: 'Activity archived.' });
     }
 
-    if (!log.archived_at) {
-      return NextResponse.json({ error: 'Archive this activity before permanently deleting it.' }, { status: 409 });
-    }
-
     const { error } = await supabaseAdmin.from('activity_log').delete().eq('id', id);
     if (error) throw error;
 
-    return NextResponse.json({ success: true, permanentlyDeleted: true, message: 'Archived activity permanently deleted.' });
+    return NextResponse.json({ success: true, permanentlyDeleted: true, message: 'Activity deleted.' });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
