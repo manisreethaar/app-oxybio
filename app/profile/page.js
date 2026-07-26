@@ -255,10 +255,14 @@ export default function ProfilePage() {
     if (passwordForm.password.length < 6) { toast.warn("Password must be at least 6 characters!"); return; }
     setPasswordLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your connection and try again.')), 15000));
+      const { error } = await Promise.race([
+        supabase.auth.updateUser({ password: passwordForm.password }),
+        timeoutPromise,
+      ]);
       if (error) { toast.error(error.message || "Failed to update password."); }
       else { toast.success("Password updated successfully!"); setShowPasswordModal(false); setPasswordForm({ password: '', confirm: '' }); }
-    } catch (err) { toast.error('Error: ' + err.message); }
+    } catch (err) { toast.error(err.message || 'Network error. Please try again.'); }
     finally { setPasswordLoading(false); }
   };
 

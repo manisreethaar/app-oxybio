@@ -29,7 +29,11 @@ export default function ResetPasswordPage() {
     setError(null);
     setMessage(null);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your connection and try again.')), 15000));
+      const { error } = await Promise.race([
+        supabase.auth.updateUser({ password }),
+        timeoutPromise,
+      ]);
       if (error) {
         setError(error.message);
       } else {
@@ -39,7 +43,7 @@ export default function ResetPasswordPage() {
         }, 2000);
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
