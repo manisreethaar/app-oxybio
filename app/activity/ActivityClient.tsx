@@ -255,7 +255,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       })(), 20000, 'Activity load timed out');
     } catch (err) {
       console.error("Activity page fetch error:", err);
-      if (isMounted.current) setError("Failed to load activity data. Please try again.");
+      if (isMounted.current) setError("Failed to load activity data: " + err.message);
     } finally {
       if (isMounted.current) setLoading(false);
     }
@@ -376,7 +376,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete activity.');
       setArchivedActivities(prev => prev.filter(a => a.id !== id));
-      toast.success(data.message || 'Archived activity permanently deleted.');
+      setActivities(prev => prev.filter(a => a.id !== id));
+      toast.success(data.message || 'Activity permanently deleted.');
     } catch (err) {
       toast.error("Failed to permanently delete activity: " + err.message);
     }
