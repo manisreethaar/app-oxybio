@@ -19,7 +19,7 @@ async function run() {
   await client.connect();
   console.log("Connected to database.");
   
-  const sql = fs.readFileSync('supabase/migrations/20260726000000_global_alcoa_gdp_remediation.sql', 'utf8');
+  const sql = fs.readFileSync('supabase/migrations/20260726000003_esignature_pins.sql', 'utf8');
   console.log("Executing SQL migration...");
   
   try {

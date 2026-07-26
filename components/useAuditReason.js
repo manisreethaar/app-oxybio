@@ -20,10 +20,10 @@ export function useAuditReason() {
     }
   };
 
-  const handleSubmit = (reason) => {
+  const handleSubmit = (reason, pin) => {
     setIsOpen(false);
     if (resolver) {
-      resolver.resolve(reason);
+      resolver.resolve({ reason, pin });
       setResolver(null);
     }
   };
