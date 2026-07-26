@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
+import { getRequestUser } from '@/utils/supabase/request-user';
 import { PieChart, Filter, Activity, BarChart2, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,9 +17,11 @@ const NAV_LINKS = [
 
 export default async function AnalyticsLayout({ children }) {
   const supabase = createClient();
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  // Identity already validated by middleware.js (which also gates
+  // /analytics) — no need to call supabase.auth.getUser() again here.
+  const user = getRequestUser();
 
-  if (authErr || !user) {
+  if (!user) {
     redirect('/login');
   }
 
