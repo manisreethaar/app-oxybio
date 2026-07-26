@@ -196,7 +196,13 @@ export default function AttendancePage() {
   const onTimeCount = useMemo(() => myHistory.slice(0, 30).filter(l => getShiftStatus(l.check_in_time)?.label === 'On Time').length, [myHistory]);
 
   useEffect(() => {
-    if (!employeeProfile) return;
+    if (!employeeProfile) {
+      // Auth resolved (e.g. safety-valve timeout or a failed profile fetch) with
+      // no profile available — stop spinning instead of waiting on a fetch that
+      // will never run, which otherwise left this page loading forever.
+      if (!authLoading) setLoading(false);
+      return;
+    }
 
     // Fetch geofence config from DB
     supabase.from('system_config').select('value').eq('key', 'attendance_geofence').maybeSingle()
@@ -222,7 +228,7 @@ export default function AttendancePage() {
 
     return () => { clearInterval(interval); supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile, todayLog?.id]);
+  }, [employeeProfile, todayLog?.id, authLoading]);
 
   const fetchAttendanceData = async () => {
     if (!employeeProfile) return;
@@ -443,6 +449,15 @@ export default function AttendancePage() {
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading attendance data...</div>;
 
+  if (!employeeProfile) {
+    return (
+      <div className="p-8 text-center text-slate-500 space-y-3">
+        <p>Couldn&apos;t load your profile. Please try again.</p>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg">Retry</button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -461,14 +476,14 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <div className="flex border-b border-slate-200">
-        <button onClick={() => setActiveTab('today')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'today' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+      <div className="flex border-b border-slate-200 overflow-x-auto">
+        <button onClick={() => setActiveTab('today')} className={`shrink-0 whitespace-nowrap px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'today' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <Clock className="w-4 h-4" /> Today
         </button>
-        <button onClick={() => setActiveTab('analytics')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'analytics' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('analytics')} className={`shrink-0 whitespace-nowrap px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'analytics' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <BarChart2 className="w-4 h-4" /> Analytics
         </button>
-        <button onClick={() => setActiveTab('corrections')} className={`px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'corrections' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('corrections')} className={`shrink-0 whitespace-nowrap px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 min-h-[44px] ${activeTab === 'corrections' ? 'border-slate-600 text-slate-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
           <AlertCircle className="w-4 h-4" /> Corrections
         </button>
       </div>

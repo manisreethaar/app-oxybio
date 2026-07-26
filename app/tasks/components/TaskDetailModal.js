@@ -65,8 +65,8 @@ export default function TaskDetailModal({
   const isAssignee = !selectedTask.assigned_to || String(selectedTask.assigned_to) === String(employeeProfile?.id);
 
   return (
-    <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white sm:rounded-xl w-full sm:max-w-md overflow-y-auto shadow-xl">
+    <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-none sm:rounded-xl w-full sm:max-w-md h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] overflow-y-auto shadow-xl">
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-start justify-between sticky top-0 bg-white z-10">
           <div>
