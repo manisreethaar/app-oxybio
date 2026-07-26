@@ -326,6 +326,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         body: JSON.stringify({ action: 'log_activity', payload: data })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to save log.');
+      toast.success('Activity logged successfully.');
       resetLog(); setLogValue('start_time', data.end_time); setLogValue('end_time', new Date().toTimeString().slice(0, 5));
       setTab(['admin', 'ceo', 'cto'].includes(role) ? 'brief' : 'feed');
       fetchData();
