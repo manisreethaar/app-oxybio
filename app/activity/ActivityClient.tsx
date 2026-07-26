@@ -934,19 +934,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                       <MessageSquare className="w-3.5 h-3.5"/>
                     </button>
                     {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
-                    {isAdmin ? (
-                      <button
-                        onClick={() => setArchiveConfirmId(act.id)}
-                        className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50"
-                        title="Archive activity"
-                      >
-                        <Archive className="w-3.5 h-3.5"/>
-                      </button>
-                    ) : act.employee_id === employeeProfile?.id && !act.is_optimistic && (
-                      myPendingIds.has(act.id) ? (
-                        <span className="text-xs font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Pending Review</span>
-                      ) : (
-                        <>
+                    {(isAdmin || (act.employee_id === employeeProfile?.id && !act.is_optimistic)) && (
+                      <>
+                        {!isAdmin && (
                           <button
                             onClick={() => openEditModal(act)}
                             className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-800 hover:bg-slate-100 hover:border-slate-300"
@@ -954,15 +944,19 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                           >
                             <Edit2 className="w-3.5 h-3.5"/>
                           </button>
-                          <button
-                            onClick={() => setRequestingDelete(act.id)}
-                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
-                            title="Request archive"
-                          >
-                            <Trash2 className="w-3.5 h-3.5"/>
-                          </button>
-                        </>
-                      )
+                        )}
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to permanently delete this activity?')) {
+                              handlePermanentDeleteActivity(act.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                          title="Delete activity"
+                        >
+                          <Trash2 className="w-3.5 h-3.5"/>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
