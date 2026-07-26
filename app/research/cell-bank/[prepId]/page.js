@@ -1054,11 +1054,21 @@ export default function CellBankDetailPage() {
         </div>
         {!loading && prep && (
           <button onClick={() => setShowCoa(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm shrink-0">
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm shrink-0">
             <Printer className="w-3.5 h-3.5"/> Generate CoA
           </button>
         )}
       </div>
+
+      {/* Mobile: full-width CoA button below the header — inline (above) would
+          otherwise reserve its width for the title's entire height, forcing
+          the title and badges to wrap despite space being free lower down. */}
+      {!loading && prep && (
+        <button onClick={() => setShowCoa(true)}
+          className="sm:hidden w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm">
+          <Printer className="w-3.5 h-3.5"/> Generate CoA
+        </button>
+      )}
 
       {!loading && prep && (
         <>
