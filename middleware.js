@@ -41,10 +41,13 @@ export async function middleware(request) {
     '/admin', '/notifications', '/directory', '/formulations',
     '/shelf-life', '/research', '/calendar', '/inventory', '/profile',
     '/capa', '/equipment', '/lab-notebook', '/mispunch',
+    '/analytics', '/scada', '/shift-handover', '/environmental-monitoring',
+    '/bioprocess', '/growth-studies', '/lab-bench', '/messages',
   ];
 
   const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
   const isAuthRoute  = pathname === '/login';
+  const isApiRoute   = pathname.startsWith('/api/');
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -64,13 +67,54 @@ export async function middleware(request) {
     return NextResponse.redirect(url);
   }
 
+  // ── ALCOA++ GDP Attendance Enforcement ─────────────────────────────────
+  // Prevent data entry (POST, PUT, PATCH, DELETE) if the user is not checked in today.
+  // The CEO is exempt from this rule.
+  if (user && isApiRoute && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    const exemptedApiPrefixes = [
+      '/api/attendance', '/api/mispunch', '/api/leave', '/api/auth', '/api/cron', '/api/push'
+    ];
+    const isExempted = exemptedApiPrefixes.some(p => pathname.startsWith(p));
+
+    if (!isExempted) {
+      try {
+        const { data: emp } = await supabase
+          .from('employees')
+          .select('id, role')
+          .eq('email', user.email)
+          .single();
+
+        if (emp && emp.role !== 'ceo') {
+          // IST Timezone date
+          const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+          const { data: attendance } = await supabase
+            .from('attendance_log')
+            .select('id')
+            .eq('employee_id', emp.id)
+            .eq('date', todayStr)
+            .maybeSingle();
+
+          if (!attendance) {
+            return NextResponse.json({
+              error: 'ALCOA++ GDP Violation: You must be checked in today to enter or modify data. Please go to the Attendance module and complete your daily check-in. If you forgot to check out yesterday and your hours were reset, you must first apply for a mispunch to generate today\'s attendance record.',
+              gdp_violation: true
+            }, { status: 403 });
+          }
+        }
+      } catch (err) {
+        console.error('[Middleware] GDP Check Error:', err);
+      }
+    }
+  }
+
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    // Skip _next/static, images, and ALL /api/* routes.
-    // API routes authenticate themselves — middleware does not touch them.
-    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Skip _next/static and images. API routes are NOT skipped here so
+    // middleware can run the GDP attendance check on data-mutating calls.
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
