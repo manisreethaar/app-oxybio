@@ -10,6 +10,7 @@ import { Package, AlertTriangle, Search, Plus, Calendar, Truck, Loader2, Filter,
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import ESignatureModal from '@/components/ui/ESignatureModal';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,12 +69,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   
   const [newStock, setNewStock] = useState({
     item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
+    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
   });
   const [newIssue, setNewIssue] = useState({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
   const [showOptions, setShowOptions] = useState(false);
   
-  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '' });
+  const [newItem, setNewItem] = useState({ name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, coa_required: false, allergen: false, organic_certified: '', item_code: '', edit_reason: '' });
   const [newVendor, setNewVendor] = useState({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved', qualification_status: 'Unqualified', qualified_at: '', qualification_notes: '', audit_due_date: '' });
   
   const [modalType, setModalType] = useState('stock'); // 'stock' | 'items' | 'vendors'
@@ -88,6 +89,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   const [selectedStock, setSelectedStock] = useState<any>(null);
   const [showQR, setShowQR] = useState(false);
+  // GDP e-signature gate for QC disposition decisions (release/reject) —
+  // the actual mutation only fires after ESignatureModal's onSuccess, i.e.
+  // after the user's PIN has been verified server-side.
+  const [qcSigModal, setQcSigModal] = useState<{ isOpen: boolean; action: 'release' | 'reject' | null; reason: string; stockId: string | null }>({ isOpen: false, action: null, reason: '', stockId: null });
+  const [qcActionLoading, setQcActionLoading] = useState(false);
   const [movements, setMovements] = useState<any[]>([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [uploadingCoA, setUploadingCoA] = useState(false);
@@ -157,8 +163,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       const [stockRes, itemsRes, vendorsRes] = await withTimeout(Promise.all([
         stockQuery,
-        pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').order('name').limit(1000) : Promise.resolve({ data: null }),
-        pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: null })
+        pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').is('archived_at', null).order('name').limit(1000) : Promise.resolve({ data: null }),
+        pageNum === 0 ? supabase.from('vendors').select('*').is('archived_at', null).order('name').limit(500) : Promise.resolve({ data: null })
       ]), 20000, 'Inventory load timed out');
 
       if (stockRes.error) throw stockRes.error;
@@ -412,7 +418,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewStock({
           item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
         });
         setPage(0); await fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -441,7 +447,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setIsModalOpen(false);
         setNewStock({
           item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
+          purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
         });
         setPage(0); await fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -463,7 +469,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setNewItem({ 
           name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
           storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
-          coa_required: false, allergen: false, organic_certified: '', item_code: '' 
+          coa_required: false, allergen: false, organic_certified: '', item_code: '', edit_reason: '' 
         });
         fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -485,7 +491,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         setNewItem({ 
           name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
           storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
-          coa_required: false, allergen: false, organic_certified: '', item_code: '' 
+          coa_required: false, allergen: false, organic_certified: '', item_code: '', edit_reason: '' 
         });
         fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -497,13 +503,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('vendors').update(newVendor as any).eq('id', (newVendor as any).id);
-      if (!error) {
+      const res = await fetch('/api/inventory/vendors', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVendor)
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
         toast.success("Vendor updated successfully.");
         fetchData(0, false);
-      } else { toast.error(error.message || 'Failed.'); }
+      } else { toast.error(json.error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
@@ -511,25 +522,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (!deletingId) return;
     setIsDeleting(true);
     try {
-      // Step 1: Null out any inventory_items that reference this vendor as preferred_supplier
-      // This releases the FK constraint before we delete
-      const { error: unlinkError } = await supabase
-        .from('inventory_items')
-        .update({ preferred_supplier: null })
-        .eq('preferred_supplier', deletingId);
-      if (unlinkError) throw unlinkError;
-
-      // Step 2: Now safely delete the vendor
-      const { error } = await supabase.from('vendors').delete().eq('id', deletingId);
-      if (error) throw error;
+      // Archiving (soft delete) + unlinking preferred_supplier now both
+      // happen server-side, attributed to the acting employee.
+      const res = await fetch(`/api/inventory/vendors?id=${deletingId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
 
       setVendors(vendors.filter(v => v.id !== deletingId));
       // Update items list to reflect unlinked suppliers
       setItems(items.map(i => i.preferred_supplier === deletingId ? { ...i, preferred_supplier: null } : i));
       setDeletingId(null);
-      toast.success("Vendor deleted successfully.");
+      toast.success("Vendor archived successfully.");
     } catch (err: any) {
-      toast.error('Failed to delete vendor: ' + err.message);
+      toast.error('Failed to archive vendor: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -540,14 +545,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const payload = { ...newVendor, created_by: employeeProfile?.id };
-      const { data, error } = await (supabase.from('vendors').insert([payload] as any) as any).select().single();
-      if (!error) {
+      const res = await fetch('/api/inventory/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVendor)
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
         toast.success("Vendor registered successfully.");
         fetchData(0, false);
-      } else { toast.error(error.message || 'Failed.'); }
+      } else { toast.error(json.error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
@@ -882,6 +891,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
+  // Shared caller for /api/inventory/stock/qc — QC release/reject, quarantine
+  // location edits, and CoA verification all go through this one endpoint so
+  // every action is permission-checked, attributed, and lands in the
+  // Movement Ledger.
+  const runQcAction = useCallback(async (stockId: string, action: string, extra: Record<string, any> = {}) => {
+    const res = await fetch('/api/inventory/stock/qc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stock_id: stockId, action, ...extra })
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Action failed');
+    return json.data;
+  }, []);
+
   const [batchUsageMap, setBatchUsageMap] = useState<Record<string, Array<{id: string, batch_id: string}>>>({});
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
 
@@ -1191,7 +1215,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <button onClick={() => {
                    setNewStock({
                     item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
+                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '', edit_reason: ''
                   });
                    setModalType('stock'); setIsModalOpen(true);
                 }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
@@ -1614,9 +1638,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">Delete {selectedItemIds.size} Items?</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Archive {selectedItemIds.size} Items?</h2>
             <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
-              This will permanently remove {selectedItemIds.size} item(s) and all their associated stock records. This cannot be undone.
+              This will archive {selectedItemIds.size} item(s), removing them from the active registry. Records are retained for audit and can be restored — this does not delete their stock/lot history.
             </p>
             <div className="flex gap-3">
               <button
@@ -1631,7 +1655,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 {isBulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {isBulkDeleting ? 'Deleting...' : `Delete ${selectedItemIds.size} Items`}
+                {isBulkDeleting ? 'Archiving...' : `Archive ${selectedItemIds.size} Items`}
               </button>
             </div>
           </div>
@@ -1645,11 +1669,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">Delete Record?</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Archive Record?</h2>
             <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
-              {deleteType === 'item' 
-                ? "This will permanently remove the item and all its associated stock records. This action cannot be undone."
-                : "This will remove the supplier from your Approved Vendor List (AVL)."}
+              {deleteType === 'item'
+                ? "This will archive the item, removing it from the active registry. It's retained for audit and can be restored — its stock/lot history is not affected."
+                : "This will archive the supplier, removing it from your Approved Vendor List (AVL). It's retained for audit and can be restored."}
             </p>
             <div className="flex gap-3">
               <button 
@@ -1663,7 +1687,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 disabled={isDeleting}
                 className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Deletion"}
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Archive"}
               </button>
             </div>
           </div>
@@ -1889,20 +1913,29 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <p className="text-xs text-slate-400 font-medium italic">No recorded movements.</p>
                 ) : (
                   <div className="bg-white border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-50">
-                    {movements.map(m => (
-                      <div key={m.id} className="p-3 flex items-center justify-between text-xs">
-                        <div>
-                          <p className="font-black text-slate-800">{m.type === 'Receive' ? 'Stock Input' : 'Stock Issue'}</p>
-                          <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
+                    {movements.map(m => {
+                      const label = m.type === 'Receive' ? 'Stock Input' : m.type === 'Issue' ? 'Stock Issue' : m.type;
+                      const isQuantityMovement = m.type === 'Receive' || m.type === 'Issue';
+                      return (
+                        <div key={m.id} className="p-3 flex items-center justify-between text-xs">
+                          <div>
+                            <p className="font-black text-slate-800">{label}</p>
+                            <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
+                            {m.notes && !isQuantityMovement && <p className="text-slate-400 font-medium mt-0.5 max-w-[220px]">{m.notes}</p>}
+                          </div>
+                          <div className="text-right">
+                            {isQuantityMovement ? (
+                              <p className={`font-black ${m.type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
+                                {m.type === 'Receive' ? '+' : '-'}{m.quantity}
+                              </p>
+                            ) : (
+                              <p className="font-black text-slate-500 uppercase tracking-wider">Event</p>
+                            )}
+                            <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-black ${m.type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
-                            {m.type === 'Receive' ? '+' : '-'}{m.quantity}
-                          </p>
-                          <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1929,27 +1962,16 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 >
                   <QrCode className="w-4 h-4" /> View QR
                 </button>
-                {selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine' ? (
+                {(selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine') && !canDo('inventory', 'qc_release') ? (
+                  <div className="flex-[2] py-3 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs font-black text-slate-500">
+                    Awaiting QC disposition by an authorised Scientist+
+                  </div>
+                ) : selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine' ? (
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                        const qcNotes = window.prompt('QC Release Notes (identity test result, sampling method, observations):');
-                       if (qcNotes === null) return; // user cancelled
-                       const { data: { user } } = await supabase.auth.getUser();
-                       const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
-                       const { error } = await supabase.from('inventory_stock').update({
-                         status: 'Available',
-                         qc_status: 'Released',
-                         qc_released_by: emp?.id || null,
-                         qc_released_at: new Date().toISOString(),
-                         qc_notes: qcNotes || null,
-                       }).eq('id', selectedStock.id);
-                       if (!error) {
-                         toast.success('Stock QC Released — status updated to Available');
-                         setSelectedStock({...selectedStock, status: 'Available', qc_status: 'Released'});
-                         fetchData(0, false);
-                       } else {
-                         toast.error(error.message);
-                       }
+                       if (!qcNotes || !qcNotes.trim()) return; // user cancelled or left it blank
+                       setQcSigModal({ isOpen: true, action: 'release', reason: qcNotes.trim(), stockId: selectedStock.id });
                     }}
                     className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
                   >
@@ -1994,7 +2016,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       placeholder="Storage location (e.g. QC Cage 1)"
                       className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
                       onBlur={async (e) => {
-                        await supabase.from('inventory_stock').update({ quarantine_location: e.target.value || null }).eq('id', selectedStock.id);
+                        try {
+                          await runQcAction(selectedStock.id, 'quarantine_location', { location: e.target.value || null });
+                        } catch (err: any) { toast.error(err.message); }
                       }}
                     />
                     <input
@@ -2002,7 +2026,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       placeholder="Rack / shelf"
                       className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
                       onBlur={async (e) => {
-                        await supabase.from('inventory_stock').update({ quarantine_rack: e.target.value || null }).eq('id', selectedStock.id);
+                        try {
+                          await runQcAction(selectedStock.id, 'quarantine_location', { rack: e.target.value || null });
+                        } catch (err: any) { toast.error(err.message); }
                       }}
                     />
                   </div>
@@ -2015,37 +2041,31 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         if (!e.target.checked) return;
                         const url = window.prompt('Enter CoA document URL (from supplier):');
                         if (!url) { e.target.checked = false; return; }
-                        await supabase.from('inventory_stock').update({ coa_url: url }).eq('id', selectedStock.id);
-                        setSelectedStock({ ...selectedStock, coa_url: url });
-                        toast.success('CoA URL saved.');
+                        try {
+                          await runQcAction(selectedStock.id, 'coa_verify', { coa_url: url });
+                          setSelectedStock({ ...selectedStock, coa_url: url });
+                          toast.success('CoA URL saved.');
+                        } catch (err: any) {
+                          e.target.checked = false;
+                          toast.error(err.message);
+                        }
                       }}
                       className="w-4 h-4 rounded border-slate-400"
                     />
                   </div>
                   {/* A-47: Rejection workflow */}
-                  <button
-                    className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-red-100"
-                    onClick={async () => {
-                      const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
-                      if (!reason) return;
-                      const { data: { user } } = await supabase.auth.getUser();
-                      const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
-                      const { error } = await supabase.from('inventory_stock').update({
-                        status: 'Discarded',
-                        qc_status: 'Rejected',
-                        rejection_reason: reason,
-                        rejected_at: new Date().toISOString(),
-                        rejected_by: emp?.id || null,
-                      }).eq('id', selectedStock.id);
-                      if (!error) {
-                        toast.success('Lot rejected and marked as Discarded.');
-                        setSelectedStock(null);
-                        fetchData(0, false);
-                      } else { toast.error(error.message); }
-                    }}
-                  >
-                    ✗ Reject Lot (A-47)
-                  </button>
+                  {canDo('inventory', 'qc_release') && (
+                    <button
+                      className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-red-100"
+                      onClick={() => {
+                        const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
+                        if (!reason || !reason.trim()) return;
+                        setQcSigModal({ isOpen: true, action: 'reject', reason: reason.trim(), stockId: selectedStock.id });
+                      }}
+                    >
+                      ✗ Reject Lot (A-47)
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -2069,6 +2089,35 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
         </div>
       )}
+
+      {/* GDP e-signature gate for QC Release / Reject Lot — the mutation
+          only fires from onSuccess, i.e. after the PIN has been verified. */}
+      <ESignatureModal
+        isOpen={qcSigModal.isOpen}
+        onClose={() => setQcSigModal({ isOpen: false, action: null, reason: '', stockId: null })}
+        onSuccess={async () => {
+          if (qcActionLoading || !qcSigModal.stockId || !qcSigModal.action) return;
+          setQcActionLoading(true);
+          try {
+            await runQcAction(qcSigModal.stockId, qcSigModal.action, { reason: qcSigModal.reason });
+            if (qcSigModal.action === 'release') {
+              toast.success('Stock QC Released — status updated to Available');
+              setSelectedStock((prev: any) => prev ? { ...prev, status: 'Available', qc_status: 'Released' } : prev);
+            } else {
+              toast.success('Lot rejected and marked as Discarded.');
+              setSelectedStock(null);
+            }
+            fetchData(0, false);
+          } catch (err: any) {
+            toast.error(err.message);
+          } finally {
+            setQcActionLoading(false);
+            setQcSigModal({ isOpen: false, action: null, reason: '', stockId: null });
+          }
+        }}
+        title={`Authorize ${qcSigModal.action === 'reject' ? 'Lot Rejection' : 'QC Release'}`}
+        message="Please enter your 4-6 digit PIN to authorize this GMP quality decision. This constitutes a legally binding electronic signature under 21 CFR Part 11."
+      />
 
       {/* Auto-Load Modal */}
       {pendingSeed && (

@@ -103,6 +103,13 @@ export default function ItemVendorModal({
           <label className="flex items-center gap-2 text-xs font-bold text-gray-600"><input type="checkbox" checked={newItem.coa_required} onChange={e => setNewItem({...newItem, coa_required: e.target.checked})} /> CoA Required</label>
         </div>
 
+        {modalType === 'edit_item' && (
+          <div>
+            <label className="block text-xs font-black uppercase text-amber-600 tracking-widest mb-2">Reason for Correction (GDP requirement)</label>
+            <textarea required rows={2} placeholder="Why is this record being corrected?" className="w-full px-4 py-3 rounded-xl bg-amber-50 border-none ring-1 ring-amber-200 focus:ring-amber-400 text-sm font-bold resize-none" value={newItem.edit_reason || ''} onChange={e => setNewItem({...newItem, edit_reason: e.target.value})} />
+          </div>
+        )}
+
         <div className="flex gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
           <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">

@@ -137,33 +137,45 @@ export async function PUT(request) {
     if (permission.error) return permission.error;
 
     const body = await request.json();
-    const { id, vendor_id, supplier_batch_number, current_quantity, expiry_date, location, purchase_order_number, invoice_ref, condition_on_arrival, sds_url, coa_url, notes } = body;
+    const { id, vendor_id, supplier_batch_number, current_quantity, expiry_date, location, purchase_order_number, invoice_ref, condition_on_arrival, sds_url, coa_url, notes, edit_reason } = body;
 
     if (!id) return NextResponse.json({ success: false, error: 'Stock ID required' }, { status: 400 });
+    if (!edit_reason || !edit_reason.trim()) {
+      return NextResponse.json({ success: false, error: 'A reason is required to correct an existing stock record (GDP requirement).' }, { status: 400 });
+    }
 
     const valQty = parseFloat(current_quantity);
     if (isNaN(valQty) || valQty < 0) return NextResponse.json({ success: false, error: 'Valid quantity required' }, { status: 400 });
 
-    const { data, error } = await supabase
-      .from('inventory_stock')
-      .update({
-        vendor_id,
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).maybeSingle();
+
+    // Single RPC call (one DB transaction) so the correction reason set via
+    // set_config actually lands in the same transaction as the UPDATE — two
+    // separate client round-trips would lose it, since each PostgREST call
+    // runs in its own transaction.
+    const { data: rows, error } = await supabase.rpc('update_inventory_stock_with_reason', {
+      p_id: id,
+      p_updates: {
+        vendor_id: vendor_id || null,
         supplier_batch_number,
         current_quantity: valQty,
-        expiry_date,
+        expiry_date: expiry_date || null,
         location,
         purchase_order_number,
         invoice_ref,
         condition_on_arrival,
         sds_url,
         coa_url,
-        notes
-      })
-      .eq('id', id)
-      .select()
-      .single();
+        notes,
+        updated_by: emp?.id || null
+      },
+      p_reason: edit_reason.trim()
+    });
+    const data = rows?.[0];
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ success: false, error: 'Stock record not found' }, { status: 404 });
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
