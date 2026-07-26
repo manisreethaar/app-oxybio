@@ -116,11 +116,11 @@ export default function ProfilePage() {
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', password: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
-  
+
   const [showPinModal, setShowPinModal] = useState(false);
-  const [pinForm, setPinForm] = useState({ pin: '', confirm: '' });
+  const [pinForm, setPinForm] = useState({ currentPin: '', pin: '', confirm: '' });
   const [pinLoading, setPinLoading] = useState(false);
   
   const fileRef = useRef();
@@ -256,17 +256,30 @@ export default function ProfilePage() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+    if (!passwordForm.currentPassword) { toast.warn("Enter your current password!"); return; }
     if (passwordForm.password !== passwordForm.confirm) { toast.warn("Passwords do not match!"); return; }
     if (passwordForm.password.length < 6) { toast.warn("Password must be at least 6 characters!"); return; }
     setPasswordLoading(true);
+    const withTimeout = (promise) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your connection and try again.')), 15000)),
+    ]);
     try {
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your connection and try again.')), 15000));
-      const { error } = await Promise.race([
-        supabase.auth.updateUser({ password: passwordForm.password }),
-        timeoutPromise,
-      ]);
+      // Re-authenticate with the current password first — this is a real check
+      // against Supabase Auth, not a client-side gate, so a logged-in session
+      // alone can no longer be used to silently take over the password.
+      const { error: reauthError } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: emp.email, password: passwordForm.currentPassword })
+      );
+      if (reauthError) { toast.error('Current password is incorrect.'); return; }
+
+      const { error } = await withTimeout(supabase.auth.updateUser({ password: passwordForm.password }));
       if (error) { toast.error(error.message || "Failed to update password."); }
-      else { toast.success("Password updated successfully!"); setShowPasswordModal(false); setPasswordForm({ password: '', confirm: '' }); }
+      else {
+        toast.success("Password updated successfully!");
+        setShowPasswordModal(false);
+        setPasswordForm({ currentPassword: '', password: '', confirm: '' });
+      }
     } catch (err) { toast.error(err.message || 'Network error. Please try again.'); }
     finally { setPasswordLoading(false); }
   };
@@ -280,14 +293,14 @@ export default function ProfilePage() {
       const res = await fetch('/api/auth/pin/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pinForm.pin })
+        body: JSON.stringify({ pin: pinForm.pin, currentPin: pinForm.currentPin })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to setup PIN');
-      
+
       toast.success("E-Signature PIN configured successfully!");
       setShowPinModal(false);
-      setPinForm({ pin: '', confirm: '' });
+      setPinForm({ currentPin: '', pin: '', confirm: '' });
     } catch (err) {
       toast.error('Error: ' + err.message);
     } finally {
