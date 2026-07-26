@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { ShieldCheck, AlertTriangle, ExternalLink, FlaskConical } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
@@ -60,10 +61,16 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
   const fetchRecord = useCallback(async () => {
     let isCurrent = true;
-    const [dRes, eqRes] = await Promise.all([
-      supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
-      supabase.from('equipment').select('id, name, status, requires_calibration, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
-    ]);
+    let dRes, eqRes;
+    try {
+      [dRes, eqRes] = await withTimeout(Promise.all([
+        supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
+        supabase.from('equipment').select('id, name, status, requires_calibration, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
+      ]), 20000, 'Sterilisation data load timed out');
+    } catch (err) {
+      console.error('SterilisationPanel fetch error:', err);
+      return;
+    }
     if (!isCurrent) return;
     if (dRes.data) {
       const d = dRes.data;

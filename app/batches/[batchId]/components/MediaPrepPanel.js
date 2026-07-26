@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Beaker, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
@@ -64,7 +65,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
   const loadData = useCallback(async () => {
     let isCurrent = true;
-    const { data: d } = await supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batch.id).single();
+    let d;
+    try {
+      ({ data: d } = await withTimeout(supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batch.id).single(), 20000, 'Media prep data load timed out'));
+    } catch (err) {
+      console.error('MediaPrepPanel fetch error:', err);
+      return;
+    }
     if (!isCurrent) return;
     if (d) {
       setData(d);

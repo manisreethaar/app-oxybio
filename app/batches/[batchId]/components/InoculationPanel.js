@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Droplets, AlertTriangle, Dna, ChevronDown } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
@@ -62,7 +63,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   useEffect(() => {
     if (sourceType !== 'cell_bank') return;
     setVialsLoading(true);
-    fetch('/api/research/cell-bank/vials?status=Available')
+    withTimeout(fetch('/api/research/cell-bank/vials?status=Available'), 20000, 'Available vials load timed out')
       .then(r => r.json())
       .then(j => { if (j.success) setAvailVials(j.data || []); })
       .catch(() => {})
@@ -71,7 +72,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
   const fetchRecord = useCallback(() => {
     if (!activeFlask?.id) return;
-    supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single()
+    withTimeout(supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(), 20000, 'Inoculation record load timed out')
       .then(({ data: d }) => {
         if (d) {
           setSourceType(d.inoculum_source_type || 'other');
@@ -101,7 +102,8 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
           setTZero('');
         }
-      });
+      })
+      .catch(err => console.error('InoculationPanel fetch error:', err));
   }, [activeFlask?.id, supabase]);
 
   useEffect(() => { fetchRecord(); }, [fetchRecord]);

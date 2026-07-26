@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { CheckCircle, Lock, AlertTriangle, Loader, FileText, Package } from 'lucide-react';
 
 export default function ReleasePanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved, batchId }) {
@@ -46,10 +47,16 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
   const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
-    const [relRes, epRes] = await Promise.all([
-      supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle()
-    ]);
+    let relRes, epRes;
+    try {
+      [relRes, epRes] = await withTimeout(Promise.all([
+        supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+        supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle()
+      ]), 20000, 'Release record load timed out');
+    } catch (err) {
+      console.error('ReleasePanel fetch error:', err);
+      return;
+    }
     if (epRes.data) {
       setSensoryData({
         overall: epRes.data.sensory_overall,
@@ -77,11 +84,12 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   useEffect(() => { setRecord(null); loadRecord(); }, [loadRecord]);
 
   useEffect(() => {
-    supabase.from('formulations')
+    withTimeout(supabase.from('formulations')
       .select('id, name, code')
       .eq('status', 'Approved')
-      .order('name')
-      .then(({ data }) => setFormulations(data || []));
+      .order('name'), 20000, 'Formulations load timed out')
+      .then(({ data }) => setFormulations(data || []))
+      .catch(err => console.error('ReleasePanel formulations fetch error:', err));
   }, [supabase]);
 
   const handleRelease = async () => {
