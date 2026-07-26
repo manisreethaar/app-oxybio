@@ -4,8 +4,6 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Download, Filter, RefreshCw, Layers } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController
 } from 'chart.js';
@@ -150,6 +148,12 @@ export default function BatchAnalyticsPage() {
     if (!reportRef.current) return;
     toast.info('Generating PDF report...');
     try {
+      // jspdf + html2canvas together are ~400KB — only worth paying for
+      // when the user actually exports, not on every page load.
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
       const canvas = await html2canvas(reportRef.current, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');

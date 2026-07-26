@@ -15,12 +15,15 @@ export async function GET() {
     }
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    // Use RPC for batch stats - single call instead of multiple
-    const { data: batchStats, error: batchErr } = await supabase
-      .rpc('get_dashboard_batch_stats', { target_date: todayStr });
-
-    // Fetch KPI counts only (not full data)
+    // Fetch KPI counts only (not full data). batchHistory and
+    // lowStockAlerts used to run as separate sequential queries after this
+    // block even though neither depends on it — folded them in here so the
+    // whole dashboard is one round-trip instead of three. (A batch-stats RPC
+    // call used to run before this too, but its result was never read
+    // anywhere in the response — dropped it entirely.)
     const [
       deviationsResult,
       overduesResult,
@@ -31,7 +34,8 @@ export async function GET() {
       currentlyInLabCount,
       totalEmps,
       mispunchesResult,
-      activeBatchesResult
+      activeBatchesResult,
+      batchHistoryResult,
     ] = await Promise.all([
       // Unacknowledged pH deviations
       supabase.from('ph_readings').select('batch_id', { count: 'exact', head: true })
@@ -63,19 +67,16 @@ export async function GET() {
       // Active batches with last fermentation reading timestamp
       supabase.from('batches').select('id, batch_id, variant, current_stage, status, created_at, ph_readings(ph_value, is_deviation), batch_fermentation_readings(ph, is_ph_alarm, logged_at)')
         .is('archived_at', null)
-        .not('status', 'in', '("released","rejected")').limit(10)
+        .not('status', 'in', '("released","rejected")').limit(10),
+      // Batch history for the 6-month chart
+      supabase.from('batches').select('status, created_at')
+        .is('archived_at', null)
+        .in('status', ['released', 'rejected'])
+        .gte('created_at', sixMonthsAgo.toISOString())
+        .order('created_at', { ascending: true }),
     ]);
 
-    // Build chart data from batch history (last 6 months)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    
-    const { data: batchHistory } = await supabase
-      .from('batches').select('status, created_at')
-      .is('archived_at', null)
-      .in('status', ['released', 'rejected'])
-      .gte('created_at', sixMonthsAgo.toISOString())
-      .order('created_at', { ascending: true });
+    const batchHistory = batchHistoryResult?.data;
 
     // Build chart data
     const monthMap = {};
@@ -93,14 +94,6 @@ export async function GET() {
         else if (b.status === 'rejected') monthMap[key].Rejected++;
       }
     });
-
-    // Low stock alerts — simple threshold check, no broken nested RPC
-    const { data: lowStockAlerts } = await supabase
-      .from('inventory_stock')
-      .select('id, current_quantity, inventory_items(name, unit, min_stock_level)')
-      .eq('status', 'Available')
-      .lt('current_quantity', 10) // simple numeric threshold, not a subquery
-      .limit(5);
 
     const response = NextResponse.json({
       success: true,
