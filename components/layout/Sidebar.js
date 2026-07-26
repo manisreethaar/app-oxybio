@@ -226,7 +226,7 @@ export default function Sidebar() {
         <div className="md:hidden fixed inset-0 z-[70]" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) setSheet(false); }}>
           <div
-            className="absolute inset-x-0 bottom-[64px] max-h-[88dvh] flex flex-col rounded-t-3xl overflow-hidden animate-slide-in-bottom shadow-2xl"
+            className="absolute inset-x-0 bottom-[64px] max-h-[88dvh] flex flex-col rounded-3xl overflow-hidden animate-slide-in-bottom shadow-2xl"
             style={{ background: V.sidebar, borderTop: `1px solid ${V.border}` }}
           >
             {/* Sheet Header */}
