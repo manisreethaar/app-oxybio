@@ -72,7 +72,13 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       }, { onConflict: 'flask_id' });
       if (error) throw error;
 
-      await supabase.from('batch_flasks').update({ status: 'rejected' }).eq('id', activeFlask.id);
+      const { error: rpcError } = await supabase.rpc('update_record_with_reason', {
+        target_table: 'batch_flasks',
+        record_id: activeFlask.id,
+        payload: { status: 'rejected' },
+        reason_text: reason
+      });
+      if (rpcError) throw rpcError;
 
       // G-29: Auto-close sibling flasks still in qc_hold (to prevent orphaned quarantine state)
       const { data: siblings } = await supabase.from('batch_flasks')
@@ -88,7 +94,12 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         const remaining = (allFlasks.data||[]).filter(f => f.id !== activeFlask.id && !['released','rejected'].includes(f.status));
         if (remaining.length === 0) {
           // All flasks are rejected — update batch status
-          await supabase.from('batches').update({ status: 'rejected', current_stage: 'rejected' }).eq('id', batch.id);
+          await supabase.rpc('update_record_with_reason', {
+            target_table: 'batches',
+            record_id: batch.id,
+            payload: { status: 'rejected', current_stage: 'rejected' },
+            reason_text: reason
+          });
           toast.warn('All trials rejected — batch marked as rejected.');
         }
       }

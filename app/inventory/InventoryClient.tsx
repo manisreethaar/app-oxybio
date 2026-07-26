@@ -17,6 +17,7 @@ import StockModal from './components/StockModal';
 import ItemVendorModal from './components/ItemVendorModal';
 import PurchaseRequestsTab from './components/PurchaseRequestsTab';
 import TraceabilityTab from './components/TraceabilityTab';
+import { useAuditReason } from '@/components/useAuditReason';
 import {
   filterStock,
   getItemStats,
@@ -27,6 +28,7 @@ import {
 } from './inventoryUtils';
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
+  const { requestReason, modal: auditModal } = useAuditReason();
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
@@ -1857,13 +1859,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                        if (qcNotes === null) return; // user cancelled
                        const { data: { user } } = await supabase.auth.getUser();
                        const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
-                       const { error } = await supabase.from('inventory_stock').update({
-                         status: 'Available',
-                         qc_status: 'Released',
-                         qc_released_by: emp?.id || null,
-                         qc_released_at: new Date().toISOString(),
-                         qc_notes: qcNotes || null,
-                       }).eq('id', selectedStock.id);
+                       const auditReason = await requestReason().catch(() => null);
+                       if (!auditReason) return;
+                       const { error } = await supabase.rpc('update_record_with_reason', {
+                         target_table: 'inventory_stock',
+                         record_id: selectedStock.id,
+                         payload: {
+                           status: 'Available',
+                           qc_status: 'Released',
+                           qc_released_by: emp?.id || null,
+                           qc_released_at: new Date().toISOString(),
+                           qc_notes: qcNotes || null,
+                         },
+                         reason_text: auditReason
+                       });
                        if (!error) {
                          toast.success('Stock QC Released — status updated to Available');
                          setSelectedStock({...selectedStock, status: 'Available', qc_status: 'Released'});
@@ -1915,7 +1924,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       placeholder="Storage location (e.g. QC Cage 1)"
                       className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
                       onBlur={async (e) => {
-                        await supabase.from('inventory_stock').update({ quarantine_location: e.target.value || null }).eq('id', selectedStock.id);
+                        if (e.target.value === (selectedStock.quarantine_location || '')) return;
+                        const auditReason = await requestReason().catch(() => null);
+                        if (!auditReason) { e.target.value = selectedStock.quarantine_location || ''; return; }
+                        await supabase.rpc('update_record_with_reason', { target_table: 'inventory_stock', record_id: selectedStock.id, payload: { quarantine_location: e.target.value || null }, reason_text: auditReason });
                       }}
                     />
                     <input
@@ -1923,7 +1935,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       placeholder="Rack / shelf"
                       className="px-2 py-1.5 border border-amber-200 rounded-lg text-xs font-semibold outline-none bg-amber-50"
                       onBlur={async (e) => {
-                        await supabase.from('inventory_stock').update({ quarantine_rack: e.target.value || null }).eq('id', selectedStock.id);
+                        if (e.target.value === (selectedStock.quarantine_rack || '')) return;
+                        const auditReason = await requestReason().catch(() => null);
+                        if (!auditReason) { e.target.value = selectedStock.quarantine_rack || ''; return; }
+                        await supabase.rpc('update_record_with_reason', { target_table: 'inventory_stock', record_id: selectedStock.id, payload: { quarantine_rack: e.target.value || null }, reason_text: auditReason });
                       }}
                     />
                   </div>
@@ -1936,7 +1951,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         if (!e.target.checked) return;
                         const url = window.prompt('Enter CoA document URL (from supplier):');
                         if (!url) { e.target.checked = false; return; }
-                        await supabase.from('inventory_stock').update({ coa_url: url }).eq('id', selectedStock.id);
+                        const auditReason = await requestReason().catch(() => null);
+                        if (!auditReason) { e.target.checked = false; return; }
+                        await supabase.rpc('update_record_with_reason', { target_table: 'inventory_stock', record_id: selectedStock.id, payload: { coa_url: url }, reason_text: auditReason });
                         setSelectedStock({ ...selectedStock, coa_url: url });
                         toast.success('CoA URL saved.');
                       }}
@@ -1951,13 +1968,20 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       if (!reason) return;
                       const { data: { user } } = await supabase.auth.getUser();
                       const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
-                      const { error } = await supabase.from('inventory_stock').update({
-                        status: 'Discarded',
-                        qc_status: 'Rejected',
-                        rejection_reason: reason,
-                        rejected_at: new Date().toISOString(),
-                        rejected_by: emp?.id || null,
-                      }).eq('id', selectedStock.id);
+                      const auditReason = await requestReason().catch(() => null);
+                      if (!auditReason) return;
+                      const { error } = await supabase.rpc('update_record_with_reason', {
+                        target_table: 'inventory_stock',
+                        record_id: selectedStock.id,
+                        payload: {
+                          status: 'Discarded',
+                          qc_status: 'Rejected',
+                          rejection_reason: reason,
+                          rejected_at: new Date().toISOString(),
+                          rejected_by: emp?.id || null,
+                        },
+                        reason_text: auditReason
+                      });
                       if (!error) {
                         toast.success('Lot rejected and marked as Discarded.');
                         setSelectedStock(null);
@@ -2020,6 +2044,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
         </div>
       )}
+      {auditModal}
     </div>
   );
 }
