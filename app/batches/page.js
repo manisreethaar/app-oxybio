@@ -11,17 +11,18 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
   FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X,
-  CheckCircle2, Trash2, Clock, Beaker, Activity, Users, Calendar,
-  ChevronRight, Zap, Search, Archive, LayoutGrid, List, Columns,
-  ShieldCheck, Droplets, Filter, Leaf
+  Clock, Beaker, Activity, Calendar,
+  Zap, Search, LayoutGrid, List, Columns,
+  ShieldCheck, Droplets, Filter
 } from 'lucide-react';
-import { format, differenceInHours, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import Link from 'next/link';
 import Skeleton from '@/components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
-import CreatorBadge from '@/components/ui/CreatorBadge';
-import EditRequestButton from '@/components/ui/EditRequestButton';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import BatchCard from '@/components/ui/BatchCard';
+import { SkuBadge } from '@/components/ui/BatchBadges';
 
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
@@ -39,29 +40,9 @@ const STAGE_LABELS = {
   released:         'Released',
   rejected:         'Rejected',
 };
-
-// ─── SKU Badge Colors ─────────────────────────────────────────
-const SKU_COLORS = {
-  CLARITY:    'bg-slate-50 text-slate-700 border-slate-200',
-  MOMENTUM:   'bg-amber-50 text-amber-700 border-amber-200',
-  VITALITY:   'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Unassigned: 'bg-slate-100 text-slate-500 border-slate-200',
-};
-
-// ─── Status Colors ────────────────────────────────────────────
-const STATUS_COLORS = {
-  scheduled:   'bg-slate-50 text-slate-700 border-slate-100',
-  planned:     'bg-slate-50 text-slate-700 border-slate-100',
-  active:       'bg-amber-50 text-amber-700 border-amber-100', // legacy DB value
-  'in-progress':'bg-amber-50 text-amber-700 border-amber-100', // DB canonical value
-  in_progress:  'bg-amber-50 text-amber-700 border-amber-100', // code alias
-  fermenting:  'bg-amber-50 text-amber-700 border-amber-100',
-  qc_hold:     'bg-slate-50 text-slate-700 border-slate-100',
-  'qc-hold':   'bg-slate-50 text-slate-700 border-slate-100',
-  released:    'bg-emerald-50 text-emerald-700 border-emerald-100',
-  rejected:    'bg-red-50 text-red-700 border-red-100',
-  deviation:   'bg-red-50 text-red-700 border-red-100',
-};
+// Only the first 7 stages are shown as progress segments — released/rejected
+// are terminal dispositions, not points along the live progress bar.
+const PROGRESS_SEGMENTS = 7;
 
 // ─── Validation Schema ───────────────────────────────────────
 const TERMINAL_STATUSES = ['released', 'rejected'];
@@ -134,7 +115,6 @@ export default function BatchesPage() {
   const [creatingBatch,    setCreatingBatch]    = useState(false);
   const [batchError,       setBatchError]       = useState(null); // { message, warnings }
   const [cancelConfirmId,  setCancelConfirmId]  = useState(null);
-  const [archiveReason,    setArchiveReason]    = useState('');
   const [statusFilter,     setStatusFilter]     = useState('active');
   const [searchTerm,       setSearchTerm]       = useState('');
   const [sortOrder,        setSortOrder]        = useState('newest');
@@ -166,9 +146,12 @@ export default function BatchesPage() {
     return effectiveIdx >= 0 ? STAGE_ORDER[effectiveIdx] : batch.current_stage;
   };
 
-  const renderBatchCard = (batch, compact = false) => {
-    const hasAlarm = batch.batch_fermentation_readings?.some(r => r.is_ph_alarm || r.is_temp_alarm);
-    const flasks   = batch.batch_flasks || [];
+  // ─── Card view-model builders ──────────────────────────────
+  // All the GMP-specific derivation (effective stage, stale-status correction,
+  // alarm state) stays here; BatchCard only ever receives plain display props.
+  const getActiveCardProps = (batch) => {
+    const hasAlarm = !!batch.has_alarm;
+    const flasks = batch.batch_flasks || [];
     const maxEpHrs = batch._maxEpHrs ?? null;
     const hours = maxEpHrs !== null
       ? maxEpHrs.toFixed(1)
@@ -187,99 +170,64 @@ export default function BatchesPage() {
       : isStatusStale ? (STAGE_LABELS[derivedStage] || 'in progress').toLowerCase()
       : batch.status;
 
-    return (
-      <div
-        key={batch.id}
-        className={`card overflow-hidden flex flex-col hover:border-slate-300 transition-all ${compact ? 'min-w-[280px] w-[280px] snap-center shrink-0' : ''} ${hasAlarm ? 'border-red-300 ring-1 ring-red-200' : ''}`}
-      >
-        <div className={`px-5 py-4 flex justify-between items-start border-b border-slate-100 bg-slate-50/40 ${compact ? 'px-4 py-3' : ''}`}>
-          <div>
-            <p className="font-mono text-sm font-black text-slate-900 tracking-wider mb-1.5">{batch.batch_id}</p>
-            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${SKU_COLORS[batch.sku_target] || SKU_COLORS.Unassigned}`}>
-                {batch.sku_target}
-              </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
-                {batch.experiment_type}
-              </span>
-              {!compact && (
-                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${hasAlarm ? 'bg-red-100 text-red-700 border-red-200 animate-pulse' : STATUS_COLORS[normaliseStatus(batch.status)] || STATUS_COLORS['in_progress'] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                  {hasAlarm ? '⚠ Alarm' : displayStatus}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="text-right flex flex-col items-end gap-1">
-            <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">{hrsLabel}</p>
-            <p className="text-lg font-black text-slate-800 tabular-nums">{hours}<span className="text-[10px] font-bold text-slate-400"> hr</span></p>
-            {!compact && isAdmin ? (
-              <div className="flex gap-2">
-                <button onClick={e => { e.preventDefault(); setArchiveReason(''); setCancelConfirmId(batch.id); }} className="p-1.5 rounded bg-slate-100 text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all border border-slate-200" title="Archive Batch"><Archive className="w-3 h-3"/></button>
-                <button onClick={e => { e.preventDefault(); handlePermanentDeleteBatch(batch.id); }} className="p-1.5 rounded bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all border border-slate-200" title="Permanently Delete Batch"><Trash2 className="w-3 h-3"/></button>
-              </div>
-            ) : null}
-          </div>
-        </div>
+    return {
+      key: batch.id,
+      batchId: batch.batch_id,
+      skuTarget: batch.sku_target,
+      experimentType: batch.experiment_type,
+      status: normaliseStatus(batch.status),
+      displayStatusLabel: displayStatus,
+      hasAlarm,
+      hours,
+      hoursLabel: hrsLabel,
+      isScheduled,
+      isTerminal: false,
+      stageLabel: isScheduled ? 'Scheduled' : (STAGE_LABELS[derivedStage] || derivedStage),
+      stageProgress: { currentIdx, total: PROGRESS_SEGMENTS },
+      flasks: flasks.map(f => ({ id: f.id, label: f.flask_label, status: f.status })),
+      recipeName: batch.formulations?.name,
+      recipeVersion: batch.formulations?.version,
+      volumeMl: batch.planned_volume_ml,
+      href: `/batches/${batch.id}`,
+      ctaLabel: isScheduled ? 'Start Batch' : (hasAlarm ? '⚠ Review Alarm' : 'Continue Batch'),
+      onStart: isScheduled ? () => handleStartBatch(batch.id) : undefined,
+      onArchive: isAdmin ? () => { setCancelConfirmId(batch.id); } : undefined,
+      onPermanentDelete: isAdmin ? () => handlePermanentDeleteBatch(batch.id) : undefined,
+      isAdmin,
+      busy: creatingBatch,
+    };
+  };
 
-        <div className={`px-5 pt-3 pb-2 ${compact ? 'px-4 pt-2 pb-1.5' : ''}`}>
-          <div className="flex items-center gap-0.5 mb-1">
-            {STAGE_ORDER.slice(0, 7).map((stage, idx) => (
-              <div
-                key={stage}
-                title={STAGE_LABELS[stage]}
-                className={`h-1.5 flex-1 rounded-full transition-all ${
-                  currentIdx >= 7 || idx < currentIdx  ? 'bg-navy' :
-                  idx === currentIdx ? 'bg-amber-500 animate-pulse' :
-                  'bg-slate-100'
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            {isScheduled ? 'Scheduled' : (STAGE_LABELS[derivedStage] || derivedStage)}
-          </p>
-        </div>
+  const getTerminalCardProps = (batch) => {
+    const dateLabel = batch.start_time ? format(new Date(batch.start_time), 'MMM d, yyyy') : 'No date';
+    const isArchivedTab = statusFilter === 'archived';
+    const label = isArchivedTab ? 'archived' : batch.status;
+    const terminalInfo = isArchivedTab
+      ? `Archived · ${dateLabel}`
+      : `${label === 'released' ? 'Released' : 'Rejected'} · ${dateLabel}`;
 
-        <div className={`px-5 py-2 border-t border-slate-50 flex items-center gap-2 ${compact ? 'px-4 py-1.5' : ''}`}>
-          <FlaskConical className="w-3 h-3 text-slate-400 shrink-0"/>
-          <div className="flex gap-1 flex-wrap">
-            {flasks.map(f => (
-              <span
-                key={f.id}
-                className={`px-1 py-0.5 rounded text-[10px] font-black uppercase border ${f.status === 'active' ? 'bg-navy/5 text-navy border-navy/20' : f.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200 line-through' : f.status === 'planned' ? 'bg-slate-50 text-slate-500 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}
-              >
-                {f.flask_label}
-              </span>
-            ))}
-            {flasks.length === 0 && <span className="text-[10px] text-slate-400">No flasks</span>}
-          </div>
-          <span className="ml-auto text-[10px] text-slate-400 font-semibold">{batch.planned_volume_ml}ml</span>
-        </div>
-
-        <div className={`px-5 py-1.5 border-t border-slate-50 flex items-center gap-1.5 ${compact ? 'px-4 py-1' : ''}`}>
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Recipe:</span>
-          <span className="text-[10px] font-bold text-slate-700 truncate max-w-[120px]">{batch.formulations?.name || '—'}</span>
-          <span className="text-[10px] text-slate-400">v{batch.formulations?.version}</span>
-        </div>
-
-        {isScheduled ? (
-          <button
-            onClick={() => handleStartBatch(batch.id)}
-            disabled={creatingBatch}
-            className="w-full py-2.5 mt-auto flex justify-center items-center text-xs font-bold transition-colors border-t border-slate-100 bg-slate-50/50 hover:bg-slate-100 text-navy disabled:opacity-60"
-          >
-            Start Batch <ArrowRight className="w-3 h-3 ml-1.5"/>
-          </button>
-        ) : (
-          <Link
-            href={`/batches/${batch.id}`}
-            className={`w-full py-2.5 mt-auto flex justify-center items-center text-xs font-bold transition-colors border-t border-slate-100 ${hasAlarm ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-slate-50/50 hover:bg-slate-100 text-navy'}`}
-          >
-            {hasAlarm ? '⚠ Review Alarm' : 'Continue Batch'} <ArrowRight className="w-3 h-3 ml-1.5"/>
-          </Link>
-        )}
-      </div>
-    );
+    return {
+      key: batch.id,
+      batchId: batch.batch_id,
+      skuTarget: batch.sku_target,
+      experimentType: batch.experiment_type,
+      status: isArchivedTab ? 'archived' : batch.status,
+      displayStatusLabel: label,
+      hasAlarm: false,
+      hours: null,
+      isScheduled: false,
+      isTerminal: true,
+      terminalInfo,
+      flasks: (batch.batch_flasks || []).map(f => ({ id: f.id, label: f.flask_label, status: f.status })),
+      recipeName: batch.formulations?.name,
+      recipeVersion: batch.formulations?.version,
+      volumeMl: batch.planned_volume_ml,
+      href: `/batches/${batch.id}`,
+      ctaLabel: 'View',
+      onArchive: (isAdmin && !isArchivedTab) ? () => { setCancelConfirmId(batch.id); } : undefined,
+      onPermanentDelete: isAdmin ? () => handlePermanentDeleteBatch(batch.id) : undefined,
+      isAdmin,
+    };
   };
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
@@ -491,7 +439,7 @@ export default function BatchesPage() {
   // ─── Cancel Batch ──────────────────────────────────────────
   const handleCancelBatch = async (id, reason) => {
     try {
-      const res  = await fetch(`/api/batches?id=${id}`, { 
+      const res  = await fetch(`/api/batches?id=${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archive_reason: reason })
@@ -706,7 +654,7 @@ export default function BatchesPage() {
               <span className="ml-2 px-2 py-0.5 bg-navy text-white text-xs font-black rounded-full">{displayedBatches.length}</span>
             )}
           </h2>
-          
+
           {/* View Toggle */}
           {statusFilter === 'active' && (
             <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
@@ -735,7 +683,7 @@ export default function BatchesPage() {
             {/* GRID VIEW */}
             {(viewMode === 'grid' || statusFilter === 'scheduled') && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {displayedBatches.map(batch => renderBatchCard(batch, false))}
+                {displayedBatches.map(batch => <BatchCard key={batch.id} {...getActiveCardProps(batch)} />)}
               </div>
             )}
 
@@ -769,7 +717,7 @@ export default function BatchesPage() {
                             <td className="px-5 py-3 text-xs font-mono font-bold text-slate-800">{batch.batch_id}</td>
                             <td className="px-5 py-3">
                               <div className="flex gap-1 items-center">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${SKU_COLORS[batch.sku_target] || SKU_COLORS.Unassigned}`}>{batch.sku_target || '—'}</span>
+                                <SkuBadge sku={batch.sku_target} />
                                 <span className="text-[10px] text-slate-500 font-bold border border-slate-200 rounded px-1.5 py-0.5 bg-slate-100">{batch.experiment_type}</span>
                               </div>
                             </td>
@@ -777,7 +725,7 @@ export default function BatchesPage() {
                             <td className="px-5 py-3">
                               <div className="w-48">
                                 <div className="flex items-center gap-0.5 mb-1.5">
-                                  {STAGE_ORDER.slice(0, 7).map((stage, idx) => (
+                                  {STAGE_ORDER.slice(0, PROGRESS_SEGMENTS).map((stage, idx) => (
                                     <div
                                       key={stage}
                                       title={STAGE_LABELS[stage]}
@@ -827,9 +775,9 @@ export default function BatchesPage() {
                     if (col.id === 'straining') return stage === 'straining' || stage === 'extract_addition';
                     return stage === col.id;
                   });
-                  
+
                   const ColIcon = col.icon;
-                  
+
                   return (
                     <div key={col.id} className={`min-w-[300px] w-[300px] flex-shrink-0 flex flex-col bg-slate-50/50 rounded-2xl border ${col.border} p-2 h-[calc(100vh-280px)] min-h-[500px]`}>
                       <div className="flex items-center justify-between px-3 py-2 mb-2 border-b border-slate-200/60 pb-3">
@@ -841,14 +789,14 @@ export default function BatchesPage() {
                         </div>
                         <span className="text-[10px] font-black bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{colBatches.length}</span>
                       </div>
-                      
+
                       <div className="flex-1 overflow-y-auto space-y-3 px-1 pb-2 custom-scrollbar flex flex-col items-center">
                         {colBatches.length === 0 ? (
                           <div className="h-24 w-full border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             Empty
                           </div>
                         ) : (
-                          colBatches.map(batch => renderBatchCard(batch, true))
+                          colBatches.map(batch => <BatchCard key={batch.id} {...getActiveCardProps(batch)} compact />)
                         )}
                       </div>
                     </div>
@@ -861,7 +809,9 @@ export default function BatchesPage() {
       </section>
       )}
 
-      {/* History Table — released / rejected tabs */}
+      {/* History — released / rejected / archived tabs. Same card as the
+          active/scheduled grid above instead of a separate table, so
+          switching tabs doesn't switch visual language. */}
       {isHistoryView && (
       <section className="mt-4">
         <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center">
@@ -871,113 +821,17 @@ export default function BatchesPage() {
             <span className="ml-2 px-2 py-0.5 bg-navy text-white text-xs font-black rounded-full">{displayedBatches.length}</span>
           )}
         </h2>
-        <div className="card overflow-hidden">
-          <div className="md:hidden p-3 space-y-3">
-            {displayedBatches.map(l => (
-              <div key={l.id} className="mobile-card p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-black font-mono text-slate-900">{l.batch_id}</p>
-                    <p className="text-xs font-semibold text-slate-500 mt-1 line-clamp-1">{l.formulations?.name || 'No recipe'}</p>
-                  </div>
-                  <span className={`px-2 py-1 inline-flex text-xs font-black uppercase tracking-wider rounded border ${statusFilter === 'archived' ? 'bg-slate-50 text-slate-600 border-slate-200' : l.status === 'released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                    {statusFilter === 'archived' ? 'archived' : l.status}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-black border ${SKU_COLORS[l.sku_target] || SKU_COLORS.Unassigned}`}>{l.sku_target || 'SKU'}</span>
-                  <span className="px-1.5 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-600 border border-slate-200">{l.experiment_type || 'Type'}</span>
-                  <span className="px-1.5 py-0.5 rounded text-xs font-black bg-slate-50 text-slate-500 border border-slate-200">
-                    {l.start_time ? format(new Date(l.start_time), 'MMM d, yyyy') : 'No date'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                  {statusFilter === 'archived' && isAdmin ? (
-                    <button
-                      onClick={() => handlePermanentDeleteBatch(l.id)}
-                      className="px-3 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black"
-                    >
-                      Delete permanently
-                    </button>
-                  ) : null}
-                  <Link href={`/batches/${l.id}`} className="px-3 py-2 rounded-xl bg-navy text-white text-xs font-black">
-                    View
-                  </Link>
-                </div>
-              </div>
-            ))}
-            {displayedBatches.length === 0 && (
-              <div className="py-8 text-center text-xs text-slate-400 font-medium">No {statusFilter} batches.</div>
-            )}
+
+        {displayedBatches.length === 0 ? (
+          <div className="card p-10 text-center">
+            <Beaker className="w-10 h-10 text-slate-200 mx-auto mb-3"/>
+            <p className="text-slate-400 font-medium text-sm">No {statusFilter} batches.</p>
           </div>
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Batch ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">SKU / Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Recipe</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {displayedBatches.map(l => (
-                  <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-3.5 text-xs font-mono font-bold text-slate-800">{l.batch_id}</td>
-                    <td className="px-6 py-3.5">
-                      <div className="flex gap-1 items-center">
-                        <span className={`px-1.5 py-0.5 rounded text-xs font-black border ${SKU_COLORS[l.sku_target] || SKU_COLORS.Unassigned}`}>{l.sku_target || '—'}</span>
-                        <span className="text-xs text-slate-400 font-bold">{l.experiment_type}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5 text-xs font-semibold text-slate-700">{l.formulations?.name || '—'}</td>
-                    <td className="px-6 py-3.5">
-                      <span className={`px-2 py-0.5 inline-flex text-xs font-black uppercase tracking-wider rounded border ${statusFilter === 'archived' ? 'bg-slate-50 text-slate-600 border-slate-200' : l.status === 'released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                        {statusFilter === 'archived' ? 'archived' : l.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-xs text-slate-500 font-semibold">
-                      {l.start_time ? format(new Date(l.start_time), 'MMM d, yyyy') : '—'}
-                    </td>
-                    <td className="px-6 py-3.5 text-right space-x-3">
-                      {isAdmin && statusFilter !== 'archived' ? (
-                        <>
-                          <button
-                            onClick={(e) => { e.preventDefault(); setArchiveReason(''); setCancelConfirmId(l.id); }}
-                            className="text-xs font-bold text-amber-600 hover:underline"
-                          >
-                            Archive
-                          </button>
-                          <button
-                            onClick={() => handlePermanentDeleteBatch(l.id)}
-                            className="text-xs font-bold text-red-600 hover:underline"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      ) : isAdmin && statusFilter === 'archived' ? (
-                        <button
-                          onClick={() => handlePermanentDeleteBatch(l.id)}
-                          className="text-xs font-bold text-red-600 hover:underline"
-                        >
-                          Delete permanently
-                        </button>
-                      ) : null}
-                      <Link href={`/batches/${l.id}`} className="text-xs font-bold text-accent hover:underline">
-                        View →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {displayedBatches.length === 0 && (
-                  <tr><td colSpan={6} className="px-6 py-8 text-center text-xs text-slate-400 font-medium">No {statusFilter} batches.</td></tr>
-                )}
-              </tbody>
-            </table>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {displayedBatches.map(batch => <BatchCard key={batch.id} {...getTerminalCardProps(batch)} />)}
           </div>
-        </div>
+        )}
       </section>
       )}
 
@@ -1203,54 +1057,20 @@ export default function BatchesPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Cancel Batch Confirmation Modal ──────────────────── */}
-      <AnimatePresence>
-        {cancelConfirmId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/10 backdrop-blur-sm p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl border border-red-100 p-6 w-full max-w-sm"
-            >
-              <div className="flex items-start gap-3 mb-4">
-                <div className="p-2 bg-red-50 rounded-xl shrink-0">
-                  <Trash2 className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-sm">Archive this batch?</h3>
-                  <p className="text-xs text-slate-500 mt-1">It will be hidden from active lists. Permanent delete is available only from Archived.</p>
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Reason for Archiving</label>
-                <input
-                  type="text"
-                  placeholder="Required..."
-                  value={archiveReason}
-                  onChange={(e) => setArchiveReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-red-500"
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setCancelConfirmId(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-                >
-                  Keep Batch
-                </button>
-                <button
-                  disabled={!archiveReason.trim()}
-                  onClick={() => { const id = cancelConfirmId; setCancelConfirmId(null); handleCancelBatch(id, archiveReason); }}
-                  className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  Archive Batch
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* ── Archive Batch Confirmation — shared modal, was a hand-rolled
+          dialog duplicated across this page and the batch detail page ── */}
+      <ConfirmModal
+        isOpen={!!cancelConfirmId}
+        onClose={() => setCancelConfirmId(null)}
+        onConfirm={(reason) => handleCancelBatch(cancelConfirmId, reason)}
+        title="Archive this batch?"
+        message="It will be hidden from active lists. Permanent delete is available only from Archived."
+        confirmText="Archive Batch"
+        variant="danger"
+        requireInput
+        inputLabel="Reason for Archiving"
+        inputPlaceholder="Required..."
+      />
     </div>
   );
 }
