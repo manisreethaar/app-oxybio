@@ -73,19 +73,29 @@ export async function PUT(request) {
     if (permission.error) return permission.error;
 
     const body = await request.json();
-    const { id, name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code } = body;
+    const { id, name, category, sub_category, unit, min_stock_level, storage_condition, preferred_supplier, hazardous, cold_chain_required, coa_required, allergen, organic_certified, item_code, reason, pin } = body;
 
     if (!id || !name || !category || !unit) {
       return NextResponse.json({ success: false, error: 'Missing required validation fields' }, { status: 400 });
     }
+    if (!reason || !reason.trim() || !pin) {
+      return NextResponse.json({ success: false, error: 'A GDP reason and e-signature PIN are required to correct an existing item record.' }, { status: 400 });
+    }
 
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .update({ 
-        name, 
-        category, 
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).maybeSingle();
+
+    // Shared app-wide RPC (also used by batches/compliance/etc.) — verifies
+    // the e-signature PIN and records the correction reason in the same
+    // transaction as the update.
+    const { error } = await supabase.rpc('update_record_with_reason', {
+      target_table: 'inventory_items',
+      record_id: id,
+      payload: {
+        name,
+        category,
         sub_category,
-        unit, 
+        unit,
         min_stock_level: parseFloat(min_stock_level) || 0,
         storage_condition,
         preferred_supplier: preferred_supplier || null,
@@ -94,14 +104,15 @@ export async function PUT(request) {
         coa_required: !!coa_required,
         allergen: !!allergen,
         organic_certified,
-        item_code
-      })
-      .eq('id', id)
-      .select()
-      .single();
+        item_code,
+        updated_by: emp?.id || null
+      },
+      reason_text: reason.trim(),
+      esignature_pin: pin,
+    });
 
     if (error) throw error;
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

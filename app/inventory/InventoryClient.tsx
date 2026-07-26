@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, Truck, Loader2, Filter, X, FileText, Trash2, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon, Boxes, FlaskConical, Beaker, Clock, Ban, Flame, Snowflake, FileCheck2, Mail, Phone, ClipboardList, Workflow, Sparkles, CheckCircle2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -26,6 +26,19 @@ import {
   getStockStats,
   type StockFilter,
 } from './inventoryUtils';
+
+// Icon per category, used across the stock grid, kanban board, item registry and
+// section dividers to make categories scannable — kept to the app's existing
+// slate/gray palette rather than introducing new colors.
+const CATEGORY_META: Record<string, { icon: any; accent: string; chip: string; bar: string }> = {
+  'RAW MATERIALS':             { icon: Boxes,        accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' },
+  'REAGENTS & STAINS':         { icon: FlaskConical,  accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' },
+  'CHEMICALS & BIOCHEMICALS':  { icon: Beaker,        accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' },
+};
+const DEFAULT_CATEGORY_META = { icon: Package, accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' };
+function getCategoryMeta(category?: string) {
+  return CATEGORY_META[(category || '').toUpperCase()] || DEFAULT_CATEGORY_META;
+}
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
   const { requestReason, modal: auditModal } = useAuditReason();
@@ -146,8 +159,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       const [stockRes, itemsRes, vendorsRes] = await withTimeout(Promise.all([
         stockQuery,
-        pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').order('name').limit(1000) : Promise.resolve({ data: null }),
-        pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: null })
+        pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').is('archived_at', null).order('name').limit(1000) : Promise.resolve({ data: null }),
+        pageNum === 0 ? supabase.from('vendors').select('*').is('archived_at', null).order('name').limit(500) : Promise.resolve({ data: null })
       ]), 20000, 'Inventory load timed out');
 
       if (stockRes.error) throw stockRes.error;
@@ -415,11 +428,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       toast.warn("Please wait for files to finish uploading.");
       return;
     }
+    // GDP: correcting an existing stock record requires a reason + e-signature,
+    // same as QC release/reject — captured via the shared AuditReasonModal.
+    const auditResult = await requestReason().catch(() => null);
+    if (!auditResult) return;
     setIsSubmitting(true);
     try {
       const payload = {
         ...newStock,
-        current_quantity: newStock.received_quantity // reuse the input field logic
+        current_quantity: newStock.received_quantity, // reuse the input field logic
+        reason: auditResult.reason,
+        pin: auditResult.pin,
       };
       const res = await fetch('/api/inventory/stock', {
         method: 'PUT',
@@ -462,19 +481,22 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const handleUpdateItem = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+    // GDP: correcting an existing item record requires a reason + e-signature.
+    const auditResult = await requestReason().catch(() => null);
+    if (!auditResult) return;
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/inventory/items', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newItem)
+        body: JSON.stringify({ ...newItem, reason: auditResult.reason, pin: auditResult.pin })
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setNewItem({ 
-          name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
-          storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
-          coa_required: false, allergen: false, organic_certified: '', item_code: '' 
+        setNewItem({
+          name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '',
+          storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false,
+          coa_required: false, allergen: false, organic_certified: '', item_code: ''
         });
         fetchData(0, false);
       } else { toast.error((await res.json()).error || 'Failed.'); }
@@ -486,13 +508,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('vendors').update(newVendor as any).eq('id', (newVendor as any).id);
-      if (!error) {
+      const res = await fetch('/api/inventory/vendors', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVendor)
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
         toast.success("Vendor updated successfully.");
         fetchData(0, false);
-      } else { toast.error(error.message || 'Failed.'); }
+      } else { toast.error(json.error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
@@ -500,25 +527,19 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (!deletingId) return;
     setIsDeleting(true);
     try {
-      // Step 1: Null out any inventory_items that reference this vendor as preferred_supplier
-      // This releases the FK constraint before we delete
-      const { error: unlinkError } = await supabase
-        .from('inventory_items')
-        .update({ preferred_supplier: null })
-        .eq('preferred_supplier', deletingId);
-      if (unlinkError) throw unlinkError;
-
-      // Step 2: Now safely delete the vendor
-      const { error } = await supabase.from('vendors').delete().eq('id', deletingId);
-      if (error) throw error;
+      // Archiving (soft delete) + unlinking preferred_supplier now both
+      // happen server-side, attributed to the acting employee.
+      const res = await fetch(`/api/inventory/vendors?id=${deletingId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
 
       setVendors(vendors.filter(v => v.id !== deletingId));
       // Update items list to reflect unlinked suppliers
       setItems(items.map(i => i.preferred_supplier === deletingId ? { ...i, preferred_supplier: null } : i));
       setDeletingId(null);
-      toast.success("Vendor deleted successfully.");
+      toast.success("Vendor archived successfully.");
     } catch (err: any) {
-      toast.error('Failed to delete vendor: ' + err.message);
+      toast.error('Failed to archive vendor: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -529,14 +550,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const payload = { ...newVendor, created_by: employeeProfile?.id };
-      const { data, error } = await (supabase.from('vendors').insert([payload] as any) as any).select().single();
-      if (!error) {
+      const res = await fetch('/api/inventory/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVendor)
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
         toast.success("Vendor registered successfully.");
         fetchData(0, false);
-      } else { toast.error(error.message || 'Failed.'); }
+      } else { toast.error(json.error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
@@ -871,6 +896,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
+  // Shared caller for /api/inventory/stock/qc — QC release/reject, quarantine
+  // location edits, and CoA verification all go through this one endpoint so
+  // every action is permission-checked, attributed, and lands in the
+  // Movement Ledger.
+  const runQcAction = useCallback(async (stockId: string, action: string, extra: Record<string, any> = {}) => {
+    const res = await fetch('/api/inventory/stock/qc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stock_id: stockId, action, ...extra })
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Action failed');
+    return json.data;
+  }, []);
+
   const [batchUsageMap, setBatchUsageMap] = useState<Record<string, Array<{id: string, batch_id: string}>>>({});
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
 
@@ -906,64 +946,90 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-40">
       {/* Summary Strip â€” Tab Aware */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {activeTab === 'stock' && [
-          { label: 'Total Items in Stock', count: stockStats.total, type: 'all', clickable: true },
-          { label: 'Low Stock', count: stockStats.low, type: 'low', clickable: true },
-          { label: 'Expiring (<30d)', count: stockStats.expiring, type: 'expiring', clickable: true },
-          { label: 'Expired', count: stockStats.expired, type: 'expired', clickable: true },
-        ].map(tile => (
-          <button
-            key={tile.type}
-            onClick={() => setStockFilter(tile.type as StockFilter)}
-            className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
-              stockFilter === tile.type
-                ? 'bg-white border-slate-500 shadow-md ring-2 ring-slate-100'
-                : 'bg-white border-gray-100 hover:border-gray-200'
-            }`}
-          >
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
-            <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-slate-800'
-            }`}>
-              {tile.count}
-            </span>
-          </button>
-        ))}
+          { label: 'Total Items in Stock', count: stockStats.total, type: 'all', icon: Package, tone: 'slate' },
+          { label: 'Low Stock', count: stockStats.low, type: 'low', icon: Boxes, tone: stockStats.low > 0 ? 'amber' : 'slate' },
+          { label: 'Expiring (<30d)', count: stockStats.expiring, type: 'expiring', icon: Clock, tone: stockStats.expiring > 0 ? 'orange' : 'slate' },
+          { label: 'Expired', count: stockStats.expired, type: 'expired', icon: Ban, tone: stockStats.expired > 0 ? 'red' : 'slate' },
+        ].map(tile => {
+          const Icon = tile.icon;
+          const pct = stockStats.total > 0 && tile.type !== 'all' ? Math.round((tile.count / stockStats.total) * 100) : null;
+          const tones: Record<string, { badge: string; ring: string; bar: string }> = {
+            slate: { badge: 'bg-slate-100 text-slate-700', ring: 'ring-slate-100 border-slate-400', bar: 'bg-slate-500' },
+            amber: { badge: 'bg-amber-100 text-amber-700', ring: 'ring-amber-100 border-amber-400', bar: 'bg-amber-500' },
+            orange: { badge: 'bg-orange-100 text-orange-700', ring: 'ring-orange-100 border-orange-400', bar: 'bg-orange-500' },
+            red: { badge: 'bg-red-100 text-red-700', ring: 'ring-red-100 border-red-400', bar: 'bg-red-500' },
+          };
+          const t = tones[tile.tone];
+          return (
+            <button
+              key={tile.type}
+              onClick={() => setStockFilter(tile.type as StockFilter)}
+              className={`p-4 rounded-2xl border bg-white flex flex-col gap-2.5 text-left transition-all shadow-sm hover:shadow-md ${
+                stockFilter === tile.type ? `ring-2 ${t.ring}` : 'border-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${t.badge}`}><Icon className="w-4.5 h-4.5" /></span>
+                {pct !== null && tile.count > 0 && <span className="text-[11px] font-black text-slate-400">{pct}%</span>}
+              </div>
+              <div>
+                <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{tile.label}</p>
+              </div>
+            </button>
+          );
+        })}
 
         {activeTab === 'items' && [
-          { label: 'Total Registered', count: itemStats.total, highlight: false },
-          { label: 'Hazardous Items', count: itemStats.hazardous, highlight: true },
-          { label: 'Cold Chain Required', count: itemStats.coldChain, highlight: true },
-          { label: 'CoA Required', count: itemStats.coaRequired, highlight: false },
-        ].map(tile => (
-          <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
-            <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-slate-800'
-            }`}>
-              {tile.count}
-            </span>
-          </div>
-        ))}
+          { label: 'Total Registered', count: itemStats.total, icon: Package, tone: 'slate' },
+          { label: 'Hazardous Items', count: itemStats.hazardous, icon: Flame, tone: itemStats.hazardous > 0 ? 'amber' : 'slate' },
+          { label: 'Cold Chain Required', count: itemStats.coldChain, icon: Snowflake, tone: itemStats.coldChain > 0 ? 'sky' : 'slate' },
+          { label: 'CoA Required', count: itemStats.coaRequired, icon: FileCheck2, tone: 'slate' },
+        ].map(tile => {
+          const Icon = tile.icon;
+          const badges: Record<string, string> = { slate: 'bg-slate-100 text-slate-700', amber: 'bg-amber-100 text-amber-700', sky: 'bg-sky-100 text-sky-700' };
+          return (
+            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-sm">
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${badges[tile.tone]}`}><Icon className="w-4.5 h-4.5" /></span>
+              <div>
+                <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{tile.label}</p>
+              </div>
+            </div>
+          );
+        })}
 
         {activeTab === 'vendors' && [
-          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-slate-800' },
-          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-slate-800' },
-          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-slate-800' },
-          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-slate-800' },
-        ].map(tile => (
-          <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
-            <span className={`text-2xl font-black font-mono mt-1 ${tile.color}`}>{tile.count}</span>
-          </div>
-        ))}
+          { label: 'Total Suppliers', count: vendorStats.total, icon: Truck, tone: 'slate' },
+          { label: 'Have Email', count: vendorStats.withEmail, icon: Mail, tone: 'slate' },
+          { label: 'Have Phone', count: vendorStats.withPhone, icon: Phone, tone: 'slate' },
+          { label: 'Lead Time Set', count: vendorStats.withLeadTime, icon: Clock, tone: vendorStats.withLeadTime < vendorStats.total ? 'amber' : 'slate' },
+        ].map(tile => {
+          const Icon = tile.icon;
+          const badges: Record<string, string> = { slate: 'bg-slate-100 text-slate-700', amber: 'bg-amber-100 text-amber-700' };
+          return (
+            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-sm">
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${badges[tile.tone]}`}><Icon className="w-4.5 h-4.5" /></span>
+              <div>
+                <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{tile.label}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory & Supply Chain</h1>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-slate-800 items-center justify-center shrink-0">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory & Supply Chain</h1>
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
+          </div>
         </div>
         <div className="flex gap-3 relative">
           {/* Context-aware Options dropdown */}
@@ -1043,12 +1109,30 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
       )}
 
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        <button onClick={() => setActiveTab('stock')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
-        <button onClick={() => setActiveTab('items')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
-        <button onClick={() => setActiveTab('vendors')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
-        <button onClick={() => setActiveTab('pr')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
-        <button onClick={() => setActiveTab('traceability')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
+      <div className="flex gap-1 bg-slate-100/70 p-1.5 rounded-2xl overflow-x-auto">
+        {[
+          { id: 'stock', label: 'Stock Log', icon: Boxes },
+          { id: 'items', label: 'Item Registry', icon: Package },
+          { id: 'vendors', label: 'Suppliers (AVL)', icon: Truck },
+          { id: 'pr', label: 'Purchase Requests', icon: ClipboardList },
+          { id: 'traceability', label: 'Traceability', icon: Workflow },
+        ].map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              {isActive && (
+                <motion.span layoutId="inventoryTabPill" className="absolute inset-0 bg-white rounded-xl shadow-sm" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+              )}
+              <Icon className="w-4 h-4 relative z-10" />
+              <span className="relative z-10">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="relative flex flex-col sm:flex-row gap-2">
@@ -1122,21 +1206,23 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         <div className="grid grid-cols-1 gap-4">
 
           {filteredStock.length === 0 ? (
-            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-              <Package className="w-12 h-12 text-gray-400" />
+            <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Package className="w-8 h-8 text-slate-300" />
+              </div>
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">{getStockFilterLabel(stockFilter)}</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">
+                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">{getStockFilterLabel(stockFilter)}</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">
                   {stockFilter === 'all' ? 'Tap Receive New Stock to log your first shipment' : 'Adjust the filter or search to see more records'}
                 </p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { 
-                   setNewStock({ 
+                <button onClick={() => {
+                   setNewStock({
                     item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
                   });
-                   setModalType('stock'); setIsModalOpen(true); 
+                   setModalType('stock'); setIsModalOpen(true);
                 }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
                   Receive Stock
                 </button>
@@ -1159,12 +1245,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 acc[cat].push(s);
                 return acc;
               }, {})
-            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => (
+            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => {
+              const meta = getCategoryMeta(category);
+              const CatIcon = meta.icon;
+              return (
               <div key={category} className="space-y-4 pb-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                    {category} ({catStock.length})
+                  <h2 className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${meta.chip}`}>
+                    <CatIcon className="w-3.5 h-3.5" /> {category} ({catStock.length})
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
@@ -1175,9 +1264,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <div
                       key={s.id}
                       onClick={() => setSelectedStock(s)}
-                      className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-slate-200'}`}
+                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-md cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-sm'}`}
                     >
-                      <div className={`absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : 'bg-slate-600'}`}></div>
+                      <div className={`absolute top-0 left-0 w-1 h-full ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">
                           {s.location || 'Central Store'}
@@ -1232,7 +1321,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 })}
                 </div>
               </div>
-            ))}
+            );})}
                 </div>
               )}
 
@@ -1248,30 +1337,33 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       return false;
                     });
                     
+                    const ColumnIcon = statusColumn === 'Healthy' ? CheckCircle2 : statusColumn === 'Low Stock' ? Boxes : Clock;
                     return (
                       <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
-                        <div className={`rounded-t-xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
+                        <div className={`rounded-t-2xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
                           statusColumn === 'Healthy' ? 'bg-emerald-50 border-emerald-200' :
                           statusColumn === 'Low Stock' ? 'bg-amber-50 border-amber-200' :
                           'bg-red-50 border-red-200'
                         }`}>
                           <div className="flex items-center justify-between">
-                            <span className="font-black text-slate-900 truncate uppercase">{statusColumn}</span>
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-white shadow-sm ${
+                            <span className={`flex items-center gap-1.5 font-black truncate uppercase text-sm ${
+                              statusColumn === 'Healthy' ? 'text-emerald-800' : statusColumn === 'Low Stock' ? 'text-amber-800' : 'text-red-800'
+                            }`}><ColumnIcon className="w-4 h-4" />{statusColumn}</span>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border bg-white shadow-sm ${
                               statusColumn === 'Healthy' ? 'text-emerald-700' :
                               statusColumn === 'Low Stock' ? 'text-amber-700' :
                               'text-red-700'
                             }`}>{columnItems.length}</span>
                           </div>
                         </div>
-                        
-                        <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+
+                        <div className="bg-slate-100/50 rounded-b-2xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
                           {columnItems.length === 0 ? (
                             <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn.toLowerCase()} items</div>
                           ) : columnItems.map(s => {
                             const risk = getStockRisk(s);
                             return (
-                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-200'}`}>
+                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-xl border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-100'}`}>
                                 <div className="flex justify-between items-start gap-2">
                                   <h3 className="text-xs font-black text-indigo-700 line-clamp-2">{s.inventory_items?.name}</h3>
                                   {(risk.isExpired || risk.isExpiring || risk.isLow) && (
@@ -1310,7 +1402,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className="card overflow-x-auto">
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
+                      <tr className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                         <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Item Name</th>
                         <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Lot Number</th>
                         <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Expiry Date</th>
@@ -1323,7 +1415,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       {filteredStock.map(s => {
                         const risk = getStockRisk(s);
                         return (
-                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
+                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`even:bg-slate-50/40 hover:bg-slate-100/70 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
                             <td className="px-4 py-3">
                               <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                                 {s.inventory_items?.name}
@@ -1385,7 +1477,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {activeTab === 'items' && (
         <div className="space-y-8">
           {/* Registry Controls */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -1438,34 +1530,39 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
 
           {Object.keys(filteredRegistry).length === 0 ? (
-            <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-              <Package className="w-12 h-12 text-gray-400" />
+            <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Package className="w-8 h-8 text-slate-300" />
+              </div>
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No matching items found</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">Adjust your search or register new items</p>
+                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">No matching items found</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">Adjust your search or register new items</p>
               </div>
             </div>
           ) : (
-            Object.entries(filteredRegistry).sort(([a],[b]) => a.localeCompare(b)).map(([category, catItems]) => (
+            Object.entries(filteredRegistry).sort(([a],[b]) => a.localeCompare(b)).map(([category, catItems]) => {
+              const meta = getCategoryMeta(category);
+              const CatIcon = meta.icon;
+              return (
               <div key={category} className="space-y-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                    {category} ({catItems.length})
+                  <h2 className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${meta.chip}`}>
+                    <CatIcon className="w-3.5 h-3.5" /> {category} ({catItems.length})
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
                   {catItems.map(item => (
                     <div
                       key={item.id}
                       onClick={isSelectMode ? () => toggleItemSelect(item.id) : undefined}
-                      className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm ${
+                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-md ${
                         isSelectMode ? 'cursor-pointer' : ''
-                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-slate-100'}`}
+                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-sm'}`}
                     >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className={`absolute top-0 left-0 w-1 h-full ${meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
                         {isSelectMode ? (
@@ -1534,7 +1631,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   ))}
                 </div>
               </div>
-            ))
+            );})
           )}
         </div>
       )}
@@ -1546,9 +1643,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">Delete {selectedItemIds.size} Items?</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Archive {selectedItemIds.size} Items?</h2>
             <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
-              This will permanently remove {selectedItemIds.size} item(s) and all their associated stock records. This cannot be undone.
+              This will archive {selectedItemIds.size} item(s), removing them from the active registry. Records are retained for audit and can be restored — this does not delete their stock/lot history.
             </p>
             <div className="flex gap-3">
               <button
@@ -1563,7 +1660,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 {isBulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {isBulkDeleting ? 'Deleting...' : `Delete ${selectedItemIds.size} Items`}
+                {isBulkDeleting ? 'Archiving...' : `Archive ${selectedItemIds.size} Items`}
               </button>
             </div>
           </div>
@@ -1577,11 +1674,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">Delete Record?</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Archive Record?</h2>
             <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
-              {deleteType === 'item' 
-                ? "This will permanently remove the item and all its associated stock records. This action cannot be undone."
-                : "This will remove the supplier from your Approved Vendor List (AVL)."}
+              {deleteType === 'item'
+                ? "This will archive the item, removing it from the active registry. It's retained for audit and can be restored — its stock/lot history is not affected."
+                : "This will archive the supplier, removing it from your Approved Vendor List (AVL). It's retained for audit and can be restored."}
             </p>
             <div className="flex gap-3">
               <button 
@@ -1595,7 +1692,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 disabled={isDeleting}
                 className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Deletion"}
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Archive"}
               </button>
             </div>
           </div>
@@ -1606,11 +1703,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {activeTab === 'vendors' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {vendors.length === 0 ? (
-            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-              <Truck className="w-12 h-12 text-gray-400" />
+            <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Truck className="w-8 h-8 text-slate-300" />
+              </div>
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No suppliers added</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
+                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">No suppliers added</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
               </div>
               {canDo('inventory', 'edit') && (
                 <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
@@ -1619,7 +1718,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               )}
             </div>
           ) : vendors.map(vendor => (
-            <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group overflow-hidden">
+            <div key={vendor.id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2">
                  {canEditItems && (
                     <button
@@ -1636,10 +1735,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     </button>
                  )}
               </div>
-              <h3 className="text-lg font-black text-slate-950">{vendor.name}</h3>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-slate-800 text-white flex items-center justify-center font-black text-sm shrink-0">
+                  {(vendor.name || '?').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black text-slate-950 truncate">{vendor.name}</h3>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 truncate">{vendor.contact_person || 'No Contact'}</p>
+                </div>
+              </div>
               <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
-                <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><ExternalLink className="w-3 h-3"/> {vendor.email || 'No email'}</p>
+                <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><Mail className="w-3 h-3"/> {vendor.email || 'No email'}</p>
                 <div className={`px-2 py-1 text-xs font-black uppercase tracking-widest rounded inline-block ${
                   vendor.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
                   vendor.status === 'Conditional' ? 'bg-amber-50 text-amber-700' :
@@ -1812,20 +1918,29 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   <p className="text-xs text-slate-400 font-medium italic">No recorded movements.</p>
                 ) : (
                   <div className="bg-white border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-50">
-                    {movements.map(m => (
-                      <div key={m.id} className="p-3 flex items-center justify-between text-xs">
-                        <div>
-                          <p className="font-black text-slate-800">{m.type === 'Receive' ? 'Stock Input' : 'Stock Issue'}</p>
-                          <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
+                    {movements.map(m => {
+                      const label = m.type === 'Receive' ? 'Stock Input' : m.type === 'Issue' ? 'Stock Issue' : m.type;
+                      const isQuantityMovement = m.type === 'Receive' || m.type === 'Issue';
+                      return (
+                        <div key={m.id} className="p-3 flex items-center justify-between text-xs">
+                          <div>
+                            <p className="font-black text-slate-800">{label}</p>
+                            <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
+                            {m.notes && !isQuantityMovement && <p className="text-slate-400 font-medium mt-0.5 max-w-[220px]">{m.notes}</p>}
+                          </div>
+                          <div className="text-right">
+                            {isQuantityMovement ? (
+                              <p className={`font-black ${m.type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
+                                {m.type === 'Receive' ? '+' : '-'}{m.quantity}
+                              </p>
+                            ) : (
+                              <p className="font-black text-slate-500 uppercase tracking-wider">Event</p>
+                            )}
+                            <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-black ${m.type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
-                            {m.type === 'Receive' ? '+' : '-'}{m.quantity}
-                          </p>
-                          <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1852,34 +1967,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 >
                   <QrCode className="w-4 h-4" /> View QR
                 </button>
-                {selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine' ? (
+                {(selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine') && !canDo('inventory', 'qc_release') ? (
+                  <div className="flex-[2] py-3 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs font-black text-slate-500">
+                    Awaiting QC disposition by an authorised Scientist+
+                  </div>
+                ) : selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine' ? (
                   <button
                     onClick={async () => {
                        const qcNotes = window.prompt('QC Release Notes (identity test result, sampling method, observations):');
-                       if (qcNotes === null) return; // user cancelled
-                       const { data: { user } } = await supabase.auth.getUser();
-                       const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
+                       if (qcNotes === null || !qcNotes.trim()) return; // user cancelled or left it blank
                        const auditResult = await requestReason().catch(() => null);
                        if (!auditResult) return;
-                       const { error } = await supabase.rpc('update_record_with_reason', {
-                         target_table: 'inventory_stock',
-                         record_id: selectedStock.id,
-                         payload: {
-                           status: 'Available',
-                           qc_status: 'Released',
-                           qc_released_by: emp?.id || null,
-                           qc_released_at: new Date().toISOString(),
-                           qc_notes: qcNotes || null,
-                         },
-                         reason_text: auditResult.reason,
-                         esignature_pin: auditResult.pin
-                       });
-                       if (!error) {
+                       try {
+                         await runQcAction(selectedStock.id, 'release', { notes: qcNotes.trim(), reason: auditResult.reason, pin: auditResult.pin });
                          toast.success('Stock QC Released — status updated to Available');
                          setSelectedStock({...selectedStock, status: 'Available', qc_status: 'Released'});
                          fetchData(0, false);
-                       } else {
-                         toast.error(error.message);
+                       } catch (err: any) {
+                         toast.error(err.message);
                        }
                     }}
                     className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
@@ -1928,7 +2033,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         if (e.target.value === (selectedStock.quarantine_location || '')) return;
                         const auditResult = await requestReason().catch(() => null);
                         if (!auditResult) { e.target.value = selectedStock.quarantine_location || ''; return; }
-                        await supabase.rpc('update_record_with_reason', { target_table: 'inventory_stock', record_id: selectedStock.id, payload: { quarantine_location: e.target.value || null }, reason_text: auditResult.reason, esignature_pin: auditResult.pin });
+                        try {
+                          await runQcAction(selectedStock.id, 'quarantine_location', { location: e.target.value || null, reason: auditResult.reason, pin: auditResult.pin });
+                        } catch (err: any) {
+                          e.target.value = selectedStock.quarantine_location || '';
+                          toast.error(err.message);
+                        }
                       }}
                     />
                     <input
@@ -1939,7 +2049,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         if (e.target.value === (selectedStock.quarantine_rack || '')) return;
                         const auditResult = await requestReason().catch(() => null);
                         if (!auditResult) { e.target.value = selectedStock.quarantine_rack || ''; return; }
-                        await supabase.rpc('update_record_with_reason', { target_table: 'inventory_stock', record_id: selectedStock.id, payload: { quarantine_rack: e.target.value || null }, reason_text: auditResult.reason, esignature_pin: auditResult.pin });
+                        try {
+                          await runQcAction(selectedStock.id, 'quarantine_location', { rack: e.target.value || null, reason: auditResult.reason, pin: auditResult.pin });
+                        } catch (err: any) {
+                          e.target.value = selectedStock.quarantine_rack || '';
+                          toast.error(err.message);
+                        }
                       }}
                     />
                   </div>
@@ -1954,45 +2069,40 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         if (!url) { e.target.checked = false; return; }
                         const auditResult = await requestReason().catch(() => null);
                         if (!auditResult) { e.target.checked = false; return; }
-                        await supabase.rpc('update_record_with_reason', { target_table: 'inventory_stock', record_id: selectedStock.id, payload: { coa_url: url }, reason_text: auditResult.reason, esignature_pin: auditResult.pin });
-                        setSelectedStock({ ...selectedStock, coa_url: url });
-                        toast.success('CoA URL saved.');
+                        try {
+                          await runQcAction(selectedStock.id, 'coa_verify', { coa_url: url, reason: auditResult.reason, pin: auditResult.pin });
+                          setSelectedStock({ ...selectedStock, coa_url: url });
+                          toast.success('CoA URL saved.');
+                        } catch (err: any) {
+                          e.target.checked = false;
+                          toast.error(err.message);
+                        }
                       }}
                       className="w-4 h-4 rounded border-slate-400"
                     />
                   </div>
                   {/* A-47: Rejection workflow */}
-                  <button
-                    className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-red-100"
-                    onClick={async () => {
-                      const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
-                      if (!reason) return;
-                      const { data: { user } } = await supabase.auth.getUser();
-                      const { data: emp } = await supabase.from('employees').select('id').eq('email', user?.email || '').maybeSingle();
-                      const auditResult = await requestReason().catch(() => null);
-                      if (!auditResult) return;
-                      const { error } = await supabase.rpc('update_record_with_reason', {
-                        target_table: 'inventory_stock',
-                        record_id: selectedStock.id,
-                        payload: {
-                          status: 'Discarded',
-                          qc_status: 'Rejected',
-                          rejection_reason: reason,
-                          rejected_at: new Date().toISOString(),
-                          rejected_by: emp?.id || null,
-                        },
-                        reason_text: auditResult.reason,
-                        esignature_pin: auditResult.pin
-                      });
-                      if (!error) {
-                        toast.success('Lot rejected and marked as Discarded.');
-                        setSelectedStock(null);
-                        fetchData(0, false);
-                      } else { toast.error(error.message); }
-                    }}
-                  >
-                    ✗ Reject Lot (A-47)
-                  </button>
+                  {canDo('inventory', 'qc_release') && (
+                    <button
+                      className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-red-100"
+                      onClick={async () => {
+                        const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
+                        if (!reason || !reason.trim()) return;
+                        const auditResult = await requestReason().catch(() => null);
+                        if (!auditResult) return;
+                        try {
+                          await runQcAction(selectedStock.id, 'reject', { notes: reason.trim(), reason: auditResult.reason, pin: auditResult.pin });
+                          toast.success('Lot rejected and marked as Discarded.');
+                          setSelectedStock(null);
+                          fetchData(0, false);
+                        } catch (err: any) {
+                          toast.error(err.message);
+                        }
+                      }}
+                    >
+                      ✗ Reject Lot (A-47)
+                    </button>
+                  )}
                 </div>
               )}
             </div>

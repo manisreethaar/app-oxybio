@@ -103,6 +103,12 @@ export default function ItemVendorModal({
           <label className="flex items-center gap-2 text-xs font-bold text-gray-600"><input type="checkbox" checked={newItem.coa_required} onChange={e => setNewItem({...newItem, coa_required: e.target.checked})} /> CoA Required</label>
         </div>
 
+        {modalType === 'edit_item' && (
+          <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
+            You&apos;ll be asked for a GDP correction reason and your e-signature PIN before this saves.
+          </p>
+        )}
+
         <div className="flex gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
           <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">
