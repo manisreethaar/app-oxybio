@@ -105,7 +105,7 @@ export default function ItemVendorModal({
 
         <div className="flex gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
-          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-gradient-brand text-white font-black rounded-2xl text-xs shadow-glow-sm hover:shadow-glow transition-all">
+          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_item' ? 'Save Changes' : 'Register Item'}
           </button>
         </div>
@@ -156,7 +156,7 @@ export default function ItemVendorModal({
       </div>
       <div className="flex gap-3 pt-4 border-t border-gray-100">
         <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
-        <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-gradient-brand text-white font-black rounded-2xl text-xs shadow-glow-sm hover:shadow-glow transition-all">
+        <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">
           {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_vendor' ? 'Save Changes' : 'Add Supplier'}
         </button>
       </div>

@@ -26,14 +26,15 @@ import {
   type StockFilter,
 } from './inventoryUtils';
 
-// Visual identity per category — icon + accent color, used across the stock grid,
-// kanban board, item registry and section dividers to make categories scannable at a glance.
+// Icon per category, used across the stock grid, kanban board, item registry and
+// section dividers to make categories scannable — kept to the app's existing
+// slate/gray palette rather than introducing new colors.
 const CATEGORY_META: Record<string, { icon: any; accent: string; chip: string; bar: string }> = {
-  'RAW MATERIALS':              { icon: Boxes,        accent: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700 border-emerald-100', bar: 'bg-emerald-500' },
-  'REAGENTS & STAINS':          { icon: FlaskConical,  accent: 'text-violet-600',  chip: 'bg-violet-50 text-violet-700 border-violet-100',   bar: 'bg-violet-500' },
-  'CHEMICALS & BIOCHEMICALS':  { icon: Beaker,        accent: 'text-sky-600',     chip: 'bg-sky-50 text-sky-700 border-sky-100',             bar: 'bg-sky-500' },
+  'RAW MATERIALS':             { icon: Boxes,        accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' },
+  'REAGENTS & STAINS':         { icon: FlaskConical,  accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' },
+  'CHEMICALS & BIOCHEMICALS':  { icon: Beaker,        accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' },
 };
-const DEFAULT_CATEGORY_META = { icon: Package, accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-700 border-slate-100', bar: 'bg-slate-500' };
+const DEFAULT_CATEGORY_META = { icon: Package, accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-800 border-slate-100', bar: 'bg-slate-600' };
 function getCategoryMeta(category?: string) {
   return CATEGORY_META[(category || '').toUpperCase()] || DEFAULT_CATEGORY_META;
 }
@@ -936,7 +937,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <button
               key={tile.type}
               onClick={() => setStockFilter(tile.type as StockFilter)}
-              className={`p-4 rounded-2xl border bg-white flex flex-col gap-2.5 text-left transition-all shadow-card hover:shadow-card-hover hover:-translate-y-0.5 ${
+              className={`p-4 rounded-2xl border bg-white flex flex-col gap-2.5 text-left transition-all shadow-sm hover:shadow-md ${
                 stockFilter === tile.type ? `ring-2 ${t.ring}` : 'border-slate-100'
               }`}
             >
@@ -961,7 +962,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           const Icon = tile.icon;
           const badges: Record<string, string> = { slate: 'bg-slate-100 text-slate-700', amber: 'bg-amber-100 text-amber-700', sky: 'bg-sky-100 text-sky-700' };
           return (
-            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-card">
+            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-sm">
               <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${badges[tile.tone]}`}><Icon className="w-4.5 h-4.5" /></span>
               <div>
                 <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
@@ -980,7 +981,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           const Icon = tile.icon;
           const badges: Record<string, string> = { slate: 'bg-slate-100 text-slate-700', amber: 'bg-amber-100 text-amber-700' };
           return (
-            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-card">
+            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-sm">
               <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${badges[tile.tone]}`}><Icon className="w-4.5 h-4.5" /></span>
               <div>
                 <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
@@ -993,7 +994,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-brand shadow-glow-sm items-center justify-center shrink-0">
+          <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-slate-800 items-center justify-center shrink-0">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -1006,7 +1007,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <div className="relative">
             <button
               onClick={() => setShowOptions(v => !v)}
-              className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-card hover:bg-gray-50 hover:shadow-card-hover transition-all active:scale-95"
+              className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95"
             >
               <Filter className="w-4 h-4 mr-2" /> Options
             </button>
@@ -1054,7 +1055,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             </button>
           )}
           {canEditItems && (
-            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-gradient-brand text-white rounded-xl font-bold text-sm shadow-glow-sm hover:shadow-glow transition-all active:scale-95">
+            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95">
               <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
           )}
@@ -1096,7 +1097,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               className={`relative shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
             >
               {isActive && (
-                <motion.span layoutId="inventoryTabPill" className="absolute inset-0 bg-white rounded-xl shadow-card" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+                <motion.span layoutId="inventoryTabPill" className="absolute inset-0 bg-white rounded-xl shadow-sm" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
               )}
               <Icon className="w-4 h-4 relative z-10" />
               <span className="relative z-10">{tab.label}</span>
@@ -1113,14 +1114,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <input
             type="text"
             placeholder="Search by item name or lot number..."
-            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-card focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
+            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto">
           {activeTab === 'stock' && (
-            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-card mr-1 h-[54px]">
+            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm mr-1 h-[54px]">
               {[
                 { id: 'kanban', icon: Columns, label: 'Kanban' },
                 { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
@@ -1147,7 +1148,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <select
             value={stockSort}
             onChange={(e) => setStockSort(e.target.value)}
-            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-card"
+            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-sm"
           >
             <option value="expiry">Sort: Nearest Expiry</option>
             <option value="name">Sort: Name (A-Z)</option>
@@ -1165,7 +1166,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 else toast.error('Stock item not found from QR code');
               }
             }}
-            className="px-6 py-4 bg-gradient-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:shadow-glow transition-all flex items-center gap-2 shadow-glow-sm shrink-0"
+            className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shrink-0"
           >
             <QrCode className="w-5 h-5" /> Scan
           </button>
@@ -1193,7 +1194,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
                   });
                    setModalType('stock'); setIsModalOpen(true);
-                }} className="mt-2 flex items-center px-4 py-2 bg-gradient-brand text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-glow-sm hover:shadow-glow transition-all">
+                }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
                   Receive Stock
                 </button>
               )}
@@ -1234,7 +1235,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <div
                       key={s.id}
                       onClick={() => setSelectedStock(s)}
-                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-card'}`}
+                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-md cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-sm'}`}
                     >
                       <div className={`absolute top-0 left-0 w-1 h-full ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
@@ -1333,7 +1334,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                           ) : columnItems.map(s => {
                             const risk = getStockRisk(s);
                             return (
-                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-xl border shadow-card hover:shadow-card-hover transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-100'}`}>
+                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-xl border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-100'}`}>
                                 <div className="flex justify-between items-start gap-2">
                                   <h3 className="text-xs font-black text-indigo-700 line-clamp-2">{s.inventory_items?.name}</h3>
                                   {(risk.isExpired || risk.isExpiring || risk.isLow) && (
@@ -1447,7 +1448,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {activeTab === 'items' && (
         <div className="space-y-8">
           {/* Registry Controls */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-card">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -1528,9 +1529,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <div
                       key={item.id}
                       onClick={isSelectMode ? () => toggleItemSelect(item.id) : undefined}
-                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${
+                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-md ${
                         isSelectMode ? 'cursor-pointer' : ''
-                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-card'}`}
+                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-sm'}`}
                     >
                       <div className={`absolute top-0 left-0 w-1 h-full ${meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
@@ -1682,13 +1683,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <p className="text-xs font-bold text-slate-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-gradient-brand text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-glow-sm hover:shadow-glow transition-all">
+                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
                   Add Supplier
                 </button>
               )}
             </div>
           ) : vendors.map(vendor => (
-            <div key={vendor.id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-card hover:shadow-card-hover transition-all relative group overflow-hidden">
+            <div key={vendor.id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2">
                  {canEditItems && (
                     <button
@@ -1706,7 +1707,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                  )}
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-brand text-white flex items-center justify-center font-black text-sm shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-slate-800 text-white flex items-center justify-center font-black text-sm shrink-0">
                   {(vendor.name || '?').slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">

@@ -156,7 +156,7 @@ export default function StockModal({
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-gray-200 transition-all">Cancel</button>
-          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-gradient-brand text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-glow-sm hover:shadow-glow transition-all active:scale-95 flex items-center justify-center">
+          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-slate-900 shadow-xl shadow-slate-950/20 transition-all active:scale-95 flex items-center justify-center">
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : modalType === 'edit_stock' ? 'Save Changes' : 'Log Entry'}
           </button>
         </div>
@@ -204,7 +204,7 @@ export default function StockModal({
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
-          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-gradient-brand text-white font-black rounded-2xl text-xs shadow-glow-sm hover:shadow-glow transition-all">
+          <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Issue Stock'}
           </button>
         </div>
