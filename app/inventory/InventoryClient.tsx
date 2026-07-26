@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, Truck, Loader2, Filter, X, FileText, Trash2, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon, Boxes, FlaskConical, Beaker, Clock, Ban, Flame, Snowflake, FileCheck2, Mail, Phone, ClipboardList, Workflow, Sparkles, CheckCircle2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -25,6 +25,18 @@ import {
   getStockStats,
   type StockFilter,
 } from './inventoryUtils';
+
+// Visual identity per category — icon + accent color, used across the stock grid,
+// kanban board, item registry and section dividers to make categories scannable at a glance.
+const CATEGORY_META: Record<string, { icon: any; accent: string; chip: string; bar: string }> = {
+  'RAW MATERIALS':              { icon: Boxes,        accent: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700 border-emerald-100', bar: 'bg-emerald-500' },
+  'REAGENTS & STAINS':          { icon: FlaskConical,  accent: 'text-violet-600',  chip: 'bg-violet-50 text-violet-700 border-violet-100',   bar: 'bg-violet-500' },
+  'CHEMICALS & BIOCHEMICALS':  { icon: Beaker,        accent: 'text-sky-600',     chip: 'bg-sky-50 text-sky-700 border-sky-100',             bar: 'bg-sky-500' },
+};
+const DEFAULT_CATEGORY_META = { icon: Package, accent: 'text-slate-600', chip: 'bg-slate-50 text-slate-700 border-slate-100', bar: 'bg-slate-500' };
+function getCategoryMeta(category?: string) {
+  return CATEGORY_META[(category || '').toUpperCase()] || DEFAULT_CATEGORY_META;
+}
 
 export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
@@ -904,71 +916,97 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-40">
       {/* Summary Strip â€” Tab Aware */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {activeTab === 'stock' && [
-          { label: 'Total Items in Stock', count: stockStats.total, type: 'all', clickable: true },
-          { label: 'Low Stock', count: stockStats.low, type: 'low', clickable: true },
-          { label: 'Expiring (<30d)', count: stockStats.expiring, type: 'expiring', clickable: true },
-          { label: 'Expired', count: stockStats.expired, type: 'expired', clickable: true },
-        ].map(tile => (
-          <button
-            key={tile.type}
-            onClick={() => setStockFilter(tile.type as StockFilter)}
-            className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
-              stockFilter === tile.type
-                ? 'bg-white border-slate-500 shadow-md ring-2 ring-slate-100'
-                : 'bg-white border-gray-100 hover:border-gray-200'
-            }`}
-          >
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
-            <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-slate-800'
-            }`}>
-              {tile.count}
-            </span>
-          </button>
-        ))}
+          { label: 'Total Items in Stock', count: stockStats.total, type: 'all', icon: Package, tone: 'slate' },
+          { label: 'Low Stock', count: stockStats.low, type: 'low', icon: Boxes, tone: stockStats.low > 0 ? 'amber' : 'slate' },
+          { label: 'Expiring (<30d)', count: stockStats.expiring, type: 'expiring', icon: Clock, tone: stockStats.expiring > 0 ? 'orange' : 'slate' },
+          { label: 'Expired', count: stockStats.expired, type: 'expired', icon: Ban, tone: stockStats.expired > 0 ? 'red' : 'slate' },
+        ].map(tile => {
+          const Icon = tile.icon;
+          const pct = stockStats.total > 0 && tile.type !== 'all' ? Math.round((tile.count / stockStats.total) * 100) : null;
+          const tones: Record<string, { badge: string; ring: string; bar: string }> = {
+            slate: { badge: 'bg-slate-100 text-slate-700', ring: 'ring-slate-100 border-slate-400', bar: 'bg-slate-500' },
+            amber: { badge: 'bg-amber-100 text-amber-700', ring: 'ring-amber-100 border-amber-400', bar: 'bg-amber-500' },
+            orange: { badge: 'bg-orange-100 text-orange-700', ring: 'ring-orange-100 border-orange-400', bar: 'bg-orange-500' },
+            red: { badge: 'bg-red-100 text-red-700', ring: 'ring-red-100 border-red-400', bar: 'bg-red-500' },
+          };
+          const t = tones[tile.tone];
+          return (
+            <button
+              key={tile.type}
+              onClick={() => setStockFilter(tile.type as StockFilter)}
+              className={`p-4 rounded-2xl border bg-white flex flex-col gap-2.5 text-left transition-all shadow-card hover:shadow-card-hover hover:-translate-y-0.5 ${
+                stockFilter === tile.type ? `ring-2 ${t.ring}` : 'border-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${t.badge}`}><Icon className="w-4.5 h-4.5" /></span>
+                {pct !== null && tile.count > 0 && <span className="text-[11px] font-black text-slate-400">{pct}%</span>}
+              </div>
+              <div>
+                <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{tile.label}</p>
+              </div>
+            </button>
+          );
+        })}
 
         {activeTab === 'items' && [
-          { label: 'Total Registered', count: itemStats.total, highlight: false },
-          { label: 'Hazardous Items', count: itemStats.hazardous, highlight: true },
-          { label: 'Cold Chain Required', count: itemStats.coldChain, highlight: true },
-          { label: 'CoA Required', count: itemStats.coaRequired, highlight: false },
-        ].map(tile => (
-          <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
-            <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-slate-800'
-            }`}>
-              {tile.count}
-            </span>
-          </div>
-        ))}
+          { label: 'Total Registered', count: itemStats.total, icon: Package, tone: 'slate' },
+          { label: 'Hazardous Items', count: itemStats.hazardous, icon: Flame, tone: itemStats.hazardous > 0 ? 'amber' : 'slate' },
+          { label: 'Cold Chain Required', count: itemStats.coldChain, icon: Snowflake, tone: itemStats.coldChain > 0 ? 'sky' : 'slate' },
+          { label: 'CoA Required', count: itemStats.coaRequired, icon: FileCheck2, tone: 'slate' },
+        ].map(tile => {
+          const Icon = tile.icon;
+          const badges: Record<string, string> = { slate: 'bg-slate-100 text-slate-700', amber: 'bg-amber-100 text-amber-700', sky: 'bg-sky-100 text-sky-700' };
+          return (
+            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-card">
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${badges[tile.tone]}`}><Icon className="w-4.5 h-4.5" /></span>
+              <div>
+                <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{tile.label}</p>
+              </div>
+            </div>
+          );
+        })}
 
         {activeTab === 'vendors' && [
-          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-slate-800' },
-          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-slate-800' },
-          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-slate-800' },
-          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-slate-800' },
-        ].map(tile => (
-          <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
-            <span className={`text-2xl font-black font-mono mt-1 ${tile.color}`}>{tile.count}</span>
-          </div>
-        ))}
+          { label: 'Total Suppliers', count: vendorStats.total, icon: Truck, tone: 'slate' },
+          { label: 'Have Email', count: vendorStats.withEmail, icon: Mail, tone: 'slate' },
+          { label: 'Have Phone', count: vendorStats.withPhone, icon: Phone, tone: 'slate' },
+          { label: 'Lead Time Set', count: vendorStats.withLeadTime, icon: Clock, tone: vendorStats.withLeadTime < vendorStats.total ? 'amber' : 'slate' },
+        ].map(tile => {
+          const Icon = tile.icon;
+          const badges: Record<string, string> = { slate: 'bg-slate-100 text-slate-700', amber: 'bg-amber-100 text-amber-700' };
+          return (
+            <div key={tile.label} className="p-4 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2.5 shadow-card">
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${badges[tile.tone]}`}><Icon className="w-4.5 h-4.5" /></span>
+              <div>
+                <span className="text-2xl font-black font-mono text-slate-900 leading-none">{tile.count}</span>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{tile.label}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory & Supply Chain</h1>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-brand shadow-glow-sm items-center justify-center shrink-0">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory & Supply Chain</h1>
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
+          </div>
         </div>
         <div className="flex gap-3 relative">
           {/* Context-aware Options dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowOptions(v => !v)}
-              className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95"
+              className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-card hover:bg-gray-50 hover:shadow-card-hover transition-all active:scale-95"
             >
               <Filter className="w-4 h-4 mr-2" /> Options
             </button>
@@ -1016,7 +1054,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             </button>
           )}
           {canEditItems && (
-            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95">
+            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-gradient-brand text-white rounded-xl font-bold text-sm shadow-glow-sm hover:shadow-glow transition-all active:scale-95">
               <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
           )}
@@ -1041,12 +1079,30 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
       )}
 
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        <button onClick={() => setActiveTab('stock')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
-        <button onClick={() => setActiveTab('items')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
-        <button onClick={() => setActiveTab('vendors')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
-        <button onClick={() => setActiveTab('pr')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
-        <button onClick={() => setActiveTab('traceability')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
+      <div className="flex gap-1 bg-slate-100/70 p-1.5 rounded-2xl overflow-x-auto">
+        {[
+          { id: 'stock', label: 'Stock Log', icon: Boxes },
+          { id: 'items', label: 'Item Registry', icon: Package },
+          { id: 'vendors', label: 'Suppliers (AVL)', icon: Truck },
+          { id: 'pr', label: 'Purchase Requests', icon: ClipboardList },
+          { id: 'traceability', label: 'Traceability', icon: Workflow },
+        ].map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              {isActive && (
+                <motion.span layoutId="inventoryTabPill" className="absolute inset-0 bg-white rounded-xl shadow-card" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+              )}
+              <Icon className="w-4 h-4 relative z-10" />
+              <span className="relative z-10">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="relative flex flex-col sm:flex-row gap-2">
@@ -1057,14 +1113,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <input
             type="text"
             placeholder="Search by item name or lot number..."
-            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
+            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-card focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto">
           {activeTab === 'stock' && (
-            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm mr-1 h-[54px]">
+            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-card mr-1 h-[54px]">
               {[
                 { id: 'kanban', icon: Columns, label: 'Kanban' },
                 { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
@@ -1091,7 +1147,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <select
             value={stockSort}
             onChange={(e) => setStockSort(e.target.value)}
-            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-sm"
+            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-card"
           >
             <option value="expiry">Sort: Nearest Expiry</option>
             <option value="name">Sort: Name (A-Z)</option>
@@ -1109,7 +1165,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 else toast.error('Stock item not found from QR code');
               }
             }}
-            className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shrink-0"
+            className="px-6 py-4 bg-gradient-brand text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:shadow-glow transition-all flex items-center gap-2 shadow-glow-sm shrink-0"
           >
             <QrCode className="w-5 h-5" /> Scan
           </button>
@@ -1120,22 +1176,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         <div className="grid grid-cols-1 gap-4">
 
           {filteredStock.length === 0 ? (
-            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-              <Package className="w-12 h-12 text-gray-400" />
+            <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Package className="w-8 h-8 text-slate-300" />
+              </div>
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">{getStockFilterLabel(stockFilter)}</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">
+                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">{getStockFilterLabel(stockFilter)}</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">
                   {stockFilter === 'all' ? 'Tap Receive New Stock to log your first shipment' : 'Adjust the filter or search to see more records'}
                 </p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { 
-                   setNewStock({ 
+                <button onClick={() => {
+                   setNewStock({
                     item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
-                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
+                    purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
                   });
-                   setModalType('stock'); setIsModalOpen(true); 
-                }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
+                   setModalType('stock'); setIsModalOpen(true);
+                }} className="mt-2 flex items-center px-4 py-2 bg-gradient-brand text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-glow-sm hover:shadow-glow transition-all">
                   Receive Stock
                 </button>
               )}
@@ -1157,12 +1215,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 acc[cat].push(s);
                 return acc;
               }, {})
-            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => (
+            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => {
+              const meta = getCategoryMeta(category);
+              const CatIcon = meta.icon;
+              return (
               <div key={category} className="space-y-4 pb-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                    {category} ({catStock.length})
+                  <h2 className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${meta.chip}`}>
+                    <CatIcon className="w-3.5 h-3.5" /> {category} ({catStock.length})
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
@@ -1173,9 +1234,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     <div
                       key={s.id}
                       onClick={() => setSelectedStock(s)}
-                      className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-slate-200'}`}
+                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-card'}`}
                     >
-                      <div className={`absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : 'bg-slate-600'}`}></div>
+                      <div className={`absolute top-0 left-0 w-1 h-full ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">
                           {s.location || 'Central Store'}
@@ -1230,7 +1291,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 })}
                 </div>
               </div>
-            ))}
+            );})}
                 </div>
               )}
 
@@ -1246,30 +1307,33 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       return false;
                     });
                     
+                    const ColumnIcon = statusColumn === 'Healthy' ? CheckCircle2 : statusColumn === 'Low Stock' ? Boxes : Clock;
                     return (
                       <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
-                        <div className={`rounded-t-xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
+                        <div className={`rounded-t-2xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
                           statusColumn === 'Healthy' ? 'bg-emerald-50 border-emerald-200' :
                           statusColumn === 'Low Stock' ? 'bg-amber-50 border-amber-200' :
                           'bg-red-50 border-red-200'
                         }`}>
                           <div className="flex items-center justify-between">
-                            <span className="font-black text-slate-900 truncate uppercase">{statusColumn}</span>
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-white shadow-sm ${
+                            <span className={`flex items-center gap-1.5 font-black truncate uppercase text-sm ${
+                              statusColumn === 'Healthy' ? 'text-emerald-800' : statusColumn === 'Low Stock' ? 'text-amber-800' : 'text-red-800'
+                            }`}><ColumnIcon className="w-4 h-4" />{statusColumn}</span>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border bg-white shadow-sm ${
                               statusColumn === 'Healthy' ? 'text-emerald-700' :
                               statusColumn === 'Low Stock' ? 'text-amber-700' :
                               'text-red-700'
                             }`}>{columnItems.length}</span>
                           </div>
                         </div>
-                        
-                        <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+
+                        <div className="bg-slate-100/50 rounded-b-2xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
                           {columnItems.length === 0 ? (
                             <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn.toLowerCase()} items</div>
                           ) : columnItems.map(s => {
                             const risk = getStockRisk(s);
                             return (
-                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-200'}`}>
+                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-xl border shadow-card hover:shadow-card-hover transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-100'}`}>
                                 <div className="flex justify-between items-start gap-2">
                                   <h3 className="text-xs font-black text-indigo-700 line-clamp-2">{s.inventory_items?.name}</h3>
                                   {(risk.isExpired || risk.isExpiring || risk.isLow) && (
@@ -1308,7 +1372,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className="card overflow-x-auto">
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
+                      <tr className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                         <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Item Name</th>
                         <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Lot Number</th>
                         <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Expiry Date</th>
@@ -1321,7 +1385,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       {filteredStock.map(s => {
                         const risk = getStockRisk(s);
                         return (
-                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
+                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`even:bg-slate-50/40 hover:bg-slate-100/70 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
                             <td className="px-4 py-3">
                               <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                                 {s.inventory_items?.name}
@@ -1383,7 +1447,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {activeTab === 'items' && (
         <div className="space-y-8">
           {/* Registry Controls */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-card">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -1436,34 +1500,39 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
 
           {Object.keys(filteredRegistry).length === 0 ? (
-            <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-              <Package className="w-12 h-12 text-gray-400" />
+            <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Package className="w-8 h-8 text-slate-300" />
+              </div>
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No matching items found</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">Adjust your search or register new items</p>
+                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">No matching items found</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">Adjust your search or register new items</p>
               </div>
             </div>
           ) : (
-            Object.entries(filteredRegistry).sort(([a],[b]) => a.localeCompare(b)).map(([category, catItems]) => (
+            Object.entries(filteredRegistry).sort(([a],[b]) => a.localeCompare(b)).map(([category, catItems]) => {
+              const meta = getCategoryMeta(category);
+              const CatIcon = meta.icon;
+              return (
               <div key={category} className="space-y-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                    {category} ({catItems.length})
+                  <h2 className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${meta.chip}`}>
+                    <CatIcon className="w-3.5 h-3.5" /> {category} ({catItems.length})
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
                   {catItems.map(item => (
                     <div
                       key={item.id}
                       onClick={isSelectMode ? () => toggleItemSelect(item.id) : undefined}
-                      className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm ${
+                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${
                         isSelectMode ? 'cursor-pointer' : ''
-                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-slate-100'}`}
+                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-card'}`}
                     >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className={`absolute top-0 left-0 w-1 h-full ${meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
                         {isSelectMode ? (
@@ -1532,7 +1601,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   ))}
                 </div>
               </div>
-            ))
+            );})
           )}
         </div>
       )}
@@ -1604,20 +1673,22 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {activeTab === 'vendors' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {vendors.length === 0 ? (
-            <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-              <Truck className="w-12 h-12 text-gray-400" />
+            <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Truck className="w-8 h-8 text-slate-300" />
+              </div>
               <div>
-                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No suppliers added</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
+                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">No suppliers added</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
+                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-gradient-brand text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-glow-sm hover:shadow-glow transition-all">
                   Add Supplier
                 </button>
               )}
             </div>
           ) : vendors.map(vendor => (
-            <div key={vendor.id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm relative group overflow-hidden">
+            <div key={vendor.id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-card hover:shadow-card-hover transition-all relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2">
                  {canEditItems && (
                     <button
@@ -1634,10 +1705,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     </button>
                  )}
               </div>
-              <h3 className="text-lg font-black text-slate-950">{vendor.name}</h3>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-brand text-white flex items-center justify-center font-black text-sm shrink-0">
+                  {(vendor.name || '?').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black text-slate-950 truncate">{vendor.name}</h3>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 truncate">{vendor.contact_person || 'No Contact'}</p>
+                </div>
+              </div>
               <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
-                <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><ExternalLink className="w-3 h-3"/> {vendor.email || 'No email'}</p>
+                <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><Mail className="w-3 h-3"/> {vendor.email || 'No email'}</p>
                 <div className={`px-2 py-1 text-xs font-black uppercase tracking-widest rounded inline-block ${
                   vendor.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
                   vendor.status === 'Conditional' ? 'bg-amber-50 text-amber-700' :
