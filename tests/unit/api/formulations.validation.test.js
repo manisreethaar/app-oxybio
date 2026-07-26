@@ -71,8 +71,8 @@ describe('isMasterAdmin()', () => {
     expect(isMasterAdmin(undefined)).toBe(false);
   });
 
-  it('is case-sensitive (does not match mixed-case variant)', () => {
-    expect(isMasterAdmin('Manisreethaar@gmail.com')).toBe(false);
+  it('is case-insensitive (matches mixed-case variant)', () => {
+    expect(isMasterAdmin('Manisreethaar@gmail.com')).toBe(true);
   });
 });
 
