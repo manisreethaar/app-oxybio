@@ -100,7 +100,21 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
 
       setUser(currentUser);
 
-      // Step 2: If we already showed cached data, revalidate silently in background
+      // Step 2: If the server already fetched a fresh profile for this exact
+      // request (RootLayout), trust it directly — re-fetching the same row
+      // again client-side a few milliseconds later was pure redundant load,
+      // doubling the Supabase round-trips on every single page load.
+      if (serverProfile && serverProfile.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
+        setEmployeeProfile(serverProfile);
+        writeCache(serverProfile);
+        setLoading(false);
+        initializedRef.current = true;
+        return;
+      }
+
+      // Step 3: No fresh server profile available (e.g. client-only mount) —
+      // fall back to a possibly-stale session cache so the UI isn't blocked,
+      // and revalidate it in the background since it wasn't just fetched.
       const cached = readCache();
       if (cached && cached.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
         setLoading(false);
@@ -114,22 +128,7 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
         return;
       }
 
-      // Step 2b: If we have server profile, use it immediately
-      if (serverProfile && serverProfile.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
-        setEmployeeProfile(serverProfile);
-        writeCache(serverProfile);
-        setLoading(false);
-        initializedRef.current = true;
-        fetchProfile(currentUser.email).then(fresh => {
-          if (mounted && fresh) {
-            setEmployeeProfile(fresh);
-            writeCache(fresh);
-          }
-        });
-        return;
-      }
-
-      // Step 3: No cache or different user — fetch and block until resolved
+      // Step 4: No cache or different user — fetch and block until resolved
       const profile = await fetchProfile(currentUser.email);
       if (mounted) {
         if (profile) {
