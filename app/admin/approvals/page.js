@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
@@ -227,7 +228,7 @@ export default function ApprovalsPage() {
   async function fetchChanges(status) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/pending-changes?status=${status}`);
+      const res = await withTimeout(fetch(`/api/admin/pending-changes?status=${status}`), 20000, 'Approvals load timed out');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setChanges(data.data || []);

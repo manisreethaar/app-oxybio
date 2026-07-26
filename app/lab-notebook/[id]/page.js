@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, AlertCircle, FlaskConical, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export default function LnbEntryPage() {
   const fetchEntry = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/lab-notebook/${id}`);
+      const res = await withTimeout(fetch(`/api/lab-notebook/${id}`), 20000, 'Lab notebook entry load timed out');
       const logsRes = await res.json();
       if (!logsRes.success) throw new Error(logsRes.error || 'Failed to fetch entry');
       

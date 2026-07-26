@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useParams } from 'next/navigation';
@@ -100,6 +101,7 @@ export default function BatchDetailPage() {
   const [editingStage,       setEditingStage]       = useState(null);
   const [lnbByFlask,         setLnbByFlask]         = useState({});
   const [flaskInoculations,  setFlaskInoculations]  = useState([]);
+  const [loadError,          setLoadError]          = useState(false);
 
   const [showQuickLog,    setShowQuickLog]    = useState(false);
   const [quickLogFlaskId, setQuickLogFlaskId] = useState('');
@@ -111,28 +113,37 @@ export default function BatchDetailPage() {
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
-    const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await Promise.all([
-      supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
-      supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
-      supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
-      supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
-      supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
-      supabase.from('lab_notebook_entries').select('id, flask_id').eq('batch_id', batchId),
-      supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
-    ]);
-    if (batchRes.data)  setBatch(batchRes.data);
-    if (flasksRes.data) setFlasks(flasksRes.data);
-    if (transRes.data)  setTransitions(transRes.data);
-    if (empRes.data)    setEmployees(empRes.data);
-    if (stockRes.data)  setAvailableStock(stockRes.data);
-    const lnbEntries = lnbRes.data || [];
-    setLnbCount(lnbEntries.length);
-    setLnbEntryId(lnbEntries[0]?.id || null);
-    const byFlask = {};
-    lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
-    setLnbByFlask(byFlask);
-    if (epRes.data) setFlaskEndpoints(epRes.data);
-    if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
+    setLoadError(false);
+    try {
+      // This page had no try/catch/finally at all — a stalled connection or
+      // any error left it stuck on "Loading batch..." forever, on one of
+      // the most-visited pages in the app, with no way out but a refresh.
+      const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await withTimeout(Promise.all([
+        supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
+        supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
+        supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
+        supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
+        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
+        supabase.from('lab_notebook_entries').select('id, flask_id').eq('batch_id', batchId),
+        supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
+      ]), 20000, 'Batch detail load timed out');
+      if (batchRes.data)  setBatch(batchRes.data);
+      if (flasksRes.data) setFlasks(flasksRes.data);
+      if (transRes.data)  setTransitions(transRes.data);
+      if (empRes.data)    setEmployees(empRes.data);
+      if (stockRes.data)  setAvailableStock(stockRes.data);
+      const lnbEntries = lnbRes.data || [];
+      setLnbCount(lnbEntries.length);
+      setLnbEntryId(lnbEntries[0]?.id || null);
+      const byFlask = {};
+      lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
+      setLnbByFlask(byFlask);
+      if (epRes.data) setFlaskEndpoints(epRes.data);
+      if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
+    } catch (err) {
+      console.error('Batch detail fetch error:', err);
+      setLoadError(true);
+    }
   }, [batchId, supabase]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -351,6 +362,17 @@ export default function BatchDetailPage() {
       toast.error('Failed to archive batch: ' + err.message);
     }
   };
+
+  if (loadError && !batch) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center gap-3 text-center">
+        <div className="p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100 font-bold text-sm max-w-md">
+          Couldn&apos;t load this batch. Your connection may be slow or unavailable.
+        </div>
+        <button onClick={fetchAll} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider rounded-lg">Retry</button>
+      </div>
+    );
+  }
 
   if (authLoading || !batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
 
