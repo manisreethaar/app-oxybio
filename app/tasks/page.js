@@ -272,7 +272,7 @@ export default function TasksPage() {
         if (!res.ok) throw new Error((await res.json()).error || 'Failed to create tasks');
         
         if (isAdmin) {
-          assignees.forEach(uid => { 
+          assignees.filter(uid => !!uid).forEach(uid => { 
             fetch('/api/push/send', { 
               method: 'POST', 
               headers: { 'Content-Type': 'application/json' }, 

@@ -50,14 +50,45 @@ export async function POST(request) {
     if (error) throw error;
 
     // Notify each assignee (service role — creator inserting for other employees)
-    const notifyPromises = tasks
-      .filter(t => t.assigned_to && t.assigned_to !== creatorInfo.id)
-      .map(t => sendServerNotification(
+    // For team tasks (assigned_to = null), notify all active staff employees
+    const teamTaskTitles = tasks.filter(t => !t.assigned_to);
+    const individualTaskAssignees = tasks.filter(t => t.assigned_to && t.assigned_to !== creatorInfo.id);
+
+    const notifyPromises = [];
+
+    // Individual task notifications
+    individualTaskAssignees.forEach(t => {
+      notifyPromises.push(sendServerNotification(
         t.assigned_to,
         `📋 New Task Assigned: ${t.title}`,
         `You have been assigned a new task${t.due_date ? ` due ${new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}.`,
         '/tasks'
       ));
+    });
+
+    // Team task notifications — notify all active non-creator staff
+    if (teamTaskTitles.length > 0) {
+      const adminClient = createAdminClient();
+      const { data: allStaff } = await adminClient
+        .from('employees')
+        .select('id')
+        .eq('is_active', true)
+        .neq('id', creatorInfo.id);
+
+      if (allStaff && allStaff.length > 0) {
+        for (const teamTask of teamTaskTitles) {
+          for (const staff of allStaff) {
+            notifyPromises.push(sendServerNotification(
+              staff.id,
+              `📋 New Team Task: ${teamTask.title}`,
+              `A new team task is available${teamTask.due_date ? ` due ${new Date(teamTask.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}. Claim it in Tasks.`,
+              '/tasks'
+            ));
+          }
+        }
+      }
+    }
+
     await Promise.allSettled(notifyPromises);
 
     return NextResponse.json({ success: true, data });
