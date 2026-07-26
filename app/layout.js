@@ -33,23 +33,30 @@ export const viewport = {
 };
 
 import { createClient } from "@/utils/supabase/server";
+import { getRequestUser } from "@/utils/supabase/request-user";
 
 const PROFILE_SELECT = 'id,full_name,email,role,department,designation,is_active,photo_url,employee_code,phone,address,blood_group,emergency_contact,emergency_contact_name,joined_date,date_of_birth,casual_leave_balance,medical_leave_balance,earned_leave_balance';
 
 export default async function RootLayout({ children }) {
   const supabase = createClient();
 
-  // FIX: Use getUser() instead of getSession().
-  // getSession() reads from local storage without validating the JWT,
-  // so it can return stale/expired tokens. getUser() validates against
-  // the Supabase Auth server and is the recommended approach.
+  // PERF FIX: identity was already validated once in middleware.js (JWT
+  // check against Supabase Auth). Re-running supabase.auth.getUser() here
+  // was a second network round-trip to Supabase Auth on every navigation,
+  // for no reason — trust the header middleware.js set instead. Only fall
+  // back to a live check if the header is somehow missing (e.g. a request
+  // that didn't pass through middleware).
   let initialSession = null;
   let initialProfile = null;
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    let user = getRequestUser();
+    if (!user) {
+      const { data: { user: u }, error } = await supabase.auth.getUser();
+      if (!error && u) user = { id: u.id, email: u.email };
+    }
 
-    if (!error && user) {
+    if (user) {
       // Build a minimal session object for AuthContext compatibility
       initialSession = { user };
 

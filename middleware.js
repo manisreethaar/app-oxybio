@@ -2,7 +2,21 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
 export async function middleware(request) {
-  let supabaseResponse = NextResponse.next({ request });
+  // ── PERF FIX: this is the ONLY place in the app that should validate the
+  // session. Once we know who the user is, we forward it downstream via
+  // trusted request headers (x-user-id / x-user-email) so the root layout,
+  // admin/analytics layouts, and pages like inventory/directory/activity no
+  // longer each make their own redundant supabase.auth.getUser() call —
+  // that was 3-5 serial Supabase Auth round-trips stacked on every single
+  // navigation, which is what made modules feel like they "never load"
+  // until a manual refresh happened to land after the chain resolved.
+  const requestHeaders = new Headers(request.headers);
+  // Never trust client-supplied identity headers — strip them first so they
+  // can only be set below, by this middleware, after JWT validation.
+  requestHeaders.delete('x-user-id');
+  requestHeaders.delete('x-user-email');
+
+  const cookiesToApply = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,16 +26,13 @@ export async function middleware(request) {
         getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          cookiesToApply.push(...cookiesToSet);
         },
       },
     }
   );
 
-  // ── PERF FIX: getUser() validates the JWT cookie locally.
+  // getUser() validates the JWT cookie locally.
   // Old code used getSession() which made a NETWORK CALL to Supabase Auth
   // on every single page navigation → +200–600ms per click, every time.
   let user = null;
@@ -30,7 +41,14 @@ export async function middleware(request) {
     user = u ?? null;
   } catch {
     // Auth service unreachable — fail open. API routes auth independently.
-    return supabaseResponse;
+    const resp = NextResponse.next({ request: { headers: requestHeaders } });
+    cookiesToApply.forEach(({ name, value, options }) => resp.cookies.set(name, value, options));
+    return resp;
+  }
+
+  if (user) {
+    requestHeaders.set('x-user-id', user.id);
+    requestHeaders.set('x-user-email', user.email ?? '');
   }
 
   const { pathname } = request.nextUrl;
@@ -41,6 +59,8 @@ export async function middleware(request) {
     '/admin', '/notifications', '/directory', '/formulations',
     '/shelf-life', '/research', '/calendar', '/inventory', '/profile',
     '/capa', '/equipment', '/lab-notebook', '/mispunch',
+    '/analytics', '/scada', '/shift-handover', '/environmental-monitoring',
+    '/bioprocess', '/growth-studies', '/lab-bench', '/messages',
   ];
 
   const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
@@ -106,7 +126,9 @@ export async function middleware(request) {
     }
   }
 
-  return supabaseResponse;
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  cookiesToApply.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+  return response;
 }
 
 export const config = {

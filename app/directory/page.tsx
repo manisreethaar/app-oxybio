@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { getRequestUser } from '@/utils/supabase/request-user';
 import DirectoryClient from './DirectoryClient';
 import { redirect } from 'next/navigation';
 
@@ -6,9 +7,11 @@ export const metadata = { title: 'Directory - OxyOS' };
 
 export default async function DirectoryPage() {
   const supabase = createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
+  // Identity already validated by middleware.js (which also gates
+  // /directory) — no need to call supabase.auth.getUser() again here.
+  const user = getRequestUser();
+
+  if (!user) {
     redirect('/login');
   }
 
