@@ -230,10 +230,10 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         {/* Source Type */}
         <div>
           <label className="field-label">Inoculum Source Type</label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {SOURCE_TYPES.map(t => (
               <button key={t.value} type="button" onClick={() => setSourceType(t.value)}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${sourceType === t.value ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}>
+                className={`flex-1 min-w-[100px] py-2 text-xs font-bold rounded-xl border transition-all ${sourceType === t.value ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}>
                 {t.label}
               </button>
             ))}

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
@@ -99,6 +99,17 @@ export default function BatchDetailPage() {
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
   const [viewingStage,       setViewingStage]       = useState(null);
   const [editingStage,       setEditingStage]       = useState(null);
+  const stagePanelRef = useRef(null);
+
+  // The Stage Timeline nav sits below the stage panel on mobile (panel first,
+  // since it's the primary actionable content). Tapping a past stage there
+  // otherwise updates the panel out of view above the user's scroll position —
+  // bring it back into view instead of leaving them looking at a stale spot.
+  useEffect(() => {
+    if (viewingStage) {
+      stagePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [viewingStage]);
   const [lnbByFlask,         setLnbByFlask]         = useState({});
   const [flaskInoculations,  setFlaskInoculations]  = useState([]);
   const [loadError,          setLoadError]          = useState(false);
@@ -683,10 +694,10 @@ export default function BatchDetailPage() {
         </div>
 
         {/* ── RIGHT COLUMN — Stage Panel (shows first on mobile) ── */}
-        <div className="order-1 lg:order-2">
+        <div className="order-1 lg:order-2" ref={stagePanelRef}>
           {/* View / Edit Mode Banner */}
           {viewingStage && (
-            <div className={`flex items-center justify-between rounded-xl px-4 py-2.5 mb-4 ${editingStage === viewingStage ? 'bg-amber-50 border border-amber-300' : 'bg-slate-50 border border-slate-200'}`}>
+            <div className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-2.5 mb-4 ${editingStage === viewingStage ? 'bg-amber-50 border border-amber-300' : 'bg-slate-50 border border-slate-200'}`}>
               <div className="flex items-center gap-2">
                 <BookOpen className={`w-4 h-4 shrink-0 ${editingStage === viewingStage ? 'text-amber-600' : 'text-slate-600'}`}/>
                 <div>
@@ -703,7 +714,7 @@ export default function BatchDetailPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 {['admin','ceo','cto'].includes(role) && editingStage !== viewingStage && (
                   <button
                     onClick={() => setEditingStage(viewingStage)}
