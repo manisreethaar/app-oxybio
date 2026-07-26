@@ -1040,16 +1040,16 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
       )}
 
-      <div className="flex border-b border-gray-200">
-        <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
-        <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
-        <button onClick={() => setActiveTab('vendors')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
-        <button onClick={() => setActiveTab('pr')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
-        <button onClick={() => setActiveTab('traceability')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
+      <div className="flex border-b border-gray-200 overflow-x-auto">
+        <button onClick={() => setActiveTab('stock')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
+        <button onClick={() => setActiveTab('items')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
+        <button onClick={() => setActiveTab('vendors')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
+        <button onClick={() => setActiveTab('pr')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
+        <button onClick={() => setActiveTab('traceability')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
       </div>
 
-      <div className="relative flex gap-2">
-        <div className="relative flex-1">
+      <div className="relative flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1 min-w-0">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
           </div>
@@ -1061,7 +1061,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto">
           {activeTab === 'stock' && (
             <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm mr-1 h-[54px]">
               {[

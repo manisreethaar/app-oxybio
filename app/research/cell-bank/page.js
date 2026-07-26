@@ -774,59 +774,65 @@ export default function CellBankPage() {
               const passageNum = (p.passage_number != null && p.passage_number > 0) ? p.passage_number : 1;
               return (
                 <Link key={p.id} href={`/research/cell-bank/${p.id}`}
-                  className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {p.type}
+                  className="card p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:shadow-md transition-shadow group">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${p.type === 'MCB' ? 'bg-emerald-100 text-emerald-700' : p.type === 'RCB' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {p.type}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-black text-slate-900">{p.prep_code}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${STATUS_COLOR[p.status] || 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
+                        <span className="px-1.5 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-600">P{passageNum}</span>
+                        {p.qc_released ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 flex items-center gap-0.5">
+                            <CheckCircle2 className="w-2.5 h-2.5"/> QC Released
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                            Awaiting QC
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">{p.cell_bank_strains?.name}</p>
+                      {(p.linked_formulation || p.cell_bank_strains?.linked_formulation) && (
+                        <p className="text-xs text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
+                          <BookOpen className="w-3 h-3 shrink-0"/>
+                          {recipeLabel(p.linked_formulation || p.cell_bank_strains?.linked_formulation)}
+                        </p>
+                      )}
+                      {p.type === 'WCB' && p.parent && <p className="text-xs text-slate-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-black text-slate-900">{p.prep_code}</p>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${STATUS_COLOR[p.status] || 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
-                      <span className="px-1.5 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-600">P{passageNum}</span>
-                      {p.qc_released ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 flex items-center gap-0.5">
-                          <CheckCircle2 className="w-2.5 h-2.5"/> QC Released
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
-                          Awaiting QC
-                        </span>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-2 pl-[52px] sm:pl-0 sm:shrink-0">
+                    <div className="flex items-center sm:flex-col sm:items-end gap-2 sm:gap-1">
+                      {p.vial_count > 0 && <p className="text-xs font-black text-slate-700">{p.vial_count} vials</p>}
+                      <p className="text-xs text-slate-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
+                      {p.employees && (
+                        <CreatorBadge initials={p.employees.initials} fullName={p.employees.full_name} />
+                      )}
+                      {isAdmin && !p.qc_released && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmReleaseId(p.id); }}
+                          className="text-xs text-amber-600 hover:text-amber-800 font-bold border border-amber-200 rounded px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 transition-colors"
+                        >
+                          Release
+                        </button>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate">{p.cell_bank_strains?.name}</p>
-                    {(p.linked_formulation || p.cell_bank_strains?.linked_formulation) && (
-                      <p className="text-xs text-navy font-bold mt-0.5 flex items-center gap-1 truncate">
-                        <BookOpen className="w-3 h-3 shrink-0"/>
-                        {recipeLabel(p.linked_formulation || p.cell_bank_strains?.linked_formulation)}
-                      </p>
-                    )}
-                    {p.type === 'WCB' && p.parent && <p className="text-xs text-slate-400 font-semibold">from MCB: {p.parent.prep_code}</p>}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {canDelete && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeletePrepId(p.id); }}
+                          className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                          title="Delete Preparation"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 shrink-0"/>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 mr-2 flex flex-col items-end gap-1">
-                    {p.vial_count > 0 && <p className="text-xs font-black text-slate-700">{p.vial_count} vials</p>}
-                    <p className="text-xs text-slate-400">{new Date(p.created_at).toLocaleDateString('en-IN')}</p>
-                    {p.employees && (
-                      <CreatorBadge initials={p.employees.initials} fullName={p.employees.full_name} />
-                    )}
-                    {isAdmin && !p.qc_released && (
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmReleaseId(p.id); }}
-                        className="text-xs text-amber-600 hover:text-amber-800 font-bold border border-amber-200 rounded px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 transition-colors"
-                      >
-                        Release
-                      </button>
-                    )}
-                  </div>
-                  {canDelete && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeletePrepId(p.id); }}
-                      className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                      title="Delete Preparation"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 shrink-0"/>
                 </Link>
               );
             })}
