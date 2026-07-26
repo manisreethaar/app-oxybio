@@ -1,15 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    // Fast path: middleware already validated the JWT and forwarded identity via
+    // trusted headers — no need for another supabase.auth.getUser() network call.
+    const user = getApiUser();
+    if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    const supabase = createClient();
 
     const { data, error } = await supabase
       .from('lab_notebook_entries')

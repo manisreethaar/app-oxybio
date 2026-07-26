@@ -179,22 +179,22 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         query = query.eq('employee_id', employeeProfile?.id);
       }
 
-      const { data: logData } = await query;
+      const { data: logData, error: logError } = await query;
+      if (logError) throw logError;
       if (!isMounted.current) return;
 
       const newLogs = logData || [];
       setHasMore(newLogs.length === PAGE_SIZE);
       if (append) {
         setActivities(prev => [...prev, ...newLogs]);
-        setActivityOffset(offset + newLogs.length);
+        setActivityOffset(prev => prev + newLogs.length);
       } else {
         setActivities(newLogs);
         setActivityOffset(newLogs.length);
       }
 
       if (isExecUser) {
-        const allLogs = append ? [...activities, ...newLogs] : newLogs;
-        setIssues(allLogs.filter((a: any) => a.issue_observed));
+        setIssues(prev => append ? [...prev, ...newLogs.filter((a: any) => a.issue_observed)] : newLogs.filter((a: any) => a.issue_observed));
       }
 
       // Founder Brief data (admin only)
@@ -259,7 +259,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, [supabase, role, employeeProfile, filterEmployee, filterDateFrom, filterDateTo, activityOffset, activities]);
+  }, [supabase, role, employeeProfile, filterEmployee, filterDateFrom, filterDateTo, activityOffset]);
 
   // High-Level Analytics Processing for CEO Dashboard
   const analyticsData = useMemo(() => {
