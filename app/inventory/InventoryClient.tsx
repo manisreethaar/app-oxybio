@@ -1,12 +1,10 @@
-// @ts-nocheck
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, MapPin, Truck, ExternalLink, Loader2, Save, Filter, X, FileText, Trash2, Archive, ChevronRight, ChevronDown, Edit3, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -31,19 +29,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
-  const [viewMode, setViewMode] = useState('grid');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('inventory_view_mode');
-    if (saved && ['kanban', 'grid', 'table'].includes(saved)) {
-      setViewMode(saved);
-    }
-  }, []);
-
-  const handleViewModeChange = (mode: string) => {
-    setViewMode(mode);
-    localStorage.setItem('inventory_view_mode', mode);
-  };
   const [stock, setStock] = useState(initialStock || []);
   const [items, setItems] = useState(initialItems || []);
   const [vendors, setVendors] = useState(initialVendors || []);
@@ -68,9 +53,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [checkingTraining, setCheckingTraining] = useState(false);
 
   const subCats = {
-    'RAW MATERIALS': ['Active Ingredients', 'Excipients & Carriers', 'Culture Media'],
-    'REAGENTS & STAINS': ['Analytical Reagents', 'Dyes & Stains', 'Biochemical Test Compounds'],
-    'CHEMICALS & BIOCHEMICALS': ['Buffer Salts', 'Organic Solvents', 'Inorganic Salts', 'Protein & Bio Standards', 'Vitamins & Nutrients', 'Polymers & Surfactants'],
+    'Raw Material': ['Active Ingredients', 'Excipients & Carriers', 'Packaging Materials'],
+    'Lab Consumables': ['Reagents', 'Chemicals', 'Culture Media & Buffers', 'Indicators & Stains', 'Lab Disposables'],
+    'Equipment & Maintenance': ['Spare Parts', 'Maintenance Supplies'],
+    'Reference Standard': ['Certified Reference Materials', 'Calibration Standards'],
+    'RAW MATERIALS LIST': ['Bulk Chemicals', 'Compounds'],
+    'GLASSWARES': ['Bottles', 'Flasks', 'Measuring', 'Miscellaneous'],
+    'PLASTICS AND CONSUMMABLES': ['Disposables', 'Safety Gear', 'Storage'],
+    'PHOTOGRAPHY / DIAGNOSTIC MEDIA': ['Agars', 'Broths'],
+    'MICROBIOLOGY CHEMICALS': ['Stains', 'Reagents', 'Solutions']
   };
 
   const [selectedStock, setSelectedStock] = useState<any>(null);
@@ -82,9 +73,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   
   // Registry specific state
   const [registrySearch, setRegistrySearch] = useState('');
-  const [registrySort, setRegistrySort] = useState('name');
-  const [stockSort, setStockSort] = useState('expiry');
-  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [registrySort, setRegistrySort] = useState('name'); // 'name' | 'stock' | 'newest'
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteType, setDeleteType] = useState<'item' | 'vendor'>('item');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -94,7 +83,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
   // Multi-select state
-
+  const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
@@ -142,11 +131,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         stockQuery = stockQuery.or(`supplier_batch_number.ilike.%${searchTerm}%,inventory_items.name.ilike.%${searchTerm}%`);
       }
 
-      const [stockRes, itemsRes, vendorsRes] = await withTimeout(Promise.all([
+      const [stockRes, itemsRes, vendorsRes] = await Promise.all([
         stockQuery,
         pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').order('name').limit(1000) : Promise.resolve({ data: null }),
         pageNum === 0 ? supabase.from('vendors').select('*').order('name').limit(500) : Promise.resolve({ data: null })
-      ]), 20000, 'Inventory load timed out');
+      ]);
 
       if (stockRes.error) throw stockRes.error;
 
@@ -266,12 +255,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     // Grouping
     const groups: { [key: string]: any[] } = {};
     result.forEach(item => {
-      let cat = item.category || 'UNCATEGORIZED';
-      if (cat.toUpperCase() === 'RAW MATERIAL' || cat.toUpperCase() === 'RAW MATERIALS') cat = 'RAW MATERIALS';
-      else if (cat.toUpperCase() === 'REAGENTS & STAINS') cat = 'REAGENTS & STAINS';
-      else if (cat.toUpperCase() === 'CHEMICALS & BIOCHEMICALS') cat = 'CHEMICALS & BIOCHEMICALS';
-      else cat = cat.toUpperCase();
-      
+      const cat = item.category || 'Uncategorized';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(item);
     });
@@ -289,7 +273,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       setItems(items.filter(i => i.id !== deletingId));
       setStock(stock.filter(s => s.item_id !== deletingId));
       setDeletingId(null);
-      toast.success("Item deleted successfully.");
     } catch (err: any) {
       toast.error("Failed to delete: " + err.message);
     } finally {
@@ -488,7 +471,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       if (!error) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
-        toast.success("Vendor updated successfully.");
         fetchData(0, false);
       } else { toast.error(error.message || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
@@ -514,7 +496,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       // Update items list to reflect unlinked suppliers
       setItems(items.map(i => i.preferred_supplier === deletingId ? { ...i, preferred_supplier: null } : i));
       setDeletingId(null);
-      toast.success("Vendor deleted successfully.");
     } catch (err: any) {
       toast.error('Failed to delete vendor: ' + err.message);
     } finally {
@@ -527,12 +508,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const payload = { ...newVendor, created_by: employeeProfile?.id };
-      const { data, error } = await (supabase.from('vendors').insert([payload] as any) as any).select().single();
+      const { data, error } = await (supabase.from('vendors').insert([newVendor] as any) as any).select().single();
       if (!error) {
         setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
-        toast.success("Vendor registered successfully.");
         fetchData(0, false);
       } else { toast.error(error.message || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
@@ -544,235 +523,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
   const executeSeed = async () => {
     setIsSubmitting(true);
-    const catalogData: Record<string, string[]> = {
-      "RAW MATERIALS": [
-        "Ragi (Finger Millet)",
-        "Karuppu Kavuni (Black Rice)",
-        "Urad dal",
-        "Agar Agar",
-        "Beef Extract",
-        "Peptone Bacteriological",
-        "Yeast Extract",
-        "MRS Broth",
-        "LB Broth",
-        "Nutrient Agar",
-        "Nutrient Broth",
-        "MacConkey Agar",
-        "Mueller Hinton Agar",
-        "Sabouraud Dextrose Agar",
-        "MEM (Minimum Essential Medium)"
-      ],
-      "REAGENTS & STAINS": [
-        "Aceto carmine",
-        "Barfoed's reagent",
-        "Bial's reagent",
-        "Biuret reagent",
-        "Bromocresol green solution",
-        "Bromophenol blue indicator",
-        "Bromophenol blue solution",
-        "Cedar wood oil",
-        "Chlorophenol red solution",
-        "Crystal violet solution",
-        "Ehrlich's reagent",
-        "Gentian violet stain solution aqueous",
-        "Giemsa's stain solution",
-        "Indole-3 acetic acid",
-        "Lactophenol",
-        "Malachite green",
-        "Methyl orange solution",
-        "Methylene blue alkaline",
-        "Methylene blue aqueous",
-        "Methylene blue staining solution aqueous",
-        "Molisch's reagent",
-        "Morner's reagent",
-        "Ninhydrin",
-        "Phenol reagent (Folin-Ciocalteu)",
-        "Phenolphthalein solution",
-        "Picric acid saturated solution",
-        "Pure linseed oil",
-        "Robert's reagent",
-        "Safranine stain solution",
-        "Seliwanoff's reagent",
-        "Tollen's reagent",
-        "Trypan blue solution",
-        "Wright's stain solution",
-        "1,10 Phenanthroline hydrate",
-        "3,5-Dinitrosalicylic acid (DNS)",
-        "Albumin Bovine Fraction (BSA)",
-        "Anthrone",
-        "Egg albumine",
-        "Egg albumine flakes",
-        "Iodine Resublimed",
-        "Kinetin pure",
-        "L-Leucine",
-        "Orcinol",
-        "Proteinase K",
-        "Pyridoxine hydrochloride",
-        "Alizarin Red",
-        "Benedict's Qualitative Reagent",
-        "Carbon Fuchsin Strong",
-        "Fehling's Solution I",
-        "Fehling's Solution II",
-        "Gower's Solution",
-        "Hydrogen Peroxide",
-        "Jenner's Stain",
-        "Lactophenol Cotton Blue",
-        "Leishman's Stain",
-        "May-Grunwald's Eosin Methylene Blue Modified Solution",
-        "Potassium Permanganate",
-        "Silica Gel G",
-        "Silica Gel G for TLC",
-        "Silica Gel White",
-        "Sodium Hypochlorite"
-      ],
-      "CHEMICALS & BIOCHEMICALS": [
-        "Acetaldehyde",
-        "Acetamide",
-        "Acetanilide",
-        "Acetic Acid",
-        "Acetic Acid Glacial",
-        "Acetone",
-        "Acetyl Acetate",
-        "Acrylamide",
-        "Activated Charcoal",
-        "Amyl Alcohol",
-        "Benzaldehyde",
-        "Benzoic Acid",
-        "Carbon Tetrachloride",
-        "Carboxymethyl Cellulose Sodium Salt",
-        "Cetrimide",
-        "Cetyltrimethyl Ammonium Bromide (CTAB)",
-        "Cholesterol",
-        "Citric Acid",
-        "Cottonseed Oil",
-        "Cyclohexanone",
-        "D-Fructose",
-        "D-Sorbitol Powder",
-        "Dextrose Extra Pure",
-        "Diacetyl Monoxime",
-        "Dimethyl Sulfoxide (DMSO)",
-        "Diphenylamine",
-        "Fructose",
-        "Formamide",
-        "Gallic Acid",
-        "Glutaraldehyde",
-        "Glycerol",
-        "Glycolic Acid 70%",
-        "Hexane",
-        "Hydroquinone",
-        "Isoamyl Alcohol",
-        "Lactose",
-        "L-Ascorbic Acid (Vitamin C)",
-        "Methanol",
-        "Meso-Inositol",
-        "Methyl Cellulose",
-        "Naphthol",
-        "Oxalic Acid",
-        "Paraffin Liquid Colourless",
-        "Paraffin Wax",
-        "Perchloroethylene",
-        "Petroleum Ether",
-        "Petroleum Jelly Yellow",
-        "Phthalic Acid",
-        "Polyethylene Glycol (PEG)",
-        "Polyvinylpyrrolidone K30 (PVP)",
-        "Potassium Oxalate",
-        "Propionic Acid",
-        "Pyridine",
-        "Salicylic Acid",
-        "Sodium Alginate",
-        "Sodium Benzoate",
-        "Sodium Salicylate",
-        "Sucrose",
-        "Sulfuric Acid",
-        "Synthetic Vinegar",
-        "Tartaric Acid",
-        "Urea",
-        "Ammonium Acetate",
-        "Ammonium Chloride",
-        "Boric Acid",
-        "Buffer Powder",
-        "Buffer Tablets",
-        "Dipotassium Hydrogen Orthophosphate",
-        "Disodium Hydrogen Orthophosphate Anhydrous",
-        "EDTA",
-        "Hydrochloric Acid",
-        "Hydrochloric Acid 35%",
-        "Ortho Phosphoric Acid",
-        "pH Standard 7",
-        "Phosphate Buffer",
-        "Potassium Acetate",
-        "Potassium Bisulphate",
-        "Potassium Carbonate Anhydrous",
-        "Potassium Chloride",
-        "Potassium Dihydrogen Orthophosphate",
-        "Potassium Hydroxide Pellets",
-        "Potassium Iodide",
-        "Potassium Sodium Tartrate",
-        "Potassium Sulphate",
-        "Sodium Acetate",
-        "Sodium Acetate Anhydrous",
-        "Sodium Acetate Trihydrate",
-        "Sodium Borate Alkaline Solution",
-        "Sodium Carbonate Anhydrous",
-        "Sodium Chloride",
-        "Sodium Dihydrogen Orthophosphate",
-        "Sodium Hydrogen Carbonate",
-        "Sodium Hydroxide Pellets",
-        "Sodium Iodide",
-        "Sodium Lauryl Sulphate (SDS)",
-        "Sodium Sulphate Anhydrous",
-        "TEMED",
-        "Titriplex III Pure (EDTA disodium salt)",
-        "Tri-Ammonium Citrate",
-        "Trisodium Citrate",
-        "Tris Buffer",
-        "Tris Hydrochloride",
-        "Aluminium Chloride Anhydrous",
-        "Aluminium Nitrate",
-        "Aluminium Potassium Sulphate",
-        "Ammonia",
-        "Ammonium Ferrous Sulphate",
-        "Ammonium Molybdate",
-        "Ammonium Nitrate",
-        "Ammonium Persulphate",
-        "Barium Chloride",
-        "Barium Nitrate",
-        "Barium Sulphate",
-        "Calcium Borate",
-        "Calcium Carbonate",
-        "Calcium Chloride",
-        "Calcium Nitrate",
-        "Copper Sulphate",
-        "Cupric Nitrate",
-        "Cupric Sulphate Pentahydrate",
-        "Epsom Salt (MgSO4)",
-        "Ferric Chloride Anhydrous",
-        "Ferrous Sulphate",
-        "Lead Acetate",
-        "Magnesium Chloride",
-        "Magnesium Phosphate",
-        "Magnesium Sulphate",
-        "Manganese Sulphate Monohydrate",
-        "Manganous Chloride",
-        "Nickel Chloride",
-        "Nitric Acid",
-        "Perchloric Acid 60%",
-        "Perchloric Acid 70%",
-        "Potassium Nitrate",
-        "Sodium Nitrite",
-        "Sodium Nitroprusside",
-        "Sodium Sulphide Flakes",
-        "Zinc Acetate",
-        "Zinc Carbonate",
-        "Zinc Chloride Anhydrous",
-        "Zinc Sulphate",
-        "Ficoll Type 400",
-        "Tween 20",
-        "Tween 80",
-        "Folic Acid",
-        "Glycine"
-      ]
+    const catalogData = {
+      "RAW MATERIALS LIST": ["AMPHOTERIC SURFACTANTS (CAPB)", "AOS Liquid", "Sodium Carbonate Anhydrous", "CDEA Flakes", "Acrylates Copolymer (Aqua SF-1)", "Dimethyldichlorosilane (DMDM Hydantoin)", "NaOH Flakes", "TETRASODIUM EDTA (VERSENE 100)", "Propylene glycol (PG)", "Cocomonoethanolamide", "Disodium Laureth Sulfosuccinate (DLS)", "Diethanolamine", "C - 1045", "Kathon CG (MIT/CMIT preservatives)", "Triethanolamine (TEA)", "Xanthan Gum", "Disodium EDTA", "Potassium Hydroxide", "Guar Hydroxypropyltrimonium Chloride (Guar Gum)", "Sodium Lauryl Ether Sulphate (SLES)", "Carbomer (Ultrez 20 / Aqua SF-1)", "Polyquaternium (PQ-7)", "Polyquaternium (PQ-10)", "Glycerin", "Cetostearyl alcohol (CSA / Cetearyl Alcohol)"],
+      "GLASSWARES": ["McCartney bottles (Universal bottles)", "Culture tubes - 20ml", "Falcon tubes - 15ml", "Falcon tubes - 50ml", "Conical flasks - 250ml", "Burett - 50ml", "Burett - 100ml", "Pipette - 10ml", "Pipette - 25ml", "Measuring Cylinders - 10ml", "Measuring Cylinders - 50ml", "Measuring Cylinders - 100ml", "Measuring Cylinders - 250ml", "Measuring Cylinders - 500ml", "Measuring Cylinders - 1000ml", "Beaker (Glass) - 50ml", "Beaker (Glass) - 100ml", "Beaker (Glass) - 250ml", "Beaker (Glass) - 500ml", "BOD bottles (Incubation bottles)", "Pipette Pump", "Volumetric flask (250ml)", "Desiccator", "Test tubes", "Separatory funnels - 50ml", "Reagent bottles - (Clear and Amber)", "Erlenmeyer Flasks (Conical flasks)", "Condenser (Liebig condenser)", "Test tube racks (Plastic)", "Burette stand (Retort stand with clamp)", "Buchner funnel (Porcelain)", "Wash bottles (Plastic)", "Glass funnels (60mm)", "Weighing boats (Plastic)", "Watch Glasses"],
+      "PLASTICS AND CONSUMMABLES": ["Micropipettes (Adjustable volumes)", "Micropipette Tips - 10ul", "Micropipette Tips - 200ul", "Pasteur Pipettes", "Syringe Filters (0.22 and 0.45 micron)", "Parafilm", "Kimwipes (Lint-free wipes)", "Microcentrifuge Tubes - 1.5ml", "Microcentrifuge Tubes - 2.0ml", "Syringes (1ml, 5ml, 10ml, 20ml)", "Petri dishes (Plastic, empty P90 & P60)", "Sterile Cotton Swabs (Long)", "Inoculating loops - 10ul", "Inoculating loops - 1ul", "Inoculating loop holders", "Cell spreaders (L-shaped, Disposable)", "Disposable Gloves (Nitrile)", "Face masks", "Lab coats (Disposable or Cotton)", "Shoe covers (Disposable)", "Autoclave bags", "Biohazard waste bags", "Aluminum foil", "Autoclave Tape", "Sample bottles (Glass / Plastic) - 250ml", "Sample bottles (Glass / Plastic) - 500ml", "Cotton plugs / Non-absorbent Cotton", "Staining Jars (Coplin Jars) - Glass", "Slide Storage Boxes (Plastic / Wood)"],
+      "PHOTOGRAPHY / DIAGNOSTIC MEDIA": ["Blood Agar Base (Columbia Agar base or similar)", "MacConkey agar", "Eosin Methylene Blue (EMB) agar", "Soybean Casein Digest Medium (SCDM / TSB)", "Baird Parker Agar", "Sabouraud Dextrose Agar (SDA)", "Lauryl Tryptose Broth (LTB)", "Brilliant Green Bile Broth (BGBB)"],
+      "MICROBIOLOGY CHEMICALS": ["3% Hydrogen Peroxide", "Xylene (Solution or CP)", "DPX Mountant", "Crystal violet (Gram's Method)", "Gram's Iodine", "Safranin (Gram's counterstain)", "95% Ethanol OR Isopropyl alcohol", "Kovac's Reagent (for Indole test)", "Simmons Citrate Agar (Base)", "Methyl Red - Voges-Proskauer (MR-VP) Medium", "Alpha-naphthol (for VP test)", "Potassium Hydroxide (KOH) Solution (40% for VP test)", "TSI (Triple Sugar Iron) Agar", "Urea Agar Base (Christensen's Urea Agar base)", "40% Urea Solution (for Urea Agar)", "Motility Indole Ornithine (MIO) Medium", "Nitrate Broth (or Nitrate test media)", "Sulfanilic acid (Nitrate Reagent A)", "Alpha-naphthylamine (Nitrate Reagent B)", "Zinc powder (for nitrate reduction test)", "Gelatin", "Nutrient Broth / Peptone Water", "Mineral oil (sterile - for biochemical tests)", "Immersion oil (for microscopy)", "Methylene Blue", "Malachite green (Endospore stain)", "Carbol Fuchsin / Ziehl Neelsen Stain (AFB stain)", "Acid Alcohol (For AFB stain)", "Lactophenol cotton blue (for fungal staining)", "Lugol's Iodine", "Oxidase Reagent (Gordon-McLeod reagent / discs)", "Catalase reagent (3% H2O2)", "Barium Chloride (for McFarland standard)", "Sulfuric Acid (for McFarland standard)", "Lysol (Phenol / 5% Phenol solution) OR Dettol (Diluted)"]
     };
 
     // Build a flat array of all items for a single bulk insert (much faster)
@@ -789,48 +545,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     }
 
     const instrumentsList = [
-      "Autoclave",
-      "Bio Chemical India – Fermentor (model: Bioage 2A)",
-      "Scigenics – Fermentor",
-      "Kemi – Laminar Air Flow",
-      "Tech Lab Instruments – Incubator",
-      "Technico – BOD Incubator",
-      "Hybridization Oven – Scigenics Biotech",
-      "Bino CXI – Microscope",
-      "Remi – Clinical Centrifuge",
-      "Remi – Cooling Centrifuge (Model 412 LAG)",
-      "Remi – Micro Centrifuge (12C)",
-      "Remi – R-8C Centrifuge",
-      "Remi – Centrifuge (KA 6775)",
-      "Deen Instruments – Magnetic Stirrer",
-      "Remi – Cyclo Mixer",
-      "Orbital Shaker – Scigenics Biotech",
-      "Orbital Water Bath Shaker – Ind Labs",
-      "Rotary Shaker – Ind Labs",
-      "Rashmi – Water Bath",
-      "Oil Bath",
-      "Electronic Scale",
-      "Weighing Machine (Electronic, Max 300 g)",
-      "Precision Lab Furniture Industries – Hot Air Oven",
-      "Golden / Butterfly – Stove",
-      "Hot Plate",
-      "Microwave Oven – Samsung",
-      "LG – Refrigerator",
-      "LG – Refrigerator (Model GL 328)",
-      "Deep Freezer – Ins Lab",
-      "Rockwell – Deep Freezer",
-      "Rockwell – Deep Freezer (Model SFR450DDU)",
-      "Ice Flake Machine",
-      "Medox – pH Meter",
-      "Borosil – Double Distillation Unit",
-      "Labtronics – Digital Flame Photometer (LT 65)",
-      "Alpha Infotech – Gel Documentation System",
-      "Medox / Weal Tech – UV Transilluminator",
-      "Labtronics – Microprocessor Colony Counter",
-      "Rashmi Scientific Company – Soxhlet Apparatus",
-      "Sonic Vibra Cell – Ultrasonicator",
-      "Endee – Gas Analyser (PA960)",
-      "Remi / Techno Instrument Co. – Homogeniser"
+      "Bench top pH meter", "STEREO MICROSCOPE WITH LED LIGHT", "Hand held refractometer",
+      "Centrifuge (Micro centrifuge)", "Ultrasonic bath (sonicator)", "LABORATORY WEIGHING SCALE"
     ];
 
     try {
@@ -916,13 +632,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             onClick={() => setStockFilter(tile.type as StockFilter)}
             className={`p-4 rounded-xl border flex flex-col transition-all text-left ${
               stockFilter === tile.type
-                ? 'bg-white border-slate-500 shadow-md ring-2 ring-slate-100'
+                ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-100'
                 : 'bg-white border-gray-100 hover:border-gray-200'
             }`}
           >
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
             <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-slate-800'
+              tile.count > 0 && tile.type !== 'all' ? 'text-red-600' : 'text-teal-800'
             }`}>
               {tile.count}
             </span>
@@ -936,9 +652,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           { label: 'CoA Required', count: itemStats.coaRequired, highlight: false },
         ].map(tile => (
           <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
             <span className={`text-2xl font-black font-mono mt-1 ${
-              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-slate-800'
+              tile.highlight && tile.count > 0 ? 'text-amber-600' : 'text-teal-800'
             }`}>
               {tile.count}
             </span>
@@ -946,13 +662,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         ))}
 
         {activeTab === 'vendors' && [
-          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-slate-800' },
-          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-slate-800' },
-          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-slate-800' },
-          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-slate-800' },
+          { label: 'Total Suppliers', count: vendorStats.total, color: 'text-teal-800' },
+          { label: 'Have Email', count: vendorStats.withEmail, color: 'text-teal-800' },
+          { label: 'Have Phone', count: vendorStats.withPhone, color: 'text-teal-800' },
+          { label: 'Lead Time Set', count: vendorStats.withLeadTime, color: vendorStats.withLeadTime < vendorStats.total ? 'text-amber-600' : 'text-teal-800' },
         ].map(tile => (
           <div key={tile.label} className="p-4 rounded-xl border bg-white border-gray-100 flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{tile.label}</span>
             <span className={`text-2xl font-black font-mono mt-1 ${tile.color}`}>{tile.count}</span>
           </div>
         ))}
@@ -976,10 +692,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div className="absolute left-0 top-full mt-2 w-52 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 overflow-hidden">
                 {activeTab === 'stock' && (
                   <>
-                    <p className="px-4 pt-3 pb-1 text-xs font-black text-gray-400 uppercase tracking-widest">Filter Stock</p>
+                    <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Stock</p>
                     {[['all','All Stock'],['low','Low Stock Only'],['expiring','Expiring (&lt;30d)'],['expired','Expired']].map(([val, label]) => (
                       <button key={val} onClick={() => { setStockFilter(val as StockFilter); setShowOptions(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 transition-colors ${ stockFilter === val ? 'text-slate-700 bg-slate-50/60' : 'text-gray-700' }`}>
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ stockFilter === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
                         {label}
                       </button>
                     ))}
@@ -987,10 +703,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 )}
                 {activeTab === 'items' && (
                   <>
-                    <p className="px-4 pt-3 pb-1 text-xs font-black text-gray-400 uppercase tracking-widest">Sort Registry</p>
+                    <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Sort Registry</p>
                     {[['name','Name (Aâ€“Z)'],['newest','Newest First'],['stock','By Min Stock Level']].map(([val, label]) => (
                       <button key={val} onClick={() => { setRegistrySort(val); setShowOptions(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 transition-colors ${ registrySort === val ? 'text-slate-700 bg-slate-50/60' : 'text-gray-700' }`}>
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-teal-50 transition-colors ${ registrySort === val ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700' }`}>
                         {label}
                       </button>
                     ))}
@@ -998,11 +714,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 )}
                 {activeTab === 'vendors' && (
                   <>
-                    <p className="px-4 pt-3 pb-1 text-xs font-black text-gray-400 uppercase tracking-widest">Supplier Options</p>
+                    <p className="px-4 pt-3 pb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">Supplier Options</p>
                     <button onClick={() => { setRegistrySearch(''); setShowOptions(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 transition-colors">Clear Search</button>
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-teal-50 transition-colors">Clear Search</button>
                     <button onClick={() => { setRegistrySort('name'); setShowOptions(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 transition-colors">Sort Aâ€“Z</button>
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-teal-50 transition-colors">Sort Aâ€“Z</button>
                   </>
                 )}
                 <div className="border-t border-gray-100 mt-1 mb-1" />
@@ -1016,7 +732,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             </button>
           )}
           {canEditItems && (
-            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/20 hover:bg-slate-900 transition-all active:scale-95">
+            <button onClick={() => { setModalType(activeTab); setIsModalOpen(true); }} className="flex items-center px-6 py-3 bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-900 transition-all active:scale-95">
               <Plus className="w-4 h-4 mr-2" /> {activeTab === 'stock' ? 'Receive New Stock' : activeTab === 'items' ? 'Register Item' : 'Add Supplier AVL'}
             </button>
           )}
@@ -1041,79 +757,41 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
       )}
 
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        <button onClick={() => setActiveTab('stock')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
-        <button onClick={() => setActiveTab('items')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
-        <button onClick={() => setActiveTab('vendors')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
-        <button onClick={() => setActiveTab('pr')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
-        <button onClick={() => setActiveTab('traceability')} className={`shrink-0 whitespace-nowrap px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-slate-600 text-slate-900 bg-slate-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
+      <div className="flex border-b border-gray-200">
+        <button onClick={() => setActiveTab('stock')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'stock' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Stock Log</button>
+        <button onClick={() => setActiveTab('items')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'items' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Item Registry</button>
+        <button onClick={() => setActiveTab('vendors')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'vendors' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Suppliers (AVL)</button>
+        <button onClick={() => setActiveTab('pr')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'pr' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Purchase Requests</button>
+        <button onClick={() => setActiveTab('traceability')} className={`px-8 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'traceability' ? 'border-teal-600 text-teal-900 bg-teal-50/30' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>Traceability</button>
       </div>
 
-      <div className="relative flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1 min-w-0">
+      <div className="relative flex gap-2">
+        <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
             type="text"
             placeholder="Search by item name or lot number..."
-            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
+            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-teal-50 focus:border-teal-500 font-bold transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {activeTab === 'stock' && (
-            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm mr-1 h-[54px]">
-              {[
-                { id: 'kanban', icon: Columns, label: 'Kanban' },
-                { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
-                { id: 'table',  icon: TableIcon, label: 'Table' },
-              ].map(v => {
-                const Icon = v.icon;
-                return (
-                  <button
-                    key={v.id}
-                    onClick={() => handleViewModeChange(v.id)}
-                    className={`flex items-center justify-center px-4 rounded-xl transition-all h-full ${
-                      viewMode === v.id
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                    }`}
-                    title={v.label}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          <select
-            value={stockSort}
-            onChange={(e) => setStockSort(e.target.value)}
-            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-sm"
-          >
-            <option value="expiry">Sort: Nearest Expiry</option>
-            <option value="name">Sort: Name (A-Z)</option>
-            <option value="quantity_asc">Sort: Quantity (Low to High)</option>
-            <option value="quantity_desc">Sort: Quantity (High to Low)</option>
-            <option value="newest">Sort: Newest Added</option>
-          </select>
-          <button 
-            onClick={() => {
-              const code = prompt('Scan QR Code (or type ID manually):');
-              if (code) {
-                const id = code.replace('OXY-STOCK-', '');
-                const s = stock.find(x => x.id === id);
-                if (s) setSelectedStock(s);
-                else toast.error('Stock item not found from QR code');
-              }
-            }}
-            className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shrink-0"
-          >
-            <QrCode className="w-5 h-5" /> Scan
-          </button>
-        </div>
+        <button 
+          onClick={() => {
+            const code = prompt('Scan QR Code (or type ID manually):');
+            if (code) {
+              const id = code.replace('OXY-STOCK-', '');
+              const s = stock.find(x => x.id === id);
+              if (s) setSelectedStock(s);
+              else toast.error('Stock item not found from QR code');
+            }
+          }}
+          className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg"
+        >
+          <QrCode className="w-5 h-5" /> Scan
+        </button>
       </div>
 
       {activeTab === 'stock' && (
@@ -1135,232 +813,86 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: '' 
                   });
                    setModalType('stock'); setIsModalOpen(true); 
-                }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
+                }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
                   Receive Stock
                 </button>
               )}
             </div>
-          ) : (
-            <>
-              {/* GRID VIEW (LEGACY) */}
-              {viewMode === 'grid' && (
-                <div className="space-y-4">
-                  {Object.entries(
-              filteredStock.reduce((acc: Record<string, any[]>, s: any) => {
-                let cat = s.inventory_items?.category || 'UNCATEGORIZED';
-                if (cat.toUpperCase() === 'RAW MATERIAL' || cat.toUpperCase() === 'RAW MATERIALS') cat = 'RAW MATERIALS';
-                else if (cat.toUpperCase() === 'REAGENTS & STAINS') cat = 'REAGENTS & STAINS';
-                else if (cat.toUpperCase() === 'CHEMICALS & BIOCHEMICALS') cat = 'CHEMICALS & BIOCHEMICALS';
-                else cat = cat.toUpperCase();
-                
-                if (!acc[cat]) acc[cat] = [];
-                acc[cat].push(s);
-                return acc;
-              }, {})
-            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => (
-              <div key={category} className="space-y-4 pb-4">
-                <div className="flex items-center gap-3 px-2">
-                  <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                    {category} ({catStock.length})
-                  </h2>
-                  <div className="h-px flex-1 bg-gray-100"></div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
-                {catStock.map((s: any) => {
-                  const risk = getStockRisk(s);
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={() => setSelectedStock(s)}
-                      className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-slate-200'}`}
-                    >
-                      <div className={`absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : 'bg-slate-600'}`}></div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">
-                          {s.location || 'Central Store'}
-                        </span>
-                        {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                          <span className={`flex items-center px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                            <AlertTriangle className="w-2.5 h-2.5 mr-1" /> {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight mb-2 line-clamp-2 group-hover:text-indigo-800 transition-colors">{s.inventory_items?.name}</h3>
-                      
-                      <div className="flex items-center justify-between gap-2 mb-2 mt-1">
-                        <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider shrink min-w-0">
-                          <Truck className="w-3 h-3 mr-1 shrink-0" /> Lot: <span className="text-slate-900 ml-1 truncate" title={s.supplier_batch_number || 'N/A'}>{s.supplier_batch_number || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 ml-1">
-                          <Calendar className="h-3 w-3 mr-1 shrink-0" /> Exp: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-50">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Balance</p>
-                          <p className={`text-xs font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                            {s.current_quantity} <span className="text-xs text-gray-500">{s.inventory_items?.unit}</span>
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Vendor</p>
-                          <p className="text-xs font-black text-gray-700 truncate">{s.vendors?.name || 'Local'}</p>
-                        </div>
-                      </div>
-                      {batchUsageMap[s.id]?.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1 pt-2 mt-2 border-t border-gray-50">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Used in:</span>
-                          {batchUsageMap[s.id].map(b => (
-                            <Link
-                              key={b.id}
-                              href={`/batches/${b.id}`}
-                              onClick={e => e.stopPropagation()}
-                              className="px-1.5 py-0.5 bg-slate-50 text-slate-700 text-xs font-black rounded border border-slate-100 hover:bg-slate-100 transition-colors"
-                            >
-                              {b.batch_id}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+          ) : filteredStock.map((s) => {
+            const risk = getStockRisk(s);
+            
+            return (
+              <div
+                key={s.id}
+                onClick={() => setSelectedStock(s)}
+                className={`bg-white rounded-xl border ${risk.isExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-100'} px-4 py-3 hover:shadow-sm hover:border-teal-100 transition-all flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group cursor-pointer`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${s.inventory_items?.category === 'Raw Material' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {s.inventory_items?.category}
+                    </span>
+                    {(risk.isExpired || risk.isExpiring || risk.isLow) && (
+                      <span className={`flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
+                        <AlertTriangle className="w-3 h-3 mr-1" /> {risk.isOut ? 'Out of Stock' : risk.isExpired ? 'Expired' : risk.isLow ? 'Low Stock' : 'Near Expiry'}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-black text-teal-950 mb-0.5 leading-tight">{s.inventory_items?.name}</h3>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <Truck className="w-3.5 h-3.5 mr-1.5" /> Lot: <span className="text-teal-900 ml-1">{s.supplier_batch_number || 'N/A'}</span>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <MapPin className="w-3.5 h-3.5 mr-1.5" /> Loc: <span className="text-teal-900 ml-1">{s.location || 'Central Store'}</span>
+                    </div>
+                    <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <Calendar className="h-3.5 w-3.5 mr-1.5" /> Expiry: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-teal-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+
+                <div className="flex flex-row items-center gap-3 sm:gap-4 shrink-0">
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
+                    <p className={`text-base font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-teal-800'}`}>
+                      {s.current_quantity}<span className="text-[10px] ml-0.5">{s.inventory_items?.unit}</span>
+                    </p>
+                    {risk.minLevel > 0 && (
+                      <p className="text-[9px] font-bold uppercase text-gray-400">min {risk.minLevel}{s.inventory_items?.unit}</p>
+                    )}
+                  </div>
+                  <div className="hidden sm:block text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Vendor</p>
+                    <p className="text-xs font-black text-gray-700 max-w-[100px] truncate">{s.vendors?.name || 'Local supplier'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); setSelectedStock(s); }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-100 text-[9px] font-black uppercase tracking-widest hover:bg-teal-100 transition-all whitespace-nowrap"
+                  >
+                    Details <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              {batchUsageMap[s.id]?.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-3 mt-1 border-t border-gray-50">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Used in:</span>
+                  {batchUsageMap[s.id].map(b => (
+                    <Link
+                      key={b.id}
+                      href={`/batches/${b.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-black rounded border border-teal-100 hover:bg-teal-100 transition-colors"
+                    >
+                      {b.batch_id}
+                    </Link>
+                  ))}
                 </div>
               )}
-
-              {/* KANBAN VIEW (TRIAGE BOARD) */}
-              {viewMode === 'kanban' && (
-                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-                  {['Healthy', 'Low Stock', 'Expiring Soon / Expired'].map(statusColumn => {
-                    const columnItems = filteredStock.filter(s => {
-                      const risk = getStockRisk(s);
-                      if (statusColumn === 'Healthy') return !risk.isExpired && !risk.isExpiring && !risk.isLow && !risk.isOut;
-                      if (statusColumn === 'Low Stock') return risk.isLow || risk.isOut;
-                      if (statusColumn === 'Expiring Soon / Expired') return risk.isExpired || risk.isExpiring;
-                      return false;
-                    });
-                    
-                    return (
-                      <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
-                        <div className={`rounded-t-xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
-                          statusColumn === 'Healthy' ? 'bg-emerald-50 border-emerald-200' :
-                          statusColumn === 'Low Stock' ? 'bg-amber-50 border-amber-200' :
-                          'bg-red-50 border-red-200'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-black text-slate-900 truncate uppercase">{statusColumn}</span>
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-white shadow-sm ${
-                              statusColumn === 'Healthy' ? 'text-emerald-700' :
-                              statusColumn === 'Low Stock' ? 'text-amber-700' :
-                              'text-red-700'
-                            }`}>{columnItems.length}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
-                          {columnItems.length === 0 ? (
-                            <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn.toLowerCase()} items</div>
-                          ) : columnItems.map(s => {
-                            const risk = getStockRisk(s);
-                            return (
-                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-200'}`}>
-                                <div className="flex justify-between items-start gap-2">
-                                  <h3 className="text-xs font-black text-indigo-700 line-clamp-2">{s.inventory_items?.name}</h3>
-                                  {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                                    <span className={`shrink-0 flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                                      <AlertTriangle className="w-2.5 h-2.5 mr-1" /> {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider shrink min-w-0">
-                                  <Truck className="w-3 h-3 mr-1 shrink-0" /> Lot: <span className="text-slate-900 ml-1 truncate" title={s.supplier_batch_number || 'N/A'}>{s.supplier_batch_number || 'N/A'}</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-gray-50">
-                                  <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
-                                    <p className={`text-[10px] font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                                      {s.current_quantity} <span className="text-[9px] text-gray-500">{s.inventory_items?.unit}</span>
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Expiry</p>
-                                    <p className={`text-[10px] font-bold ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* TABLE VIEW */}
-              {viewMode === 'table' && (
-                <div className="card overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Item Name</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Lot Number</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Expiry Date</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-right">Balance</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Vendor</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Location</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredStock.map(s => {
-                        const risk = getStockRisk(s);
-                        return (
-                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
-                            <td className="px-4 py-3">
-                              <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                {s.inventory_items?.name}
-                                {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                                    {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[10px] font-bold text-slate-400 uppercase">{s.inventory_items?.category || 'Uncategorized'}</div>
-                            </td>
-                            <td className="px-4 py-3 text-sm font-mono text-slate-600">{s.supplier_batch_number || 'N/A'}</td>
-                            <td className="px-4 py-3 text-sm font-mono">
-                              <span className={risk.isExpired ? 'text-red-600 font-bold' : 'text-slate-600'}>
-                                {s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <span className={`text-sm font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                                {s.current_quantity}
-                              </span>
-                              <span className="text-[10px] text-gray-500 ml-1">{s.inventory_items?.unit}</span>
-                            </td>
-                            <td className="px-4 py-3 text-sm font-medium text-slate-700">{s.vendors?.name || 'Local'}</td>
-                            <td className="px-4 py-3">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">
-                                {s.location || 'Central'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
-
+            </div>
+            );
+          })}
+          
           {loading ? (
             <div className="space-y-4">
               {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 w-full rounded-3xl"/>)}
@@ -1370,7 +902,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <button 
                 onClick={loadMore}
                 disabled={loading}
-                className="px-8 py-3 bg-white border border-slate-100 text-slate-800 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-50 transition-all flex items-center gap-2"
+                className="px-8 py-3 bg-white border border-teal-100 text-teal-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-teal-50 transition-all flex items-center gap-2"
               >
                 Load More Records
               </button>
@@ -1391,15 +923,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 placeholder="Search by name, code, or category..."
                 value={registrySearch}
                 onChange={(e) => setRegistrySearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-slate-600 text-sm font-bold"
+                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-teal-600 text-sm font-bold"
               />
             </div>
             <div className="flex items-center gap-3 w-full md:w-auto">
-              <span className="text-xs font-black uppercase text-gray-400 whitespace-nowrap">Sort By</span>
+              <span className="text-[10px] font-black uppercase text-gray-400 whitespace-nowrap">Sort By</span>
               <select
                 value={registrySort}
                 onChange={(e) => setRegistrySort(e.target.value)}
-                className="px-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 text-xs font-bold focus:ring-2 focus:ring-slate-600"
+                className="px-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 text-xs font-bold focus:ring-2 focus:ring-teal-600"
               >
                 <option value="name">Alphabetical (A-Z)</option>
                 <option value="newest">Newest Added</option>
@@ -1448,24 +980,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div key={category} className="space-y-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-100">
                     {category} ({catItems.length})
                   </h2>
                   <div className="h-px flex-1 bg-gray-100"></div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {catItems.map(item => (
                     <div
                       key={item.id}
                       onClick={isSelectMode ? () => toggleItemSelect(item.id) : undefined}
                       className={`bg-white rounded-xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-sm ${
                         isSelectMode ? 'cursor-pointer' : ''
-                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-slate-100'}`}
+                      } ${selectedItemIds.has(item.id) ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-gray-100 hover:border-teal-100'}`}
                     >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute top-0 left-0 w-1 h-full bg-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       <div className="flex justify-between items-start mb-2">
-                        <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
                         {isSelectMode ? (
                           <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selectedItemIds.has(item.id) ? 'bg-red-600 border-red-600' : 'border-gray-300 bg-white'}`}>
                             {selectedItemIds.has(item.id) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
@@ -1475,20 +1007,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                             {(item as any).creator && (
                               <CreatorBadge initials={(item as any).creator.initials} fullName={(item as any).creator.full_name} size="sm" />
                             )}
-                            {canEditItems ? (
+                            {isAdmin ? (
                               <>
                                 <button
                                   onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm">
+                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
                                   <FileText className="w-3.5 h-3.5" />
                                 </button>
-                                {isAdmin && (
-                                  <button
-                                    onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
-                                    className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
+                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </>
                             ) : (item as any).created_by === employeeProfile?.id ? (
                               <EditRequestButton
@@ -1509,23 +1039,29 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                                 allowDelete
                                 onSuccess={() => fetchData(0, false)}
                               />
+                            ) : canEditItems ? (
+                              <button
+                                onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
+                                className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
+                                <FileText className="w-3.5 h-3.5" />
+                              </button>
                             ) : null}
                           </div>
                         )}
                       </div>
                       
-                      <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight group-hover:text-indigo-800 transition-colors">{item.name}</h3>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-0.5">
+                      <h3 className="text-xs font-black text-teal-950 leading-tight">{item.name}</h3>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
                         {item.unit}{(item as any).hazardous && <span className="ml-1 text-orange-500">⚠</span>}
                       </p>
                       <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between gap-1">
                         <div>
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Stock</p>
-                          <p className="text-xs font-black text-slate-800">{item.min_stock_level || '0'} {item.unit}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Stock</p>
+                          <p className="text-xs font-black text-teal-800">{item.min_stock_level || '0'} {item.unit}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Code</p>
-                          <p className="text-xs font-mono font-bold text-gray-500 truncate max-w-[72px]">{item.item_code || '---'}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Code</p>
+                          <p className="text-[10px] font-mono font-bold text-gray-500 truncate max-w-[72px]">{item.item_code || '---'}</p>
                         </div>
                       </div>
                     </div>
@@ -1539,7 +1075,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -1551,14 +1087,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="flex gap-3">
               <button
                 onClick={() => setShowBulkConfirm(false)}
-                className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkDeleteItems}
                 disabled={isBulkDeleting}
-                className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 {isBulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 {isBulkDeleting ? 'Deleting...' : `Delete ${selectedItemIds.size} Items`}
@@ -1570,7 +1106,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Confirmation Modal */}
       {deletingId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -1584,14 +1120,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             <div className="flex gap-3">
               <button 
                 onClick={() => setDeletingId(null)}
-                className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                className="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
               >
                 Cancel
               </button>
               <button 
                 onClick={() => deleteType === 'item' ? handleDeleteItem() : handleDeleteVendor()}
                 disabled={isDeleting}
-                className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="flex-[2] py-4 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-red-700 shadow-xl shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Deletion"}
               </button>
@@ -1611,7 +1147,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <p className="text-xs font-bold text-gray-400 mt-1">Tap &apos;Add Supplier&apos; to expand your AVL</p>
               </div>
               {canDo('inventory', 'edit') && (
-                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-900 transition-all">
+                <button onClick={() => { setModalType('vendors'); setIsModalOpen(true); }} className="mt-2 flex items-center px-4 py-2 bg-teal-800 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-900 transition-all">
                   Add Supplier
                 </button>
               )}
@@ -1622,7 +1158,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                  {canEditItems && (
                     <button
                       onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
-                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm">
+                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-teal-50 hover:text-teal-600 transition-all border border-gray-200 shadow-sm">
                       <FileText className="w-3.5 h-3.5" />
                     </button>
                  )}
@@ -1634,11 +1170,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     </button>
                  )}
               </div>
-              <h3 className="text-lg font-black text-slate-950">{vendor.name}</h3>
+              <h3 className="text-lg font-black text-teal-950">{vendor.name}</h3>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{vendor.contact_person || 'No Contact'}</p>
               <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
                 <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><ExternalLink className="w-3 h-3"/> {vendor.email || 'No email'}</p>
-                <div className={`px-2 py-1 text-xs font-black uppercase tracking-widest rounded inline-block ${
+                <div className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded inline-block ${
                   vendor.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
                   vendor.status === 'Conditional' ? 'bg-amber-50 text-amber-700' :
                   vendor.status === 'Blacklisted' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700'
@@ -1646,15 +1182,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   {vendor.status || 'Approved'} Supplier
                 </div>
                 {/* A-09: Vendor qualification badge */}
-                <div className={`ml-1 px-2 py-1 text-xs font-black uppercase tracking-widest rounded inline-block ${
-                  vendor.qualification_status === 'Approved' ? 'bg-slate-100 text-slate-900' :
+                <div className={`ml-1 px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded inline-block ${
+                  vendor.qualification_status === 'Approved' ? 'bg-blue-50 text-blue-700' :
                   vendor.qualification_status === 'Under Review' ? 'bg-amber-50 text-amber-700' :
                   vendor.qualification_status === 'Suspended' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {vendor.qualification_status || 'Unqualified'} (AVL)
                 </div>
                 {vendor.audit_due_date && new Date(vendor.audit_due_date) < new Date() && (
-                  <p className="text-xs text-red-600 font-bold mt-1">⚠ Vendor audit overdue since {new Date(vendor.audit_due_date).toLocaleDateString('en-IN')}</p>
+                  <p className="text-[9px] text-red-600 font-bold mt-1">⚠ Vendor audit overdue since {new Date(vendor.audit_due_date).toLocaleDateString('en-IN')}</p>
                 )}
               </div>
             </div>
@@ -1678,18 +1214,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Unified Modal Shell */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-teal-950/40 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
-            <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gray-50 border-b border-gray-100 flex items-center justify-between shrink-0">
+            <div className="px-8 py-6 bg-teal-800 text-white flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-black tracking-tight text-slate-800">
+                <h2 className="text-xl font-black tracking-tight">
                   {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'edit_stock' ? 'Edit Stock Log' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
                 </h2>
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">
+                <p className="text-teal-300 text-[10px] font-bold uppercase tracking-widest mt-1">
                   {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
                 </p>
               </div>
-              {modalType === 'stock' && !trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-5 h-5 text-amber-500 font-black animate-pulse" />}
+              {modalType === 'stock' && !trainingStatus.isTrained && !['admin', 'research_fellow', 'scientist'].includes(role) && <AlertTriangle className="w-6 h-6 text-amber-400 font-black animate-pulse" />}
             </div>
 
             {/* Stock / Issue forms */}
@@ -1721,11 +1257,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
       {/* Stock Item Detail Modal (Section 2.4) */}
       {selectedStock && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
           <div className="w-full max-w-xl rounded-none sm:rounded-2xl bg-white h-[100dvh] sm:h-auto sm:max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-5 bg-gray-50 border-b border-gray-100 relative shrink-0">
-              <div className="absolute top-5 right-14 flex items-center gap-2">
+            <div className="p-5 bg-teal-900 text-white relative">
+              <div className="absolute top-6 right-16 flex items-center gap-2">
                 {canDo('inventory', 'edit') && (
                   <button onClick={() => { 
                     setNewStock({ 
@@ -1737,15 +1273,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     setModalType('edit_stock');
                     setIsModalOpen(true);
                     setSelectedStock(null);
-                  }} className="p-1.5 rounded-lg bg-white border border-gray-200 text-slate-600 hover:bg-gray-100 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+                  }} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
                     <Edit3 className="w-4 h-4"/> Edit
                   </button>
                 )}
               </div>
-              <button onClick={() => setSelectedStock(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-200 rounded-lg transition-all"><X className="w-5 h-5"/></button>
-              <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-600">{selectedStock.inventory_items?.category}</span>
-              <h2 className="text-xl font-black font-mono tracking-tighter mt-1 text-slate-800">{selectedStock.inventory_items?.name}</h2>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
+              <button onClick={() => setSelectedStock(null)} className="absolute top-6 right-6 text-white/50 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5"/></button>
+              <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] font-black uppercase tracking-widest text-white">{selectedStock.inventory_items?.category}</span>
+              <h2 className="text-2xl font-black font-mono tracking-tighter mt-1">{selectedStock.inventory_items?.name}</h2>
+              <p className="text-xs font-bold text-teal-200 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
             </div>
 
             {/* Content Scrollable */}
@@ -1753,11 +1289,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               {/* Summary Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-xs font-black uppercase text-gray-400 tracking-widest">Available Balance</p>
-                  <p className="text-2xl font-black font-mono text-slate-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Available Balance</p>
+                  <p className="text-2xl font-black font-mono text-teal-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-xs font-black uppercase text-gray-400 tracking-widest">Expiry Date</p>
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Expiry Date</p>
                   <p className={`text-lg font-black mt-1 ${selectedStock.expiry_date && new Date(selectedStock.expiry_date) < new Date() ? 'text-red-600' : 'text-slate-800'}`}>
                     {selectedStock.expiry_date ? new Date(selectedStock.expiry_date).toLocaleDateString() : 'N/A'}
                   </p>
@@ -1834,7 +1370,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div className="flex gap-2">
                 {selectedStock.coa_url && (
                   <a href={selectedStock.coa_url} target="_blank" rel="noreferrer" className="flex-1 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                    <FileText className="w-4 h-4 text-slate-600"/> View CoA
+                    <FileText className="w-4 h-4 text-teal-600"/> View CoA
                   </a>
                 )}
                 {selectedStock.sds_url && (
@@ -1846,7 +1382,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div className="flex gap-2 w-full">
                 <button 
                   onClick={() => setShowQR(true)} 
-                  className="flex-1 py-4 bg-gray-100 text-gray-700 font-black rounded-2xl text-xs uppercase tracking-widest shadow-sm hover:bg-gray-200 transition-all text-center flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-gray-100 text-gray-700 font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-sm hover:bg-gray-200 transition-all text-center flex items-center justify-center gap-2"
                 >
                   <QrCode className="w-4 h-4" /> View QR
                 </button>
@@ -1872,12 +1408,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                          toast.error(error.message);
                        }
                     }}
-                    className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
+                    className="flex-[2] py-4 bg-amber-500 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-amber-600 transition-all text-center"
                   >
                     ✓ QC Release (Quarantine → Available)
                   </button>
                 ) : selectedStock.qc_status === 'Rejected' ? (
-                  <div className="flex-[2] py-3 bg-red-50 border border-red-200 rounded-2xl text-center text-xs font-black text-red-700">
+                  <div className="flex-[2] py-3 bg-red-50 border border-red-200 rounded-2xl text-center text-[10px] font-black text-red-700">
                     REJECTED — {selectedStock.rejection_reason || 'No reason recorded'}
                   </div>
                 ) : (
@@ -1888,7 +1424,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       setIsModalOpen(true);
                       setSelectedStock(null);
                     }} 
-                    className="flex-[2] py-4 bg-slate-800 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg hover:bg-slate-900 transition-all text-center"
+                    className="flex-[2] py-4 bg-teal-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-teal-900 transition-all text-center"
                   >
                     Issue Stock Out
                   </button>
@@ -1897,9 +1433,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
               {/* A-08: AQL Sampling Plan */}
               {selectedStock.received_quantity && (
-                <div className="mt-2 p-2 bg-slate-100 border border-slate-300 rounded-xl text-xs">
-                  <p className="font-black text-slate-900 uppercase mb-0.5">A-08 AQL Level II Incoming Sample Guide</p>
-                  <p className="text-slate-900 font-semibold">
+                <div className="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-xl text-[10px]">
+                  <p className="font-black text-indigo-800 uppercase mb-0.5">A-08 AQL Level II Incoming Sample Guide</p>
+                  <p className="text-indigo-700 font-semibold">
                     Lot qty: {selectedStock.received_quantity} → Sample: {Math.max(1, Math.round(parseFloat(String(selectedStock.received_quantity)) * 0.1))} units · Accept ≤0 defects · Reject ≥1
                   </p>
                 </div>
@@ -1908,7 +1444,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               {/* A-46: Quarantine location + A-47: Rejection + A-45: CoA verification */}
               {(selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine') && (
                 <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                  <p className="text-xs font-black text-gray-500 uppercase">A-46 Quarantine Location</p>
+                  <p className="text-[10px] font-black text-gray-500 uppercase">A-46 Quarantine Location</p>
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       defaultValue={selectedStock.quarantine_location || ''}
@@ -1928,8 +1464,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     />
                   </div>
                   {/* A-45: CoA verification */}
-                  <div className="flex items-center justify-between p-2 bg-slate-100 border border-slate-300 rounded-lg">
-                    <span className="text-xs font-black text-slate-900">A-45 CoA Verified</span>
+                  <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <span className="text-[10px] font-black text-blue-800">A-45 CoA Verified</span>
                     <input type="checkbox"
                       defaultChecked={!!selectedStock.coa_url}
                       onChange={async (e) => {
@@ -1940,12 +1476,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                         setSelectedStock({ ...selectedStock, coa_url: url });
                         toast.success('CoA URL saved.');
                       }}
-                      className="w-4 h-4 rounded border-slate-400"
+                      className="w-4 h-4 rounded border-blue-300"
                     />
                   </div>
                   {/* A-47: Rejection workflow */}
                   <button
-                    className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-red-100"
+                    className="w-full py-2 bg-red-50 border border-red-200 text-red-700 font-black rounded-xl text-[10px] uppercase tracking-wider hover:bg-red-100"
                     onClick={async () => {
                       const reason = window.prompt('Rejection reason (failed identity test, contamination, CoA mismatch, etc.):');
                       if (!reason) return;
@@ -1976,7 +1512,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* QR Code Modal */}
       {showQR && selectedStock && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowQR(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
               <X className="w-5 h-5" />
@@ -1993,7 +1529,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Auto-Load Modal */}
       {pendingSeed && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
             <p className="text-sm text-gray-600 mb-6 text-center">

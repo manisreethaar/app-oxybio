@@ -56,10 +56,8 @@ export default function QuickLogOverlay() {
     supabase
       .from('batches')
       .select('id, batch_id, current_stage, status, sku')
-      .neq('status', 'released')
-      .neq('status', 'rejected')
-      .neq('current_stage', 'released')
-      .neq('current_stage', 'rejected')
+      .not('status', 'in', '("released","rejected")')
+      .not('current_stage', 'in', '("released","rejected")')
       .order('updated_at', { ascending: false })
       .limit(25)
       .then(({ data }) => {
@@ -207,13 +205,13 @@ export default function QuickLogOverlay() {
           className="fixed inset-0 z-[1050] flex items-end justify-start p-4 md:items-end md:justify-center"
           onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-sm animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-sm animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
               <div className="flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-navy" />
-                <span className="text-sm font-black text-slate-900">
+                <span className="text-sm font-black text-gray-900">
                   {step === 'pick'  && 'Quick Log — Active Batches'}
                   {step === 'flask' && `Select Flask — ${selectedBatch?.batch_id}`}
                   {step === 'log'   && `Log → ${selectedBatch?.batch_id} · ${selectedFlask?.flask_label}`}
@@ -221,7 +219,7 @@ export default function QuickLogOverlay() {
               </div>
               <button
                 onClick={handleClose}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -232,11 +230,11 @@ export default function QuickLogOverlay() {
               <div className="p-3 space-y-1.5 max-h-[60vh] overflow-y-auto">
                 {loadingBatches && (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 text-slate-300 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-gray-300 animate-spin" />
                   </div>
                 )}
                 {!loadingBatches && activeBatches.length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-6 font-semibold">
+                  <p className="text-xs text-gray-400 text-center py-6 font-semibold">
                     No active batches found.
                   </p>
                 )}
@@ -246,20 +244,20 @@ export default function QuickLogOverlay() {
                   return (
                     <div
                       key={b.id}
-                      className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-100 hover:border-navy/20 hover:bg-navy/5 transition-all"
+                      className="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:border-navy/20 hover:bg-navy/5 transition-all"
                     >
                       <div className="flex-1 min-w-0 mr-3">
-                        <p className="text-sm font-black text-slate-900 font-mono truncate">{b.batch_id}</p>
+                        <p className="text-sm font-black text-gray-900 font-mono truncate">{b.batch_id}</p>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                             isFermentation
                               ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-500'
+                              : 'bg-gray-100 text-gray-500'
                           }`}>
                             {STAGE_LABELS[b.current_stage] || b.current_stage}
                           </span>
                           {b.sku && (
-                            <span className="text-xs text-slate-400 font-semibold truncate">{b.sku}</span>
+                            <span className="text-[10px] text-gray-400 font-semibold truncate">{b.sku}</span>
                           )}
                         </div>
                       </div>
@@ -269,7 +267,7 @@ export default function QuickLogOverlay() {
                         <button
                           onClick={() => handlePickBatch(b)}
                           disabled={loadingFlasks}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover transition-colors disabled:opacity-50 shrink-0"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-navy text-white text-[11px] font-black rounded-lg hover:bg-navy-hover transition-colors disabled:opacity-50 shrink-0"
                         >
                           {isLoading
                             ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -280,7 +278,7 @@ export default function QuickLogOverlay() {
                         <Link
                           href={`/batches/${b.id}`}
                           onClick={handleClose}
-                          className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 text-slate-500 text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors shrink-0"
+                          className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-500 text-[11px] font-bold rounded-lg hover:bg-gray-50 transition-colors shrink-0"
                         >
                           Open <ExternalLink className="w-3 h-3" />
                         </Link>
@@ -294,25 +292,25 @@ export default function QuickLogOverlay() {
             {/* ── Step 2: Flask picker (FIX 2) ── */}
             {step === 'flask' && (
               <div className="p-3 space-y-1.5">
-                <p className="text-xs text-slate-400 font-semibold px-2 py-1">
+                <p className="text-[11px] text-gray-400 font-semibold px-2 py-1">
                   Multiple active flasks — select one:
                 </p>
                 {flasks.map(f => (
                   <button
                     key={f.id}
                     onClick={() => handlePickFlask(f)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-100 hover:border-navy/20 hover:bg-navy/5 transition-all group text-left"
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:border-navy/20 hover:bg-navy/5 transition-all group text-left"
                   >
                     <div className="flex items-center gap-3">
                       <Beaker className="w-4 h-4 text-navy" />
-                      <span className="text-sm font-black text-slate-900 font-mono">{f.flask_label}</span>
+                      <span className="text-sm font-black text-gray-900 font-mono">{f.flask_label}</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors" />
                   </button>
                 ))}
                 <button
                   onClick={() => { setStep('pick'); setSelectedBatch(null); setFlasks([]); }}
-                  className="w-full py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                  className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   ← Back to batches
                 </button>
@@ -325,7 +323,7 @@ export default function QuickLogOverlay() {
 
                 {/* pH — large, prominent */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
                     pH Value <span className="text-red-500">★ CCP</span>
                   </label>
                   <input
@@ -333,17 +331,17 @@ export default function QuickLogOverlay() {
                     type="number" step="0.01" min="0" max="14"
                     value={pH} onChange={e => setPH(e.target.value)}
                     placeholder="0.00"
-                    className={`w-full px-4 py-3 border-2 rounded-xl text-3xl font-black font-mono text-center tracking-tighter text-slate-800 outline-none transition-colors ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl text-3xl font-black font-mono text-center tracking-tighter text-gray-800 outline-none transition-colors ${
                       phInAlarm   ? 'border-red-400 bg-red-50/30' :
                       phOffTarget ? 'border-amber-300 bg-amber-50/20' :
-                      'border-slate-200 focus:border-navy'
+                      'border-gray-200 focus:border-navy'
                     }`}
                     onKeyDown={enterKey}
                   />
-                  <p className={`text-xs mt-1 font-semibold ${
+                  <p className={`text-[10px] mt-1 font-semibold ${
                     phInAlarm   ? 'text-red-600' :
                     phOffTarget ? 'text-amber-600' :
-                    'text-slate-400'
+                    'text-gray-400'
                   }`}>
                     {phInAlarm   ? '⚠ Outside alarm range (3.8–5.5) — will be flagged' :
                      phOffTarget ? '◈ Outside target range (4.2–4.5)' :
@@ -354,37 +352,37 @@ export default function QuickLogOverlay() {
                 {/* Temp + Brix + OD — compact grid */}
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Temp °C</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Temp °C</label>
                     <input
                       type="number" step="0.1"
                       value={temp} onChange={e => setTemp(e.target.value)}
                       placeholder="37.0"
                       className={`w-full px-2 py-2 border rounded-lg text-sm font-semibold text-center outline-none transition-colors ${
-                        tempInAlarm ? 'border-amber-400 bg-amber-50/30' : 'border-slate-200 focus:border-navy'
+                        tempInAlarm ? 'border-amber-400 bg-amber-50/30' : 'border-gray-200 focus:border-navy'
                       }`}
                       onKeyDown={enterKey}
                     />
                     {tempInAlarm && (
-                      <p className="text-xs text-amber-600 font-bold mt-0.5 text-center">⚠ Out of range</p>
+                      <p className="text-[9px] text-amber-600 font-bold mt-0.5 text-center">⚠ Out of range</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Brix °Bx</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Brix °Bx</label>
                     <input
                       type="number" step="0.1"
                       value={brix} onChange={e => setBrix(e.target.value)}
                       placeholder="10.5"
-                      className="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-center outline-none focus:border-navy transition-colors"
+                      className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-center outline-none focus:border-navy transition-colors"
                       onKeyDown={enterKey}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">OD 600</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">OD 600</label>
                     <input
                       type="number" step="0.001"
                       value={od} onChange={e => setOd(e.target.value)}
                       placeholder="0.500"
-                      className="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-center outline-none focus:border-navy transition-colors"
+                      className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-center outline-none focus:border-navy transition-colors"
                       onKeyDown={enterKey}
                     />
                   </div>
@@ -392,16 +390,16 @@ export default function QuickLogOverlay() {
 
                 {/* Foam — quick toggle row */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Foam</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Foam</label>
                   <div className="flex gap-1.5">
                     {FOAM_OPTS.map(opt => (
                       <button
                         key={opt} type="button"
                         onClick={() => setFoam(opt)}
-                        className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${
+                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg border transition-all ${
                           foam === opt
                             ? 'bg-navy text-white border-navy'
-                            : 'bg-white text-slate-500 border-slate-200 hover:border-navy/40'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-navy/40'
                         }`}
                       >
                         {opt}
@@ -415,7 +413,7 @@ export default function QuickLogOverlay() {
                   type="text"
                   value={notes} onChange={e => setNotes(e.target.value)}
                   placeholder="Notes / observation (optional)"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-navy transition-colors"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-navy transition-colors"
                   onKeyDown={enterKey}
                 />
 
@@ -433,7 +431,7 @@ export default function QuickLogOverlay() {
                         setFlasks([]);
                       }
                     }}
-                    className="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 transition-colors"
+                    className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-bold text-xs rounded-xl hover:bg-gray-50 transition-colors"
                   >
                     ← Back
                   </button>
@@ -453,17 +451,17 @@ export default function QuickLogOverlay() {
             {done && (
               <div className="p-8 flex flex-col items-center text-center gap-3">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                <p className="text-sm font-black text-slate-900">Reading logged!</p>
+                <p className="text-sm font-black text-gray-900">Reading logged!</p>
                 {(alarms?.ph || alarms?.temp) && (
                   <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                    <p className="text-xs font-bold text-red-700">
+                    <p className="text-[11px] font-bold text-red-700">
                       {[alarms.ph && 'pH alarm', alarms.temp && 'Temp alarm']
                         .filter(Boolean).join(' + ')} — task auto-created
                     </p>
                   </div>
                 )}
-                <p className="text-xs text-slate-400">Closing automatically…</p>
+                <p className="text-[10px] text-gray-400">Closing automatically…</p>
               </div>
             )}
           </div>

@@ -43,21 +43,6 @@ export default function PushNotificationToggle() {
 
   const handleToggle = async () => {
     if (isLoading) return;
-
-    // Preserve user gesture for Safari by calling requestPermission immediately
-    if (!isSubscribed) {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          toast.error("Permission not granted for notifications.");
-          return;
-        }
-      } catch (err) {
-        toast.error("Failed to request permission.");
-        return;
-      }
-    }
-
     setIsLoading(true);
 
     try {
@@ -79,6 +64,14 @@ export default function PushNotificationToggle() {
         setIsSubscribed(false);
         toast.info("Push notifications disabled.");
       } else {
+        // Request permission and subscribe
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.error("Permission not granted for notifications.");
+          setIsLoading(false);
+          return;
+        }
+
         const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!publicVapidKey) {
           throw new Error('VAPID key not configured');

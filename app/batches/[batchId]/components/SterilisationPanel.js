@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { withTimeout } from '@/lib/withTimeout';
 import { ShieldCheck, AlertTriangle, ExternalLink, FlaskConical } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
+import { useSopGate } from '@/hooks/useSopGate';
+import SopGate from '@/components/ui/SopGate';
 
 const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Filter','Chemical','Other'];
 const TAPE_RES = ['Positive','Negative'];
@@ -19,6 +20,7 @@ function calcF0(tempC, holdMin) {
 
 export default function SterilisationPanel({ batch, employees, employeeProfile, role, availableStock, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
   const toast = useToast();
+  const sopGate = useSopGate({ employeeId: employeeProfile?.id, category: 'Fermentation', role, bypassRoles: ['admin'] });
   const [equipment, setEquipment] = useState([]);
   const [saving,    setSaving]    = useState(false);
   const isInternOrRI = ['intern','research_intern'].includes(role);
@@ -61,16 +63,10 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
   const fetchRecord = useCallback(async () => {
     let isCurrent = true;
-    let dRes, eqRes;
-    try {
-      [dRes, eqRes] = await withTimeout(Promise.all([
-        supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
-        supabase.from('equipment').select('id, name, status, requires_calibration, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
-      ]), 20000, 'Sterilisation data load timed out');
-    } catch (err) {
-      console.error('SterilisationPanel fetch error:', err);
-      return;
-    }
+    const [dRes, eqRes] = await Promise.all([
+      supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).single(),
+      supabase.from('equipment').select('id, name, status, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
+    ]);
     if (!isCurrent) return;
     if (dRes.data) {
       const d = dRes.data;
@@ -102,7 +98,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   useEffect(() => { fetchRecord(); }, [fetchRecord]);
 
   const selectedEquip = equipment.find(e => e.id === equipId);
-  const isCalibExpired = selectedEquip?.requires_calibration !== false && selectedEquip?.calibration_due_date ? new Date(selectedEquip.calibration_due_date) < new Date() : false;
+  const isCalibExpired = selectedEquip?.calibration_due_date ? new Date(selectedEquip.calibration_due_date) < new Date() : false;
   const isEquipBad     = selectedEquip && (selectedEquip.status !== 'Operational' || isCalibExpired);
 
   const holdTime = cycleStart && cycleEnd
@@ -220,17 +216,21 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
     finally { setSaving(false); }
   };
 
+  if (sopGate.checking || !sopGate.isTrained) {
+    return <SopGate checking={sopGate.checking} isTrained={sopGate.isTrained} category="Fermentation" sopLabel="Sterilisation SOP" />;
+  }
+
   return (
     <div className="space-y-5">
-      <div className="card p-5 flex items-center gap-3">
+      <div className="surface p-5 flex items-center gap-3">
         <ShieldCheck className="w-5 h-5 text-slate-600"/>
-        <div><h2 className="text-base font-bold text-slate-900">Sterilisation</h2>
-          <p className="text-xs text-slate-500">CCP — autoclave/pressure cooker record. Pass required to proceed.</p></div>
-        <span className={`ml-auto px-2 py-1 text-xs font-black rounded-lg border uppercase ${passFail==='Pass'?'bg-emerald-50 text-emerald-700 border-emerald-200':passFail==='Fail'?'bg-red-50 text-red-700 border-red-200':'bg-slate-100 text-slate-500 border-slate-200'}`}>{passFail}</span>
+        <div><h2 className="text-base font-bold text-gray-900">Sterilisation</h2>
+          <p className="text-xs text-gray-500">CCP — autoclave/pressure cooker record. Pass required to proceed.</p></div>
+        <span className={`ml-auto px-2 py-1 text-[10px] font-black rounded-lg border uppercase ${passFail==='Pass'?'bg-emerald-50 text-emerald-700 border-emerald-200':passFail==='Fail'?'bg-red-50 text-red-700 border-red-200':'bg-gray-100 text-gray-500 border-gray-200'}`}>{passFail}</span>
       </div>
 
       {passFail === 'Fail' && (
-        <div className="card p-4 border-red-300 bg-red-50 flex items-start gap-3">
+        <div className="surface p-4 border-red-300 bg-red-50 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5"/>
           <div className="flex-1">
             <p className="text-sm font-bold text-red-800">Sterilisation Failed — Advance Blocked</p>
@@ -243,14 +243,14 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         </div>
       )}
 
-      <div className="card p-5 space-y-4">
+      <div className="surface p-5 space-y-4">
         {/* Method */}
         <div>
           <label className="field-label">Method</label>
           <div className="flex flex-wrap gap-2">
             {METHODS.map(m=>(
               <button key={m} type="button" onClick={()=>setMethod(m)}
-                className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${method===m?'bg-navy text-white border-navy':'bg-white text-slate-600 border-slate-200 hover:border-navy'}`}>
+                className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${method===m?'bg-navy text-white border-navy':'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
                 {m}
               </button>
             ))}
@@ -263,10 +263,10 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           <select value={equipId} onChange={e=>setEquipId(e.target.value)} className={`field-input bg-white ${isEquipBad?'border-red-300':''}`}>
             <option value="">Select equipment...</option>
             {equipment.map(e=>(
-              <option key={e.id} value={e.id}>{e.name} — {e.status}{(e.requires_calibration !== false && e.calibration_due_date && new Date(e.calibration_due_date)<new Date())?' ⚠ CALIB EXPIRED':''}</option>
+              <option key={e.id} value={e.id}>{e.name} — {e.status}{e.calibration_due_date&&new Date(e.calibration_due_date)<new Date()?' ⚠ CALIB EXPIRED':''}</option>
             ))}
           </select>
-          {isEquipBad && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Equipment non-compliant — check Equipment module before proceeding.</p>}
+          {isEquipBad && <p className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Equipment non-compliant — check Equipment module before proceeding.</p>}
         </div>
 
         {/* Cycle params */}
@@ -301,40 +301,40 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           <div className="flex gap-2">
             {TAPE_RES.map(o=>(
               <button key={o} type="button" onClick={()=>setTape(o)}
-                className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${tape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${tape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>
                 {o === 'Positive' ? '✓ Positive (colour change)' : '✗ Negative (no change)'}
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-400 mt-1">Positive = colour change confirmed = sterilisation indicator passed</p>
+          <p className="text-[10px] text-gray-400 mt-1">Positive = colour change confirmed = sterilisation indicator passed</p>
         </div>
 
         {/* G-01: Biological Indicator */}
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={biUsed} onChange={e=>setBiUsed(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
-              <span className="text-xs font-black text-slate-900">Biological Indicator (BI) used in this cycle</span>
+              <input type="checkbox" checked={biUsed} onChange={e=>setBiUsed(e.target.checked)} className="w-4 h-4 rounded border-indigo-300"/>
+              <span className="text-xs font-black text-indigo-900">Biological Indicator (BI) used in this cycle</span>
             </label>
-            <span className="text-xs text-slate-500 font-semibold ml-1">Geobacillus stearothermophilus spore strip</span>
+            <span className="text-[10px] text-indigo-500 font-semibold ml-1">Geobacillus stearothermophilus spore strip</span>
           </div>
           {biUsed && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="field-label text-slate-800">BI Result</label>
+                <label className="field-label text-indigo-800">BI Result</label>
                 <div className="flex gap-2">
                   {BI_RESULTS.map(o=>(
                     <button key={o} type="button" onClick={()=>setBiResult(o)}
-                      className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${biResult===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
+                      className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${biResult===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-500 border-gray-200'}`}>
                       {o}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="field-label text-slate-800">BI Strip Incubation Date</label>
+                <label className="field-label text-indigo-800">BI Strip Incubation Date</label>
                 <input type="date" value={biIncDate} onChange={e=>setBiIncDate(e.target.value)} className="field-input"/>
-                <p className="text-xs text-slate-400 mt-0.5">Incubate at 55–60°C for 48 hrs — record result date</p>
+                <p className="text-[9px] text-indigo-400 mt-0.5">Incubate at 55–60°C for 48 hrs — record result date</p>
               </div>
             </div>
           )}
@@ -352,7 +352,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             <div className="flex gap-2">
               {['Dry saturated','Wet steam','Not checked'].map(o=>(
                 <button key={o} type="button" onClick={()=>setSteamQuality(steamQuality===o?'':o)}
-                  className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${steamQuality===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200'}`}>
+                  className={`flex-1 py-1.5 text-[9px] font-black rounded-xl border transition-all ${steamQuality===o?'bg-navy text-white border-navy':'bg-white text-gray-500 border-gray-200'}`}>
                   {o}
                 </button>
               ))}
@@ -363,7 +363,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             <div className="flex gap-2">
               {['Pass','Fail','N/A'].map(o=>(
                 <button key={o} type="button" onClick={()=>setCondensateCheck(condensateCheck===o?'':o)}
-                  className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${condensateCheck===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
+                  className={`flex-1 py-1.5 text-[9px] font-black rounded-xl border transition-all ${condensateCheck===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-500 border-gray-200'}`}>
                   {o}
                 </button>
               ))}
@@ -374,17 +374,17 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         {/* G-59: Cooling time */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="field-label">Cooling Time (min) <span className="text-slate-400 text-xs">autoclave end → LAF transfer</span></label>
+            <label className="field-label">Cooling Time (min) <span className="text-gray-400 text-[9px]">autoclave end → LAF transfer</span></label>
             <input type="number" step="1" value={coolingMin} onChange={e=>setCoolingMin(e.target.value)} className="field-input" placeholder="e.g. 30"/>
           </div>
         </div>
 
         {/* G-58: Second sterilisation cycle */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
           <button type="button" onClick={()=>setShowCycle2(p=>!p)}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-xs font-black text-slate-700 transition-colors">
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-xs font-black text-gray-700 transition-colors">
             <span>Second Sterilisation Cycle (optional)</span>
-            <span className={`text-lg ${showCycle2?'text-navy':'text-slate-300'}`}>{showCycle2?'▼':'▶'}</span>
+            <span className={`text-lg ${showCycle2?'text-navy':'text-gray-300'}`}>{showCycle2?'▼':'▶'}</span>
           </button>
           {showCycle2 && (
             <div className="p-4 space-y-3">
@@ -399,7 +399,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
                 <div className="flex gap-2">
                   {TAPE_RES.map(o=>(
                     <button key={o} type="button" onClick={()=>setCycle2Tape(o)}
-                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${cycle2Tape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200'}`}>
+                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${cycle2Tape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-gray-500 border-gray-200'}`}>
                       {o}
                     </button>
                   ))}
@@ -410,30 +410,30 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
         </div>
 
         {/* Pass / Fail — gate */}
-        <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
-          <label className="block text-xs font-black uppercase tracking-wider text-slate-600 mb-2">
+        <div className="p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
+          <label className="block text-[11px] font-black uppercase tracking-wider text-gray-600 mb-2">
             Overall Result <span className="text-red-500">★ Gate — Fail blocks advance to Inoculation</span>
           </label>
           <div className="flex gap-3">
             {['Pass','Fail','Pending'].map(o=>(
               <button key={o} type="button" onClick={()=>setPassFail(o)}
-                className={`flex-1 py-3 text-sm font-black rounded-xl border-2 transition-all ${passFail===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                className={`flex-1 py-3 text-sm font-black rounded-xl border-2 transition-all ${passFail===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-gray-500 text-white border-gray-500'):'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>
                 {o}
               </button>
             ))}
           </div>
           {passFail === 'Fail' && !capaDevId && (
-            <p className="text-xs text-red-600 font-bold mt-2">Saving will auto-raise a CAPA deviation record.</p>
+            <p className="text-[10px] text-red-600 font-bold mt-2">Saving will auto-raise a CAPA deviation record.</p>
           )}
         </div>
 
         {/* A-48: IQ/OQ/PQ validation document linkage */}
         {selectedEquip && (
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-            <p className="font-black text-slate-700 uppercase text-xs mb-1">Equipment Validation Status (A-48)</p>
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs">
+            <p className="font-black text-gray-700 uppercase text-[10px] mb-1">Equipment Validation Status (A-48)</p>
             <div className="flex flex-wrap gap-3">
               {[['IQ','iq_doc_url'],['OQ','oq_doc_url'],['PQ','pq_doc_url']].map(([label, field]) => (
-                <span key={label} className={`px-2 py-1 rounded-lg border text-xs font-black ${selectedEquip[field] ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                <span key={label} className={`px-2 py-1 rounded-lg border text-[10px] font-black ${selectedEquip[field] ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>
                   {label}: {selectedEquip[field] ? '✓' : 'Missing'}
                   {selectedEquip[field] && <a href={selectedEquip[field]} target="_blank" rel="noreferrer" className="ml-1 underline">View</a>}
                 </span>
@@ -447,7 +447,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
         {/* A-28: Autoclave load configuration */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-          <p className="text-xs font-black text-slate-700">Load Configuration <span className="text-slate-400 font-semibold text-xs">(A-28 — affects heat penetration)</span></p>
+          <p className="text-xs font-black text-slate-700">Load Configuration <span className="text-slate-400 font-semibold text-[10px]">(A-28 — affects heat penetration)</span></p>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="field-label">Total Load Volume (ml)</label><input type="number" value={loadTotalVol} onChange={e=>setLoadTotalVol(e.target.value)} className="field-input" placeholder="e.g. 750"/></div>
             <div><label className="field-label">Flask Sizes (comma-separated)</label><input value={flaskSizes} onChange={e=>setFlaskSizes(e.target.value)} className="field-input" placeholder="e.g. 250ml, 500ml, 100ml"/></div>
@@ -455,10 +455,10 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           <div><label className="field-label">Load Description</label><input value={loadDesc} onChange={e=>setLoadDesc(e.target.value)} className="field-input" placeholder="e.g. 3 × 250ml media + 2 × 500ml broth in stainless rack"/></div>
         </div>
 
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes (cycle observations, deviations)..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes (cycle observations, deviations)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button onClick={()=>handleSave(false)} disabled={saving||raisingCapa} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={()=>handleSave(false)} disabled={saving||raisingCapa} className="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : raisingCapa ? 'Raising CAPA...' : 'Save Draft'}
           </button>
           <button onClick={()=>handleSave(true)} disabled={saving||actionLoading||passFail!=='Pass'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">

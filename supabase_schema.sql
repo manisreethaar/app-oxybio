@@ -21,7 +21,7 @@ CREATE TABLE employees (
 CREATE TABLE leave_applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES employees(id),
-    leave_type TEXT CHECK (leave_type IN ('Casual', 'Sick', 'Earned', 'Permission')),
+    leave_type TEXT CHECK (leave_type IN ('Casual', 'Sick', 'Earned')),
     start_date DATE,
     end_date DATE,
     total_days INTEGER,
@@ -56,10 +56,6 @@ CREATE TABLE tasks (
     status TEXT CHECK (status IN ('open', 'in-progress', 'done', 'cancelled')),
     completion_note TEXT,
     completed_at TIMESTAMPTZ,
-    completed_by UUID REFERENCES employees(id),
-    is_routine BOOLEAN DEFAULT false,
-    routine_interval TEXT,
-    esignature_used BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -87,13 +83,8 @@ CREATE TABLE activity_log (
     end_time TIME,
     issue_observed BOOLEAN DEFAULT false,
     issue_description TEXT,
-    equipment_id UUID REFERENCES equipment(id) ON DELETE SET NULL,
-    severity TEXT DEFAULT 'normal',
     founder_comment TEXT,
     reviewed_by UUID REFERENCES employees(id),
-    archived_at TIMESTAMPTZ,
-    archived_by UUID REFERENCES employees(id),
-    archive_reason TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -208,7 +199,7 @@ CREATE OR REPLACE FUNCTION is_admin() RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM employees 
-    WHERE employees.email = auth.jwt()->>'email' AND role IN ('admin', 'ceo', 'cto')
+    WHERE employees.email = auth.jwt()->>'email' AND role = 'admin'
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

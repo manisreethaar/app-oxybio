@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { MessageSquare, Users, Search, Plus } from 'lucide-react';
@@ -92,7 +91,6 @@ export default function MessagesPage() {
 
   const fetchChats = async () => {
     try {
-      await withTimeout((async () => {
       // Fetch chats where the user is a member
       const { data: memberData, error: memberErr } = await supabase
         .from('chat_members')
@@ -122,7 +120,6 @@ export default function MessagesPage() {
         if (!prev) return prev;
         return chatsData?.find(c => c.id === prev.id) || prev;
       });
-      })(), 20000, 'Messages load timed out');
     } catch (err) {
       console.error('Error fetching chats:', err);
       toast.error('Failed to load chats');
@@ -135,7 +132,7 @@ export default function MessagesPage() {
     setActiveChat(chat);
   };
 
-  if (authLoading) return <div className="p-8 text-center text-slate-400 font-medium">Loading messages...</div>;
+  if (authLoading) return <div className="p-8 text-center text-gray-400 font-medium">Loading messages...</div>;
 
   return (
     <div className="page-container h-[calc(100vh-6rem)] flex flex-col md:overflow-hidden">
@@ -153,12 +150,12 @@ export default function MessagesPage() {
       <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shrink-0">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Messages</h1>
-          <p className="text-sm text-slate-500 mt-1">Discuss tasks, batches, and chat with team members.</p>
+          <p className="text-sm text-gray-500 mt-1">Discuss tasks, batches, and chat with team members.</p>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm min-h-0">
-        <div className={`w-full md:w-80 lg:w-96 border-r border-slate-100 flex-shrink-0 flex flex-col ${activeChat ? 'hidden md:flex' : 'flex'}`}>
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden bg-white rounded-2xl border border-gray-200 shadow-sm min-h-0">
+        <div className={`w-full md:w-80 lg:w-96 border-r border-gray-100 flex-shrink-0 flex flex-col ${activeChat ? 'hidden md:flex' : 'flex'}`}>
           <ChatSidebar 
             chats={chats} 
             activeChat={activeChat} 
@@ -172,7 +169,7 @@ export default function MessagesPage() {
           />
         </div>
         
-        <div className={`flex-1 flex flex-col min-w-0 bg-slate-50/30 ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col min-w-0 bg-gray-50/30 ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
           {activeChat ? (
             <ChatWindow 
               chat={activeChat} 
@@ -181,7 +178,7 @@ export default function MessagesPage() {
               initialPinnedItem={initialPinnedItem}
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
               <MessageSquare className="w-12 h-12 mb-3 opacity-20" />
               <p className="font-semibold text-sm">Select a chat to start messaging</p>
             </div>

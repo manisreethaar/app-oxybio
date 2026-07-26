@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/checkout-reminder",
-      "schedule": "30 10 * * 1-6"
-    },
-    {
       "path": "/api/cron/morning-check",
-      "schedule": "0 4 * * 1-6"
+      "schedule": "30 4 * * 1-6"
     },
     {
       "path": "/api/cron/evening-warning",

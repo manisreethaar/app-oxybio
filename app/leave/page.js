@@ -5,12 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 // import removed as notifications are handled by the backend API route
 import { CalendarOff, CheckCircle, XCircle, Loader2, Send, AlertCircle, Clock } from 'lucide-react';
-// import { differenceInBusinessDays } from 'date-fns';
+import { differenceInBusinessDays } from 'date-fns';
 
 const ALL_LEAVE_TYPES = ['Casual', 'Sick', 'Earned', 'Permission'];
 
@@ -92,14 +91,14 @@ export default function LeavePage() {
     setLoading(true);
     try {
       if (['admin', 'ceo', 'cto'].includes(role)) {
-        const [myLeavesRes, pLeavesRes] = await withTimeout(Promise.all([
+        const [myLeavesRes, pLeavesRes] = await Promise.all([
           supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }),
-          supabase.from('leave_applications').select('*, employees!leave_applications_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
-        ]), 20000, 'Leave load timed out');
+          supabase.from('leave_applications').select('*, employees(full_name)').eq('status', 'pending').order('created_at', { ascending: false })
+        ]);
         setLeaves(myLeavesRes.data || []);
         setPendingLeaves(pLeavesRes.data || []);
       } else {
-        const { data: myLeaves } = await withTimeout(supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false }), 20000, 'Leave load timed out');
+        const { data: myLeaves } = await supabase.from('leave_applications').select('*').eq('employee_id', employeeProfile.id).order('created_at', { ascending: false });
         setLeaves(myLeaves || []);
       }
     } catch (err) { console.error('Leave fetch error:', err); }
@@ -110,13 +109,8 @@ export default function LeavePage() {
   const calculateDays = () => {
     if (isPermission) return 0;
     if (!watchStartDate || !watchEndDate) return 0;
-    const start = new Date(watchStartDate);
-    const end = new Date(watchEndDate);
-    if (end < start) return 0;
-    // Calculate calendar days
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    const days = differenceInBusinessDays(new Date(watchEndDate), new Date(watchStartDate)) + 1;
+    return days > 0 ? days : 0;
   };
 
   const handleApplyForm = async (data) => {
@@ -152,7 +146,6 @@ export default function LeavePage() {
 
       // Notifications are handled by the backend API route.
 
-      toast.success(isPermission ? 'Permission requested successfully.' : 'Leave requested successfully.');
       reset();
       fetchLeaves();
     } catch (err) {
@@ -192,7 +185,6 @@ export default function LeavePage() {
 
       // Notification is handled by the backend
 
-      toast.success(`Leave request ${status}.`);
       setRejectionId(null);
       setRejectionReason('');
       fetchLeaves();
@@ -201,48 +193,48 @@ export default function LeavePage() {
   };
 
 
-  if (authLoading || loading) return <div className="p-8 text-center text-slate-400 font-medium">Loading leave ledger data...</div>;
+  if (authLoading || loading) return <div className="p-8 text-center text-gray-400 font-medium">Loading leave ledger data...</div>;
 
   return (
     <div className="page-container">
       <div>
         <h1 className="text-3xl font-black text-slate-800 tracking-tight">Leave Management</h1>
-        <p className="text-sm text-slate-500 mt-1">Submit submittals and review platform attendance queries.</p>
+        <p className="text-sm text-gray-500 mt-1">Submit submittals and review platform attendance queries.</p>
       </div>
 
       {['admin', 'ceo', 'cto'].includes(role) && pendingLeaves.length > 0 && (
-        <section className="card p-6 bg-amber-50/30 border-amber-200">
+        <section className="surface p-6 bg-amber-50/30 border-amber-200">
           <h2 className="text-base font-bold text-amber-900 mb-6 flex items-center tracking-tight">
             <CalendarOff className="w-5 h-5 mr-2 text-amber-700" /> Approval Queue ({pendingLeaves.length})
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pendingLeaves.map(leave => (
               <div key={leave.id} className="bg-white rounded-xl border border-amber-200 p-5 shadow-sm hover:shadow hover:border-amber-300 transition-all duration-150">
-                <p className="font-bold text-slate-900 text-base">{leave.employees?.full_name || 'Staff'}</p>
+                <p className="font-bold text-gray-900 text-base">{leave.employees?.full_name || 'Staff'}</p>
                 <div className="flex justify-between items-center mt-1 mb-4">
-                  <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-widest ${
-                    leave.leave_type === 'Permission' ? 'bg-slate-50 text-slate-700 border border-slate-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${
+                    leave.leave_type === 'Permission' ? 'bg-sky-50 text-sky-700 border border-sky-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
                   }`}>
                     {leave.leave_type === 'Permission' ? <><Clock className="w-3 h-3 inline mr-1"/>Permission</> : leave.leave_type}
                   </span>
-                  <span className="text-xs font-bold text-slate-500">
+                  <span className="text-xs font-bold text-gray-500">
                     {leave.leave_type === 'Permission' ? 'Short Leave' : `${leave.total_days} Days`}
                   </span>
                 </div>
                 
-                <div className="text-xs font-bold text-slate-600 bg-slate-50 p-2.5 rounded-lg text-center border border-slate-100 mb-4 tabular-nums">
+                <div className="text-xs font-bold text-gray-600 bg-gray-50 p-2.5 rounded-lg text-center border border-gray-100 mb-4 tabular-nums">
                   {new Date(leave.start_date).toLocaleDateString()} → {new Date(leave.end_date).toLocaleDateString()}
                 </div>
                 
-                <p className="text-sm text-slate-600 italic mb-6 line-clamp-3 leading-relaxed">&quot;{leave.reason}&quot;</p>
+                <p className="text-sm text-gray-600 italic mb-6 line-clamp-3 leading-relaxed">&quot;{leave.reason}&quot;</p>
                 
                 {rejectionId === leave.id ? (
                   <div className="space-y-3">
-                    <label className="block text-xs font-black text-red-600 uppercase tracking-widest mb-1">Mandatory Rejection Reason</label>
+                    <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Mandatory Rejection Reason</label>
                     <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="State the scientific or operational reason for rejection..." className="w-full p-3 text-sm border border-red-200 rounded-lg bg-red-50 focus:ring-1 focus:ring-red-500 outline-none h-24 font-medium resize-none shadow-inner" />
                     <div className="flex gap-2">
                       <button onClick={() => processLeave(leave.id, 'rejected')} disabled={actionLoadingId === leave.id} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-xs font-bold">Confirm Reject</button>
-                      <button onClick={() => setRejectionId(null)} className="flex-1 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-bold">Cancel</button>
+                      <button onClick={() => setRejectionId(null)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-lg text-xs font-bold">Cancel</button>
                     </div>
                   </div>
                 ) : (
@@ -250,7 +242,7 @@ export default function LeavePage() {
                     <button onClick={() => processLeave(leave.id, 'approved')} disabled={actionLoadingId === leave.id} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold flex justify-center items-center shadow-sm">
                       {actionLoadingId === leave.id ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Approve'}
                     </button>
-                    <button onClick={() => setRejectionId(leave.id)} className="px-3 bg-white border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 py-2 rounded-lg flex items-center justify-center transition-colors text-slate-400">
+                    <button onClick={() => setRejectionId(leave.id)} className="px-3 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 py-2 rounded-lg flex items-center justify-center transition-colors text-gray-400">
                       <XCircle className="w-4 h-4" />
                     </button>
                   </div>
@@ -263,19 +255,19 @@ export default function LeavePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1">
-          <div className="card p-6">
-            <h2 className="text-base font-bold text-slate-900 mb-6 tracking-tight">Apply for Leave</h2>
+          <div className="surface p-6">
+            <h2 className="text-base font-bold text-gray-900 mb-6 tracking-tight">Apply for Leave</h2>
             {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-100 flex items-start"><AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />{errorMsg}</div>}
             <form onSubmit={handleSubmit(handleApplyForm)} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-1.5">Leave Category</label>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Leave Category</label>
                 {isClOnly && (
-                  <div className="mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-700">
+                  <div className="mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700">
                     📋 Leave Policy: Casual Leave only · 6 CL credited on joining · 1 CL/month after 6-month mark · Unused CL expires Dec 31.
                     {employeeProfile?.joined_date && <span className="ml-1 text-amber-600">Earned this year: <strong>{earnedCL} days</strong>.</span>}
                   </div>
                 )}
-                <select {...register('leaveType')} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
+                <select {...register('leaveType')} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent-light outline-none text-sm font-semibold">
                   <option value="Casual">Casual Leave (CL)</option>
                   {!isClOnly && <option value="Sick">Sick Leave (SL)</option>}
                   {!isClOnly && <option value="Earned">Earned Leave (EL)</option>}
@@ -284,15 +276,15 @@ export default function LeavePage() {
               </div>
 
               {isPermission ? (
-                <div className="space-y-3 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
-                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Short Leave — Hours Based</p>
+                <div className="space-y-3 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                  <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Short Leave — Hours Based</p>
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Date</label>
-                    <input type="date" {...register('permissionDate', { required: isPermission })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none" />
+                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Date</label>
+                    <input type="date" {...register('permissionDate', { required: isPermission })} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Duration</label>
-                    <select {...register('permissionHours')} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none">
+                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Duration</label>
+                    <select {...register('permissionHours')} className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold outline-none">
                       <option value="1">1 Hour</option>
                       <option value="2">2 Hours</option>
                       <option value="3">3 Hours</option>
@@ -303,27 +295,27 @@ export default function LeavePage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-1.5">Start Date</label>
-                    <input type="date" {...register('startDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none" />
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">Start Date</label>
+                    <input type="date" {...register('startDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-1.5">End Date</label>
-                    <input type="date" {...register('endDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none" />
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">End Date</label>
+                    <input type="date" {...register('endDate', { required: !isPermission })} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none" />
                   </div>
                 </div>
               )}
 
               {!isPermission && calculateDays() > 0 && (
-                <p className="text-xs font-black text-navy bg-slate-100 py-1.5 px-3 rounded-md border border-slate-200 uppercase tracking-widest">
+                <p className="text-[10px] font-black text-navy bg-gray-100 py-1.5 px-3 rounded-md border border-gray-200 uppercase tracking-widest">
                   Selected: {calculateDays()} Business Days
                 </p>
               )}
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-1.5">
+                <label className="block text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5">
                   {isPermission ? 'Reason for Permission' : 'Justification'}
                 </label>
-                <textarea {...register('reason')} rows="3" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold resize-none outline-none focus:ring-2 focus:ring-accent-light" placeholder={isPermission ? 'Brief reason...' : 'Brief explanation...'}></textarea>
+                <textarea {...register('reason')} rows="3" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold resize-none outline-none focus:ring-2 focus:ring-accent-light" placeholder={isPermission ? 'Brief reason...' : 'Brief explanation...'}></textarea>
               </div>
 
               <button type="submit" disabled={submitting} className="w-full py-3 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center uppercase tracking-wider text-xs">
@@ -334,41 +326,41 @@ export default function LeavePage() {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="card overflow-hidden flex flex-col h-full">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">Leave Ledger</h2>
+          <div className="surface overflow-hidden flex flex-col h-full">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h2 className="text-base font-bold text-gray-900 tracking-tight">Leave Ledger</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-100">
                 <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Cycle</th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Net Days</th>
-                    <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cycle</th>
+                    <th className="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">Net Days</th>
+                    <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {leaves.map((l) => (
-                    <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                        {l.leave_type === 'Permission' && <Clock className="w-3.5 h-3.5 text-slate-500"/>}
+                    <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                        {l.leave_type === 'Permission' && <Clock className="w-3.5 h-3.5 text-blue-500"/>}
                         {l.leave_type}
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-500 font-medium tabular-nums">
+                      <td className="px-6 py-4 text-xs text-gray-500 font-medium tabular-nums">
                         {new Date(l.start_date).toLocaleDateString([], { month: 'short', day: 'numeric'})} - {new Date(l.end_date).toLocaleDateString([], { month: 'short', day: 'numeric'})}
                       </td>
-                      <td className="px-6 py-4 text-center text-sm font-bold text-slate-900">
-                        {l.leave_type === 'Permission' ? <span className="text-slate-600">Short</span> : l.total_days}
+                      <td className="px-6 py-4 text-center text-sm font-bold text-gray-900">
+                        {l.leave_type === 'Permission' ? <span className="text-blue-600">Short</span> : l.total_days}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className={`px-2 py-0.5 text-xs font-black uppercase tracking-widest rounded-md border ${STATUS_STYLE[l.status] || STATUS_STYLE.pending}`}>
+                        <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md border ${STATUS_STYLE[l.status] || STATUS_STYLE.pending}`}>
                           {l.status}
                         </span>
                       </td>
                     </tr>
                   ))}
-                  {leaves.length === 0 && <tr><td colSpan="4" className="px-6 py-12 text-center text-slate-400 font-medium text-sm">No ledger entries found.</td></tr>}
+                  {leaves.length === 0 && <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-400 font-medium text-sm">No ledger entries found.</td></tr>}
                 </tbody>
               </table>
             </div>

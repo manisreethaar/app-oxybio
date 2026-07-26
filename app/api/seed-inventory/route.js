@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
@@ -205,4 +204,3 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-

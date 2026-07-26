@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Loader2,
@@ -76,7 +75,7 @@ function blankAdHocRow(hour = 0) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-const CellCls = 'w-full px-2 py-1.5 text-sm font-medium text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400';
+const CellCls = 'w-full px-2 py-1.5 text-sm font-medium text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-slate-50 disabled:text-slate-400';
 
 function rowHasData(row) {
   return row.ph !== '' || row.od !== '' || row.sterility !== '' || row.plate_done || row.notes !== '';
@@ -109,7 +108,7 @@ export default function GridEntryPage() {
   //   ?source_type=growth_study&source_id=uuid
   useEffect(() => {
     setSourcesLoading(true);
-    withTimeout(fetch('/api/lab-bench/sources'), 20000, 'Lab bench sources load timed out')
+    fetch('/api/lab-bench/sources')
       .then(r => r.json())
       .then(json => {
         if (json.success) {
@@ -247,8 +246,8 @@ export default function GridEntryPage() {
   if (result) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 text-center">
-        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-slate-600" />
+        <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-teal-600" />
         </div>
         <h2 className="text-xl font-black text-slate-800 mb-1">Grid Saved</h2>
         <p className="text-slate-500 text-sm font-medium mb-4">
@@ -279,7 +278,7 @@ export default function GridEntryPage() {
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => { setResult(null); setRows(rows.map(r => ({ ...r, ph: '', od: '', sterility: '', plate_done: false, colony_count: '', notes: '', skipped: false, skip_reason: '' }))); }}
-            className="px-6 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-xl text-sm"
+            className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm"
           >
             New Grid
           </button>
@@ -303,7 +302,7 @@ export default function GridEntryPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
           <h1 className="text-xl font-black text-slate-800">Grid Entry</h1>
         </div>
       </div>
@@ -323,11 +322,11 @@ export default function GridEntryPage() {
               className={clsx(
                 'flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-black text-xs transition-all',
                 sourceType === value
-                  ? 'border-slate-600 bg-slate-50 text-slate-700'
+                  ? 'border-teal-600 bg-teal-50 text-teal-700'
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               )}
             >
-              <Icon className={clsx('w-4 h-4', sourceType === value ? 'text-slate-600' : 'text-slate-400')} />
+              <Icon className={clsx('w-4 h-4', sourceType === value ? 'text-teal-600' : 'text-slate-400')} />
               {label}
             </button>
           ))}
@@ -336,7 +335,7 @@ export default function GridEntryPage() {
         <div className={clsx('grid gap-3', isBatch ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-3')}>
           {/* Source dropdown */}
           <div className={isBatch ? 'col-span-2 md:col-span-2' : 'md:col-span-1'}>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
               {isBatch ? 'Batch' : 'Growth Study'}
             </label>
             {sourcesLoading ? (
@@ -367,7 +366,7 @@ export default function GridEntryPage() {
           {/* Log hour — batch only (GS uses per-row hours from time points) */}
           {isBatch && (
             <div>
-              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
                 Log Hour (T+)
               </label>
               <div className="relative">
@@ -385,7 +384,7 @@ export default function GridEntryPage() {
 
           {/* OD wavelength */}
           <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
               OD Wavelength
             </label>
             <div className="relative">
@@ -395,13 +394,13 @@ export default function GridEntryPage() {
                 value={odWavelength}
                 onChange={e => setOdWavelength(Number(e.target.value))}
               />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">nm</span>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">nm</span>
             </div>
           </div>
 
           {/* Logged at */}
           <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
               Logged At
             </label>
             <input
@@ -416,11 +415,11 @@ export default function GridEntryPage() {
 
       {/* ── Ad-hoc mode banner ── */}
       {isStudy && adHocMode && rows.length > 0 && (
-        <div className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
-          <Activity className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3">
+          <Activity className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-slate-700">No time point schedule — ad-hoc entry</p>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-xs font-black text-violet-700">No time point schedule — ad-hoc entry</p>
+            <p className="text-[11px] text-violet-500 font-medium mt-0.5">
               This study has no formal time points. Enter measurements at any hour. The hour is editable per row.
             </p>
           </div>
@@ -432,7 +431,7 @@ export default function GridEntryPage() {
                 : 0;
               setRows(prev => [...prev, blankAdHocRow(lastHour)]);
             }}
-            className="shrink-0 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-black rounded-lg transition-colors"
+            className="shrink-0 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-black rounded-lg transition-colors"
           >
             + Add row
           </button>
@@ -458,11 +457,11 @@ export default function GridEntryPage() {
         <div className="flex md:hidden items-center gap-2 mb-3">
           <button
             onClick={() => setMobileView('table')}
-            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'table' ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-600 border-slate-200')}
+            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'table' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200')}
           >Table</button>
           <button
             onClick={() => setMobileView('cards')}
-            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'cards' ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-600 border-slate-200')}
+            className={clsx('px-3 py-1.5 rounded-lg text-xs font-bold border transition-all', mobileView === 'cards' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200')}
           >Cards</button>
         </div>
 
@@ -474,30 +473,30 @@ export default function GridEntryPage() {
             <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="px-3 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-20 sm:w-28 sticky left-0 bg-slate-50 z-10">
+                  <th className="px-3 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-20 sm:w-28 sticky left-0 bg-slate-50 z-10">
                     {isBatch ? 'Flask' : 'Timepoint'}
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-black text-slate-400 uppercase tracking-wider w-16">
+                  <th className="px-2 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider w-16">
                     Skip
                   </th>
-                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-24">
+                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-24">
                     pH
                   </th>
-                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-24">
+                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-24">
                     OD{odWavelength}
                   </th>
                   {isBatch && (
-                    <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-24">
+                    <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-24">
                       Temp °C
                     </th>
                   )}
-                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider w-28">
+                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider w-28">
                     Sterility
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-black text-slate-400 uppercase tracking-wider w-16">
+                  <th className="px-2 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider w-16">
                     Plate
                   </th>
-                  <th className="px-2 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">
                     Notes
                   </th>
                 </tr>
@@ -521,7 +520,7 @@ export default function GridEntryPage() {
           {/* Table footer summary */}
           <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
-              <span className="text-slate-700">{activeRows.length} with data</span>
+              <span className="text-teal-700">{activeRows.length} with data</span>
               {skippedRows.length > 0 && (
                 <span className="text-amber-600">{skippedRows.length} skipped</span>
               )}
@@ -541,16 +540,16 @@ export default function GridEntryPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                 <div>
-                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">pH</label>
-                  <input type="number" step="0.01" value={row.ph} onChange={e => updateRow(i, 'ph', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-50" placeholder="—" />
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">pH</label>
+                  <input type="number" step="0.01" value={row.ph} onChange={e => updateRow(i, 'ph', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">OD</label>
-                  <input type="number" step="0.001" value={row.od} onChange={e => updateRow(i, 'od', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-50" placeholder="—" />
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">OD</label>
+                  <input type="number" step="0.001" value={row.od} onChange={e => updateRow(i, 'od', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Temp °C</label>
-                  <input type="number" step="0.1" value={row.incubator_temp_c || ''} onChange={e => updateRow(i, 'incubator_temp_c', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-50" placeholder="—" />
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Temp °C</label>
+                  <input type="number" step="0.1" value={row.incubator_temp_c || ''} onChange={e => updateRow(i, 'incubator_temp_c', e.target.value)} disabled={row.skipped} className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-slate-50" placeholder="—" />
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -593,7 +592,7 @@ export default function GridEntryPage() {
           type="button"
           onClick={handleSubmit}
           disabled={saving || (activeRows.length === 0 && skippedRows.length === 0)}
-          className="w-full py-4 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:text-slate-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
+          className="w-full py-4 bg-teal-700 hover:bg-teal-800 disabled:bg-slate-300 disabled:text-slate-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
         >
           {saving ? (
             <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>
@@ -625,17 +624,17 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
         )}>
           {row.is_adhoc ? (
             <div className="flex items-center gap-1">
-              <span className="text-xs font-black text-slate-500">T+</span>
+              <span className="text-[10px] font-black text-violet-500">T+</span>
               <input
                 type="number"
                 step="0.5"
                 min="0"
                 disabled={dim}
-                className="w-16 px-1.5 py-1 text-sm font-black text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:opacity-50"
+                className="w-16 px-1.5 py-1 text-sm font-black text-violet-700 bg-violet-50 border border-violet-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-50"
                 value={row.log_hour}
                 onChange={e => updateRow(idx, 'log_hour', e.target.value)}
               />
-              <span className="text-xs font-bold text-slate-400">h</span>
+              <span className="text-[10px] font-bold text-slate-400">h</span>
             </div>
           ) : (
             <span className={clsx(
@@ -728,8 +727,8 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
             className={clsx(
               'w-7 h-7 rounded-lg border flex items-center justify-center mx-auto transition-all text-xs font-black',
               row.plate_done && !dim
-                ? 'bg-red-100 border-red-300 text-red-600'
-                : 'bg-white border-slate-200 text-slate-300 hover:border-red-200 hover:bg-red-50'
+                ? 'bg-rose-100 border-rose-300 text-rose-600'
+                : 'bg-white border-slate-200 text-slate-300 hover:border-rose-200 hover:bg-rose-50'
             )}
             title={row.plate_done ? 'Plate taken' : 'Mark plate taken'}
           >
@@ -755,7 +754,7 @@ function GridRow({ row, idx, isBatch, odWavelength, updateRow, toggleSkip }) {
         <tr className="bg-amber-50/60">
           <td colSpan={isBatch ? 8 : 7} className="px-3 py-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-amber-600 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider whitespace-nowrap">
                 Skip reason
               </span>
               <select

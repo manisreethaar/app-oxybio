@@ -1,5 +1,4 @@
 import { createClient } from '@/utils/supabase/server';
-import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { syncCellBankStepToLNB } from '@/lib/lnbSync';
 import { requireResearchAccess } from '@/lib/research/access';
@@ -14,16 +13,16 @@ export async function GET(request, { params }) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
-    const adminSupabase = createAdminClient();
-
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('cell_bank_preparations')
       .select(`
         *,
         linked_formulation:formulations(id, code, name, version, category, status),
         cell_bank_strains(id, name, source_type, accession_number, isolation_source, taxonomy, strain_short_code, notes, formulation_id, characterization, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type, step_data, formulation_id),
-        employees!cell_bank_preparations_created_by_fkey(full_name)
+        employees(full_name),
+        qc_released_employee:qc_released_by(full_name),
+        cell_bank_vials(id, vial_code, storage_temp, freezer_id, rack, box, position, status, expires_at, used_in_batch_id, used_at, notes)
       `)
       .eq('id', params.id)
       .single();
@@ -31,25 +30,14 @@ export async function GET(request, { params }) {
     if (error) throw error;
     if (!data) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
-    // Fetch QC releaser name separately to avoid FK constraint name ambiguity
-    let qcReleasedEmployee = null;
-    if (data.qc_released_by) {
-      const { data: qcEmp } = await adminSupabase
-        .from('employees')
-        .select('full_name')
-        .eq('id', data.qc_released_by)
-        .maybeSingle();
-      qcReleasedEmployee = qcEmp || null;
-    }
-
     // Fetch linked incubation records for this preparation
-    const { data: incubations } = await adminSupabase
+    const { data: incubations } = await supabase
       .from('sample_incubation_records')
       .select('id, sample_name, sample_type, start_time, end_time, duration_hours, sterility_status, colony_count, cfu_per_ml, colony_morphology, microscopic_morphology, incubation_temp_c, media_used, lab_bench_sample_id, source_label, log_hour, timepoint_label, plate_label, plate_index, plate_total')
       .eq('cell_bank_preparation_id', params.id)
       .order('created_at', { ascending: true });
 
-    const { data: lnbEntry } = await adminSupabase
+    const { data: lnbEntry } = await supabase
       .from('lab_notebook_entries')
       .select('id')
       .eq('cell_bank_preparation_id', params.id)
@@ -58,7 +46,7 @@ export async function GET(request, { params }) {
       .limit(1)
       .maybeSingle();
 
-    return NextResponse.json({ success: true, data: { ...data, qc_released_employee: qcReleasedEmployee, incubations: incubations || [], lnb_entry_id: lnbEntry?.id || null } });
+    return NextResponse.json({ success: true, data: { ...data, incubations: incubations || [], lnb_entry_id: lnbEntry?.id || null } });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -68,17 +56,16 @@ export async function PATCH(request, { params }) {
   try {
     const supabase = createClient();
     const access = await requireResearchAccess(supabase);
-    if (!access || access.error) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!access) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
-    const adminSupabase = createAdminClient();
     const body = await request.json();
 
     // -- QC Release action ------------------------------------------------
     if (body.action === 'qc_release') {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-      const { data: emp } = await adminSupabase.from('employees').select('id').eq('email', user.email).single();
-      const { data, error } = await adminSupabase.from('cell_bank_preparations')
+      const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
+      const { data, error } = await supabase.from('cell_bank_preparations')
         .update({ qc_released: true, qc_released_by: emp?.id || access.emp?.id, qc_released_at: new Date().toISOString() })
         .eq('id', params.id).select().single();
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -118,7 +105,7 @@ export async function PATCH(request, { params }) {
         updates.characterization = body.characterization || {};
       }
 
-      const { data, error } = await adminSupabase
+      const { data, error } = await supabase
         .from('cell_bank_strains')
         .update(updates)
         .eq('id', params.id)
@@ -139,7 +126,7 @@ export async function PATCH(request, { params }) {
       if (!count || count < 1) return NextResponse.json({ success: false, error: 'count must be >= 1' }, { status: 400 });
 
       // Fetch prep + strain for code generation
-      const { data: prep, error: prepErr } = await adminSupabase
+      const { data: prep, error: prepErr } = await supabase
         .from('cell_bank_preparations')
         .select('type, prep_code, strain_id, cell_bank_strains(strain_short_code)')
         .eq('id', params.id)
@@ -165,7 +152,7 @@ export async function PATCH(request, { params }) {
         };
       });
 
-      const { data: vials, error: vialErr } = await adminSupabase.from('cell_bank_vials').insert(vialRows).select();
+      const { data: vials, error: vialErr } = await supabase.from('cell_bank_vials').insert(vialRows).select();
       if (vialErr) throw vialErr;
 
       // Insert log entries for each vial
@@ -174,12 +161,12 @@ export async function PATCH(request, { params }) {
         action: 'registered',
         operator_id: access.emp?.id || null,
       }));
-      try { await adminSupabase.from('cell_bank_vial_logs').insert(logRows); } catch (_) {}
+      try { await supabase.from('cell_bank_vial_logs').insert(logRows); } catch (_) {}
 
       // Update prep vial_count
-      await adminSupabase.from('cell_bank_preparations').update({ vial_count: count }).eq('id', params.id);
+      await supabase.from('cell_bank_preparations').update({ vial_count: count }).eq('id', params.id);
       await syncCellBankStepToLNB(
-        adminSupabase,
+        supabase,
         params.id,
         prep.prep_code,
         'vial_storage',
@@ -201,7 +188,7 @@ export async function PATCH(request, { params }) {
     // -- Standard step_data / status update --------------------------------
     const { step_key, step_data_patch, status, vial_count, notes, formulation_id } = body;
 
-    const { data: current, error: fetchErr } = await adminSupabase
+    const { data: current, error: fetchErr } = await supabase
       .from('cell_bank_preparations')
       .select('step_data, status')
       .eq('id', params.id)
@@ -234,7 +221,7 @@ export async function PATCH(request, { params }) {
     if (notes !== undefined) updates.notes = notes;
     if (formulation_id !== undefined) updates.formulation_id = formulation_id || null;
 
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('cell_bank_preparations')
       .update(updates)
       .eq('id', params.id)
@@ -245,7 +232,7 @@ export async function PATCH(request, { params }) {
     // Sync step to LNB -- fire and forget
     if (status === 'Completed') {
       await syncCellBankStepToLNB(
-        adminSupabase,
+        supabase,
         params.id,
         data.prep_code,
         'completion',
@@ -260,7 +247,7 @@ export async function PATCH(request, { params }) {
 
     if (step_key && step_data_patch) {
       syncCellBankStepToLNB(
-        adminSupabase,
+        supabase,
         params.id,
         data.prep_code,
         step_key,
@@ -282,7 +269,7 @@ export async function PATCH(request, { params }) {
         
         if (formId && vol > 0) {
           deductFormulationFIFO(
-            adminSupabase, formId, vol, 
+            supabase, formId, vol, 
             `cell_bank_${step_key}`, 
             params.id, 
             access.emp?.id, 
@@ -295,7 +282,7 @@ export async function PATCH(request, { params }) {
     // Auto-create incubation record(s) when plating step is saved with plates_poured
     if (step_key === 'plating' && parseInt(step_data_patch?.plates_poured, 10) > 0) {
       try {
-        const { count: existing } = await adminSupabase
+        const { count: existing } = await supabase
           .from('sample_incubation_records')
           .select('id', { count: 'exact', head: true })
           .eq('cell_bank_preparation_id', params.id);
@@ -333,7 +320,7 @@ export async function PATCH(request, { params }) {
             logged_by:               access.emp?.id || null,
           }));
 
-          await adminSupabase.from('sample_incubation_records').insert(incRows);
+          await supabase.from('sample_incubation_records').insert(incRows);
         }
       } catch (syncErr) {
         console.error('[cell-bank/plating] incubation sync failed:', syncErr.message);
@@ -352,13 +339,12 @@ export async function DELETE(request, { params }) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
-    const adminSupabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const target = searchParams.get('target') || 'preparation';
 
     if (target === 'strain') {
       // Guard: block if strain has any preparations
-      const { count: prepCount } = await adminSupabase
+      const { count: prepCount } = await supabase
         .from('cell_bank_preparations')
         .select('id', { count: 'exact', head: true })
         .eq('strain_id', params.id);
@@ -371,12 +357,12 @@ export async function DELETE(request, { params }) {
         }, { status: 409 });
       }
 
-      const { error } = await adminSupabase.from('cell_bank_strains').delete().eq('id', params.id);
+      const { error } = await supabase.from('cell_bank_strains').delete().eq('id', params.id);
       if (error) throw error;
 
     } else {
       // Guard: block if preparation has any registered vials
-      const { data: prep } = await adminSupabase
+      const { data: prep } = await supabase
         .from('cell_bank_preparations')
         .select('prep_code, vial_count, status')
         .eq('id', params.id)
@@ -385,7 +371,7 @@ export async function DELETE(request, { params }) {
       if (!prep) return NextResponse.json({ success: false, error: 'Preparation not found' }, { status: 404 });
 
       // Count actual vials in the vials table (source of truth, not just vial_count column)
-      const { count: vialCount } = await adminSupabase
+      const { count: vialCount } = await supabase
         .from('cell_bank_vials')
         .select('id', { count: 'exact', head: true })
         .eq('preparation_id', params.id);
@@ -408,7 +394,7 @@ export async function DELETE(request, { params }) {
         }, { status: 409 });
       }
 
-      const { error } = await adminSupabase.from('cell_bank_preparations').delete().eq('id', params.id);
+      const { error } = await supabase.from('cell_bank_preparations').delete().eq('id', params.id);
       if (error) throw error;
     }
 
@@ -417,4 +403,3 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
-

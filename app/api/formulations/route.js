@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
@@ -12,7 +11,7 @@ import {
 
 import { validateCode } from '@/lib/formulations/access';
 import { requireAuth, requireAccess } from '@/lib/access';
-
+export { validateCode };
 
 
 export async function GET(request) {
@@ -41,21 +40,13 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const supabase = createClient();
-    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
-    if (authErr) return authErr;
+    const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();
-    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
+    const { code, name, ingredients, notes, base_version_id, category, base_volume_ml } = body;
 
     const codeErr = validateCode(code);
     if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
-
-    let parsedYield = null;
-    if (yield_predicted_ml !== undefined && yield_predicted_ml !== '') {
-      const val = parseFloat(yield_predicted_ml);
-      if (!isNaN(val)) parsedYield = val;
-    }
     const normCode = code.trim().toUpperCase();
 
     let nextVersion = 1;
@@ -83,9 +74,6 @@ export async function POST(request) {
       base_version_id: base_version_id || null,
       status: 'Draft',
       category: category || 'Fermentation',
-      nutritional_info: nutritional_info || {},
-      yield_predicted_ml: parsedYield,
-      regulatory_claims: regulatory_claims || []
     }).select().single();
 
     if (error) throw error;
@@ -97,14 +85,12 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const supabase = createClient();
-    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
-    if (authErr) return authErr;
+    const { supabase, emp, user } = await requireAuth();
 
     const { id, status, rejection_reason } = await request.json();
     if (!id || !status) return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
 
-    const isApprover = emp && (can(emp.role, 'recipes', 'approve', emp.custom_permissions) || isMasterAdmin(user.email));
+    const isApprover = emp && (can(emp.role, 'recipes', 'approve') || isMasterAdmin(user.email));
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
     if (!current) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
 
@@ -167,22 +153,14 @@ export async function PATCH(request) {
 
 export async function PUT(request) {
   try {
-    const supabase = createClient();
-    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
-    if (authErr) return authErr;
+    const { supabase, emp, user } = await requireAuth();
 
     const body = await request.json();
-    const { id, name, ingredients, notes, category, base_volume_ml, nutritional_info, yield_predicted_ml, regulatory_claims } = body;
+    const { id, name, ingredients, notes, category, base_volume_ml } = body;
     let { code } = body;
 
     const codeErr = validateCode(code);
     if (codeErr) return NextResponse.json({ error: codeErr }, { status: 400 });
-
-    let parsedYield = null;
-    if (yield_predicted_ml !== undefined && yield_predicted_ml !== '') {
-      const val = parseFloat(yield_predicted_ml);
-      if (!isNaN(val)) parsedYield = val;
-    }
     code = code.trim().toUpperCase();
 
     const { data: current } = await supabase.from('formulations').select('status, created_by').eq('id', id).single();
@@ -191,17 +169,7 @@ export async function PUT(request) {
 
     const adminDb = createAdminClient();
     const { data, error } = await adminDb.from('formulations')
-      .update({ 
-        code, 
-        name, 
-        ingredients, 
-        notes, 
-        base_volume_ml: base_volume_ml || 1000, 
-        ...(category ? { category } : {}),
-        nutritional_info: nutritional_info || {},
-        yield_predicted_ml: parsedYield,
-        regulatory_claims: regulatory_claims || []
-      })
+      .update({ code, name, ingredients, notes, base_volume_ml: base_volume_ml || 1000, ...(category ? { category } : {}) })
       .eq('id', id)
       .select()
       .single();
@@ -215,9 +183,7 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const supabase = createClient();
-    const { error: authErr, user, employee: emp } = await requireAuth(supabase);
-    if (authErr) return authErr;
+    const { supabase, emp, user } = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

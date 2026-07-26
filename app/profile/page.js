@@ -17,21 +17,20 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import PasswordModal from './components/PasswordModal';
-import PinSetupModal from './components/PinSetupModal';
 
 function DigitalIDCard({ emp }) {
   return (
     <div className="bg-white rounded-[2rem] p-6 shadow-2xl w-full max-w-[340px] mx-auto border border-slate-200 flex flex-col items-center relative overflow-hidden">
       {/* Subtle modern background gradient */}
-      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-slate-800 to-slate-900"/>
+      <div className="absolute top-0 left-0 w-full h-36 bg-gradient-to-br from-teal-800 to-cyan-900"/>
       
       {/* Header */}
       <div className="w-full relative z-10 flex justify-between items-start mb-8">
         <div>
           <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
-          <p className="text-slate-100 font-bold tracking-widest text-xs uppercase">Bioinnovations</p>
+          <p className="text-teal-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
         </div>
-        <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-xs font-black uppercase tracking-widest border ${
+        <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
           emp.is_active 
             ? 'bg-white/20 text-white border-white/30' 
             : 'bg-red-500/40 text-white border-red-300/50'
@@ -53,18 +52,18 @@ function DigitalIDCard({ emp }) {
       </div>
 
       <h2 className="text-xl font-black text-slate-800 tracking-tight text-center leading-none mt-2">{emp.full_name}</h2>
-      <p className="text-xs font-bold text-slate-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
+      <p className="text-xs font-bold text-teal-700 tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
       
       <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
         <p className="font-mono text-2xl font-black text-slate-800 tracking-widest">{emp.employee_code || 'PENDING'}</p>
       </div>
 
       {/* QR Code Section */}
       <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
         <div className="text-left pr-4">
-          <p className="text-xs font-black text-slate-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
-          <p className="text-xs font-bold text-slate-500 leading-relaxed">
+          <p className="text-[9px] font-black text-teal-700 uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
+          <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
             Scan to securely verify identity &amp; log compliance checkpoint access.
           </p>
         </div>
@@ -86,7 +85,7 @@ export default function ProfilePage() {
   const adminViewId = searchParams.get('id');
   const isAdminView = searchParams.get('adminView') === 'true';
 
-  const { employeeProfile, loading: authLoading, role, signOut, refreshProfile } = useAuth();
+  const { employeeProfile, loading: authLoading, role, signOut } = useAuth();
   const toast = useToast();
   const [emp, setEmp] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -116,13 +115,8 @@ export default function ProfilePage() {
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', password: '', confirm: '' });
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
-
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinForm, setPinForm] = useState({ currentPin: '', pin: '', confirm: '' });
-  const [pinLoading, setPinLoading] = useState(false);
-  
   const fileRef = useRef();
 
   useEffect(() => {
@@ -210,10 +204,6 @@ export default function ProfilePage() {
         setEmp({ ...emp, ...data });
         reset(data);
       }
-      // Refresh the AuthContext-cached profile too — otherwise the next time this
-      // page mounts, its effect repopulates the form from the stale cached profile
-      // and the just-saved values (e.g. initials) appear to "reset".
-      if (!isAdminView) refreshProfile();
       setEditing(false);
       toast.success('Profile updated successfully!');
     } catch (err) { toast.error('Error: ' + err.message); }
@@ -245,7 +235,6 @@ export default function ProfilePage() {
         });
         if (!patchRes.ok) throw new Error("Failed to save profile photo binding.");
         setEmp({ ...emp, photo_url: data.url });
-        if (!isAdminView) refreshProfile();
       }
     } catch (err) {
       toast.error("Network Error: Could not connect to the upload server.");
@@ -256,56 +245,15 @@ export default function ProfilePage() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    if (!passwordForm.currentPassword) { toast.warn("Enter your current password!"); return; }
     if (passwordForm.password !== passwordForm.confirm) { toast.warn("Passwords do not match!"); return; }
     if (passwordForm.password.length < 6) { toast.warn("Password must be at least 6 characters!"); return; }
     setPasswordLoading(true);
-    const withTimeout = (promise) => Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your connection and try again.')), 15000)),
-    ]);
     try {
-      // Re-authenticate with the current password first — this is a real check
-      // against Supabase Auth, not a client-side gate, so a logged-in session
-      // alone can no longer be used to silently take over the password.
-      const { error: reauthError } = await withTimeout(
-        supabase.auth.signInWithPassword({ email: emp.email, password: passwordForm.currentPassword })
-      );
-      if (reauthError) { toast.error('Current password is incorrect.'); return; }
-
-      const { error } = await withTimeout(supabase.auth.updateUser({ password: passwordForm.password }));
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
       if (error) { toast.error(error.message || "Failed to update password."); }
-      else {
-        toast.success("Password updated successfully!");
-        setShowPasswordModal(false);
-        setPasswordForm({ currentPassword: '', password: '', confirm: '' });
-      }
-    } catch (err) { toast.error(err.message || 'Network error. Please try again.'); }
+      else { toast.success("Password updated successfully!"); setShowPasswordModal(false); setPasswordForm({ password: '', confirm: '' }); }
+    } catch (err) { toast.error('Error: ' + err.message); }
     finally { setPasswordLoading(false); }
-  };
-
-  const handlePinSetup = async () => {
-    if (pinForm.pin !== pinForm.confirm) { toast.warn("PINs do not match!"); return; }
-    if (pinForm.pin.length < 4 || pinForm.pin.length > 6) { toast.warn("PIN must be 4-6 digits!"); return; }
-    
-    setPinLoading(true);
-    try {
-      const res = await fetch('/api/auth/pin/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pinForm.pin, currentPin: pinForm.currentPin })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to setup PIN');
-
-      toast.success("E-Signature PIN configured successfully!");
-      setShowPinModal(false);
-      setPinForm({ currentPin: '', pin: '', confirm: '' });
-    } catch (err) {
-      toast.error('Error: ' + err.message);
-    } finally {
-      setPinLoading(false);
-    }
   };
 
   if (!emp) {
@@ -319,7 +267,7 @@ export default function ProfilePage() {
            <p className="text-sm font-medium text-slate-500 mb-8 px-4">
              Your account ({(employeeProfile?.email || 'authenticated user')}) is not registered in the employee directory yet.
            </p>
-           <button onClick={() => window.location.reload()} className="w-full py-3.5 bg-slate-800 text-white font-bold rounded-xl shadow-md">
+           <button onClick={() => window.location.reload()} className="w-full py-3.5 bg-teal-800 text-white font-bold rounded-xl shadow-md">
              Refresh Session
            </button>
         </div>
@@ -330,7 +278,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-20">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {isAdminView && (
             <button onClick={() => router.push('/admin/users')} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-all">
@@ -346,28 +294,19 @@ export default function ProfilePage() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-3">
           {!isAdminView && (
-            <>
-              <button
-                onClick={() => setShowPasswordModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
-              >
-                <Lock className="w-4 h-4"/>
-                Password
-              </button>
-              <button
-                onClick={() => setShowPinModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
-              >
-                <Lock className="w-4 h-4"/>
-                E-Sig PIN
-              </button>
-            </>
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-100"
+            >
+              <Lock className="w-4 h-4"/>
+              Password
+            </button>
           )}
           <button
             onClick={() => setView(view === 'info' ? 'card' : 'info')}
-            className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm font-bold text-slate-700 hover:bg-white transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm font-bold text-teal-700 hover:bg-white transition-all"
           >
             <CreditCard className="w-4 h-4"/>
             {view === 'info' ? 'View ID Card' : 'View Info'}
@@ -409,7 +348,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => fileRef.current.click()}
                   disabled={uploadingPhoto}
-                  className="absolute -bottom-2 -right-2 w-9 h-9 bg-slate-600 text-white rounded-xl flex items-center justify-center shadow-md hover:bg-slate-500 transition-all"
+                  className="absolute -bottom-2 -right-2 w-9 h-9 bg-teal-600 text-white rounded-xl flex items-center justify-center shadow-md hover:bg-teal-500 transition-all"
                 >
                   {uploadingPhoto ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Upload className="w-4 h-4"/>}
                 </button>
@@ -418,9 +357,9 @@ export default function ProfilePage() {
 
               <div className="flex-1 text-center sm:text-left">
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">{emp.full_name}</h2>
-                <p className="text-slate-600 font-bold mt-1">{emp.designation || emp.role}</p>
+                <p className="text-teal-600 font-bold mt-1">{emp.designation || emp.role}</p>
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
-                  <span className="px-3 py-1 bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-100">
+                  <span className="px-3 py-1 bg-teal-50 text-teal-700 rounded-xl text-xs font-bold border border-teal-100">
                     {emp.department}
                   </span>
                   <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-100">
@@ -583,15 +522,6 @@ export default function ProfilePage() {
             onSubmit={handlePasswordUpdate}
             onClose={() => setShowPasswordModal(false)}
           />
-
-          <PinSetupModal
-            showModal={showPinModal}
-            pinForm={pinForm}
-            setPinForm={setPinForm}
-            pinLoading={pinLoading}
-            onSubmit={handlePinSetup}
-            onClose={() => setShowPinModal(false)}
-          />
         </>
       )}
     </div>
@@ -600,13 +530,13 @@ export default function ProfilePage() {
 
 function InitialsField({ value, editing, registerProps }) {
   const display = value || '??';
-  const colors = ['bg-slate-600', 'bg-slate-600', 'bg-slate-600', 'bg-amber-600', 'bg-red-600', 'bg-emerald-600'];
+  const colors = ['bg-teal-600', 'bg-violet-600', 'bg-sky-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600'];
   const colorIdx = display.charCodeAt(0) % colors.length;
   const bg = colors[colorIdx];
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
         <Badge className="w-3.5 h-3.5" /> Initials / Badge
       </label>
       {editing ? (
@@ -619,7 +549,7 @@ function InitialsField({ value, editing, registerProps }) {
             maxLength={3}
             placeholder="e.g. MB"
             {...registerProps}
-            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 uppercase"
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 uppercase"
           />
         </div>
       ) : (
@@ -633,7 +563,7 @@ function InitialsField({ value, editing, registerProps }) {
         </div>
       )}
       {editing && (
-        <p className="text-xs font-medium text-slate-400 px-1">
+        <p className="text-[10px] font-medium text-slate-400 px-1">
           1–3 letters shown in badges across the app. Leave blank to auto-generate from your name.
         </p>
       )}
@@ -645,7 +575,7 @@ function InfoField({ label, value, icon: Icon, readonly, editing, multiline, inp
   const displayVal = value || '—';
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
         <Icon className="w-3.5 h-3.5"/> {label}
       </label>
       {editing && !readonly ? (
@@ -653,13 +583,13 @@ function InfoField({ label, value, icon: Icon, readonly, editing, multiline, inp
           <textarea
             {...registerProps}
             rows={3}
-            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
           />
         ) : (
           <input
             type={inputType || 'text'}
             {...registerProps}
-            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            className="w-full px-4 py-2.5 bg-white/80 border border-white rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
           />
         )
       ) : (

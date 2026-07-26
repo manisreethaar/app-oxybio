@@ -9,16 +9,16 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-4 sm:space-y-6 animate-pulse">
       <div className="mb-8">
-        <div className="h-8 w-64 bg-slate-200 rounded-lg mb-2" />
-        <div className="h-4 w-80 bg-slate-100 rounded-lg" />
+        <div className="h-8 w-64 bg-gray-200 rounded-lg mb-2" />
+        <div className="h-4 w-80 bg-gray-100 rounded-lg" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-24 bg-slate-100 rounded-2xl" />
+          <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
         ))}
       </div>
-      <div className="h-40 bg-slate-100 rounded-2xl" />
-      <div className="h-32 bg-slate-100 rounded-2xl" />
+      <div className="h-40 bg-gray-100 rounded-2xl" />
+      <div className="h-32 bg-gray-100 rounded-2xl" />
     </div>
   );
 }
@@ -26,20 +26,21 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const { employeeProfile, loading } = useAuth();
 
-  // Computed client-side only — the server and the browser can be in
-  // different timezones, so evaluating new Date() directly during render
-  // made the server-rendered greeting disagree with the client's during
-  // hydration for large parts of the day (a real React hydration error,
-  // not just a cosmetic one). Hooks must run unconditionally, before the
-  // early returns below.
-  const [clientGreeting, setClientGreeting] = useState(null);
-  useEffect(() => {
-    const hour = new Date().getHours();
-    setClientGreeting(hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening');
-  }, []);
+  // FIXED: Reduced from 5000ms to 1500ms — no reason to wait 5 seconds
+  const [timedOut, setTimedOut] = useState(false);
 
-  // Remove the artificial delay
-  if (loading) {
+  useEffect(() => {
+    if (!employeeProfile && !loading) {
+      const timer = setTimeout(() => {
+        setTimedOut(true);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employeeProfile, loading]);
+
+  // FIXED: Show skeleton immediately instead of blank screen with text
+  if (loading || (!employeeProfile && !timedOut)) {
     return <DashboardSkeleton />;
   }
 
@@ -63,7 +64,8 @@ export default function DashboardPage() {
     return parts[0];
   };
 
-  const greeting = clientGreeting || 'Day';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
 
   return (
     <div className="space-y-6">
@@ -71,7 +73,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-black text-slate-800 tracking-tight">
           Good {greeting}, {getNameForGreeting(employeeProfile?.full_name)}
         </h1>
-        <p className="text-slate-500 mt-1">
+        <p className="text-gray-500 mt-1">
           Here&apos;s what&apos;s happening across Oxygen Bioinnovations today.
         </p>
       </div>

@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 /**
  * POST /api/lab-bench/log
  *

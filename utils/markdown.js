@@ -41,11 +41,11 @@ export function markdownToHtml(text) {
       const txt = hm[2];
       const id = toId(txt);
       const cls = {
-        1: 'text-2xl font-black text-gray-900 mt-2 mb-4 scroll-mt-24 break-words print:text-xl',
-        2: 'text-xl font-bold text-gray-800 mt-10 mb-3 pb-2 border-b-2 border-blue-100 scroll-mt-24 break-words print:mt-6 print:text-lg',
-        3: 'text-base font-bold text-navy mt-6 mb-2 scroll-mt-24 break-words',
-        4: 'text-sm font-bold text-gray-600 mt-4 mb-1 uppercase tracking-wide break-words',
-      }[lvl] || 'font-bold mt-4 mb-2 break-words';
+        1: 'text-2xl font-black text-gray-900 mt-2 mb-4 scroll-mt-24 print:text-xl',
+        2: 'text-xl font-bold text-gray-800 mt-10 mb-3 pb-2 border-b-2 border-blue-100 scroll-mt-24 print:mt-6 print:text-lg',
+        3: 'text-base font-bold text-navy mt-6 mb-2 scroll-mt-24',
+        4: 'text-sm font-bold text-gray-600 mt-4 mb-1 uppercase tracking-wide',
+      }[lvl] || 'font-bold mt-4 mb-2';
       result.push(`<h${lvl} id="${id}" class="${cls}">${inline(txt)}</h${lvl}>`);
       i++; continue;
     }

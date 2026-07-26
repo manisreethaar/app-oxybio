@@ -12,7 +12,7 @@ export default function ActivityLoading() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="card p-5 space-y-3">
+          <div key={i} className="surface p-5 space-y-3">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-8 w-12" />
           </div>
@@ -29,7 +29,7 @@ export default function ActivityLoading() {
       {/* Activity List */}
       <div className="space-y-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="card p-4 flex items-center gap-4">
+          <div key={i} className="surface p-4 flex items-center gap-4">
             <Skeleton variant="circle" className="w-10 h-10 shrink-0" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-4 w-3/4" />

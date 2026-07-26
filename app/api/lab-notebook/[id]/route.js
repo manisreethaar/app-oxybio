@@ -1,6 +1,4 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { notifyAdmins, sendServerNotification } from '@/utils/serverNotify';
 import {
@@ -9,8 +7,6 @@ import {
   canEditLabNotebookEntry,
   validateLabNotebookStatusUpdate,
 } from '@/lib/labNotebook/access';
-import { checkSopCompletionMany } from '@/lib/sop/gate';
-import { isMasterAdmin } from '@/lib/permissions';
 
 async function getEmployeeForUser(supabase, user) {
   const { data } = await supabase
@@ -33,7 +29,7 @@ export async function GET(request, { params }) {
       .from('lab_notebook_entries')
       .select(`
         id, title, objective, methodology, observations, conclusions, status, created_at, countersigned_at,
-        stage_snapshots, batch_stage, attachment_url, sop_ids,
+        stage_snapshots, batch_stage, attachment_url,
         batches (
           id, batch_id, variant
         ),
@@ -75,7 +71,7 @@ export async function PUT(request, { params }) {
     // Verify ownership and current status
     const { data: currentEntry, error: fetchErr } = await supabase
       .from('lab_notebook_entries')
-      .select('created_by, status, sop_ids')
+      .select('created_by, status')
       .eq('id', id)
       .single();
 
@@ -89,17 +85,6 @@ export async function PUT(request, { params }) {
     const statusAccess = validateLabNotebookStatusUpdate(currentEntry.status, status);
     if (!statusAccess.allowed) return NextResponse.json({ success: false, error: statusAccess.error }, { status: 400 });
 
-    if (statusAccess.status === 'Submitted' && !isMasterAdmin(user.email)) {
-      const unmet = await checkSopCompletionMany(supabase, currentEntry.sop_ids, emp?.id);
-      if (unmet) {
-        return NextResponse.json({
-          error: `You must complete SOP "${unmet.sop.title}" before submitting this entry.`,
-          sop_violation: true,
-          sop: unmet.sop,
-        }, { status: 403 });
-      }
-    }
-
     const updates = { 
       title, objective, methodology, observations, conclusions, updated_at: new Date().toISOString() 
     };
@@ -107,8 +92,7 @@ export async function PUT(request, { params }) {
     if (batch_id !== undefined) updates.batch_id = batch_id || null;
     if (status) updates.status = statusAccess.status; // Allows transitioning from Draft to Submitted
 
-    const adminSupabase = createAdminClient();
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('lab_notebook_entries')
       .update(updates)
       .eq('id', id)
@@ -163,8 +147,7 @@ export async function PATCH(request, { params }) {
     const countersignAccess = canCountersignLabNotebookEntry(currentEntry, emp, user.email);
     if (!countersignAccess.allowed) return NextResponse.json({ success: false, error: countersignAccess.error }, { status: 403 });
 
-    const adminSupabase = createAdminClient();
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('lab_notebook_entries')
       .update({
         status: 'Countersigned',
@@ -221,15 +204,13 @@ export async function DELETE(request, { params }) {
     const { searchParams } = new URL(request.url);
     const permanent = searchParams.get('permanent') === 'true';
 
-    const adminSupabase = createAdminClient();
-
     if (permanent) {
-      const { error } = await adminSupabase.from('lab_notebook_entries').delete().eq('id', id);
+      const { error } = await supabase.from('lab_notebook_entries').delete().eq('id', id);
       if (error) throw error;
       return NextResponse.json({ success: true, message: 'LNB entry permanently deleted.' });
     }
 
-    const { error } = await adminSupabase
+    const { error } = await supabase
       .from('lab_notebook_entries')
       .update({ archived_at: new Date().toISOString(), archived_by: emp.id })
       .eq('id', id);

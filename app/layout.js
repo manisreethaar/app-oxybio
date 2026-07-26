@@ -1,13 +1,12 @@
-export const dynamic = 'force-dynamic';
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ClientLayout from "@/components/layout/ClientLayout";
 import Script from "next/script";
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist-sans",
   display: "swap",
 });
 
@@ -33,30 +32,23 @@ export const viewport = {
 };
 
 import { createClient } from "@/utils/supabase/server";
-import { getRequestUser } from "@/utils/supabase/request-user";
 
 const PROFILE_SELECT = 'id,full_name,email,role,department,designation,is_active,photo_url,employee_code,phone,address,blood_group,emergency_contact,emergency_contact_name,joined_date,date_of_birth,casual_leave_balance,medical_leave_balance,earned_leave_balance';
 
 export default async function RootLayout({ children }) {
   const supabase = createClient();
 
-  // PERF FIX: identity was already validated once in middleware.js (JWT
-  // check against Supabase Auth). Re-running supabase.auth.getUser() here
-  // was a second network round-trip to Supabase Auth on every navigation,
-  // for no reason — trust the header middleware.js set instead. Only fall
-  // back to a live check if the header is somehow missing (e.g. a request
-  // that didn't pass through middleware).
+  // FIX: Use getUser() instead of getSession().
+  // getSession() reads from local storage without validating the JWT,
+  // so it can return stale/expired tokens. getUser() validates against
+  // the Supabase Auth server and is the recommended approach.
   let initialSession = null;
   let initialProfile = null;
 
   try {
-    let user = getRequestUser();
-    if (!user) {
-      const { data: { user: u }, error } = await supabase.auth.getUser();
-      if (!error && u) user = { id: u.id, email: u.email };
-    }
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (user) {
+    if (!error && user) {
       // Build a minimal session object for AuthContext compatibility
       initialSession = { user };
 
@@ -75,26 +67,23 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en">
+      {/* Service Worker registered as early as possible so push works even when logged out */}
+      <Script
+        id="sw-register"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                  .catch(function(err) { console.warn('SW registration failed:', err); });
+              });
+            }
+          `
+        }}
+      />
       {/* No manual <head> needed — Next.js generates viewport meta from the export above */}
-      <body className={jakarta.className}>
-        {/* Service Worker registered as early as possible so push works even when logged out.
-            Must be inside <body> — <script> is not a valid direct child of <html>, and having
-            it there caused the browser to silently restructure the parsed HTML, which made
-            React's hydration disagree with the server output on literally every page load. */}
-        <Script
-          id="sw-register"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .catch(function(err) { console.warn('SW registration failed:', err); });
-                });
-              }
-            `
-          }}
-        />
+      <body className={geistSans.className}>
         <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>

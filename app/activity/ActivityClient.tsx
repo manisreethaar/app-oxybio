@@ -1,11 +1,9 @@
-// @ts-nocheck
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -28,8 +26,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
   const toast = useToast();
   const [activities, setActivities] = useState<any[]>(initialLogs || []);
   const [archivedActivities, setArchivedActivities] = useState<any[]>([]);
-  const [issues, setIssues] = useState<any[]>([]);
-  const [issuesLoading, setIssuesLoading] = useState(false);
+  const [issues, setIssues] = useState<any[]>(initialLogs ? initialLogs.filter((a: any) => a.issue_observed) : []);
   const [activeBatches, setActiveBatches] = useState(initialBatches || []);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('feed'); 
@@ -90,7 +87,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
    const hasIssue = watchLog('issue_observed');
    const selectedEquipmentId = watchLog('equipment_id');
    const selectedEquipment = equipmentList.find(e => e.id === selectedEquipmentId);
-   const isCalOverdue = selectedEquipment && selectedEquipment.requires_calibration !== false && selectedEquipment.calibration_due_date && new Date(selectedEquipment.calibration_due_date) < new Date();
+   const isCalOverdue = selectedEquipment && selectedEquipment.calibration_due_date && new Date(selectedEquipment.calibration_due_date) < new Date();
 
   // Founder Brief State
   const [brief, setBrief] = useState({
@@ -127,12 +124,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             if (!isMounted.current) return;
             // For staff: only show own entries. For admin: show all.
             if (!isExecUser && payload.new.employee_id !== employeeProfile?.id) return;
-            // Realtime INSERT payloads don't include joined data — resolve name locally
-            const resolvedName =
-              allEmployees.find((e: any) => e.id === payload.new.employee_id)?.full_name ||
-              (payload.new.employee_id === employeeProfile?.id ? employeeProfile?.full_name : null) ||
-              '...';
-            setActivities(prev => [{ ...payload.new, employees: { full_name: resolvedName } }, ...prev]);
+            setActivities(prev => [{ ...payload.new, employees: { full_name: payload.new.employees?.full_name || '...' } }, ...prev]);
           }
         )
         .subscribe();
@@ -147,7 +139,6 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
     setError(null);
 
     try {
-      await withTimeout((async () => {
       // Fetch batches for dropdown
       const { data: batches } = await supabase.from('batches')
         .select('batch_id, product_name, status')
@@ -166,7 +157,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       let query = supabase
         .from('activity_log')
-        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
+        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, archived_at, employees(full_name)')
         .is('archived_at', null)
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
@@ -201,7 +192,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       if (isExecUser) {
         const archivedQuery = supabase
           .from('activity_log')
-          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
+          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, equipment_id, severity, founder_comment, employee_id, archived_at, employees(full_name)')
           .not('archived_at', 'is', null)
           .order('archived_at', { ascending: false })
           .limit(100);
@@ -209,25 +200,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         if (!isMounted.current) return;
         setArchivedActivities(archived || []);
 
-        // Bug A fix: Dedicated Issue Tracker query — not limited to loaded page
-        setIssuesLoading(true);
-        const issuesQuery = supabase
-          .from('activity_log')
-          .select('id, created_at, activity_description, issue_description, founder_comment, employee_id, employees!activity_log_employee_id_fkey(full_name), batch_id')
-          .eq('issue_observed', true)
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
-          .limit(200);
-        const { data: allIssues } = await issuesQuery;
-        if (isMounted.current) {
-          setIssues(allIssues || []);
-          setIssuesLoading(false);
-        }
-
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // IST-safe date
+        const today = new Date().toISOString().split('T')[0];
         const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
-          // Bug B fix: exclude admin, ceo AND cto from the staff attendance list
-          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin').neq('role', 'ceo').neq('role', 'cto'),
+          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin'),
           supabase.from('attendance_log').select('employee_id, check_out_time').eq('date', today),
           supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
           supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
@@ -247,12 +222,10 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const present = allStaff.filter((s: any) => logMap.has(s.id) && !logMap.get(s.id).check_out_time);
         const checkedOut = allStaff.filter((s: any) => logMap.has(s.id) && logMap.get(s.id).check_out_time);
         const absent = allStaff.filter((s: any) => !logMap.has(s.id));
-        // Open issues for morning brief — from the dedicated issues query
-        const openIssues = (allIssues || []).filter((a: any) => !a.founder_comment).slice(0, 5);
+        const openIssues = newLogs.filter((a: any) => a.issue_observed && !a.founder_comment);
 
         setBrief({ presentToday: present, absentToday: absent, checkedOutToday: checkedOut, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
       }
-      })(), 20000, 'Activity load timed out');
     } catch (err) {
       console.error("Activity page fetch error:", err);
       if (isMounted.current) setError("Failed to load activity data. Please try again.");
@@ -326,7 +299,6 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         body: JSON.stringify({ action: 'log_activity', payload: data })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to save log.');
-      toast.success('Activity logged successfully.');
       resetLog(); setLogValue('start_time', data.end_time); setLogValue('end_time', new Date().toTimeString().slice(0, 5));
       setTab(['admin', 'ceo', 'cto'].includes(role) ? 'brief' : 'feed');
       fetchData();
@@ -506,22 +478,22 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         <nav className="-mb-px flex gap-2 md:gap-6 overflow-x-auto mobile-scroll-tabs md:mx-0 md:px-0">
           {isAdmin && (
             <button onClick={() => setTab('brief')} 
-              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-navy text-navy' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'brief' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Zap className="w-4 h-4"/> Morning Brief
             </button>
           )}
           {isAdmin && (
             <button onClick={() => setTab('analytics')} 
-              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-navy text-navy' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'analytics' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <TrendingUp className="w-4 h-4"/> Operations Hub
             </button>
           )}
           <button onClick={() => setTab('feed')}
-            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'feed' ? 'border-navy text-navy' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'feed' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
             {isAdmin ? 'Team Activity Feed' : 'Recent Activity'}
           </button>
           <button onClick={() => setTab('log')}
-            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'log' ? 'border-navy text-navy' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+            className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm transition-colors ${tab === 'log' ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
             + Log Activity
           </button>
           {isAdmin && (
@@ -529,7 +501,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'issues' ? 'border-red-600 text-red-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               Issue Tracker
               {issues.filter(i => !i.founder_comment).length > 0 && (
-                <span className="bg-red-500 text-white py-0.5 px-1.5 rounded-full text-xs font-black">
+                <span className="bg-red-500 text-white py-0.5 px-1.5 rounded-full text-[10px] font-black">
                   {issues.filter(i => !i.founder_comment).length}
                 </span>
               )}
@@ -540,7 +512,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               className={`whitespace-nowrap py-3 px-2 md:px-1 border-b-2 font-bold text-sm flex items-center gap-1.5 transition-colors ${tab === 'archived' ? 'border-slate-700 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
               <Archive className="w-4 h-4"/> Archived
               {archivedActivities.length > 0 && (
-                <span className="bg-slate-200 text-slate-700 py-0.5 px-1.5 rounded-full text-xs font-black">
+                <span className="bg-slate-200 text-slate-700 py-0.5 px-1.5 rounded-full text-[10px] font-black">
                   {archivedActivities.length}
                 </span>
               )}
@@ -551,12 +523,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── Feed Controls: filters + export ───────────────────── */}
       {tab === 'feed' && (
-        <div className="card p-3 flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
+        <div className="surface p-3 flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
           {isAdmin && (
             <select
               value={filterEmployee}
               onChange={e => { setFilterEmployee(e.target.value); setActivityOffset(0); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-700 font-medium focus:ring-2 focus:ring-navy outline-none"
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-700 font-medium focus:ring-2 focus:ring-teal-500 outline-none"
             >
               <option value="">All Staff</option>
               {allEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
@@ -565,12 +537,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">From</label>
             <input type="date" value={filterDateFrom} onChange={e => { setFilterDateFrom(e.target.value); setActivityOffset(0); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-navy outline-none" />
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" />
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">To</label>
             <input type="date" value={filterDateTo} onChange={e => { setFilterDateTo(e.target.value); setActivityOffset(0); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-navy outline-none" />
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" />
           </div>
           {(filterEmployee || filterDateFrom || filterDateTo) && (
             <button onClick={() => { setFilterEmployee(''); setFilterDateFrom(''); setFilterDateTo(''); setActivityOffset(0); }}
@@ -583,7 +555,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               const headers = ['Date', 'Employee', 'Start', 'End', 'Description', 'Issue?', 'Issue Detail'];
               const rows = activities.map((a: any) => [
                 a.created_at?.split('T')[0] || '',
-                a.employees?.full_name || employeeProfile?.full_name || '',
+                a.employees?.full_name || '',
                 a.start_time || '',
                 a.end_time || '',
                 `"${(a.activity_description || '').replace(/"/g, '""')}"`,
@@ -622,13 +594,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               { label: 'In Today', value: brief.presentToday.length, icon: CalendarCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
               { label: 'Not Yet In', value: brief.absentToday.length, icon: Users, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
               { label: 'Overdue Tasks', value: brief.overdueTasks.length, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
-              { label: 'Active Batches', value: brief.activeExperiments.length, icon: FlaskConical, color: 'text-navy', bg: 'bg-slate-50', border: 'border-slate-200' },
+              { label: 'Active Batches', value: brief.activeExperiments.length, icon: FlaskConical, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
             ].map(kpi => (
               <div key={kpi.label} className={`${kpi.bg} border ${kpi.border} rounded-2xl p-4 flex items-center gap-3`}>
                 <kpi.icon className={`w-7 h-7 ${kpi.color} shrink-0`}/>
                 <div>
                   <p className="text-2xl font-black text-slate-800">{kpi.value}</p>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{kpi.label}</p>
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{kpi.label}</p>
                 </div>
               </div>
             ))}
@@ -650,7 +622,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <div key={s.id} className="flex items-center gap-2 text-sm">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                       <span className="font-bold text-slate-800">{s.full_name}</span>
-                      <span className="text-slate-400 text-xs">{s.designation || s.role}</span>
+                      <span className="text-slate-400 text-[11px]">{s.designation || s.role}</span>
                     </div>
                   ))}
                 </div>
@@ -659,7 +631,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {brief.checkedOutToday && brief.checkedOutToday.length > 0 && (
                 <>
                   <div className="border-t border-slate-100 mt-3 pt-3">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><LogOut className="w-3 h-3 text-slate-400"/> Checked out</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><LogOut className="w-3 h-3 text-slate-400"/> Checked out</p>
                     {brief.checkedOutToday.map(s => (
                       <div key={s.id} className="flex items-center gap-2 text-sm mb-1.5 opacity-60">
                         <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
@@ -673,7 +645,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               {brief.absentToday.length > 0 && (
                 <>
                   <div className="border-t border-slate-100 mt-3 pt-3">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Not yet checked in</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Not yet checked in</p>
                     {brief.absentToday.map(s => (
                       <div key={s.id} className="flex items-center gap-2 text-sm mb-1.5">
                         <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
@@ -687,40 +659,36 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
             {/* Overdue Tasks + Pending Approvals */}
             <div className="glass-card rounded-2xl p-5 space-y-4">
-              {/* Bug C fix: Overdue tasks — now clickable, navigate to /tasks */}
               {brief.overdueTasks.length > 0 && (
                 <div>
                   <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500"/> Overdue Tasks
-                    <button onClick={() => router.push('/tasks')} className="ml-auto text-xs font-bold text-navy hover:underline">View all →</button>
                   </h2>
                   <div className="space-y-2">
                     {brief.overdueTasks.map(t => (
-                      <button key={t.id} onClick={() => router.push('/tasks')} className="w-full text-left bg-red-50 border border-red-100 rounded-xl px-3 py-2 flex items-center justify-between hover:bg-red-100 transition-colors">
+                      <div key={t.id} className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-bold text-red-800 truncate max-w-[180px]">{t.title}</p>
-                          <p className="text-xs text-red-500">{t.assigned_user?.full_name} · Due {new Date(t.due_date).toLocaleDateString()}</p>
+                          <p className="text-[11px] text-red-500">{t.assigned_user?.full_name} · Due {new Date(t.due_date).toLocaleDateString()}</p>
                         </div>
-                        <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${t.priority === 'urgent' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{t.priority}</span>
-                      </button>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${t.priority === 'urgent' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-800'}`}>{t.priority}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Bug C fix: Pending approvals — now clickable, navigate to /tasks */}
               {brief.pendingApprovals.length > 0 && (
                 <div>
                   <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <CheckSquare className="w-4 h-4 text-amber-500"/> Pending Your Approval
-                    <button onClick={() => router.push('/tasks')} className="ml-auto text-xs font-bold text-navy hover:underline">View all →</button>
                   </h2>
                   <div className="space-y-2">
                     {brief.pendingApprovals.map(t => (
-                      <button key={t.id} onClick={() => router.push('/tasks')} className="w-full text-left bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 hover:bg-amber-100 transition-colors">
+                      <div key={t.id} className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                         <p className="text-sm font-bold text-amber-800 truncate">{t.title}</p>
-                        <p className="text-xs text-amber-600">Submitted by {t.assigned_user?.full_name}</p>
-                      </button>
+                        <p className="text-[11px] text-amber-600">Submitted by {t.assigned_user?.full_name}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -735,42 +703,40 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             </div>
           </div>
 
-          {/* Bug C fix: Active Experiments — now clickable, each batch links to /batches/[id] */}
+          {/* Active Experiments */}
           {brief.activeExperiments.length > 0 && (
             <div className="glass-card rounded-2xl p-5">
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-navy"/> Active Experiments
-                <button onClick={() => router.push('/batches')} className="ml-auto text-xs font-bold text-navy hover:underline">View all →</button>
+                <FlaskConical className="w-4 h-4 text-teal-500"/> Active Experiments
               </h2>
               <div className="flex flex-wrap gap-2">
                 {brief.activeExperiments.map(b => (
-                  <button key={b.batch_id} onClick={() => router.push(`/batches/${b.batch_id}`)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-slate-100 hover:border-navy/30 transition-colors">
-                    <span className="w-2 h-2 rounded-full bg-navy animate-pulse"></span>
-                    <span className="text-sm font-black text-slate-800 font-mono">{b.batch_id}</span>
-                    {b.product_name && <span className="text-xs text-slate-600">{b.product_name}</span>}
-                    <span className="text-xs font-bold uppercase text-navy bg-slate-200 px-1.5 py-0.5 rounded">{b.status}</span>
-                  </button>
+                  <div key={b.batch_id} className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                    <span className="text-sm font-black text-teal-800 font-mono">{b.batch_id}</span>
+                    {b.product_name && <span className="text-xs text-teal-600">{b.product_name}</span>}
+                    <span className="text-[10px] font-bold uppercase text-teal-500 bg-teal-100 px-1.5 py-0.5 rounded">{b.status}</span>
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Bug C fix: Open Issues — now clickable, each issue navigates to the Issue Tracker tab */}
+          {/* Open Issues */}
           {brief.openIssues.length > 0 && (
             <div className="glass-card rounded-2xl p-5 border border-red-100">
               <h2 className="text-xs font-black text-red-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4"/> Unreviewed Lab Issues
-                <button onClick={() => setTab('issues')} className="ml-auto text-xs font-bold text-red-600 hover:underline">Review all →</button>
               </h2>
               <div className="space-y-2">
                 {brief.openIssues.map(issue => (
-                  <button key={issue.id} onClick={() => setTab('issues')} className="w-full text-left bg-red-50 border border-red-200 rounded-xl p-3 hover:bg-red-100 transition-colors">
+                  <div key={issue.id} className="bg-red-50 border border-red-200 rounded-xl p-3">
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-red-800 text-sm">{issue.employees?.full_name}</span>
-                      <span className="text-xs text-red-500">{new Date(issue.created_at).toLocaleDateString()}</span>
+                      <span className="text-[10px] text-red-500">{new Date(issue.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-xs text-red-700 font-medium">{issue.issue_description}</p>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -787,13 +753,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         >
            {/* Top KPIs */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="card p-6">
+              <div className="surface p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy">
                        <Activity className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Logged Effort (7D)</p>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Logged Effort (7D)</p>
                        <p className="text-2xl font-black text-gray-900 leading-none mt-1">
                           {analyticsData.velocity.reduce((acc,v) => acc + v.hours, 0).toFixed(1)} <span className="text-xs font-bold text-gray-400">HRS</span>
                        </p>
@@ -801,41 +767,41 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                  </div>
               </div>
 
-              <div className="card p-6">
+              <div className="surface p-6">
                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
                        <AlertTriangle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Deviation Rate</p>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Deviation Rate</p>
                        <p className="text-2xl font-black text-gray-900 leading-none mt-1">
                           {((analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0) / (activities.length || 1)) * 100).toFixed(1)}%
                        </p>
                     </div>
                  </div>
-                 <p className="text-xs font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
               </div>
 
-              <div className="card p-6">
+              <div className="surface p-6">
                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-navy">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
                        <CheckCircle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Issues Logged (7D)</p>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Issues Logged (7D)</p>
                        <p className="text-2xl font-black text-gray-900 leading-none mt-1">
                           {analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0)}
                        </p>
                     </div>
                  </div>
-                 <p className="text-xs font-bold text-gray-400 uppercase">Across all team members</p>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Across all team members</p>
               </div>
            </div>
 
            {/* Charts Section */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Productivity Chart */}
-              <div className="card p-6">
+              <div className="surface p-6">
                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-navy"/> Activity Velocity
                  </h3>
@@ -845,7 +811,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               </div>
 
               {/* Issue Tracker Heatmap */}
-              <div className="card p-6">
+              <div className="surface p-6">
                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500"/> Deviation Heatmap
                  </h3>
@@ -863,7 +829,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
            </div>
 
            {/* Recent High Priority Events */}
-           <div className="card p-6">
+           <div className="surface p-6">
               <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Critical Review Feed</h3>
               <div className="space-y-3">
                  {activities.filter(a => a.severity === 'high' || a.issue_observed).slice(0, 3).map(act => (
@@ -874,12 +840,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                           </div>
                           <div>
                              <p className="text-xs font-bold text-gray-900">{act.employees?.full_name}</p>
-                             <p className="text-xs text-gray-500">{act.activity_description.length > 60 ? act.activity_description.slice(0, 60) + '...' : act.activity_description}</p>
+                             <p className="text-[10px] text-gray-500">{act.activity_description.slice(0, 60)}...</p>
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className="text-xs font-black uppercase text-gray-400">{new Date(act.created_at).toLocaleDateString()}</p>
-                          <button onClick={() => {setTab('feed'); setPriorityOnly(true);}} className="text-xs font-black text-navy uppercase hover:underline">Review</button>
+                          <p className="text-[10px] font-black uppercase text-gray-400">{new Date(act.created_at).toLocaleDateString()}</p>
+                          <button onClick={() => {setTab('feed'); setPriorityOnly(true);}} className="text-[10px] font-black text-navy uppercase hover:underline">Review</button>
                        </div>
                     </div>
                  ))}
@@ -909,16 +875,16 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             activities
               .filter(act => !priorityOnly || act.severity === 'high' || (act.issue_observed && !act.founder_comment))
               .map(act => (
-              <div key={act.id} className={`glass-card rounded-2xl border p-5 transition-all ${act.severity === 'high' || act.issue_observed ? 'border-red-200 bg-red-50/20' : 'border-white/60 hover:border-slate-200'}`}>
+              <div key={act.id} className={`glass-card rounded-2xl border p-5 transition-all ${act.severity === 'high' || act.issue_observed ? 'border-red-200 bg-red-50/20' : 'border-white/60 hover:border-teal-200'}`}>
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{isAdmin ? act.employees?.full_name : 'You'}</span>
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
-                    {act.batch_id && <span className="px-2 py-0.5 bg-slate-100 text-slate-900 text-xs font-mono font-bold rounded border border-slate-200">{act.batch_id}</span>}
+                    {act.batch_id && <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-mono font-bold rounded border border-blue-100">{act.batch_id}</span>}
                     {act.severity && (
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${
                         act.severity === 'high' ? 'bg-red-50 text-red-700 border-red-100' : 
-                        act.severity === 'normal' ? 'bg-slate-100 text-slate-900 border-slate-200' :
+                        act.severity === 'normal' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                         'bg-slate-50 text-slate-500 border-slate-200'
                       }`}>
                         {act.severity}
@@ -928,56 +894,62 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/messages?pin_type=activity&pin_id=${act.id}&pin_title=${encodeURIComponent('Activity: ' + (act.activity_description.length > 20 ? act.activity_description.substring(0, 20) + '...' : act.activity_description))}`)}
-                      className="p-1.5 rounded-lg border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                      className="p-1.5 rounded-lg border border-indigo-200 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50"
                       title="Discuss activity"
                     >
                       <MessageSquare className="w-3.5 h-3.5"/>
                     </button>
                     {act.issue_observed && <span className="flex items-center text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded"><AlertTriangle className="w-3 h-3 mr-1"/> ISSUE</span>}
-                    {(isAdmin || (act.employee_id === employeeProfile?.id && !act.is_optimistic)) && (
-                      <>
-                        {!isAdmin && (
+                    {isAdmin ? (
+                      <button
+                        onClick={() => setArchiveConfirmId(act.id)}
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50"
+                        title="Archive activity"
+                      >
+                        <Archive className="w-3.5 h-3.5"/>
+                      </button>
+                    ) : act.employee_id === employeeProfile?.id && !act.is_optimistic && (
+                      myPendingIds.has(act.id) ? (
+                        <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Pending Review</span>
+                      ) : (
+                        <>
                           <button
                             onClick={() => openEditModal(act)}
-                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-800 hover:bg-slate-100 hover:border-slate-300"
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
                             title="Request edit"
                           >
                             <Edit2 className="w-3.5 h-3.5"/>
                           </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            if (confirm('Are you sure you want to permanently delete this activity?')) {
-                              handlePermanentDeleteActivity(act.id);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
-                          title="Delete activity"
-                        >
-                          <Trash2 className="w-3.5 h-3.5"/>
-                        </button>
-                      </>
+                          <button
+                            onClick={() => setRequestingDelete(act.id)}
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                            title="Request archive"
+                          >
+                            <Trash2 className="w-3.5 h-3.5"/>
+                          </button>
+                        </>
+                      )
                     )}
                   </div>
                 </div>
                 <p className="text-slate-700 whitespace-pre-wrap text-sm mb-2">{act.activity_description}</p>
                 {act.issue_observed && <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-900"><span className="font-bold">Issue: </span>{act.issue_description}</div>}
                 {act.founder_comment ? (
-                  <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start">
-                    <MessageSquare className="w-4 h-4 text-navy mr-2 mt-0.5 shrink-0"/>
-                    <div><p className="text-xs font-black text-navy mb-0.5">ADMIN REVIEW</p><p className="text-sm text-slate-700">{act.founder_comment}</p></div>
+                  <div className="mt-3 p-3 bg-teal-50 border border-teal-100 rounded-xl flex items-start">
+                    <MessageSquare className="w-4 h-4 text-teal-600 mr-2 mt-0.5 shrink-0"/>
+                    <div><p className="text-xs font-black text-teal-700 mb-0.5">ADMIN REVIEW</p><p className="text-sm text-teal-800">{act.founder_comment}</p></div>
                   </div>
                 ) : isAdmin ? (
                   <div className="mt-3 pt-3 border-t border-slate-100">
                     {activeCommentId === act.id ? (
                       <div className="flex gap-2">
-                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a review note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy"/>
-                        <button onClick={() => handleAddComment(act.id)} className="bg-navy text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-navy-hover">Save</button>
+                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a review note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"/>
+                        <button onClick={() => handleAddComment(act.id)} className="bg-teal-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">Save</button>
                         <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-2 text-sm">Cancel</button>
 
                       </div>
                     ) : (
-                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm text-navy font-bold hover:text-navy-hover flex items-center">
+                      <button onClick={() => { setCommentText(''); setActiveCommentId(act.id); }} className="text-sm text-teal-600 font-bold hover:text-teal-800 flex items-center">
 
                         <MessageSquare className="w-3.5 h-3.5 mr-1"/> Add Review
                       </button>
@@ -1016,7 +988,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900 text-sm">{act.employees?.full_name}</span>
                     <span className="text-xs text-slate-400">{new Date(act.created_at).toLocaleDateString()} · {act.start_time} – {act.end_time}</span>
-                    <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase border bg-slate-100 text-slate-600 border-slate-200">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase border bg-slate-100 text-slate-600 border-slate-200">
                       Archived
                     </span>
                   </div>
@@ -1043,20 +1015,20 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             <div>
               <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">What did you do? *</label>
               <textarea {...regLog('activity_description')} rows={4} 
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy resize-none bg-slate-50 text-sm" 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm" 
                 placeholder="Protocol steps, prep work, general tasks, results..."/>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Linked Batch</label>
-                <select {...regLog('batch_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy bg-slate-50 text-sm">
+                <select {...regLog('batch_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
                   <option value="">— None —</option>
                   {activeBatches.map(b => <option key={b.batch_id} value={b.batch_id}>{b.batch_id}</option>)}
                 </select>
               </div>
               <div className="flex-1">
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Hardware / Equipment</label>
-                <select {...regLog('equipment_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy bg-slate-50 text-sm">
+                <select {...regLog('equipment_id')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm">
                   <option value="">— None —</option>
                   {equipmentList.map(e => <option key={e.id} value={e.id}>{e.name} ({e.model})</option>)}
                 </select>
@@ -1068,18 +1040,18 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <AlertTriangle className="w-4 h-4"/>
                   <p className="text-xs font-black uppercase">Calibration Lock Active</p>
                 </div>
-                <p className="text-xs text-red-600">This equipment passed its calibration due date ({new Date(selectedEquipment.calibration_due_date).toLocaleDateString()}). Logging is disabled for compliance safety.</p>
+                <p className="text-[11px] text-red-600">This equipment passed its calibration due date ({new Date(selectedEquipment.calibration_due_date).toLocaleDateString()}). Logging is disabled for compliance safety.</p>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start</label>
-                  <input type="time" {...regLog('start_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy bg-slate-50 text-sm"/>
+                  <input type="time" {...regLog('start_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
                 </div>
                 <div className="flex-1">
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">End</label>
-                  <input type="time" {...regLog('end_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy bg-slate-50 text-sm"/>
+                  <input type="time" {...regLog('end_time')} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
                 </div>
               </div>
             </div>
@@ -1101,7 +1073,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               )}
             </div>
             <button type="submit" disabled={isSubmitting || isCalOverdue}
-              className="w-full flex justify-center items-center py-3 px-4 rounded-xl text-sm font-black text-white bg-navy hover:bg-navy-hover disabled:opacity-60 transition-all">
+              className="w-full flex justify-center items-center py-3 px-4 rounded-xl text-sm font-black text-white bg-teal-800 hover:bg-teal-900 disabled:opacity-60 transition-all">
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : isCalOverdue ? 'Locked (Calibration Required)' : 'Save Activity Entry'}
             </button>
           </form>
@@ -1110,7 +1082,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── DELETE CONFIRMATION (inline, non-admin) ───────────────── */}
       {requestingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/10 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl border border-red-100 max-w-sm w-full p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div>
@@ -1135,7 +1107,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
       {/* ── EDIT REQUEST MODAL (non-admin) ────────────────────────── */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/10 backdrop-blur-sm p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
           <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 space-y-4 h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div>
@@ -1152,7 +1124,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   rows={4}
                   value={editForm.activity_description}
                   onChange={e => setEditForm(f => ({ ...f, activity_description: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy resize-none bg-slate-50 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 resize-none bg-slate-50 text-sm"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1160,13 +1132,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Start Time</label>
                   <input type="time" value={editForm.start_time}
                     onChange={e => setEditForm(f => ({ ...f, start_time: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy bg-slate-50 text-sm"/>
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">End Time</label>
                   <input type="time" value={editForm.end_time}
                     onChange={e => setEditForm(f => ({ ...f, end_time: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy bg-slate-50 text-sm"/>
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 bg-slate-50 text-sm"/>
                 </div>
               </div>
               <div>
@@ -1196,7 +1168,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               <button
                 onClick={submitEditRequest}
                 disabled={submittingRequest || !editForm.activity_description?.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-navy text-white text-sm font-black hover:bg-navy-hover disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 text-white text-sm font-black hover:bg-teal-800 disabled:opacity-60"
               >
                 {submittingRequest ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Send className="w-4 h-4"/> Submit for Approval</>}
               </button>
@@ -1205,12 +1177,10 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         </div>
       )}
 
-      {/* ── ISSUE TRACKER (Admin only) — Bug A fix: dedicated DB query, not in-memory filter ── */}
+      {/* ── ISSUE TRACKER (Admin only) ─────────────────────────────── */}
       {tab === 'issues' && isAdmin && (
         <div className="space-y-4">
-          {issuesLoading ? (
-            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="glass-card p-5 rounded-2xl border border-red-100 h-24 animate-pulse bg-red-50/30" />)}</div>
-          ) : issues.length === 0 ? (
+          {issues.length === 0 ? (
             <div className="glass-card p-8 rounded-2xl text-center">
               <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-3"/>
               <p className="text-slate-500 font-medium">No issues reported. All running smoothly.</p>
@@ -1224,8 +1194,8 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                     <span className="text-xs text-red-600 font-bold">{new Date(act.created_at).toLocaleDateString()}</span>
                   </div>
                   {!act.founder_comment 
-                    ? <span className="bg-red-600 text-white text-xs uppercase font-black px-2 py-0.5 rounded animate-pulse">Needs Review</span>
-                    : <span className="bg-emerald-100 text-emerald-800 text-xs uppercase font-black px-2 py-0.5 rounded">Reviewed</span>}
+                    ? <span className="bg-red-600 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded animate-pulse">Needs Review</span>
+                    : <span className="bg-emerald-100 text-emerald-800 text-[10px] uppercase font-black px-2 py-0.5 rounded">Reviewed</span>}
                 </div>
                 <div className="mb-3 text-sm text-slate-600 border-l-2 border-slate-300 pl-3">{act.activity_description}</div>
                 <div className="p-3 bg-red-100 border border-red-200 rounded-xl text-sm text-red-900 mb-3 font-medium">
@@ -1233,16 +1203,16 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                   {act.issue_description}
                 </div>
                 {act.founder_comment ? (
-                  <div className="mt-3 p-3 bg-white border border-slate-200 rounded-xl">
-                    <p className="text-xs font-black text-navy mb-1">RESOLUTION NOTE</p>
+                  <div className="mt-3 p-3 bg-white border border-teal-200 rounded-xl">
+                    <p className="text-xs font-black text-teal-700 mb-1">RESOLUTION NOTE</p>
                     <p className="text-sm text-slate-700">{act.founder_comment}</p>
                   </div>
                 ) : (
                   <div className="mt-4 pt-3 border-t border-red-100">
                     {activeCommentId === act.id ? (
                       <div className="flex gap-2">
-                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-navy"/>
-                        <button onClick={() => handleAddComment(act.id)} className="bg-navy text-white px-4 py-1.5 rounded-lg text-sm font-black hover:bg-navy-hover">Resolve</button>
+                        <input autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Enter resolution note..." className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"/>
+                        <button onClick={() => handleAddComment(act.id)} className="bg-teal-700 text-white px-4 py-1.5 rounded-lg text-sm font-black">Resolve</button>
                         <button onClick={() => { setCommentText(''); setActiveCommentId(null); }} className="text-slate-500 px-3 text-sm font-medium">Cancel</button>
 
                       </div>
@@ -1266,7 +1236,6 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         title="Archive Activity"
         message="This activity will be hidden from the active log."
         confirmText="Archive Activity"
-        loadingText="Archiving..."
         variant="danger"
         requireInput={true}
         inputPlaceholder="Reason for archiving..."

@@ -1,12 +1,12 @@
 'use client';
 
 const PALETTE = [
-  'from-slate-100 to-slate-100 text-slate-700',
-  'from-slate-100 to-slate-100 text-slate-700',
-  'from-amber-100 to-amber-100 text-amber-700',
-  'from-red-100 to-red-100 text-red-700',
-  'from-slate-100 to-slate-100 text-slate-700',
-  'from-emerald-100 to-emerald-100 text-emerald-700',
+  'from-teal-100 to-cyan-100 text-teal-700',
+  'from-violet-100 to-purple-100 text-violet-700',
+  'from-amber-100 to-orange-100 text-amber-700',
+  'from-rose-100 to-pink-100 text-rose-700',
+  'from-sky-100 to-blue-100 text-sky-700',
+  'from-emerald-100 to-green-100 text-emerald-700',
 ];
 
 function colorFor(str = '') {
@@ -22,7 +22,7 @@ export default function CreatorBadge({ initials, fullName, size = 'sm', showTool
   const display = initials || (fullName ? derivedInitials(fullName) : null);
   if (!display) return null;
 
-  const dim = size === 'md' ? 'w-8 h-8 text-xs leading-none tracking-tight' : 'w-6 h-6 text-[10px] leading-none tracking-tighter';
+  const dim = size === 'md' ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[10px]';
   const color = colorFor(display);
 
   return (
@@ -34,7 +34,7 @@ export default function CreatorBadge({ initials, fullName, size = 'sm', showTool
         {display}
       </span>
       {fullName && showTooltip && (
-        <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-slate-800 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+        <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
           {fullName}
           <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-slate-800" />
         </span>

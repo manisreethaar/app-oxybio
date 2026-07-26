@@ -16,7 +16,7 @@ const AQL_TABLE = {
   '281-500':{ sample: 125, accept: 3, reject: 4 },
 };
 
-function getAqlSampleSize(lotQty) {
+export function getAqlSampleSize(lotQty) {
   const qty = parseInt(lotQty) || 0;
   if (qty <= 1)   return AQL_TABLE['2'];
   if (qty <= 5)   return AQL_TABLE['3-5'];

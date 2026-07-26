@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
@@ -15,15 +14,12 @@ export async function GET() {
     }
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    // Fetch KPI counts only (not full data). batchHistory and
-    // lowStockAlerts used to run as separate sequential queries after this
-    // block even though neither depends on it — folded them in here so the
-    // whole dashboard is one round-trip instead of three. (A batch-stats RPC
-    // call used to run before this too, but its result was never read
-    // anywhere in the response — dropped it entirely.)
+    // Use RPC for batch stats - single call instead of multiple
+    const { data: batchStats, error: batchErr } = await supabase
+      .rpc('get_dashboard_batch_stats', { target_date: todayStr });
+
+    // Fetch KPI counts only (not full data)
     const [
       deviationsResult,
       overduesResult,
@@ -31,11 +27,9 @@ export async function GET() {
       tasksCount,
       compCount,
       attendanceCount,
-      currentlyInLabCount,
       totalEmps,
       mispunchesResult,
-      activeBatchesResult,
-      batchHistoryResult,
+      activeBatchesResult
     ] = await Promise.all([
       // Unacknowledged pH deviations
       supabase.from('ph_readings').select('batch_id', { count: 'exact', head: true })
@@ -44,7 +38,7 @@ export async function GET() {
       supabase.from('compliance_items').select('id', { count: 'exact', head: true })
         .eq('status', 'overdue'),
       // Pending leaves
-      supabase.from('leave_applications').select('id, employees!leave_applications_employee_id_fkey(full_name)', { count: 'exact' })
+      supabase.from('leave_applications').select('id, employees(full_name)', { count: 'exact' })
         .eq('status', 'pending').limit(5),
       // Urgent task count
       supabase.from('tasks').select('id', { count: 'exact', head: true })
@@ -55,9 +49,6 @@ export async function GET() {
       // Today's attendance
       supabase.from('attendance_log').select('id', { count: 'exact', head: true })
         .eq('date', todayStr),
-      // Currently in lab
-      supabase.from('attendance_log').select('id', { count: 'exact', head: true })
-        .eq('date', todayStr).is('check_out_time', null),
       // Active employees
       supabase.from('employees').select('id', { count: 'exact', head: true })
         .eq('is_active', true),
@@ -67,16 +58,19 @@ export async function GET() {
       // Active batches with last fermentation reading timestamp
       supabase.from('batches').select('id, batch_id, variant, current_stage, status, created_at, ph_readings(ph_value, is_deviation), batch_fermentation_readings(ph, is_ph_alarm, logged_at)')
         .is('archived_at', null)
-        .not('status', 'in', '("released","rejected")').limit(10),
-      // Batch history for the 6-month chart
-      supabase.from('batches').select('status, created_at')
-        .is('archived_at', null)
-        .in('status', ['released', 'rejected'])
-        .gte('created_at', sixMonthsAgo.toISOString())
-        .order('created_at', { ascending: true }),
+        .not('status', 'in', '("released","rejected")').limit(10)
     ]);
 
-    const batchHistory = batchHistoryResult?.data;
+    // Build chart data from batch history (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    const { data: batchHistory } = await supabase
+      .from('batches').select('status, created_at')
+      .is('archived_at', null)
+      .in('status', ['released', 'rejected'])
+      .gte('created_at', sixMonthsAgo.toISOString())
+      .order('created_at', { ascending: true });
 
     // Build chart data
     const monthMap = {};
@@ -95,6 +89,14 @@ export async function GET() {
       }
     });
 
+    // Low stock alerts — simple threshold check, no broken nested RPC
+    const { data: lowStockAlerts } = await supabase
+      .from('inventory_stock')
+      .select('id, current_quantity, inventory_items(name, unit, min_stock_level)')
+      .eq('status', 'Available')
+      .lt('current_quantity', 10) // simple numeric threshold, not a subquery
+      .limit(5);
+
     const response = NextResponse.json({
       success: true,
       data: {
@@ -105,7 +107,6 @@ export async function GET() {
           urgentTasks:              tasksCount?.count       || 0,
           upcomingCompliance:       compCount?.count        || 0,
           checkedInToday:           attendanceCount?.count  || 0,
-          currentlyInLab:           currentlyInLabCount?.count || 0,
           totalEmployees:           totalEmps?.count        || 0,
           pendingMispunches:        mispunchesResult?.count || 0,
           activeBatches:            activeBatchesResult?.data?.length || 0

@@ -40,12 +40,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Only substitute a synthetic offline response for page navigations.
-  // Letting API/auth fetches (e.g. Supabase login) fail naturally means
-  // the app's own error handling sees the real network error instead of
-  // a fake response it doesn't know how to interpret.
-  if (event.request.mode !== 'navigate') return;
-
   event.respondWith(
     fetch(event.request).catch(() =>
       new Response(JSON.stringify({ error: 'Offline' }), {

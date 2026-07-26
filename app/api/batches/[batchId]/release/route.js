@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { createClient as createAnonClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
@@ -33,14 +32,14 @@ export async function POST(request, { params }) {
     const db = adminClient();
     const { data: emp, error: empErr } = await db
       .from('employees')
-      .select('id, role, custom_permissions')
+      .select('id, role')
       .eq('email', user.email)
       .single();
 
     if (empErr || !emp) {
       return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
     }
-    if (!can(emp.role, 'batches', 'release', emp.custom_permissions) && !isMasterAdmin(user.email)) {
+    if (!can(emp.role, 'batches', 'release') && !isMasterAdmin(user.email)) {
       return NextResponse.json({ error: 'Release requires CEO / Admin role' }, { status: 403 });
     }
 

@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';

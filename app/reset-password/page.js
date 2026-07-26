@@ -29,11 +29,7 @@ export default function ResetPasswordPage() {
     setError(null);
     setMessage(null);
     try {
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your connection and try again.')), 15000));
-      const { error } = await Promise.race([
-        supabase.auth.updateUser({ password }),
-        timeoutPromise,
-      ]);
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) {
         setError(error.message);
       } else {
@@ -43,7 +39,7 @@ export default function ResetPasswordPage() {
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -61,25 +57,25 @@ export default function ResetPasswordPage() {
           O₂
         </div>
         <h1 className="text-3xl font-black text-navy tracking-tight mb-1">OxyOS</h1>
-        <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Operational Neural Cloud</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Operational Neural Cloud</p>
       </motion.div>
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="bg-white rounded-[2rem] p-5 md:p-8 md:p-6 md:p-8 shadow-2xl shadow-navy/10 border border-slate-100"
+        className="bg-white rounded-[2rem] p-5 md:p-8 md:p-6 md:p-8 shadow-2xl shadow-navy/10 border border-gray-100"
       >
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-slate-900 border-l-4 border-navy pl-4">Set New Password</h2>
-          <p className="text-xs font-medium text-slate-500 mt-1 pl-5">Enter your new secure password below.</p>
+          <h2 className="text-xl font-bold text-gray-900 border-l-4 border-navy pl-4">Set New Password</h2>
+          <p className="text-xs font-medium text-gray-500 mt-1 pl-5">Enter your new secure password below.</p>
         </div>
         
         {error && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-xs font-bold border border-red-100 flex items-center gap-2"
+            className="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-[11px] font-bold border border-red-100 flex items-center gap-2"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
             {error}
@@ -90,7 +86,7 @@ export default function ResetPasswordPage() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 flex items-center gap-2"
+            className="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-100 flex items-center gap-2"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
             {message}
@@ -99,13 +95,13 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleReset} className="space-y-5">
           <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">New Password</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">New Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-gray-400 focus:ring-4 focus:ring-navy/5 focus:border-navy outline-none transition-all font-semibold text-sm pr-12"
+                className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-4 focus:ring-navy/5 focus:border-navy outline-none transition-all font-semibold text-sm pr-12"
                 required
                 disabled={loading}
                 placeholder="••••••••"
@@ -114,7 +110,7 @@ export default function ResetPasswordPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-navy transition-all"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition-all"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -133,7 +129,7 @@ export default function ResetPasswordPage() {
             <button 
               type="button" 
               onClick={() => router.push('/login')}
-              className="text-xs font-bold text-slate-400 hover:text-navy transition-all uppercase tracking-widest"
+              className="text-[10px] font-bold text-gray-400 hover:text-navy transition-all uppercase tracking-widest"
             >
               Back to Sign In
             </button>
@@ -142,10 +138,10 @@ export default function ResetPasswordPage() {
       </motion.div>
       
       <div className="text-center mt-10 space-y-2">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
           Powered by Oxygen Bioinnovations
         </p>
-        <div className="flex justify-center gap-4 text-xs font-black text-slate-300 uppercase tracking-widest">
+        <div className="flex justify-center gap-4 text-[9px] font-black text-gray-300 uppercase tracking-widest">
            <span>Terms</span>
            <span>Privacy</span>
            <span>Security</span>

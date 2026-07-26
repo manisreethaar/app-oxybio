@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import {
   FlaskConical, Activity, ChevronDown, CheckCircle2,
@@ -86,8 +85,8 @@ function autoSampleLabel(sourceType, batch, study, cellPrep, flaskLabel, logHour
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
-const InputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
-const LabelCls = 'block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5';
+const InputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500';
+const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5';
 
 function SkipPanel({ reason, onChange }) {
   return (
@@ -120,7 +119,7 @@ function TestCard({ title, icon: Icon, color, skipped, onSkipToggle, children, s
           </div>
           <span className="font-black text-slate-700 text-sm">{title}</span>
           {skipped && (
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-black rounded-full border border-amber-200 uppercase tracking-wide">
+            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200 uppercase tracking-wide">
               Skipped
             </span>
           )}
@@ -129,9 +128,9 @@ function TestCard({ title, icon: Icon, color, skipped, onSkipToggle, children, s
           type="button"
           onClick={onSkipToggle}
           className={clsx(
-            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border transition-all',
+            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
             skipped
-              ? 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+              ? 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'
               : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
           )}
         >
@@ -193,7 +192,7 @@ export default function QuickLogPage() {
   const loadSources = useCallback(async () => {
     setSourcesLoading(true);
     try {
-      const res  = await withTimeout(fetch('/api/lab-bench/sources'), 20000, 'Lab bench sources load timed out');
+      const res  = await fetch('/api/lab-bench/sources');
       const json = await res.json();
       if (json.success) {
         setSources(json);
@@ -383,8 +382,8 @@ export default function QuickLogPage() {
   if (success) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 text-center">
-        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-slate-600" />
+        <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-teal-600" />
         </div>
         <h2 className="text-xl font-black text-slate-800 mb-1">Sample Logged</h2>
         <p className="text-slate-500 text-sm font-medium mb-2">{success.sample_label}</p>
@@ -396,7 +395,7 @@ export default function QuickLogPage() {
           </div>
         )}
         {success.alarms?.temp && (
-          <div className="mx-auto max-w-xs mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-700 text-sm font-bold">
+          <div className="mx-auto max-w-xs mb-4 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-orange-700 text-sm font-bold">
             <Thermometer className="w-4 h-4 shrink-0" />
             Temperature alarm triggered — admin notified
           </div>
@@ -407,7 +406,7 @@ export default function QuickLogPage() {
         {success.incubation_count > 0 && (
           <Link
             href="/research/incubation"
-            className="mx-auto mb-6 flex items-center justify-center gap-2 max-w-xs px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold text-sm transition-colors"
+            className="mx-auto mb-6 flex items-center justify-center gap-2 max-w-xs px-4 py-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl text-teal-700 font-bold text-sm transition-colors"
           >
             <FlaskConical className="w-4 h-4" />
             {success.incubation_count} incubation plate{success.incubation_count !== 1 ? 's' : ''} created — View in Incubation Hub →
@@ -417,7 +416,7 @@ export default function QuickLogPage() {
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => setSuccess(null)}
-            className="px-6 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-xl text-sm"
+            className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm"
           >
             Log Another Sample
           </button>
@@ -443,7 +442,7 @@ export default function QuickLogPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lab Bench</p>
           <h1 className="text-xl font-black text-slate-800">Quick Log</h1>
         </div>
       </div>
@@ -463,11 +462,11 @@ export default function QuickLogPage() {
               className={clsx(
                 'flex flex-col items-center justify-center py-4 rounded-2xl border-2 font-black text-sm transition-all min-h-[44px]',
                 sourceType === value
-                  ? 'border-slate-600 bg-slate-50 text-slate-700 shadow-sm'
+                  ? 'border-teal-600 bg-teal-50 text-teal-700 shadow-sm'
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
               )}
             >
-              <Icon className={clsx('w-6 h-6 mb-1.5', sourceType === value ? 'text-slate-600' : 'text-slate-400')} />
+              <Icon className={clsx('w-6 h-6 mb-1.5', sourceType === value ? 'text-teal-600' : 'text-slate-400')} />
               {label}
             </button>
           ))}
@@ -475,7 +474,7 @@ export default function QuickLogPage() {
 
         {/* ── Source Selection ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
             {sourceType === 'batch'
               ? 'Select Batch & Flask'
               : sourceType === 'growth_study'
@@ -492,7 +491,7 @@ export default function QuickLogPage() {
               {sources.batches.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
                   No batches in fermentation stage.{' '}
-                  <Link href="/batches" className="text-slate-600 font-bold hover:underline">Go to Batches →</Link>
+                  <Link href="/batches" className="text-teal-600 font-bold hover:underline">Go to Batches →</Link>
                 </p>
               ) : (
                 <div>
@@ -542,7 +541,7 @@ export default function QuickLogPage() {
               {sources.growth_studies.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
                   No active growth studies.{' '}
-                  <Link href="/growth-studies" className="text-slate-600 font-bold hover:underline">Go to Growth Studies →</Link>
+                  <Link href="/growth-studies" className="text-teal-600 font-bold hover:underline">Go to Growth Studies →</Link>
                 </p>
               ) : (
                 <div>
@@ -576,13 +575,13 @@ export default function QuickLogPage() {
                           className={clsx(
                             'flex flex-col items-center py-2 px-1 rounded-xl border text-xs font-black transition-all',
                             timePointId === tp.id
-                              ? 'border-slate-600 bg-slate-50 text-slate-700'
+                              ? 'border-teal-600 bg-teal-50 text-teal-700'
                               : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                           )}
                         >
                           <span>T+{tp.planned_hour}h</span>
                           {tp.sample_types?.length > 0 && (
-                            <span className="text-xs font-bold text-slate-400 mt-0.5 truncate max-w-full px-1">
+                            <span className="text-[9px] font-bold text-slate-400 mt-0.5 truncate max-w-full px-1">
                               {tp.sample_types.slice(0, 2).join(', ')}
                             </span>
                           )}
@@ -598,7 +597,7 @@ export default function QuickLogPage() {
               {sources.cell_bank_preparations?.length === 0 ? (
                 <p className="text-slate-400 text-sm font-medium py-2">
                   No in-progress cell bank preparations.{' '}
-                  <Link href="/research/cell-bank" className="text-slate-600 font-bold hover:underline">Go to Cell Bank</Link>
+                  <Link href="/research/cell-bank" className="text-teal-600 font-bold hover:underline">Go to Cell Bank</Link>
                 </p>
               ) : (
                 <div>
@@ -616,7 +615,7 @@ export default function QuickLogPage() {
                     ))}
                   </select>
                   {selectedCellPrep && (
-                    <p className="text-xs text-slate-500 font-semibold mt-2">
+                    <p className="text-[10px] text-slate-500 font-semibold mt-2">
                       {selectedCellPrep.cell_bank_strains?.strain_short_code || selectedCellPrep.cell_bank_strains?.accession_number || 'Strain'} · Passage {selectedCellPrep.passage_number ?? '-'}
                     </p>
                   )}
@@ -628,7 +627,7 @@ export default function QuickLogPage() {
 
         {/* ── Hour & Time ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4">Sample Timepoint</h3>
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-4">Sample Timepoint</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={LabelCls}>Log Hour (T+)</label>
@@ -657,13 +656,13 @@ export default function QuickLogPage() {
 
         {/* ── Tests ── */}
         <div className="space-y-3">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider px-1">Common Tests</h3>
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider px-1">Common Tests</h3>
 
           {/* pH */}
           <TestCard
             title="pH"
             icon={Waves}
-            color="bg-slate-500"
+            color="bg-blue-500"
             skipped={tests.ph.skipped}
             skip_reason={tests.ph.skip_reason}
             onSkipToggle={() => updateTest('ph', { skipped: !tests.ph.skipped, skip_reason: '' })}
@@ -697,7 +696,7 @@ export default function QuickLogPage() {
           <TestCard
             title={`OD (Optical Density${selectedStudy?.od_wavelength ? ` @${selectedStudy.od_wavelength}nm` : ''})`}
             icon={Activity}
-            color="bg-slate-500"
+            color="bg-teal-500"
             skipped={tests.od.skipped}
             skip_reason={tests.od.skip_reason}
             onSkipToggle={() => updateTest('od', { skipped: !tests.od.skipped, skip_reason: '' })}
@@ -752,7 +751,7 @@ export default function QuickLogPage() {
           <TestCard
             title="Sterility Check"
             icon={ClipboardList}
-            color="bg-slate-500"
+            color="bg-violet-500"
             skipped={tests.sterility.skipped}
             skip_reason={tests.sterility.skip_reason}
             onSkipToggle={() => updateTest('sterility', { skipped: !tests.sterility.skipped, skip_reason: '' })}
@@ -771,7 +770,7 @@ export default function QuickLogPage() {
                         ? opt === 'Fail'
                           ? 'border-red-500 bg-red-50 text-red-700'
                           : opt === 'Pass'
-                            ? 'border-slate-500 bg-slate-50 text-slate-700'
+                            ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-amber-400 bg-amber-50 text-amber-700'
                         : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
                     )}
@@ -792,12 +791,12 @@ export default function QuickLogPage() {
           )}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-red-500">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-rose-500">
                   <FlaskConical className="w-4 h-4 text-white" />
                 </div>
                 <span className="font-black text-slate-700 text-sm">Plate Analysis</span>
                 {tests.plate_analysis.skipped && (
-                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-black rounded-full border border-amber-200 uppercase tracking-wide">
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200 uppercase tracking-wide">
                     Skipped
                   </span>
                 )}
@@ -809,10 +808,10 @@ export default function QuickLogPage() {
                     type="button"
                     onClick={() => updateTest('plate_analysis', { active: !tests.plate_analysis.active })}
                     className={clsx(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border transition-all',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
                       tests.plate_analysis.active
-                        ? 'border-red-400 bg-red-50 text-red-700'
-                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
+                        ? 'border-rose-400 bg-rose-50 text-rose-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600'
                     )}
                   >
                     {tests.plate_analysis.active ? (
@@ -830,9 +829,9 @@ export default function QuickLogPage() {
                     skip_reason: '',
                   })}
                   className={clsx(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border transition-all',
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all',
                     tests.plate_analysis.skipped
-                      ? 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'
                       : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
                   )}
                 >
@@ -924,10 +923,10 @@ export default function QuickLogPage() {
 
         {/* G-20 + G-21 + G-22: Lab safety & contamination flags */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
-          <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Lab Safety & Traceability</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Lab Safety & Traceability</p>
           {/* G-22: batch linkage already shown via source selector above */}
           {sourceType === 'batch' && sourceId && (
-            <p className="text-xs font-bold text-slate-700 flex items-center gap-1">
+            <p className="text-xs font-bold text-teal-700 flex items-center gap-1">
               <Activity className="w-3.5 h-3.5"/>Work Order linked to: <span className="font-black">{sourceId}</span>
             </p>
           )}
@@ -951,16 +950,16 @@ export default function QuickLogPage() {
           )}
           {/* G-74: Reagents/consumables used */}
           <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Reagents / Consumables Used <span className="font-normal normal-case">(comma-separated)</span></label>
+            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Reagents / Consumables Used <span className="font-normal normal-case">(comma-separated)</span></label>
             <input type="text" value={reagentsUsed} onChange={e=>setReagentsUsed(e.target.value)}
               className={InputCls} placeholder="e.g. MRS Broth, Tryptone, Loop, Pipette tips"/>
           </div>
           {/* G-75: Cold storage temperature */}
           <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Cold Item Storage Temp (°C)</label>
+            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cold Item Storage Temp (°C)</label>
             <input type="number" step="0.5" value={coldTempC} onChange={e=>setColdTempC(e.target.value)}
               className={InputCls} placeholder="e.g. 4.2"/>
-            <p className="text-xs text-slate-400 mt-0.5">Temperature of bench-top cold items (media, reagents) at time of use</p>
+            <p className="text-[9px] text-slate-400 mt-0.5">Temperature of bench-top cold items (media, reagents) at time of use</p>
           </div>
         </div>
 
@@ -982,7 +981,7 @@ export default function QuickLogPage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-4 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
+          className="w-full py-4 bg-teal-700 hover:bg-teal-800 disabled:bg-teal-400 text-white font-black rounded-2xl text-base transition-all flex items-center justify-center gap-2 shadow-sm"
         >
           {saving ? (
             <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>

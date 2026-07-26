@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useParams, useRouter } from 'next/navigation';
@@ -44,7 +43,7 @@ const BBD_DESIGN = [
 ];
 
 const TYPE_META = {
-  pbd: { label: 'Plackett-Burman Design', color: 'text-slate-700 bg-slate-50 border-slate-200', runs: 12 },
+  pbd: { label: 'Plackett-Burman Design', color: 'text-indigo-700 bg-indigo-50 border-indigo-200', runs: 12 },
   rsm: { label: 'Response Surface Methodology', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', runs: 15 },
   kinetics: { label: 'Fermentation Kinetics', color: 'text-amber-700 bg-amber-50 border-amber-200', runs: null },
 };
@@ -79,9 +78,9 @@ function RSMHeatmap({ heatmap, factors }) {
   heatmap.forEach((row, i) => row.forEach((val, j) => { if (val > heatmap[optRow][optCol]) { optRow = i; optCol = j; } }));
   return (
     <div>
-      <p className="text-xs text-slate-500 mb-2">2D surface — Factor C held at centre level</p>
+      <p className="text-xs text-gray-500 mb-2">2D surface — Factor C held at centre level</p>
       <div className="flex items-start gap-2">
-        <div className="text-xs text-slate-400 flex flex-col justify-between h-full pr-1" style={{ minHeight: '200px' }}>
+        <div className="text-[10px] text-gray-400 flex flex-col justify-between h-full pr-1" style={{ minHeight: '200px' }}>
           <span>{fA ? fA.high_value : '+1'}</span>
           <span className="rotate-90 whitespace-nowrap" style={{ writingMode: 'vertical-rl' }}>{fA ? fA.variable : 'Factor A'}</span>
           <span>{fA ? fA.low_value : '-1'}</span>
@@ -100,16 +99,16 @@ function RSMHeatmap({ heatmap, factors }) {
               ))
             )}
           </div>
-          <div className="flex justify-between text-xs text-slate-400 mt-1 px-0.5">
+          <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-0.5">
             <span>{fB ? fB.low_value : '-1'}</span>
             <span>{fB ? fB.variable : 'Factor B'}</span>
             <span>{fB ? fB.high_value : '+1'}</span>
           </div>
         </div>
         <div className="ml-2 flex flex-col items-center gap-1" style={{ minHeight: '200px', justifyContent: 'space-between' }}>
-          <span className="text-xs text-slate-500">{max.toFixed(2)}</span>
+          <span className="text-[10px] text-gray-500">{max.toFixed(2)}</span>
           <div style={{ width: 12, height: 120, background: 'linear-gradient(to bottom, rgb(220,38,127), rgb(34,139,34))', borderRadius: 4 }} />
-          <span className="text-xs text-slate-500">{min.toFixed(2)}</span>
+          <span className="text-[10px] text-gray-500">{min.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -125,12 +124,8 @@ function PredictiveModelsTab({ supabase, toast }) {
   const [form, setForm] = useState({ model_name: '', version: '1.0', target_variable: '', confidence_interval: '', feature_weights: '{}' });
 
   useEffect(() => {
-    withTimeout(
-      supabase.from('predictive_models').select('*').order('created_at', { ascending: false }),
-      20000, 'Predictive models load timed out'
-    )
-      .then(({ data }) => { setModels(data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    supabase.from('predictive_models').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { setModels(data || []); setLoading(false); });
   }, [supabase]);
 
   const handleSave = async () => {
@@ -152,19 +147,19 @@ function PredictiveModelsTab({ supabase, toast }) {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-400 text-sm">Loading...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-black text-slate-900">A-67 Predictive Model Registry</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Register ML models for process variable prediction (yield, CFU, pH endpoint)</p>
+          <h3 className="text-sm font-black text-gray-900">A-67 Predictive Model Registry</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Register ML models for process variable prediction (yield, CFU, pH endpoint)</p>
         </div>
         <button onClick={() => setShowForm(v=>!v)} className="px-4 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase tracking-wider hover:bg-navy-hover">Register Model</button>
       </div>
       {showForm && (
-        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+        <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="field-label">Model Name</label><input value={form.model_name} onChange={e=>setForm(f=>({...f,model_name:e.target.value}))} className="field-input" placeholder="e.g. pH Endpoint Predictor v1"/></div>
             <div><label className="field-label">Version</label><input value={form.version} onChange={e=>setForm(f=>({...f,version:e.target.value}))} className="field-input" placeholder="1.0"/></div>
@@ -173,34 +168,34 @@ function PredictiveModelsTab({ supabase, toast }) {
           </div>
           <div><label className="field-label">Feature Weights (JSON)</label>
             <textarea value={form.feature_weights} onChange={e=>setForm(f=>({...f,feature_weights:e.target.value}))} rows={3}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono outline-none resize-none"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono outline-none resize-none"
               placeholder='{"inoculation_pct": 0.35, "initial_ph": 0.28, "temp_c": 0.22, "brix_0": 0.15}'/>
           </div>
           <div className="flex gap-3">
             <button onClick={handleSave} disabled={saving} className="px-5 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Saving...':'Register'}</button>
-            <button onClick={()=>setShowForm(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Cancel</button>
+            <button onClick={()=>setShowForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">Cancel</button>
           </div>
         </div>
       )}
       {models.length === 0 ? (
-        <div className="p-12 text-center text-slate-400 text-sm">No predictive models registered yet. Register a model above to track ML-based process predictions.</div>
+        <div className="p-12 text-center text-gray-400 text-sm">No predictive models registered yet. Register a model above to track ML-based process predictions.</div>
       ) : (
         <div className="space-y-3">
           {models.map(m => (
-            <div key={m.id} className={`card p-4 border-l-4 ${m.is_active ? 'border-l-emerald-500' : 'border-l-gray-300'}`}>
+            <div key={m.id} className={`surface p-4 border-l-4 ${m.is_active ? 'border-l-emerald-500' : 'border-l-gray-300'}`}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-black text-slate-900">{m.model_name} <span className="text-slate-400 font-semibold text-xs">v{m.version}</span></p>
-                  <p className="text-xs text-slate-600 mt-0.5">Target: <strong>{m.target_variable}</strong> · CI: {m.confidence_interval ? `${m.confidence_interval}%` : '—'}</p>
+                  <p className="font-black text-gray-900">{m.model_name} <span className="text-gray-400 font-semibold text-xs">v{m.version}</span></p>
+                  <p className="text-xs text-gray-600 mt-0.5">Target: <strong>{m.target_variable}</strong> · CI: {m.confidence_interval ? `${m.confidence_interval}%` : '—'}</p>
                   {m.feature_weights && Object.keys(m.feature_weights).length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {Object.entries(m.feature_weights).map(([feat, weight]) => (
-                        <span key={feat} className="px-2 py-0.5 bg-slate-50 text-slate-700 border border-slate-100 rounded text-xs font-bold">{feat}: {weight}</span>
+                        <span key={feat} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded text-[9px] font-bold">{feat}: {weight}</span>
                       ))}
                     </div>
                   )}
                 </div>
-                <span className={`text-xs font-black px-2 py-1 rounded-lg border uppercase ${m.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                <span className={`text-[10px] font-black px-2 py-1 rounded-lg border uppercase ${m.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                   {m.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
@@ -267,7 +262,7 @@ function ScaleDownForm({ experimentId, supabase, toast, batches }) {
           ✓ Scale-down model saved — scaling factor {scalingFactor}× · comparability {compScore || '—'}
         </div>
       )}
-      <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+      <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
         {saving ? 'Saving...' : 'Save Scale-Down Model'}
       </button>
     </div>
@@ -296,12 +291,11 @@ export default function BioprocessDetailPage() {
   const [kineticConfig, setKineticConfig] = useState({});
   const [batches, setBatches] = useState([]);
   const [creatingRSM, setCreatingRSM] = useState(false);
-  const [sopBlock, setSopBlock] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch(`/api/bioprocess/${id}`), 20000, 'Bioprocess experiment load timed out');
+      const res = await fetch(`/api/bioprocess/${id}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setExperiment(json.experiment);
@@ -459,10 +453,9 @@ export default function BioprocessDetailPage() {
   // ── Save ──────────────────────────────────────────────────────────────────
   const saveAll = async () => {
     setSaving(true);
-    setSopBlock(null);
     try {
       // Save factors + responses
-      const res = await fetch(`/api/bioprocess/${id}/runs`, {
+      await fetch(`/api/bioprocess/${id}/runs`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -475,11 +468,6 @@ export default function BioprocessDetailPage() {
           kineticData: experiment?.type === 'kinetics' ? localKinetics : undefined,
         }),
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (json.sop_violation) setSopBlock(json);
-        throw new Error(json.error || 'Failed to save run data');
-      }
       // Save kinetics config
       if (experiment?.type === 'kinetics') {
         await fetch(`/api/bioprocess/${id}`, {
@@ -517,7 +505,7 @@ export default function BioprocessDetailPage() {
 
   // ── Render utilities ──────────────────────────────────────────────────────
   const pValue = (p) => {
-    const cls = p < 0.001 ? 'text-red-600 font-bold' : p < 0.01 ? 'text-amber-600 font-semibold' : p < 0.05 ? 'text-amber-700 font-semibold' : 'text-slate-500';
+    const cls = p < 0.001 ? 'text-red-600 font-bold' : p < 0.01 ? 'text-orange-600 font-semibold' : p < 0.05 ? 'text-yellow-700 font-semibold' : 'text-gray-500';
     return <span className={cls}>{p < 0.0001 ? '< 0.0001' : p.toFixed(4)}</span>;
   };
 
@@ -525,7 +513,7 @@ export default function BioprocessDetailPage() {
     <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 text-navy animate-spin" /></div>
   );
   if (!experiment) return (
-    <div className="text-center py-20 text-slate-500">Experiment not found</div>
+    <div className="text-center py-20 text-gray-500">Experiment not found</div>
   );
 
   const tm = TYPE_META[experiment.type];
@@ -536,7 +524,7 @@ export default function BioprocessDetailPage() {
   // ── Tab: Setup ────────────────────────────────────────────────────────────
   const SetupTab = () => (
     <div className="space-y-6">
-      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-800">
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
         <strong>{experiment.type === 'pbd' ? 'PBD:' : experiment.type === 'rsm' ? 'RSM:' : 'Kinetics:'}</strong>
         {experiment.type === 'pbd' && ' Define up to 11 factors with their high/low levels. The 12-run design matrix will be generated automatically.'}
         {experiment.type === 'rsm' && ' Define exactly 3 significant factors (from PBD) with their low, centre, and high actual values. A Box-Behnken 15-run matrix will be generated.'}
@@ -546,31 +534,31 @@ export default function BioprocessDetailPage() {
       {/* Kinetics config */}
       {experiment.type === 'kinetics' && (
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Kinetic Model</h3>
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Kinetic Model</h3>
           <div className="space-y-2">
             {KINETICS_MODEL_OPTIONS.map(opt => (
-              <label key={opt.value} className={`block cursor-pointer border-2 rounded-xl p-4 transition-all ${kineticConfig.kinetics_model === opt.value ? 'border-navy bg-navy/5' : 'border-slate-200 hover:border-slate-300'}`}>
+              <label key={opt.value} className={`block cursor-pointer border-2 rounded-xl p-4 transition-all ${kineticConfig.kinetics_model === opt.value ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}>
                 <input type="radio" name="kinetics_model" value={opt.value}
                   checked={kineticConfig.kinetics_model === opt.value}
                   onChange={() => setKineticConfig(c => ({ ...c, kinetics_model: opt.value }))}
                   className="sr-only" />
-                <div className={`text-sm font-bold ${kineticConfig.kinetics_model === opt.value ? 'text-navy' : 'text-slate-700'}`}>{opt.label}</div>
-                <div className="text-xs text-slate-500 font-mono mt-0.5">{opt.desc}</div>
+                <div className={`text-sm font-bold ${kineticConfig.kinetics_model === opt.value ? 'text-navy' : 'text-gray-700'}`}>{opt.label}</div>
+                <div className="text-xs text-gray-500 font-mono mt-0.5">{opt.desc}</div>
               </label>
             ))}
           </div>
 
           {/* Batch link — Unified Process Bus */}
-          <div className="border border-slate-200 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+          <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
               <Link2 className="w-4 h-4 text-navy" /> Link to Batch (Unified Process Bus)
             </h3>
-            <p className="text-xs text-slate-500">When linked, fermentation readings (OD, pH, Brix) sync automatically from the batch run — manual data entry is disabled.</p>
+            <p className="text-xs text-gray-500">When linked, fermentation readings (OD, pH, Brix) sync automatically from the batch run — manual data entry is disabled.</p>
             <div className="flex items-center gap-3">
               <select
                 defaultValue={experiment.batch_id || ''}
                 onChange={e => handleLinkBatch(e.target.value || null)}
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+                className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
               >
                 <option value="">None -- manual data entry</option>
                 {batches.map(b => (
@@ -621,7 +609,7 @@ export default function BioprocessDetailPage() {
       {experiment.type !== 'kinetics' && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
               Factor Definitions ({localFactors.length}/{experiment.type === 'rsm' ? 3 : 11})
             </h3>
             {(experiment.type === 'pbd' && localFactors.length < 11) || (experiment.type === 'rsm' && localFactors.length < 3) ? (
@@ -631,49 +619,49 @@ export default function BioprocessDetailPage() {
             ) : null}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 w-16">Code</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600">Variable / Factor Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 w-20">Unit</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 w-28">Low (−1)</th>
-                  {experiment.type === 'rsm' && <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 w-28">Centre (0)</th>}
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 w-28">High (+1)</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 w-16">Code</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Variable / Factor Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 w-20">Unit</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 w-28">Low (−1)</th>
+                  {experiment.type === 'rsm' && <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 w-28">Centre (0)</th>}
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 w-28">High (+1)</th>
                   <th className="px-2 py-3 w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {localFactors.length === 0 && (
-                  <tr><td colSpan={experiment.type === 'rsm' ? 7 : 6} className="px-4 py-8 text-center text-slate-400 text-xs">No factors defined — click Add Factor</td></tr>
+                  <tr><td colSpan={experiment.type === 'rsm' ? 7 : 6} className="px-4 py-8 text-center text-gray-400 text-xs">No factors defined — click Add Factor</td></tr>
                 )}
                 {localFactors.map((f, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
+                  <tr key={idx} className="hover:bg-gray-50">
                     <td className="px-4 py-2">
                       <span className="font-mono font-bold text-navy text-xs px-2 py-0.5 bg-navy/10 rounded">{f.code}</span>
                     </td>
                     <td className="px-4 py-2">
                       <input value={f.variable} onChange={e => updateFactor(idx, 'variable', e.target.value)}
-                        placeholder="e.g. Carbon source" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                        placeholder="e.g. Carbon source" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
                     </td>
                     <td className="px-4 py-2">
                       <input value={f.unit || ''} onChange={e => updateFactor(idx, 'unit', e.target.value)}
-                        placeholder="g/L" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                        placeholder="g/L" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
                     </td>
                     <td className="px-4 py-2">
                       <input type="number" step="any" value={f.low_value} onChange={e => updateFactor(idx, 'low_value', e.target.value)}
-                        placeholder="0" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                        placeholder="0" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
                     </td>
                     {experiment.type === 'rsm' && (
                       <td className="px-4 py-2">
                         <input type="number" step="any" value={f.center_value || ''} onChange={e => updateFactor(idx, 'center_value', e.target.value)}
-                          placeholder="midpoint" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                          placeholder="midpoint" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
                       </td>
                     )}
                     <td className="px-4 py-2">
                       <input type="number" step="any" value={f.high_value} onChange={e => updateFactor(idx, 'high_value', e.target.value)}
-                        placeholder="0" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
+                        placeholder="0" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20" />
                     </td>
                     <td className="px-2 py-2">
                       <button onClick={() => removeFactor(idx)} className="text-red-400 hover:text-red-600 p-1 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -685,8 +673,8 @@ export default function BioprocessDetailPage() {
           </div>
 
           {experiment.type === 'pbd' && localFactors.length > 0 && (
-            <div className="mt-3 bg-slate-50 rounded-xl p-3">
-              <p className="text-xs text-slate-500">
+            <div className="mt-3 bg-gray-50 rounded-xl p-3">
+              <p className="text-xs text-gray-500">
                 Default ranges from OBI-TRN-BPOE-001: Carbon 10–25 g/L · Yeast extract 3–10 g/L · Peptone 5–15 g/L · pH 4.5–6.5 · Temp 30–37°C
               </p>
             </div>
@@ -719,15 +707,6 @@ export default function BioprocessDetailPage() {
       
       return (
         <div className="space-y-5">
-          {sopBlock && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
-              <div>
-                <strong>SOP completion required:</strong>
-                <p>{sopBlock.error} <a href="/sops" className="underline font-semibold">Go sign it</a>.</p>
-              </div>
-            </div>
-          )}
           {isLinkedToBatch ? (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-2">
               <CheckCircle className="w-5 h-5 mt-0.5 shrink-0" />
@@ -746,21 +725,21 @@ export default function BioprocessDetailPage() {
             </div>
           )}
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead className="bg-gray-50">
                 <tr>
                   {isTimeCourse ? (
                     <>
-                      <th className="px-4 py-3 text-xs font-bold text-slate-600 text-left">Time (h)</th>
-                      <th className="px-4 py-3 text-xs font-bold text-slate-600 text-left">Biomass X (g/L)</th>
-                      <th className="px-4 py-3 text-xs font-bold text-slate-600 text-left">Substrate S (g/L)</th>
-                      <th className="px-4 py-3 text-xs font-bold text-slate-600 text-left">Product P (g/L)</th>
+                      <th className="px-4 py-3 text-xs font-bold text-gray-600 text-left">Time (h)</th>
+                      <th className="px-4 py-3 text-xs font-bold text-gray-600 text-left">Biomass X (g/L)</th>
+                      <th className="px-4 py-3 text-xs font-bold text-gray-600 text-left">Substrate S (g/L)</th>
+                      <th className="px-4 py-3 text-xs font-bold text-gray-600 text-left">Product P (g/L)</th>
                     </>
                   ) : (
                     <>
-                      <th className="px-4 py-3 text-xs font-bold text-slate-600 text-left">[S] {modelType === 'monod' ? '(g/L)' : '(mM)'}</th>
-                      <th className="px-4 py-3 text-xs font-bold text-slate-600 text-left">{modelType === 'monod' ? 'μ (h⁻¹)' : 'v (mM/min)'}</th>
+                      <th className="px-4 py-3 text-xs font-bold text-gray-600 text-left">[S] {modelType === 'monod' ? '(g/L)' : '(mM)'}</th>
+                      <th className="px-4 py-3 text-xs font-bold text-gray-600 text-left">{modelType === 'monod' ? 'μ (h⁻¹)' : 'v (mM/min)'}</th>
                     </>
                   )}
                   <th className="px-2 py-3 w-10"></th>
@@ -768,17 +747,17 @@ export default function BioprocessDetailPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {localKinetics.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">No data points — click Add Row</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-xs">No data points — click Add Row</td></tr>
                 )}
                 {localKinetics.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
+                  <tr key={idx} className="hover:bg-gray-50">
                     {isTimeCourse ? (
                       <>
                         {['time_h','biomass','substrate','product'].map(field => (
                           <td key={field} className="px-4 py-2">
                             <input type="number" step="any" value={row[field] ?? ''} onChange={e => updateKineticRow(idx, field, e.target.value)}
                               disabled={isLinkedToBatch}
-                              className={`w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`} />
+                              className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} />
                           </td>
                         ))}
                       </>
@@ -787,12 +766,12 @@ export default function BioprocessDetailPage() {
                         <td className="px-4 py-2">
                           <input type="number" step="any" value={row.substrate ?? ''} onChange={e => updateKineticRow(idx, 'substrate', e.target.value)}
                             disabled={isLinkedToBatch}
-                            className={`w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`} />
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} />
                         </td>
                         <td className="px-4 py-2">
                           <input type="number" step="any" value={row.rate ?? ''} onChange={e => updateKineticRow(idx, 'rate', e.target.value)}
                             disabled={isLinkedToBatch}
-                            className={`w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`} />
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20 ${isLinkedToBatch ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} />
                         </td>
                       </>
                     )}
@@ -828,26 +807,17 @@ export default function BioprocessDetailPage() {
 
     return (
       <div className="space-y-5">
-        {sopBlock && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-2">
-            <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
-            <div>
-              <strong>SOP completion required:</strong>
-              <p>{sopBlock.error} <a href="/sops" className="underline font-semibold">Go sign it</a>.</p>
-            </div>
-          </div>
-        )}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-700">
+            <p className="text-sm font-semibold text-gray-700">
               Responses entered: <span className={`font-bold ${completedRuns === nRuns ? 'text-emerald-600' : 'text-navy'}`}>{completedRuns}/{nRuns}</span>
             </p>
-            <div className="mt-1 w-48 bg-slate-100 rounded-full h-2">
+            <div className="mt-1 w-48 bg-gray-100 rounded-full h-2">
               <div className="bg-navy rounded-full h-2 transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={exportDesignCSV} className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors">
+            <button onClick={exportDesignCSV} className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 bg-gray-100 px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
               <Download className="w-4 h-4" /> Export CSV
             </button>
             <button onClick={saveAll} disabled={saving} className="flex items-center gap-2 bg-navy text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
@@ -856,22 +826,22 @@ export default function BioprocessDetailPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full text-xs">
-            <thead className="bg-slate-50 sticky top-0">
+            <thead className="bg-gray-50 sticky top-0">
               <tr>
-                <th className="px-3 py-3 text-left font-bold text-slate-600 w-14">Run</th>
+                <th className="px-3 py-3 text-left font-bold text-gray-600 w-14">Run</th>
                 {localFactors.map(f => (
-                  <th key={f.code} className="px-2 py-3 text-center font-bold text-slate-600 min-w-[56px]">
+                  <th key={f.code} className="px-2 py-3 text-center font-bold text-gray-600 min-w-[56px]">
                     <div className="font-mono text-navy">{f.code}</div>
-                    <div className="text-xs font-normal text-slate-400 mt-0.5 max-w-[64px] truncate">{f.variable}</div>
+                    <div className="text-[10px] font-normal text-gray-400 mt-0.5 max-w-[64px] truncate">{f.variable}</div>
                   </th>
                 ))}
-                {nFactors === 0 && <th className="px-2 py-3 text-center text-slate-400">Define factors in Setup tab</th>}
+                {nFactors === 0 && <th className="px-2 py-3 text-center text-gray-400">Define factors in Setup tab</th>}
                 <th className="px-3 py-3 text-center font-bold text-emerald-700 min-w-[100px]">
                   Y ({experiment.response_variable})
                 </th>
-                <th className="px-3 py-3 text-left font-bold text-slate-500 min-w-[120px]">Notes</th>
+                <th className="px-3 py-3 text-left font-bold text-gray-500 min-w-[120px]">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -880,9 +850,9 @@ export default function BioprocessDetailPage() {
                 const resp = localResponses.find(r => r.run_number === ri + 1);
                 const isCenter = experiment.type === 'rsm' && ri >= 12;
                 return (
-                  <tr key={ri} className={`${isCenter ? 'bg-amber-50/40' : 'hover:bg-slate-50'}`}>
-                    <td className="px-3 py-2 font-bold text-slate-700">
-                      {ri + 1} {isCenter && <span className="text-xs text-amber-600">CP</span>}
+                  <tr key={ri} className={`${isCenter ? 'bg-amber-50/40' : 'hover:bg-gray-50'}`}>
+                    <td className="px-3 py-2 font-bold text-gray-700">
+                      {ri + 1} {isCenter && <span className="text-[10px] text-amber-600">CP</span>}
                     </td>
                     {localFactors.map((f, fi) => {
                       const level = row[fi];
@@ -892,10 +862,10 @@ export default function BioprocessDetailPage() {
                         isHigh ? f.high_value : f.low_value;
                       return (
                         <td key={f.code} className="px-2 py-2 text-center">
-                          <div className={`text-xs font-black ${isHigh ? 'text-emerald-700' : isLow ? 'text-red-700' : 'text-slate-600'}`}>
+                          <div className={`text-xs font-black ${isHigh ? 'text-green-700' : isLow ? 'text-red-700' : 'text-gray-600'}`}>
                             {actual !== '' && actual !== undefined ? actual : (level === 1 ? '+1' : level === -1 ? '−1' : '0')}
                           </div>
-                          <div className={`text-xs mt-0.5 font-semibold ${isHigh ? 'text-emerald-400' : isLow ? 'text-red-400' : 'text-slate-400'}`}>
+                          <div className={`text-[9px] mt-0.5 font-semibold ${isHigh ? 'text-green-400' : isLow ? 'text-red-400' : 'text-gray-400'}`}>
                             {level === 1 ? '+1' : level === -1 ? '−1' : '0'}
                           </div>
                         </td>
@@ -908,7 +878,7 @@ export default function BioprocessDetailPage() {
                         value={resp?.response ?? ''}
                         onChange={e => updateResponse(ri + 1, e.target.value)}
                         placeholder="—"
-                        className={`w-24 border rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-300 ${resp?.response != null ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200'}`}
+                        className={`w-24 border rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-300 ${resp?.response != null ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200'}`}
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -917,7 +887,7 @@ export default function BioprocessDetailPage() {
                         value={resp?.notes ?? ''}
                         onChange={e => updateResponseNotes(ri + 1, e.target.value)}
                         placeholder="observations..."
-                        className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-navy/30 min-w-[110px]"
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-navy/30 min-w-[110px]"
                       />
                     </td>
                   </tr>
@@ -943,9 +913,9 @@ export default function BioprocessDetailPage() {
   const AnalysisTab = () => {
     if (!result) return (
       <div className="text-center py-20">
-        <BarChart2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-500 font-semibold">No analysis results yet</p>
-        <p className="text-sm text-slate-400 mt-1">Complete data entry and click &quot;Run Analysis&quot;</p>
+        <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500 font-semibold">No analysis results yet</p>
+        <p className="text-sm text-gray-400 mt-1">Complete data entry and click &quot;Run Analysis&quot;</p>
         <button onClick={runAnalysis} disabled={analysing} className="mt-4 flex items-center gap-2 mx-auto bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60">
           {analysing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} Run Analysis
         </button>
@@ -962,24 +932,24 @@ export default function BioprocessDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-navy/5 rounded-xl p-4 text-center">
               <div className="text-2xl font-black text-navy">{result.results.length}</div>
-              <div className="text-xs text-slate-500 mt-1">Factors tested</div>
+              <div className="text-xs text-gray-500 mt-1">Factors tested</div>
             </div>
             <div className="bg-emerald-50 rounded-xl p-4 text-center">
               <div className="text-2xl font-black text-emerald-700">{result.significant.length}</div>
-              <div className="text-xs text-slate-500 mt-1">Significant (p&lt;0.05)</div>
+              <div className="text-xs text-gray-500 mt-1">Significant (p&lt;0.05)</div>
             </div>
             <div className="bg-amber-50 rounded-xl p-4 text-center">
               <div className="text-2xl font-black text-amber-700">
                 {result.results.reduce((m, r) => Math.abs(r.effect) > Math.abs(m) ? r.effect : m, 0).toFixed(3)}
               </div>
-              <div className="text-xs text-slate-500 mt-1">Max |effect|</div>
+              <div className="text-xs text-gray-500 mt-1">Max |effect|</div>
             </div>
           </div>
 
           {/* Pareto chart of standardized effects */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-1">Pareto Chart of Standardized Effects</h3>
-            <p className="text-xs text-slate-400 mb-4">Absolute t-statistic per factor — bars crossing the red line are significant at p&lt;0.05</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-bold text-gray-700 mb-1">Pareto Chart of Standardized Effects</h3>
+            <p className="text-xs text-gray-400 mb-4">Absolute t-statistic per factor — bars crossing the red line are significant at p&lt;0.05</p>
             {(() => {
               const paretoData = [...result.results]
                 .sort((a, b) => Math.abs(b.t) - Math.abs(a.t))
@@ -1002,8 +972,8 @@ export default function BioprocessDetailPage() {
           </div>
 
           {/* Effect direction chart */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Effect Directions</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Effect Directions</h3>
             {(() => {
               const chartData = [...result.results]
                 .sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect))
@@ -1023,31 +993,31 @@ export default function BioprocessDetailPage() {
                 </ResponsiveContainer>
               );
             })()}
-            <p className="text-xs text-slate-400 text-center mt-2">Green = significant, high level benefits response · Red = significant, low level benefits response · Grey = not significant</p>
+            <p className="text-[11px] text-gray-400 text-center mt-2">Green = significant, high level benefits response · Red = significant, low level benefits response · Grey = not significant</p>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600">Factor</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600">Variable</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">Effect</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">t-stat</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">p-value</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-slate-600">Significant?</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Factor</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Variable</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">Effect</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">t-stat</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">p-value</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-600">Significant?</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {result.results.map(r => (
                   <tr key={r.code} className={r.significant ? 'bg-emerald-50/40' : ''}>
                     <td className="px-4 py-2.5 font-mono font-bold text-navy text-xs">{r.code}</td>
-                    <td className="px-4 py-2.5 text-slate-700">{r.variable}</td>
+                    <td className="px-4 py-2.5 text-gray-700">{r.variable}</td>
                     <td className="px-4 py-2.5 text-right font-mono">{r.effect >= 0 ? '+' : ''}{r.effect.toFixed(4)}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-slate-500">{r.t.toFixed(3)}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-gray-500">{r.t.toFixed(3)}</td>
                     <td className="px-4 py-2.5 text-right">{pValue(r.p)}</td>
                     <td className="px-4 py-2.5 text-center">
-                      {r.significant ? <CheckCircle className="w-4 h-4 text-emerald-600 mx-auto" /> : <span className="text-slate-300">—</span>}
+                      {r.significant ? <CheckCircle className="w-4 h-4 text-emerald-600 mx-auto" /> : <span className="text-gray-300">—</span>}
                     </td>
                   </tr>
                 ))}
@@ -1091,19 +1061,19 @@ export default function BioprocessDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className={`rounded-xl p-4 text-center ${result.r2 >= 0.9 ? 'bg-emerald-50' : 'bg-red-50'}`}>
               <div className={`text-2xl font-black ${result.r2 >= 0.9 ? 'text-emerald-700' : 'text-red-600'}`}>{(result.r2 * 100).toFixed(1)}%</div>
-              <div className="text-xs text-slate-500 mt-1">R² (model fit)</div>
+              <div className="text-xs text-gray-500 mt-1">R² (model fit)</div>
             </div>
             <div className="bg-navy/5 rounded-xl p-4 text-center">
               <div className="text-2xl font-black text-navy">{(result.adjR2 * 100).toFixed(1)}%</div>
-              <div className="text-xs text-slate-500 mt-1">Adj. R²</div>
+              <div className="text-xs text-gray-500 mt-1">Adj. R²</div>
             </div>
             <div className={`rounded-xl p-4 text-center ${result.lackOfFit.adequate ? 'bg-emerald-50' : 'bg-amber-50'}`}>
               <div className={`text-2xl font-black ${result.lackOfFit.adequate ? 'text-emerald-700' : 'text-amber-700'}`}>{result.lackOfFit.adequate ? 'OK' : 'Fail'}</div>
-              <div className="text-xs text-slate-500 mt-1">Lack of Fit (p={result.lackOfFit.p})</div>
+              <div className="text-xs text-gray-500 mt-1">Lack of Fit (p={result.lackOfFit.p})</div>
             </div>
             <div className="bg-amber-50 rounded-xl p-4 text-center">
               <div className="text-2xl font-black text-amber-700">{result.predictedResponse.toFixed(3)}</div>
-              <div className="text-xs text-slate-500 mt-1">Predicted optimum</div>
+              <div className="text-xs text-gray-500 mt-1">Predicted optimum</div>
             </div>
           </div>
 
@@ -1114,11 +1084,11 @@ export default function BioprocessDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {localFactors.slice(0, 3).map((f, i) => (
                   <div key={f.code} className="bg-white rounded-xl p-3 border border-navy/10">
-                    <div className="text-xs font-bold text-slate-500 uppercase">{f.code} — {f.variable}</div>
+                    <div className="text-[10px] font-bold text-gray-500 uppercase">{f.code} — {f.variable}</div>
                     <div className="text-xl font-black text-navy mt-1">
-                      {result.actualOpt[i]} <span className="text-sm font-normal text-slate-500">{f.unit}</span>
+                      {result.actualOpt[i]} <span className="text-sm font-normal text-gray-500">{f.unit}</span>
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">coded: {result.stationary.clamped[i].toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">coded: {result.stationary.clamped[i].toFixed(2)}</div>
                   </div>
                 ))}
               </div>
@@ -1126,22 +1096,22 @@ export default function BioprocessDetailPage() {
           )}
 
           {/* Surface heatmap */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Response Surface (Factor A vs B, Factor C at centre)</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Response Surface (Factor A vs B, Factor C at centre)</h3>
             <RSMHeatmap heatmap={result.heatmap} factors={localFactors} />
           </div>
 
           {/* ANOVA Table */}
           {result.anova && (
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                <h3 className="text-sm font-bold text-slate-700">ANOVA Table</h3>
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 className="text-sm font-bold text-gray-700">ANOVA Table</h3>
               </div>
               <table className="w-full text-sm">
-                <thead className="bg-slate-50/60">
+                <thead className="bg-gray-50/60">
                   <tr>
                     {['Source','SS','df','MS','F','p-value'].map(h => (
-                      <th key={h} className={`px-4 py-2.5 text-xs font-bold text-slate-600 ${h === 'Source' ? 'text-left' : 'text-right'}`}>{h}</th>
+                      <th key={h} className={`px-4 py-2.5 text-xs font-bold text-gray-600 ${h === 'Source' ? 'text-left' : 'text-right'}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1155,36 +1125,36 @@ export default function BioprocessDetailPage() {
                     <td className="px-4 py-2.5 text-right">{pValue(result.anova.model.p)}</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-2 text-slate-600 pl-8 text-xs">Residual</td>
+                    <td className="px-4 py-2 text-gray-600 pl-8 text-xs">Residual</td>
                     <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.residual.SS}</td>
                     <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.residual.df}</td>
                     <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.residual.MS}</td>
-                    <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
-                    <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-xs">--</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-xs">--</td>
                   </tr>
                   <tr className="bg-amber-50/40">
-                    <td className="px-4 py-2 text-slate-600 pl-12 text-xs">Lack of Fit</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.SS}</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.df}</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.MS}</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.lof.F}</td>
-                    <td className="px-4 py-2 text-right text-xs">{pValue(result.anova.lof.p)}</td>
+                    <td className="px-4 py-2 text-gray-600 pl-12 text-[11px]">Lack of Fit</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.MS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.lof.F}</td>
+                    <td className="px-4 py-2 text-right text-[11px]">{pValue(result.anova.lof.p)}</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-2 text-slate-600 pl-12 text-xs">Pure Error</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.pureErr.SS}</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.pureErr.df}</td>
-                    <td className="px-4 py-2 text-right font-mono text-xs">{result.anova.pureErr.MS}</td>
-                    <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
-                    <td className="px-4 py-2 text-right text-slate-400 text-xs">--</td>
+                    <td className="px-4 py-2 text-gray-600 pl-12 text-[11px]">Pure Error</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.SS}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.df}</td>
+                    <td className="px-4 py-2 text-right font-mono text-[11px]">{result.anova.pureErr.MS}</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-[11px]">--</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-[11px]">--</td>
                   </tr>
-                  <tr className="bg-slate-50 font-bold">
-                    <td className="px-4 py-2.5 text-slate-700">Total (Corrected)</td>
+                  <tr className="bg-gray-50 font-bold">
+                    <td className="px-4 py-2.5 text-gray-700">Total (Corrected)</td>
                     <td className="px-4 py-2.5 text-right font-mono">{result.anova.total.SS}</td>
                     <td className="px-4 py-2.5 text-right font-mono">{result.anova.total.df}</td>
-                    <td className="px-4 py-2.5 text-right text-slate-400">--</td>
-                    <td className="px-4 py-2.5 text-right text-slate-400">--</td>
-                    <td className="px-4 py-2.5 text-right text-slate-400">--</td>
+                    <td className="px-4 py-2.5 text-right text-gray-400">--</td>
+                    <td className="px-4 py-2.5 text-right text-gray-400">--</td>
+                    <td className="px-4 py-2.5 text-right text-gray-400">--</td>
                   </tr>
                 </tbody>
               </table>
@@ -1192,26 +1162,26 @@ export default function BioprocessDetailPage() {
           )}
 
           {/* Coefficient table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600">Term</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-600">Description</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">Coefficient beta</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">Std. Error</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">t</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-slate-600">p-value</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Term</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600">Description</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">Coefficient beta</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">Std. Error</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">t</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600">p-value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {result.coefs.map(c => (
                   <tr key={c.term} className={c.significant ? 'bg-emerald-50/40' : ''}>
                     <td className="px-4 py-2.5 font-mono font-bold text-navy text-xs">{c.term}</td>
-                    <td className="px-4 py-2.5 text-slate-500 text-xs">{TERM_LABELS[c.term] || c.term}</td>
+                    <td className="px-4 py-2.5 text-gray-500 text-xs">{TERM_LABELS[c.term] || c.term}</td>
                     <td className="px-4 py-2.5 text-right font-mono">{c.beta >= 0 ? '+' : ''}{c.beta.toFixed(4)}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-slate-500">{c.se.toFixed(4)}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-slate-500">{c.t.toFixed(3)}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-gray-500">{c.se.toFixed(4)}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-gray-500">{c.t.toFixed(3)}</td>
                     <td className="px-4 py-2.5 text-right">{pValue(c.p)}</td>
                   </tr>
                 ))}
@@ -1224,9 +1194,9 @@ export default function BioprocessDetailPage() {
             const allVals = result.diagnostics.flatMap(d => [d.actual, d.fitted]);
             const mn = Math.min(...allVals), mx = Math.max(...allVals);
             return (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h3 className="text-sm font-bold text-slate-700 mb-1">Predicted vs Actual</h3>
-                <p className="text-xs text-slate-400 mb-4">Points close to the diagonal indicate good model fit</p>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-bold text-gray-700 mb-1">Predicted vs Actual</h3>
+                <p className="text-xs text-gray-400 mb-4">Points close to the diagonal indicate good model fit</p>
                 <ResponsiveContainer width="100%" height={220}>
                   <ScatterChart margin={{ left: 10, right: 10, top: 4, bottom: 16 }}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1239,18 +1209,18 @@ export default function BioprocessDetailPage() {
                 </ResponsiveContainer>
                 <div className="mt-3 overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead><tr className="bg-slate-50">
+                    <thead><tr className="bg-gray-50">
                       {['Run','Actual','Predicted','Residual'].map(h => (
-                        <th key={h} className="px-3 py-2 text-right first:text-left font-bold text-slate-600">{h}</th>
+                        <th key={h} className="px-3 py-2 text-right first:text-left font-bold text-gray-600">{h}</th>
                       ))}
                     </tr></thead>
                     <tbody className="divide-y divide-gray-100">
                       {result.diagnostics.map(d => (
                         <tr key={d.run} className={Math.abs(d.residual) > 2 * Math.sqrt(result.MSE || 1) ? 'bg-red-50' : ''}>
-                          <td className="px-3 py-1.5 font-bold text-slate-700">{d.run}</td>
+                          <td className="px-3 py-1.5 font-bold text-gray-700">{d.run}</td>
                           <td className="px-3 py-1.5 text-right font-mono">{d.actual}</td>
                           <td className="px-3 py-1.5 text-right font-mono text-navy">{d.fitted}</td>
-                          <td className={`px-3 py-1.5 text-right font-mono ${Math.abs(d.residual) > 2 * Math.sqrt(result.MSE || 1) ? 'text-red-600 font-bold' : 'text-slate-500'}`}>{d.residual >= 0 ? '+' : ''}{d.residual}</td>
+                          <td className={`px-3 py-1.5 text-right font-mono ${Math.abs(d.residual) > 2 * Math.sqrt(result.MSE || 1) ? 'text-red-600 font-bold' : 'text-gray-500'}`}>{d.residual >= 0 ? '+' : ''}{d.residual}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1275,9 +1245,9 @@ export default function BioprocessDetailPage() {
         return (
           <div className="space-y-6">
             <div className="flex items-center gap-3 flex-wrap">
-              <div className={`flex-1 rounded-xl p-4 border text-center ${result.dominant === 'growth-associated' ? 'bg-slate-50 border-slate-200' : result.dominant === 'non-growth-associated' ? 'bg-slate-50 border-slate-200' : 'bg-amber-50 border-amber-200'}`}>
+              <div className={`flex-1 rounded-xl p-4 border text-center ${result.dominant === 'growth-associated' ? 'bg-blue-50 border-blue-200' : result.dominant === 'non-growth-associated' ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200'}`}>
                 <div className="text-lg font-black capitalize">{result.dominant} product</div>
-                <div className="text-xs text-slate-500 mt-1">Luedeking-Piret classification</div>
+                <div className="text-xs text-gray-500 mt-1">Luedeking-Piret classification</div>
               </div>
               {result.fittedFromData ? (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-xs font-bold text-emerald-700 flex items-center gap-1.5">
@@ -1291,15 +1261,15 @@ export default function BioprocessDetailPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center text-sm">
               {[['mumax', result.muMax + ' h-1'], ['Ks', result.Ks + ' g/L'], ['Yx/s', result.Yxs], ['alpha', result.alpha], ['beta', result.beta]].map(([l, v]) => (
-                <div key={l} className="bg-slate-50 rounded-xl p-3">
-                  <div className="font-mono text-xs text-slate-500">{l}</div>
+                <div key={l} className="bg-gray-50 rounded-xl p-3">
+                  <div className="font-mono text-xs text-gray-500">{l}</div>
                   <div className="font-black text-navy mt-1">{v}</div>
                 </div>
               ))}
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="text-sm font-bold text-slate-700 mb-1">Batch Simulation vs Experimental Data</h3>
-              <p className="text-xs text-slate-400 mb-4">Lines = ODE simulation · Dots = measured data points</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-1">Batch Simulation vs Experimental Data</h3>
+              <p className="text-xs text-gray-400 mb-4">Lines = ODE simulation · Dots = measured data points</p>
               <ResponsiveContainer width="100%" height={300}>
                 <ComposedChart margin={{ left: 4, right: 8, bottom: 16 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1330,24 +1300,24 @@ export default function BioprocessDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div className="bg-navy/5 rounded-xl p-4">
               <div className="text-2xl font-black text-navy">{result.muMax}</div>
-              <div className="text-xs text-slate-500 mt-1">{result.modelType === 'monod' ? 'μmax (h⁻¹)' : 'Vmax'}</div>
+              <div className="text-xs text-gray-500 mt-1">{result.modelType === 'monod' ? 'μmax (h⁻¹)' : 'Vmax'}</div>
             </div>
             <div className="bg-emerald-50 rounded-xl p-4">
               <div className="text-2xl font-black text-emerald-700">{result.Ks}</div>
-              <div className="text-xs text-slate-500 mt-1">{result.modelType === 'monod' ? 'Ks (g/L)' : 'Km (mM)'}</div>
+              <div className="text-xs text-gray-500 mt-1">{result.modelType === 'monod' ? 'Ks (g/L)' : 'Km (mM)'}</div>
             </div>
             <div className="bg-amber-50 rounded-xl p-4">
               <div className="text-2xl font-black text-amber-700">{(result.r2 * 100).toFixed(1)}%</div>
-              <div className="text-xs text-slate-500 mt-1">R² fit</div>
+              <div className="text-xs text-gray-500 mt-1">R² fit</div>
             </div>
           </div>
           {result.doublingTime && (
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-800 text-center">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800 text-center">
               Doubling time at non-limiting substrate: <span className="font-bold">{result.doublingTime} h</span>
             </div>
           )}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">
               {result.modelType === 'monod' ? 'Monod Curve' : 'Michaelis-Menten Curve'}
             </h3>
             <ResponsiveContainer width="100%" height={240}>
@@ -1363,7 +1333,7 @@ export default function BioprocessDetailPage() {
             <div className="mt-3">
               <div className="flex flex-wrap gap-2 justify-center">
                 {result.rawPts?.map((pt, i) => (
-                  <span key={i} className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">
+                  <span key={i} className="text-xs text-gray-500 bg-gray-100 rounded px-2 py-0.5">
                     [S]={pt.s} → {result.modelType === 'monod' ? 'μ' : 'v'}={pt.r}
                   </span>
                 ))}
@@ -1372,8 +1342,8 @@ export default function BioprocessDetailPage() {
           </div>
 
           {result.lwb?.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="text-sm font-bold text-slate-700 mb-4">Lineweaver-Burk Plot (1/v vs 1/[S])</h3>
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-4">Lineweaver-Burk Plot (1/v vs 1/[S])</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1383,32 +1353,32 @@ export default function BioprocessDetailPage() {
                   <Scatter data={result.lwb} fill="#dc2626" />
                 </ScatterChart>
               </ResponsiveContainer>
-              <p className="text-xs text-slate-400 text-center mt-2">Slope = Km/Vmax · y-intercept = 1/Vmax · x-intercept = −1/Km</p>
+              <p className="text-[11px] text-gray-400 text-center mt-2">Slope = Km/Vmax · y-intercept = 1/Vmax · x-intercept = −1/Km</p>
             </div>
           )}
         </div>
       );
     }
 
-    return <div className="text-slate-500 text-sm">Unknown result type</div>;
+    return <div className="text-gray-500 text-sm">Unknown result type</div>;
   };
 
   // ── Tab: Interpretation ───────────────────────────────────────────────────
   const InterpretationTab = () => {
     if (!result?.interpretation?.length) return (
       <div className="text-center py-20">
-        <Info className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-500 font-semibold">Run the analysis first to see interpretation</p>
+        <Info className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500 font-semibold">Run the analysis first to see interpretation</p>
       </div>
     );
     return (
       <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
             <Info className="w-4 h-4 text-navy" /> Scientific Interpretation
           </h3>
           {result.interpretation.map((line, i) => (
-            <p key={i} className="text-sm text-slate-700 leading-relaxed border-l-2 border-navy/20 pl-4">{line}</p>
+            <p key={i} className="text-sm text-gray-700 leading-relaxed border-l-2 border-navy/20 pl-4">{line}</p>
           ))}
         </div>
 
@@ -1422,8 +1392,8 @@ export default function BioprocessDetailPage() {
               {result.significant.map((f, i) => (
                 <div key={f.code} className="flex items-center gap-3 bg-white rounded-lg p-3 border border-emerald-100">
                   <span className="font-mono font-bold text-navy text-xs w-6">{['A','B','C','D'][i]}</span>
-                  <span className="text-sm text-slate-700">{f.variable}</span>
-                  <span className="text-xs text-slate-400 ml-auto">effect = {f.effect >= 0 ? '+' : ''}{f.effect.toFixed(4)}</span>
+                  <span className="text-sm text-gray-700">{f.variable}</span>
+                  <span className="text-xs text-gray-400 ml-auto">effect = {f.effect >= 0 ? '+' : ''}{f.effect.toFixed(4)}</span>
                 </div>
               ))}
             </div>
@@ -1438,9 +1408,9 @@ export default function BioprocessDetailPage() {
         )}
 
         {experiment?.type === 'rsm' && (experiment?.status === 'complete' || experiment?.status === 'completed') && (
-          <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <p className="text-sm font-bold text-slate-800 mb-1">Ready for production?</p>
-            <p className="text-xs text-slate-600 mb-3">Use the predicted optimal conditions to start a production batch. The &quot;Create Batch&quot; button in the top-right pre-fills the batch notes with optimal factor values.</p>
+          <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+            <p className="text-sm font-bold text-blue-800 mb-1">Ready for production?</p>
+            <p className="text-xs text-blue-600 mb-3">Use the predicted optimal conditions to start a production batch. The "Create Batch" button in the top-right pre-fills the batch notes with optimal factor values.</p>
           </div>
         )}
       </div>
@@ -1461,26 +1431,23 @@ export default function BioprocessDetailPage() {
       {/* Back + header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-start gap-4">
-          <Link href="/bioprocess" className="mt-1 p-2 rounded-lg hover:bg-slate-100 transition-colors">
-            <ArrowLeft className="w-4 h-4 text-slate-600" />
+          <Link href="/bioprocess" className="mt-1 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <ArrowLeft className="w-4 h-4 text-gray-600" />
           </Link>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className={`text-xs font-bold px-2 py-0.5 rounded border ${tm.color}`}>{tm.label}</span>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${experiment.status === 'complete' ? 'bg-emerald-50 text-emerald-700' : experiment.status === 'collecting' ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${experiment.status === 'complete' ? 'bg-emerald-50 text-emerald-700' : experiment.status === 'collecting' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
                 {experiment.status}
               </span>
-              {experiment.sop_id && (
-                <a href="/sops" className="text-xs font-bold px-2 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100">Requires SOP</a>
-              )}
             </div>
-            <h1 className="text-xl font-black text-slate-900">{experiment.title}</h1>
-            {experiment.description && <p className="text-sm text-slate-500 mt-0.5">{experiment.description}</p>}
-            <p className="text-xs text-slate-400 mt-1">Response: {experiment.response_variable} {experiment.response_unit && `(${experiment.response_unit})`}</p>
+            <h1 className="text-xl font-black text-gray-900">{experiment.title}</h1>
+            {experiment.description && <p className="text-sm text-gray-500 mt-0.5">{experiment.description}</p>}
+            <p className="text-xs text-gray-400 mt-1">Response: {experiment.response_variable} {experiment.response_unit && `(${experiment.response_unit})`}</p>
             {experiment.creator && (
               <div className="flex items-center gap-1.5 mt-1">
                 <CreatorBadge initials={experiment.creator.initials} fullName={experiment.creator.full_name} />
-                <span className="text-xs text-slate-400">{experiment.creator.full_name}</span>
+                <span className="text-[11px] text-gray-400">{experiment.creator.full_name}</span>
               </div>
             )}
           </div>
@@ -1516,12 +1483,12 @@ export default function BioprocessDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-6">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
         {tabs.map(({ id, label, Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${activeTab === id ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${activeTab === id ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <Icon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{label}</span>
@@ -1538,11 +1505,11 @@ export default function BioprocessDetailPage() {
         {activeTab === 'models' && <PredictiveModelsTab supabase={supabase} toast={toast} />}
         {activeTab === 'scaledown' && (
           <div className="space-y-6">
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
-              <h3 className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-slate-600"/>A-65 Scale-Down Model
+            <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
+              <h3 className="text-sm font-black text-gray-900 mb-2 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-indigo-600"/>A-65 Scale-Down Model
               </h3>
-              <p className="text-xs text-slate-600 font-semibold mb-4">Link this bench-scale experiment to a production-scale batch to compute scaling factor and comparability score.</p>
+              <p className="text-xs text-gray-600 font-semibold mb-4">Link this bench-scale experiment to a production-scale batch to compute scaling factor and comparability score.</p>
               <ScaleDownForm experimentId={id} supabase={supabase} toast={toast} batches={batches}/>
             </div>
           </div>
