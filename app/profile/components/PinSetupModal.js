@@ -32,6 +32,19 @@ export default function PinSetupModal({
           </p>
 
           <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current PIN (leave blank if you don&apos;t have one yet)</label>
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pinForm.currentPin}
+              onChange={e => setPinForm({...pinForm, currentPin: e.target.value})}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent text-center tracking-[0.5em]"
+            />
+          </div>
+
+          <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">New PIN</label>
             <input 
               type="password" 
