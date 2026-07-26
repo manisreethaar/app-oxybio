@@ -14,6 +14,7 @@ const STANDARD_REASONS = [
 export default function AuditReasonModal({ isOpen, onClose, onSubmit, title = "Reason for Change Required" }) {
   const [selectedReason, setSelectedReason] = useState(STANDARD_REASONS[0]);
   const [customReason, setCustomReason] = useState('');
+  const [pin, setPin] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = () => {
@@ -26,12 +27,18 @@ export default function AuditReasonModal({ isOpen, onClose, onSubmit, title = "R
       finalReason = customReason.trim();
     }
     
-    // Pass the reason string back to the parent to execute the RPC
-    onSubmit(finalReason);
+    if (!pin || pin.length < 4) {
+      setError('Please provide a valid E-Signature PIN.');
+      return;
+    }
+    
+    // Pass the reason string and pin back to the parent to execute the RPC
+    onSubmit(finalReason, pin);
     
     // Reset state for next time
     setSelectedReason(STANDARD_REASONS[0]);
     setCustomReason('');
+    setPin('');
     setError('');
   };
 
@@ -58,7 +65,7 @@ export default function AuditReasonModal({ isOpen, onClose, onSubmit, title = "R
           {/* Body */}
           <div className="px-6 py-6 space-y-5">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              In accordance with GDP and ALCOA++ principles, you must provide a reason for modifying this record. This will be permanently attached to the audit trail.
+              In accordance with GDP and ALCOA++ principles, you must provide a reason for modifying this record and your E-Signature PIN to authorize the change.
             </p>
 
             <div>
@@ -80,22 +87,39 @@ export default function AuditReasonModal({ isOpen, onClose, onSubmit, title = "R
             </div>
 
             {selectedReason === 'Other' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Specific Reason <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={customReason}
-                  onChange={(e) => {
-                    setCustomReason(e.target.value);
-                    setError('');
-                  }}
-                  rows={3}
-                  placeholder="Explain why this change is being made..."
-                  className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2.5 border"
-                />
-              </div>
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   Specific Reason <span className="text-red-500">*</span>
+                 </label>
+                 <textarea
+                   value={customReason}
+                   onChange={(e) => {
+                     setCustomReason(e.target.value);
+                     setError('');
+                   }}
+                   rows={3}
+                   placeholder="Explain why this change is being made..."
+                   className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2.5 border"
+                 />
+               </div>
             )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                E-Signature PIN <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="password"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value);
+                  setError('');
+                }}
+                placeholder="••••••"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2.5 border tracking-[0.5em] font-mono"
+              />
+            </div>
 
             {error && (
               <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
@@ -114,7 +138,7 @@ export default function AuditReasonModal({ isOpen, onClose, onSubmit, title = "R
               onClick={handleSubmit}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm rounded-lg transition-colors"
             >
-              Confirm Update
+              Sign & Update
             </button>
           </div>
         </Dialog.Panel>

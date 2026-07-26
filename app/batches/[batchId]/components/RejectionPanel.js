@@ -14,6 +14,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
   const isCeo    = ['ceo','admin'].includes(role);
 
   const [reason,          setReason]          = useState('');
+  const [pin,             setPin]             = useState('');
   const [stage,           setStage]           = useState('');
   const [disposal,        setDisposal]        = useState('Autoclave + Drain');
   const [capaReq,         setCapaReq]         = useState(false);
@@ -57,6 +58,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
 
   const confirmReject = async () => {
     if (!activeFlask) return;
+    if (!pin || pin.length < 4) { toast.warn('A valid E-Signature PIN is required.'); return; }
     setPendingReject(false);
     setSaving(true);
     try {
@@ -76,7 +78,8 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         target_table: 'batch_flasks',
         record_id: activeFlask.id,
         payload: { status: 'rejected' },
-        reason_text: reason
+        reason_text: reason,
+        esignature_pin: pin
       });
       if (rpcError) throw rpcError;
 
@@ -98,7 +101,8 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
             target_table: 'batches',
             record_id: batch.id,
             payload: { status: 'rejected', current_stage: 'rejected' },
-            reason_text: reason
+            reason_text: reason,
+            esignature_pin: pin
           });
           toast.warn('All trials rejected — batch marked as rejected.');
         }
@@ -227,6 +231,17 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Trial Rejection</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">Confirm rejection of {activeFlask.flask_label}? This act is permanent.</p>
+            <div className="mb-4 text-left">
+              <label className="block text-sm font-medium text-slate-700 mb-1">E-Signature PIN</label>
+              <input 
+                type="password"
+                maxLength={6}
+                value={pin}
+                onChange={e => setPin(e.target.value)}
+                placeholder="••••••"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center tracking-[0.5em] font-mono text-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
+              />
+            </div>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingReject(false)}
