@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { canPatchTaskAction, isMasterAdmin } from '@/lib/tasks/access';
+import { canPatchTaskAction } from '@/lib/tasks/access';
+import { isMasterAdmin } from '@/lib/permissions';
 
 const task = {
   assigned_to: 'employee-1',
