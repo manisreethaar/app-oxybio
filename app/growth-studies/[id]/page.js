@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import {
   Clock, AlertCircle, Play, Square, BarChart2,
   FlaskConical, Microscope, X, FileText, Loader2,
@@ -103,7 +104,7 @@ export default function GrowthStudyDetailPage() {
   const [actualInocTime, setActualInocTime] = useState('');
 
   const load = useCallback(() => {
-    fetch(`/api/growth-studies/${id}`)
+    withTimeout(fetch(`/api/growth-studies/${id}`), 20000, 'Growth study load timed out')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));

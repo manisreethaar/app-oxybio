@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { Shield, Search, Filter, Download, ArrowLeft, Eye } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
@@ -23,15 +24,21 @@ export default function AuditLogsPage() {
 
   const fetchLogs = async () => {
     setLoading(true);
-    // Fetch logs joined with employee data
-    const { data } = await supabase
-      .from('system_audit_logs')
-      .select('*, employees(id, first_name, last_name, email, role)')
-      .order('changed_at', { ascending: false })
-      .limit(500); // cap at 500 for UI performance
-    
-    if (data) setLogs(data);
-    setLoading(false);
+    try {
+      // Fetch logs joined with employee data
+      const { data } = await withTimeout(supabase
+        .from('system_audit_logs')
+        .select('*, employees(id, first_name, last_name, email, role)')
+        .order('changed_at', { ascending: false })
+        .limit(500), // cap at 500 for UI performance
+        20000, 'Audit log load timed out');
+
+      if (data) setLogs(data);
+    } catch (err) {
+      console.error('Audit log fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredLogs = logs.filter(log => {

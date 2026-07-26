@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Plus, Trash2, GripVertical, Save, FlaskConical, Tag } from 'lucide-react';
 
 function OptionsEditor({ title, description, icon: Icon, optionKey, options, onSave, saving }) {
@@ -119,7 +120,7 @@ export default function BatchSettingsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/admin/batch-options')
+    withTimeout(fetch('/api/admin/batch-options'), 20000, 'Settings load timed out')
       .then(r => r.json())
       .then(json => {
         if (json.success) {
