@@ -1017,8 +1017,8 @@ export default function CellBankDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-5">
-      <div className="flex items-center gap-2">
-        <Link href="/research/cell-bank" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+      <div className="flex items-start gap-2">
+        <Link href="/research/cell-bank" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 shrink-0">
           <ChevronLeft className="w-4 h-4"/>
         </Link>
         <div className="flex-1 min-w-0">

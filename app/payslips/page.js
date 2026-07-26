@@ -129,54 +129,54 @@ function DayCell({ dayData }) {
   };
 
   return (
-    <div className={`relative rounded-2xl border p-2 min-h-[80px] flex flex-col gap-1 transition-all ${bgMap[status] || 'bg-white border-slate-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
+    <div className={`relative rounded-2xl border p-1 sm:p-2 min-h-[72px] sm:min-h-[80px] flex flex-col gap-1 transition-all overflow-hidden ${bgMap[status] || 'bg-white border-slate-100'} ${isToday ? 'ring-2 ring-slate-400' : ''}`}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className={`text-xs font-black ${status === 'not_applicable' ? 'text-slate-200' : is_sunday && status !== 'present' ? 'text-slate-400' : 'text-slate-700'}`}>
+        <div className="flex items-center gap-1 min-w-0">
+          <span className={`text-xs font-black shrink-0 ${status === 'not_applicable' ? 'text-slate-200' : is_sunday && status !== 'present' ? 'text-slate-400' : 'text-slate-700'}`}>
             {dayNum}
           </span>
           {is_sunday && (
-            <span className={`text-xs font-bold ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
+            <span className={`hidden sm:inline text-xs font-bold truncate ${status === 'not_applicable' ? 'text-slate-200' : status === 'present' ? 'text-emerald-600/50' : 'text-slate-300'}`}>Sun</span>
           )}
         </div>
-        {is_joining_day && <Star className="w-3 h-3 text-amber-500 fill-amber-400" />}
-        {isToday && <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />}
+        {is_joining_day && <Star className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />}
+        {isToday && <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0" />}
       </div>
 
       {status === 'present' && log && (
-        <div className="space-y-0.5 flex-1">
+        <div className="space-y-0.5 flex-1 min-w-0">
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-xs font-bold text-emerald-700 font-mono">
-              {new Date(log.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+            <span className="text-[10px] sm:text-xs font-bold text-emerald-700 font-mono whitespace-nowrap">
+              {new Date(log.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
             </span>
           </div>
           {log.check_out_time && log.mispunch_status !== 'required' ? (
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-              <span className="text-xs font-bold text-slate-500 font-mono">
-                {new Date(log.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              <span className="text-[10px] sm:text-xs font-bold text-slate-500 font-mono whitespace-nowrap">
+                {new Date(log.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-1 mt-1">
-              <AlertTriangle className="w-3 h-3 text-red-500" />
-              <span className="text-xs font-black text-red-600 uppercase tracking-widest">Missed Checkout</span>
+            <div className="flex items-center gap-1 mt-1 min-w-0">
+              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
+              <span className="text-[9px] sm:text-xs font-black text-red-600 uppercase tracking-widest truncate">Missed</span>
             </div>
           )}
           {log.total_hours && (
-            <span className="block text-xs font-black text-slate-600 mt-0.5">
+            <span className="block text-[10px] sm:text-xs font-black text-slate-600 mt-0.5 whitespace-nowrap">
               {log.total_hours}h
             </span>
           )}
           {log.manual_entry && (
-            <span className="block text-xs font-black text-slate-500 uppercase tracking-wide">Manual</span>
+            <span className="block text-[9px] sm:text-xs font-black text-slate-500 uppercase tracking-wide truncate">Manual</span>
           )}
         </div>
       )}
 
       {(status === 'on_leave' || status === 'leave_pending') && leave && (
-        <span className="text-xs font-black text-amber-600 leading-tight">{leave.leave_type}</span>
+        <span className="text-[10px] sm:text-xs font-black text-amber-600 leading-tight truncate block">{leave.leave_type}</span>
       )}
     </div>
   );
@@ -231,16 +231,16 @@ function AttendanceCalendar({ calendarDays, summary, month, year, onPrev, onNext
       </div>
 
       {/* Day labels header */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
         {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-          <div key={d} className={`text-center text-xs font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
+          <div key={d} className={`text-center text-[10px] sm:text-xs font-black uppercase tracking-widest py-1 ${d === 'Sun' ? 'text-slate-300' : 'text-slate-400'}`}>
             {d}
           </div>
         ))}
 
         {/* Padding cells */}
         {Array.from({ length: padCount }).map((_, i) => (
-          <div key={`pad-${i}`} className="min-h-[80px]" />
+          <div key={`pad-${i}`} className="min-h-[72px] sm:min-h-[80px]" />
         ))}
 
         {/* Actual day cells */}
