@@ -35,12 +35,19 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
   const fetchingRef   = useRef(false);
   const initializedRef= useRef(false);
 
-  const cachedProfile = readCache();
   const serverProfile = initialProfile || null;
 
+  // IMPORTANT: the initial state here must match what the server rendered
+  // exactly, or React throws a hydration mismatch and discards + redoes the
+  // entire tree on every single page load (this was happening app-wide —
+  // sessionStorage doesn't exist during SSR, so reading it synchronously
+  // here to seed state made the client's first render diverge from the
+  // server's). serverProfile is safe because it was computed the same way
+  // during SSR. The (possibly fresher) sessionStorage cache is applied in
+  // the effect below instead, which only ever runs after hydration.
   const [user,            setUser]            = useState(initialSession?.user || null);
-  const [employeeProfile, setEmployeeProfile] = useState(cachedProfile || serverProfile);
-  const [loading,         setLoading]         = useState(!cachedProfile && !serverProfile);
+  const [employeeProfile, setEmployeeProfile] = useState(serverProfile);
+  const [loading,         setLoading]         = useState(!serverProfile);
   const [sessionExpired,  setSessionExpired]  = useState(false);
 
   // ── Profile fetcher ──────────────────────────────────────

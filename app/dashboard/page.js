@@ -26,6 +26,18 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const { employeeProfile, loading } = useAuth();
 
+  // Computed client-side only — the server and the browser can be in
+  // different timezones, so evaluating new Date() directly during render
+  // made the server-rendered greeting disagree with the client's during
+  // hydration for large parts of the day (a real React hydration error,
+  // not just a cosmetic one). Hooks must run unconditionally, before the
+  // early returns below.
+  const [clientGreeting, setClientGreeting] = useState(null);
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setClientGreeting(hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening');
+  }, []);
+
   // Remove the artificial delay
   if (loading) {
     return <DashboardSkeleton />;
@@ -51,8 +63,7 @@ export default function DashboardPage() {
     return parts[0];
   };
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
+  const greeting = clientGreeting || 'Day';
 
   return (
     <div className="space-y-6">

@@ -19,6 +19,16 @@ export default function TopBar() {
   const supabase = useMemo(() => createClient(), []);
   const topbarRef = useRef(null);
 
+  // Computed client-side only — the server and the browser can be in
+  // different timezones, so formatting new Date() directly during render
+  // can disagree with the client's version during hydration near a
+  // midnight boundary. This header renders on every single page, so any
+  // mismatch here was a hydration error on every navigation.
+  const [todayStr, setTodayStr] = useState('');
+  useEffect(() => {
+    setTodayStr(format(new Date(), 'EEE, MMM d'));
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (topbarRef.current && !topbarRef.current.contains(event.target)) {
@@ -120,8 +130,6 @@ export default function TopBar() {
   const openSearch = () => {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('oxysearch:open'));
   };
-
-  const todayStr = format(new Date(), 'EEE, MMM d');
 
   return (
     <header
