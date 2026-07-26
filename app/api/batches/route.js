@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { sendServerNotification } from '@/utils/serverNotify';
@@ -5,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { can, isMasterAdmin } from '@/lib/permissions';
 import { createBatchSchema as postSchema } from '@/lib/schemas/batches';
 
-export { postSchema };
+
 
 // ─────────────────────────────────────────────────────────────
 // Generate sequential batch ID: OB-FER-YY-NNN
@@ -16,19 +17,29 @@ async function generateBatchId(supabase) {
   const yy = String(now.getFullYear()).slice(-2);
   const prefix = `OB-FER-${yy}-`;
 
-  const { data: lastBatch } = await supabase
+  const { data: batches } = await supabase
     .from('batches')
     .select('batch_id')
     .like('batch_id', `${prefix}%`)
-    .order('batch_id', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('batch_id', { ascending: true });
 
   let seq = 1;
-  if (lastBatch?.batch_id) {
-    const parts = lastBatch.batch_id.split('-');
-    const lastSeq = parseInt(parts[parts.length - 1], 10);
-    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  if (batches && batches.length > 0) {
+    const usedSeqs = batches
+      .map(b => {
+        const parts = b.batch_id.split('-');
+        return parseInt(parts[parts.length - 1], 10);
+      })
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b);
+      
+    for (const num of usedSeqs) {
+      if (num === seq) {
+        seq++;
+      } else if (num > seq) {
+        break; // found a gap
+      }
+    }
   }
 
   return `${prefix}${String(seq).padStart(3, '0')}`;
@@ -38,12 +49,12 @@ async function generateBatchId(supabase) {
 // Phase 0 standard QC test template — auto-created at QC Hold stage
 // (not at batch creation, but defined here for reference)
 // ─────────────────────────────────────────────────────────────
-export const STANDARD_QC_TESTS = [
+const STANDARD_QC_TESTS = [
   { test_name: 'pH — Final product',           target_spec: '4.2–4.6',                 result_unit: 'pH units' },
   { test_name: 'CFU count (Viable count)',      target_spec: '≥10⁶ CFU/ml',             result_unit: 'CFU/ml' },
   { test_name: 'Gram stain',                   target_spec: 'Gram-positive rods dominant', result_unit: '' },
   { test_name: 'Sensory — Aroma',              target_spec: 'Tangy, clean, no off-odour', result_unit: '' },
-  { test_name: 'Sensory — Colour',             target_spec: 'Consistent (Kavuni: reddish-purple)', result_unit: '' },
+  { test_name: 'Sensory — Colour',             target_spec: 'Consistent (Kavuni: reddish-slate)', result_unit: '' },
   { test_name: 'Sensory — Taste',              target_spec: 'Acceptable to panel',     result_unit: '' },
   { test_name: 'Sensory — Overall',            target_spec: 'PASS ≥7/10',             result_unit: 'score' },
   { test_name: 'Microbial (Yeast + Mould)',    target_spec: 'Defer to Phase 1',        result_unit: 'CFU/ml', pass_fail: 'N/A' },
@@ -89,7 +100,7 @@ export async function POST(request) {
     // ── Gate 2: Creator role check ──────────────────────────────────────
     const { data: creator, error: creatorErr } = await supabase
       .from('employees')
-      .select('id, full_name, role')
+      .select('id, full_name, role, custom_permissions')
       .eq('email', user.email)
       .single();
 
@@ -97,7 +108,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Employee profile not found' }, { status: 403 });
     }
 
-    if (!can(creator.role, 'batches', 'create') && !isMasterAdmin(user.email)) {
+    if (!can(creator.role, 'batches', 'create', creator.custom_permissions) && !isMasterAdmin(user.email)) {
       return NextResponse.json({ error: 'Insufficient permissions to create a batch.' }, { status: 403 });
     }
 
@@ -318,10 +329,10 @@ export async function DELETE(request) {
 
     const { data: currentUser } = await supabase
       .from('employees')
-      .select('id, role')
+      .select('id, role, custom_permissions')
       .eq('email', user.email)
       .single();
-    if (!currentUser || (!can(currentUser.role, 'batches', 'delete') && !isMasterAdmin(user.email))) {
+    if (!currentUser || (!can(currentUser.role, 'batches', 'delete', currentUser.custom_permissions) && !isMasterAdmin(user.email))) {
       return NextResponse.json({ error: 'Insufficient permissions to archive or delete batches.' }, { status: 403 });
     }
 
@@ -361,9 +372,7 @@ export async function DELETE(request) {
       });
     }
 
-    if (!batch.archived_at) {
-      return NextResponse.json({ error: 'Archive this batch before permanently deleting it.' }, { status: 409 });
-    }
+    // Removed the check that blocked permanent deletion if not archived.
 
     // Reverse any inventory movements already recorded
     const { data: movements } = await supabase
@@ -385,14 +394,36 @@ export async function DELETE(request) {
     }
 
     // Explicitly delete child records to satisfy constraints without needing ON DELETE CASCADE
-    await adminSupabase.from('stage_transitions').delete().eq('batch_id', id);
-    await adminSupabase.from('batch_stage_media_prep').delete().eq('batch_id', id);
-    await adminSupabase.from('batch_stage_sterilisation').delete().eq('batch_id', id);
-    await adminSupabase.from('batch_flasks').delete().eq('batch_id', id);
+    const childTables = [
+      'batch_stage_rejected',
+      'batch_stage_released',
+      'batch_stage_qc_hold',
+      'batch_stage_extract_addition',
+      'batch_stage_straining',
+      'batch_stage_inoculation',
+      'batch_stage_sterilisation',
+      'batch_stage_media_prep',
+      'stage_transitions',
+      'batch_flask_qc_tests',
+      'batch_qc_tests',
+      'batch_fermentation_readings',
+      'batch_flask_endpoints',
+      'batch_flasks',
+      'lab_notebook_entries',
+      'tasks',
+      'batch_comments',
+      'taste_panels',
+      'batch_yield_metrics',
+      'incubation_records'
+    ];
+
+    for (const table of childTables) {
+      await adminSupabase.from(table).delete().eq('batch_id', id);
+    }
     
-    await adminSupabase.from('lab_notebook_entries').delete().eq('batch_id', id);
-    
-    await adminSupabase.from('tasks').delete().eq('batch_id', id);
+    await adminSupabase.from('edit_requests').delete().eq('record_id', id);
+    await adminSupabase.from('scale_up_records').delete().eq('bench_scale_batch_id', id);
+    await adminSupabase.from('scale_up_records').delete().eq('production_scale_batch_id', id);
 
     const { error: deleteErr } = await adminSupabase.from('batches').delete().eq('id', id);
     if (deleteErr) throw deleteErr;
@@ -402,5 +433,6 @@ export async function DELETE(request) {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
 
+
+}

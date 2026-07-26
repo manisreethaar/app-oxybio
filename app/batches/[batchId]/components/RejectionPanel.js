@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { XCircle, Lock } from 'lucide-react';
 
 const DISPOSAL = ['Autoclave + Drain', 'Incineration', 'Return for reprocessing', 'Other'];
@@ -24,20 +25,24 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
   const fetch = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    const [{ data }, mediaPrep] = await Promise.all([
-      supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).single(),
-    ]);
-    if (!isCurrent) return;
-    if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
-    else { setRecord(null); setStage(activeFlask.current_stage || ''); }
-    // Build lot list from media prep
-    const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
-    if (lotIds.length) {
-      const { data: lots } = await supabase.from('inventory_stock')
-        .select('id, supplier_batch_number, inventory_items(name)')
-        .in('id', lotIds);
-      if (lots) setBatchLots(lots);
+    try {
+      const [{ data }, mediaPrep] = await withTimeout(Promise.all([
+        supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).single(),
+      ]), 20000, 'Rejection record load timed out');
+      if (!isCurrent) return;
+      if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
+      else { setRecord(null); setStage(activeFlask.current_stage || ''); }
+      // Build lot list from media prep
+      const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
+      if (lotIds.length) {
+        const { data: lots } = await withTimeout(supabase.from('inventory_stock')
+          .select('id, supplier_batch_number, inventory_items(name)')
+          .in('id', lotIds), 20000, 'Batch lots load timed out');
+        if (lots) setBatchLots(lots);
+      }
+    } catch (err) {
+      console.error('RejectionPanel fetch error:', err);
     }
     return () => { isCurrent = false; };
   }, [activeFlask?.id, activeFlask?.current_stage, batch.id, supabase]);
@@ -111,31 +116,31 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
     finally { setSaving(false); }
   };
 
-  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Rejection decision.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Rejection decision.</div>;
 
   return (
     <div className="space-y-5">
-      <div className="surface p-5 flex items-center gap-3">
+      <div className="card p-5 flex items-center gap-3">
         <XCircle className="w-5 h-5 text-red-600"/>
-        <div><h2 className="text-base font-bold text-gray-900">Trial Rejected: <span className="text-red-500">{activeFlask.flask_label}</span></h2>
-          <p className="text-xs text-gray-500">Document the root cause for rejection and secure audit trail.</p></div>
+        <div><h2 className="text-base font-bold text-slate-900">Trial Rejected: <span className="text-red-500">{activeFlask.flask_label}</span></h2>
+          <p className="text-xs text-slate-500">Document the root cause for rejection and secure audit trail.</p></div>
       </div>
 
       {record && (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-center">
             <XCircle className="w-8 h-8 text-red-600 mx-auto mb-2"/>
             <p className="text-sm font-black text-red-800">Trial Rejected</p>
             <p className="text-xs text-red-600">{record.rejection_date ? new Date(record.rejection_date).toLocaleString('en-IN') : ''}</p>
           </div>
           <div className="grid grid-cols-1 gap-3 text-xs">
-            <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Reason / Root Cause</p><p className="font-semibold text-gray-800">{record.rejection_reason}</p></div>
+            <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-xs mb-1">Reason / Root Cause</p><p className="font-semibold text-slate-800">{record.rejection_reason}</p></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Failed Stage</p><p className="font-bold text-gray-800">{record.rejection_stage?.replace(/_/g,' ') || '—'}</p></div>
-              <div className="p-3 bg-gray-50 rounded-xl"><p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Disposal Method</p><p className="font-bold text-gray-800">{record.disposal_method}</p></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-xs mb-1">Failed Stage</p><p className="font-bold text-slate-800">{record.rejection_stage?.replace(/_/g,' ') || '—'}</p></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><p className="text-slate-400 font-bold uppercase text-xs mb-1">Disposal Method</p><p className="font-bold text-slate-800">{record.disposal_method}</p></div>
             </div>
             {record.supplier_defect && (
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl font-bold text-orange-800 text-xs">🏭 Supplier defect flagged — Critical deviation raised.</div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">🏭 Supplier defect flagged — Critical deviation raised.</div>
             )}
             {record.capa_required && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl font-bold text-amber-800 text-xs">⚠ CAPA raised — check the CAPA module for the open deviation.</div>
@@ -145,15 +150,15 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       )}
 
       {!record && (
-        <div className="surface p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           {!isCeo ? (
-            <div className="p-6 bg-gray-50 rounded-2xl text-center">
-              <Lock className="w-8 h-8 text-gray-300 mx-auto mb-3"/>
-              <p className="text-sm font-bold text-gray-600">Rejection authority restricted to CEO</p>
+            <div className="p-6 bg-slate-50 rounded-2xl text-center">
+              <Lock className="w-8 h-8 text-slate-300 mx-auto mb-3"/>
+              <p className="text-sm font-bold text-slate-600">Rejection authority restricted to CEO</p>
             </div>
           ) : (
             <>
-              <p className="text-sm font-bold text-gray-900">Complete rejection record for {activeFlask.flask_label}:</p>
+              <p className="text-sm font-bold text-slate-900">Complete rejection record for {activeFlask.flask_label}:</p>
               <div>
                 <label className="field-label">Root Cause / Reason <span className="text-red-500">*</span></label>
                 <textarea value={reason} onChange={e=>setReason(e.target.value)} rows={3} required placeholder="Describe the reason for rejection (QC failure, contamination)..."
@@ -172,15 +177,15 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
                 <div className="flex flex-wrap gap-2">
                   {DISPOSAL.map(d=>(
                     <button key={d} type="button" onClick={()=>setDisposal(d)}
-                      className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${disposal===d?'bg-gray-800 text-white border-gray-800':'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+                      className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${disposal===d?'bg-slate-800 text-white border-slate-800':'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}>
                       {d}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-200 rounded-xl">
-                <input type="checkbox" id="supplierDefect" checked={supplierDefect} onChange={e=>setSupplierDefect(e.target.checked)} className="w-4 h-4 rounded border-orange-300"/>
-                <label htmlFor="supplierDefect" className="text-xs font-bold text-orange-800">Supplier / Raw Material Defect — escalates deviation to Critical</label>
+              <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <input type="checkbox" id="supplierDefect" checked={supplierDefect} onChange={e=>setSupplierDefect(e.target.checked)} className="w-4 h-4 rounded border-amber-300"/>
+                <label htmlFor="supplierDefect" className="text-xs font-bold text-amber-800">Supplier / Raw Material Defect — escalates deviation to Critical</label>
               </div>
               {supplierDefect && batchLots.length > 0 && (
                 <div>
@@ -194,10 +199,10 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
                 </div>
               )}
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <input type="checkbox" id="capaReq" checked={capaReq} onChange={e=>setCapaReq(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
+                <input type="checkbox" id="capaReq" checked={capaReq} onChange={e=>setCapaReq(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
                 <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">Notify CAPA — a deviation is always raised; checking this also sends a CAPA notification</label>
               </div>
-              <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+              <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
               <button onClick={handleSave} disabled={saving||!reason.trim()} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
                 {saving ? 'Saving...' : `✗ Confirm Rejection of ${activeFlask.flask_label}`}
               </button>
@@ -207,14 +212,14 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       )}
 
       {pendingReject && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Trial Rejection</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">Confirm rejection of {activeFlask.flask_label}? This act is permanent.</p>
+            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Trial Rejection</h3>
+            <p className="text-sm text-slate-600 mb-6 text-center">Confirm rejection of {activeFlask.flask_label}? This act is permanent.</p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingReject(false)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
               >
                 Cancel
               </button>

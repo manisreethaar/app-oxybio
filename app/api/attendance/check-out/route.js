@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -48,7 +49,8 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Location Required: GPS coordinates must be sent for geofenced checkout.' }, { status: 400 });
         }
         const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
-        if (distance > MAX_RADIUS_METERS) {
+        const isNearby = distance <= MAX_RADIUS_METERS + 150; // Buffer for indoor GPS drift
+        if (!isNearby) {
             return NextResponse.json({ 
                 error: `Location Verification Failed: You are ${Math.round(distance)}m away from the campus. You must be within the geofence to check out.` 
             }, { status: 403 });

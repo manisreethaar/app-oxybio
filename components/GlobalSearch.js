@@ -95,15 +95,15 @@ export default function GlobalSearch() {
 
   return (
     <div
-      className="fixed inset-0 z-[9998] flex items-start justify-center pt-[15vh] px-4 bg-slate-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9998] flex items-start justify-center pt-[15vh] px-4 bg-slate-50/10 backdrop-blur-sm"
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 fade-in duration-150"
+        className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 fade-in duration-150"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center px-4 py-3.5 border-b border-gray-100 gap-3">
-          <Search className="w-5 h-5 text-gray-400 shrink-0" />
+        <div className="flex items-center px-4 py-3.5 border-b border-slate-100 gap-3">
+          <Search className="w-5 h-5 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -111,19 +111,19 @@ export default function GlobalSearch() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400 bg-transparent"
+            className="flex-1 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 bg-transparent"
           />
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 rounded">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 rounded">
             ESC
           </kbd>
-          <button onClick={() => setOpen(false)} className="p-1 text-gray-300 hover:text-gray-500 transition-colors">
+          <button onClick={() => setOpen(false)} className="p-1 text-slate-300 hover:text-slate-500 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="py-2 max-h-80 overflow-y-auto">
           {results.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-gray-400">
+            <div className="px-4 py-8 text-center text-sm text-slate-400">
               No modules found for &ldquo;{query}&rdquo;
             </div>
           ) : (
@@ -132,22 +132,22 @@ export default function GlobalSearch() {
                 key={idx}
                 onClick={() => navigate(route.href)}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-left group transition-colors ${
-                  idx === selected ? 'bg-gray-50' : 'hover:bg-gray-50'
+                  idx === selected ? 'bg-slate-50' : 'hover:bg-slate-50'
                 }`}
               >
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{route.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{route.category}</p>
+                  <p className="text-sm font-semibold text-slate-800">{route.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{route.category}</p>
                 </div>
                 <ArrowRight className={`w-4 h-4 transition-colors ${
-                  idx === selected ? 'text-gray-500' : 'text-gray-200 group-hover:text-gray-400'
+                  idx === selected ? 'text-slate-500' : 'text-slate-200 group-hover:text-slate-400'
                 }`} />
               </button>
             ))
           )}
         </div>
 
-        <div className="px-4 py-2 border-t border-gray-50 flex items-center gap-4 text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+        <div className="px-4 py-2 border-t border-slate-50 flex items-center gap-4 text-xs font-bold text-slate-300 uppercase tracking-widest">
           <span>↑↓ Navigate</span>
           <span>↵ Open</span>
           <span>Esc Close</span>

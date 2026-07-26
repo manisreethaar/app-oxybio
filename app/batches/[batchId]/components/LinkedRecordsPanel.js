@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { withTimeout } from '@/lib/withTimeout';
 import {
   Package, Wrench, BookOpen, AlertTriangle, Clock, CheckSquare,
   ChevronRight, Loader, FlaskConical, ExternalLink,
@@ -13,18 +14,18 @@ import {
 
 const SEV = {
   critical: 'bg-red-100 text-red-700',
-  major:    'bg-orange-100 text-orange-700',
-  minor:    'bg-yellow-100 text-yellow-700',
+  major:    'bg-amber-100 text-amber-700',
+  minor:    'bg-amber-100 text-amber-700',
 };
 const PRI = {
   high:   'bg-red-100 text-red-700',
   medium: 'bg-amber-100 text-amber-700',
-  low:    'bg-gray-100 text-gray-600',
+  low:    'bg-slate-100 text-slate-600',
 };
 
 function EmptyState({ label }) {
   return (
-    <p className="text-sm text-gray-400 text-center py-8">
+    <p className="text-sm text-slate-400 text-center py-8">
       No {label} linked to this batch yet.
     </p>
   );
@@ -43,21 +44,21 @@ function InventoryTab({ rows }) {
           <Link
             key={r.id}
             href="/inventory"
-            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+            className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-800 truncate">{item?.name || '—'}</p>
+              <p className="text-sm font-bold text-slate-800 truncate">{item?.name || '—'}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-gray-400">Lot: {stock?.supplier_batch_number || 'N/A'}</span>
-                <span className="text-[10px] font-bold text-navy">{r.quantity_used} {item?.unit}</span>
+                <span className="text-xs text-slate-400">Lot: {stock?.supplier_batch_number || 'N/A'}</span>
+                <span className="text-xs font-bold text-navy">{r.quantity_used} {item?.unit}</span>
                 {expiry && (
-                  <span className={`text-[10px] font-bold ${isExpired ? 'text-red-600' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-bold ${isExpired ? 'text-red-600' : 'text-slate-400'}`}>
                     Exp: {expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 )}
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
           </Link>
         );
       })}
@@ -70,31 +71,31 @@ function EquipmentTab({ rows }) {
   return (
     <div className="space-y-2">
       {rows.map(eq => {
-        const dueDate   = eq.calibration_due_date ? new Date(eq.calibration_due_date) : null;
+        const dueDate   = eq.requires_calibration !== false && eq.calibration_due_date ? new Date(eq.calibration_due_date) : null;
         const calOverdue = dueDate && dueDate < new Date();
         return (
           <Link
             key={eq.id}
             href="/equipment"
-            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+            className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-800">{eq.name}</p>
+              <p className="text-sm font-bold text-slate-800">{eq.name}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-gray-400">{eq.model || '—'}</span>
+                <span className="text-xs text-slate-400">{eq.model || '—'}</span>
                 {calOverdue ? (
-                  <span className="text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Cal Overdue</span>
+                  <span className="text-xs font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Cal Overdue</span>
                 ) : dueDate ? (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-xs text-slate-400">
                     Cal due: {dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                   </span>
                 ) : null}
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${eq.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${eq.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                   {eq.status}
                 </span>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
           </Link>
         );
       })}
@@ -110,22 +111,22 @@ function NotebookTab({ rows }) {
         <Link
           key={entry.id}
           href="/lab-notebook"
-          className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+          className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
         >
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-800 truncate">{entry.title || 'Untitled Entry'}</p>
+            <p className="text-sm font-bold text-slate-800 truncate">{entry.title || 'Untitled Entry'}</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+              <span className={`text-xs font-black px-1.5 py-0.5 rounded ${
                 entry.status === 'signed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
               }`}>
                 {entry.status || 'draft'}
               </span>
               {entry.employees?.full_name && (
-                <span className="text-[10px] text-gray-400">by {entry.employees.full_name}</span>
+                <span className="text-xs text-slate-400">by {entry.employees.full_name}</span>
               )}
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
         </Link>
       ))}
     </div>
@@ -143,30 +144,30 @@ function DeviationsTab({ rows }) {
           <Link
             key={dev.id}
             href="/capa"
-            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+            className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${SEV[dev.severity] || 'bg-gray-100 text-gray-600'}`}>
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${SEV[dev.severity] || 'bg-slate-100 text-slate-600'}`}>
                   {dev.severity}
                 </span>
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
-                  dev.status === 'closed' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
+                  dev.status === 'closed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                 }`}>
                   {dev.status}
                 </span>
               </div>
-              <p className="text-sm font-bold text-gray-800 truncate">{dev.title}</p>
+              <p className="text-sm font-bold text-slate-800 truncate">{dev.title}</p>
               <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-[10px] text-gray-400">
+                <span className="text-xs text-slate-400">
                   Investigation: {inv ? (inv.root_cause_identified ? '✓ Done' : 'In progress') : 'Pending'}
                 </span>
-                <span className="text-[10px] text-gray-400">
+                <span className="text-xs text-slate-400">
                   CAPA: {capa ? (capa.effectiveness_verified ? '✓ Verified' : 'Open') : 'Pending'}
                 </span>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
           </Link>
         );
       })}
@@ -182,24 +183,24 @@ function ShelfLifeTab({ rows }) {
         <Link
           key={study.id}
           href="/shelf-life"
-          className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+          className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
         >
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-800">{study.storage_condition || 'Study'}</p>
+            <p className="text-sm font-bold text-slate-800">{study.storage_condition || 'Study'}</p>
             <div className="flex items-center gap-2 mt-0.5">
               {study.status && (
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded uppercase ${
-                  study.status === 'complete' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
+                  study.status === 'complete' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-700'
                 }`}>
                   {study.status}
                 </span>
               )}
-              <span className="text-[10px] text-gray-400">
+              <span className="text-xs text-slate-400">
                 {new Date(study.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
         </Link>
       ))}
     </div>
@@ -217,25 +218,25 @@ function IncubationTab({ rows }) {
           <Link
             key={r.id}
             href="/research/incubation"
-            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+            className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-800 truncate">{r.sample_name}</p>
+              <p className="text-sm font-bold text-slate-800 truncate">{r.sample_name}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] text-gray-400">{r.sample_type}</span>
+                <span className="text-xs text-slate-400">{r.sample_type}</span>
                 {r.batch_flasks?.flask_label && (
-                  <span className="text-[10px] font-bold text-navy">{r.batch_flasks.flask_label}</span>
+                  <span className="text-xs font-bold text-navy">{r.batch_flasks.flask_label}</span>
                 )}
                 {r.source_stage && (
-                  <span className="text-[10px] text-gray-400 capitalize">{r.source_stage.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-slate-400 capitalize">{r.source_stage.replace(/_/g, ' ')}</span>
                 )}
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
-                  ongoing ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
+                  ongoing ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {ongoing ? 'Ongoing' : `${Number(r.duration_hours || 0).toFixed(1)}h`}
                 </span>
                 {sterility && sterility !== 'Pending' && (
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                  <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${
                     sterility === 'Sterile' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
                   }`}>
                     {sterility}
@@ -243,7 +244,7 @@ function IncubationTab({ rows }) {
                 )}
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
           </Link>
         );
       })}
@@ -262,30 +263,30 @@ function TasksTab({ rows }) {
           <Link
             key={task.id}
             href="/tasks"
-            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-navy/30 hover:bg-gray-50 transition-all group"
+            className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-navy/30 hover:bg-slate-50 transition-all group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-800 truncate">{task.title}</p>
+              <p className="text-sm font-bold text-slate-800 truncate">{task.title}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${PRI[task.priority] || 'bg-gray-100 text-gray-600'}`}>
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded uppercase ${PRI[task.priority] || 'bg-slate-100 text-slate-600'}`}>
                   {task.priority}
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
-                  task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded uppercase ${
+                  task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {task.status}
                 </span>
                 {task.employees?.full_name && (
-                  <span className="text-[10px] text-gray-400">→ {task.employees.full_name}</span>
+                  <span className="text-xs text-slate-400">→ {task.employees.full_name}</span>
                 )}
                 {dueDate && (
-                  <span className={`text-[10px] font-bold ${overdue ? 'text-red-600' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-bold ${overdue ? 'text-red-600' : 'text-slate-400'}`}>
                     {overdue ? '⚠ Overdue' : `Due ${dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
                   </span>
                 )}
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-navy transition-colors shrink-0" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-navy transition-colors shrink-0" />
           </Link>
         );
       })}
@@ -302,7 +303,10 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
     let active = true;
     setLoading(true);
     setAll(null);
-    Promise.all([
+    // This section renders on every batch detail page regardless of stage —
+    // no try/catch/timeout before meant a stalled connection left it
+    // spinning forever with no recovery, on every single batch.
+    withTimeout(Promise.all([
       getLinkedInventory(supabase, batch.id),
       getLinkedEquipment(supabase, batch.id),
       getLinkedLabNotebook(supabase, batch.id),
@@ -310,10 +314,14 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
       getLinkedShelfLife(supabase, batch.id),
       getLinkedTasks(supabase, batch.id),
       getLinkedIncubation(supabase, batch.id),
-    ]).then(([inventory, equipment, notebook, deviations, shelflife, tasks, incubation]) => {
+    ]), 20000, 'Linked records load timed out').then(([inventory, equipment, notebook, deviations, shelflife, tasks, incubation]) => {
       if (!active) return;
       setAll({ inventory, equipment, notebook, deviations, shelflife, tasks, incubation });
-      setLoading(false);
+    }).catch(err => {
+      console.error('LinkedRecordsPanel fetch error:', err);
+      if (active) setAll({ inventory: [], equipment: [], notebook: [], deviations: [], shelflife: [], tasks: [], incubation: [] });
+    }).finally(() => {
+      if (active) setLoading(false);
     });
     return () => { active = false; };
   }, [batch.id, supabase]);
@@ -329,14 +337,14 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
   ], [all]);
 
   return (
-    <div className="surface mt-6">
-      <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+    <div className="card mt-6">
+      <div className="px-5 pt-5 pb-3 border-b border-slate-100">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Linked Records</h3>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Linked Records</h3>
           {(() => {
             const tab = TABS.find(t => t.id === activeTab);
             return tab ? (
-              <Link href={tab.href} className="flex items-center gap-1 text-[10px] font-black text-navy hover:text-navy-hover transition-colors">
+              <Link href={tab.href} className="flex items-center gap-1 text-xs font-black text-navy hover:text-navy-hover transition-colors">
                 Open {tab.label} <ExternalLink className="w-3 h-3"/>
               </Link>
             ) : null;
@@ -351,13 +359,13 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  active ? 'bg-navy text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  active ? 'bg-navy text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
                 <Icon className="w-3 h-3" />
                 {tab.label}
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-black ${
                     active ? 'bg-white/25 text-white' : 'bg-navy text-white'
                   }`}>
                     {tab.count}
@@ -371,7 +379,7 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
 
       <div className="p-5">
         {loading && (
-          <div className="flex items-center justify-center py-10 text-gray-400">
+          <div className="flex items-center justify-center py-10 text-slate-400">
             <Loader className="w-5 h-5 animate-spin mr-2" /> Loading linked records…
           </div>
         )}

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { getRequestUser } from '@/utils/supabase/request-user';
 import InventoryClient from './InventoryClient';
 import { redirect } from 'next/navigation';
 
@@ -6,9 +7,11 @@ export const metadata = { title: 'Inventory - OxyOS' };
 
 export default async function InventoryPage({ searchParams }: { searchParams?: { search?: string } }) {
   const supabase = createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // Identity already validated by middleware.js (which also gates
+  // /inventory) — no need to call supabase.auth.getUser() again here.
+  const user = getRequestUser();
 
-  if (authError || !user) {
+  if (!user) {
     redirect('/login');
   }
 

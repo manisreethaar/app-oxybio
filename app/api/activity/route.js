@@ -1,7 +1,9 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { notifyAdmins } from '@/utils/serverNotify';
 
 const postSchema = z.object({
   action: z.enum(['log_activity']),
@@ -51,7 +53,7 @@ export async function POST(request) {
       if (desc.includes('delete') || desc.includes('remove') || desc.includes('fail')) severity = 'high';
       if (desc.includes('viewed') || desc.includes('read')) severity = 'info';
 
-      const { data, error } = await supabase.from('activity_log').insert({
+      let insertPayload = {
         ...payload,
         batch_id: payload.batch_id || null,
         equipment_id: payload.equipment_id || null,
@@ -59,9 +61,26 @@ export async function POST(request) {
         employee_id: emp.id,
         severity: severity,
         log_date: new Date().toISOString().split('T')[0],
-      }).select().single();
+      };
+
+      let { data, error } = await supabase.from('activity_log').insert(insertPayload).select().single();
+
+      if (error && error.message && error.message.includes('equipment_id')) {
+        delete insertPayload.equipment_id;
+        const retry = await supabase.from('activity_log').insert(insertPayload).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
+
+      // Notify all admins/CEO/CTO that a new activity was logged (fire-and-forget)
+      const notifTitle = payload.issue_observed ? '🚨 Issue Reported' : '📋 Activity Logged';
+      const notifMsg = payload.issue_observed
+        ? `${emp.full_name} reported an issue: ${(payload.issue_description || '').slice(0, 100)}`
+        : `${emp.full_name} logged: ${payload.activity_description.slice(0, 100)}`;
+      notifyAdmins(notifTitle, notifMsg, '/activity', payload.issue_observed ? 'warning' : 'info').catch(() => {});
+
       return NextResponse.json({ success: true, data });
     }
 

@@ -34,7 +34,7 @@ export default function FormulaDiff({ v1, v2 }) {
   return (
     <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
       <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Visual Delta: V{v1.version} → V{v2.version}</span>
+        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Visual Delta: V{v1.version} → V{v2.version}</span>
       </div>
       <div className="p-4 space-y-2">
         {allKeys.map(key => {
@@ -66,8 +66,8 @@ export default function FormulaDiff({ v1, v2 }) {
           }
 
           return (
-            <div key={key} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-100 rounded-lg text-xs font-bold">
-              <span className="text-blue-900">{key.toUpperCase()}</span>
+            <div key={key} className="flex items-center justify-between p-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold">
+              <span className="text-slate-950">{key.toUpperCase()}</span>
               <span className={diff > 0 ? 'text-emerald-600' : 'text-amber-600'}>
                 {item1.value}{item1.unit} → {item2.value}{item2.unit} ({diff > 0 ? '+' : ''}{diff.toFixed(2)}{item2.unit})
               </span>

@@ -1,5 +1,7 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function POST(req) {
   try {
@@ -11,17 +13,21 @@ export async function POST(req) {
     }
 
     const { subscription } = await req.json();
-    if (!subscription) {
+    if (subscription === undefined) {
       return NextResponse.json({ error: 'Missing subscription object' }, { status: 400 });
     }
 
-    // ilike = case-insensitive match; consistent with how profile lookup works in layout.js
-    const { error } = await supabase
+    const supabaseAdmin = createAdminClient();
+
+    const { error } = await supabaseAdmin
       .from('employees')
       .update({ push_subscription: subscription })
-      .ilike('email', user.email);
+      .eq('id', user.id);
       
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase Update Error:", error);
+      throw error;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { requireResearchAccess } from '@/lib/research/access';
 
@@ -23,6 +24,7 @@ export async function PATCH(request, { params }) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
+    const adminSupabase = createAdminClient();
     const body = await request.json();
     const {
       action,
@@ -40,8 +42,8 @@ export async function PATCH(request, { params }) {
 
     // -- Ship action -------------------------------------------------------
     if (action === 'ship') {
-      await supabase.from('cell_bank_vials').update({ status: 'Shipped' }).eq('id', params.vialId);
-      await supabase.from('cell_bank_vial_logs').insert({
+      await adminSupabase.from('cell_bank_vials').update({ status: 'Shipped' }).eq('id', params.vialId);
+      await adminSupabase.from('cell_bank_vial_logs').insert({
         vial_id: params.vialId,
         action: 'shipped',
         destination: destination || null,
@@ -50,7 +52,7 @@ export async function PATCH(request, { params }) {
         created_at: new Date().toISOString(),
       }).catch(() => {});
 
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('cell_bank_vials')
         .select('*')
         .eq('id', params.vialId)
@@ -90,7 +92,7 @@ export async function PATCH(request, { params }) {
 
     // Update vial status
     if (Object.keys(vialUpdates).length > 0) {
-      const { error: updateErr } = await supabase
+      const { error: updateErr } = await adminSupabase
         .from('cell_bank_vials')
         .update(vialUpdates)
         .eq('id', params.vialId);
@@ -98,7 +100,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Enriched log entry -- includes study_id, cell_bank_prep_id, volume_used_ml, recovery_pct
-    await supabase.from('cell_bank_vial_logs').insert({
+    await adminSupabase.from('cell_bank_vial_logs').insert({
       vial_id:          params.vialId,
       action:           logAction,
       batch_id:         batch_id          || null,
@@ -117,7 +119,7 @@ export async function PATCH(request, { params }) {
     // Created whenever a vial is actually consumed (use / discard).
     // stock_id is null here -- vials are cell bank assets, not raw material lots.
     if (['use', 'discard'].includes(action)) {
-      await supabase.from('inventory_usage').insert({
+      await adminSupabase.from('inventory_usage').insert({
         vial_id:          params.vialId,
         batch_id:         batch_id          || null,
         growth_study_id:  study_id          || null,
@@ -130,7 +132,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Return updated vial
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('cell_bank_vials')
       .select('*')
       .eq('id', params.vialId)
@@ -149,9 +151,10 @@ export async function GET(request, { params }) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
+    const adminSupabase = createAdminClient();
     const [{ data: vial, error }, { data: logs }] = await Promise.all([
-      supabase.from('cell_bank_vials').select('*').eq('id', params.vialId).single(),
-      supabase.from('cell_bank_vial_logs')
+      adminSupabase.from('cell_bank_vials').select('*').eq('id', params.vialId).single(),
+      adminSupabase.from('cell_bank_vial_logs')
         .select('id, action, batch_id, flask_id, notes, recovery_pct, destination, created_at, employees(full_name), batches(batch_id)')
         .eq('vial_id', params.vialId)
         .order('created_at', { ascending: true }),

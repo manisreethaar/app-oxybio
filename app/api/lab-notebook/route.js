@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -67,7 +68,7 @@ export async function POST(request) {
     }
 
     const { title, batch_id, flask_id, batch_stage, attachment_url, cell_bank_preparation_id,
-            sop_references, previous_version_id, entry_version,
+            sop_ids, previous_version_id, entry_version,
             objective, observations, sketch_url } = await request.json();
 
     if (!title) {
@@ -93,7 +94,7 @@ export async function POST(request) {
         cell_bank_preparation_id: cell_bank_preparation_id || null,
         batch_stage:         batch_stage || null,
         attachment_url:      attachment_url || null,
-        sop_references:      sop_references || [],
+        sop_ids:             sop_ids || [],
         previous_version_id: previous_version_id || null,
         entry_version:       entry_version || 1,
         objective:           objective    || null,

@@ -1,9 +1,13 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from "@/utils/supabase/server";
+import { getRequestUser } from "@/utils/supabase/request-user";
 import { redirect } from "next/navigation";
 
 export default async function AdminLayout({ children }) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Identity already validated by middleware.js (which also gates /admin) —
+  // no need to call supabase.auth.getUser() again here.
+  const user = getRequestUser();
 
   if (!user) {
     redirect("/login");

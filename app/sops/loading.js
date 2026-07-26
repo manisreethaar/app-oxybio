@@ -21,7 +21,7 @@ export default function SopsLoading() {
       {/* SOP Cards */}
       <div className="space-y-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="surface p-5 flex items-center gap-4">
+          <div key={i} className="card p-5 flex items-center gap-4">
             <Skeleton variant="rect" className="w-10 h-10 rounded-xl shrink-0" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-4 w-2/3" />

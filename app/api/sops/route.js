@@ -1,12 +1,16 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const sopSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  category: z.enum(['Fermentation', 'QC', 'Sanitation', 'Safety']),
+  category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
-  document_url: z.string().url("Valid document URL is required")
+  document_url: z.string().url("Valid document URL is required"),
+  target_roles: z.array(z.string()).optional(),
+  target_departments: z.array(z.string()).optional(),
+  target_employees: z.array(z.string()).optional()
 });
 
 export async function POST(request) {
@@ -15,7 +19,7 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp } = await supabase.from('employees').select('role').eq('email', user.email).single();
+    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!['admin','ceo','cto','research_fellow'].includes(emp?.role)) {
       return NextResponse.json({ error: 'Permission Denied: Leadership role required' }, { status: 403 });
     }
@@ -27,7 +31,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { title, category, version, document_url } = parsed.data;
+    const { title, category, version, document_url, target_roles, target_departments, target_employees } = parsed.data;
 
     // Invalidate previous active versions of this SOP (Gap 38: SOP Version Expiration)
     await supabase
@@ -46,7 +50,11 @@ export async function POST(request) {
         category, 
         version, 
         document_url, 
-        is_active: true 
+        target_roles: target_roles || [],
+        target_departments: target_departments || [],
+        target_employees: target_employees || [],
+        is_active: true,
+        uploaded_by: emp?.id || null
       })
       .select()
       .single();

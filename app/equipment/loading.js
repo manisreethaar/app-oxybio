@@ -8,7 +8,7 @@ export default function Loading() {
         <Skeleton width={180} height={32} />
         <Skeleton width={140} height={40} className="rounded-lg" />
       </div>
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
         <Skeleton className="h-64 rounded-xl" />
       </div>
       <div className="space-y-3">
