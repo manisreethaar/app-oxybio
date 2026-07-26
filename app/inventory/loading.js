@@ -15,7 +15,7 @@ export default function InventoryLoading() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="card p-5 space-y-3">
+          <div key={i} className="surface p-5 space-y-3">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-8 w-16" />
             <Skeleton className="h-3 w-20" />
@@ -31,8 +31,8 @@ export default function InventoryLoading() {
       </div>
 
       {/* Table Rows */}
-      <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-100">
+      <div className="surface overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
           <Skeleton className="h-10 w-full rounded-xl" />
         </div>
         <div className="divide-y divide-gray-50">

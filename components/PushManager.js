@@ -40,8 +40,8 @@ export default function PushManager() {
             setSubscribed(true);
             const sessionKey = `push_saved_${user.id}`;
             if (!sessionStorage.getItem(sessionKey)) {
-              const res = await saveSubscription(sub, reg);
-              if (res.success) sessionStorage.setItem(sessionKey, '1');
+              const ok = await saveSubscription(sub, reg);
+              if (ok) sessionStorage.setItem(sessionKey, '1');
             }
           } else if (Notification.permission === 'granted') {
             // Permission already granted but no active subscription (e.g. after SW update)
@@ -51,8 +51,8 @@ export default function PushManager() {
               try {
                 const applicationServerKey = urlBase64ToUint8Array(vapidKey);
                 const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
-                const res = await saveSubscription(newSub, reg);
-                if (res.success) {
+                const ok = await saveSubscription(newSub, reg);
+                if (ok) {
                   sessionStorage.setItem(`push_saved_${user.id}`, '1');
                   setSubscribed(true);
                 }
@@ -86,20 +86,20 @@ export default function PushManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription })
       });
-      if (res.ok) return { success: true };
-      
-      const text = await res.text();
-      console.warn('[PushManager] Server rejected subscription:', res.status, text);
+      if (res.ok) return true;
+      if (res.status === 401) return false; // not logged in yet, skip silently
+      // Any other server error means the subscription is rejected — clean up browser side
+      console.warn('[PushManager] Server rejected subscription, unsubscribing browser:', res.status);
       if (reg) {
         const existing = await reg.pushManager.getSubscription();
         if (existing) await existing.unsubscribe();
       }
       setSubscribed(false);
       setShowBanner(Notification.permission !== 'denied');
-      return { success: false, error: `HTTP ${res.status}: ${text}` };
+      return false;
     } catch (err) {
       console.error('Failed to save subscription:', err);
-      return { success: false, error: err.message };
+      return false;
     }
   };
 
@@ -124,14 +124,12 @@ export default function PushManager() {
           userVisibleOnly: true,
           applicationServerKey,
         });
-        const res = await saveSubscription(sub, reg);
-        if (res.success) {
+        const ok = await saveSubscription(sub, reg);
+        if (ok) {
           const sessionKey = `push_saved_${user?.id}`;
           sessionStorage.setItem(sessionKey, '1');
           setSubscribed(true);
           setShowBanner(false);
-        } else {
-          setError(res.error || 'Failed to save push subscription on server.');
         }
       } else if (permission === 'denied') {
         setShowBanner(false);
@@ -147,7 +145,7 @@ export default function PushManager() {
   if (!showBanner || subscribed || !user) return null;
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 to-navy text-white px-4 py-3 shadow-md flex flex-col sm:flex-row items-center justify-center sm:justify-between z-40 relative">
+    <div className="bg-gradient-to-r from-gray-900 to-navy text-white px-4 py-3 shadow-md flex flex-col sm:flex-row items-center justify-center sm:justify-between z-40 relative">
       <div className="flex items-center mb-3 sm:mb-0">
         <div className="bg-amber-100 p-2 rounded-full mr-3 shadow-inner hidden sm:block border border-amber-200">
           {isIOS ? (
@@ -160,7 +158,7 @@ export default function PushManager() {
           <h4 className="font-bold text-sm">
             {isIOS ? 'Install as App for Notifications' : 'Enable Standard Notifications'}
           </h4>
-          <p className="text-slate-300 text-xs mt-0.5 max-w-xl">
+          <p className="text-gray-300 text-xs mt-0.5 max-w-xl">
             {isIOS 
               ? 'Add OxyOS to your home screen to receive push notifications.'
               : 'Get instant alerts when you are assigned a new protocol or task.'}
@@ -169,7 +167,7 @@ export default function PushManager() {
       </div>
       <div className="flex items-center space-x-3 shrink-0">
         {isIOS ? (
-          <span className="text-xs text-slate-300 bg-slate-700 px-3 py-2 rounded-lg">
+          <span className="text-xs text-gray-300 bg-slate-700 px-3 py-2 rounded-lg">
             Add to Home Screen
           </span>
         ) : (
@@ -177,18 +175,18 @@ export default function PushManager() {
             <button 
               onClick={subscribeUser} 
               disabled={loading} 
-              className="bg-white text-navy font-bold px-4 py-2 rounded-lg text-xs hover:bg-slate-100 shadow-sm transition-colors flex items-center disabled:opacity-50"
+              className="bg-white text-navy font-bold px-4 py-2 rounded-lg text-xs hover:bg-gray-100 shadow-sm transition-colors flex items-center disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1"/> : "Enable"}
             </button>
             {error && (
-              <span className="text-xs text-red-300 max-w-[200px] truncate" title={error}>
-                {error.includes('not configured') ? '⚠️ Config' : `⚠️ ${error}`}
+              <span className="text-xs text-red-300 max-w-[150px]" title={error}>
+                {error.includes('not configured') ? '⚠️ Config' : '⚠️ Error'}
               </span>
             )}
           </>
         )}
-        <button onClick={() => setShowBanner(false)} className="text-slate-400 hover:text-white p-2 rounded-full transition-colors"><X className="w-4 h-4" /></button>
+        <button onClick={() => setShowBanner(false)} className="text-gray-400 hover:text-white p-2 rounded-full transition-colors"><X className="w-4 h-4" /></button>
       </div>
     </div>
   );

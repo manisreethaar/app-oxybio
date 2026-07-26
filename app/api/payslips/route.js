@@ -1,6 +1,4 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -21,8 +19,6 @@ const postSchema = z.object({
   total_working_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
   present_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
   approved_leave_days: z.preprocess((val) => Number(val) || 0, z.number().optional()),
-  total_hours_worked: z.preprocess((val) => Number(val) || 0, z.number().optional()),
-  admin_notes: z.string().optional().nullable(),
   is_auto_generated: z.boolean().optional(),
 });
 
@@ -40,12 +36,7 @@ export async function POST(request) {
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
-    const supabaseAdmin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    const { error } = await supabaseAdmin.from('payslips').insert({
+    const { error } = await supabase.from('payslips').insert({
       ...parsed.data,
       uploaded_by: adminEmp.id,
       uploaded_at: new Date().toISOString()

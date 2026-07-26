@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
@@ -25,7 +24,7 @@ function DiffRow({ label, original, proposed }) {
   const changed = JSON.stringify(original) !== JSON.stringify(proposed);
   return (
     <tr className={changed ? 'bg-amber-50/60' : ''}>
-      <td className="px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-400 w-36 align-top">{label}</td>
+      <td className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400 w-36 align-top">{label}</td>
       <td className="px-3 py-2 text-xs text-slate-500 align-top max-w-[180px] break-words">
         {original === null || original === undefined ? <span className="italic text-slate-300">—</span> : String(original)}
       </td>
@@ -67,15 +66,15 @@ function ChangeCard({ change, onAction, isAdmin }) {
       {/* Header row */}
       <div className="flex items-start gap-4 p-5">
         {/* Requester avatar */}
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-100 border border-white shadow-sm shrink-0 flex items-center justify-center">
-          <span className="text-slate-700 font-black text-sm">{change.requester?.initials || '??'}</span>
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-100 border border-white shadow-sm shrink-0 flex items-center justify-center">
+          <span className="text-teal-700 font-black text-sm">{change.requester?.initials || '??'}</span>
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-black text-slate-800 text-sm">{change.requester?.full_name || 'Unknown'}</span>
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{change.requester?.role}</span>
-            <span className={`flex items-center gap-1 text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${STATUS_COLORS[change.status]}`}>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{change.requester?.role}</span>
+            <span className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${STATUS_COLORS[change.status]}`}>
               {CHANGE_TYPE_ICON[change.change_type]}
               {change.change_type}
             </span>
@@ -85,7 +84,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`px-2.5 py-1 text-xs font-black uppercase tracking-widest rounded-xl border ${STATUS_COLORS[change.status]}`}>
+          <span className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-widest rounded-xl border ${STATUS_COLORS[change.status]}`}>
             {change.status}
           </span>
           <button
@@ -102,7 +101,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
         <div className="border-t border-white/40 px-5 py-4 space-y-4">
           {isDelete ? (
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Record to Delete</p>
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Record to Delete</p>
               <div className="rounded-xl overflow-hidden border border-slate-100">
                 <table className="w-full">
                   <tbody className="divide-y divide-slate-50">
@@ -115,15 +114,15 @@ function ChangeCard({ change, onAction, isAdmin }) {
             </div>
           ) : (
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Proposed Changes</p>
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Proposed Changes</p>
               <div className="rounded-xl overflow-hidden border border-slate-100">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-50">
-                      <th className="px-3 py-1.5 text-left text-xs font-black uppercase tracking-widest text-slate-300">Field</th>
-                      <th className="px-3 py-1.5 text-left text-xs font-black uppercase tracking-widest text-slate-300">Original</th>
+                      <th className="px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-slate-300">Field</th>
+                      <th className="px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-slate-300">Original</th>
                       <th className="px-2 py-1.5" />
-                      <th className="px-3 py-1.5 text-left text-xs font-black uppercase tracking-widest text-amber-400">Proposed</th>
+                      <th className="px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-amber-400">Proposed</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -144,7 +143,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
           {/* Review note (for history) */}
           {change.review_note && (
             <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Review Note</p>
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1">Review Note</p>
               <p className="text-sm text-slate-600 font-medium">{change.review_note}</p>
               {change.reviewer && (
                 <p className="text-xs text-slate-400 mt-1">— {change.reviewer.full_name}</p>
@@ -183,7 +182,7 @@ function ChangeCard({ change, onAction, isAdmin }) {
                   <button
                     onClick={() => submit('approve')}
                     disabled={loading}
-                    className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-emerald-500 to-slate-600 text-white font-black text-sm rounded-xl hover:from-emerald-400 hover:to-slate-500 transition-all shadow-sm disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-black text-sm rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-all shadow-sm disabled:opacity-50"
                   >
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                     Approve {isDelete ? 'Deletion' : 'Edit'}
@@ -228,7 +227,7 @@ export default function ApprovalsPage() {
   async function fetchChanges(status) {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch(`/api/admin/pending-changes?status=${status}`), 20000, 'Approvals load timed out');
+      const res = await fetch(`/api/admin/pending-changes?status=${status}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setChanges(data.data || []);
@@ -258,7 +257,7 @@ export default function ApprovalsPage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -285,7 +284,7 @@ export default function ApprovalsPage() {
         </div>
         <button
           onClick={() => fetchChanges(tab)}
-          className="p-2.5 rounded-xl bg-white/60 border border-white hover:bg-white transition-all text-slate-400 hover:text-slate-600"
+          className="p-2.5 rounded-xl bg-white/60 border border-white hover:bg-white transition-all text-slate-400 hover:text-teal-600"
           title="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
@@ -316,7 +315,7 @@ export default function ApprovalsPage() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
         </div>
       ) : changes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3 glass-card rounded-2xl">

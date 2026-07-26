@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
@@ -73,14 +72,16 @@ export async function POST(request) {
     let days = 0;
     let curr = new Date(start);
     while(curr <= end) {
+      const dayOfWeek = curr.getDay();
       const isoDate = curr.toISOString().split('T')[0];
-      if (!holidayDates.includes(isoDate)) {
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.includes(isoDate)) {
         days++;
       }
       curr.setDate(curr.getDate() + 1);
     }
 
-    if (days <= 0) return NextResponse.json({ error: 'Invalid date range selected' }, { status: 400 });
+    if (days <= 0) return NextResponse.json({ error: 'Invalid date range or only non-business days selected' }, { status: 400 });
+
     // 2. Fetch Employee Profile
     const { data: emp } = await supabase
       .from('employees')

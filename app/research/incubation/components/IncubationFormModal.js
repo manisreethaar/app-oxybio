@@ -9,8 +9,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
+import { useSopGate } from '@/hooks/useSopGate';
+import SopGate from '@/components/ui/SopGate';
 
 // null-safe string: DB returns null for empty fields, z.string().optional() rejects null
 const nullStr = z.preprocess((v) => v ?? '', z.string());
@@ -46,7 +47,7 @@ const formSchema = z.object({
 });
 
 const READ_STATUSES = [
-  { value: 'no_growth',    label: 'No Growth',    cls: 'border-slate-300 bg-slate-100 text-slate-700' },
+  { value: 'no_growth',    label: 'No Growth',    cls: 'border-gray-300 bg-gray-100 text-gray-700' },
   { value: 'growing',      label: 'Growing',       cls: 'border-emerald-300 bg-emerald-50 text-emerald-700' },
   { value: 'contaminated', label: 'Contaminated',  cls: 'border-red-300 bg-red-50 text-red-700' },
   { value: 'tntc',         label: 'TNTC',          cls: 'border-amber-300 bg-amber-50 text-amber-700' },
@@ -64,11 +65,11 @@ const MORPHOLOGY_OPTIONS = {
 };
 
 const CHIP_COLORS = {
-  shape:     'bg-slate-50 text-slate-700 border-slate-200',
-  margin:    'bg-slate-50 text-slate-700 border-slate-200',
-  elevation: 'bg-slate-50 text-slate-700 border-slate-200',
-  color:     'bg-amber-50 text-amber-700 border-amber-200',
-  surface:   'bg-red-50 text-red-700 border-red-200',
+  shape:     'bg-blue-50 text-blue-700 border-blue-200',
+  margin:    'bg-purple-50 text-purple-700 border-purple-200',
+  elevation: 'bg-teal-50 text-teal-700 border-teal-200',
+  color:     'bg-orange-50 text-orange-700 border-orange-200',
+  surface:   'bg-pink-50 text-pink-700 border-pink-200',
 };
 
 function parseMorphology(raw) {
@@ -97,7 +98,7 @@ function MorphologyPicker({ value, onChange }) {
     <div className="space-y-3">
       {Object.entries(MORPHOLOGY_OPTIONS).map(([trait, { label, choices }]) => (
         <div key={trait}>
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">{label}</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">{label}</p>
           <div className="flex flex-wrap gap-1.5">
             {choices.map(choice => {
               const isSelected = selected[trait] === choice;
@@ -106,10 +107,10 @@ function MorphologyPicker({ value, onChange }) {
                   key={choice}
                   type="button"
                   onClick={() => toggle(trait, choice)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${
                     isSelected
                       ? CHIP_COLORS[trait]
-                      : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'
+                      : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
                   }`}
                 >
                   {choice}
@@ -121,11 +122,11 @@ function MorphologyPicker({ value, onChange }) {
       ))}
       {/* Display selected chips summary */}
       {Object.keys(selected).length > 0 && (
-        <div className="pt-2 border-t border-slate-100">
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">Selected</p>
+        <div className="pt-2 border-t border-gray-100">
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Selected</p>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(selected).map(([trait, choice]) => (
-              <span key={trait} className={`px-2.5 py-1 rounded-lg text-xs font-black border ${CHIP_COLORS[trait]}`}>
+              <span key={trait} className={`px-2.5 py-1 rounded-lg text-[10px] font-black border ${CHIP_COLORS[trait]}`}>
                 {MORPHOLOGY_OPTIONS[trait].label}: {choice}
               </span>
             ))}
@@ -139,12 +140,12 @@ function MorphologyPicker({ value, onChange }) {
 function MorphologyChips({ raw }) {
   const parsed = parseMorphology(raw);
   if (Object.keys(parsed).length === 0) {
-    return <span className="text-sm text-slate-500">{raw || '--'}</span>;
+    return <span className="text-sm text-gray-500">{raw || '--'}</span>;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
       {Object.entries(parsed).map(([trait, choice]) => (
-        <span key={trait} className={`px-2.5 py-1 rounded-lg text-xs font-black border ${CHIP_COLORS[trait] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+        <span key={trait} className={`px-2.5 py-1 rounded-lg text-[10px] font-black border ${CHIP_COLORS[trait] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
           {MORPHOLOGY_OPTIONS[trait]?.label || trait}: {choice}
         </span>
       ))}
@@ -161,11 +162,18 @@ function parseObservation(obs) {
   return { reads: [], notes: obs };
 }
 
-const inputCls = 'w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none transition bg-white';
-const labelCls = 'block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5';
+const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none transition bg-white';
+const labelCls = 'block text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5';
 
-export default function IncubationFormModal({ onClose, onSuccess, initialData = null }) {
+export default function IncubationFormModal({ onClose, onSuccess, initialData = null, role }) {
   const { employeeProfile } = useAuth();
+  const sopGate = useSopGate({
+    employeeId: employeeProfile?.id,
+    category: 'Sanitation',
+    role,
+    bypassRoles: ['admin', 'research_fellow', 'scientist'],
+    enabled: !initialData, // only gate new-record creation, not editing an existing sample
+  });
   const [batches, setBatches] = useState(() =>
     initialData?.batches && initialData?.batch_id
       ? [{ id: initialData.batch_id, batch_id: initialData.batches.batch_id }]
@@ -257,24 +265,19 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
   }, [dilutionFactor, volPlated, plateReads, colonyCount]);
 
   useEffect(() => {
-    withTimeout(supabase.from('batches').select('id, batch_id').order('created_at', { ascending: false }).limit(20), 20000, 'Batches dropdown load timed out')
+    supabase.from('batches').select('id, batch_id').order('created_at', { ascending: false }).limit(20)
       .then(({ data }) => {
         if (!data) return;
         setBatches(prev => {
           const ids = new Set(data.map(d => d.id));
           return [...prev.filter(p => !ids.has(p.id)), ...data];
         });
-      })
-      .catch(err => console.error('Batches dropdown fetch error:', err));
-    withTimeout(supabase.from('inventory_items').select('id, name, unit').in('category', ['Microbiological Media', 'Lab Consumables'])
-      .order('name'), 20000, 'Media items load timed out')
-      .then(({ data }) => setMediaItems(data || []))
-      .catch(err => console.error('Media items fetch error:', err));
-    withTimeout(supabase.from('formulations').select('id, code, name, version, ingredients, category')
+      });
+    supabase.from('inventory_items').select('id, name, unit').in('category', ['Microbiological Media', 'Lab Consumables'])
+      .order('name').then(({ data }) => setMediaItems(data || []));
+    supabase.from('formulations').select('id, code, name, version, ingredients, category')
       .eq('status', 'Approved')
-      .order('name'), 20000, 'Media recipes load timed out')
-      .then(({ data }) => setMediaRecipes(data || []))
-      .catch(err => console.error('Media recipes fetch error:', err));
+      .order('name').then(({ data }) => setMediaRecipes(data || []));
   }, [supabase]);
 
 
@@ -282,7 +285,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     const hour = Number(h);
     if (!hour || plateReads.some(r => r.hour === hour)) return;
     setPlateReads(prev =>
-      [...prev, { hour, status: 'no_growth', colony_count: '', od_value: '', ph_value: '', notes: '', recorded_by: employeeProfile?.full_name || 'Unknown' }]
+      [...prev, { hour, status: 'no_growth', colony_count: '', notes: '', recorded_by: employeeProfile?.full_name || 'Unknown' }]
         .sort((a, b) => a.hour - b.hour)
     );
     setCustomHour('');
@@ -299,9 +302,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     try {
       const readsPayload = plateReads.map(r => ({
         ...r,
-        colony_count: r.colony_count !== '' && r.colony_count != null ? Number(r.colony_count) : null,
-        od_value: r.od_value !== '' && r.od_value != null ? Number(r.od_value) : null,
-        ph_value: r.ph_value !== '' && r.ph_value != null ? Number(r.ph_value) : null,
+        colony_count: r.colony_count !== '' ? Number(r.colony_count) : null,
       }));
       const observation = readsPayload.length > 0
         ? JSON.stringify({ reads: readsPayload, notes: finalNote || '' })
@@ -357,8 +358,18 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
     { id: 'results', label: 'Results' },
   ];
 
+  if (sopGate.checking || !sopGate.isTrained) {
+    return (
+      <div className="fixed inset-0 z-[1200] flex items-start sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
+        <div className="bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg overflow-hidden">
+          <SopGate checking={sopGate.checking} isTrained={sopGate.isTrained} category="Sanitation" sopLabel="Sanitation SOP" onClose={onClose} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[1200] flex items-start sm:items-center justify-center bg-slate-50/10 backdrop-blur-sm p-0 sm:p-4">
+    <div className="fixed inset-0 z-[1200] flex items-start sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
       <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col overflow-hidden">
 
         {/* Header */}
@@ -368,24 +379,24 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
               <FlaskConical className="w-4.5 h-4.5 text-navy" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-slate-900">
+              <h2 className="text-sm font-black text-gray-900">
                 {initialData ? 'Edit Incubation Record' : 'Log New Sample'}
               </h2>
               {initialData?.sample_name && (
-                <p className="text-xs font-mono text-slate-400 mt-0.5">{initialData.sample_name}</p>
+                <p className="text-[10px] font-mono text-gray-400 mt-0.5">{initialData.sample_name}</p>
               )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors shrink-0"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Strip */}
-        <div className="flex border-b border-slate-100 px-5 shrink-0">
+        <div className="flex border-b border-gray-100 px-5 shrink-0">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -394,7 +405,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
               className={`py-2.5 px-3 text-xs font-black border-b-2 transition-colors mr-1 whitespace-nowrap ${
                 activeTab === t.id
                   ? 'border-navy text-navy'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
               {t.label}
@@ -415,7 +426,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   <div>
                     <label className={labelCls}>Sample Name *</label>
                     <input {...register('sample_name')} className={inputCls} placeholder="e.g. F2 Plate A" />
-                    {errors.sample_name && <p className="text-red-500 text-xs mt-1">{errors.sample_name.message}</p>}
+                    {errors.sample_name && <p className="text-red-500 text-[10px] mt-1">{errors.sample_name.message}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -449,7 +460,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   )}
                 </div>
 
-                <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="space-y-3 pt-3 border-t border-gray-100">
                   <p className={labelCls}>Incubation Setup</p>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -466,13 +477,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                   <div>
                     <label className={labelCls}>Start Time *</label>
                     <input type="datetime-local" {...register('start_time')} className={inputCls} />
-                    {errors.start_time && <p className="text-red-500 text-xs mt-1">{errors.start_time.message}</p>}
+                    {errors.start_time && <p className="text-red-500 text-[10px] mt-1">{errors.start_time.message}</p>}
                   </div>
 
                 </div>
 
                 {/* Media */}
-                <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="space-y-3 pt-3 border-t border-gray-100">
                   <p className={labelCls}>Media</p>
 
                   <div>
@@ -507,15 +518,15 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                       ))}
                     </select>
                     {mediaRecipes.length === 0 && (
-                      <p className="text-xs text-amber-500 mt-1">No approved recipes found. Go to Recipe Management and approve a formulation.</p>
+                      <p className="text-[9px] text-amber-500 mt-1">No approved recipes found. Go to Recipe Management and approve a formulation.</p>
                     )}
                   </div>
 
                   {selectedRecipeId ? (
-                    <div className={`rounded-lg px-3 py-2 flex items-center gap-2 text-xs font-semibold ${selectedMediaItemId ? 'bg-emerald-50 border border-emerald-100 text-emerald-700' : 'bg-amber-50 border border-amber-100 text-amber-700'}`}>
+                    <div className={`rounded-lg px-3 py-2 flex items-center gap-2 text-[10px] font-semibold ${selectedMediaItemId ? 'bg-emerald-50 border border-emerald-100 text-emerald-700' : 'bg-amber-50 border border-amber-100 text-amber-700'}`}>
                       {selectedMediaItemId
                         ? <><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Will deduct from inventory: {mediaItems.find(m => m.id === selectedMediaItemId)?.name}</>
-                        : <><AlertCircle className="w-3.5 h-3.5 shrink-0" /> No matching inventory item found — stock won&apos;t be deducted</>
+                        : <><AlertCircle className="w-3.5 h-3.5 shrink-0" /> No matching inventory item found — stock won't be deducted</>
                       }
                     </div>
                   ) : (
@@ -545,7 +556,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                 {/* Dilution Series section - Agar Plate only */}
                 {sampleType === 'Agar Plate' && (
-                  <div className="space-y-3 pt-3 border-t border-slate-100">
+                  <div className="space-y-3 pt-3 border-t border-gray-100">
                     <p className={labelCls}>Dilution Series</p>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -558,7 +569,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                           placeholder="e.g. 0.001"
                           className={inputCls}
                         />
-                        <p className="text-xs text-slate-400 mt-1">0.001 = 10^-3</p>
+                        <p className="text-[9px] text-gray-400 mt-1">0.001 = 10^-3</p>
                       </div>
                       <div>
                         <label className={labelCls}>Volume Plated (mL)</label>
@@ -586,25 +597,25 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                     {/* G-72: Plate image URL */}
                     <div>
-                      <label className={labelCls}>Plate Photo URL <span className="text-slate-400 font-normal normal-case">(G-72 — optional)</span></label>
+                      <label className={labelCls}>Plate Photo URL <span className="text-gray-400 font-normal normal-case">(G-72 — optional)</span></label>
                       <input type="url" {...register('plate_image_url')} className={inputCls} placeholder="https://... (link to plate photo)"/>
                     </div>
                     {/* G-73: Duplicate flag */}
                     <div className="flex items-center gap-3">
-                      <input type="checkbox" id="is_dup" {...register('is_duplicate')} className="w-4 h-4 rounded border-slate-300"/>
-                      <label htmlFor="is_dup" className="text-xs font-bold text-slate-700">Mark as Duplicate Plate (triplicate / QC check)</label>
+                      <input type="checkbox" id="is_dup" {...register('is_duplicate')} className="w-4 h-4 rounded border-gray-300"/>
+                      <label htmlFor="is_dup" className="text-xs font-bold text-gray-700">Mark as Duplicate Plate (triplicate / QC check)</label>
                     </div>
 
                     {/* CFU/mL preview */}
                     {cfuPreview !== null && (
                       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                        <p className="text-xs font-black uppercase tracking-widest text-amber-600 mb-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">
                           CFU/mL Preview
                         </p>
                         <p className="text-sm font-black text-amber-800 font-mono">
                           {cfuPreview.toExponential(2)} CFU/mL
                         </p>
-                        <p className="text-xs text-amber-600 mt-1">
+                        <p className="text-[9px] text-amber-600 mt-1">
                           = colony_count / (dilution_factor x volume_plated_ml)
                         </p>
                       </div>
@@ -612,14 +623,14 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                     {/* Show formula hint even when no values yet */}
                     {cfuPreview === null && (
-                      <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
+                      <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">
                           CFU/mL Formula
                         </p>
-                        <p className="text-xs text-slate-500 font-mono">
+                        <p className="text-[10px] text-gray-500 font-mono">
                           CFU/mL = colony_count / (dilution_factor x volume_plated_ml)
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-[9px] text-gray-400 mt-1">
                           Fill in dilution factor, volume, and colony count to see the preview.
                         </p>
                       </div>
@@ -647,7 +658,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                           className={`px-3 py-1.5 rounded-lg text-xs font-black border transition-all ${
                             exists
                               ? 'bg-navy/10 text-navy border-navy/30 cursor-default'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-navy hover:text-navy hover:bg-navy/5'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-navy hover:text-navy hover:bg-navy/5'
                           }`}
                         >
                           {exists ? '+' : '+'}{h}h
@@ -662,13 +673,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                         onChange={e => setCustomHour(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addRead(customHour))}
                         placeholder="hr"
-                        className="w-14 px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-navy text-center"
+                        className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-navy text-center"
                       />
                       <button
                         type="button"
                         onClick={() => addRead(customHour)}
                         disabled={!customHour}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-600 transition disabled:opacity-40"
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-black bg-gray-100 hover:bg-gray-200 text-gray-600 transition disabled:opacity-40"
                       >
                         Add
                       </button>
@@ -679,13 +690,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 {/* CFU preview in reads tab */}
                 {cfuPreview !== null && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <p className="text-xs font-black uppercase tracking-widest text-amber-600 mb-1">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">
                       Auto-calculated CFU/mL
                     </p>
                     <p className="text-sm font-black text-amber-800 font-mono">
                       {cfuPreview.toExponential(2)} CFU/mL
                     </p>
-                    <p className="text-xs text-amber-500 mt-0.5">
+                    <p className="text-[9px] text-amber-500 mt-0.5">
                       Based on latest colony count in reads + dilution settings from Setup tab.
                     </p>
                   </div>
@@ -693,20 +704,20 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                 {/* Read cards */}
                 {plateReads.length === 0 ? (
-                  <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-2xl">
-                    <Clock className="w-8 h-8 mx-auto mb-2 text-slate-200" />
-                    <p className="text-xs font-bold text-slate-400">No plate reads logged yet.</p>
-                    <p className="text-xs text-slate-300 mt-1">Use the buttons above to add reads at 12h, 24h, 36h or 48h.</p>
+                  <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl">
+                    <Clock className="w-8 h-8 mx-auto mb-2 text-gray-200" />
+                    <p className="text-xs font-bold text-gray-400">No plate reads logged yet.</p>
+                    <p className="text-[10px] text-gray-300 mt-1">Use the buttons above to add reads at 12h, 24h, 36h or 48h.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {plateReads.map(read => (
-                      <div key={read.hour} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50/40">
+                      <div key={read.hour} className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50/40">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-black text-navy font-mono">T+{read.hour}h Read</span>
                             {read.recorded_by && (
-                              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                              <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
                                 Logged by: {read.recorded_by}
                               </span>
                             )}
@@ -714,7 +725,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                           <button
                             type="button"
                             onClick={() => removeRead(read.hour)}
-                            className="p-1 text-slate-300 hover:text-red-400 transition-colors rounded"
+                            className="p-1 text-gray-300 hover:text-red-400 transition-colors rounded"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -722,17 +733,17 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
 
                         {/* Status chips */}
                         <div>
-                          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Plate Status</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Plate Status</p>
                           <div className="flex flex-wrap gap-1.5">
                             {READ_STATUSES.map(opt => (
                               <button
                                 key={opt.value}
                                 type="button"
                                 onClick={() => updateRead(read.hour, 'status', opt.value)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all ${
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${
                                   read.status === opt.value
                                     ? `${opt.cls} shadow-sm`
-                                    : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'
+                                    : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
                                 }`}
                               >
                                 {opt.label}
@@ -742,52 +753,25 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                          {sampleType === 'Agar Plate' ? (
-                            <div>
-                              <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Colony Count</label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={read.colony_count}
-                                onChange={e => updateRead(read.hour, 'colony_count', e.target.value)}
-                                placeholder="e.g. 50"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
-                              />
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">OD Value</label>
-                                <input
-                                  type="number"
-                                  step="0.001"
-                                  value={read.od_value || ''}
-                                  onChange={e => updateRead(read.hour, 'od_value', e.target.value)}
-                                  placeholder="0.500"
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">pH Value</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={read.ph_value || ''}
-                                  onChange={e => updateRead(read.hour, 'ph_value', e.target.value)}
-                                  placeholder="4.2"
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
-                                />
-                              </div>
-                            </div>
-                          )}
                           <div>
-                            <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Notes</label>
+                            <label className="block text-[9px] font-black uppercase tracking-wider text-gray-400 mb-1">Colony Count</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={read.colony_count}
+                              onChange={e => updateRead(read.hour, 'colony_count', e.target.value)}
+                              placeholder="e.g. 50"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-black uppercase tracking-wider text-gray-400 mb-1">Notes</label>
                             <input
                               type="text"
                               value={read.notes}
                               onChange={e => updateRead(read.hour, 'notes', e.target.value)}
                               placeholder="Observations..."
-                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy transition bg-white"
                             />
                           </div>
                         </div>
@@ -797,14 +781,14 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 )}
 
                 {/* Final note */}
-                <div className="pt-3 border-t border-slate-100">
+                <div className="pt-3 border-t border-gray-100">
                   <label className={labelCls}>Final Note / Overall Conclusion</label>
                   <textarea
                     value={finalNote}
                     onChange={e => setFinalNote(e.target.value)}
                     rows={2}
                     placeholder="e.g. Clean growth at 48h, no contamination observed."
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-navy transition resize-none bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-navy transition resize-none bg-white"
                   />
                 </div>
               </div>
@@ -826,10 +810,10 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                         key={opt.value}
                         type="button"
                         onClick={() => setValue('sterility_status', opt.value, { shouldValidate: true })}
-                        className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all text-xs font-black ${
+                        className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all text-[10px] font-black ${
                           sterility === opt.value
                             ? opt.cls
-                            : 'border-slate-100 text-slate-300 hover:border-slate-200 hover:text-slate-500 bg-white'
+                            : 'border-gray-100 text-gray-300 hover:border-gray-200 hover:text-gray-500 bg-white'
                         }`}
                       >
                         {opt.icon}
@@ -848,7 +832,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 {/* Counts */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Colony Count <span className="text-slate-400 font-normal normal-case text-xs">(G-89: manual count — use colony counter tool and enter result)</span></label>
+                    <label className={labelCls}>Colony Count <span className="text-gray-400 font-normal normal-case text-[8px]">(G-89: manual count — use colony counter tool and enter result)</span></label>
                     <input type="number" min="0" {...register('colony_count')} placeholder="e.g. 245" className={inputCls} />
                   </div>
                   <div>
@@ -860,13 +844,13 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 {/* Auto CFU info box */}
                 {autoCfu !== null && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <p className="text-xs font-black uppercase tracking-widest text-amber-600 mb-1">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">
                       Auto-calculated
                     </p>
                     <p className="text-sm font-black text-amber-800 font-mono">
                       {autoCfu.toExponential(2)} CFU/mL
                     </p>
-                    <p className="text-xs text-amber-500 mt-0.5">
+                    <p className="text-[9px] text-amber-500 mt-0.5">
                       Auto-filled from colony count, dilution factor, and volume plated.
                     </p>
                   </div>
@@ -888,7 +872,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                 {sampleType === 'Agar Plate' && (
                   <div>
                     <label className={labelCls}>Colony Morphology</label>
-                    <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/40">
+                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/40">
                       <MorphologyPicker
                         value={colonyMorph}
                         onChange={(val) => setValue('colony_morphology', val)}
@@ -896,15 +880,15 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                     </div>
                     {colonyMorph && (
                       <div className="mt-2">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">Stored as JSON</p>
-                        <p className="text-xs font-mono text-slate-400 break-all">{colonyMorph}</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Stored as JSON</p>
+                        <p className="text-[9px] font-mono text-gray-400 break-all">{colonyMorph}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Staining */}
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
                   <div>
                     <label className={labelCls}>Staining Method</label>
                     <input {...register('staining_method')} placeholder="e.g. Gram Stain" className={inputCls} />
@@ -920,11 +904,11 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
           </div>
 
           {/* Sticky Footer */}
-          <div className="shrink-0 border-t border-slate-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex gap-3">
+          <div className="shrink-0 border-t border-gray-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 font-bold text-slate-600 hover:bg-slate-100 rounded-xl text-sm transition-colors border border-slate-200"
+              className="flex-1 py-2.5 font-bold text-gray-600 hover:bg-gray-100 rounded-xl text-sm transition-colors border border-gray-200"
             >
               Cancel
             </button>

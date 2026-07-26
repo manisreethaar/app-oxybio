@@ -8,16 +8,6 @@ export default function GlobalError({ error, reset }) {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error("Next.js Fatal Boundary Caught:", error);
-
-    // Automatically reload on chunk loading errors (often happens after deployments)
-    if (error?.message && error.message.includes('Loading chunk')) {
-      const reloadCount = parseInt(sessionStorage.getItem('chunkReloadCount') || '0', 10);
-      if (reloadCount < 2) {
-        sessionStorage.setItem('chunkReloadCount', String(reloadCount + 1));
-        window.location.reload();
-        return;
-      }
-    }
     
     // Attempt to forcefully clear caches to un-stick the app if it's a chunk error
     if (typeof window !== 'undefined') {
@@ -65,7 +55,7 @@ export default function GlobalError({ error, reset }) {
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={handleReset}
-            className="w-full flex items-center justify-center py-3.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors shadow-md active:scale-95"
+            className="w-full flex items-center justify-center py-3.5 bg-teal-800 text-white font-bold rounded-xl hover:bg-teal-900 transition-colors shadow-md active:scale-95"
           >
             <RefreshCcw className="w-4 h-4 mr-2" /> Quick Refresh
           </button>
@@ -78,7 +68,7 @@ export default function GlobalError({ error, reset }) {
           </button>
         </div>
         
-        <p className="mt-6 text-xs font-mono text-slate-400 bg-slate-50 p-2 rounded block whitespace-normal break-all">
+        <p className="mt-6 text-[10px] font-mono text-slate-400 bg-slate-50 p-2 rounded block whitespace-normal break-all">
           {error?.message || "Unknown rendering exception"}
         </p>
       </div>

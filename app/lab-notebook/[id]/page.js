@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Loader2, ArrowLeft, Save, FileCheck, FileSignature, BookOpen, Clock, AlertCircle, FlaskConical, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
@@ -12,8 +11,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import { markdownToHtml } from '@/utils/markdown';
-import BlockEditor from '@/components/lnb/BlockEditor';
-import ESignatureModal from '@/components/ui/ESignatureModal';
 
 export default function LnbEntryPage() {
   const params = useParams();
@@ -27,10 +24,7 @@ export default function LnbEntryPage() {
   const [saving, setSaving] = useState(false);
   const [signing, setSigning] = useState(false);
   const [pendingSubmitReview, setPendingSubmitReview] = useState(false);
-  
-  // E-Signature state
-  const [esigConfig, setEsigConfig] = useState({ isOpen: false });
-  
+  const [pendingCountersign, setPendingCountersign] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingIds, setPendingIds] = useState(new Set());
@@ -44,15 +38,13 @@ export default function LnbEntryPage() {
   const [stageSnapshots, setStageSnapshots] = useState({});
   // Lookup map: formulation UUID → "CODE — Name" for display in snapshots
   const [formulationMap, setFormulationMap] = useState({});
-  // Linked SOPs — read-only reference, not retyped into Methodology
-  const [linkedSops, setLinkedSops] = useState([]);
 
   const supabase = useMemo(() => createClient(), []);
 
   const fetchEntry = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch(`/api/lab-notebook/${id}`), 20000, 'Lab notebook entry load timed out');
+      const res = await fetch(`/api/lab-notebook/${id}`);
       const logsRes = await res.json();
       if (!logsRes.success) throw new Error(logsRes.error || 'Failed to fetch entry');
       
@@ -77,20 +69,6 @@ export default function LnbEntryPage() {
   useEffect(() => {
     if (id) fetchEntry();
   }, [id, fetchEntry]);
-
-  // Load linked SOPs + this employee's acknowledgement status — read-only reference panel
-  useEffect(() => {
-    const sopIds = entry?.sop_ids;
-    if (!sopIds?.length || !employeeProfile?.id) { setLinkedSops([]); return; }
-    (async () => {
-      const [{ data: sopRows }, { data: ackRows }] = await Promise.all([
-        supabase.from('sop_library').select('id, sop_id, title, version, document_url').in('id', sopIds),
-        supabase.from('sop_acknowledgements').select('sop_id, acknowledged_at').eq('employee_id', employeeProfile.id).in('sop_id', sopIds),
-      ]);
-      const ackMap = Object.fromEntries((ackRows || []).map(a => [a.sop_id, a.acknowledged_at]));
-      setLinkedSops((sopRows || []).map(s => ({ ...s, acknowledgedAt: ackMap[s.id] || null })));
-    })();
-  }, [entry?.sop_ids, employeeProfile?.id, supabase]);
 
   useEffect(() => {
     fetch('/api/edit-request').then(res => res.ok ? res.json() : null).then(d => {
@@ -140,11 +118,11 @@ export default function LnbEntryPage() {
   };
 
   const handleCountersign = () => {
-    setEsigConfig({ isOpen: true });
+    setPendingCountersign(true);
   };
 
-  const handleEsigSuccess = async () => {
-    setEsigConfig({ isOpen: false });
+  const confirmCountersign = async () => {
+    setPendingCountersign(false);
     setSigning(true);
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, {
@@ -194,45 +172,40 @@ export default function LnbEntryPage() {
 
   const isDraft = entry.status === 'Draft';
   const isAuthor = entry.author?.id === employeeProfile.id;
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(String(employeeProfile.role || '').toLowerCase());
-  const canEdit = isDraft && (isAuthor || isAdmin);
-  const canDelete = canEdit;
+  const isAdmin = employeeProfile.role === 'admin';
+  const canEdit = isDraft && isAuthor;
+  const canDelete = canEdit || isAdmin;
   const canCountersign = entry.status === 'Submitted' && 
                          (employeeProfile.role === 'admin' || employeeProfile.role === 'research_fellow') && 
                          entry.author?.id !== employeeProfile.id;
 
   return (
-    <div className="page-container text-slate-900 max-w-5xl mx-auto">
-      <Link href="/lab-notebook" className="flex items-center text-xs font-bold text-slate-400 hover:text-navy transition-colors mb-6 uppercase tracking-wider">
+    <div className="page-container text-gray-900 max-w-5xl mx-auto">
+      <Link href="/lab-notebook" className="flex items-center text-xs font-bold text-gray-400 hover:text-navy transition-colors mb-6 uppercase tracking-wider">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Notebook
       </Link>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div className="flex-1 w-full min-w-0">
+        <div className="flex-1 w-full">
           {canEdit ? (
-             <textarea 
-               value={title} onChange={(e) => setTitle(e.target.value)} 
-               className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight w-full bg-transparent border-b border-transparent hover:border-slate-200 outline-none focus:border-navy transition-colors pb-1 resize-none overflow-hidden break-words"
+             <input 
+               type="text" value={title} onChange={(e) => setTitle(e.target.value)} 
+               className="text-3xl font-black text-gray-900 tracking-tight w-full bg-transparent border-b border-transparent hover:border-gray-200 outline-none focus:border-navy transition-colors pb-1"
                placeholder="Experiment Title..."
-               rows={title.length > 40 ? 2 : 1}
-               onInput={(e) => {
-                 e.target.style.height = 'auto';
-                 e.target.style.height = e.target.scrollHeight + 'px';
-               }}
              />
           ) : (
-             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight break-words">{entry.title}</h1>
+             <h1 className="text-3xl font-black text-gray-900 tracking-tight">{entry.title}</h1>
           )}
           
           <div className="flex flex-wrap items-center gap-4 mt-3">
-             <div className="flex items-center text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-lg">
+             <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-100 px-3 py-1.5 rounded-lg">
                 <span className={
                   entry.status === 'Draft' ? 'text-amber-600' : 
-                  entry.status === 'Submitted' ? 'text-slate-600' : 'text-emerald-600'
+                  entry.status === 'Submitted' ? 'text-blue-600' : 'text-emerald-600'
                 }>{entry.status}</span>
              </div>
              {entry.batches && (
-               <div className="flex items-center text-xs font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+               <div className="flex items-center text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
                   <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Batch: {entry.batches.batch_id}
                </div>
              )}
@@ -241,7 +214,7 @@ export default function LnbEntryPage() {
                   <FlaskConical className="w-3.5 h-3.5 mr-1.5" /> Cell Bank: {entry.cell_bank_preparations.prep_code}
                </div>
              )}
-             <div className="flex items-center text-xs font-bold text-slate-500">
+             <div className="flex items-center text-xs font-bold text-gray-500">
                 <Clock className="w-3.5 h-3.5 mr-1.5" /> {new Date(entry.created_at).toLocaleString()}
              </div>
           </div>
@@ -250,7 +223,7 @@ export default function LnbEntryPage() {
         <div className="flex gap-3">
           {canEdit && (
             <>
-              <button disabled={saving || deleting} onClick={handleSaveDraft} className="flex items-center px-4 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-slate-200 transition-all">
+              <button disabled={saving || deleting} onClick={handleSaveDraft} className="flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all">
                 {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />} Save Draft
               </button>
               <button disabled={saving || deleting} onClick={handleSubmitReview} className="flex items-center px-4 py-2 bg-navy text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-navy-hover transition-all shadow-sm">
@@ -263,7 +236,7 @@ export default function LnbEntryPage() {
               {deleting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : 'Delete LNB'}
             </button>
           )}
-          {canDelete && !isAdmin && !isAuthor && (
+          {!isAdmin && canEdit && (
             <EditRequestButton
               tableName="lab_notebook_entries"
               recordId={entry.id}
@@ -299,82 +272,47 @@ export default function LnbEntryPage() {
              onResync={fetchEntry}
            />
            <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
-           <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder={linkedSops.length ? 'Note any deviations from the linked SOP(s), if applicable...' : 'Detail the steps, reagents, and equipment used...'} isLarge />
-           
-           <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
-             <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-               <div className="text-navy"><FileCheck className="w-4 h-4" /></div>
-               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Detailed Observations</h3>
-             </div>
-             <div className="p-4 bg-slate-50/30">
-               <BlockEditor value={observations} onChange={setObservations} canEdit={canEdit} />
-             </div>
-           </div>
-           
+           <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder="Detail the steps, reagents, and equipment used..." isLarge />
+           <SectionBox title="Detailed Observations" icon={<FileCheck className="w-4 h-4" />} canEdit={canEdit} value={observations} onChange={setObservations} placeholder="Record qualitative and quantitative readings..." isLarge />
            <SectionBox title="Conclusions" icon={<FileSignature className="w-4 h-4" />} canEdit={canEdit} value={conclusions} onChange={setConclusions} placeholder="Summarize findings and next steps..." />
         </div>
 
         {/* Sidebar Signatures */}
         <div className="space-y-6">
-           {linkedSops.length > 0 && (
-             <div className="card p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
-               <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Linked SOPs</h3>
-               <div className="space-y-3">
-                 {linkedSops.map(s => (
-                   <div key={s.id} className="border border-slate-100 rounded-lg p-3">
-                     <p className="text-sm font-bold text-slate-800">{s.sop_id ? `${s.sop_id} — ` : ''}{s.title}</p>
-                     <p className="text-xs text-slate-400 mb-1.5">{s.version ? `v${s.version}` : ''}</p>
-                     {s.acknowledgedAt ? (
-                       <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                         <FileCheck className="w-3.5 h-3.5" /> Signed {new Date(s.acknowledgedAt).toLocaleDateString()}
-                       </span>
-                     ) : (
-                       <Link href="/sops" className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:underline">
-                         <AlertCircle className="w-3.5 h-3.5" /> Not yet completed — sign it
-                       </Link>
-                     )}
-                     {s.document_url && (
-                       <a href={s.document_url} target="_blank" rel="noreferrer" className="block text-xs text-slate-400 hover:text-navy mt-1 underline">View procedure document</a>
-                     )}
-                   </div>
-                 ))}
-               </div>
-             </div>
-           )}
-           <div className="card p-5 border border-slate-100 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] mb-4 uppercase">Chain of Custody</h3>
+           <div className="surface p-5 border border-gray-100 rounded-2xl bg-white shadow-sm">
+              <h3 className="text-[10px] font-black text-gray-400 tracking-[0.2em] mb-4 uppercase">Chain of Custody</h3>
               
               <div className="mb-6">
-                 <p className="text-xs font-bold text-slate-500 uppercase mb-2">Primary Author</p>
+                 <p className="text-xs font-bold text-gray-500 uppercase mb-2">Primary Author</p>
                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">
                        <FileSignature className="w-5 h-5" />
                     </div>
                     <div>
-                       <p className="text-sm font-bold text-slate-900">{entry.author?.full_name}</p>
-                       <p className="text-xs font-semibold text-slate-500">{entry.author?.role}</p>
+                       <p className="text-sm font-bold text-gray-900">{entry.author?.full_name}</p>
+                       <p className="text-xs font-semibold text-gray-500">{entry.author?.role}</p>
                     </div>
                  </div>
               </div>
 
-              <div className="pt-5 border-t border-slate-100">
-                 <p className="text-xs font-bold text-slate-500 uppercase mb-2">Countersigned By</p>
+              <div className="pt-5 border-t border-gray-100">
+                 <p className="text-xs font-bold text-gray-500 uppercase mb-2">Countersigned By</p>
                  {entry.countersigner ? (
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
                          <FileCheck className="w-5 h-5" />
                       </div>
                       <div>
-                         <p className="text-sm font-bold text-slate-900">{entry.countersigner.full_name}</p>
-                         <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{new Date(entry.countersigned_at).toLocaleDateString()}</p>
+                         <p className="text-sm font-bold text-gray-900">{entry.countersigner.full_name}</p>
+                         <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{new Date(entry.countersigned_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                  ) : (
                     <div className="flex items-center gap-3 opacity-50">
-                       <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center">
-                          <Clock className="w-4 h-4 text-slate-300" />
+                       <div className="w-10 h-10 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center">
+                          <Clock className="w-4 h-4 text-gray-300" />
                        </div>
-                       <p className="text-xs font-bold text-slate-400 italic">Pending Review...</p>
+                       <p className="text-xs font-bold text-gray-400 italic">Pending Review...</p>
                     </div>
                  )}
               </div>
@@ -395,16 +333,16 @@ export default function LnbEntryPage() {
 
       {/* Submit Review Modal */}
       {pendingSubmitReview && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Submit for Review</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Submit for Review</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
               Are you sure you want to submit? Once submitted, this notebook entry will be locked for review and you can no longer edit it.
             </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingSubmitReview(false)}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
               >
                 Cancel
               </button>
@@ -420,13 +358,30 @@ export default function LnbEntryPage() {
       )}
 
       {/* Countersign Modal */}
-      <ESignatureModal
-        isOpen={esigConfig.isOpen}
-        onClose={() => setEsigConfig({ isOpen: false })}
-        onSuccess={handleEsigSuccess}
-        title="Countersign Document"
-        message="By countersigning, you legally verify this document's contents and attest to its accuracy under 21 CFR Part 11. Proceed?"
-      />
+      {pendingCountersign && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Countersign Document</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              By countersigning, you legally verify this document&apos;s contents and attest to its accuracy. Proceed?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingCountersign(false)}
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmCountersign}
+                className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full"
+              >
+                ✓ Countersign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -475,23 +430,23 @@ function RichToolbar({ taRef, value, onChange }) {
   };
 
   return (
-    <div className="flex items-center gap-0.5 px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex-wrap">
+    <div className="flex items-center gap-0.5 px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex-wrap">
       {TOOLBAR_TOOLS.map((t, i) =>
         t.sep ? (
-          <div key={i} className="w-px h-3.5 bg-slate-200 mx-1 shrink-0" />
+          <div key={i} className="w-px h-3.5 bg-gray-200 mx-1 shrink-0" />
         ) : (
           <button
             key={i}
             type="button"
             title={t.title}
             onMouseDown={(e) => { e.preventDefault(); apply(t); }}
-            className={`px-2 py-1 rounded text-xs text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors select-none ${t.cls}`}
+            className={`px-2 py-1 rounded text-[11px] text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors select-none ${t.cls}`}
           >
             {t.label}
           </button>
         )
       )}
-      <span className="ml-auto text-xs font-bold text-slate-300 uppercase tracking-widest hidden sm:block">Markdown</span>
+      <span className="ml-auto text-[9px] font-bold text-gray-300 uppercase tracking-widest hidden sm:block">Markdown</span>
     </div>
   );
 }
@@ -501,10 +456,10 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
   const html  = value ? markdownToHtml(value) : '';
 
   return (
-    <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
-      <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+    <div className="surface p-0 overflow-hidden border border-gray-200 shadow-sm rounded-2xl bg-white">
+      <div className="bg-gray-50/50 px-5 py-3 border-b border-gray-100 flex items-center gap-2">
         <div className="text-navy">{icon}</div>
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">{title}</h3>
+        <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">{title}</h3>
       </div>
       {canEdit && <RichToolbar taRef={taRef} value={value} onChange={onChange} />}
       <div className="p-1">
@@ -513,14 +468,14 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
             ref={taRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className={`w-full p-4 bg-transparent outline-none resize-none text-sm font-medium text-slate-700 leading-relaxed font-mono ${isLarge ? 'min-h-[14rem]' : 'min-h-[8rem]'}`}
+            className={`w-full p-4 bg-transparent outline-none resize-none text-sm font-medium text-gray-700 leading-relaxed font-mono ${isLarge ? 'min-h-[14rem]' : 'min-h-[8rem]'}`}
             placeholder={placeholder}
           />
         ) : (
           <div className={`w-full px-5 py-4 overflow-y-auto prose prose-sm max-w-none ${isLarge ? 'min-h-[10rem]' : 'min-h-[5rem]'}`}>
             {html
               ? <div dangerouslySetInnerHTML={{ __html: html }} />
-              : <span className="text-slate-400 italic text-sm">No {title.toLowerCase()} recorded.</span>
+              : <span className="text-gray-400 italic text-sm">No {title.toLowerCase()} recorded.</span>
             }
           </div>
         )}
@@ -532,18 +487,18 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
 const STAGE_META = [
   { key: 'preparation',    label: 'Cell Bank Preparation', color: 'emerald', perFlask: false },
   { key: 'strain_source',  label: 'Strain Source',         color: 'emerald', perFlask: false },
-  { key: 'broth_culture_1', label: 'Broth Culture #1',     color: 'slate',    perFlask: false },
+  { key: 'broth_culture_1', label: 'Broth Culture #1',     color: 'teal',    perFlask: false },
   { key: 'colony_pick',    label: 'Colony Pick',           color: 'indigo',  perFlask: false },
-  { key: 'broth_culture_2', label: 'Broth Culture #2',     color: 'slate',    perFlask: false },
+  { key: 'broth_culture_2', label: 'Broth Culture #2',     color: 'teal',    perFlask: false },
   { key: 'glycerol_stock', label: 'Glycerol Stock',        color: 'blue',    perFlask: false },
   { key: 'vial_storage',   label: 'Vial Registration',     color: 'blue',    perFlask: false },
   { key: 'completion',     label: 'Preparation Completion', color: 'emerald', perFlask: false },
   { key: 'media_prep',    label: 'Media Preparation',      color: 'amber',   perFlask: false },
   { key: 'sterilisation', label: 'Sterilisation',           color: 'blue',    perFlask: false },
   { key: 'inoculation',   label: 'Inoculation',             color: 'indigo',  perFlask: true  },
-  { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'slate',    perFlask: true  },
+  { key: 'fermentation',  label: 'Fermentation Endpoint',   color: 'teal',    perFlask: true  },
   { key: 'qc',            label: 'QC Hold',                 color: 'emerald', perFlask: true  },
-  { key: 'plating',       label: 'Plating Results',         color: 'slate',    perFlask: true  },
+  { key: 'plating',       label: 'Plating Results',         color: 'teal',    perFlask: true  },
   { key: 'sample_incubation', label: 'Sample Incubation',    color: 'blue',    perFlask: true  },
 ];
 
@@ -601,10 +556,10 @@ function SnapshotRows({ data, formulationMap = {} }) {
             : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
           return (
             <div key={key} className="flex items-start justify-between gap-3 min-w-0">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-wide shrink-0 mt-0.5 min-w-[80px]">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 min-w-[80px]">
                 {FIELD_LABELS[key] || key.replace(/_/g, ' ')}
               </span>
-              <span className="text-xs font-bold text-slate-700 text-right break-words min-w-0 flex-1">
+              <span className="text-xs font-bold text-gray-700 text-right break-words min-w-0 flex-1">
                 {display}
               </span>
             </div>
@@ -612,11 +567,11 @@ function SnapshotRows({ data, formulationMap = {} }) {
         })}
       {data.tests && (
         <div className="mt-2 space-y-1">
-          <p className="text-xs font-black text-slate-400 uppercase tracking-wide mb-1">QC Test Results</p>
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-wide mb-1">QC Test Results</p>
           {data.tests.map((t, i) => (
-            <div key={i} className="flex items-start justify-between gap-2 text-xs py-0.5 border-b border-slate-50 last:border-0">
-              <span className="text-slate-600 break-words flex-1">{t.test}</span>
-              <span className={`font-black ml-2 shrink-0 ${t.pass_fail === 'Pass' ? 'text-emerald-600' : t.pass_fail === 'Fail' ? 'text-red-600' : 'text-slate-400'}`}>
+            <div key={i} className="flex items-start justify-between gap-2 text-xs py-0.5 border-b border-gray-50 last:border-0">
+              <span className="text-gray-600 break-words flex-1">{t.test}</span>
+              <span className={`font-black ml-2 shrink-0 ${t.pass_fail === 'Pass' ? 'text-emerald-600' : t.pass_fail === 'Fail' ? 'text-red-600' : 'text-gray-400'}`}>
                 {t.result ? `${t.result} ` : ''}{t.pass_fail}
               </span>
             </div>
@@ -631,25 +586,25 @@ function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
   const [open, setOpen] = useState(true);
   const colorMap = {
     amber:   'bg-amber-50  border-amber-100  text-amber-700',
-    blue:    'bg-slate-50   border-slate-100   text-slate-700',
-    indigo:  'bg-slate-50 border-slate-100 text-slate-700',
-    slate:    'bg-slate-50   border-slate-100   text-slate-700',
+    blue:    'bg-blue-50   border-blue-100   text-blue-700',
+    indigo:  'bg-indigo-50 border-indigo-100 text-indigo-700',
+    teal:    'bg-teal-50   border-teal-100   text-teal-700',
     emerald: 'bg-emerald-50 border-emerald-100 text-emerald-700',
   };
-  const headerClass = colorMap[colorKey] || colorMap.slate;
+  const headerClass = colorMap[colorKey] || colorMap.teal;
   const syncDate = perFlask
     ? Object.values(data)[0]?.synced_at
     : data.synced_at;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
       <button
         onClick={() => setOpen(v => !v)}
-        className={`w-full px-4 py-2.5 flex items-center justify-between border-b border-slate-100 ${open ? headerClass : 'bg-slate-50 text-slate-600'} transition-colors`}
+        className={`w-full px-4 py-2.5 flex items-center justify-between border-b border-gray-100 ${open ? headerClass : 'bg-gray-50 text-gray-600'} transition-colors`}
       >
-        <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
         <div className="flex items-center gap-2">
-          {syncDate && <span className="text-xs opacity-60">{new Date(syncDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+          {syncDate && <span className="text-[9px] opacity-60">{new Date(syncDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
           {open ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
         </div>
       </button>
@@ -659,7 +614,7 @@ function StageBlock({ label, data, perFlask, colorKey, formulationMap }) {
             <div className="space-y-4">
               {Object.entries(data).map(([flask, flaskData]) => (
                 <div key={flask}>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-50 pb-1">Trial {flask}</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-50 pb-1">Trial {flask}</p>
                   <SnapshotRows data={flaskData} formulationMap={formulationMap} />
                 </div>
               ))}
@@ -696,16 +651,16 @@ function StageLogPanel({ snapshots, formulationMap = {}, entryId, role, onResync
 
   if (present.length === 0 && !canResync) return null;
   return (
-    <div className="card rounded-2xl border border-slate-100 bg-slate-50/20 overflow-hidden">
-      <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-        <FlaskConical className="w-4 h-4 text-slate-500" />
-        <h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">Auto-Synced Stage Data</h3>
-        <span className="ml-auto text-xs font-semibold text-slate-400">Read-only · Updated as stages complete</span>
+    <div className="surface rounded-2xl border border-indigo-100 bg-indigo-50/20 overflow-hidden">
+      <div className="px-5 py-3 border-b border-indigo-100 flex items-center gap-2">
+        <FlaskConical className="w-4 h-4 text-indigo-500" />
+        <h3 className="text-xs font-black text-indigo-600 uppercase tracking-widest">Auto-Synced Stage Data</h3>
+        <span className="ml-auto text-[9px] font-semibold text-gray-400">Read-only · Updated as stages complete</span>
         {canResync && (
           <button
             onClick={handleResync}
             disabled={resyncing}
-            className="ml-2 px-2.5 py-1 text-xs font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            className="ml-2 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors disabled:opacity-50"
           >
             {resyncing ? 'Syncing...' : 'Re-sync Flasks'}
           </button>

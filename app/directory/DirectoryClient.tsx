@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -9,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/context/ToastContext';
-import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2, UserPlus, UserCog, Sparkles, RefreshCw, Save, Power, Building2, Trash2 } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Droplets, Search, CreditCard, X, Briefcase, Hash, Calendar, AlertCircle, ShieldCheck, CheckSquare, Loader2, UserPlus, UserCog, Sparkles, RefreshCw, Save, Power, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PERMISSIONS, { ROLE_WEIGHTS } from '@/lib/permissions';
 
@@ -20,7 +19,6 @@ const DESIGNATION_PRESETS = [
   { label: 'Chief Technology Officer (CTO)', code: 'CT' },
   { label: 'Research Fellow', code: 'RF' },
   { label: 'Scientist', code: 'SC' },
-  { label: 'Research Intern', code: 'RI' },
   { label: 'Intern', code: 'IN' },
   { label: 'Custom...', code: '' },
 ];
@@ -46,14 +44,14 @@ function generateEmployeeCode(existingCodes: string[], designationCode: string) 
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">{label}</label>
+      <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{label}</label>
       {children}
     </div>
   );
 }
 
-function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete }: {
-  emp: any; onClose: () => void; isAdmin: boolean; onEdit: (e: any) => void; onToggleActive: (e: any) => void; onDelete?: (e: any) => void;
+function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive }: {
+  emp: any; onClose: () => void; isAdmin: boolean; onEdit: (e: any) => void; onToggleActive: (e: any) => void;
 }) {
   const [toggling, setToggling] = useState(false);
 
@@ -64,13 +62,13 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="bg-white w-full sm:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden max-h-[95dvh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
 
         {/* ── Header gradient strip ── */}
-        <div className="relative shrink-0 bg-gradient-to-br from-slate-800 via-navy to-slate-700 pt-5 pb-16 px-6 rounded-t-[2rem]">
+        <div className="relative shrink-0 bg-gradient-to-br from-slate-800 via-navy to-teal-700 pt-5 pb-16 px-6 rounded-t-[2rem]">
           <div className="flex items-center justify-between">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-widest border ${
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
               emp.is_active
                 ? 'bg-emerald-400/20 text-emerald-200 border-emerald-300/30'
                 : 'bg-red-400/20 text-red-200 border-red-300/30'
@@ -82,58 +80,57 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
         </div>
 
         {/* ── Avatar overlapping header ── */}
-        <div className="px-6 -mt-12 shrink-0 relative z-10">
-          <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-xl">
+        <div className="px-6 -mt-12 flex items-end gap-4 shrink-0">
+          <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-xl shrink-0">
             {emp.photo_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800 font-black text-2xl">
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-slate-100 text-teal-600 font-black text-2xl">
                 {emp.full_name?.split(' ').slice(0,2).map((n: string) => n[0]).join('').toUpperCase()}
               </div>
             )}
           </div>
-        </div>
-        
-        <div className="px-6 pt-3 shrink-0">
-          <h2 className="text-xl font-black text-slate-800 leading-tight truncate">{emp.full_name}</h2>
-          <p className="text-xs font-bold text-navy mt-0.5">{emp.designation || emp.role?.replace(/_/g, ' ')}</p>
+          <div className="pb-2 flex-1 min-w-0">
+            <h2 className="text-xl font-black text-slate-800 leading-tight truncate">{emp.full_name}</h2>
+            <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role?.replace(/_/g, ' ')}</p>
+          </div>
         </div>
 
         {/* ── Pill row ── */}
         <div className="px-6 pt-3 pb-4 flex flex-wrap gap-2 shrink-0">
           {emp.employee_code && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-navy/5 text-navy rounded-full text-xs font-black border border-navy/10">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-navy/5 text-navy rounded-full text-[11px] font-black border border-navy/10">
               <Hash className="w-3 h-3"/>{emp.employee_code}
             </span>
           )}
           {emp.department && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-[11px] font-bold border border-slate-200">
               <Building2 className="w-3 h-3"/>{emp.department}
             </span>
           )}
           {emp.blood_group && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-bold border border-red-100">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-[11px] font-bold border border-red-100">
               <Droplets className="w-3 h-3"/>{emp.blood_group}
             </span>
           )}
         </div>
 
         {/* ── Scrollable body ── */}
-        <div className="flex-1 overflow-y-auto border-t border-slate-100 px-6 py-5 pb-10 space-y-4">
+        <div className="flex-1 overflow-y-auto border-t border-slate-100 px-6 py-5 space-y-4">
 
           {/* Contact */}
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
             <div className="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
-              <Mail className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-black uppercase tracking-widest text-slate-400">Contact</span>
+              <Mail className="w-3.5 h-3.5 text-slate-400"/><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact</span>
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center gap-3 px-4 py-3">
-                <Mail className="w-4 h-4 text-slate-700 shrink-0"/>
+                <Mail className="w-4 h-4 text-teal-500 shrink-0"/>
                 <span className="text-sm font-medium text-slate-700 break-all">{emp.email || '—'}</span>
               </div>
               <div className="flex items-center gap-3 px-4 py-3">
-                <Phone className="w-4 h-4 text-slate-700 shrink-0"/>
+                <Phone className="w-4 h-4 text-teal-500 shrink-0"/>
                 <span className="text-sm font-medium text-slate-700">{emp.phone || '—'}</span>
               </div>
             </div>
@@ -142,7 +139,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {/* Dates */}
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
             <div className="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-black uppercase tracking-widest text-slate-400">Important Dates</span>
+              <Calendar className="w-3.5 h-3.5 text-slate-400"/><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Important Dates</span>
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between px-4 py-3">
@@ -159,7 +156,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {/* Emergency */}
           <div className="rounded-2xl border border-red-100 overflow-hidden">
             <div className="bg-red-50 px-4 py-2.5 flex items-center gap-2">
-              <AlertCircle className="w-3.5 h-3.5 text-red-400"/><span className="text-xs font-black uppercase tracking-widest text-red-400">Emergency Contact</span>
+              <AlertCircle className="w-3.5 h-3.5 text-red-400"/><span className="text-[10px] font-black uppercase tracking-widest text-red-400">Emergency Contact</span>
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between px-4 py-3">
@@ -177,7 +174,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {emp.address && (
             <div className="rounded-2xl border border-slate-100 overflow-hidden">
               <div className="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-black uppercase tracking-widest text-slate-400">Address</span>
+                <MapPin className="w-3.5 h-3.5 text-slate-400"/><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Address</span>
               </div>
               <p className="px-4 py-3 text-sm font-medium text-slate-700 leading-relaxed">{emp.address}</p>
             </div>
@@ -187,11 +184,11 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
           {isAdmin && (
             <>
               {emp.base_salary && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-100/40 px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-800">
+                <div className="rounded-2xl border border-teal-100 bg-teal-50/40 px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-teal-600">
                     <CreditCard className="w-3.5 h-3.5"/>Base Salary
                   </div>
-                  <span className="text-lg font-black text-slate-900">
+                  <span className="text-lg font-black text-teal-700">
                     Rs.{Number(emp.base_salary).toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -200,7 +197,7 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
               {/* Status toggle */}
               <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${emp.is_active ? 'border-red-100 bg-red-50/40' : 'border-emerald-100 bg-emerald-50/40'}`}>
                 <div>
-                  <p className={`text-xs font-black uppercase tracking-widest ${emp.is_active ? 'text-red-500' : 'text-emerald-600'}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${emp.is_active ? 'text-red-500' : 'text-emerald-600'}`}>
                     {emp.is_active ? 'Deactivate Account' : 'Reactivate Account'}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -226,22 +223,13 @@ function ProfileModal({ emp, onClose, isAdmin, onEdit, onToggleActive, onDelete 
 
         {/* ── Footer actions ── */}
         {isAdmin && (
-          <div className="shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3 bg-white">
+          <div className="shrink-0 border-t border-slate-100 px-6 py-4">
             <button
               onClick={() => { onClose(); onEdit(emp); }}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-navy text-white font-black rounded-xl hover:bg-navy/90 text-sm transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-navy text-white font-black rounded-xl hover:bg-navy/90 text-sm transition-colors"
             >
               <UserCog className="w-4 h-4"/> Edit Full Profile
             </button>
-            {onDelete && (
-              <button
-                onClick={() => { onClose(); onDelete(emp); }}
-                className="flex-none px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-black rounded-xl transition-colors"
-                title="Delete Employee"
-              >
-                <Trash2 className="w-5 h-5"/>
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -253,15 +241,15 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
   const [showFullProfile, setShowFullProfile] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="relative w-full max-w-sm">
         <button onClick={onClose} className="absolute -top-4 -right-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors">
           <X className="w-5 h-5 text-slate-600"/>
         </button>
         
         {isAdmin && (
-          <button onClick={() => { onClose(); onEdit(emp); }} className="absolute -top-4 -left-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-100 transition-colors" title="Edit Employee">
-            <UserCog className="w-5 h-5 text-slate-800"/>
+          <button onClick={() => { onClose(); onEdit(emp); }} className="absolute -top-4 -left-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-50 transition-colors" title="Edit Employee">
+            <UserCog className="w-5 h-5 text-teal-600"/>
           </button>
         )}
         
@@ -273,9 +261,9 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           <div className="w-full relative z-10 flex justify-between items-start mb-8">
             <div>
               <h3 className="text-white font-black tracking-widest text-sm uppercase">OXYGEN</h3>
-              <p className="text-slate-200 font-bold tracking-widest text-xs uppercase">Bioinnovations</p>
+              <p className="text-teal-100 font-bold tracking-widest text-[9px] uppercase">Bioinnovations</p>
             </div>
-            <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-xs font-black uppercase tracking-widest border ${
+            <div className={`px-2 py-1 backdrop-blur-sm rounded flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest border ${
               emp.is_active ? 'bg-white/20 text-white border-white/30' : 'bg-red-500/40 text-white border-red-300/50'
             }`}>
               <CheckSquare className="w-3 h-3"/> {emp.is_active ? 'Active' : 'Inactive'}
@@ -298,36 +286,36 @@ function EmployeeIDCard({ emp, onClose, onEdit, isAdmin }) {
           <p className="text-xs font-bold text-navy tracking-widest uppercase mt-2 mb-6 text-center">{emp.designation || emp.role}</p>
           
           <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center mb-2 shadow-inner">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Official Employee Code</p>
             <p className="font-mono text-2xl font-black text-slate-800 tracking-widest">{emp.employee_code || 'PENDING'}</p>
           </div>
 
-          <div className="w-full space-y-2 mt-2 px-2 text-xs font-semibold text-slate-500">
+          <div className="w-full space-y-2 mt-2 px-2 text-[10px] font-semibold text-slate-500">
             {emp.phone && <p className="flex items-center"><Phone className="w-3 h-3 mr-2" />{emp.phone}</p>}
             {emp.email && <p className="flex items-center"><Mail className="w-3 h-3 mr-2" />{emp.email}</p>}
             {emp.blood_group && <p className="flex items-center"><Droplets className="w-3 h-3 mr-2 text-red-500" />Blood Group: <span className="ml-1 text-red-600 font-bold">{emp.blood_group}</span></p>}
           </div>
 
           {showFullProfile && (
-            <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-xs text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
-                {emp.date_of_birth && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Date of Birth</span> {new Date(emp.date_of_birth).toLocaleDateString('en-IN')}</p>}
-                {emp.joined_date && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Date of Joining</span> {new Date(emp.joined_date).toLocaleDateString('en-IN')}</p>}
-                {emp.address && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Address</span> {emp.address}</p>}
+            <div className="w-full mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-[10px] text-slate-600 text-left animate-in fade-in slide-in-from-top-2">
+                {emp.date_of_birth && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Birth</span> {new Date(emp.date_of_birth).toLocaleDateString('en-IN')}</p>}
+                {emp.joined_date && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Date of Joining</span> {new Date(emp.joined_date).toLocaleDateString('en-IN')}</p>}
+                {emp.address && <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Address</span> {emp.address}</p>}
                 {(emp.emergency_contact || emp.emergency_contact_name) && (
-                  <p><span className="font-bold text-slate-400 uppercase tracking-widest text-xs block mb-0.5">Emergency Contact</span> {emp.emergency_contact_name} {emp.emergency_contact ? `(${emp.emergency_contact})` : ''}</p>
+                  <p><span className="font-bold text-slate-400 uppercase tracking-widest text-[8px] block mb-0.5">Emergency Contact</span> {emp.emergency_contact_name} {emp.emergency_contact ? `(${emp.emergency_contact})` : ''}</p>
                 )}
             </div>
           )}
 
-          <button onClick={() => setShowFullProfile(!showFullProfile)} className="mt-4 text-xs font-black text-slate-800 hover:text-slate-900 transition-colors uppercase tracking-widest">
+          <button onClick={() => setShowFullProfile(!showFullProfile)} className="mt-4 text-[9px] font-black text-teal-600 hover:text-teal-700 transition-colors uppercase tracking-widest">
             {showFullProfile ? 'Hide Profile' : 'View Full Profile'}
           </button>
 
           {/* QR Code Section */}
           <div className="w-full mt-4 pt-5 border-t border-slate-100 flex items-center justify-between">
             <div className="text-left pr-4">
-              <p className="text-xs font-black text-navy uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
-              <p className="text-xs font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
+              <p className="text-[9px] font-black text-navy uppercase tracking-widest mb-1.5 flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Global Audit Tag</p>
+              <p className="text-[10px] font-bold text-slate-500 leading-relaxed">Scan to securely verify identity & access.</p>
             </div>
             <div className="p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
               <QRCodeSVG value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.oxygenbioinnovations.com'}/verify/${emp.id}`} size={64} level="M" />
@@ -585,25 +573,6 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
     }
   };
 
-  const handleDeleteEmployee = async (emp: any) => {
-    if (!window.confirm(`Are you sure you want to completely delete ${emp.full_name}? This action cannot be undone.`)) return;
-    setUpdateLoading(true);
-    try {
-      const res = await fetch('/api/admin/delete-employee', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: emp.id }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success(`${emp.full_name} deleted successfully`);
-      setEditingEmployee(null);
-      await fetchEmployees();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
@@ -615,7 +584,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         {isAdmin && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="flex items-center justify-center px-6 py-3 bg-gradient-to-br from-slate-500 to-cyan-600 text-white font-black rounded-2xl hover:from-slate-400 hover:to-cyan-500 transition-all shadow-lg shadow-slate-700/20 active:scale-95"
+              className="flex items-center justify-center px-6 py-3 bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-black rounded-2xl hover:from-teal-400 hover:to-cyan-500 transition-all shadow-lg shadow-teal-500/20 active:scale-95"
             >
               <UserPlus className="w-5 h-5 mr-2"/> Add Employee
             </button>
@@ -636,7 +605,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
         </div>
         {isAdmin && (
           <label className="flex items-center gap-2 px-6 py-4 glass-card rounded-2xl cursor-pointer text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors whitespace-nowrap border border-slate-100 shadow-sm">
-            <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} className="rounded border-slate-300 text-slate-800 focus:ring-slate-700 w-4 h-4"/>
+            <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4"/>
             Show Inactive Members
           </label>
         )}
@@ -645,7 +614,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
       {/* Employee Cards Grid Grouped */}
       {loading && employees.length === 0 ? (
         <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin"/>
+          <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"/>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
@@ -666,7 +635,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={emp.photo_url} alt={emp.full_name} className="w-full h-full object-cover"/>
                                 ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-800 font-black text-lg">
+                                <div className="w-full h-full flex items-center justify-center text-teal-600 font-black text-lg">
                                     {(() => {
                                     const titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Mr', 'Mrs', 'Ms'];
                                     const parts = emp.full_name?.split(' ') || [];
@@ -678,7 +647,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-black text-slate-800 truncate leading-tight">{emp.full_name}</p>
-                                <p className="text-xs font-bold text-navy mt-0.5">{emp.designation || emp.role}</p>
+                                <p className="text-xs font-bold text-teal-600 mt-0.5">{emp.designation || emp.role}</p>
                                 <p className="text-xs text-slate-400 font-medium">{emp.department}</p>
                             </div>
                             </div>
@@ -700,7 +669,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                 {isAdmin && (
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); setEditingEmployee(emp); }} 
-                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-black text-slate-900 border border-slate-200 transition-all shadow-sm"
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-teal-50 hover:bg-teal-100 rounded-xl text-xs font-black text-teal-700 border border-teal-100 transition-all shadow-sm"
                                     >
                                         <UserCog className="w-3.5 h-3.5"/> Edit
                                     </button>
@@ -722,21 +691,21 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
         {/* Profile Modal */}
       {viewingProfile && typeof document !== 'undefined' && createPortal(
-        <ProfileModal emp={viewingProfile} onClose={() => setViewingProfile(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin} onToggleActive={handleToggleActive} onDelete={handleDeleteEmployee}/>,
+        <ProfileModal emp={viewingProfile} onClose={() => setViewingProfile(null)} onEdit={(e) => setEditingEmployee(e)} isAdmin={isAdmin} onToggleActive={handleToggleActive}/>,
         document.body
       )}
 
       {/* Admin Quick Edit Profile Modal */}
       {editingEmployee && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
             <div className="flex flex-col bg-white rounded-[2rem] max-w-2xl w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
                 <button onClick={() => setEditingEmployee(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
                 <h2 className="text-2xl font-black text-slate-800 mb-2">Edit {editingEmployee.full_name}</h2>
                 <p className="text-sm text-slate-500 mb-6">Manage details and specific access overrides for this user.</p>
 
                 <div className="flex gap-4 border-b border-slate-200 mb-6">
-                    <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'details' ? 'border-slate-700 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('details')}>Details & Role</button>
-                    <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'access' ? 'border-slate-700 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('access')}>Access Management</button>
+                    <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'details' ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('details')}>Details & Role</button>
+                    <button className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'access' ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'}`} onClick={() => setActiveTab('access')}>Access Management</button>
                 </div>
 
                 {activeTab === 'details' && (
@@ -785,29 +754,9 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                         </div>
 
                         <div className="flex justify-end pt-4">
-                            <button onClick={handleUpdateDetails} disabled={updateLoading} className="px-6 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-slate-900 transition flex items-center gap-2">
+                            <button onClick={handleUpdateDetails} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
                                 {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Details
                             </button>
-                        </div>
-
-                        <div className="mt-8 pt-6 border-t border-red-100 bg-red-50/50 -mx-5 -mb-5 p-5 rounded-b-[2rem]">
-                            <h4 className="text-sm font-black text-red-700 uppercase tracking-wider mb-3">Danger Zone</h4>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <button 
-                                    onClick={() => handleToggleActive(editingEmployee)}
-                                    disabled={updateLoading} 
-                                    className="flex-1 px-4 py-3 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition flex items-center justify-center gap-2 text-sm"
-                                >
-                                    <Power className="w-4 h-4"/> {editingEmployee.is_active ? 'Deactivate Account' : 'Reactivate Account'}
-                                </button>
-                                <button 
-                                    onClick={() => handleDeleteEmployee(editingEmployee)}
-                                    disabled={updateLoading} 
-                                    className="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2 text-sm"
-                                >
-                                    <X className="w-4 h-4"/> Delete Permanently
-                                </button>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -845,10 +794,10 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                                                             }
                                                             setCustomPerms(newPerms);
                                                         }}
-                                                        className={`rounded focus:ring-2 w-4 h-4 ${isOverridden ? 'text-amber-600 focus:ring-amber-500 border-amber-400' : 'text-slate-800 focus:ring-slate-700 border-slate-300'}`}
+                                                        className={`rounded focus:ring-2 w-4 h-4 ${isOverridden ? 'text-amber-600 focus:ring-amber-500 border-amber-400' : 'text-teal-600 focus:ring-teal-500 border-slate-300'}`}
                                                     />
                                                     <span className="capitalize">{actionName.replace('_', ' ')}</span>
-                                                    {isOverridden && <span className="text-xs font-black uppercase ml-auto bg-amber-200/50 px-1.5 py-0.5 rounded text-amber-800">Override</span>}
+                                                    {isOverridden && <span className="text-[9px] font-black uppercase ml-auto bg-amber-200/50 px-1.5 py-0.5 rounded text-amber-800">Override</span>}
                                                 </label>
                                             );
                                         })}
@@ -858,7 +807,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                         </div>
 
                         <div className="flex justify-end pt-4 border-t border-slate-100">
-                            <button onClick={handleUpdatePermissions} disabled={updateLoading} className="px-6 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-slate-900 transition flex items-center gap-2">
+                            <button onClick={handleUpdatePermissions} disabled={updateLoading} className="px-6 py-3 bg-teal-600 text-white font-black rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
                                 {updateLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Permissions
                             </button>
                         </div>
@@ -870,7 +819,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
       {/* Add Employee Modal */}
       {showInviteModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-0 sm:p-4">
           <div className="flex flex-col glass-panel rounded-[2rem] max-w-lg w-full p-5 md:p-8 relative shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto bg-white">
             <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all">
               <X className="w-5 h-5"/>
@@ -880,7 +829,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
             {inviteError && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 font-medium">{inviteError}</div>}
 
-            <form onSubmit={handleSubmit(handleInviteSubmit, (errors) => setInviteError(Object.values(errors)[0]?.message || 'Please fill all required fields correctly'))} className="space-y-5">
+            <form onSubmit={handleSubmit(handleInviteSubmit)} className="space-y-5">
               <div className="grid grid-cols-1 gap-4">
                 <Field label="Full Name">
                   <input {...register('full_name')} className="input-field" placeholder="Santha Kumari R K"/>
@@ -897,8 +846,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 <Field label="Role">
                   <select {...register('role')} className="input-field">
                     <option value="admin">Administrator</option>
-                    <option value="staff">Staff / R&amp;D</option>
-                    <option value="research_intern">Research Intern</option>
+                    <option value="staff">Staff / R&D</option>
                     <option value="intern">Intern</option>
                   </select>
                 </Field>
@@ -919,7 +867,7 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
 
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="w-4 h-4 text-slate-800"/>
+                  <Sparkles className="w-4 h-4 text-teal-600"/>
                   <span className="text-sm font-black text-slate-700 uppercase tracking-wider">Employee ID Auto-Generator</span>
                 </div>
 
@@ -945,14 +893,14 @@ export default function DirectoryClient({ initialEmployees }: { initialEmployees
                 )}
 
                 <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Generated Employee ID</label>
                   <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
-                    <span className="font-mono font-black text-slate-900 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
+                    <span className="font-mono font-black text-teal-700 text-lg tracking-widest">{watchEmployeeCode || '—'}</span>
                   </div>
                 </div>
               </div>
 
-              <button disabled={inviting} type="submit" className="w-full bg-gradient-to-br from-slate-500 to-cyan-600 text-white font-black py-4 rounded-2xl hover:from-slate-400 hover:to-cyan-500 transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-slate-700/20 active:scale-95">
+              <button disabled={inviting} type="submit" className="w-full bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-black py-4 rounded-2xl hover:from-teal-400 hover:to-cyan-500 transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-teal-500/20 active:scale-95">
                 {inviting ? <Loader2 className="w-5 h-5 animate-spin"/> : <UserPlus className="w-5 h-5"/>}
                 {inviting ? 'Creating Account...' : 'Create Employee Account'}
               </button>

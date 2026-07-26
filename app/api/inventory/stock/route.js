@@ -58,9 +58,6 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Valid Quantity greater than 0 is required' }, { status: 400 });
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).maybeSingle();
-
     // Auto-generate internal lot number when supplier doesn't provide one
     const resolvedLotNumber = supplier_batch_number?.trim()
       ? supplier_batch_number.trim()
@@ -96,8 +93,7 @@ export async function POST(request) {
         invoice_ref,
         condition_on_arrival,
         sds_url,
-        coa_url,
-        received_by: emp?.id || null
+        coa_url
       })
       .select()
       .single();

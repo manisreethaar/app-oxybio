@@ -45,7 +45,7 @@ INSERT INTO lookup_categories (type, name, color) VALUES
 ('compliance', 'FSSAI', 'orange'),
 ('compliance', 'TIIC', 'blue'),
 ('compliance', 'PF', 'green'),
-('compliance', 'ESI', 'violet'),
+('compliance', 'ESI', 'teal'),
 ('compliance', 'ISO', 'purple'),
 ('calendar', 'Grant (SISFS/DPIIT)', 'indigo'),
 ('calendar', 'Regulatory (FSSAI/GST)', 'orange'),
@@ -54,7 +54,7 @@ INSERT INTO lookup_categories (type, name, color) VALUES
 ('sop', 'Manufacturing', 'blue'),
 ('sop', 'Quality Control', 'purple'),
 ('sop', 'Safety & Hygiene', 'red'),
-('sop', 'Equipment Operation', 'violet')
+('sop', 'Equipment Operation', 'teal')
 ON CONFLICT (type, name) DO NOTHING;
 
 -- 3. Alter sop_library table to add quiz_data

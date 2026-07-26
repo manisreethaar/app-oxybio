@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useParams } from 'next/navigation';
@@ -40,15 +39,15 @@ const RejectionPanel = dynamic(() => import('./components/RejectionPanel'), { ss
 const LinkedRecordsPanel = dynamic(() => import('./components/LinkedRecordsPanel'), { ssr: false });
 
 const STAGES = [
-  { id: 'media_prep',       label: 'Media Prep',       icon: Beaker,      color: 'text-slate-600', bg: 'bg-slate-50',  border: 'border-slate-200' },
+  { id: 'media_prep',       label: 'Media Prep',       icon: Beaker,      color: 'text-indigo-600', bg: 'bg-indigo-50',  border: 'border-indigo-200' },
   { id: 'sterilisation',    label: 'Sterilisation',    icon: ShieldCheck, color: 'text-slate-600',  bg: 'bg-slate-50',   border: 'border-slate-200'  },
-  { id: 'inoculation',      label: 'Inoculation',      icon: Droplets,    color: 'text-slate-600',   bg: 'bg-slate-50',    border: 'border-slate-200'   },
+  { id: 'inoculation',      label: 'Inoculation',      icon: Droplets,    color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200'   },
   { id: 'fermentation',     label: 'Fermentation',     icon: Activity,    color: 'text-navy',       bg: 'bg-navy/10',    border: 'border-navy/30'    },
-  { id: 'harvest',          label: 'Harvest',          icon: Package,     color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', supplementary: true },
+  { id: 'harvest',          label: 'Harvest',          icon: Package,     color: 'text-orange-600', bg: 'bg-orange-50',  border: 'border-orange-200', supplementary: true },
   { id: 'straining',        label: 'Straining',        icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
-  { id: 'extract_addition', label: 'Extract Addition', icon: Leaf,        color: 'text-slate-600',bg: 'bg-slate-50', border: 'border-slate-200'},
-  { id: 'downstream',       label: 'Downstream',       icon: Layers,      color: 'text-slate-600', bg: 'bg-slate-50',  border: 'border-slate-200', supplementary: true },
-  { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200'   },
+  { id: 'extract_addition', label: 'Extract Addition', icon: Leaf,        color: 'text-fuchsia-600',bg: 'bg-fuchsia-50', border: 'border-fuchsia-200'},
+  { id: 'downstream',       label: 'Downstream',       icon: Layers,      color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', supplementary: true },
+  { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-rose-600',   bg: 'bg-rose-50',    border: 'border-rose-200'   },
   { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
   { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
 ];
@@ -101,7 +100,6 @@ export default function BatchDetailPage() {
   const [editingStage,       setEditingStage]       = useState(null);
   const [lnbByFlask,         setLnbByFlask]         = useState({});
   const [flaskInoculations,  setFlaskInoculations]  = useState([]);
-  const [loadError,          setLoadError]          = useState(false);
 
   const [showQuickLog,    setShowQuickLog]    = useState(false);
   const [quickLogFlaskId, setQuickLogFlaskId] = useState('');
@@ -113,37 +111,28 @@ export default function BatchDetailPage() {
 
   const fetchAll = useCallback(async () => {
     if (!batchId) return;
-    setLoadError(false);
-    try {
-      // This page had no try/catch/finally at all — a stalled connection or
-      // any error left it stuck on "Loading batch..." forever, on one of
-      // the most-visited pages in the app, with no way out but a refresh.
-      const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await withTimeout(Promise.all([
-        supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
-        supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
-        supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
-        supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
-        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
-        supabase.from('lab_notebook_entries').select('id, flask_id').eq('batch_id', batchId),
-        supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
-      ]), 20000, 'Batch detail load timed out');
-      if (batchRes.data)  setBatch(batchRes.data);
-      if (flasksRes.data) setFlasks(flasksRes.data);
-      if (transRes.data)  setTransitions(transRes.data);
-      if (empRes.data)    setEmployees(empRes.data);
-      if (stockRes.data)  setAvailableStock(stockRes.data);
-      const lnbEntries = lnbRes.data || [];
-      setLnbCount(lnbEntries.length);
-      setLnbEntryId(lnbEntries[0]?.id || null);
-      const byFlask = {};
-      lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
-      setLnbByFlask(byFlask);
-      if (epRes.data) setFlaskEndpoints(epRes.data);
-      if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
-    } catch (err) {
-      console.error('Batch detail fetch error:', err);
-      setLoadError(true);
-    }
+    const [batchRes, flasksRes, transRes, empRes, stockRes, lnbRes, epRes] = await Promise.all([
+      supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
+      supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
+      supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
+      supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
+      supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
+      supabase.from('lab_notebook_entries').select('id, flask_id').eq('batch_id', batchId),
+      supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
+    ]);
+    if (batchRes.data)  setBatch(batchRes.data);
+    if (flasksRes.data) setFlasks(flasksRes.data);
+    if (transRes.data)  setTransitions(transRes.data);
+    if (empRes.data)    setEmployees(empRes.data);
+    if (stockRes.data)  setAvailableStock(stockRes.data);
+    const lnbEntries = lnbRes.data || [];
+    setLnbCount(lnbEntries.length);
+    setLnbEntryId(lnbEntries[0]?.id || null);
+    const byFlask = {};
+    lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
+    setLnbByFlask(byFlask);
+    if (epRes.data) setFlaskEndpoints(epRes.data);
+    if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
   }, [batchId, supabase]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -363,18 +352,7 @@ export default function BatchDetailPage() {
     }
   };
 
-  if (loadError && !batch) {
-    return (
-      <div className="p-8 flex flex-col items-center justify-center gap-3 text-center">
-        <div className="p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100 font-bold text-sm max-w-md">
-          Couldn&apos;t load this batch. Your connection may be slow or unavailable.
-        </div>
-        <button onClick={fetchAll} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider rounded-lg">Retry</button>
-      </div>
-    );
-  }
-
-  if (authLoading || !batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
+  if (authLoading || !batch) return <div className="p-8 text-center text-gray-400 animate-pulse">Loading batch...</div>;
 
   const currentIdx  = STAGES.findIndex(s => s.id === batch.current_stage);
   const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
@@ -421,7 +399,7 @@ export default function BatchDetailPage() {
         optical_density: quickOd ? parseFloat(quickOd) : null,
         visual_appearance: quickVisual,
         logged_at: new Date().toISOString(),
-        is_ph_alarm: parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6.5,
+        is_ph_alarm: parseFloat(quickPh) < 3.8 || parseFloat(quickPh) > 5.5,
         logged_by: employeeProfile?.id,
       });
       if (error) throw error;
@@ -442,7 +420,7 @@ export default function BatchDetailPage() {
 
   return (
     <div className="page-container">
-      <Link href="/batches" className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-navy mb-4">
+      <Link href="/batches" className="inline-flex items-center text-xs font-semibold text-gray-500 hover:text-navy mb-4">
         <ArrowLeft className="w-3.5 h-3.5 mr-1"/> Back to Registry
       </Link>
 
@@ -458,7 +436,7 @@ export default function BatchDetailPage() {
       )}
 
       {overtimeFlasksComputed.length > 0 && (
-        <div className="card p-4 bg-amber-50 border-amber-300 border flex items-center gap-3 mb-4">
+        <div className="surface p-4 bg-amber-50 border-amber-300 border flex items-center gap-3 mb-4">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0"/>
           <div>
             <p className="text-sm font-bold text-amber-800">Fermentation overtime: {overtimeFlasksComputed.map(f => f.label).join(', ')}</p>
@@ -468,16 +446,16 @@ export default function BatchDetailPage() {
       )}
 
       {/* Batch Header — always at top on all screen sizes */}
-      <div className="card p-4 md:p-5">
+      <div className="surface p-4 md:p-5">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="font-mono text-lg font-black text-slate-900 tracking-wider">{batch.batch_id}</p>
+            <p className="font-mono text-lg font-black text-gray-900 tracking-wider">{batch.batch_id}</p>
             <div className="flex gap-1.5 mt-1 flex-wrap">
               {batch.sku_target && batch.sku_target !== 'Unassigned' && (
-                <span className={`px-2 py-0.5 rounded text-xs font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-slate-50 text-slate-700 border-slate-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${batch.sku_target==='CLARITY' ? 'bg-blue-50 text-blue-700 border-blue-200' : batch.sku_target==='MOMENTUM' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{batch.sku_target}</span>
               )}
-              <span className="px-2 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-600 border border-slate-200 uppercase">{batch.experiment_type}</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='processing' ? 'bg-slate-50 text-slate-700 border-slate-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>{derivedStatus}</span>
+              <span className="px-2 py-0.5 rounded text-[9px] font-black bg-gray-100 text-gray-600 border border-gray-200 uppercase">{batch.experiment_type}</span>
+              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${derivedStatus==='released' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : derivedStatus==='rejected' ? 'bg-red-50 text-red-700 border-red-100' : derivedStatus==='fermenting' ? 'bg-navy/10 text-navy border-navy/20' : derivedStatus==='qc-hold' ? 'bg-rose-50 text-rose-700 border-rose-100' : derivedStatus==='processing' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>{derivedStatus}</span>
             </div>
           </div>
           <div className="text-right flex flex-col items-end gap-2">
@@ -493,8 +471,8 @@ export default function BatchDetailPage() {
                   : (new Date() - new Date(batch.start_time)) / 3600000;
                 return (
                   <>
-                    <p className="text-xs text-slate-400 font-bold uppercase">{isScheduled ? 'Scheduled' : maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
-                    <p className="text-xl font-black text-slate-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-slate-400"> hr</span></p>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">{isScheduled ? 'Scheduled' : maxEpHrs !== null ? 'Fermentation' : 'Age'}</p>
+                    <p className="text-xl font-black text-gray-800 tabular-nums">{hrs.toFixed(1)}<span className="text-xs text-gray-400"> hr</span></p>
                   </>
                 );
               })()}
@@ -502,7 +480,7 @@ export default function BatchDetailPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => router.push(`/messages?pin_type=batch&pin_id=${batch.batch_id}&pin_title=${encodeURIComponent('Batch ' + batch.batch_id)}`)}
-                className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-600 border border-indigo-200 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors"
                 title="Discuss this batch"
               >
                 <MessageSquare className="w-3 h-3"/> Discuss
@@ -510,7 +488,7 @@ export default function BatchDetailPage() {
               {!isTerminal && ['admin','ceo','cto'].includes(role) && (
                 <button
                   onClick={handleCancelBatch}
-                  className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
                   title="Archive this batch"
                 >
                   <Trash2 className="w-3 h-3"/> Archive Batch
@@ -519,15 +497,15 @@ export default function BatchDetailPage() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 border-t border-gray-100 text-xs">
           <div>
-            <p className="text-xs text-slate-400 font-bold uppercase mb-0.5">Recipe</p>
-            <Link href="/formulations" className="font-bold text-slate-800 hover:text-navy hover:underline block">
+            <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Recipe</p>
+            <Link href="/formulations" className="font-bold text-gray-800 hover:text-navy hover:underline block">
               {batch.formulations?.name}
             </Link>
-            <p className="text-slate-400">v{batch.formulations?.version}</p>
+            <p className="text-gray-400">v{batch.formulations?.version}</p>
           </div>
-          <div><p className="text-xs text-slate-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-slate-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
+          <div><p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Volume / Flasks</p><p className="font-bold text-gray-800">{batch.planned_volume_ml}ml × {batch.num_flasks}</p></div>
         </div>
       </div>
 
@@ -537,8 +515,8 @@ export default function BatchDetailPage() {
         <div className="space-y-4 order-2 lg:order-1">
 
           {/* Stage Timeline */}
-          <div className="card p-4">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Stage Timeline</p>
+          <div className="surface p-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Stage Timeline</p>
             <div className="space-y-0.5">
               {STAGES.filter(s => !['released','rejected'].includes(s.id)).map((stage, idx) => {
                 let done, curr;
@@ -562,18 +540,18 @@ export default function BatchDetailPage() {
                     className={`flex items-center gap-2.5 py-2 px-3 rounded-lg transition-all ${
                       isViewing ? `${stage.bg} border-2 ${stage.border} ring-2 ring-offset-1 ring-navy/30` :
                       curr ? `${stage.bg} border ${stage.border}` :
-                      done ? 'hover:bg-slate-50 cursor-pointer' : ''
+                      done ? 'hover:bg-gray-50 cursor-pointer' : ''
                     }`}
                   >
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done ? 'bg-navy border-navy' : curr ? `${stage.bg} ${stage.border}` : 'bg-slate-50 border-slate-200'}`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${done ? 'bg-navy border-navy' : curr ? `${stage.bg} ${stage.border}` : 'bg-gray-50 border-gray-200'}`}>
                       {done
                         ? <CheckCircle className="w-3 h-3 text-white"/>
-                        : <Icon className={`w-2.5 h-2.5 ${curr ? stage.color : 'text-slate-300'}`}/>}
+                        : <Icon className={`w-2.5 h-2.5 ${curr ? stage.color : 'text-gray-300'}`}/>}
                     </div>
-                    <span className={`text-xs font-bold ${isViewing ? 'text-navy' : curr ? 'text-slate-900' : done ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{stage.label}</span>
-                    {isViewing && <span className="ml-auto text-xs font-black text-slate-600">VIEWING</span>}
-                    {curr && !isViewing && <span className="ml-auto text-xs font-black text-navy">ACTIVE</span>}
-                    {done && !isViewing && <span className="ml-auto text-xs text-slate-300 font-bold">↩</span>}
+                    <span className={`text-xs font-bold ${isViewing ? 'text-navy' : curr ? 'text-gray-900' : done ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{stage.label}</span>
+                    {isViewing && <span className="ml-auto text-[9px] font-black text-blue-600">VIEWING</span>}
+                    {curr && !isViewing && <span className="ml-auto text-[9px] font-black text-navy">ACTIVE</span>}
+                    {done && !isViewing && <span className="ml-auto text-[9px] text-gray-300 font-bold">↩</span>}
                   </div>
                 );
               })}
@@ -587,26 +565,26 @@ export default function BatchDetailPage() {
           </div>
 
           {/* Flask Cards */}
-          <div className="card p-4 border-2 border-navy/10 relative overflow-hidden">
+          <div className="surface p-4 border-2 border-navy/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-navy/5 rounded-bl-[100px] -z-10"/>
-            <p className="text-xs font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
+            <p className="text-[10px] font-black text-navy uppercase tracking-widest mb-3 flex items-center gap-1"><FlaskConical className="w-3 h-3"/>Trials Tracking</p>
             <div className="space-y-2">
               {flasks.map(f => (
                 <button
                   key={f.id}
                   onClick={() => { setSelectedFlaskId(f.id); setViewingStage(null); }}
                   disabled={!isPostSterilisation}
-                  className={`w-full p-2.5 rounded-xl text-left border transition-all flex flex-col items-start ${selectedFlaskId===f.id?'bg-navy/5 border-navy shadow-sm ring-1 ring-navy':f.status==='rejected'?'bg-red-50 border-red-200 opacity-60':'bg-white hover:bg-slate-50 border-slate-200 hover:border-navy/50'}`}>
+                  className={`w-full p-2.5 rounded-xl text-left border transition-all flex flex-col items-start ${selectedFlaskId===f.id?'bg-navy/5 border-navy shadow-sm ring-1 ring-navy':f.status==='rejected'?'bg-red-50 border-red-200 opacity-60':'bg-white hover:bg-gray-50 border-gray-200 hover:border-navy/50'}`}>
                   <div className="flex justify-between items-center w-full">
-                    <p className={`text-sm font-black ${f.status==='rejected'?'text-red-500 line-through':selectedFlaskId===f.id?'text-navy':'text-slate-700'}`}>{f.flask_label}</p>
+                    <p className={`text-sm font-black ${f.status==='rejected'?'text-red-500 line-through':selectedFlaskId===f.id?'text-navy':'text-gray-700'}`}>{f.flask_label}</p>
                     {selectedFlaskId===f.id && <div className="w-1.5 h-1.5 bg-navy rounded-full animate-pulse"/>}
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <p className={`text-xs font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-slate-200 text-slate-500'}`}>
+                    <p className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>
                       {f.status==='rejected' ? 'REJECTED' : isScheduled ? 'PLANNED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
                     </p>
                     {lnbByFlask[f.id] > 0 && (
-                      <span className="text-xs font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 flex items-center gap-0.5">
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 flex items-center gap-0.5">
                         <BookOpen className="w-2.5 h-2.5"/>{lnbByFlask[f.id]}
                       </span>
                     )}
@@ -614,16 +592,16 @@ export default function BatchDetailPage() {
                 </button>
               ))}
             </div>
-            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-xs text-amber-700 font-bold">{isScheduled ? 'Start batch to unlock stage tracking.' : 'Complete Sterilisation to unlock individual trial tracking.'}</span></div>}
+            {!isPostSterilisation && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center z-10"><FlaskConical className="w-6 h-6 text-amber-500 mb-2 opacity-50"/><span className="text-[10px] text-amber-700 font-bold">{isScheduled ? 'Start batch to unlock stage tracking.' : 'Complete Sterilisation to unlock individual trial tracking.'}</span></div>}
           </div>
 
           {/* Linked Records (compact — Lab Notebook + BMR only) */}
-          <div className="card p-4">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Quick Links</p>
+          <div className="surface p-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Quick Links</p>
             <div className="space-y-2">
-              <Link href={lnbEntryId ? `/lab-notebook/${lnbEntryId}` : '/lab-notebook'} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-2"><BookOpen className="w-3.5 h-3.5 text-slate-400"/><span className="text-xs font-semibold text-slate-700">Lab Notebook</span></div>
-                <span className={`text-xs font-black px-1.5 py-0.5 rounded ${lnbCount>0?'bg-navy text-white':'bg-slate-200 text-slate-500'}`}>{lnbCount}</span>
+              <Link href={lnbEntryId ? `/lab-notebook/${lnbEntryId}` : '/lab-notebook'} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-2"><BookOpen className="w-3.5 h-3.5 text-gray-400"/><span className="text-xs font-semibold text-gray-700">Lab Notebook</span></div>
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded ${lnbCount>0?'bg-navy text-white':'bg-gray-200 text-gray-500'}`}>{lnbCount}</span>
               </Link>
 
               {['qc_hold','released','rejected'].includes(batch?.current_stage) && (
@@ -637,13 +615,13 @@ export default function BatchDetailPage() {
                       {bmrLoading ? <Loader className="w-3.5 h-3.5 text-navy animate-spin"/> : <FileText className="w-3.5 h-3.5 text-navy"/>}
                       <span className="text-xs font-black text-navy">{bmrLoading ? 'Generating…' : bmrUrl ? 'Regenerate BMR' : 'Export BMR PDF'}</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">GMP</span>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase">GMP</span>
                   </button>
                   {bmrUrl && (
                     <a href={`/api/batches/${batchId}/bmr?download=true`} target="_blank"
                       className="w-full flex items-center justify-between p-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors">
                       <div className="flex items-center gap-2"><Download className="w-3.5 h-3.5 text-emerald-600"/><span className="text-xs font-black text-emerald-700">Download BMR</span></div>
-                      <span className="text-xs font-bold text-emerald-500 uppercase">PDF</span>
+                      <span className="text-[9px] font-bold text-emerald-500 uppercase">PDF</span>
                     </a>
                   )}
                 </div>
@@ -652,10 +630,10 @@ export default function BatchDetailPage() {
           </div>
 
           {/* Stage History */}
-          <div className="card p-4">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Stage History</p>
+          <div className="surface p-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Stage History</p>
             <div className="space-y-2.5">
-              {transitions.length===0 && <p className="text-xs text-slate-400 text-center py-2">No transitions yet.</p>}
+              {transitions.length===0 && <p className="text-xs text-gray-400 text-center py-2">No transitions yet.</p>}
               {(() => {
                 const asc = [...transitions].sort((a,b) => new Date(a.created_at)-new Date(b.created_at));
                 return asc.map((t, i) => {
@@ -669,10 +647,10 @@ export default function BatchDetailPage() {
                       <div className="w-1.5 h-1.5 bg-navy rounded-full mt-1.5 shrink-0"/>
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-bold text-slate-700">{t.from_stage?.replace(/_/g,' ')} → {t.to_stage?.replace(/_/g,' ')}</p>
-                          {dur && <span className="text-xs font-black text-navy bg-navy/5 px-1.5 py-0.5 rounded">{dur}</span>}
+                          <p className="font-bold text-gray-700">{t.from_stage?.replace(/_/g,' ')} → {t.to_stage?.replace(/_/g,' ')}</p>
+                          {dur && <span className="text-[9px] font-black text-navy bg-navy/5 px-1.5 py-0.5 rounded">{dur}</span>}
                         </div>
-                        <p className="text-slate-400 text-xs">{t.employees?.full_name} · {t.created_at ? new Date(t.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
+                        <p className="text-gray-400 text-[10px]">{t.employees?.full_name} · {t.created_at ? new Date(t.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
                       </div>
                     </div>
                   );
@@ -686,19 +664,19 @@ export default function BatchDetailPage() {
         <div className="order-1 lg:order-2">
           {/* View / Edit Mode Banner */}
           {viewingStage && (
-            <div className={`flex items-center justify-between rounded-xl px-4 py-2.5 mb-4 ${editingStage === viewingStage ? 'bg-amber-50 border border-amber-300' : 'bg-slate-50 border border-slate-200'}`}>
+            <div className={`flex items-center justify-between rounded-xl px-4 py-2.5 mb-4 ${editingStage === viewingStage ? 'bg-amber-50 border border-amber-300' : 'bg-blue-50 border border-blue-200'}`}>
               <div className="flex items-center gap-2">
-                <BookOpen className={`w-4 h-4 shrink-0 ${editingStage === viewingStage ? 'text-amber-600' : 'text-slate-600'}`}/>
+                <BookOpen className={`w-4 h-4 shrink-0 ${editingStage === viewingStage ? 'text-amber-600' : 'text-blue-600'}`}/>
                 <div>
                   {editingStage === viewingStage ? (
                     <>
                       <p className="text-xs font-black text-amber-800">Editing Past Stage — Admin Mode</p>
-                      <p className="text-xs text-amber-600">Editing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. Save within the panel to update.</p>
+                      <p className="text-[10px] text-amber-600">Editing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. Save within the panel to update.</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-xs font-black text-slate-800">Viewing Past Stage — Read Only</p>
-                      <p className="text-xs text-slate-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
+                      <p className="text-xs font-black text-blue-800">Viewing Past Stage — Read Only</p>
+                      <p className="text-[10px] text-blue-600">You are reviewing <span className="font-bold uppercase">{viewingStage.replace(/_/g,' ')}</span> data. No edits can be made.</p>
                     </>
                   )}
                 </div>
@@ -707,7 +685,7 @@ export default function BatchDetailPage() {
                 {['admin','ceo','cto'].includes(role) && editingStage !== viewingStage && (
                   <button
                     onClick={() => setEditingStage(viewingStage)}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-lg transition-colors"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-colors"
                   >
                     Edit Stage
                   </button>
@@ -715,14 +693,14 @@ export default function BatchDetailPage() {
                 {editingStage === viewingStage && (
                   <button
                     onClick={() => setEditingStage(null)}
-                    className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-black rounded-lg hover:bg-slate-200 transition-colors"
+                    className="px-3 py-1.5 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg hover:bg-blue-200 transition-colors"
                   >
                     Stop Editing
                   </button>
                 )}
                 <button
                   onClick={() => { setViewingStage(null); setEditingStage(null); }}
-                  className="px-3 py-1.5 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover transition-colors"
+                  className="px-3 py-1.5 bg-navy text-white text-[10px] font-black rounded-lg hover:bg-navy-hover transition-colors"
                 >
                   ← Return to Current Stage
                 </button>
@@ -732,15 +710,15 @@ export default function BatchDetailPage() {
 
           {!viewingStage && isPostSterilisation && selectedFlask && !['released','rejected'].includes(selectedFlask.current_stage) && selectedFlask.status !== 'rejected' && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => setPendingFlaskReject(true)} className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 font-black rounded-lg text-xs uppercase tracking-wider transition-all hover:scale-105">Abort / Reject Trial {selectedFlask.flask_label}</button>
+              <button onClick={() => setPendingFlaskReject(true)} className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 font-black rounded-lg text-[10px] uppercase tracking-wider transition-all hover:scale-105">Abort / Reject Trial {selectedFlask.flask_label}</button>
             </div>
           )}
 
           {isScheduled ? (
-            <div className="card p-8 text-center">
+            <div className="surface p-8 text-center">
               <Clock className="w-8 h-8 text-navy mx-auto mb-3" />
-              <p className="text-sm font-black text-slate-900 uppercase tracking-wider">Batch Scheduled</p>
-              <p className="text-xs text-slate-500 mt-1 mb-5">Start this batch when production begins. The first active stage will be Media Prep.</p>
+              <p className="text-sm font-black text-gray-900 uppercase tracking-wider">Batch Scheduled</p>
+              <p className="text-xs text-gray-500 mt-1 mb-5">Start this batch when production begins. The first active stage will be Media Prep.</p>
               <button
                 onClick={handleStartBatch}
                 disabled={actionLoading}
@@ -769,7 +747,7 @@ export default function BatchDetailPage() {
               />
             </div>
           ) : (
-            <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>
+            <div className="surface p-8 text-center text-gray-400 text-sm">Unknown stage: {batch.current_stage}</div>
           )}
         </div>
       </div>
@@ -779,14 +757,14 @@ export default function BatchDetailPage() {
 
       {/* Transition Modal */}
       {pendingTransition && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Advance Stage</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to advance this batch to <strong className="uppercase">{pendingTransition.replace(/_/g, ' ')}</strong>?</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Advance Stage</h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to advance this batch to <strong className="uppercase">{pendingTransition.replace(/_/g, ' ')}</strong>?</p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingTransition(null)}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
               >
                 Cancel
               </button>
@@ -804,22 +782,22 @@ export default function BatchDetailPage() {
 
       {/* Archive Modal */}
       {pendingCancel && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Archive Entire Batch</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">This hides the batch from active lists. Permanent delete is available only from Archived.</p>
+            <p className="text-sm text-gray-600 mb-6 text-center">This hides the batch from active lists. Permanent delete is available only from Archived.</p>
             <div className="mb-4">
-              <label className="block text-xs font-bold text-slate-700 mb-1">Reason for Archiving</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Reason for Archiving</label>
               <input
                 type="text"
                 placeholder="Required..."
                 value={archiveReason}
                 onChange={(e) => setArchiveReason(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-red-500"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-red-500"
               />
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setPendingCancel(false)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold">Nevermind</button>
+              <button onClick={() => setPendingCancel(false)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold">Nevermind</button>
               <button disabled={!archiveReason.trim()} onClick={confirmCancelBatch} className="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-bold shadow-sm">Archive Batch</button>
             </div>
           </div>
@@ -828,16 +806,16 @@ export default function BatchDetailPage() {
 
       {/* Flask Advance Confirmation Modal */}
       {pendingFlaskAdvance && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-base font-bold text-slate-900 mb-1 text-center">Advance Trial Stage</h3>
-            <p className="text-sm text-slate-600 mb-1 text-center">
+            <h3 className="text-base font-bold text-gray-900 mb-1 text-center">Advance Trial Stage</h3>
+            <p className="text-sm text-gray-600 mb-1 text-center">
               Advancing <span className="font-black text-navy">{pendingFlaskAdvance.flaskLabel}</span> to{' '}
               <span className="font-black uppercase">{pendingFlaskAdvance.toStage.replace(/_/g,' ')}</span>
             </p>
-            <p className="text-xs text-slate-400 text-center mb-5">This cannot be undone without admin intervention.</p>
+            <p className="text-xs text-gray-400 text-center mb-5">This cannot be undone without admin intervention.</p>
             <div className="flex gap-3">
-              <button onClick={() => setPendingFlaskAdvance(null)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
+              <button onClick={() => setPendingFlaskAdvance(null)} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
               <button onClick={confirmFlaskAdvance} disabled={actionLoading} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
                 {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : `Advance ${pendingFlaskAdvance.flaskLabel}`}
               </button>
@@ -848,14 +826,14 @@ export default function BatchDetailPage() {
 
       {/* Reject Trial Modal */}
       {pendingFlaskReject && selectedFlask && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-red-600 mb-2 text-center">Abort & Reject Trial</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to forcibly reject <strong>{selectedFlask.flask_label}</strong> at its current stage? This cannot be undone.</p>
+            <p className="text-sm text-gray-600 mb-6 text-center">Are you sure you want to forcibly reject <strong>{selectedFlask.flask_label}</strong> at its current stage? This cannot be undone.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setPendingFlaskReject(false)}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
               >
                 Nevermind
               </button>
@@ -872,17 +850,17 @@ export default function BatchDetailPage() {
 
       {/* Quick Log Modal */}
       {showQuickLog && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-base font-black text-slate-900 mb-4">Quick Fermentation Reading</h3>
+            <h3 className="text-base font-black text-gray-900 mb-4">Quick Fermentation Reading</h3>
 
             {/* Flask selector */}
             <div className="mb-3">
-              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Flask</label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Flask</label>
               <select
                 value={quickLogFlaskId}
                 onChange={e => setQuickLogFlaskId(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-navy/30"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-navy/30"
               >
                 {fermentingFlasks.map(f => (
                   <option key={f.id} value={f.id}>{f.flask_label}</option>
@@ -892,7 +870,7 @@ export default function BatchDetailPage() {
 
             {/* pH — required */}
             <div className="mb-3">
-              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">pH <span className="text-red-500">*</span></label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">pH <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 step="0.01"
@@ -901,29 +879,29 @@ export default function BatchDetailPage() {
                 value={quickPh}
                 onChange={e => setQuickPh(e.target.value)}
                 placeholder="e.g. 4.20"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
               />
-              {quickPh && (parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6.5) && (
-                <p className="text-xs text-red-600 font-bold mt-0.5">⚠ pH out of range — alarm will be flagged</p>
+              {quickPh && (parseFloat(quickPh) < 3.8 || parseFloat(quickPh) > 5.5) && (
+                <p className="text-[10px] text-red-600 font-bold mt-0.5">⚠ pH out of range — alarm will be flagged</p>
               )}
             </div>
 
             {/* Incubator Temp */}
             <div className="mb-3">
-              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Incubator Temp °C <span className="text-slate-300">(optional)</span></label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Incubator Temp °C <span className="text-gray-300">(optional)</span></label>
               <input
                 type="number"
                 step="0.1"
                 value={quickTemp}
                 onChange={e => setQuickTemp(e.target.value)}
                 placeholder="e.g. 30.0"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
               />
             </div>
 
             {/* OD 600nm */}
             <div className="mb-3">
-              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">OD 600nm <span className="text-slate-300">(optional)</span></label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">OD 600nm <span className="text-gray-300">(optional)</span></label>
               <input
                 type="number"
                 step="0.01"
@@ -931,17 +909,17 @@ export default function BatchDetailPage() {
                 value={quickOd}
                 onChange={e => setQuickOd(e.target.value)}
                 placeholder="e.g. 1.25"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
               />
             </div>
 
             {/* Visual */}
             <div className="mb-5">
-              <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Visual Appearance</label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Visual Appearance</label>
               <select
                 value={quickVisual}
                 onChange={e => setQuickVisual(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-navy/30"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-navy/30"
               >
                 {['Clear', 'Turbid', 'Foamy', 'Settling', 'Other'].map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -952,7 +930,7 @@ export default function BatchDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowQuickLog(false); setQuickPh(''); setQuickTemp(''); setQuickOd(''); setQuickVisual('Clear'); }}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition"
+                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition"
               >
                 Cancel
               </button>

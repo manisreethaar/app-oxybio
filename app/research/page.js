@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -149,7 +148,7 @@ export default function ConsumerResearchPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [panelRes, { data: batchData }] = await withTimeout(Promise.all([
+      const [panelRes, { data: batchData }] = await Promise.all([
         fetch('/api/research'),
         (async () => {
           const { createClient } = await import('@/utils/supabase/client');
@@ -160,7 +159,7 @@ export default function ConsumerResearchPage() {
             .eq('status', 'released')
             .limit(100);
         })(),
-      ]), 20000, 'Research load timed out');
+      ]);
 
       if (!panelRes.ok) throw new Error('Failed to load panels');
       const { data: panelData } = await panelRes.json();
@@ -378,14 +377,14 @@ export default function ConsumerResearchPage() {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <div className="page-container text-slate-900">
+    <div className="page-container text-gray-900">
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                               */}
       {/* ------------------------------------------------------------------ */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Consumer Insights</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Sensory Validation &amp; Taste Panel Data</p>
+          <p className="text-sm font-medium text-gray-500 mt-1">Sensory Validation &amp; Taste Panel Data</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -395,8 +394,8 @@ export default function ConsumerResearchPage() {
             }}
             className={`flex items-center px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all active:scale-95 border ${
               compareMode
-                ? 'bg-slate-600 text-white border-slate-600 hover:bg-slate-700'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                ? 'bg-teal-600 text-white border-teal-600 hover:bg-teal-700'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
             }`}
           >
             <GitCompareArrows className="w-4 h-4 mr-1.5"/>
@@ -413,7 +412,7 @@ export default function ConsumerResearchPage() {
 
       {/* Compare mode banner */}
       {compareMode && (
-        <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+        <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs font-semibold text-teal-800">
           Compare mode: select 2-3 sessions using the checkboxes on each card. Then scroll down to see the overlay chart.
         </div>
       )}
@@ -422,11 +421,11 @@ export default function ConsumerResearchPage() {
       {/* Trend chart                                                          */}
       {/* ------------------------------------------------------------------ */}
       {sessions.length >= 2 && !compareMode && (
-        <div className="card p-6 mb-6 mt-8">
+        <div className="surface p-6 mb-6 mt-8">
           <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-1 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-navy"/> Sensory Score Trend
           </h2>
-          <p className="text-xs text-slate-500 font-medium mb-5">7.0+ threshold = consumer-ready formulation</p>
+          <p className="text-xs text-gray-500 font-medium mb-5">7.0+ threshold = consumer-ready formulation</p>
           <ResearchTrendChart sessions={sessions}/>
         </div>
       )}
@@ -435,13 +434,13 @@ export default function ConsumerResearchPage() {
       {/* Compare radar overlay                                                */}
       {/* ------------------------------------------------------------------ */}
       {compareMode && compareSessions.length >= 2 && (
-        <div className="card p-6 mt-6">
+        <div className="surface p-6 mt-6">
           <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-4 flex items-center gap-2">
             <GitCompareArrows className="w-4 h-4"/> Session Comparison
           </h2>
           <div className="flex flex-wrap gap-3 mb-4">
             {compareSessions.map((s, i) => (
-              <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold uppercase border" style={{ borderColor: COMPARE_COLORS[i], color: COMPARE_COLORS[i] }}>
+              <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase border" style={{ borderColor: COMPARE_COLORS[i], color: COMPARE_COLORS[i] }}>
                 <span className="w-2 h-2 rounded-full inline-block" style={{ background: COMPARE_COLORS[i] }}/>
                 {s.session_title}
               </span>
@@ -486,7 +485,7 @@ export default function ConsumerResearchPage() {
                     });
                     setShowNew(true);
                   }}
-                  className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 text-xs font-bold rounded-lg hover:bg-amber-100 transition-all"
+                  className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-all"
                 >
                   {batch.batch_id}{flask.flask_label ? ` | ${flask.flask_label}` : ''}{batch.variant ? ` | ${batch.variant}` : ''}
                 </button>
@@ -507,7 +506,7 @@ export default function ConsumerResearchPage() {
             <Skeleton className="h-48 w-full rounded-xl"/>
           </div>
         ) : sessions.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm font-medium text-slate-400">
+          <div className="col-span-full py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm font-medium text-gray-400">
             No panel data recorded. Select a released batch above to start a session.
           </div>
         ) : sessions.map((s, cardIdx) => {
@@ -519,7 +518,7 @@ export default function ConsumerResearchPage() {
           return (
             <div
               key={s.id}
-              className={`card p-6 hover:shadow-md transition-all group relative overflow-hidden ${
+              className={`surface p-6 hover:shadow-md transition-all group relative overflow-hidden ${
                 compareMode && isSelected ? 'ring-2' : ''
               }`}
               style={compareMode && isSelected ? { '--tw-ring-color': COMPARE_COLORS[colorIdx] } : {}}
@@ -531,19 +530,19 @@ export default function ConsumerResearchPage() {
                   className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                     isSelected
                       ? 'border-transparent text-white'
-                      : 'border-slate-300 bg-white'
+                      : 'border-gray-300 bg-white'
                   }`}
                   style={isSelected ? { background: COMPARE_COLORS[colorIdx], borderColor: COMPARE_COLORS[colorIdx] } : {}}
                   title={isSelected ? 'Deselect' : 'Select for comparison'}
                 >
-                  {isSelected && <span className="text-xs font-black">{colorIdx + 1}</span>}
+                  {isSelected && <span className="text-[10px] font-black">{colorIdx + 1}</span>}
                 </button>
               )}
 
               {/* Batch tag */}
               {s.batches && (
                 <div className="mb-3">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-navy rounded text-xs font-bold uppercase tracking-wider border border-slate-100">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-navy rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">
                     <FlaskConical className="w-3 h-3"/> {s.batches.batch_id}
                     {s.batches.variant ? ` - ${s.batches.variant}` : ''}
                   </span>
@@ -552,14 +551,14 @@ export default function ConsumerResearchPage() {
 
               {/* Meta row */}
               <div className="flex items-center justify-between mb-4">
-                <span className="px-2 py-0.5 bg-slate-50 text-slate-700 rounded text-xs font-bold uppercase tracking-wider border border-slate-100 flex items-center gap-1">
+                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-100 flex items-center gap-1">
                   <Users className="w-3 h-3"/> {s.panelist_count} Panelists
                 </span>
                 <div className="flex items-center gap-2">
                   {s.creator && (
                     <CreatorBadge initials={s.creator.initials} fullName={s.creator.full_name}/>
                   )}
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                     {new Date(s.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -567,13 +566,13 @@ export default function ConsumerResearchPage() {
 
               {/* Title + delete */}
               <div className="flex justify-between items-start">
-                <h3 className="text-base font-bold text-slate-900 mb-1">{s.session_title}</h3>
+                <h3 className="text-base font-bold text-gray-900 mb-1">{s.session_title}</h3>
                 <div className="flex items-center gap-1">
                   {hasScores && (
                     <button
                       title="Export CSV"
                       onClick={() => exportCSV(s)}
-                      className="p-1 text-slate-400 hover:text-navy transition-all"
+                      className="p-1 text-gray-400 hover:text-navy transition-all"
                     >
                       <Download className="w-4 h-4"/>
                     </button>
@@ -591,7 +590,7 @@ export default function ConsumerResearchPage() {
 
               <p className="text-xs font-bold text-navy font-mono mb-1">{s.sample_ids || 'V1 / V2 / V3 Comparison'}</p>
               {sessionIdentity(s) && (
-                <p className="text-xs font-semibold text-slate-500 mb-5">{sessionIdentity(s)}</p>
+                <p className="text-[10px] font-semibold text-gray-500 mb-5">{sessionIdentity(s)}</p>
               )}
 
               {/* Radar chart */}
@@ -602,9 +601,9 @@ export default function ConsumerResearchPage() {
               {/* Per-attribute stats table (only when scores exist) */}
               {hasScores && (
                 <div className="mb-4 overflow-x-auto">
-                  <table className="w-full text-xs font-semibold">
+                  <table className="w-full text-[10px] font-semibold">
                     <thead>
-                      <tr className="text-slate-400 uppercase tracking-wider">
+                      <tr className="text-gray-400 uppercase tracking-wider">
                         <th className="text-left py-1 pr-2">Attr</th>
                         <th className="text-right pr-2">Mean</th>
                         <th className="text-right pr-2">SD</th>
@@ -616,20 +615,20 @@ export default function ConsumerResearchPage() {
                     <tbody>
                       {stats.map(st => (
                         <tr key={st.attr} className="border-t border-slate-100">
-                          <td className="py-1 pr-2 font-bold text-slate-700 capitalize">{st.attr}</td>
+                          <td className="py-1 pr-2 font-bold text-gray-700 capitalize">{st.attr}</td>
                           <td className={`text-right pr-2 font-black ${
-                            st.pass === true  ? 'text-slate-700' :
-                            st.pass === false ? 'text-red-600'  : 'text-slate-800'
+                            st.pass === true  ? 'text-teal-700' :
+                            st.pass === false ? 'text-red-600'  : 'text-gray-800'
                           }`}>
                             {st.mean ?? '-'}
                           </td>
-                          <td className="text-right pr-2 text-slate-500">{st.sd ?? '-'}</td>
-                          <td className="text-right pr-2 text-slate-500">{st.min ?? '-'}</td>
-                          <td className="text-right pr-2 text-slate-500">{st.max ?? '-'}</td>
+                          <td className="text-right pr-2 text-gray-500">{st.sd ?? '-'}</td>
+                          <td className="text-right pr-2 text-gray-500">{st.min ?? '-'}</td>
+                          <td className="text-right pr-2 text-gray-500">{st.max ?? '-'}</td>
                           <td className="text-right">
-                            {st.pass === true  && <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 inline"/>}
+                            {st.pass === true  && <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 inline"/>}
                             {st.pass === false && <XCircle      className="w-3.5 h-3.5 text-red-500 inline"/>}
-                            {st.pass === null  && <span className="text-slate-300">-</span>}
+                            {st.pass === null  && <span className="text-gray-300">-</span>}
                           </td>
                         </tr>
                       ))}
@@ -641,16 +640,16 @@ export default function ConsumerResearchPage() {
               {/* Composite score row */}
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Composite Score</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Score</p>
                   <div className="flex items-baseline gap-2">
                     <span className={`text-3xl font-black tracking-tight ${(s.avg_score || 0) >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
                       {s.avg_score || '-'}
                     </span>
-                    <span className="text-xs font-semibold text-slate-400">/ 10</span>
+                    <span className="text-xs font-semibold text-gray-400">/ 10</span>
                   </div>
                 </div>
                 {(s.avg_score || 0) >= 7.0
-                  ? <span className="p-3 bg-slate-50 text-slate-600 rounded-xl border border-slate-100"><Award className="w-6 h-6"/></span>
+                  ? <span className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100"><Award className="w-6 h-6"/></span>
                   : <span className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-100"><Zap className="w-6 h-6"/></span>
                 }
               </div>
@@ -675,21 +674,21 @@ export default function ConsumerResearchPage() {
       {/* Score Logging Modal                                                  */}
       {/* ------------------------------------------------------------------ */}
       {activeSession && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200">
             <button
               onClick={closeScoreModal}
-              className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 transition-all"
+              className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
             >
-              <X className="w-5 h-5 text-slate-400"/>
+              <X className="w-5 h-5 text-gray-400"/>
             </button>
 
             {/* Modal header */}
             <div className="p-6 border-b border-slate-100">
-              <p className="text-xs font-bold uppercase tracking-wider text-navy mb-1">Sensory Score Entry</p>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">{activeSession.session_title}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-navy mb-1">Sensory Score Entry</p>
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">{activeSession.session_title}</h2>
               {activeSession.batches && (
-                <p className="text-xs font-semibold text-slate-500 mt-1">
+                <p className="text-xs font-semibold text-gray-500 mt-1">
                   Batch {activeSession.batches.batch_id}
                   {activeSession.flask_id ? ` | Flask ${activeSession.flask_id}` : ''}
                   {activeSession.batches.variant ? ` | ${activeSession.batches.variant}` : ''}
@@ -705,7 +704,7 @@ export default function ConsumerResearchPage() {
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
                       activePanelist === idx
                         ? 'bg-navy text-white border-navy'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
                     }`}
                   >
                     Panelist {idx + 1}
@@ -726,15 +725,15 @@ export default function ConsumerResearchPage() {
                   <div key={criterion} className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">{criterion}</label>
+                        <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{criterion}</label>
                         {threshold != null && (
-                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${passing ? 'bg-slate-50 text-slate-700' : 'bg-red-50 text-red-600'}`}>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${passing ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>
                             min {threshold}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {passing === true  && <CheckCircle2 className="w-4 h-4 text-slate-600"/>}
+                        {passing === true  && <CheckCircle2 className="w-4 h-4 text-teal-600"/>}
                         {passing === false && <XCircle      className="w-4 h-4 text-red-500"/>}
                         <input
                           type="number"
@@ -743,7 +742,7 @@ export default function ConsumerResearchPage() {
                           step="0.1"
                           value={currentVal}
                           onChange={(e) => updateScore(criterion, e.target.value)}
-                          className="w-20 px-2 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-sm text-center outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                          className="w-20 px-2 py-1.5 bg-white border border-gray-200 rounded-lg font-bold text-sm text-center outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                         />
                       </div>
                     </div>
@@ -762,7 +761,7 @@ export default function ConsumerResearchPage() {
                       placeholder={`Comment for ${criterion} (optional)`}
                       value={attrComments[attrKey]?.[activePanelist] || ''}
                       onChange={(e) => updateComment(attrKey, e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all resize-none"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all resize-none"
                     />
                   </div>
                 );
@@ -772,9 +771,9 @@ export default function ConsumerResearchPage() {
             {/* Footer */}
             <div className="px-6 pb-6 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Composite Average</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Composite Average</p>
                 <p className={`text-3xl font-black tracking-tight ${scoreAverage >= 7.0 ? 'text-navy' : 'text-red-600'}`}>
-                  {scoreAverage}<span className="text-sm font-semibold text-slate-400"> / 10</span>
+                  {scoreAverage}<span className="text-sm font-semibold text-gray-400"> / 10</span>
                 </p>
               </div>
               <button
@@ -794,27 +793,27 @@ export default function ConsumerResearchPage() {
       {/* New Panel Modal                                                      */}
       {/* ------------------------------------------------------------------ */}
       {showNew && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => { setShowNew(false); reset(); }}
-              className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 transition-all"
+              className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 transition-all"
             >
-              <X className="w-5 h-5 text-slate-400"/>
+              <X className="w-5 h-5 text-gray-400"/>
             </button>
 
             <div className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">Panel Setup</h2>
-              <p className="text-xs text-slate-500 mt-1">Link a released batch and configure your tasting session.</p>
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">Panel Setup</h2>
+              <p className="text-xs text-gray-500 mt-1">Link a released batch and configure your tasting session.</p>
             </div>
 
             <form onSubmit={handleSubmit(handleCreateSession)} className="px-6 pb-8 space-y-4">
               {/* Batch selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Released Batch</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Released Batch</label>
                 <select
                   {...register('batch_id')}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                 >
                   <option value="">-- Select released batch (optional) --</option>
                   {batches.map(b => (
@@ -825,17 +824,17 @@ export default function ConsumerResearchPage() {
                 </select>
                 {errors.batch_id && <p className="text-red-500 text-xs mt-1">{errors.batch_id.message}</p>}
                 {batches.length === 0 && (
-                  <p className="text-amber-600 text-xs font-semibold mt-1">No released batches found. Release a batch first to link it here.</p>
+                  <p className="text-amber-600 text-[10px] font-semibold mt-1">No released batches found. Release a batch first to link it here.</p>
                 )}
               </div>
 
               {/* Flask selector */}
               {selectedFlasks.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Flask / Trial</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Flask / Trial</label>
                   <select
                     {...register('flask_id')}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                   >
                     <option value="">Batch-level panel</option>
                     {selectedFlasks.map(flask => (
@@ -844,17 +843,17 @@ export default function ConsumerResearchPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">Use one sensory session per flask when F1, F2, F3 have different results.</p>
+                  <p className="text-[10px] text-gray-500 font-semibold mt-1">Use one sensory session per flask when F1, F2, F3 have different results.</p>
                 </div>
               )}
 
               {/* Session title */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Session Target</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Session Target</label>
                 <input
                   placeholder="e.g. Kavuni Pro v3.1 Blind Test"
                   {...register('session_title')}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                 />
                 {errors.session_title && <p className="text-red-500 text-xs mt-1">{errors.session_title.message}</p>}
               </div>
@@ -862,32 +861,32 @@ export default function ConsumerResearchPage() {
               {/* Panelists + version */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Panelists</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Panelists</label>
                   <input
                     type="number" min="1"
                     {...register('panelist_count')}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                   />
                   {errors.panelist_count && <p className="text-red-500 text-xs mt-1">{errors.panelist_count.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Version / IDs</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Version / IDs</label>
                   <input
                     placeholder="e.g. V1, V2"
                     {...register('sample_ids')}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                   />
                 </div>
               </div>
 
               {/* Pass thresholds */}
               <div className="pt-2 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-700 mb-3">Pass Thresholds (optional)</label>
-                <p className="text-xs text-slate-500 font-semibold mb-3">Set minimum mean score required per attribute (0-10). Leave blank to skip.</p>
+                <label className="block text-xs font-bold text-gray-700 mb-3">Pass Thresholds (optional)</label>
+                <p className="text-[10px] text-gray-500 font-semibold mb-3">Set minimum mean score required per attribute (0-10). Leave blank to skip.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {ATTRS.map(a => (
                     <div key={a}>
-                      <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">{ATTR_LABELS[a]}</label>
+                      <label className="block text-[10px] font-bold text-gray-600 mb-1 uppercase tracking-wider">{ATTR_LABELS[a]}</label>
                       <input
                         type="number"
                         min="0"
@@ -895,7 +894,7 @@ export default function ConsumerResearchPage() {
                         step="0.1"
                         placeholder="e.g. 7"
                         {...register(`pt_${a}`)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-semibold text-sm outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all"
                       />
                     </div>
                   ))}

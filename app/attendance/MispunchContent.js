@@ -29,19 +29,19 @@ export default function MispunchContent() {
     setLoading(true);
     try {
       const results = await Promise.all([
-        employeeProfile.id ? supabase
+        supabase
           .from('attendance_log')
           .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
           .eq('employee_id', employeeProfile.id)
           .not('mispunch_status', 'is', null)
-          .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
-        employeeProfile.id ? supabase
+          .order('date', { ascending: false }),
+        supabase
           .from('attendance_log')
           .select('id, date, check_in_time')
           .eq('employee_id', employeeProfile.id)
           .is('check_out_time', null)
           .is('mispunch_status', null)
-          .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
+          .order('date', { ascending: false }),
         isAdmin ? fetch('/api/mispunch/pending').then(r => r.json()) : Promise.resolve(null)
       ]);
 
@@ -156,7 +156,7 @@ export default function MispunchContent() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-400">Syncing attendance records...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-400">Syncing attendance records...</div>;
 
   const requiredLogs = mispunches.filter(m => m.mispunch_status === 'required');
   const historyLogs  = mispunches.filter(m => m.mispunch_status !== 'required');
@@ -164,10 +164,10 @@ export default function MispunchContent() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-red-500" /> Attendance Corrections
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-gray-500 mt-1">
           Report missed checkouts or apply for manual hour reconciliation.
         </p>
       </div>
@@ -177,7 +177,7 @@ export default function MispunchContent() {
           <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-400" /> Pending Admin Approvals
             {adminMispunches.length > 0 && (
-              <span className="ml-1 bg-amber-400/20 text-amber-300 text-xs px-2 py-0.5 rounded-full border border-amber-500/30">
+              <span className="ml-1 bg-amber-400/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30">
                 {adminMispunches.length} pending
               </span>
             )}
@@ -196,7 +196,7 @@ export default function MispunchContent() {
                       <p className="text-white font-bold">{log.employees?.full_name}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
                     </div>
-                    <span className="text-xs font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
                       {log.mispunch_requested_hours}H Requested
                     </span>
                   </div>
@@ -264,10 +264,10 @@ export default function MispunchContent() {
                     <Calendar className="w-5 h-5 text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">
+                    <p className="font-bold text-gray-900">
                       {new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
-                    <p className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
+                    <p className="text-[10px] font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
                       Shift Still Open — Not Checked Out
                     </p>
                   </div>
@@ -281,7 +281,7 @@ export default function MispunchContent() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-slate-400 flex items-start gap-1.5">
+          <p className="text-[11px] text-gray-400 flex items-start gap-1.5">
             <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
             Your shift will be closed with 0 hours and submitted for admin approval with the hours you enter.
           </p>
@@ -289,7 +289,7 @@ export default function MispunchContent() {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+        <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
           <Clock className="w-3 h-3" /> Pending Resolution ({requiredLogs.length})
         </h2>
         {requiredLogs.length === 0 ? (
@@ -300,14 +300,14 @@ export default function MispunchContent() {
         ) : (
           <div className="grid gap-3">
             {requiredLogs.map(log => (
-              <div key={log.id} className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+              <div key={log.id} className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="bg-red-50 p-2.5 rounded-lg border border-red-100">
                     <Calendar className="w-5 h-5 text-red-500" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                    <p className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
+                    <p className="font-bold text-gray-900">{new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-[10px] font-medium text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
                       Auto-Zeroed Log
                     </p>
                   </div>
@@ -325,21 +325,21 @@ export default function MispunchContent() {
       </section>
 
       {historyLogs.length > 0 && (
-        <section className="space-y-4 pt-6 border-t border-slate-100">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+        <section className="space-y-4 pt-6 border-t border-gray-100">
+          <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
             <History className="w-3 h-3" /> Mispunch History
           </h2>
           <div className="grid gap-2">
             {historyLogs.map(log => (
-              <div key={log.id} className="bg-slate-50/50 border border-slate-100 p-3 rounded-lg flex items-center justify-between opacity-80">
+              <div key={log.id} className="bg-gray-50/50 border border-gray-100 p-3 rounded-lg flex items-center justify-between opacity-80">
                 <div className="text-xs">
-                  <span className="font-bold text-slate-700">{new Date(log.date).toLocaleDateString()}</span>
-                  <span className="mx-2 text-slate-300">|</span>
-                  <span className="text-slate-500">{log.mispunch_reason}</span>
+                  <span className="font-bold text-gray-700">{new Date(log.date).toLocaleDateString()}</span>
+                  <span className="mx-2 text-gray-300">|</span>
+                  <span className="text-gray-500">{log.mispunch_reason}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-slate-500 uppercase">{log.mispunch_requested_hours}H Requested</span>
-                  <span className={`text-xs font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
+                  <span className="text-[10px] font-black text-gray-500 uppercase">{log.mispunch_requested_hours}H Requested</span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
                     log.mispunch_status === 'pending'  ? 'bg-amber-100 text-amber-700 border-amber-200' :
                     log.mispunch_status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                     'bg-red-100 text-red-700 border-red-200'
@@ -354,42 +354,42 @@ export default function MispunchContent() {
       )}
 
       {selfReportLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSelfReport}>
-              <div className="p-6 border-b border-slate-100 bg-amber-50">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <div className="p-6 border-b border-gray-100 bg-amber-50">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <LogOut className="w-5 h-5 text-amber-500" /> Missed Checkout
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   {new Date(selfReportLog.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
                   {' — '}Enter the hours you actually worked. An admin will review and approve.
                 </p>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
                   <input
                     type="number" step="0.5" min="0.5" max="16" required
-                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm font-bold"
+                    className="w-full h-10 px-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm font-bold"
                     placeholder="e.g. 8.5"
                     value={selfReportData.hours}
                     onChange={e => setSelfReportData({ ...selfReportData, hours: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Reason</label>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Reason</label>
                   <textarea
                     required
                     placeholder="e.g. Left the office in a hurry and forgot to check out..."
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm min-h-[90px] resize-none"
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm min-h-[90px] resize-none"
                     value={selfReportData.reason}
                     onChange={e => setSelfReportData({ ...selfReportData, reason: e.target.value })}
                   />
                 </div>
               </div>
-              <div className="p-4 bg-slate-50 flex gap-3">
-                <button type="button" onClick={() => setSelfReportLog(null)} className="flex-1 py-2.5 bg-white text-slate-600 font-semibold rounded-lg border border-slate-200 text-sm">Cancel</button>
+              <div className="p-4 bg-gray-50 flex gap-3">
+                <button type="button" onClick={() => setSelfReportLog(null)} className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm">Cancel</button>
                 <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2" /> Submit for Approval</>}
                 </button>
@@ -400,37 +400,37 @@ export default function MispunchContent() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSubmit}>
-              <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                <h3 className="text-lg font-bold text-slate-900">Mispunch For {new Date(selectedLog.date).toLocaleDateString()}</h3>
-                <p className="text-xs text-slate-500 mt-1">Please provide the actual hours worked and reason.</p>
+              <div className="p-6 border-b border-gray-100 bg-slate-50/50">
+                <h3 className="text-lg font-bold text-gray-900">Mispunch For {new Date(selectedLog.date).toLocaleDateString()}</h3>
+                <p className="text-xs text-gray-500 mt-1">Please provide the actual hours worked and reason.</p>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
                   <input
                     type="number" step="0.5" min="0.5" max="16" required
-                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm font-bold"
+                    className="w-full h-10 px-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm font-bold"
                     placeholder="e.g. 8.5"
                     value={formData.hours}
                     onChange={e => setFormData({ ...formData, hours: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Reason for Mispunch</label>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Reason for Mispunch</label>
                   <textarea
                     required
                     placeholder="e.g. Forgot to check out while leaving for field visit..."
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm min-h-[100px] resize-none"
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm min-h-[100px] resize-none"
                     value={formData.reason}
                     onChange={e => setFormData({ ...formData, reason: e.target.value })}
                   />
                 </div>
               </div>
-              <div className="p-4 bg-slate-50 flex gap-3">
-                <button type="button" onClick={() => setSelectedLog(null)} className="flex-1 py-2.5 bg-white text-slate-600 font-semibold rounded-lg border border-slate-200 text-sm">Cancel</button>
+              <div className="p-4 bg-gray-50 flex gap-3">
+                <button type="button" onClick={() => setSelectedLog(null)} className="flex-1 py-2.5 bg-white text-gray-600 font-semibold rounded-lg border border-gray-200 text-sm">Cancel</button>
                 <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2" /> Submit Application</>}
                 </button>

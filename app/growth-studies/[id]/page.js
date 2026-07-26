@@ -4,9 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/context/ToastContext';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import {
   Clock, AlertCircle, Play, Square, BarChart2,
   FlaskConical, Microscope, X, FileText, Loader2,
@@ -45,18 +43,17 @@ function elapsedHours(inocTime) {
 function StatusBadge({ status }) {
   const map = {
     setup: 'bg-slate-100 text-slate-600 border-slate-200',
-    active: 'bg-slate-50 text-slate-700 border-slate-200',
-    completed: 'bg-slate-50 text-slate-700 border-slate-200',
+    active: 'bg-teal-50 text-teal-700 border-teal-200',
+    completed: 'bg-blue-50 text-blue-700 border-blue-200',
     analysed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
-  return <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${map[status] || map.setup}`}>{status}</span>;
+  return <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${map[status] || map.setup}`}>{status}</span>;
 }
 
 export default function GrowthStudyDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { role, employeeProfile } = useAuth();
-  const toast = useToast();
   const [pendingIds, setPendingIds] = useState(new Set());
 
   const isAdmin = ['admin', 'ceo', 'cto'].includes(role);
@@ -104,7 +101,7 @@ export default function GrowthStudyDetailPage() {
   const [actualInocTime, setActualInocTime] = useState('');
 
   const load = useCallback(() => {
-    withTimeout(fetch(`/api/growth-studies/${id}`), 20000, 'Growth study load timed out')
+    fetch(`/api/growth-studies/${id}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -143,7 +140,6 @@ export default function GrowthStudyDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     });
-    toast.success(`Status updated to ${newStatus}.`);
     setActionLoading(false);
     load();
   };
@@ -184,7 +180,6 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setActionLoading(false);
     if (!res.ok) { setStartErr(json.error); return; }
-    toast.success("Study started successfully.");
     setStartModal(false);
     load();
   };
@@ -279,7 +274,6 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setEditSaving(false);
     if (!res.ok) { setEditErr(json.error); return; }
-    toast.success("Study updated successfully.");
     setEditModal(false);
     load();
   };
@@ -291,7 +285,6 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setDeleteLoading(false);
     if (!res.ok) { setDeleteErr(json.error); return; }
-    toast.success("Study deleted successfully.");
     router.push('/growth-studies');
   };
 
@@ -324,7 +317,6 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setModalSaving(false);
     if (!res.ok) { setModalErr(json.error); return; }
-    toast.success("Measurement recorded successfully.");
     setModal(null);
     load();
   };
@@ -342,13 +334,12 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setModalSaving(false);
     if (!res.ok) { setModalErr(json.error); return; }
-    toast.success("Plate observation recorded successfully.");
     setModal(null);
     load();
   };
 
-  const InputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500';
-  const LabelCls = 'block text-xs font-black text-slate-500 uppercase tracking-wider mb-1';
+  const InputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500';
+  const LabelCls = 'block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1';
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading study…</div>;
   if (!data?.study) return <div className="p-8 text-center text-red-500">Study not found.</div>;
@@ -434,16 +425,16 @@ export default function GrowthStudyDetailPage() {
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <StatusBadge status={study.status} />
-            <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${isFermentation ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${isFermentation ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-violet-50 text-violet-700 border-violet-200'}`}>
               {isFermentation ? 'Fermentation' : 'Growth Curve'}
             </span>
             {study.study_code && (
-              <span className="text-xs font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
+              <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
                 {study.study_code}
               </span>
             )}
             {isActive && (
-              <span className="text-xs font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
+              <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded-full border border-teal-100">
                 T + {elapsed.toFixed(1)}h elapsed
               </span>
             )}
@@ -456,7 +447,7 @@ export default function GrowthStudyDetailPage() {
         <div className="flex items-center gap-3 shrink-0">
           {study.status === 'setup' && (
             <button onClick={openStartModal} disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-xl text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-sm disabled:opacity-50"
             >
               <Play className="w-4 h-4" /> Start Study
             </button>
@@ -470,14 +461,14 @@ export default function GrowthStudyDetailPage() {
           )}
           {['completed', 'analysed'].includes(study.status) && (
             <Link href={`/growth-studies/${id}/report`}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-xl text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-700 hover:bg-violet-800 text-white font-black rounded-xl text-sm"
             >
               <FileText className="w-4 h-4" /> View Report
             </Link>
           )}
           {isActive && (
             <button onClick={() => openMeasurementModal(nextTp)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-black rounded-xl text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl text-sm"
             >
               <FlaskConical className="w-4 h-4" /> Record Sample
             </button>
@@ -507,7 +498,7 @@ export default function GrowthStudyDetailPage() {
           </h3>
           {canEdit && (
             <button onClick={() => openEditModal(study)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-teal-700 border border-slate-200 hover:border-teal-400 rounded-xl transition-colors"
             >
               <Pencil className="w-3 h-3" /> Edit
             </button>
@@ -533,20 +524,20 @@ export default function GrowthStudyDetailPage() {
             ...(study.completed_at ? [{ label: 'Completed', value: new Date(study.completed_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }] : []),
           ].map(({ label, value, mono }) => (
             <div key={label}>
-              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
               <p className={`font-bold text-slate-700 ${mono ? 'font-mono' : ''}`}>{value}</p>
             </div>
           ))}
         </div>
         {study.objective && (
           <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
             <p className="text-xs font-medium text-slate-600 italic">{study.objective}</p>
           </div>
         )}
         {study.notes && (
           <div className="mt-3">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Notes</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Notes</p>
             <p className="text-xs font-medium text-slate-600">{study.notes}</p>
           </div>
         )}
@@ -570,11 +561,11 @@ export default function GrowthStudyDetailPage() {
         <div className="lg:col-span-1 space-y-4">
           <div className="glass-card rounded-2xl p-5">
             <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-slate-600" /> Sampling Timeline
+              <Clock className="w-4 h-4 text-teal-600" /> Sampling Timeline
               <span className="ml-auto text-slate-400 font-bold text-xs">{tpDone}/{time_points.length}</span>
             </h3>
             <div className="h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden">
-              <div className="h-full bg-slate-500 rounded-full" style={{ width: `${time_points.length ? (tpDone / time_points.length) * 100 : 0}%` }} />
+              <div className="h-full bg-teal-500 rounded-full" style={{ width: `${time_points.length ? (tpDone / time_points.length) * 100 : 0}%` }} />
             </div>
 
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -585,21 +576,21 @@ export default function GrowthStudyDetailPage() {
                 const isOverdue = isActive && tp.status === 'pending' && tp.planned_hour < elapsed - 0.25;
 
                 return (
-                  <div key={tp.id} className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isNext ? 'bg-slate-50 border border-slate-200' : isOverdue ? 'bg-red-50 border border-red-100' : 'bg-white/50 border border-white'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${isDone ? 'bg-slate-500' : isMissed ? 'bg-slate-300' : isOverdue ? 'bg-red-400' : isNext ? 'bg-slate-200' : 'bg-slate-100'}`}>
+                  <div key={tp.id} className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isNext ? 'bg-teal-50 border border-teal-200' : isOverdue ? 'bg-red-50 border border-red-100' : 'bg-white/50 border border-white'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${isDone ? 'bg-teal-500' : isMissed ? 'bg-slate-300' : isOverdue ? 'bg-red-400' : isNext ? 'bg-teal-200' : 'bg-slate-100'}`}>
                       {isDone ? '✓' : isMissed ? '—' : tp.planned_hour}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className={`text-xs font-black ${isDone ? 'text-slate-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
+                        <p className={`text-xs font-black ${isDone ? 'text-teal-700' : isMissed ? 'text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
                           T + {tp.planned_hour}h
                         </p>
                         {/* 2A: Inline overdue badge */}
                         {isOverdue && (
-                          <span className="text-xs font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">OVERDUE</span>
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">OVERDUE</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400 font-medium truncate">
+                      <p className="text-[9px] text-slate-400 font-medium truncate">
                         {tp.sample_types.map(t => t.replace(/_/g, ' ')).join(' · ')}
                       </p>
                     </div>
@@ -609,7 +600,7 @@ export default function GrowthStudyDetailPage() {
                           if (tp.sample_types.includes('od_ph') || tp.sample_types.includes('biochemistry')) openMeasurementModal(tp);
                           else openPlateModal(tp);
                         }}
-                        className="text-xs font-black text-slate-600 hover:text-slate-800 shrink-0"
+                        className="text-[10px] font-black text-teal-600 hover:text-teal-800 shrink-0"
                       >
                         Record
                       </button>
@@ -624,20 +615,20 @@ export default function GrowthStudyDetailPage() {
           {plate_observations.length > 0 && (
             <div className="glass-card rounded-2xl p-5">
               <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
-                <Microscope className="w-4 h-4 text-slate-600" /> Plate Observations
+                <Microscope className="w-4 h-4 text-violet-600" /> Plate Observations
               </h3>
               <div className="space-y-2">
                 {plate_observations.map(obs => (
                   <div key={obs.id} className="bg-white/60 border border-white rounded-xl p-3">
                     <div className="flex justify-between items-start">
                       <span className="text-xs font-black text-slate-700">T+{obs.time_point_hours}h — {obs.observation_type === 'sterility' ? 'Sterility' : 'Colony Count'}</span>
-                      <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${obs.result === 'sterile' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : obs.result === 'contaminated' ? 'bg-red-50 text-red-600 border-red-200' : obs.result === 'normal_growth' ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
                         {obs.result || 'pending'}
                       </span>
                     </div>
-                    {obs.plate_media && <p className="text-xs text-slate-400 mt-0.5">{obs.plate_media} {obs.dilution ? `· ${obs.dilution}` : ''}</p>}
+                    {obs.plate_media && <p className="text-[10px] text-slate-400 mt-0.5">{obs.plate_media} {obs.dilution ? `· ${obs.dilution}` : ''}</p>}
                     {obs.colony_count !== null && obs.colony_count !== undefined && (
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">{obs.colony_count} CFU</p>
+                      <p className="text-[10px] text-slate-500 font-medium mt-0.5">{obs.colony_count} CFU</p>
                     )}
                   </div>
                 ))}
@@ -647,7 +638,7 @@ export default function GrowthStudyDetailPage() {
 
           {isActive && (
             <button onClick={() => openPlateModal(null)}
-              className="w-full py-2.5 border-2 border-dashed border-slate-200 hover:border-slate-400 text-slate-500 hover:text-slate-600 text-xs font-black rounded-2xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 border-2 border-dashed border-slate-200 hover:border-teal-400 text-slate-500 hover:text-teal-600 text-xs font-black rounded-2xl transition-colors flex items-center justify-center gap-2"
             >
               <Microscope className="w-3.5 h-3.5" /> Add Plate Observation
             </button>
@@ -657,17 +648,17 @@ export default function GrowthStudyDetailPage() {
           {study.cell_bank_vials && (
             <div className="glass-card rounded-2xl p-5">
               <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
-                <TestTube2 className="w-4 h-4 text-slate-600" /> Vial Used
+                <TestTube2 className="w-4 h-4 text-violet-600" /> Vial Used
               </h3>
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
-                <p className="text-sm font-black text-slate-800 font-mono">{study.cell_bank_vials.vial_code}</p>
-                {study.cell_bank_vials.storage_temp && <p className="text-xs text-slate-600 font-medium">{study.cell_bank_vials.storage_temp}</p>}
+              <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 space-y-1">
+                <p className="text-sm font-black text-violet-800 font-mono">{study.cell_bank_vials.vial_code}</p>
+                {study.cell_bank_vials.storage_temp && <p className="text-xs text-violet-600 font-medium">{study.cell_bank_vials.storage_temp}</p>}
                 {study.cell_bank_vials.freezer_id && (
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-violet-500 font-medium">
                     {study.cell_bank_vials.freezer_id}{study.cell_bank_vials.rack ? ` · Rack ${study.cell_bank_vials.rack}` : ''}{study.cell_bank_vials.position ? ` · Pos ${study.cell_bank_vials.position}` : ''}
                   </p>
                 )}
-                <span className="inline-block text-xs font-black px-1.5 py-0.5 rounded border bg-red-50 text-red-600 border-red-200">Used</span>
+                <span className="inline-block text-[9px] font-black px-1.5 py-0.5 rounded border bg-rose-50 text-rose-600 border-rose-200">Used</span>
               </div>
             </div>
           )}
@@ -696,16 +687,16 @@ export default function GrowthStudyDetailPage() {
           <div className="glass-card rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-slate-600" /> Growth Curve
+                <BarChart2 className="w-4 h-4 text-teal-600" /> Growth Curve
               </h3>
               <div className="flex gap-2 flex-wrap">
                 {availableLines.map(l => (
                   <button key={l.key} onClick={() => setShowLines(prev => prev.includes(l.key) ? prev.filter(k => k !== l.key) : [...prev, l.key])}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-colors ${showLines.includes(l.key) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${showLines.includes(l.key) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}
                   >{l.label}</button>
                 ))}
                 <button onClick={() => setLogScale(p => !p)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-colors ${logScale ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-400 border-slate-200'}`}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${logScale ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-200'}`}
                 >log₁₀</button>
               </div>
             </div>
@@ -718,29 +709,29 @@ export default function GrowthStudyDetailPage() {
           {kinetics && (
             <div className="glass-card rounded-2xl p-6">
               <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-slate-600"/> Kinetics Analysis
+                <BarChart2 className="w-4 h-4 text-indigo-600"/> Kinetics Analysis
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: 'µmax (h⁻¹)', value: kinetics.muMax, desc: 'Max specific growth rate', color: 'slate' },
+                  { label: 'µmax (h⁻¹)', value: kinetics.muMax, desc: 'Max specific growth rate', color: 'teal' },
                   { label: 'Doubling Time', value: `${kinetics.doublingTime} h`, desc: 'Td = ln2 / µmax', color: 'indigo' },
-                  { label: 'Generation Time', value: `${kinetics.generationTime} h`, desc: 'G = Td (bacteria)', color: 'slate' },
+                  { label: 'Generation Time', value: `${kinetics.generationTime} h`, desc: 'G = Td (bacteria)', color: 'violet' },
                   { label: 'Peak OD', value: kinetics.peakOD, desc: `OD${study.od_wavelength || 600} maximum`, color: 'emerald' },
                 ].map(({ label, value, desc, color }) => (
                   <div key={label} className={`p-4 bg-${color}-50 border border-${color}-100 rounded-xl`}>
-                    <p className={`text-xs font-black uppercase tracking-wider text-${color}-500 mb-1`}>{label}</p>
+                    <p className={`text-[9px] font-black uppercase tracking-wider text-${color}-500 mb-1`}>{label}</p>
                     <p className={`text-xl font-black text-${color}-800 tabular-nums`}>{value}</p>
-                    <p className={`text-xs text-${color}-400 font-semibold mt-0.5`}>{desc}</p>
+                    <p className={`text-[9px] text-${color}-400 font-semibold mt-0.5`}>{desc}</p>
                   </div>
                 ))}
               </div>
               {/* A-62: Maintenance coefficient */}
               {kinetics.ms && (
                 <div className="mt-3 pt-3 border-t border-slate-100">
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
-                    <p className="text-xl font-black text-slate-800 tabular-nums">{kinetics.ms}</p>
-                    <p className="text-xs text-slate-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
+                  <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-gray-500 mb-1">ms — Maintenance Coefficient (h⁻¹)</p>
+                    <p className="text-xl font-black text-gray-800 tabular-nums">{kinetics.ms}</p>
+                    <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Energy for cell maintenance vs growth · estimated from min µ in early log</p>
                   </div>
                 </div>
               )}
@@ -749,17 +740,17 @@ export default function GrowthStudyDetailPage() {
               {(kinetics.ks || kinetics.yxs) && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
                   {kinetics.ks && (
-                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                      <p className="text-xs font-black uppercase tracking-wider text-amber-500 mb-1">Ks (g/L)</p>
-                      <p className="text-xl font-black text-amber-800 tabular-nums">{kinetics.ks}</p>
-                      <p className="text-xs text-amber-400 font-semibold mt-0.5">Half-saturation constant</p>
+                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-orange-500 mb-1">Ks (g/L)</p>
+                      <p className="text-xl font-black text-orange-800 tabular-nums">{kinetics.ks}</p>
+                      <p className="text-[9px] text-orange-400 font-semibold mt-0.5">Half-saturation constant</p>
                     </div>
                   )}
                   {kinetics.yxs && (
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Yx/s (g/g)</p>
-                      <p className="text-xl font-black text-slate-800 tabular-nums">{kinetics.yxs}</p>
-                      <p className="text-xs text-slate-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
+                    <div className="p-4 bg-cyan-50 border border-cyan-100 rounded-xl">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-cyan-500 mb-1">Yx/s (g/g)</p>
+                      <p className="text-xl font-black text-cyan-800 tabular-nums">{kinetics.yxs}</p>
+                      <p className="text-[9px] text-cyan-400 font-semibold mt-0.5">Biomass / substrate yield{kinetics.substrateConcGL ? ` (S₀=${kinetics.substrateConcGL}g/L)` : ''}</p>
                     </div>
                   )}
                 </div>
@@ -771,7 +762,7 @@ export default function GrowthStudyDetailPage() {
                   <p className="text-red-700 font-semibold">OD is declining in the last 3 readings — culture has entered the death/decline phase. Harvest immediately if not already done.</p>
                 </div>
               )}
-              <p className="text-xs text-slate-400 font-semibold mt-3">
+              <p className="text-[9px] text-slate-400 font-semibold mt-3">
                 Calculated from {kinetics.dataPoints} OD data points · µ = (ln OD₂ − ln OD₁) / (t₂ − t₁) per interval
               </p>
             </div>
@@ -781,14 +772,14 @@ export default function GrowthStudyDetailPage() {
           {comparisonStudies.length > 0 && (
             <div className="glass-card rounded-2xl p-6">
               <h3 className="font-black text-slate-800 text-sm mb-4">
-                Strain Comparison — Other studies with <span className="text-slate-700">{isolateName}</span>
+                Strain Comparison — Other studies with <span className="text-teal-700">{isolateName}</span>
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-100">
                       {['Study', 'Status', 'Media', 'Temp', 'Date', ''].map(h => (
-                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-xs">{h}</th>
+                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-[9px]">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -797,7 +788,7 @@ export default function GrowthStudyDetailPage() {
                       <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                         <td className="py-2 pr-4 font-bold text-slate-800">{s.study_code || s.name}</td>
                         <td className="py-2 pr-4">
-                          <span className={`px-1.5 py-0.5 text-xs font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`px-1.5 py-0.5 text-[9px] font-black rounded ${s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : s.status === 'active' ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-500'}`}>
                             {s.status}
                           </span>
                         </td>
@@ -805,7 +796,7 @@ export default function GrowthStudyDetailPage() {
                         <td className="py-2 pr-4 text-slate-500">{s.temperature_c ? `${s.temperature_c}°C` : '—'}</td>
                         <td className="py-2 pr-4 text-slate-400">{s.created_at ? new Date(s.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '—'}</td>
                         <td className="py-2">
-                          <a href={`/growth-studies/${s.id}`} className="text-xs font-black text-slate-600 hover:underline">View →</a>
+                          <a href={`/growth-studies/${s.id}`} className="text-[9px] font-black text-teal-600 hover:underline">View →</a>
                         </td>
                       </tr>
                     ))}
@@ -826,7 +817,7 @@ export default function GrowthStudyDetailPage() {
                 a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
                 a.download = `${study.study_code||study.id}_measurements.csv`;
                 a.click();
-              }} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors">
+              }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-200 flex items-center gap-1.5 transition-colors">
                 ↓ Export CSV
               </button>
             </div>
@@ -844,14 +835,14 @@ export default function GrowthStudyDetailPage() {
                   <thead>
                     <tr className="border-b border-slate-100">
                       {['Hour', `OD${study.od_wavelength || 600}`, 'pH', 'Temp (°C)', 'Glucose (g/L)', 'Protein (mg/mL)', ...(isFermentation ? ['DO%'] : []), 'Turbidity', 'Notes', ''].map(h => (
-                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-xs whitespace-nowrap">{h}</th>
+                        <th key={h} className="pb-2 pr-4 text-left font-black text-slate-400 uppercase tracking-wider text-[9px] whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {measurements.map(m => (
                       <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                        <td className="py-2 pr-4 font-black text-slate-700">T+{m.actual_hour}h</td>
+                        <td className="py-2 pr-4 font-black text-teal-700">T+{m.actual_hour}h</td>
                         <td className="py-2 pr-4">{m.od_value ?? '—'}</td>
                         <td className="py-2 pr-4">{m.ph_value ?? '—'}</td>
                         <td className="py-2 pr-4">{m.temperature_actual_c ?? '—'}</td>
@@ -896,13 +887,13 @@ export default function GrowthStudyDetailPage() {
                       <span className="text-xs font-bold text-slate-500">T+{m.actual_hour}h</span>
                       <div className="flex items-center gap-1.5">
                         {m.recorder && <CreatorBadge initials={m.recorder.initials} fullName={m.recorder.full_name} size="sm"/>}
-                        <span className="text-xs text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                        <span className="text-[10px] text-slate-400">{m.logged_at ? new Date(m.logged_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : m.created_at ? new Date(m.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div><p className="text-xs text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
-                      <div><p className="text-xs text-slate-400 font-bold">pH</p><p className="text-sm font-bold text-slate-700">{m.ph_value ?? '—'}</p></div>
-                      <div><p className="text-xs text-slate-400 font-bold">Temp</p><p className="text-sm font-bold text-slate-700">{m.temperature_actual_c ? `${m.temperature_actual_c}°C` : '—'}</p></div>
+                      <div><p className="text-[10px] text-slate-400 font-bold">OD</p><p className="text-sm font-bold text-slate-700">{m.od_value ?? '—'}</p></div>
+                      <div><p className="text-[10px] text-slate-400 font-bold">pH</p><p className="text-sm font-bold text-slate-700">{m.ph_value ?? '—'}</p></div>
+                      <div><p className="text-[10px] text-slate-400 font-bold">Temp</p><p className="text-sm font-bold text-slate-700">{m.temperature_actual_c ? `${m.temperature_actual_c}°C` : '—'}</p></div>
                     </div>
                   </div>
                 ))}
@@ -915,7 +906,7 @@ export default function GrowthStudyDetailPage() {
 
       {/* 2A: Combined tabbed measurement+plate modal */}
       {modal?.type === 'combined' && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="flex flex-col h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[92vh]">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -931,7 +922,7 @@ export default function GrowthStudyDetailPage() {
                   key={key}
                   onClick={() => { setModalTab(key); setModalErr(''); }}
                   className={`flex-1 py-3 text-xs font-black transition-colors border-b-2 ${
-                    modalTab === key ? 'border-slate-600 text-slate-700 bg-slate-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'
+                    modalTab === key ? 'border-teal-600 text-teal-700 bg-teal-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {label}
@@ -962,7 +953,7 @@ export default function GrowthStudyDetailPage() {
                     </div>
                   </div>
                   <details className="group">
-                    <summary className="text-xs font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-slate-600 transition-colors list-none flex items-center gap-1">
+                    <summary className="text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-teal-600 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span> More fields
                     </summary>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -995,8 +986,8 @@ export default function GrowthStudyDetailPage() {
                   </details>
                   {/* A-42: VFA profile (for heterofermenters) */}
                   {(study?.study_type === 'fermentation' || study?.study_type === 'vfa_profile') && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
-                      <p className="text-xs font-black uppercase text-red-800">A-42 VFA Profile (mmol/L)</p>
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
+                      <p className="text-[10px] font-black uppercase text-rose-800">A-42 VFA Profile (mmol/L)</p>
                       <div className="grid grid-cols-3 gap-2">
                         <div><label className={LabelCls}>Acetate</label><input className={InputCls} type="number" step="0.01" value={mForm.acetate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, acetate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
                         <div><label className={LabelCls}>Propionate</label><input className={InputCls} type="number" step="0.01" value={mForm.propionate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, propionate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
@@ -1007,7 +998,7 @@ export default function GrowthStudyDetailPage() {
                   {/* A-43: Temperature optima study — multiple temp readings */}
                   {study?.study_type === 'temperature_optima' && (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                      <p className="text-xs font-black uppercase text-amber-800 mb-2">A-43 Temperature Optima — Test Temp</p>
+                      <p className="text-[10px] font-black uppercase text-amber-800 mb-2">A-43 Temperature Optima — Test Temp</p>
                       <div><label className={LabelCls}>Test Temperature (°C)</label>
                         <input className={InputCls} type="number" step="0.5" value={mForm.test_temperature_c || ''} onChange={e => setMForm(f => ({ ...f, test_temperature_c: e.target.value }))} placeholder="e.g. 30, 37, 42"/>
                       </div>
@@ -1085,7 +1076,7 @@ export default function GrowthStudyDetailPage() {
                 <button
                   onClick={() => modalTab === 'measurement' ? saveMeasurement() : savePlate()}
                   disabled={modalSaving || (modalTab === 'measurement' && !mForm.actual_hour) || (modalTab === 'plate' && !pForm.time_point_hours)}
-                  className="flex-1 py-3 bg-slate-700 text-white font-black rounded-2xl text-sm hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-teal-700 text-white font-black rounded-2xl text-sm hover:bg-teal-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
                 </button>
@@ -1097,7 +1088,7 @@ export default function GrowthStudyDetailPage() {
 
       {/* Legacy: keep individual modals for old type='measurement'|'plate' paths (safety fallback) */}
       {startModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -1114,8 +1105,8 @@ export default function GrowthStudyDetailPage() {
               ) : (
                 <>
                   {/* Study identity */}
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Study</p>
+                  <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-teal-500 uppercase tracking-wider mb-1">Study</p>
                     <p className="font-black text-slate-800">{study.name}</p>
                     {study.study_code && <p className="text-xs font-mono text-slate-500 mt-0.5">{study.study_code}</p>}
                   </div>
@@ -1123,14 +1114,14 @@ export default function GrowthStudyDetailPage() {
                   {/* Vial section */}
                   {startInfo?.has_vial && startInfo?.vial ? (
                     <div>
-                      <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Vial to be used</p>
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-                        <TestTube2 className="w-4 h-4 text-slate-600 shrink-0" />
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Vial to be used</p>
+                      <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 flex items-center gap-3">
+                        <TestTube2 className="w-4 h-4 text-violet-600 shrink-0" />
                         <div>
-                          <p className="text-sm font-black text-slate-800 font-mono">{startInfo.vial.vial_code}</p>
-                          <p className="text-xs text-slate-500">{startInfo.vial.storage_temp || ''}{startInfo.vial.freezer_id ? ` · ${startInfo.vial.freezer_id}` : ''}</p>
+                          <p className="text-sm font-black text-violet-800 font-mono">{startInfo.vial.vial_code}</p>
+                          <p className="text-xs text-violet-500">{startInfo.vial.storage_temp || ''}{startInfo.vial.freezer_id ? ` · ${startInfo.vial.freezer_id}` : ''}</p>
                         </div>
-                        <span className="ml-auto text-xs font-black px-1.5 py-0.5 rounded border bg-slate-50 text-slate-700 border-slate-200">→ Will be marked Used</span>
+                        <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded border bg-teal-50 text-teal-700 border-teal-200">→ Will be marked Used</span>
                       </div>
                     </div>
                   ) : startInfo?.has_vial && !startInfo?.vial ? (
@@ -1142,7 +1133,7 @@ export default function GrowthStudyDetailPage() {
                   {/* Ingredients / lot selection */}
                   {startInfo?.has_formulation && startInfo?.ingredients?.length > 0 && (
                     <div>
-                      <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
                         Media ingredients — scaled to {study.volume_ml} mL
                       </p>
                       <div className="space-y-3">
@@ -1155,7 +1146,7 @@ export default function GrowthStudyDetailPage() {
                               </span>
                             </div>
                             {ing.available_lots.length === 0 ? (
-                              <p className="text-xs text-red-600 font-bold">No available lots — proceed without deduction or restock first.</p>
+                              <p className="text-[10px] text-red-600 font-bold">No available lots — proceed without deduction or restock first.</p>
                             ) : (
                               <select
                                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white"
@@ -1179,7 +1170,7 @@ export default function GrowthStudyDetailPage() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-slate-400 font-medium mt-2">Skipped ingredients will not be deducted from inventory.</p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-2">Skipped ingredients will not be deducted from inventory.</p>
                     </div>
                   )}
 
@@ -1191,17 +1182,17 @@ export default function GrowthStudyDetailPage() {
 
                   {/* Actual inoculation time — defaults to now, editable */}
                   <div>
-                    <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">
                       Actual Inoculation Time
                     </label>
                     <input
                       type="datetime-local"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       value={actualInocTime}
                       max={nowDatetimeLocal()}
                       onChange={e => setActualInocTime(e.target.value)}
                     />
-                    <p className="text-xs text-slate-400 mt-1 font-medium">
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
                       Defaults to now. Correct this if you inoculated earlier and are entering data retroactively.
                     </p>
                   </div>
@@ -1213,7 +1204,7 @@ export default function GrowthStudyDetailPage() {
                       Cancel
                     </button>
                     <button onClick={confirmStart} disabled={actionLoading}
-                      className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Play className="w-4 h-4" /> Confirm & Start</>}
                     </button>
@@ -1227,7 +1218,7 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Plate Observation Modal ── */}
       {modal?.type === 'plate' && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -1313,7 +1304,7 @@ export default function GrowthStudyDetailPage() {
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                 <button onClick={savePlate} disabled={modalSaving || !pForm.time_point_hours}
-                  className="flex-1 py-3 bg-slate-700 text-white font-black rounded-2xl text-sm hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-violet-700 text-white font-black rounded-2xl text-sm hover:bg-violet-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Observation'}
                 </button>
@@ -1325,7 +1316,7 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Edit Study Modal ── */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="flex flex-col h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto max-h-[92vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
@@ -1344,7 +1335,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Identity ── */}
                 <div className="space-y-4">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Identity</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Identity</p>
                   <div>
                     <label className={LabelCls}>Study Name *</label>
                     <input className={InputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
@@ -1354,7 +1345,7 @@ export default function GrowthStudyDetailPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {STUDY_TYPES.map(v => (
                         <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
-                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-slate-500 bg-slate-50 text-slate-700' : 'border-slate-200 bg-white text-slate-500'}`}
+                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-500'}`}
                         >{v.replace(/_/g,' ')}</button>
                       ))}
                     </div>
@@ -1369,7 +1360,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Isolate ── */}
                 <div className="space-y-3">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
                   <div className="flex gap-3">
                     {[['strain','Cell Bank Strain'],['prep','Preparation / Vial']].map(([v,l]) => (
                       <button key={v} type="button"
@@ -1393,7 +1384,7 @@ export default function GrowthStudyDetailPage() {
                       </select>
                       {editForm.cell_bank_preparation_id && (
                         <div>
-                          <label className={LabelCls}>Vial <span className="text-slate-600 normal-case font-medium">(link or change)</span></label>
+                          <label className={LabelCls}>Vial <span className="text-teal-600 normal-case font-medium">(link or change)</span></label>
                           <select className={InputCls} value={editForm.vial_id} onChange={e => setEditForm(f => ({ ...f, vial_id: e.target.value }))}>
                             <option value="">No vial linked</option>
                             {editMeta.vials.map(v => (
@@ -1402,7 +1393,7 @@ export default function GrowthStudyDetailPage() {
                               </option>
                             ))}
                           </select>
-                          <p className="text-xs text-slate-400 mt-1">Changing vial restores the previous one to Available.</p>
+                          <p className="text-[10px] text-slate-400 mt-1">Changing vial restores the previous one to Available.</p>
                         </div>
                       )}
                     </>
@@ -1413,7 +1404,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Media ── */}
                 <div className="space-y-3">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
                   <select className={InputCls} value={editForm.formulation_id} onChange={e => setEditForm(f => ({ ...f, formulation_id: e.target.value, media_name: '' }))}>
                     <option value="">Select from Formulation Library…</option>
                     {editMeta.formulations.map(fm => <option key={fm.id} value={fm.id}>{fm.name} ({fm.code})</option>)}
@@ -1427,7 +1418,7 @@ export default function GrowthStudyDetailPage() {
 
                 {/* ── Conditions ── */}
                 <div className="space-y-3">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Incubation Conditions</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Vessel Type</label>
@@ -1484,7 +1475,7 @@ export default function GrowthStudyDetailPage() {
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                   <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
-                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
                   </button>
@@ -1497,7 +1488,7 @@ export default function GrowthStudyDetailPage() {
 
       {/* ── Delete Confirmation ── */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -1510,7 +1501,7 @@ export default function GrowthStudyDetailPage() {
             </div>
             <div className="bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-xs font-black text-red-700">{study.study_code} — {study.name}</p>
-              {study.cell_bank_vials && <p className="text-xs text-red-500 mt-0.5">Vial {study.cell_bank_vials.vial_code} will be restored to Available.</p>}
+              {study.cell_bank_vials && <p className="text-[10px] text-red-500 mt-0.5">Vial {study.cell_bank_vials.vial_code} will be restored to Available.</p>}
             </div>
             {deleteErr && <p className="text-xs text-red-600 font-bold">{deleteErr}</p>}
             <div className="flex gap-3">

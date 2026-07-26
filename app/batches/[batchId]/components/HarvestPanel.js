@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { withTimeout } from '@/lib/withTimeout';
 import { Package, AlertTriangle, Thermometer, CheckCircle2 } from 'lucide-react';
 
 const HARVEST_METHODS = ['Centrifugation', 'Filtration', 'Decantation', 'Gravity settling'];
@@ -39,16 +38,10 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
   const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
-    let data, eq;
-    try {
-      [{ data }, { data: eq }] = await withTimeout(Promise.all([
-        supabase.from('batch_stage_harvest').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-        supabase.from('equipment').select('id, name, status').order('name'),
-      ]), 20000, 'Harvest data load timed out');
-    } catch (err) {
-      console.error('HarvestPanel fetch error:', err);
-      return;
-    }
+    const [{ data }, { data: eq }] = await Promise.all([
+      supabase.from('batch_stage_harvest').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+      supabase.from('equipment').select('id, name, status').order('name'),
+    ]);
     if (eq) setEquipment(eq);
     if (data) {
       setRecord(data);
@@ -111,20 +104,20 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
     finally { setSaving(false); }
   };
 
-  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Harvest details.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Harvest details.</div>;
 
   return (
     <div className="space-y-5">
-      <div className="card p-5 flex items-center gap-3 border-l-4 border-l-orange-500">
-        <Package className="w-5 h-5 text-amber-600"/>
+      <div className="surface p-5 flex items-center gap-3 border-l-4 border-l-orange-500">
+        <Package className="w-5 h-5 text-orange-600"/>
         <div>
-          <h2 className="text-base font-bold text-slate-900">Harvest: <span className="text-amber-600">{activeFlask.flask_label}</span></h2>
-          <p className="text-xs text-slate-500">Post-fermentation biomass collection — cooling, transfer, and cell viability record.</p>
+          <h2 className="text-base font-bold text-gray-900">Harvest: <span className="text-orange-600">{activeFlask.flask_label}</span></h2>
+          <p className="text-xs text-gray-500">Post-fermentation biomass collection — cooling, transfer, and cell viability record.</p>
         </div>
-        {record && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black rounded-lg uppercase">Saved</span>}
+        {record && <span className="ml-auto px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-lg uppercase">Saved</span>}
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="surface p-5 space-y-4">
         {/* Harvest start + method */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -148,14 +141,14 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         </div>
 
         {/* Temperature control */}
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-          <p className="text-xs font-black text-slate-900">Cold Chain — LAB must reach &lt;10°C within 2 hours of endpoint</p>
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+          <p className="text-xs font-black text-blue-900">Cold Chain — LAB must reach &lt;10°C within 2 hours of endpoint</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="field-label">Harvest Temp (°C)</label>
               <input type="number" step="0.1" value={harvestTempC} onChange={e => setHarvestTempC(e.target.value)} className="field-input" placeholder="e.g. 8"/>
               {harvestTempC && parseFloat(harvestTempC) > 10 && (
-                <p className="text-xs text-amber-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Above 10°C — cold chain risk</p>
+                <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Above 10°C — cold chain risk</p>
               )}
             </div>
             <div>
@@ -166,7 +159,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
               <label className="field-label">Cooling Time (min)</label>
               <input type="number" value={coolingTimeMins} onChange={e => setCoolingTimeMins(e.target.value)} className="field-input" placeholder="e.g. 90"/>
               {coolingTimeMins && parseFloat(coolingTimeMins) > 120 && (
-                <p className="text-xs text-red-600 font-bold mt-1">Exceeds 2-hour cold-chain target</p>
+                <p className="text-[10px] text-red-600 font-bold mt-1">Exceeds 2-hour cold-chain target</p>
               )}
             </div>
             {/* A-52: Cooling rate checkpoints */}
@@ -207,28 +200,28 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         )}
 
         {/* Cell viability */}
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-          <p className="text-xs font-black text-slate-900">Cell Viability at Harvest</p>
+        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-3">
+          <p className="text-xs font-black text-indigo-900">Cell Viability at Harvest</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="field-label text-slate-800">Viability Method</label>
+              <label className="field-label text-indigo-800">Viability Method</label>
               <select value={viabilityMethod} onChange={e => setViabilityMethod(e.target.value)} className="field-input bg-white">
                 {VIABILITY_METHODS.map(m => <option key={m}>{m}</option>)}
               </select>
             </div>
             <div>
-              <label className="field-label text-slate-800">Viability (%)</label>
+              <label className="field-label text-indigo-800">Viability (%)</label>
               <input type="number" step="0.1" min="0" max="100" value={cellViabilityPct} onChange={e => setCellViabilityPct(e.target.value)} className="field-input" placeholder="e.g. 92.5"/>
               {cellViabilityPct && parseFloat(cellViabilityPct) < 80 && (
-                <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low viability — verify harvest conditions</p>
+                <p className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low viability — verify harvest conditions</p>
               )}
             </div>
           </div>
         </div>
 
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Harvest observations, anomalies..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Harvest observations, anomalies..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
           {saving ? 'Saving...' : 'Save Harvest Record'}
         </button>
       </div>

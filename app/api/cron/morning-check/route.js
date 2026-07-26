@@ -19,7 +19,7 @@ export async function GET(request) {
 
     // Get current date in IST (UTC+5:30)
     const nowUtc = new Date();
-    // 09:30 AM IST = 4:00 AM UTC. Cron runs at 4:00 UTC.
+    // 10:00 AM IST = 4:30 AM UTC. Cron runs at 4:30 UTC.
     const nowIst = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
     const todayStr = nowIst.toISOString().split('T')[0];
 
@@ -62,7 +62,7 @@ export async function GET(request) {
     const notifications = missingEmployees.map(emp => ({
       employee_id: emp.id,
       title: '⏰ Attendance Reminder',
-      message: 'It is past 09:30 AM and you have not checked in yet. Please log your attendance.',
+      message: 'It is past 10:00 AM and you have not checked in yet. Please log your attendance.',
       link: '/attendance',
       is_read: false
     }));
@@ -94,7 +94,7 @@ export async function GET(request) {
 
           await webpush.sendNotification(sub, JSON.stringify({
             title: '⏰ Missing Check-In',
-            body: 'It is past 09:30 AM. Please check in now via OxyOS.',
+            body: 'It is past 10:00 AM. Please check in now via OxyOS.',
             url: '/attendance'
           }));
           sentCount++;

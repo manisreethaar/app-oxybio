@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 
 const COLORS = {
-  od: '#0d9488',    // slate
+  od: '#0d9488',    // teal
   ph: '#6366f1',    // indigo
   glucose: '#f59e0b', // amber
   protein: '#ec4899', // pink

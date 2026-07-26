@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Plus, Trash2, FlaskConical } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useSopGate } from '@/hooks/useSopGate';
+import SopGate from '@/components/ui/SopGate';
 
 const VESSEL_TYPES = ['test_tube','flask_50ml','flask_125ml','flask_250ml','flask_500ml','flask_1000ml','bioreactor_1L','bioreactor_5L','bioreactor_10L'];
 const SAMPLE_TYPE_OPTIONS = [
@@ -17,6 +19,8 @@ const DEFAULT_SCHEDULE = [0, 2, 4, 6, 8, 12, 18, 24, 36, 48];
 export default function NewGrowthStudyPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { employeeProfile, role } = useAuth();
+  const sopGate = useSopGate({ employeeId: employeeProfile?.id, category: 'Fermentation', role, bypassRoles: ['admin', 'research_fellow', 'scientist'] });
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -60,15 +64,15 @@ export default function NewGrowthStudyPage() {
   const [newHour, setNewHour] = useState('');
 
   useEffect(() => {
-    withTimeout(Promise.all([
+    Promise.all([
       supabase.from('cell_bank_strains').select('id, name, accession_number').order('name'),
       supabase.from('cell_bank_preparations').select('id, prep_code, type, passage_number').order('created_at', { ascending: false }),
       supabase.from('formulations').select('id, name, code').eq('status', 'Approved').order('name'),
-    ]), 20000, 'New study form data load timed out').then(([s, p, f]) => {
+    ]).then(([s, p, f]) => {
       setStrains(s.data || []);
       setPreps(p.data || []);
       setFormulations(f.data || []);
-    }).catch(err => console.error('New study form load error:', err));
+    });
   }, [supabase]);
 
   // Fetch available vials when a preparation is selected
@@ -160,8 +164,18 @@ export default function NewGrowthStudyPage() {
     (form.isolate_source !== 'strain' || form.cell_bank_strain_id) &&
     (form.isolate_source !== 'prep' || form.cell_bank_preparation_id);
 
-  const InputCls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent';
+  const InputCls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent';
   const LabelCls = 'block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5';
+
+  if (sopGate.checking || !sopGate.isTrained) {
+    return (
+      <div className="max-w-2xl mx-auto pb-16">
+        <div className="glass-card rounded-3xl overflow-hidden">
+          <SopGate checking={sopGate.checking} isTrained={sopGate.isTrained} category="Fermentation" sopLabel="Fermentation SOP" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto pb-16">
@@ -174,11 +188,11 @@ export default function NewGrowthStudyPage() {
       <div className="flex items-center gap-2 mb-8">
         {['Isolate & Media', 'Conditions', 'Sampling Schedule'].map((s, i) => (
           <div key={s} className="flex items-center gap-2 flex-1">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-colors ${step > i + 1 ? 'bg-slate-600 border-slate-600 text-white' : step === i + 1 ? 'bg-white border-slate-600 text-slate-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-colors ${step > i + 1 ? 'bg-teal-600 border-teal-600 text-white' : step === i + 1 ? 'bg-white border-teal-600 text-teal-700' : 'bg-white border-slate-200 text-slate-400'}`}>
               {step > i + 1 ? '✓' : i + 1}
             </div>
-            <span className={`text-xs font-bold hidden sm:block ${step === i + 1 ? 'text-slate-700' : 'text-slate-400'}`}>{s}</span>
-            {i < 2 && <div className={`flex-1 h-0.5 ${step > i + 1 ? 'bg-slate-500' : 'bg-slate-200'}`} />}
+            <span className={`text-xs font-bold hidden sm:block ${step === i + 1 ? 'text-teal-700' : 'text-slate-400'}`}>{s}</span>
+            {i < 2 && <div className={`flex-1 h-0.5 ${step > i + 1 ? 'bg-teal-500' : 'bg-slate-200'}`} />}
           </div>
         ))}
       </div>
@@ -196,7 +210,7 @@ export default function NewGrowthStudyPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[['growth_curve', 'Growth Curve', 'Isolate characterisation, OD/pH tracking'], ['fermentation', 'Fermentation', 'Process monitoring, product formation']].map(([v, l, d]) => (
                   <button key={v} type="button" onClick={() => setField('study_type', v)}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all ${form.study_type === v ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all ${form.study_type === v ? 'border-teal-500 bg-teal-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                   >
                     <p className="font-black text-sm text-slate-800">{l}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{d}</p>
@@ -226,7 +240,7 @@ export default function NewGrowthStudyPage() {
                   </select>
                   {form.cell_bank_preparation_id && (
                     <div className="mt-3">
-                      <label className={LabelCls}>Select Vial to Use <span className="text-slate-600">*</span></label>
+                      <label className={LabelCls}>Select Vial to Use <span className="text-teal-600">*</span></label>
                       {vials.length === 0 ? (
                         <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-medium">
                           No available vials for this preparation.
@@ -241,7 +255,7 @@ export default function NewGrowthStudyPage() {
                           ))}
                         </select>
                       )}
-                      <p className="text-xs text-slate-400 font-medium mt-1">The selected vial will be marked as Used when the study is started.</p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">The selected vial will be marked as Used when the study is started.</p>
                     </div>
                   )}
                 </>
@@ -338,7 +352,7 @@ export default function NewGrowthStudyPage() {
                 placeholder="Hours"
                 onKeyDown={e => e.key === 'Enter' && addTimePoint()}
               />
-              <button onClick={addTimePoint} className="px-4 py-2 bg-slate-600 text-white rounded-xl text-xs font-black hover:bg-slate-700 flex items-center gap-1.5 min-h-[38px]">
+              <button onClick={addTimePoint} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-black hover:bg-teal-700 flex items-center gap-1.5 min-h-[38px]">
                 <Plus className="w-3.5 h-3.5" /> Add Point
               </button>
               <span className="text-xs text-slate-400 font-medium hidden sm:inline">Press Enter or click Add</span>
@@ -348,7 +362,7 @@ export default function NewGrowthStudyPage() {
               {timePoints.map((tp, i) => (
                 <div key={tp.planned_hour} className="flex items-start gap-3 bg-slate-50 rounded-2xl p-3">
                   <div className="w-16 shrink-0 text-center">
-                    <span className="text-lg font-black text-slate-700">T+{tp.planned_hour}h</span>
+                    <span className="text-lg font-black text-teal-700">T+{tp.planned_hour}h</span>
                   </div>
                   <div className="flex-1 flex flex-wrap gap-1.5">
                     {SAMPLE_TYPE_OPTIONS.map(opt => (
@@ -356,10 +370,10 @@ export default function NewGrowthStudyPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => toggleSampleType(i, opt.value)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-colors ${
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-colors ${
                           tp.sample_types.includes(opt.value)
-                            ? 'bg-slate-600 text-white border-slate-600'
-                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
+                            ? 'bg-teal-600 text-white border-teal-600'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-teal-400'
                         }`}
                         title={opt.label}
                       >
@@ -390,7 +404,7 @@ export default function NewGrowthStudyPage() {
             <button
               onClick={() => setStep(s => s + 1)}
               disabled={step === 1 && !canNext1}
-              className="flex-1 flex items-center justify-center px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center px-5 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </button>
@@ -398,7 +412,7 @@ export default function NewGrowthStudyPage() {
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-50"
+              className="flex-1 py-3 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl text-sm disabled:opacity-50"
             >
               {saving ? 'Creating…' : 'Create Study'}
             </button>

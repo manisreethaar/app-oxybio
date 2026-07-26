@@ -43,7 +43,7 @@ export async function GET() {
       supabase
         .from('batches')
         .select('id, batch_id, current_stage, batch_flasks(id, flask_label, status, current_stage)')
-        .in('current_stage', ['fermentation'])   // straining/extract_addition no longer need fermentation readings
+        .in('current_stage', ['fermentation', 'straining', 'extract_addition'])
         .order('created_at', { ascending: false })
         .limit(20),
 
@@ -90,19 +90,15 @@ export async function GET() {
         f.status !== 'planned' && f.current_stage !== 'qc_hold'
       );
       for (const flask of flasks) {
-        // Only show flasks that are actively in fermentation — skip post-fermentation stages
-        if (flask.current_stage && !['fermentation', 'inoculation'].includes(flask.current_stage)) continue;
-
         const key     = `${batch.id}::${flask.id}`;
         const reading = latestReadingMap[key] || null;
 
         let urgency, hoursSince, detail;
 
         if (!reading) {
-          // No readings yet — give a 2h grace period before calling it overdue
-          urgency    = 'active';
+          urgency    = 'overdue';
           hoursSince = null;
-          detail     = 'No readings yet — log the first reading';
+          detail     = 'No readings yet';
         } else {
           hoursSince = (now - new Date(reading.logged_at).getTime()) / 3_600_000;
           if (hoursSince > 6) {
