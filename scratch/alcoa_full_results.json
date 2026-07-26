@@ -1,0 +1,744 @@
+{
+  "HR_Admin": [
+    {
+      "name": "released_employee_codes",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "hr_shifts",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "hr_holidays",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "leave_encashments",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "hr_delegations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "hr_tax_profiles",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "hr_expenses",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "shift_handovers",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "employees",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "leave_applications",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "attendance_log",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "payslips",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ],
+  "Inventory": [
+    {
+      "name": "inventory_movements",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "inventory_usage",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "vendors",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "inventory_items",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "inventory_stock",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "inventory",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ],
+  "QualityCompliance": [
+    {
+      "name": "emp_sampling_locations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "emp_samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "system_audit_logs",
+      "hasCreatedAt": false,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": false,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "deviations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "capa_actions",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "customer_complaints",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "internal_audits",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sops",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sop_quizzes",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sop_quiz_results",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sop_targets",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sop_library",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sop_acknowledgements",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ],
+  "BatchManufacturing": [
+    {
+      "name": "batch_flasks",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_stage_media_prep",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_stage_sterilisation",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_stage_inoculation",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_fermentation_readings",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_fermentation_endpoint",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_endpoints",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_stage_straining",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_stage_extract_addition",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_qc_samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_qc_tests",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_release_record",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_rejection_record",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "stage_transitions",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_inoculations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_straining",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_extract_addition",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_qc_samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_qc_tests",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_release_record",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_flask_rejection_record",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_fermentation_feeds",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batch_costs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "batches",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ],
+  "Equipment": [
+    {
+      "name": "equipment",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "calibration_logs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "equipment_tickets",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ],
+  "Research": [
+    {
+      "name": "sample_incubation_records",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "formulation_ingredients",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ],
+  "Other": [
+    {
+      "name": "document_categories",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "chats",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "chat_members",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "messages",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "lab_logs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "app_settings",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "samples",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "test_results",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "aql_sampling_plans",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "investigations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "system_config",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "lookup_categories",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "stability_timepoints",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "tasks",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "rbac_matrix",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "system_logs",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "sso_configurations",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "api_keys",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "ip_whitelist",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "bioprocess_statistics",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "scale_down_models",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "predictive_models",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "chat_retention_policies",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "chat_attachments",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "user_preferences",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "scada_streams",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "activity_log",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "ph_readings",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "compliance_items",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "documents",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    },
+    {
+      "name": "notifications",
+      "hasCreatedAt": true,
+      "hasUpdatedAt": true,
+      "hasCreatedBy": true,
+      "hasUpdatedBy": true,
+      "hasReasonForChange": true
+    }
+  ]
+}

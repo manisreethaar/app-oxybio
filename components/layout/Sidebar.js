@@ -8,7 +8,7 @@ import {
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
   Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle,
   Wind, Wifi, ArrowRight, ChevronRight, X, Home, Menu,
-  Bell, Search, PieChart
+  Bell, Search, PieChart, Shield
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
@@ -113,6 +113,7 @@ export default function Sidebar() {
     { title: 'Admin', items: [
       { name: 'Archive',     href: '/archive',         icon: Archive,   show: ['admin','ceo','cto'].includes(eRole) },
       { name: 'Approvals',   href: '/admin/approvals', icon: FileCheck, show: ['admin','ceo','cto'].includes(eRole) },
+      { name: 'Audit Logs',  href: '/admin/audit-logs',icon: Shield,    show: ['admin','ceo','cto'].includes(eRole) },
       { name: 'Settings',    href: '/admin/settings',  icon: Settings,  show: ['admin','ceo','cto'].includes(eRole) },
     ]},
   ];
