@@ -60,15 +60,24 @@ export async function GET(request, { params }) {
 
     if (!batchRes.data) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
 
-    // 4. Fetch release records via flask IDs (batch_id column may not exist in all envs)
+    // 4. Fetch release records, QC tests, and Audit Logs via flask IDs/batch ID
     const flaskIds = flasksRes.data?.map(f => f.id) || [];
     let releaseData = [];
-    if (flaskIds.length > 0) {
+    let auditLogs = [];
+    if (flaskIds.length > 0 || batchId) {
       const { data } = await db
         .from('batch_flask_release_record')
         .select('*')
         .in('flask_id', flaskIds);
       releaseData = data || [];
+      
+      const recordIds = [batchId, ...flaskIds];
+      const { data: logsData } = await db
+        .from('system_audit_logs')
+        .select('*, employees!system_audit_logs_changed_by_fkey(full_name, role)')
+        .in('record_id', recordIds)
+        .order('changed_at');
+      auditLogs = logsData || [];
     }
 
     // 5. Fetch QC tests
@@ -100,6 +109,7 @@ export async function GET(request, { params }) {
       flaskRejections:   rejectionRes.data  || [],
       sampleIncubations: incubationRes.data  || [],
       inventoryUsage:    inventoryUsageRes.data || [],
+      auditLogs:         auditLogs,
       generatedBy:       emp.full_name,
       generatedAt:       new Date().toISOString(),
     };
