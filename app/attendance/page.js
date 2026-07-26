@@ -238,30 +238,38 @@ export default function AttendancePage() {
       // A stalled Supabase connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh.
       await withTimeout((async () => {
+      // These queries don't depend on each other — run them in parallel
+      // instead of one after another (was 4 sequential round-trips).
+      const isExec = ['admin', 'ceo', 'cto'].includes(role);
+      const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+      const [todayRes, historyRes, leavesRes, rosterRes] = await Promise.all([
+        employeeProfile.id
+          ? supabase.from('attendance_log')
+              .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
+              .order('created_at', { ascending: false }).limit(1).maybeSingle()
+          : Promise.resolve({ data: null }),
+        employeeProfile.id
+          ? supabase.from('attendance_log')
+              .select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).limit(30)
+          : Promise.resolve({ data: null }),
+        employeeProfile.id
+          ? supabase.from('leave_applications')
+              .select('employee_id').eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr)
+          : Promise.resolve({ data: null }),
+        // Use server-side API to bypass RLS for cross-employee reads
+        isExec ? fetch('/api/attendance/team-roster') : Promise.resolve(null),
+      ]);
+
       if (employeeProfile.id) {
-        // Use IST date (UTC+5:30) to match what the check-in API stores in the DB
-        const todayStr = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split('T')[0];
-        const { data: today } = await supabase.from('attendance_log')
-          .select('*').eq('employee_id', employeeProfile.id).eq('date', todayStr)
-          .order('created_at', { ascending: false }).limit(1).maybeSingle();
-        setTodayLog(today || null);
-
-        const { data: history } = await supabase.from('attendance_log')
-          .select('*').eq('employee_id', employeeProfile.id).order('date', { ascending: false }).limit(30);
-        setMyHistory(history || []);
-
-        const { data: leavesToday } = await supabase.from('leave_applications')
-          .select('employee_id').eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr);
-        setOnLeaveToday((leavesToday || []).map(l => l.employee_id));
+        setTodayLog(todayRes.data || null);
+        setMyHistory(historyRes.data || []);
+        setOnLeaveToday((leavesRes.data || []).map(l => l.employee_id));
       }
 
-      if (['admin', 'ceo', 'cto'].includes(role)) {
-        // Use server-side API to bypass RLS for cross-employee reads
-        const rosterRes = await fetch('/api/attendance/team-roster');
-        if (rosterRes.ok) {
-          const rosterData = await rosterRes.json();
-          setTeamToday(rosterData.data || []);
-        }
+      if (isExec && rosterRes?.ok) {
+        const rosterData = await rosterRes.json();
+        setTeamToday(rosterData.data || []);
       }
       })(), 20000, 'Attendance load timed out');
     } catch (err) {
