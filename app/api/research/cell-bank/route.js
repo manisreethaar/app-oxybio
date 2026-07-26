@@ -1,16 +1,18 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { syncCellBankStepToLNB } from '@/lib/lnbSync';
 import { requireResearchAccess } from '@/lib/research/access';
 
-async function generatePrepCode(supabase, type) {
+async function generatePrepCode(adminSupabase, type) {
   const yy = String(new Date().getFullYear()).slice(-2);
-  const prefix = `OB-CB-${yy}-`;
-  const { data: last } = await supabase
+  // Search across ALL years (OB-CB-%) so the sequence never resets when the
+  // calendar year changes. The current year is still stamped on the new code.
+  const { data: last } = await adminSupabase
     .from('cell_bank_preparations')
     .select('prep_code')
-    .like('prep_code', `${prefix}%`)
+    .like('prep_code', 'OB-CB-%')
     .order('prep_code', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -19,7 +21,7 @@ async function generatePrepCode(supabase, type) {
     const n = parseInt(last.prep_code.split('-').pop(), 10);
     if (!isNaN(n)) seq = n + 1;
   }
-  return `${prefix}${String(seq).padStart(3, '0')}`;
+  return `OB-CB-${yy}-${String(seq).padStart(3, '0')}`;
 }
 
 export const dynamic = 'force-dynamic';
@@ -56,12 +58,13 @@ export async function GET(request) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
+    const adminSupabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view') || 'preparations';
     const strainId = searchParams.get('strain_id');
 
     if (view === 'strains') {
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('cell_bank_strains')
         .select('*, characterization, employees(full_name, initials), linked_formulation:formulations(id, code, name, version, category, status)')
         .order('created_at', { ascending: false });
@@ -69,7 +72,7 @@ export async function GET(request) {
       return NextResponse.json({ success: true, data });
     }
 
-    let query = supabase
+    let query = adminSupabase
       .from('cell_bank_preparations')
       .select(`
         id, type, prep_code, status, passage_number, source_vial_id,
@@ -79,7 +82,7 @@ export async function GET(request) {
         linked_formulation:formulations(id, code, name, version, category, status),
         cell_bank_strains(id, name, source_type, accession_number, formulation_id, linked_formulation:formulations(id, code, name, version, category, status)),
         parent:parent_id(id, prep_code, type),
-        employees(full_name, initials)
+        employees!cell_bank_preparations_created_by_fkey(full_name, initials)
       `)
       .order('created_at', { ascending: false });
 
@@ -99,6 +102,7 @@ export async function POST(request) {
     const access = await requireResearchAccess(supabase);
     if (access.error) return access.error;
 
+    const adminSupabase = createAdminClient();
     const body = await request.json();
 
     // Normalize empty strings -> null for optional UUID / date fields
@@ -118,7 +122,7 @@ export async function POST(request) {
       const parsed = strainSchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ success: false, error: parsed.error.issues.map(i => i.message).join(', ') }, { status: 400 });
       const { type: _t, ...fields } = parsed.data;
-      const { data, error } = await supabase.from('cell_bank_strains').insert({ ...fields, created_by: access.emp?.id }).select().single();
+      const { data, error } = await adminSupabase.from('cell_bank_strains').insert({ ...fields, created_by: access.emp?.id }).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, data });
     }
@@ -126,17 +130,17 @@ export async function POST(request) {
     // preparation
     const parsed = prepSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, error: parsed.error.issues.map(i => i.message).join(', ') }, { status: 400 });
-    const prepCode = parsed.data.prep_code?.trim() || await generatePrepCode(supabase, parsed.data.type);
+    const prepCode = parsed.data.prep_code?.trim() || await generatePrepCode(adminSupabase, parsed.data.type);
     let formulationId = parsed.data.formulation_id || null;
     if (!formulationId) {
-      const { data: strain } = await supabase
+      const { data: strain } = await adminSupabase
         .from('cell_bank_strains')
         .select('formulation_id')
         .eq('id', parsed.data.strain_id)
         .maybeSingle();
       formulationId = strain?.formulation_id || null;
     }
-    const { data, error } = await supabase.from('cell_bank_preparations').insert({
+    const { data, error } = await adminSupabase.from('cell_bank_preparations').insert({
       ...parsed.data,
       formulation_id: formulationId,
       prep_code: prepCode,
@@ -145,7 +149,7 @@ export async function POST(request) {
       created_by: access.emp?.id,
     }).select().single();
     if (error) throw error;
-    await syncCellBankStepToLNB(supabase, data.id, data.prep_code, 'preparation', {
+    await syncCellBankStepToLNB(adminSupabase, data.id, data.prep_code, 'preparation', {
       type: data.type,
       status: data.status,
       strain_id: data.strain_id,

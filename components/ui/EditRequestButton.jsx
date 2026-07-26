@@ -89,7 +89,7 @@ export default function EditRequestButton({
 
   if (hasPending) {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-black uppercase tracking-widest">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-black uppercase tracking-widest">
         <Loader2 className="w-3 h-3 animate-spin" />
         Pending Review
       </span>
@@ -120,8 +120,8 @@ export default function EditRequestButton({
       </div>
 
       {open && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
             <button
               onClick={() => setOpen(false)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
@@ -148,7 +148,7 @@ export default function EditRequestButton({
               <div className="space-y-4">
                 {fields.map(f => (
                   <div key={f.key}>
-                    <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
                       {f.label}
                     </label>
                     {f.type === 'select' ? (
@@ -195,7 +195,7 @@ export default function EditRequestButton({
                   </p>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">
                     Reason for archive
                   </label>
                   <textarea
@@ -214,8 +214,8 @@ export default function EditRequestButton({
               disabled={submitting || (mode === 'delete' && deleteReason.trim().length < 5)}
               className={`mt-6 w-full py-3 font-black text-sm text-white rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${
                 mode === 'edit'
-                  ? 'bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400'
-                  : 'bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500'
+                  ? 'bg-gradient-to-br from-amber-500 to-amber-500 hover:from-amber-400 hover:to-amber-400'
+                  : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500'
               }`}
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <SendHorizonal className="w-4 h-4" />}

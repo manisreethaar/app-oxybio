@@ -49,15 +49,15 @@ export default async function VerifyEmployeePage({ params }) {
   if (!emp.is_active) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-rose-100">
-          <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck className="w-10 h-10 text-rose-500 opacity-40" />
+        <div className="max-w-md w-full bg-white rounded-3xl p-5 md:p-8 text-center shadow-xl border border-red-100">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-10 h-10 text-red-500 opacity-40" />
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Access Revoked</h1>
-          <p className="text-rose-500 font-bold mb-4 uppercase tracking-widest text-xs">Credential Suspended</p>
-          <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 text-left mb-6">
-             <p className="text-sm font-bold text-rose-900">{emp.full_name}</p>
-             <p className="text-xs font-medium text-rose-700">{emp.designation || 'STAFF'}</p>
+          <p className="text-red-500 font-bold mb-4 uppercase tracking-widest text-xs">Credential Suspended</p>
+          <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-left mb-6">
+             <p className="text-sm font-bold text-red-900">{emp.full_name}</p>
+             <p className="text-xs font-medium text-red-700">{emp.designation || 'STAFF'}</p>
           </div>
           <p className="text-slate-500 text-sm">This identity is acknowledged by Oxygen Bioinnovations but is currently marked as <strong>Inactive</strong>. Access to facility nodes is restricted.</p>
         </div>
@@ -78,7 +78,7 @@ export default async function VerifyEmployeePage({ params }) {
         {/* ID Card Display */}
         <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-500">
           {/* Header */}
-          <div className="bg-gradient-to-br from-teal-800 to-teal-950 p-6 flex flex-col items-center relative overflow-hidden">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-950 p-6 flex flex-col items-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
             
             {emp.photo_url ? (
@@ -92,7 +92,7 @@ export default async function VerifyEmployeePage({ params }) {
             
             <div className="mt-4 text-center z-10">
               <h2 className="text-2xl font-black text-white tracking-tight leading-tight">{emp.full_name}</h2>
-              <p className="text-teal-200 font-medium text-sm mt-1">{emp.designation || emp.role?.toUpperCase() || 'STAFF'}</p>
+              <p className="text-slate-200 font-medium text-sm mt-1">{emp.designation || emp.role?.toUpperCase() || 'STAFF'}</p>
             </div>
           </div>
 
@@ -117,7 +117,7 @@ export default async function VerifyEmployeePage({ params }) {
                   <span className="font-bold text-slate-400">ID</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Verification ID</p>
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-wider">Verification ID</p>
                   <p className="font-bold text-slate-800 italic">
                     {emp.verification_token 
                       ? `${emp.verification_token.slice(0,8)}...${emp.verification_token.slice(-4)}` 
@@ -131,7 +131,7 @@ export default async function VerifyEmployeePage({ params }) {
                   <Calendar className="w-4 h-4 text-slate-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Since</p>
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-wider">Since</p>
                   <p className="font-bold text-slate-800">{emp.joined_date ? new Date(emp.joined_date).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>

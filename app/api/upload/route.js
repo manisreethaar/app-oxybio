@@ -3,7 +3,15 @@ import { NextResponse } from 'next/server';
 import { requireInventoryPermission } from '@/lib/inventory/access';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf', 
+  'image/png', 
+  'image/jpeg',
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.ms-excel', // .xls
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx
+]);
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +25,13 @@ export async function POST(request) {
     }
 
     const supabase = createClient();
-    const permission = await requireInventoryPermission(supabase, 'edit');
-    if (permission.error) return permission.error;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      return NextResponse.json({ success: false, error: 'Only PDF, PNG, and JPG files are allowed' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Invalid file type. Only PDF, Image, Word, and Excel files are allowed' }, { status: 400 });
     }
 
     if (file.size > MAX_UPLOAD_BYTES) {

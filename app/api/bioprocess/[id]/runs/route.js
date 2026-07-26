@@ -1,5 +1,8 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { checkSopCompletion } from '@/lib/sop/gate';
+import { isMasterAdmin } from '@/lib/permissions';
 
 // PATCH: upsert factors + responses in bulk
 export async function PATCH(req, { params }) {
@@ -8,6 +11,25 @@ export async function PATCH(req, { params }) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
+
+  const { data: experiment } = await supabase
+    .from('bioprocess_experiments')
+    .select('sop_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (experiment?.sop_id && !isMasterAdmin(user.email)) {
+    const { data: employee } = await supabase.from('employees').select('id').eq('email', user.email).single();
+    const sopStatus = await checkSopCompletion(supabase, experiment.sop_id, employee?.id);
+    if (sopStatus.required && !sopStatus.completed) {
+      return NextResponse.json({
+        error: `You must complete SOP "${sopStatus.sop.title}" before entering data for this experiment.`,
+        sop_violation: true,
+        sop: sopStatus.sop,
+      }, { status: 403 });
+    }
+  }
+
   const { factors, responses, kineticData } = await req.json();
 
   // Upsert factors

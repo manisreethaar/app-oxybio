@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -30,18 +31,16 @@ export async function POST(request) {
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
-    const docId = `DOC-${Date.now().toString(36).toUpperCase().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-
+    // removed docId declaration
     const { error } = await supabase.from('documents').insert({
-      doc_id: docId,
       ...parsed.data,
       effective_date: new Date().toISOString(),
-      created_by: emp.id
+      uploaded_by: emp.id
     });
 
     if (error) throw error;
     
-    return NextResponse.json({ success: true, doc_id: docId });
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

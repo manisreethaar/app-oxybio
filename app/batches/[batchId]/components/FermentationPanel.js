@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { withTimeout } from '@/lib/withTimeout';
 import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer, Droplet } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -16,10 +17,10 @@ const APPEARANCE_OPTS = ['Normal','Colour change','Turbidity change','Separation
 
 function PhChart({ readings, loading = false, comparisonData = {} }) {
   if (loading) return (
-    <div className="h-28 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl animate-pulse">Loading…</div>
+    <div className="h-28 flex items-center justify-center text-xs text-slate-300 border border-dashed border-slate-200 rounded-xl animate-pulse">Loading…</div>
   );
   if (!readings.length) return (
-    <div className="h-28 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl">No readings yet — chart will appear here</div>
+    <div className="h-28 flex items-center justify-center text-xs text-slate-300 border border-dashed border-slate-200 rounded-xl">No readings yet — chart will appear here</div>
   );
   const valid = readings.filter(r => r.ph != null && r.elapsed_hours != null);
   if (!valid.length) return null;
@@ -163,7 +164,7 @@ function TempChart({ readings }) {
 function BrixChart({ readings }) {
   const valid = readings.filter(r => r.brix != null && r.elapsed_hours != null);
   if (!valid.length) return (
-    <div className="h-20 flex items-center justify-center text-xs text-gray-300 border border-dashed border-gray-200 rounded-xl">No Brix readings yet</div>
+    <div className="h-20 flex items-center justify-center text-xs text-slate-300 border border-dashed border-slate-200 rounded-xl">No Brix readings yet</div>
   );
   const W = 400, H = 100, PAD = { t: 10, r: 16, b: 20, l: 32 };
   const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
@@ -306,16 +307,25 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const fetchData = useCallback(async () => {
     if (!activeFlask?.id) return;
     setLoadingReadings(true);
-    const [rRes, iRes, epRes] = await Promise.all([
-      supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
-      supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
-      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
-    ]);
-    if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
-    if (rRes.data) setReadings(rRes.data);
-    if (iRes.data) setInocu(iRes.data); else setInocu(null);
-    setEndpoint(epRes.data ?? null);
-    setLoadingReadings(false);
+    try {
+      // No try/catch/timeout here before meant a stalled connection left
+      // this stuck on "Loading…" forever — fermentation is one of the
+      // longest-running, most-viewed stages, so this was a major source of
+      // "batches has infinite loading."
+      const [rRes, iRes, epRes] = await withTimeout(Promise.all([
+        supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
+        supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
+      ]), 20000, 'Fermentation data load timed out');
+      if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
+      if (rRes.data) setReadings(rRes.data);
+      if (iRes.data) setInocu(iRes.data); else setInocu(null);
+      setEndpoint(epRes.data ?? null);
+    } catch (err) {
+      console.error('FermentationPanel fetch error:', err);
+    } finally {
+      setLoadingReadings(false);
+    }
   }, [batch.id, activeFlask?.id, supabase]);
 
   const fetchPendingIds = async () => {
@@ -699,7 +709,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   const supervisors = employees.filter(e => ['ceo','admin','cto','research_fellow','scientist'].includes(e.role));
 
-  if (!activeFlask) return <div className="p-4 text-center text-gray-400">Select a Trial to view Fermentation details.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Fermentation details.</div>;
 
   // pH range helpers for inline hint
   // Suppress alarm/target hints at T+0h — initial pH is always on the higher side
@@ -708,7 +718,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     : elapsedHr;
   const isAtTZero = currentReadingElapsed !== null && currentReadingElapsed < 0.5;
   const phNum = parseFloat(pH);
-  const phInAlarmRange = pH && !isAtTZero && (phNum < 3.8 || phNum > 5.5);
+  const phInAlarmRange = pH && !isAtTZero && (phNum < 3 || phNum > 6.5);
   const phOutOfTarget = pH && !isAtTZero && !phInAlarmRange && (phNum < 4.2 || phNum > 4.5);
 
   return (
@@ -722,7 +732,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           </p>
           <button
             onClick={() => setResolvingPlating(true)}
-            className="px-2.5 py-1 bg-amber-600 text-white text-[10px] font-black rounded-lg hover:bg-amber-700 transition-colors whitespace-nowrap"
+            className="px-2.5 py-1 bg-amber-600 text-white text-xs font-black rounded-lg hover:bg-amber-700 transition-colors whitespace-nowrap"
           >
             Add now ▶
           </button>
@@ -741,13 +751,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         </div>
       )}
       {/* Header + alarms */}
-      <div className="surface p-5 border-l-4 border-l-navy">
+      <div className="card p-5 border-l-4 border-l-navy">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-navy"/>
-            <h2 className="text-base font-bold text-gray-900">Fermentation: <span className="text-navy">{activeFlask.flask_label}</span></h2>
+            <h2 className="text-base font-bold text-slate-900">Fermentation: <span className="text-navy">{activeFlask.flask_label}</span></h2>
             {tZero && (
-              <span className="px-2 py-0.5 bg-navy/5 border border-navy/20 rounded text-[10px] font-black text-navy">
+              <span className="px-2 py-0.5 bg-navy/5 border border-navy/20 rounded text-xs font-black text-navy">
                 {endpoint
                   ? `${endpoint.total_hours?.toFixed(1)}hr Total`
                   : `${elapsedHr?.toFixed(1)}hr Elapsed`}
@@ -772,7 +782,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 setEndpointTime('');
               }
               setShowEndpoint(s => !s);
-            }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
+            }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-navy'}`}>
               {showEndpoint ? 'Cancel Endpoint' : 'Declare Endpoint'}
             </button>
           )}
@@ -784,9 +794,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
         {/* Fermentation End Time — always visible once T=0 is set, before endpoint is declared */}
         {false && tZero && !endpoint && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1.5">
-              Fermentation End Time <span className="text-gray-400 font-normal normal-case tracking-normal">(fill this when fermentation stops)</span>
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+              Fermentation End Time <span className="text-slate-400 font-normal normal-case tracking-normal">(fill this when fermentation stops)</span>
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -794,7 +804,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 value={endpointTime}
                 max={toLocalDatetime(new Date().toISOString())}
                 onChange={e => setEndpointTime(e.target.value)}
-                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${endpointTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-gray-200'}`}
+                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${endpointTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200'}`}
               />
               {endpointTime && tZero && (
                 <span className="text-sm font-black text-navy whitespace-nowrap tabular-nums">
@@ -802,13 +812,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </span>
               )}
               {endpointTime && (
-                <button onClick={() => setEndpointTime('')} className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
+                <button onClick={() => setEndpointTime('')} className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
                   <X className="w-3.5 h-3.5"/>
                 </button>
               )}
             </div>
             {endpointTime && (
-              <p className="text-[9px] text-emerald-600 font-bold mt-1">✓ Saved — will auto-fill when you declare endpoint</p>
+              <p className="text-xs text-emerald-600 font-bold mt-1">✓ Saved — will auto-fill when you declare endpoint</p>
             )}
           </div>
         )}
@@ -817,60 +827,60 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ── Reading Log Form ── */}
         {!endpoint && tZero && (
-          <div className="surface overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-gray-900">Log Reading for {activeFlask.flask_label}</h3>
+          <div className="card overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900">Log Reading for {activeFlask.flask_label}</h3>
             </div>
             <form onSubmit={handleLogReading} className="p-5 space-y-3">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">pH Value <span className="text-red-500">★ CCP</span></label>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">pH Value <span className="text-red-500">★ CCP</span></label>
                 <input type="number" step="0.01" min="0" max="14" required value={pH} onChange={e=>setPH(e.target.value)}
-                  className={`w-full px-4 py-3 border-2 rounded-xl text-3xl font-black font-mono tracking-tighter text-gray-800 focus:border-navy outline-none text-center transition-colors ${
+                  className={`w-full px-4 py-3 border-2 rounded-xl text-3xl font-black font-mono tracking-tighter text-slate-800 focus:border-navy outline-none text-center transition-colors ${
                     phInAlarmRange ? 'border-red-400 bg-red-50/30' :
                     phOutOfTarget  ? 'border-amber-400 bg-amber-50/20' :
-                    'border-gray-200'
+                    'border-slate-200'
                   }`} placeholder="0.00"/>
                 {/* 3B: Inline target range hint */}
-                <div className={`mt-1 text-[10px] font-semibold flex items-center gap-1 ${
-                  phInAlarmRange ? 'text-red-600' : phOutOfTarget ? 'text-amber-600' : 'text-gray-400'
+                <div className={`mt-1 text-xs font-semibold flex items-center gap-1 ${
+                  phInAlarmRange ? 'text-red-600' : phOutOfTarget ? 'text-amber-600' : 'text-slate-400'
                 }`}>
                   {phInAlarmRange
-                    ? '⚠ Outside alarm range (3.8–5.5) — reading will be flagged'
+                    ? '⚠ Outside alarm range (3–6.5) — reading will be flagged'
                     : phOutOfTarget
                     ? '◈ Outside target endpoint range (4.2–4.5)'
-                    : 'Target endpoint: 4.2–4.5 · Alarm: <3.8 or >5.5'}
+                    : 'Target endpoint: 4.2–4.5 · Alarm: <3 or >6.5'}
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Temp (°C)</label>
-                  <input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} placeholder="37.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-                  <p className={`text-[9px] mt-0.5 font-semibold ${temp && (parseFloat(temp)<36||parseFloat(temp)>38)?'text-amber-600':'text-gray-400'}`}>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Temp (°C)</label>
+                  <input type="number" step="0.1" value={temp} onChange={e=>setTemp(e.target.value)} placeholder="37.0" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <p className={`text-xs mt-0.5 font-semibold ${temp && (parseFloat(temp)<36||parseFloat(temp)>38)?'text-amber-600':'text-slate-400'}`}>
                     {temp && (parseFloat(temp)<36||parseFloat(temp)>38)?'⚠ Outside 36–38°C':'Range: 36–38°C'}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Brix (°Bx)</label>
-                  <input type="number" step="0.1" value={brix} onChange={e=>setBrix(e.target.value)} placeholder="10.5" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Brix (°Bx)</label>
+                  <input type="number" step="0.1" value={brix} onChange={e=>setBrix(e.target.value)} placeholder="10.5" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">OD (600nm)</label>
-                  <input type="number" step="0.001" value={od} onChange={e=>setOd(e.target.value)} placeholder="0.500" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">OD (600nm)</label>
+                  <input type="number" step="0.001" value={od} onChange={e=>setOd(e.target.value)} placeholder="0.500" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 {/* G-30: Titratable Acidity */}
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">TA (%)</label>
-                  <input type="number" step="0.01" value={ta} onChange={e=>setTa(e.target.value)} placeholder="0.75" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-                  <p className="text-[9px] text-gray-400 mt-0.5">Titratable acidity</p>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">TA (%)</label>
+                  <input type="number" step="0.01" value={ta} onChange={e=>setTa(e.target.value)} placeholder="0.75" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <p className="text-xs text-slate-400 mt-0.5">Titratable acidity</p>
                 </div>
               </div>
               {/* G-82: CO₂ gas lock observation */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">CO₂ / Gas Production</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">CO₂ / Gas Production</label>
                 <div className="flex gap-2">
                   {['Active bubbling','Slow evolution','Trace','None observed'].map(o=>(
                     <button key={o} type="button" onClick={()=>setCo2Observed(co2Observed===o?'':o)}
-                      className={`flex-1 py-1 text-[9px] font-black rounded-lg border transition-all ${co2Observed===o?'bg-navy text-white border-navy':'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>
+                      className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${co2Observed===o?'bg-navy text-white border-navy':'bg-white text-slate-400 border-slate-200 hover:border-slate-400'}`}>
                       {o}
                     </button>
                   ))}
@@ -878,28 +888,28 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
               {/* G-83: Ethanol measurement (for mixed cultures) */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Ethanol (%) <span className="text-gray-300 font-normal normal-case">— mixed cultures</span></label>
-                <input type="number" step="0.01" value={ethanolPct} onChange={e=>setEthanolPct(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Ethanol (%) <span className="text-slate-300 font-normal normal-case">— mixed cultures</span></label>
+                <input type="number" step="0.01" value={ethanolPct} onChange={e=>setEthanolPct(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
               </div>
 
               {/* A-60, A-61: DO + headspace CO₂ */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">DO (%)</label>
-                  <input type="number" step="0.1" min="0" max="100" value={doPercent} onChange={e=>setDoPercent(e.target.value)} placeholder="e.g. 5.0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-                  <p className="text-[9px] text-gray-400 mt-0.5">Dissolved oxygen %</p>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">DO (%)</label>
+                  <input type="number" step="0.1" min="0" max="100" value={doPercent} onChange={e=>setDoPercent(e.target.value)} placeholder="e.g. 5.0" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <p className="text-xs text-slate-400 mt-0.5">Dissolved oxygen %</p>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Headspace CO₂ (kPa)</label>
-                  <input type="number" step="0.1" value={co2Pressure} onChange={e=>setCo2Pressure(e.target.value)} placeholder="e.g. 1.5" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Headspace CO₂ (kPa)</label>
+                  <input type="number" step="0.1" value={co2Pressure} onChange={e=>setCo2Pressure(e.target.value)} placeholder="e.g. 1.5" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
 
               {/* G-31: Incubator equipment picker */}
               {incubators.length > 0 && (
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Incubator Used</label>
-                  <select value={incubatorId} onChange={e=>setIncubatorId(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white focus:border-navy">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Incubator Used</label>
+                  <select value={incubatorId} onChange={e=>setIncubatorId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white focus:border-navy">
                     <option value="">Select incubator...</option>
                     {incubators.map(eq => <option key={eq.id} value={eq.id}>{eq.name} ({eq.status})</option>)}
                   </select>
@@ -907,24 +917,24 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               )}
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Foam</label>
-                  <select value={foam} onChange={e=>setFoam(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Foam</label>
+                  <select value={foam} onChange={e=>setFoam(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {FOAM_OPTS.map(o=><option key={o}>{o}</option>)}
                   </select>
                 </div>
               </div>
 
               {/* 1A: Plate this sample? — Yes / No / Later */}
-              <div className="bg-teal-50/50 border border-teal-100 p-3 rounded-xl space-y-3">
+              <div className="bg-slate-50/50 border border-slate-100 p-3 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-800">Plate this sample?</span>
+                  <span className="text-xs font-bold text-slate-800">Plate this sample?</span>
                   <div className="flex gap-1.5">
-                    {[['yes','Yes','bg-teal-600 text-white border-teal-600'],['no','No','bg-gray-200 text-gray-700 border-gray-200'],['later','Later','bg-amber-100 text-amber-700 border-amber-300']].map(([val, label, activeClass]) => (
+                    {[['yes','Yes','bg-slate-600 text-white border-slate-600'],['no','No','bg-slate-200 text-slate-700 border-slate-200'],['later','Later','bg-amber-100 text-amber-700 border-amber-300']].map(([val, label, activeClass]) => (
                       <button
                         key={val} type="button"
                         onClick={() => setPlatingIntent(platingIntent === val ? null : val)}
-                        className={`px-3 py-1 text-[11px] font-black rounded-lg border transition-all ${
-                          platingIntent === val ? activeClass : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                        className={`px-3 py-1 text-xs font-black rounded-lg border transition-all ${
+                          platingIntent === val ? activeClass : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
                         }`}
                       >
                         {label}
@@ -933,12 +943,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   </div>
                 </div>
                 {platingIntent === 'later' && (
-                  <p className="text-[10px] text-amber-700 font-semibold pl-1">⏱ A reminder banner will appear on your next log entry for this flask.</p>
+                  <p className="text-xs text-amber-700 font-semibold pl-1">⏱ A reminder banner will appear on your next log entry for this flask.</p>
                 )}
                 {platingIntent === 'yes' && (
                   <div className="space-y-3 pt-1">
-                    <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700">
-                      <input type="checkbox" checked={platingDone} onChange={e=>setPlatingDone(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy"/>
+                    <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
+                      <input type="checkbox" checked={platingDone} onChange={e=>setPlatingDone(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-navy focus:ring-navy"/>
                       Plating done now — create incubation activity
                     </label>
                     {platingDone && (
@@ -976,14 +986,14 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 )}
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Visual Appearance</label>
-                <select value={appearance} onChange={e=>setAppearance(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Visual Appearance</label>
+                <select value={appearance} onChange={e=>setAppearance(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                   {APPEARANCE_OPTS.map(o=><option key={o}>{o}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="retro" checked={isRetro} onChange={e=>setIsRetro(e.target.checked)} className="w-4 h-4 rounded border-gray-300"/>
-                <label htmlFor="retro" className="text-xs font-semibold text-gray-600">Retrospective entry</label>
+                <input type="checkbox" id="retro" checked={isRetro} onChange={e=>setIsRetro(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <label htmlFor="retro" className="text-xs font-semibold text-slate-600">Retrospective entry</label>
               </div>
               {isRetro && (
                 <div className="space-y-2 pl-6">
@@ -995,7 +1005,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               )}
               {isIntern && (
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-red-500 mb-1">Supervised By <span className="text-red-500">*Required</span></label>
+                  <label className="block text-xs font-black uppercase tracking-wider text-red-500 mb-1">Supervised By <span className="text-red-500">*Required</span></label>
                   <select
                     value={supervisedBy}
                     onChange={e => {
@@ -1011,7 +1021,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   </select>
                 </div>
               )}
-              <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Notes (optional)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none"/>
+              <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Notes (optional)" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none"/>
               <button type="submit" disabled={saving||!pH} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 disabled:opacity-50">
                 <Plus className="w-3.5 h-3.5"/>{saving ? 'Logging...' : 'Commit Reading'}
               </button>
@@ -1020,12 +1030,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         )}
 
         {/* ── Chart + Reading Table (Shows All Flasks' graph context) ── */}
-        <div className="surface overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Trial Trends</h3>
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900">Trial Trends</h3>
             {batch?.formulation_id && (
               <button onClick={() => setShowComparison(v => !v)}
-                className={`px-2.5 py-1 text-[10px] font-black rounded-lg border transition-all ${showComparison ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-navy'}`}>
+                className={`px-2.5 py-1 text-xs font-black rounded-lg border transition-all ${showComparison ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-navy'}`}>
                 {showComparison ? 'Hide' : 'Compare'} Historical
               </button>
             )}
@@ -1035,21 +1045,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             {/* G-33: Brix trend chart */}
             {readings.some(r => r.brix != null) && (
               <div>
-                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Sugar Consumption (Brix °Bx)</p>
+                <p className="text-xs font-black uppercase text-slate-400 mb-1">Sugar Consumption (Brix °Bx)</p>
                 <BrixChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
               </div>
             )}
             {/* G-87: OD trend chart */}
             {readings.some(r => r.optical_density != null) && (
               <div>
-                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Biomass Growth (OD 600nm)</p>
+                <p className="text-xs font-black uppercase text-slate-400 mb-1">Biomass Growth (OD 600nm)</p>
                 <OdChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
               </div>
             )}
             {/* G-88: Temperature trend chart */}
             {readings.some(r => r.incubator_temp_c != null) && (
               <div>
-                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Temperature Profile (°C)</p>
+                <p className="text-xs font-black uppercase text-slate-400 mb-1">Temperature Profile (°C)</p>
                 <TempChart readings={readings.filter(r => r.flask_id === activeFlask?.id)}/>
               </div>
             )}
@@ -1064,25 +1074,25 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               const violations = phVals.filter(v => v > ucl || v < lcl).length;
               return (
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <p className="text-[9px] font-black uppercase text-slate-600 mb-2">A-66 PAT — Shewhart Control Chart (pH)</p>
+                  <p className="text-xs font-black uppercase text-slate-600 mb-2">A-66 PAT — Shewhart Control Chart (pH)</p>
                   <div className="grid grid-cols-4 gap-2 text-xs text-center">
                     {[['Mean', mean.toFixed(3)],['σ', std.toFixed(3)],['UCL (3σ)', ucl.toFixed(3)],['LCL (3σ)', lcl.toFixed(3)]].map(([l,v])=>(
                       <div key={l} className="p-1.5 bg-white rounded-lg border border-slate-100">
-                        <p className="text-[8px] font-black uppercase text-slate-400">{l}</p>
+                        <p className="text-xs font-black uppercase text-slate-400">{l}</p>
                         <p className="font-black text-slate-800 text-sm tabular-nums">{v}</p>
                       </div>
                     ))}
                   </div>
-                  {violations > 0 && <p className="text-[10px] text-red-700 font-bold mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>{violations} reading(s) outside 3σ control limits — process out of control</p>}
-                  {violations === 0 && flaskPh.length >= 4 && <p className="text-[10px] text-emerald-700 font-semibold mt-1">✓ All readings within 3σ control limits — process in control</p>}
+                  {violations > 0 && <p className="text-xs text-red-700 font-bold mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>{violations} reading(s) outside 3σ control limits — process out of control</p>}
+                  {violations === 0 && flaskPh.length >= 4 && <p className="text-xs text-emerald-700 font-semibold mt-1">✓ All readings within 3σ control limits — process in control</p>}
                 </div>
               );
             })()}
 
             {/* A-33: Inter-batch pH comparison overlay */}
             {showComparison && Object.keys(comparisonData).length > 0 && (
-              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
-                <p className="text-[9px] font-black uppercase text-indigo-700 mb-2">Historical Batch Comparison (same formulation)</p>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <p className="text-xs font-black uppercase text-slate-700 mb-2">Historical Batch Comparison (same formulation)</p>
                 <div className="space-y-1">
                   {Object.entries(comparisonData).map(([batchLabel, pts], idx) => {
                     const colors = ['#7c3aed','#059669','#d97706'];
@@ -1091,13 +1101,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     return (
                       <div key={batchLabel} className="flex items-center gap-2 text-xs">
                         <span style={{ backgroundColor: col }} className="w-8 h-1.5 rounded-full inline-block shrink-0"/>
-                        <span className="font-bold text-gray-700 font-mono">{batchLabel}</span>
-                        <span className="text-gray-500">{pts.length} readings · Last pH: {latestPt?.ph?.toFixed(2)} at T+{latestPt?.elapsed_hours?.toFixed(1)}h</span>
+                        <span className="font-bold text-slate-700 font-mono">{batchLabel}</span>
+                        <span className="text-slate-500">{pts.length} readings · Last pH: {latestPt?.ph?.toFixed(2)} at T+{latestPt?.elapsed_hours?.toFixed(1)}h</span>
                       </div>
                     );
                   })}
                 </div>
-                <p className="text-[9px] text-indigo-400 mt-1">pH data from last 3 released batches overlaid above in grey on chart</p>
+                <p className="text-xs text-slate-400 mt-1">pH data from last 3 released batches overlaid above in grey on chart</p>
               </div>
             )}
 
@@ -1118,12 +1128,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               // A-64: lactic acid productivity ≈ (TA% × 10 g/L) / hours [rough estimate]
               const productivity = totalHrs > 0 ? ((finalTA * 10) / totalHrs).toFixed(3) : null;
               return (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
-                  <p className="text-[9px] font-black uppercase text-rose-800">Acid Production Analytics (from TA% readings)</p>
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
+                  <p className="text-xs font-black uppercase text-red-800">Acid Production Analytics (from TA% readings)</p>
                   <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div><p className="text-rose-600 font-black text-[9px] uppercase">Max ΔTA/Δt</p><p className="font-black text-rose-900">{maxRate.toFixed(4)} %/h</p></div>
-                    <div><p className="text-rose-600 font-black text-[9px] uppercase">Final TA%</p><p className="font-black text-rose-900">{finalTA.toFixed(2)}%</p></div>
-                    {productivity && <div><p className="text-rose-600 font-black text-[9px] uppercase">A-64 Productivity</p><p className="font-black text-rose-900">~{productivity} g/L/h</p><p className="text-[8px] text-rose-400">lactic acid est.</p></div>}
+                    <div><p className="text-red-600 font-black text-xs uppercase">Max ΔTA/Δt</p><p className="font-black text-red-900">{maxRate.toFixed(4)} %/h</p></div>
+                    <div><p className="text-red-600 font-black text-xs uppercase">Final TA%</p><p className="font-black text-red-900">{finalTA.toFixed(2)}%</p></div>
+                    {productivity && <div><p className="text-red-600 font-black text-xs uppercase">A-64 Productivity</p><p className="font-black text-red-900">~{productivity} g/L/h</p><p className="text-xs text-red-400">lactic acid est.</p></div>}
                   </div>
                 </div>
               );
@@ -1132,13 +1142,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             {/* G-34: Sampling plan indicator */}
             {inocu?.sampling_plan_hrs?.length > 0 && (
               <div className="p-3 bg-navy/5 rounded-xl border border-navy/10">
-                <p className="text-[9px] font-black uppercase text-navy/70 mb-1.5">Sampling Schedule</p>
+                <p className="text-xs font-black uppercase text-navy/70 mb-1.5">Sampling Schedule</p>
                 <div className="flex flex-wrap gap-1.5">
                   {inocu.sampling_plan_hrs.map(hr => {
                     const logged = readings.filter(r => r.flask_id === activeFlask?.id)
                       .some(r => Math.abs((r.elapsed_hours || 0) - parseFloat(hr)) <= 1.5);
                     return (
-                      <span key={hr} className={`px-2 py-0.5 text-[9px] font-black rounded border ${logged ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-white text-gray-500 border-gray-200'}`}>
+                      <span key={hr} className={`px-2 py-0.5 text-xs font-black rounded border ${logged ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-white text-slate-500 border-slate-200'}`}>
                         {logged ? '✓' : '○'} T+{hr}h
                       </span>
                     );
@@ -1147,35 +1157,35 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
             )}
           </div>
-          <div className="border-t border-gray-100 overflow-x-auto">
+          <div className="border-t border-slate-100 overflow-x-auto">
             <table className="w-full min-w-[480px] divide-y divide-gray-100">
-              <thead><tr className="bg-gray-50/50">
-                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Flask</th>
-                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">T+hr</th>
-                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">pH</th>
-                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Temp</th>
-                <th className="px-3 py-2 text-left text-[9px] font-bold text-gray-400 uppercase">Brix · OD · Plating</th>
-                {isAdmin && <th className="px-3 py-2 text-[9px] font-bold text-gray-400 uppercase"></th>}
+              <thead><tr className="bg-slate-50/50">
+                <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">Flask</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">T+hr</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">pH</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">Temp</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">Brix · OD · Plating</th>
+                {isAdmin && <th className="px-3 py-2 text-xs font-bold text-slate-400 uppercase"></th>}
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {[...readings].filter(r => r.flask_id === activeFlask.id).reverse().map(r => (
-                  <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-gray-50/30'}>
+                  <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-slate-50/30'}>
                     <td className="px-3 py-2 whitespace-nowrap">
                       <p className="text-xs font-black text-navy">{r.flask_label}</p>
                       <div className="flex gap-1 mt-0.5 flex-wrap">
                         {r.is_retrospective && <span className="px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-[7px] font-bold">RETRO</span>}
-                        {r.edit_reason && <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[7px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
+                        {r.edit_reason && <span className="px-1 py-0.5 bg-slate-100 text-slate-700 rounded text-[7px] font-bold" title={`Edited: ${r.edit_reason}`}>EDITED</span>}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
-                    <td className={`px-3 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-gray-900'}`}>{r.ph}</td>
-                    <td className={`px-3 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-gray-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
+                    <td className="px-3 py-2 text-xs font-semibold text-slate-600 whitespace-nowrap">T+{r.elapsed_hours?.toFixed(1)}h</td>
+                    <td className={`px-3 py-2 text-sm font-black tabular-nums whitespace-nowrap ${r.is_ph_alarm?'text-red-600':'text-slate-900'}`}>{r.ph}</td>
+                    <td className={`px-3 py-2 text-xs font-semibold whitespace-nowrap ${r.is_temp_alarm?'text-amber-600':'text-slate-600'}`}>{r.incubator_temp_c ? `${r.incubator_temp_c}°C` : '—'}</td>
                     <td className="px-3 py-2">
-                      <p className="text-[10px] text-gray-600 font-semibold">
+                      <p className="text-xs text-slate-600 font-semibold">
                         {r.brix ? `${r.brix}°Bx` : '—'} · {r.optical_density ? `OD ${r.optical_density}` : '—'}
                       </p>
                       {platingSummary(r) && (
-                        <p className="text-[9px] text-gray-400 mt-0.5 truncate max-w-[160px]" title={platingSummary(r)}>
+                        <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[160px]" title={platingSummary(r)}>
                           {platingSummary(r)}
                         </p>
                       )}
@@ -1186,7 +1196,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                         {isAdmin ? (
                           <>
                             <button onClick={() => openEdit(r)} title="Edit reading"
-                              className="p-1 rounded hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors">
+                              className="p-1 rounded hover:bg-slate-50 text-slate-500 hover:text-slate-700 transition-colors">
                               <Pencil className="w-3 h-3"/>
                             </button>
                             <button onClick={() => { setDeletingReading(r); setDeleteReason(''); }} title="Delete reading"
@@ -1217,7 +1227,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                     </td>
                   </tr>
                 ))}
-                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-gray-400">{loadingReadings ? 'Loading…' : 'No readings yet.'}</td></tr>}
+                {readings.filter(r => r.flask_id === activeFlask.id).length===0 && <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-center text-xs text-slate-400">{loadingReadings ? 'Loading…' : 'No readings yet.'}</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1226,20 +1236,20 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Endpoint Declaration ── */}
       {!endpoint && showEndpoint && (
-        <div className="surface overflow-hidden border-2 border-navy/20">
-          <div className="px-5 py-4 border-b border-gray-100 bg-navy/5 flex items-center gap-2">
+        <div className="card overflow-hidden border-2 border-navy/20">
+          <div className="px-5 py-4 border-b border-slate-100 bg-navy/5 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-navy"/>
-            <h3 className="text-sm font-bold text-gray-900">Declare Endpoint for {activeFlask.flask_label}</h3>
+            <h3 className="text-sm font-bold text-slate-900">Declare Endpoint for {activeFlask.flask_label}</h3>
           </div>
           <form onSubmit={handleEndpoint} className="p-5 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Final pH</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">Final pH</label>
                 <input type="number" step="0.01" required value={epPh} onChange={e=>setEpPh(e.target.value)}
-                  className={`w-full px-4 py-3 border-2 rounded-xl text-2xl font-black font-mono text-center outline-none ${parseFloat(epPh)<4.2||parseFloat(epPh)>4.5?'border-red-400 text-red-600':'border-gray-200 text-gray-800 focus:border-navy'}`} placeholder="4.30"/>
+                  className={`w-full px-4 py-3 border-2 rounded-xl text-2xl font-black font-mono text-center outline-none ${parseFloat(epPh)<4.2||parseFloat(epPh)>4.5?'border-red-400 text-red-600':'border-slate-200 text-slate-800 focus:border-navy'}`} placeholder="4.30"/>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase mb-1 text-amber-600">
+                <label className="block text-xs font-bold uppercase mb-1 text-amber-600">
                   Fermentation End Time <span className="text-red-500">* Required</span>
                 </label>
                 <input
@@ -1248,13 +1258,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   value={endpointTime}
                   max={toLocalDatetime(new Date().toISOString())}
                   onChange={e => setEndpointTime(e.target.value)}
-                  className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${!endpointTime ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
+                  className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${!endpointTime ? 'border-amber-400 bg-amber-50' : 'border-slate-200'}`}
                 />
                 {tZero && (() => {
                   const t = endpointTime ? new Date(endpointTime) : new Date();
                   const hrs = (t - tZero) / 3600000;
                   return (
-                    <p className="text-[10px] mt-1 font-black text-navy text-center">
+                    <p className="text-xs mt-1 font-black text-navy text-center">
                       Total: {hrs.toFixed(1)} hr
                       {!endpointTime && <span className="text-amber-600"> — enter actual end time above</span>}
                     </p>
@@ -1263,48 +1273,48 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Aroma</label>
-                <select value={aroma} onChange={e=>setAroma(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white">
+              <div><label className="block text-xs font-bold uppercase text-slate-400 mb-1">Aroma</label>
+                <select value={aroma} onChange={e=>setAroma(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white">
                   {['Tangy and clean','Mild','Off-odour detected'].map(o=><option key={o}>{o}</option>)}
                 </select>
               </div>
-              <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Texture</label>
-                <select value={texture} onChange={e=>setTexture(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white">
+              <div><label className="block text-xs font-bold uppercase text-slate-400 mb-1">Texture</label>
+                <select value={texture} onChange={e=>setTexture(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white">
                   {['Normal slurry','Over-separated','Clumped'].map(o=><option key={o}>{o}</option>)}
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Colour Description</label>
-                <input value={colourDesc} onChange={e=>setColourDesc(e.target.value)} placeholder="e.g. Reddish-purple" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none"/>
+              <div><label className="block text-xs font-bold uppercase text-slate-400 mb-1">Colour Description</label>
+                <input value={colourDesc} onChange={e=>setColourDesc(e.target.value)} placeholder="e.g. Reddish-slate" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none"/>
               </div>
               <div className="space-y-2">
-                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gram Stain Result</label>
-                  <select value={gramStain} onChange={e=>setGramStain(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none bg-white">
+                <div><label className="block text-xs font-bold uppercase text-slate-400 mb-1">Gram Stain Result</label>
+                  <select value={gramStain} onChange={e=>setGramStain(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white">
                     {['Gram-positive rods dominant','Mixed','Gram-negative dominant','Not done'].map(o=><option key={o}>{o}</option>)}
                   </select>
                 </div>
                 {/* G-32: Gram stain image URL */}
-                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Gram Stain Photo URL <span className="text-gray-300 font-normal normal-case">(optional)</span></label>
-                  <input type="url" value={gramStainImg} onChange={e=>setGramStainImg(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
+                <div><label className="block text-xs font-bold uppercase text-slate-400 mb-1">Gram Stain Photo URL <span className="text-slate-300 font-normal normal-case">(optional)</span></label>
+                  <input type="url" value={gramStainImg} onChange={e=>setGramStainImg(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[{label:'Sensory Overall',val:sensory,set:setSensory,opts:['PASS','FAIL']}].map(f=>(
-                <div key={f.label}><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{f.label}</label>
+                <div key={f.label}><label className="block text-xs font-bold uppercase text-slate-400 mb-1">{f.label}</label>
                   <div className="flex gap-2">
-                    {f.opts.map(o=><button type="button" key={o} onClick={()=>f.set(o)} className={`flex-1 py-2 text-xs font-black rounded-lg border transition-all ${f.val===o?(o==='PASS'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>{o}</button>)}
+                    {f.opts.map(o=><button type="button" key={o} onClick={()=>f.set(o)} className={`flex-1 py-2 text-xs font-black rounded-lg border transition-all ${f.val===o?(o==='PASS'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>{o}</button>)}
                   </div>
                 </div>
               ))}
             </div>
             {/* G-30: TA% at endpoint */}
-            <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Titratable Acidity at Endpoint (%)</label>
-              <input type="number" step="0.01" value={epTa} onChange={e=>setEpTa(e.target.value)} placeholder="e.g. 0.85" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
-              <p className="text-[9px] text-gray-400 mt-0.5">Typical LAB endpoint: 0.6–1.0% TA</p>
+            <div><label className="block text-xs font-bold uppercase text-slate-400 mb-1">Titratable Acidity at Endpoint (%)</label>
+              <input type="number" step="0.01" value={epTa} onChange={e=>setEpTa(e.target.value)} placeholder="e.g. 0.85" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+              <p className="text-xs text-slate-400 mt-0.5">Typical LAB endpoint: 0.6–1.0% TA</p>
             </div>
-            <textarea value={epNotes} onChange={e=>setEpNotes(e.target.value)} rows={2} placeholder="Endpoint notes..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+            <textarea value={epNotes} onChange={e=>setEpNotes(e.target.value)} rows={2} placeholder="Endpoint notes..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
             <div className="grid grid-cols-1 gap-3">
               <button type="submit" disabled={savingEp} className="py-3 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
                 {savingEp ? 'Saving...' : 'Save Endpoint Record'}
@@ -1316,21 +1326,21 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Feed / pH Correction Log */}
       {tZero && (
-        <div className="surface overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+        <div className="card overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Droplet className="w-4 h-4 text-blue-600"/>
-              <h3 className="text-sm font-bold text-gray-900">Feed / pH Correction Log</h3>
-              {feeds.length > 0 && <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">{feeds.length}</span>}
+              <Droplet className="w-4 h-4 text-slate-600"/>
+              <h3 className="text-sm font-bold text-slate-900">Feed / pH Correction Log</h3>
+              {feeds.length > 0 && <span className="text-xs font-black text-slate-700 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">{feeds.length}</span>}
             </div>
             {!endpoint && (
-              <button onClick={() => setShowFeedForm(v => !v)} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1">
+              <button onClick={() => setShowFeedForm(v => !v)} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-1">
                 <Plus className="w-3 h-3"/>{showFeedForm ? 'Cancel' : 'Log Feed'}
               </button>
             )}
           </div>
           {showFeedForm && (
-            <div className="p-4 border-b border-gray-100 bg-blue-50/30 space-y-3">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/30 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="field-label">Type</label>
@@ -1351,25 +1361,25 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   <input type="number" step="0.01" value={feedPhAfter} onChange={e => setFeedPhAfter(e.target.value)} className="field-input" placeholder="4.1"/>
                 </div>
               </div>
-              <input value={feedReason} onChange={e => setFeedReason(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none" placeholder="Reason / agent used (e.g. 0.5ml 1M NaOH to correct pH overshoot) *"/>
-              <button onClick={handleLogFeed} disabled={savingFeed} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider disabled:opacity-50">
+              <input value={feedReason} onChange={e => setFeedReason(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none" placeholder="Reason / agent used (e.g. 0.5ml 1M NaOH to correct pH overshoot) *"/>
+              <button onClick={handleLogFeed} disabled={savingFeed} className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider disabled:opacity-50">
                 {savingFeed ? 'Logging...' : 'Log Entry'}
               </button>
             </div>
           )}
           {feeds.length === 0 ? (
-            <div className="px-5 py-4 text-xs text-gray-400 font-semibold">No feed / correction entries yet.</div>
+            <div className="px-5 py-4 text-xs text-slate-400 font-semibold">No feed / correction entries yet.</div>
           ) : (
             <div className="divide-y divide-gray-50">
               {feeds.map(f => (
                 <div key={f.id} className="px-5 py-3 flex items-center gap-3 text-xs">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded text-[9px] uppercase">{f.feed_type}</span>
-                  <span className="font-black text-gray-800">{f.volume_ml} ml</span>
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold rounded text-xs uppercase">{f.feed_type}</span>
+                  <span className="font-black text-slate-800">{f.volume_ml} ml</span>
                   {f.ph_before && f.ph_after && (
-                    <span className="text-gray-500 font-semibold">pH {f.ph_before} → {f.ph_after}</span>
+                    <span className="text-slate-500 font-semibold">pH {f.ph_before} → {f.ph_after}</span>
                   )}
-                  <span className="text-gray-500 flex-1 truncate">{f.reason}</span>
-                  <span className="text-gray-400 whitespace-nowrap">{new Date(f.logged_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-slate-500 flex-1 truncate">{f.reason}</span>
+                  <span className="text-slate-400 whitespace-nowrap">{new Date(f.logged_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               ))}
             </div>
@@ -1379,10 +1389,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Advance button (after endpoint declared) */}
       {endpoint && (
-        <div className="surface p-5 flex items-center justify-between gap-4">
+        <div className="card p-5 flex items-center justify-between gap-4">
           <div className="text-sm">
-            <p className="font-bold text-gray-900">Endpoint declared ✓</p>
-            <p className="text-gray-500 text-xs">Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total fermentation</p>
+            <p className="font-bold text-slate-900">Endpoint declared ✓</p>
+            <p className="text-slate-500 text-xs">Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total fermentation</p>
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
@@ -1402,26 +1412,26 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Admin Edit Endpoint Modal */}
       {editingEndpoint && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-amber-700 mb-1 flex items-center gap-2">
               <Pencil className="w-4 h-4"/> Correct Endpoint Record
             </h3>
-            <p className="text-xs text-gray-500 mb-4">Admin correction — update total fermentation hours and final pH stored for this endpoint.</p>
+            <p className="text-xs text-slate-500 mb-4">Admin correction — update total fermentation hours and final pH stored for this endpoint.</p>
             <form onSubmit={handleEndpointEdit} className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Total Fermentation Hours</label>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Total Fermentation Hours</label>
                 <input type="number" step="0.01" min="0" required value={epEditHours} onChange={e => setEpEditHours(e.target.value)}
                   className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm font-semibold outline-none focus:border-amber-500"/>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Final pH</label>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Final pH</label>
                 <input type="number" step="0.01" min="0" max="14" required value={epEditPh} onChange={e => setEpEditPh(e.target.value)}
                   className="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm font-semibold outline-none focus:border-amber-500"/>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setEditingEndpoint(false)}
-                  className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+                  className="flex-1 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
                 <button type="submit" disabled={savingEpEdit}
                   className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 disabled:opacity-50">
                   {savingEpEdit ? 'Saving...' : 'Save Correction'}
@@ -1434,59 +1444,59 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Admin Edit Reading Modal ── */}
       {editingReading && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-md shadow-xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-sm font-bold text-gray-900">Edit Reading — {editingReading.flask_label} T+{editingReading.elapsed_hours?.toFixed(1)}h</h3>
-              <button onClick={() => setEditingReading(null)} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-400"/></button>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">Edit Reading — {editingReading.flask_label} T+{editingReading.elapsed_hours?.toFixed(1)}h</h3>
+              <button onClick={() => setEditingReading(null)} className="p-1 rounded hover:bg-slate-100"><X className="w-4 h-4 text-slate-400"/></button>
             </div>
             <form onSubmit={handleEditSave} className="p-5 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">pH <span className="text-red-500">★ CCP</span></label>
+                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">pH <span className="text-red-500">★ CCP</span></label>
                   <input type="number" step="0.01" min="0" max="14" value={editFields.ph}
                     onChange={e => setEditFields(f => ({...f, ph: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Temp (°C)</label>
+                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Temp (°C)</label>
                   <input type="number" step="0.1" value={editFields.incubator_temp_c}
                     onChange={e => setEditFields(f => ({...f, incubator_temp_c: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Brix (°Bx)</label>
+                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Brix (°Bx)</label>
                   <input type="number" step="0.1" value={editFields.brix}
                     onChange={e => setEditFields(f => ({...f, brix: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">OD (600nm)</label>
+                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">OD (600nm)</label>
                   <input type="number" step="0.001" value={editFields.optical_density}
                     onChange={e => setEditFields(f => ({...f, optical_density: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Foam</label>
+                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Foam</label>
                   <select value={editFields.foam_level} onChange={e => setEditFields(f => ({...f, foam_level: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {FOAM_OPTS.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Visual Appearance</label>
+                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Visual Appearance</label>
                   <select value={editFields.visual_appearance} onChange={e => setEditFields(f => ({...f, visual_appearance: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {APPEARANCE_OPTS.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
               </div>
               {(editingReading.sample_incubation_id || editingReading.plating_result) && (
-                <div className="rounded-lg border border-teal-100 bg-teal-50/40 px-3 py-2">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-teal-700">Plating</p>
-                  <p className="mt-0.5 text-xs text-teal-800">
+                <div className="rounded-lg border border-slate-100 bg-slate-50/40 px-3 py-2">
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-700">Plating</p>
+                  <p className="mt-0.5 text-xs text-slate-800">
                     {editingReading.sample_incubation_id
                       ? 'Linked incubation results are edited in Sample Incubation.'
                       : `Legacy result: ${editingReading.plating_result}`}
@@ -1494,25 +1504,25 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Reading Timestamp</label>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Reading Timestamp</label>
                 <input type="datetime-local" value={editFields.logged_at}
                   onChange={e => setEditFields(f => ({...f, logged_at: e.target.value}))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Notes</label>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Notes</label>
                 <input value={editFields.notes} onChange={e => setEditFields(f => ({...f, notes: e.target.value}))}
-                  placeholder="Notes (optional)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
+                  placeholder="Notes (optional)" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
               </div>
-              <div className="pt-1 border-t border-gray-100">
-                <label className="block text-[10px] font-bold uppercase text-red-500 mb-1">Reason for Edit <span>*Required</span></label>
+              <div className="pt-1 border-t border-slate-100">
+                <label className="block text-xs font-bold uppercase text-red-500 mb-1">Reason for Edit <span>*Required</span></label>
                 <input required value={editReason} onChange={e => setEditReason(e.target.value)}
                   placeholder="Why is this reading being corrected?"
                   className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none focus:border-red-400"/>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setEditingReading(null)}
-                  className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+                  className="flex-1 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
                 <button type="submit" disabled={savingEdit}
                   className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover disabled:opacity-50">
                   {savingEdit ? 'Saving...' : 'Save Changes'}
@@ -1525,24 +1535,24 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Admin Delete Reading Modal ── */}
       {deletingReading && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-red-600 mb-2 flex items-center gap-2">
               <Trash2 className="w-4 h-4"/> Delete Reading
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-slate-600 mb-4">
               Delete <strong>{deletingReading.flask_label}</strong> reading at <strong>T+{deletingReading.elapsed_hours?.toFixed(1)}h</strong> (pH {deletingReading.ph})?
               This cannot be undone but will be logged in the audit trail.
             </p>
             <div className="mb-4">
-              <label className="block text-[10px] font-bold uppercase text-red-500 mb-1">Reason <span>*Required</span></label>
+              <label className="block text-xs font-bold uppercase text-red-500 mb-1">Reason <span>*Required</span></label>
               <input value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
                 placeholder="Why is this reading being deleted?"
                 className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none focus:border-red-400"/>
             </div>
             <div className="flex gap-3">
               <button onClick={() => { setDeletingReading(null); setDeleteReason(''); }}
-                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
+                className="flex-1 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
               <button onClick={handleDeleteConfirm} disabled={savingDelete || !deleteReason.trim()}
                 className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 disabled:opacity-50">
                 {savingDelete ? 'Deleting...' : 'Delete'}
@@ -1554,18 +1564,18 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Out of Range Override Modal */}
       {pendingOOROverride && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-amber-600 mb-2 text-center flex items-center justify-center gap-2">
               <AlertTriangle className="w-5 h-5"/> pH Alert
             </h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">
+            <p className="text-sm text-slate-600 mb-6 text-center">
               Final pH <strong className="text-amber-600">{epPh}</strong> is outside the target range of 4.2–4.5. Confirm and proceed with endpoint declaration anyway?
             </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingOOROverride(false)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
               >
                 Cancel
               </button>

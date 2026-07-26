@@ -13,7 +13,7 @@ export default function Loading() {
         <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-32 rounded-xl" />
       </div>
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
         <Skeleton className="h-80 rounded-xl" />
       </div>
     </div>

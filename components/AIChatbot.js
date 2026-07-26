@@ -225,29 +225,29 @@ export default function AIChatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed bottom-[5.5rem] right-4 left-4 md:right-6 md:left-auto md:bottom-24 md:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col z-[1000] overflow-hidden h-[75vh] md:h-[600px] max-h-[75vh] md:max-h-[70vh]"
+            className="fixed bottom-[5.5rem] right-4 left-4 md:right-6 md:left-auto md:bottom-24 md:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col z-[1000] overflow-hidden h-[75vh] md:h-[600px] max-h-[75vh] md:max-h-[70vh]"
           >
             {/* Header */}
             <div className="bg-[#1F3A5F] p-4 flex justify-between items-center text-white flex-shrink-0">
               <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5 text-teal-400" />
+                <Bot className="w-5 h-5 text-slate-400" />
                 <h3 className="font-bold text-sm">Bubbles</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-300 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                className="text-slate-300 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 text-gray-900">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 text-slate-900">
               {messages.length === 0 && (
-                <div className="text-center text-gray-500 mt-6 px-2">
-                  <Bot className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <div className="text-center text-slate-500 mt-6 px-2">
+                  <Bot className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                   <p className="text-sm font-medium">Hi! I&apos;m your Bubbles.</p>
-                  <p className="text-xs text-gray-400 mt-1 mb-5">Tap a shortcut or type anything below.</p>
+                  <p className="text-xs text-slate-400 mt-1 mb-5">Tap a shortcut or type anything below.</p>
 
                   <div className="grid grid-cols-2 gap-2 text-left">
                     {[
@@ -262,7 +262,7 @@ export default function AIChatbot() {
                         key={action.label}
                         type="button"
                         onClick={() => handleQuickAction(action.msg)}
-                        className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-all shadow-sm active:scale-95"
+                        className="flex items-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-700 transition-all shadow-sm active:scale-95"
                       >
                         <span className="text-base">{action.emoji}</span>
                         {action.label}
@@ -276,10 +276,10 @@ export default function AIChatbot() {
                 const parts = m.parts || [];
                 return (
                   <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-teal-600 text-white' : 'bg-[#1F3A5F] text-teal-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-slate-600 text-white' : 'bg-[#1F3A5F] text-slate-400'}`}>
                       {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                     </div>
-                    <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'}`}>
+                    <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-slate-600 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm'}`}>
                       {parts.map((part, idx) => {
                         if (part.type === 'text' && part.text?.trim()) {
                           return <div key={idx} className="whitespace-pre-wrap">{part.text}</div>;
@@ -287,9 +287,9 @@ export default function AIChatbot() {
                         if (part.type === 'tool-invocation') {
                           const t = part.toolInvocation;
                           return (
-                            <div key={t?.toolCallId || idx} className="mt-2 text-xs bg-gray-50 p-2 rounded border border-gray-200 font-mono">
+                            <div key={t?.toolCallId || idx} className="mt-2 text-xs bg-slate-50 p-2 rounded border border-slate-200 font-mono">
                               {t?.state === 'result' ? (
-                                <div className="flex items-center gap-1 text-teal-700 font-medium">
+                                <div className="flex items-center gap-1 text-slate-700 font-medium">
                                   ✓ {t.toolName}
                                 </div>
                               ) : (
@@ -304,7 +304,7 @@ export default function AIChatbot() {
                       })}
                       {/* Show spinner if this is an empty assistant message while loading */}
                       {m.role === 'assistant' && parts.length === 0 && isLoading && (
-                        <div className="flex items-center gap-2 text-gray-400">
+                        <div className="flex items-center gap-2 text-slate-400">
                           <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
                         </div>
                       )}
@@ -334,14 +334,14 @@ export default function AIChatbot() {
             </div>
 
             {/* Input */}
-            <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0">
+            <div className="p-4 bg-white border-t border-slate-100 flex-shrink-0">
               <form onSubmit={handleFormSubmit} className="flex gap-2 relative">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask me anything..."
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all text-gray-900"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500 transition-all text-slate-900"
                   disabled={isLoading}
                   autoComplete="off"
                 />
@@ -357,7 +357,7 @@ export default function AIChatbot() {
                   <button
                     type="submit"
                     disabled={!input.trim()}
-                    className="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
+                    className="bg-slate-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-sm disabled:opacity-50"
                   >
                     <Send className="w-4 h-4 ml-0.5" />
                   </button>
@@ -370,7 +370,7 @@ export default function AIChatbot() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-teal-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-700 hover:scale-105 transition-all z-[999]"
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-slate-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-700 hover:scale-105 transition-all z-[999]"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>

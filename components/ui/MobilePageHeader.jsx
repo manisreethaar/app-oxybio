@@ -11,7 +11,7 @@ export default function MobilePageHeader({ icon: Icon, title, subtitle, action, 
             )}
             <h1 className="text-2xl font-black text-slate-900 tracking-tight truncate">{title}</h1>
           </div>
-          {subtitle && <p className="text-xs font-semibold text-gray-500 mt-2 leading-relaxed">{subtitle}</p>}
+          {subtitle && <p className="text-xs font-semibold text-slate-500 mt-2 leading-relaxed">{subtitle}</p>}
         </div>
         {action}
       </div>
@@ -20,7 +20,7 @@ export default function MobilePageHeader({ icon: Icon, title, subtitle, action, 
           {stats.slice(0, 3).map(stat => (
             <div key={stat.label} className="mobile-card px-3 py-2">
               <p className="text-lg font-black text-slate-900 leading-none">{stat.value}</p>
-              <p className="text-[9px] font-black uppercase tracking-wider text-gray-400 mt-1">{stat.label}</p>
+              <p className="text-xs font-black uppercase tracking-wider text-slate-400 mt-1">{stat.label}</p>
             </div>
           ))}
         </div>

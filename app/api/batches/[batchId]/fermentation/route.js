@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { notifyAdmins } from '@/utils/serverNotify';
@@ -21,7 +22,7 @@ async function getRequester(supabase) {
 
   const { data: employee } = await supabase
     .from('employees')
-    .select('id, role')
+    .select('id, role, custom_permissions')
     .eq('email', user.email)
     .maybeSingle();
 
@@ -207,7 +208,7 @@ export async function POST(request, { params }) {
       if (saved?.is_ph_alarm || saved?.is_temp_alarm) {
         const batchLabel = data.flask_label ? `${batchId} (${data.flask_label})` : batchId;
         const msgs = [];
-        if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3.8–5.5)`);
+        if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3–6.5)`);
         if (saved.is_temp_alarm) msgs.push(`Temp ${data.incubator_temp_c}°C (outside 36–38°C)`);
 
         await notifyAdmins(
@@ -333,7 +334,7 @@ export async function PATCH(request, { params }) {
     const requester = await getRequester(supabase);
     if (requester.error) return requester.error;
 
-    if (!can(requester.employee.role, 'batches', 'release') && !isMasterAdmin(requester.user.email)) {
+    if (!can(requester.employee.role, 'batches', 'release', requester.employee.custom_permissions) && !isMasterAdmin(requester.user.email)) {
       return NextResponse.json({ error: 'Only admin, CEO, or CTO can edit fermentation readings.' }, { status: 403 });
     }
 
@@ -380,7 +381,7 @@ export async function DELETE(request, { params }) {
     const requester = await getRequester(supabase);
     if (requester.error) return requester.error;
 
-    if (!can(requester.employee.role, 'batches', 'release') && !isMasterAdmin(requester.user.email)) {
+    if (!can(requester.employee.role, 'batches', 'release', requester.employee.custom_permissions) && !isMasterAdmin(requester.user.email)) {
       return NextResponse.json({ error: 'Only admin, CEO, or CTO can delete fermentation readings.' }, { status: 403 });
     }
 

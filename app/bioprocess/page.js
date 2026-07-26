@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
@@ -14,14 +15,14 @@ import {
 import CreatorBadge from '@/components/ui/CreatorBadge';
 
 const TYPE_META = {
-  pbd: { label: 'Plackett-Burman Design', shortLabel: 'PBD', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: BarChart2, runs: 12, desc: 'Screen up to 11 factors in 12 runs to identify significant variables' },
+  pbd: { label: 'Plackett-Burman Design', shortLabel: 'PBD', color: 'bg-slate-50 text-slate-700 border-slate-200', icon: BarChart2, runs: 12, desc: 'Screen up to 11 factors in 12 runs to identify significant variables' },
   rsm: { label: 'Response Surface Methodology', shortLabel: 'RSM', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: Activity, runs: 15, desc: 'Box-Behnken design (3 factors, 15 runs) to find optimal conditions' },
   kinetics: { label: 'Fermentation Kinetics', shortLabel: 'Kinetics', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: Beaker, runs: null, desc: 'Fit Monod, Michaelis-Menten, or Luedeking-Piret kinetic models' },
 };
 
 const STATUS_META = {
   setup:      { label: 'Setup',      color: 'bg-slate-100 text-slate-600',    icon: Settings },
-  collecting: { label: 'Collecting', color: 'bg-blue-50 text-blue-700',       icon: Clock },
+  collecting: { label: 'Collecting', color: 'bg-slate-50 text-slate-700',       icon: Clock },
   complete:   { label: 'Complete',   color: 'bg-emerald-50 text-emerald-700', icon: CheckCircle },
 };
 
@@ -31,6 +32,7 @@ const createSchema = z.object({
   type:              z.enum(['pbd', 'rsm', 'kinetics']),
   response_variable: z.string().min(1, 'Response variable required'),
   response_unit:     z.string().optional(),
+  sop_id:            z.string().optional(),
 });
 
 export default function BioprocessPage() {
@@ -40,6 +42,7 @@ export default function BioprocessPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [experiments, setExperiments] = useState([]);
+  const [sops, setSops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
@@ -48,14 +51,19 @@ export default function BioprocessPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm({
     resolver: zodResolver(createSchema),
-    defaultValues: { title: '', description: '', type: 'pbd', response_variable: 'OD600 at 24h', response_unit: '' },
+    defaultValues: { title: '', description: '', type: 'pbd', response_variable: 'OD600 at 24h', response_unit: '', sop_id: '' },
   });
   const watchedType = watch('type');
+
+  useEffect(() => {
+    supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title')
+      .then(({ data }) => setSops(data || []));
+  }, [supabase]);
 
   const fetchExperiments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/bioprocess');
+      const res = await withTimeout(fetch('/api/bioprocess'), 20000, 'Bioprocess load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setExperiments(json.data || []);
@@ -73,7 +81,7 @@ export default function BioprocessPage() {
       const res = await fetch('/api/bioprocess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, sop_id: data.sop_id || null }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -122,7 +130,7 @@ export default function BioprocessPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Bioprocess Lab</h1>
-          <p className="text-sm text-gray-500 mt-1">PBD screening · RSM optimisation · Fermentation kinetics</p>
+          <p className="text-sm text-slate-500 mt-1">PBD screening · RSM optimisation · Fermentation kinetics</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -138,7 +146,7 @@ export default function BioprocessPage() {
           <button
             key={v}
             onClick={() => setTypeFilter(v)}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${typeFilter === v ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${typeFilter === v ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
           >
             {l}
           </button>
@@ -147,15 +155,15 @@ export default function BioprocessPage() {
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Search experiments, response, creator..."
-            className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy"
+            className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy"
           />
         </div>
-        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 outline-none">
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
           <option value="title">Title A-Z</option>
@@ -169,10 +177,10 @@ export default function BioprocessPage() {
           <Loader2 className="w-7 h-7 text-navy animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <FlaskConical className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-semibold">{experiments.length === 0 ? 'No experiments yet' : 'No matching experiments'}</p>
-          <p className="text-sm text-gray-400 mt-1">{experiments.length === 0 ? 'Create your first bioprocess experiment to get started' : 'Adjust search, type, or sort controls'}</p>
+        <div className="text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <FlaskConical className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 font-semibold">{experiments.length === 0 ? 'No experiments yet' : 'No matching experiments'}</p>
+          <p className="text-sm text-slate-400 mt-1">{experiments.length === 0 ? 'Create your first bioprocess experiment to get started' : 'Adjust search, type, or sort controls'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -185,7 +193,7 @@ export default function BioprocessPage() {
               <button
                 key={exp.id}
                 onClick={() => router.push(`/bioprocess/${exp.id}`)}
-                className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all p-5 group"
+                className="text-left bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-100 transition-all p-5 group"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${tm.color}`}>
@@ -197,18 +205,18 @@ export default function BioprocessPage() {
                     {sm.label}
                   </div>
                 </div>
-                <h3 className="font-bold text-gray-900 text-sm mb-1 group-hover:text-navy transition-colors line-clamp-2">{exp.title}</h3>
-                {exp.description && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{exp.description}</p>}
-                <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
+                <h3 className="font-bold text-slate-900 text-sm mb-1 group-hover:text-navy transition-colors line-clamp-2">{exp.title}</h3>
+                {exp.description && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{exp.description}</p>}
+                <div className="flex items-center justify-between text-xs text-slate-400 mt-3">
                   <span>{exp.response_variable}</span>
                   <span className="flex items-center gap-1 text-navy font-semibold">
                     Open <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
                 {exp.creator && (
-                  <div className="flex items-center gap-1.5 mt-2 border-t border-gray-50 pt-2">
+                  <div className="flex items-center gap-1.5 mt-2 border-t border-slate-50 pt-2">
                     <CreatorBadge initials={exp.creator.initials} fullName={exp.creator.full_name} />
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-xs text-slate-400">
                       {exp.creator.full_name} · {new Date(exp.created_at).toLocaleDateString('en-IN')}
                     </p>
                   </div>
@@ -221,60 +229,69 @@ export default function BioprocessPage() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-slate-50/10 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-lg font-black text-gray-900">New Experiment</h2>
-              <button onClick={() => setShowCreate(false)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
-                <X className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-lg font-black text-slate-900">New Experiment</h2>
+              <button onClick={() => setShowCreate(false)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
+                <X className="w-4 h-4 text-slate-600" />
               </button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
               {/* Type selector */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Experiment Type</label>
+                <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">Experiment Type</label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {Object.entries(TYPE_META).map(([v, m]) => {
                     const Icon = m.icon;
                     return (
-                      <label key={v} className={`cursor-pointer rounded-xl border-2 p-3 transition-all ${watchedType === v ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <label key={v} className={`cursor-pointer rounded-xl border-2 p-3 transition-all ${watchedType === v ? 'border-navy bg-navy/5' : 'border-slate-200 hover:border-slate-300'}`}>
                         <input type="radio" value={v} {...register('type')} className="sr-only" />
-                        <Icon className={`w-5 h-5 mb-1.5 ${watchedType === v ? 'text-navy' : 'text-gray-400'}`} />
-                        <div className={`text-xs font-bold ${watchedType === v ? 'text-navy' : 'text-gray-600'}`}>{m.shortLabel}</div>
+                        <Icon className={`w-5 h-5 mb-1.5 ${watchedType === v ? 'text-navy' : 'text-slate-400'}`} />
+                        <div className={`text-xs font-bold ${watchedType === v ? 'text-navy' : 'text-slate-600'}`}>{m.shortLabel}</div>
                       </label>
                     );
                   })}
                 </div>
                 {watchedType && (
-                  <p className="text-xs text-gray-500 mt-2 ml-1">{TYPE_META[watchedType].desc}</p>
+                  <p className="text-xs text-slate-500 mt-2 ml-1">{TYPE_META[watchedType].desc}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Experiment Title</label>
-                <input {...register('title')} placeholder="e.g. LAB Media Optimisation Run 1" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Experiment Title</label>
+                <input {...register('title')} placeholder="e.g. LAB Media Optimisation Run 1" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
                 {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Description (optional)</label>
-                <textarea {...register('description')} rows={2} placeholder="Brief objective or notes" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy resize-none" />
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Description (optional)</label>
+                <textarea {...register('description')} rows={2} placeholder="Brief objective or notes" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy resize-none" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Response Variable</label>
-                  <input {...register('response_variable')} placeholder="OD600 at 24h" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Response Variable</label>
+                  <input {...register('response_variable')} placeholder="OD600 at 24h" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
                   {errors.response_variable && <p className="text-xs text-red-500 mt-1">{errors.response_variable.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Unit</label>
-                  <input {...register('response_unit')} placeholder="AU, g/L, mM/min…" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Unit</label>
+                  <input {...register('response_unit')} placeholder="AU, g/L, mM/min…" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy" />
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Requires SOP (optional)</label>
+                <select {...register('sop_id')} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy">
+                  <option value="">No SOP required</option>
+                  {sops.map(s => <option key={s.id} value={s.id}>{s.sop_id ? `${s.sop_id} — ` : ''}{s.title}</option>)}
+                </select>
+                <p className="text-xs text-slate-400 mt-1">Data entry is blocked until the performer has e-signed this SOP.</p>
+              </div>
+
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="flex-1 py-2.5 bg-navy text-white rounded-xl text-sm font-bold hover:bg-navy/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   Create

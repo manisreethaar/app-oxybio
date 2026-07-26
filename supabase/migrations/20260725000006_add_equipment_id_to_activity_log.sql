@@ -1,0 +1,2 @@
+ALTER TABLE activity_log
+ADD COLUMN IF NOT EXISTS equipment_id UUID REFERENCES equipment(id) ON DELETE SET NULL;

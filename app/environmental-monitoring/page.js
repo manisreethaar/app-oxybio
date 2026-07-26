@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Wind, Plus, AlertTriangle, CheckCircle2, X, MapPin, BarChart2, Loader2 } from 'lucide-react';
@@ -15,7 +16,7 @@ const RESULT_STYLE = {
   Pass:    'bg-emerald-50 text-emerald-700 border-emerald-200',
   Alert:   'bg-amber-50 text-amber-700 border-amber-200',
   Action:  'bg-red-50 text-red-700 border-red-200',
-  Pending: 'bg-gray-100 text-gray-500 border-gray-200',
+  Pending: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 export default function EnvironmentalMonitoringPage() {
@@ -53,10 +54,10 @@ export default function EnvironmentalMonitoringPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [sRes, lRes] = await Promise.all([
+      const [sRes, lRes] = await withTimeout(Promise.all([
         fetch('/api/environmental-monitoring?view=samples').then(r => r.json()),
         fetch('/api/environmental-monitoring?view=locations').then(r => r.json()),
-      ]);
+      ]), 20000, 'Environmental monitoring load timed out');
       if (sRes.success) setSamples(sRes.data || []);
       if (lRes.success) setLocations(lRes.data || []);
     } catch { /* silent */ }
@@ -125,7 +126,7 @@ export default function EnvironmentalMonitoringPage() {
   const alertCount  = last30.filter(s => s.result === 'Alert').length;
   const passCount   = last30.filter(s => s.result === 'Pass').length;
 
-  if (authLoading || loading) return <div className="page-container flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-gray-400"/></div>;
+  if (authLoading || loading) return <div className="page-container flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-slate-400"/></div>;
 
   return (
     <div className="page-container space-y-6">
@@ -133,12 +134,12 @@ export default function EnvironmentalMonitoringPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Environmental Monitoring</h1>
-          <p className="text-xs text-gray-500 mt-0.5">EMP — Scheduled microbial sampling of production environment</p>
+          <p className="text-xs text-slate-500 mt-0.5">EMP — Scheduled microbial sampling of production environment</p>
         </div>
         <div className="flex gap-2">
           {isAdmin && (
             <button onClick={() => { setShowLocForm(v => !v); setShowSampleForm(false); }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
               <MapPin className="w-3.5 h-3.5"/>Manage Locations
             </button>
           )}
@@ -152,22 +153,22 @@ export default function EnvironmentalMonitoringPage() {
       {/* 30-day summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Samples (30d)', value: last30.length, color: 'text-gray-800', bg: 'bg-gray-50' },
+          { label: 'Samples (30d)', value: last30.length, color: 'text-slate-800', bg: 'bg-slate-50' },
           { label: 'Pass',          value: passCount,     color: 'text-emerald-700', bg: 'bg-emerald-50' },
           { label: 'Alert Limit',   value: alertCount,    color: 'text-amber-700',   bg: 'bg-amber-50' },
           { label: 'Action Limit',  value: actionCount,   color: 'text-red-700',     bg: 'bg-red-50' },
         ].map(s => (
-          <div key={s.label} className={`surface p-4 ${s.bg} text-center`}>
+          <div key={s.label} className={`card p-4 ${s.bg} text-center`}>
             <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
-            <p className="text-xs font-bold text-gray-500 uppercase mt-1">{s.label}</p>
+            <p className="text-xs font-bold text-slate-500 uppercase mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Log Sample Form */}
       {showSampleForm && (
-        <div className="surface p-5 border-l-4 border-l-teal-500 space-y-4">
-          <h3 className="text-sm font-black text-gray-900 flex items-center gap-2"><Wind className="w-4 h-4 text-teal-600"/>Log EMP Sample</h3>
+        <div className="card p-5 border-l-4 border-l-slate-500 space-y-4">
+          <h3 className="text-sm font-black text-slate-900 flex items-center gap-2"><Wind className="w-4 h-4 text-slate-600"/>Log EMP Sample</h3>
           <form onSubmit={handleSubmitSample} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -214,12 +215,12 @@ export default function EnvironmentalMonitoringPage() {
               if (loc.alert_limit_cfu && count >= loc.alert_limit_cfu) return <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800">⚠ Alert limit reached ({count} ≥ {loc.alert_limit_cfu} CFU) — investigate and increase monitoring frequency</div>;
               return <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/>Within acceptable limits</div>;
             })()}
-            <textarea value={sNotes} onChange={e => setSNotes(e.target.value)} rows={2} placeholder="Observations (morphology, colour, contamination notes)..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+            <textarea value={sNotes} onChange={e => setSNotes(e.target.value)} rows={2} placeholder="Observations (morphology, colour, contamination notes)..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
             <div className="flex gap-3">
-              <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+              <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
                 {submitting ? 'Logging...' : 'Save EMP Sample'}
               </button>
-              <button type="button" onClick={() => setShowSampleForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs">Cancel</button>
+              <button type="button" onClick={() => setShowSampleForm(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs">Cancel</button>
             </div>
           </form>
         </div>
@@ -227,8 +228,8 @@ export default function EnvironmentalMonitoringPage() {
 
       {/* Add Location Form */}
       {showLocForm && isAdmin && (
-        <div className="surface p-5 border-l-4 border-l-indigo-500 space-y-4">
-          <h3 className="text-sm font-black text-gray-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-indigo-600"/>Add Sampling Location</h3>
+        <div className="card p-5 border-l-4 border-l-indigo-500 space-y-4">
+          <h3 className="text-sm font-black text-slate-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-600"/>Add Sampling Location</h3>
           <form onSubmit={handleSubmitLocation} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="field-label">Location Name *</label><input value={lName} onChange={e => setLName(e.target.value)} className="field-input" placeholder="e.g. LAF-01 Left Corner" required/></div>
             <div><label className="field-label">Area *</label><select value={lArea} onChange={e => setLArea(e.target.value)} className="field-input bg-white">{AREAS.map(a => <option key={a}>{a}</option>)}</select></div>
@@ -238,8 +239,8 @@ export default function EnvironmentalMonitoringPage() {
             <div><label className="field-label">Alert Limit (CFU)</label><input type="number" value={lAlert} onChange={e => setLAlert(e.target.value)} className="field-input" placeholder="e.g. 50"/></div>
             <div><label className="field-label">Action Limit (CFU)</label><input type="number" value={lAction} onChange={e => setLAction(e.target.value)} className="field-input" placeholder="e.g. 200"/></div>
             <div className="sm:col-span-2 flex gap-3">
-              <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">{submitting ? 'Saving...' : 'Add Location'}</button>
-              <button type="button" onClick={() => setShowLocForm(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs">Cancel</button>
+              <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">{submitting ? 'Saving...' : 'Add Location'}</button>
+              <button type="button" onClick={() => setShowLocForm(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs">Cancel</button>
             </div>
           </form>
         </div>
@@ -247,15 +248,15 @@ export default function EnvironmentalMonitoringPage() {
 
       {/* Locations summary */}
       {locations.length > 0 && (
-        <div className="surface p-4">
-          <h3 className="text-xs font-black text-gray-600 uppercase tracking-wider mb-3">Registered Sampling Locations ({locations.length})</h3>
+        <div className="card p-4">
+          <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3">Registered Sampling Locations ({locations.length})</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {locations.map(l => (
-              <div key={l.id} className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs">
-                <p className="font-black text-gray-900">{l.name} {l.location_code && <span className="text-gray-400 font-mono">[{l.location_code}]</span>}</p>
-                <p className="text-gray-500 font-semibold">{l.area} · {l.sampling_method} · {l.frequency}</p>
+              <div key={l.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <p className="font-black text-slate-900">{l.name} {l.location_code && <span className="text-slate-400 font-mono">[{l.location_code}]</span>}</p>
+                <p className="text-slate-500 font-semibold">{l.area} · {l.sampling_method} · {l.frequency}</p>
                 {(l.alert_limit_cfu || l.action_limit_cfu) && (
-                  <p className="text-[10px] text-gray-400 mt-0.5">Alert: {l.alert_limit_cfu || '—'} · Action: {l.action_limit_cfu || '—'} CFU</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Alert: {l.alert_limit_cfu || '—'} · Action: {l.action_limit_cfu || '—'} CFU</p>
                 )}
               </div>
             ))}
@@ -264,13 +265,13 @@ export default function EnvironmentalMonitoringPage() {
       )}
 
       {/* Sample log */}
-      <div className="surface overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-          <h3 className="text-sm font-black text-gray-900">Sample Log</h3>
-          <span className="text-xs text-gray-400 font-semibold">{samples.length} total records</span>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <h3 className="text-sm font-black text-slate-900">Sample Log</h3>
+          <span className="text-xs text-slate-400 font-semibold">{samples.length} total records</span>
         </div>
         {samples.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">
+          <div className="p-12 text-center text-slate-400">
             <Wind className="w-10 h-10 mx-auto mb-3 opacity-30"/>
             <p className="font-semibold text-sm">No EMP samples logged yet.</p>
             <p className="text-xs mt-1">Add sampling locations and log your first environmental sample.</p>
@@ -278,23 +279,23 @@ export default function EnvironmentalMonitoringPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-xs">
-              <thead><tr className="bg-gray-50">
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Location</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Method</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Date</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">CFU</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">Result</th>
-                <th className="px-4 py-2 text-left font-black text-gray-400 uppercase text-[9px]">By</th>
+              <thead><tr className="bg-slate-50">
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Location</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Method</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Date</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">CFU</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">Result</th>
+                <th className="px-4 py-2 text-left font-black text-slate-400 uppercase text-xs">By</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {samples.map(s => (
-                  <tr key={s.id} className={s.result === 'Action' ? 'bg-red-50' : s.result === 'Alert' ? 'bg-amber-50/40' : 'hover:bg-gray-50/30'}>
-                    <td className="px-4 py-2.5 font-semibold text-gray-800">{s.emp_sampling_locations?.name || '—'}<br/><span className="text-[10px] text-gray-400">{s.emp_sampling_locations?.area}</span></td>
-                    <td className="px-4 py-2.5 text-gray-600">{s.emp_sampling_locations?.sampling_method || '—'}</td>
-                    <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{new Date(s.sampled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                    <td className="px-4 py-2.5 font-black text-gray-800">{s.colony_count ?? <span className="text-gray-300 font-semibold">Pending</span>}</td>
+                  <tr key={s.id} className={s.result === 'Action' ? 'bg-red-50' : s.result === 'Alert' ? 'bg-amber-50/40' : 'hover:bg-slate-50/30'}>
+                    <td className="px-4 py-2.5 font-semibold text-slate-800">{s.emp_sampling_locations?.name || '—'}<br/><span className="text-xs text-slate-400">{s.emp_sampling_locations?.area}</span></td>
+                    <td className="px-4 py-2.5 text-slate-600">{s.emp_sampling_locations?.sampling_method || '—'}</td>
+                    <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap">{new Date(s.sampled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                    <td className="px-4 py-2.5 font-black text-slate-800">{s.colony_count ?? <span className="text-slate-300 font-semibold">Pending</span>}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase ${RESULT_STYLE[s.result] || RESULT_STYLE.Pending}`}>{s.result}</span>
+                      <span className={`px-2 py-0.5 rounded border text-xs font-black uppercase ${RESULT_STYLE[s.result] || RESULT_STYLE.Pending}`}>{s.result}</span>
                     </td>
                     <td className="px-4 py-2.5">
                       {s.sampler && <CreatorBadge initials={s.sampler.initials} fullName={s.sampler.full_name} size="sm"/>}

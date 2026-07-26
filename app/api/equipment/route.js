@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -7,6 +8,7 @@ const equipmentSchema = z.object({
   name: z.string().min(1, "Name is required"),
   model: z.string().optional(),
   serial_number: z.string().optional(),
+  requires_calibration: z.boolean().default(false),
   calibration_due_date: z.string().optional().or(z.literal('')),
   status: z.enum(['Operational', 'Out of Service', 'Under Maintenance']).default('Operational'),
   iq_doc_url: z.string().optional().or(z.literal('')),
@@ -35,7 +37,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { error: accessError } = await requireAccess(supabase, 'equipment', 'create');
+    const { error: accessError, employee: emp } = await requireAccess(supabase, 'equipment', 'create');
     if (accessError) return accessError;
 
     const body = await request.json();
@@ -45,11 +47,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { name, model, serial_number, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = parsed.data;
+    const { name, model, serial_number, requires_calibration, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = parsed.data;
 
     const { data, error } = await supabase
       .from('equipment')
-      .insert({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
+      .insert({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null, registered_by: emp?.id || null })
       .select()
       .single();
 
@@ -67,7 +69,7 @@ export async function PUT(request) {
     if (accessError) return accessError;
 
     const body = await request.json();
-    const { id, name, model, serial_number, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = body;
+    const { id, name, model, serial_number, requires_calibration, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = body;
 
     if (!id || !name) {
       return NextResponse.json({ error: 'Validation failed: ID and Name required' }, { status: 400 });
@@ -75,7 +77,7 @@ export async function PUT(request) {
 
     const { data, error } = await supabase
       .from('equipment')
-      .update({ name, model, serial_number, calibration_due_date: calibration_due_date || null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
+      .update({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
       .eq('id', id)
       .select()
       .single();
