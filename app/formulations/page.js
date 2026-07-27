@@ -139,15 +139,43 @@ export default function FormulationsPage() {
   const fetchFormulations = async () => {
     setLoading(true);
     try {
-      const { data, error } = await withTimeout(supabase
+      const { data, error } = await supabase
         .from('formulations')
-        .select('*, approver:employees!formulations_approved_by_fkey(full_name), creator:employees!formulations_created_by_fkey(id, full_name, initials)')
+        .select('*')
         .neq('status', 'Archived')
         .is('archived_at', null)
-        .order('created_at', { ascending: false }), 20000, 'Formulations load timed out');
-      if (!error) setFormulations(data || []);
-      if (!error && data?.length > 0) {
-        const ids = data.map(f => f.id);
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      let fetched = data || [];
+      if (fetched.length > 0) {
+        const empIds = new Set();
+        fetched.forEach(f => {
+          if (f.created_by) empIds.add(f.created_by);
+          if (f.approved_by) empIds.add(f.approved_by);
+        });
+
+        if (empIds.size > 0) {
+          const { data: emps } = await supabase
+            .from('employees')
+            .select('id, full_name, initials')
+            .in('id', Array.from(empIds));
+            
+          const empMap = {};
+          (emps || []).forEach(e => { empMap[e.id] = e; });
+          
+          fetched = fetched.map(f => ({
+            ...f,
+            creator: f.created_by ? empMap[f.created_by] : null,
+            approver: f.approved_by ? empMap[f.approved_by] : null
+          }));
+        }
+      }
+      
+      setFormulations(fetched);
+      if (fetched.length > 0) {
+        const ids = fetched.map(f => f.id);
         const { data: batchData } = await supabase
           .from('batches')
           .select('formulation_id')
