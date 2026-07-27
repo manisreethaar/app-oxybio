@@ -47,6 +47,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
   const [viewMode, setViewMode] = useState('table');
+  const [inlineContext, setInlineContext] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('inventory_view_mode');
@@ -466,15 +467,24 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newItem)
       });
-      if (res.ok) {
-        setIsModalOpen(false);
+      const json = await res.json();
+      if (res.ok && json.success) {
         setNewItem({ 
           name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '', 
           storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false, 
           coa_required: false, allergen: false, organic_certified: '', item_code: '' 
         });
-        fetchData(0, false);
-      } else { toast.error((await res.json()).error || 'Failed.'); }
+        await fetchData(0, false);
+        if (inlineContext === 'stock') {
+          if (json.data?.id) setNewStock(prev => ({ ...prev, item_id: json.data.id }));
+          setModalType('stock');
+          setInlineContext(null);
+          toast.success("Item registered! Continuing stock receipt...");
+        } else {
+          setIsModalOpen(false);
+          toast.success("Item registered successfully.");
+        }
+      } else { toast.error(json.error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
 
@@ -502,6 +512,37 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       } else { toast.error((await res.json()).error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
+
+  // Handle Smart Receive Flow Triggers
+  useEffect(() => {
+    if (newStock.item_id === 'CREATE_NEW_ITEM') {
+      setNewStock(prev => ({ ...prev, item_id: '' }));
+      setInlineContext('stock');
+      setModalType('items');
+    }
+    if (newStock.vendor_id === 'CREATE_NEW_VENDOR') {
+      setNewStock(prev => ({ ...prev, vendor_id: '' }));
+      setInlineContext('stock');
+      setModalType('vendors');
+    }
+  }, [newStock.item_id, newStock.vendor_id]);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setNewStock({
+        item_id: '', vendor_id: '', supplier_batch_number: '', received_quantity: '', expiry_date: '', location: '',
+        purchase_order_number: '', invoice_ref: '', condition_on_arrival: 'Good Condition', notes: '', sds_url: '', coa_url: ''
+      });
+      setNewIssue({ stock_id: '', quantity_issued: '', purpose: 'Production Use', notes: '', batch_reference: '' });
+      setNewItem({
+        name: '', category: 'Raw Material', sub_category: '', unit: '', min_stock_level: '',
+        storage_condition: 'Room Temperature', preferred_supplier: '', hazardous: false, cold_chain_required: false,
+        coa_required: false, allergen: false, organic_certified: '', item_code: ''
+      });
+      setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
+      setInlineContext(null);
+    }
+  }, [isModalOpen]);
 
   const handleUpdateVendor = async (e) => {
     e.preventDefault();
@@ -557,10 +598,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        setIsModalOpen(false);
         setNewVendor({ name: '', contact_person: '', email: '', phone: '', address: '', payment_terms: '', lead_time: '', status: 'Approved' });
-        toast.success("Vendor registered successfully.");
-        fetchData(0, false);
+        await fetchData(0, false);
+        if (inlineContext === 'stock') {
+          if (json.data?.id) setNewStock(prev => ({ ...prev, vendor_id: json.data.id }));
+          setModalType('stock');
+          setInlineContext(null);
+          toast.success("Vendor added! Continuing stock receipt...");
+        } else {
+          setIsModalOpen(false);
+          toast.success("Vendor registered successfully.");
+        }
       } else { toast.error(json.error || 'Failed.'); }
     } catch (err) { toast.error("Network Error"); } finally { setIsSubmitting(false); }
   };
@@ -1660,7 +1708,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             ) : (
               /* Item / Vendor forms */
               <ItemVendorModal
-                modalType={modalType} vendors={vendors}
+                modalType={modalType} vendors={vendors} inlineContext={inlineContext}
                 newItem={newItem} setNewItem={setNewItem}
                 newVendor={newVendor} setNewVendor={setNewVendor}
                 isSubmitting={isSubmitting}

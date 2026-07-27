@@ -207,7 +207,7 @@ export default function NewGrowthStudyPage() {
             <div>
               <label className={LabelCls}>Isolate Source</label>
               <div className="flex gap-3 mb-3">
-                {[['strain', 'Cell Bank Strain'], ['prep', 'Preparation / Vial']].map(([v, l]) => (
+                {[['strain', 'Cell Bank Strain'], ['prep', 'Preparation / Vial'], ['none', 'None (Media Control)']].map(([v, l]) => (
                   <button key={v} type="button" onClick={() => setField('isolate_source', v)}
                     className={`flex-1 py-2 rounded-xl border text-xs font-black transition-colors ${form.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
                   >{l}</button>
@@ -218,7 +218,7 @@ export default function NewGrowthStudyPage() {
                   <option value="">Select strain…</option>
                   {strains.map(s => <option key={s.id} value={s.id}>{s.name}{s.accession_number ? ` (${s.accession_number})` : ''}</option>)}
                 </select>
-              ) : (
+              ) : form.isolate_source === 'prep' ? (
                 <>
                   <select className={InputCls} value={form.cell_bank_preparation_id} onChange={e => { setField('cell_bank_preparation_id', e.target.value); setField('vial_id', ''); }}>
                     <option value="">Select preparation…</option>
@@ -245,6 +245,10 @@ export default function NewGrowthStudyPage() {
                     </div>
                   )}
                 </>
+              ) : (
+                <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium">
+                  This study will not be associated with any microbial isolate. Use this for uninoculated media controls, sterility checks, and validation.
+                </div>
               )}
             </div>
             <div>

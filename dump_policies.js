@@ -11,7 +11,7 @@ async function check() {
   const { data, error } = await supabase.rpc('exec_sql', { query: `
     SELECT tablename, policyname, roles, cmd, qual, with_check 
     FROM pg_policies 
-    WHERE tablename LIKE 'cell_bank_%';
+    WHERE tablename = 'documents';
   `});
   console.log('POLICIES:', data, error);
 }
