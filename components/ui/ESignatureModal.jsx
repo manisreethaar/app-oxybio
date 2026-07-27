@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Lock, X, AlertCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 
 export default function ESignatureModal({ 
   isOpen, 
@@ -28,11 +29,11 @@ export default function ESignatureModal({
     setError('');
     
     try {
-      const res = await fetch('/api/auth/pin/verify', {
+      const res = await withTimeout(fetch('/api/auth/pin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin }),
-      });
+      }), 20000, 'PIN verification timed out');
       const data = await res.json();
       
       if (!res.ok) {
@@ -51,12 +52,12 @@ export default function ESignatureModal({
   const handleReset = async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await withTimeout(supabase.auth.getUser(), 20000, 'User auth check timed out');
       if (!user?.email) throw new Error("No user email found");
       
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(user.email, {
+      const { error: resetError } = await withTimeout(supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${window.location.origin}/auth/update-password`,
-      });
+      }), 20000, 'Password reset timed out');
       
       if (resetError) throw resetError;
       

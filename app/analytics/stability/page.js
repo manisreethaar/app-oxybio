@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Clock, Download, RefreshCw, AlertCircle, CheckCircle, ExternalLink, TrendingDown } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -40,12 +41,12 @@ export default function StabilityAnalyticsPage() {
         else if (dateRange === '1Y') fromDate.setFullYear(fromDate.getFullYear() - 1);
         else fromDate = new Date(2000, 0, 1);
 
-        const { data: studyData, error } = await supabase
+        const { data: studyData, error } = await withTimeout(supabase
           .from('shelf_life_studies')
           .select('id, storage_condition, study_type, status, start_date, created_at, batches(batch_id, product_name), shelf_life_logs(id, day_number, test_data, created_at)')
           .is('archived_at', null)
           .gte('created_at', fromDate.toISOString())
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }), 20000, 'Stability studies timed out');
 
         if (error) throw error;
         setStudies(studyData || []);

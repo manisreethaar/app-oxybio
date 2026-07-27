@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Download, RefreshCw, TrendingUp, FlaskConical, ExternalLink } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -48,17 +49,17 @@ export default function GrowthAnalyticsPage() {
           studyQuery = studyQuery.eq('study_type', selectedStudyType);
         }
 
-        const { data: studyData, error: studyErr } = await studyQuery;
+        const { data: studyData, error: studyErr } = await withTimeout(studyQuery, 20000, 'Study query timed out');
         if (studyErr) throw studyErr;
 
         const studyIds = (studyData || []).map(s => s.id);
 
         if (studyIds.length > 0) {
-          const { data: measData } = await supabase
+          const { data: measData } = await withTimeout(supabase
             .from('growth_measurements')
             .select('study_id, actual_hour, od_value, ph_value, glucose_g_l')
             .in('study_id', studyIds)
-            .order('actual_hour');
+            .order('actual_hour'), 20000, 'Measurements query timed out');
           setMeasurements(measData || []);
         } else {
           setMeasurements([]);

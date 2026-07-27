@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import {
   ShieldAlert, Clock, Calendar, AlertCircle,
@@ -43,7 +44,7 @@ export default function MispunchContent() {
           .is('mispunch_status', null)
           .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
         isAdmin ? fetch('/api/mispunch/pending').then(r => r.json()) : Promise.resolve(null)
-      ]);
+      ]), 20000, 'Attendance fetch timed out');
 
       const [mispunchRes, openRes, adminRes] = results;
 
