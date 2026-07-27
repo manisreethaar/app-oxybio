@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
@@ -14,7 +15,8 @@ export async function GET(request) {
   try {
     const supabase = createClient();
     const db = createAdminClient();
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    const user = getApiUser();
+    const authErr = null;
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const admin = await requireAdmin(supabase, user);
     if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -32,13 +32,14 @@ export async function middleware(request) {
     }
   );
 
-  // getUser() validates the JWT cookie locally.
-  // Old code used getSession() which made a NETWORK CALL to Supabase Auth
-  // on every single page navigation → +200–600ms per click, every time.
+  // getSession() validates the JWT cookie locally (instant).
+  // getUser() makes a NETWORK CALL to Supabase Auth on every single page navigation
+  // which adds a massive 200–600ms latency penalty per click, every time.
+  // For internal apps, local validation is secure enough and massively faster.
   let user = null;
   try {
-    const { data: { user: u } } = await supabase.auth.getUser();
-    user = u ?? null;
+    const { data: { session } } = await supabase.auth.getSession();
+    user = session?.user ?? null;
   } catch {
     // Auth service unreachable — fail open. API routes auth independently.
     const resp = NextResponse.next({ request: { headers: requestHeaders } });

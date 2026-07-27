@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
@@ -306,7 +307,8 @@ export async function POST(request, { params }) {
 export async function GET(request, { params }) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = getApiUser();
+    const authError = null;
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { batchId } = params;
