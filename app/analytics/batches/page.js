@@ -2,9 +2,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
-import { Activity, Download, Filter, RefreshCw, Layers } from 'lucide-react';
+import { Activity, Download, Filter, RefreshCw, Layers, ExternalLink } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import Link from 'next/link';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController
 } from 'chart.js';
@@ -212,13 +213,21 @@ export default function BatchAnalyticsPage() {
           </select>
         </div>
 
-        <button
-          onClick={handleDownloadReport}
-          className="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl flex items-center hover:bg-slate-700 transition-colors shadow-sm"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export PDF
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/batches"
+            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl flex items-center hover:bg-slate-50 transition-colors text-sm shadow-sm"
+          >
+            <ExternalLink className="w-4 h-4 mr-1.5" /> Open Module
+          </Link>
+          <button
+            onClick={handleDownloadReport}
+            className="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl flex items-center hover:bg-slate-700 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {loading ? (
