@@ -49,11 +49,21 @@ export async function POST(request) {
 
     const { name, model, serial_number, requires_calibration, calibration_due_date, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days, next_pm_date } = parsed.data;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('equipment')
       .insert({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null, registered_by: emp?.id || null })
       .select()
       .single();
+
+    if (error && error.message && (error.message.includes('pm_frequency_days') || error.message.includes('next_pm_date'))) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('equipment')
+        .insert({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, registered_by: emp?.id || null })
+        .select()
+        .single();
+      data = fallbackData;
+      error = fallbackError;
+    }
 
     if (error) throw error;
     return NextResponse.json({ success: true, data });
@@ -75,12 +85,23 @@ export async function PUT(request) {
       return NextResponse.json({ error: 'Validation failed: ID and Name required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('equipment')
       .update({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url, pm_frequency_days: pm_frequency_days || null, next_pm_date: next_pm_date || null })
       .eq('id', id)
       .select()
       .single();
+
+    if (error && error.message && (error.message.includes('pm_frequency_days') || error.message.includes('next_pm_date'))) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('equipment')
+        .update({ name, model, serial_number, requires_calibration: requires_calibration ?? false, calibration_due_date: requires_calibration ? (calibration_due_date || null) : null, status, iq_doc_url, oq_doc_url, pq_doc_url })
+        .eq('id', id)
+        .select()
+        .single();
+      data = fallbackData;
+      error = fallbackError;
+    }
 
     if (error) throw error;
     return NextResponse.json({ success: true, data });

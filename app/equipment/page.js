@@ -53,6 +53,7 @@ export default function EquipmentPage() {
   // Maintenance Modal State
   const [activeDevice, setActiveDevice] = useState(null);
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
+  const [historyDevice, setHistoryDevice] = useState(null);
   
   // Ticket Modal State
   const [isTicketOpen, setIsTicketOpen] = useState(false);
@@ -422,19 +423,24 @@ export default function EquipmentPage() {
                   <div className="flex gap-2">
                     <button
                       disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                      onClick={() => { setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setMaintValue('log_type', device.requires_calibration ? 'Calibration' : 'Maintenance'); setIsMaintenanceOpen(true); }}
+                      onClick={(e) => { e.stopPropagation(); setActiveDevice(device); setMaintValue('status', device.status); setMaintValue('equipment_id', device.id); setMaintValue('log_type', device.requires_calibration ? 'Calibration' : 'Maintenance'); setIsMaintenanceOpen(true); }}
                       className="flex-1 py-3 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                         Log Maintenance
                     </button>
                     {device.requires_calibration && (
                       <button 
                         disabled={!['admin', 'ceo', 'cto'].includes(role)}
-                        onClick={() => { setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setMaintValue('log_type', 'Calibration'); setIsMaintenanceOpen(true); }} 
+                        onClick={(e) => { e.stopPropagation(); setActiveDevice(device); setMaintValue('status', 'Operational'); setMaintValue('equipment_id', device.id); setMaintValue('log_type', 'Calibration'); setIsMaintenanceOpen(true); }} 
                         className="flex-1 py-3 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                           Calibrate Now
                       </button>
                     )}
                   </div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setHistoryDevice(device); }} 
+                    className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95">
+                      View History
+                  </button>
                   <button 
                     onClick={() => { setActiveDevice(device); setTicketValue('equipment_id', device.id); setIsTicketOpen(true); }} 
                     className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2">
@@ -820,6 +826,62 @@ export default function EquipmentPage() {
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Removal"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {historyDevice && (
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+          <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl">
+            <div className="px-8 py-6 bg-slate-800 text-white flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Activity className="w-8 h-8 text-indigo-400" />
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">{historyDevice.name}</h2>
+                  <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mt-1">Log History</p>
+                </div>
+              </div>
+              <button onClick={() => setHistoryDevice(null)} className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-8 overflow-y-auto max-h-[60vh]">
+              {(!historyDevice.calibration_logs || historyDevice.calibration_logs.length === 0) ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Activity className="w-8 h-8" />
+                  </div>
+                  <p className="text-sm font-black uppercase tracking-widest text-slate-400">No logs found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {historyDevice.calibration_logs
+                    .sort((a, b) => new Date(b.created_at || b.calibration_date) - new Date(a.created_at || a.calibration_date))
+                    .map((log) => (
+                    <div key={log.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-white border border-slate-200 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest">
+                            {log.log_type || 'Calibration'}
+                          </span>
+                          <span className="text-xs font-bold text-slate-500">
+                            {new Date(log.calibration_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {log.employees && (
+                          <CreatorBadge initials={log.employees.initials} fullName={log.employees.full_name} size="sm" />
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap">{log.result}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-6 bg-slate-50 border-t border-slate-100">
+              <button onClick={() => setHistoryDevice(null)} className="w-full py-4 bg-white border border-slate-200 text-slate-600 font-black rounded-xl uppercase tracking-widest text-xs hover:bg-slate-100 transition-all">Close</button>
             </div>
           </div>
         </div>

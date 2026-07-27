@@ -50,7 +50,16 @@ export async function POST(request) {
     if (log_type === 'Maintenance' && next_due_date) updates.next_pm_date = next_due_date;
     
     const { error: updateErr } = await supabase.from('equipment').update(updates).eq('id', equipment_id);
-    if (updateErr) throw updateErr;
+    if (updateErr) {
+      if (updateErr.message && updateErr.message.includes('next_pm_date')) {
+        // Fallback for environments where the pm schema migration hasn't run yet
+        delete updates.next_pm_date;
+        const { error: fallbackErr } = await supabase.from('equipment').update(updates).eq('id', equipment_id);
+        if (fallbackErr) throw fallbackErr;
+      } else {
+        throw updateErr;
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
