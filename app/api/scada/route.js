@@ -6,7 +6,7 @@
  * GET /api/scada — Fetch recent sensor streams (last 200)
  */
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -63,7 +63,7 @@ export async function POST(request) {
 export async function GET(request) {
   try {
     const supabase = createClient();
-    const user = getApiUser();
+    const user = await getApiUserOrFallback(supabase);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -17,9 +17,8 @@ const postSchema = z.object({
 export async function GET() {
   try {
     const supabase = createClient();
-    const user = getApiUser();
-    const authError = null;
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data, error } = await supabase
       .from('taste_panels')
@@ -38,7 +37,7 @@ export async function POST(request) {
   try {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: employee, error: empErr } = await supabase
       .from('employees')

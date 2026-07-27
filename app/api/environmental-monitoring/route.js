@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -7,9 +7,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const supabase = createClient();
-    const user = getApiUser();
-    const authErr = null;
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view') || 'samples';
@@ -44,7 +43,7 @@ export async function POST(request) {
   try {
     const supabase = createClient();
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });

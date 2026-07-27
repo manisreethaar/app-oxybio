@@ -1,5 +1,47 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+
+// Supabase signs session JWTs with a project-wide HS256 secret (Project
+// Settings -> API -> JWT Settings -> JWT Secret in the dashboard). Verifying
+// the signature locally with that secret is cryptographically equivalent to
+// asking Supabase's Auth server "is this token real and unexpired" -- but
+// it's pure math, no network round-trip. That gets getUser()'s correctness
+// (a forged/expired token is rejected) at getSession()'s speed. The one gap
+// vs. a live network call: an admin deactivating a user takes effect on
+// that user's next token refresh, not instantly -- an accepted, standard
+// JWT tradeoff, and strictly better than the getSession()-only approach
+// this replaces, which had that same gap with no signature check at all.
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET
+  ? new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET)
+  : null;
+
+// Errors that mean "this token is genuinely invalid" -- reject as
+// unauthenticated. Anything else (malformed session shape, a jose library
+// hiccup) falls through to the authoritative network call instead, so a
+// verification-path bug can't silently lock users out.
+const INVALID_TOKEN_CODES = new Set([
+  'ERR_JWS_SIGNATURE_VERIFICATION_FAILED',
+  'ERR_JWT_EXPIRED',
+  'ERR_JWT_CLAIM_VALIDATION_FAILED',
+  'ERR_JWT_INVALID',
+]);
+
+async function resolveUser(supabase) {
+  if (JWT_SECRET) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return null;
+      const { payload } = await jwtVerify(session.access_token, JWT_SECRET, { algorithms: ['HS256'] });
+      return { id: payload.sub, email: payload.email ?? '' };
+    } catch (err) {
+      if (INVALID_TOKEN_CODES.has(err?.code)) return null;
+      // Fall through to getUser() below for anything unexpected.
+    }
+  }
+  const { data: { user } } = await supabase.auth.getUser();
+  return user ? { id: user.id, email: user.email ?? '' } : null;
+}
 
 export async function middleware(request) {
   // ── PERF FIX: this is the ONLY place in the app that should validate the
@@ -32,14 +74,12 @@ export async function middleware(request) {
     }
   );
 
-  // getSession() validates the JWT cookie locally (instant).
-  // getUser() makes a NETWORK CALL to Supabase Auth on every single page navigation
-  // which adds a massive 200–600ms latency penalty per click, every time.
-  // For internal apps, local validation is secure enough and massively faster.
+  // See resolveUser() above: verifies the JWT signature locally (fast, no
+  // network call) when SUPABASE_JWT_SECRET is configured, falling back to
+  // the authoritative supabase.auth.getUser() network call otherwise.
   let user = null;
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    user = session?.user ?? null;
+    user = await resolveUser(supabase);
   } catch {
     // Auth service unreachable — fail open. API routes auth independently.
     const resp = NextResponse.next({ request: { headers: requestHeaders } });

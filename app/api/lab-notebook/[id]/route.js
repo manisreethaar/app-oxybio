@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 import { notifyAdmins, sendServerNotification } from '@/utils/serverNotify';
@@ -27,9 +27,8 @@ export async function GET(request, { params }) {
     const supabase = createClient();
     const { id } = params;
 
-    const user = getApiUser();
-    const authError = null;
-    if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const { data, error } = await supabase
       .from('lab_notebook_entries')
@@ -68,7 +67,7 @@ export async function PUT(request, { params }) {
     const { id } = params;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const { title, objective, methodology, observations, conclusions, status, batch_id } = await request.json();
 
@@ -142,7 +141,7 @@ export async function PATCH(request, { params }) {
     const { id } = params;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const { action } = await request.json();
 
@@ -204,7 +203,7 @@ export async function DELETE(request, { params }) {
     const { id } = params;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const emp = await getEmployeeForUser(supabase, user);
     if (!emp) return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
