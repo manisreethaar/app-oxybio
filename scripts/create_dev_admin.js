@@ -1,12 +1,17 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // ── This matches .env.local (the project localhost connects to) ──
-const SUPABASE_URL = 'https://ttikqclvbewkollnjvza.supabase.co';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 // Anon key — we'll use signUp which doesn't need service role
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0aWtxY2x2YmV3a29sbG5qdnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDEwMzEsImV4cCI6MjA4OTU3NzAzMX0.Yv0OecoCGYtnvwNKb2aE7zG2igEsmRCx8s_Kjz3-cQI';
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const TEST_EMAIL    = 'manisreethaar+dev@gmail.com';
-const TEST_PASSWORD = 'OxyDev@2025!';
+const TEST_EMAIL    = process.env.DEV_ADMIN_EMAIL;
+const TEST_PASSWORD = process.env.DEV_ADMIN_PASSWORD;
+
+if (!SUPABASE_URL || !ANON_KEY || !TEST_EMAIL || !TEST_PASSWORD) {
+  console.error('Missing one of NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD env vars.');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY);
 
