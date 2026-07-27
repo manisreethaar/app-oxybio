@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
+import { withTimeout, withRetry } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { BookOpen, Loader2, FileSignature, ChevronRight, FlaskConical, Sparkles, X, Paperclip, Upload, Activity, Search, ArrowUpDown, SortAsc, SortDesc, Microscope, CheckCircle, History } from 'lucide-react';
@@ -94,10 +94,10 @@ export default function DigitalLnbPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [entriesRes, { data: batchData }] = await withTimeout(Promise.all([
+      const [entriesRes, { data: batchData }] = await withRetry(() => withTimeout(Promise.all([
         fetch('/api/lab-notebook').then(r => r.json()),
         supabase.from('batches').select('id, batch_id, variant').limit(100)
-      ]), 20000, 'Lab notebook load timed out');
+      ]), 20000, 'Lab notebook load timed out'));
       if (entriesRes.success) {
         setEntries(entriesRes.data || []);
       } else {
@@ -106,7 +106,7 @@ export default function DigitalLnbPage() {
       setBatches(batchData || []);
     } catch (err) { console.error('LNB fetch error:', err); toast.error(err.message || 'Failed to load lab notebook entries.'); }
     finally { setLoading(false); }
-  }, [supabase]);
+  }, [supabase, toast]);
 
   useEffect(() => {
     supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title')
