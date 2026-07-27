@@ -84,7 +84,7 @@ export default function DocumentsPage() {
     try {
       let query = supabase.from('documents').select('*, employees(full_name, initials)');
       if (category !== 'All') { query = query.eq('category', category); }
-      if (!['admin', 'ceo', 'cto'].includes(role)) { query = query.eq('access_level', 'all-staff'); }
+      if (!['admin', 'ceo', 'cto'].includes(role)) { query = query.or('access_level.eq.all-staff,access_level.is.null'); }
       const { data, error } = await withTimeout(query.order('created_at', { ascending: false }), 20000, 'Documents load timed out');
       if (error) throw error;
       setDocuments(data || []);
@@ -287,7 +287,7 @@ export default function DocumentsPage() {
 
       {showUploadModal && (
         <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl max-w-md w-full p-5 md:p-8 relative shadow-2xl">
+          <div className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-2xl max-w-md w-full p-5 md:p-8 relative shadow-2xl">
             <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">×</button>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Upload Document to Vault</h2>
             <form onSubmit={handleSubmit(handleUploadSubmit)} className="space-y-4">
