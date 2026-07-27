@@ -284,16 +284,14 @@ export default function BatchesPage() {
     try {
       // A stalled Supabase connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh. A single transient
-      // failure (a slow auth round-trip, a momentary connection blip) is
-      // retried once before it's treated as a real failure.
-      await withRetry(() => withTimeout((async () => {
+    try {
       const [activeRes, completedRes, archivedRes] = await Promise.all([
         supabase
           .from('batches')
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
-            created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
+            created_by,
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
@@ -305,7 +303,7 @@ export default function BatchesPage() {
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
-            created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
+            created_by,
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
@@ -318,7 +316,7 @@ export default function BatchesPage() {
           .select(`
             id, batch_id, experiment_type, sku_target, status, current_stage,
             planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
-            created_by, creator:employees!batches_created_by_fkey(id, full_name, initials),
+            created_by,
             formulations(name, code, version),
             batch_flasks(id, flask_label, status, current_stage)
           `)
@@ -326,8 +324,24 @@ export default function BatchesPage() {
           .order('archived_at', { ascending: false }),
       ]);
 
-      const fetchedActive = (activeRes.data || []).map(normaliseBatchForList);
-      const fetchedCompleted = (completedRes.data || []).map(normaliseBatchForList);
+      // Fetch creator details separately to avoid slow RLS joins
+      const allFetched = [...(activeRes.data || []), ...(completedRes.data || []), ...(archivedRes.data || [])];
+      const creatorIds = Array.from(new Set(allFetched.map(b => b.created_by).filter(Boolean)));
+      
+      let creatorsMap = {};
+      if (creatorIds.length > 0) {
+        const { data: creatorData } = await supabase
+          .from('employees')
+          .select('id, full_name, initials')
+          .in('id', creatorIds);
+        (creatorData || []).forEach(c => { creatorsMap[c.id] = c; });
+      }
+
+      // Attach creators
+      const attachCreator = b => ({ ...b, creator: creatorsMap[b.created_by] || null });
+
+      const fetchedActive = (activeRes.data || []).map(attachCreator).map(normaliseBatchForList);
+      const fetchedCompleted = (completedRes.data || []).map(attachCreator).map(normaliseBatchForList);
       const active = fetchedActive.filter(b => !TERMINAL_STATUSES.includes(b.status));
       const completedById = new Map();
       [...fetchedCompleted, ...fetchedActive.filter(b => TERMINAL_STATUSES.includes(b.status))]
@@ -351,8 +365,7 @@ export default function BatchesPage() {
 
       setActiveBatches(activeWithEp);
       setHistory(completed);
-      setArchivedBatches((archivedRes.data || []).map(normaliseBatchForList));
-      })(), 20000, 'Batches load timed out'));
+      setArchivedBatches((archivedRes.data || []).map(attachCreator).map(normaliseBatchForList));
     } catch (err) {
       console.error('Fetch batches error:', err);
       toast.error('Failed to load batches: ' + err.message);
