@@ -16,27 +16,25 @@ const JWT_SECRET = process.env.SUPABASE_JWT_SECRET
   ? new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET)
   : null;
 
-// Errors that mean "this token is genuinely invalid" -- reject as
-// unauthenticated. Anything else (malformed session shape, a jose library
-// hiccup) falls through to the authoritative network call instead, so a
-// verification-path bug can't silently lock users out.
-const INVALID_TOKEN_CODES = new Set([
-  'ERR_JWS_SIGNATURE_VERIFICATION_FAILED',
-  'ERR_JWT_EXPIRED',
-  'ERR_JWT_CLAIM_VALIDATION_FAILED',
-  'ERR_JWT_INVALID',
-]);
-
+// Local verification is ONLY ever used to short-circuit to a fast "yes,
+// this is genuinely a valid, current user" -- never to reject one. Any
+// failure at all (no session, expired token, signature mismatch, a
+// misconfigured or stale SUPABASE_JWT_SECRET, a jose library hiccup) falls
+// through to the authoritative supabase.auth.getUser() network call, which
+// is the actual source of truth. This means a wrong/malformed env var can
+// only ever cost you the speed win, never lock every user out of the app --
+// that fail-safe behavior matters more than the optimization itself.
 async function resolveUser(supabase) {
   if (JWT_SECRET) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return null;
-      const { payload } = await jwtVerify(session.access_token, JWT_SECRET, { algorithms: ['HS256'] });
-      return { id: payload.sub, email: payload.email ?? '' };
-    } catch (err) {
-      if (INVALID_TOKEN_CODES.has(err?.code)) return null;
-      // Fall through to getUser() below for anything unexpected.
+      if (session?.access_token) {
+        const { payload } = await jwtVerify(session.access_token, JWT_SECRET, { algorithms: ['HS256'] });
+        return { id: payload.sub, email: payload.email ?? '' };
+      }
+    } catch {
+      // Any failure here just means "couldn't take the fast path" --
+      // fall through to the authoritative check below.
     }
   }
   const { data: { user } } = await supabase.auth.getUser();
