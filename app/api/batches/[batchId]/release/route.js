@@ -142,6 +142,10 @@ export async function POST(request, { params }) {
     const { data: flaskData } = await db.from('batch_flasks').select('flask_label').eq('id', flask_id).single();
     const flaskLabel = flaskData?.flask_label || '';
 
+    // Fetch batch number for better naming
+    const { data: batchData } = await db.from('batches').select('batch_id').eq('id', batchId).single();
+    const displayBatchId = batchData?.batch_id || batchId;
+
     // 6. Kick off shelf-life study and sensory session (non-blocking)
     const start  = new Date().toISOString().slice(0, 10);
     const expiry = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
@@ -159,7 +163,7 @@ export async function POST(request, { params }) {
     db.from('taste_panels').insert({
       batch_id: batchId,
       flask_id: flaskLabel,
-      session_title: `Sensory Evaluation - ${batchId}${flaskLabel ? ' ' + flaskLabel : ''}`,
+      session_title: `Sensory Evaluation - ${displayBatchId}${flaskLabel ? ' ' + flaskLabel : ''}`,
       panelist_count: 5,
       test_criteria: ['Taste', 'Aroma', 'Appearance', 'Overall Acceptability'],
       avg_score: 0,
