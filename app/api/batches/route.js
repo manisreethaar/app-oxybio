@@ -187,6 +187,26 @@ export async function POST(request) {
       console.warn('Flask auto-creation warning:', err.message);
     });
 
+    // ── Auto-create Inoculum Incubation record ─────────────────────────
+    const nowIso = new Date().toISOString();
+    await supabase.from('sample_incubation_records').insert({
+      sample_name: `Seed Culture — ${batchIdStr}`,
+      batch_id: newBatch.id,
+      sample_category: 'Subculture',
+      sample_type: 'Broth',
+      source_stage: 'seed_prep',
+      source_type: 'batch',
+      source_id: newBatch.id,
+      source_label: batchIdStr,
+      incubation_date: planned_start_date || nowIso.split('T')[0],
+      incubation_temp_c: 37,
+      start_time: nowIso,
+      sterility_status: 'Pending',
+      logged_by: creator.id
+    }).then(() => {}).catch(err => {
+      console.warn('Inoculum incubation auto-creation warning:', err.message);
+    });
+
     // ── Auto-create batch monitoring task ─────────────────────────────
     const taskAssignee = assigned_team.length > 0 ? assigned_team[0] : creator.id;
     const adminClient = createAdminClient(
