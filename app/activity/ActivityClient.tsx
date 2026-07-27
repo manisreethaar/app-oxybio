@@ -148,118 +148,134 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
     try {
       await withTimeout((async () => {
-      // Fetch batches for dropdown
-      const { data: batches } = await supabase.from('batches')
-        .select('batch_id, product_name, status')
-        .is('archived_at', null)
-        .in('status', ['fermenting', 'in-progress', 'testing', 'inoculation', 'media_prep', 'sterilisation', 'harvest', 'downstream', 'qc_hold'])
-        .limit(20);
-      const { data: equip } = await supabase.from('equipment').select('id, name, model, status').eq('status', 'Operational');
-      if (!isMounted.current) return;
-      setActiveBatches(batches || []);
-      setEquipmentList(equip || []);
-
-      // Build activity log query
-      const PAGE_SIZE = 50;
-      const offset = append ? activityOffset : 0;
-      const isExecUser = ['admin', 'ceo', 'cto'].includes(role);
-
-      let query = supabase
-        .from('activity_log')
-        .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
-        .is('archived_at', null)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1);
-
-      if (isExecUser) {
-        if (filterEmployee) query = query.eq('employee_id', filterEmployee);
-        if (filterDateFrom) query = query.gte('created_at', filterDateFrom);
-        if (filterDateTo)   query = query.lte('created_at', filterDateTo + 'T23:59:59');
-      } else {
-        query = query.eq('employee_id', employeeProfile?.id);
-      }
-
-      const { data: logData, error: logError } = await query;
-      if (logError) throw logError;
-      if (!isMounted.current) return;
-
-      const newLogs = logData || [];
-      setHasMore(newLogs.length === PAGE_SIZE);
-      if (append) {
-        setActivities(prev => [...prev, ...newLogs]);
-        setActivityOffset(prev => prev + newLogs.length);
-      } else {
-        setActivities(newLogs);
-        setActivityOffset(newLogs.length);
-      }
-
-      if (isExecUser) {
-        setIssues(prev => append ? [...prev, ...newLogs.filter((a: any) => a.issue_observed)] : newLogs.filter((a: any) => a.issue_observed));
-      }
-
-      // Founder Brief data (admin only)
-      if (isExecUser) {
-        const archivedQuery = supabase
-          .from('activity_log')
-          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
-          .not('archived_at', 'is', null)
-          .order('archived_at', { ascending: false })
-          .limit(100);
-        const { data: archived } = await archivedQuery;
-        if (!isMounted.current) return;
-        setArchivedActivities(archived || []);
-
-        // Bug A fix: Dedicated Issue Tracker query — not limited to loaded page
-        setIssuesLoading(true);
-        const issuesQuery = supabase
-          .from('activity_log')
-          .select('id, created_at, activity_description, issue_description, founder_comment, employee_id, employees!activity_log_employee_id_fkey(full_name), batch_id')
-          .eq('issue_observed', true)
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
-          .limit(200);
-        const { data: allIssues } = await issuesQuery;
-        if (isMounted.current) {
-          setIssues(allIssues || []);
-          setIssuesLoading(false);
+        const isExecUser = ['admin', 'ceo', 'cto'].includes(role);
+        const PAGE_SIZE = 50;
+        const offset = append ? activityOffset : 0;
+        
+        // 1. Prepare base queries
+        let batchesPromise = Promise.resolve({ data: activeBatches });
+        if (!append && activeBatches.length === 0) {
+          batchesPromise = supabase.from('batches')
+            .select('batch_id, product_name, status')
+            .is('archived_at', null)
+            .in('status', ['fermenting', 'in-progress', 'testing', 'inoculation', 'media_prep', 'sterilisation', 'harvest', 'downstream', 'qc_hold'])
+            .limit(20);
+        }
+          
+        let equipPromise = Promise.resolve({ data: equipmentList });
+        if (!append && equipmentList.length === 0) {
+          equipPromise = supabase.from('equipment')
+            .select('id, name, model, status')
+            .eq('status', 'Operational');
         }
 
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // IST-safe date
-        const [staffRes, logsRes, overdueRes, approvalRes, expRes] = await Promise.all([
-          // Bug B fix: exclude admin, ceo AND cto from the staff attendance list
-          supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin').neq('role', 'ceo').neq('role', 'cto'),
-          supabase.from('attendance_log').select('employee_id, check_out_time').eq('date', today),
-          supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5),
-          supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5),
-          supabase.from('batches').select('batch_id, product_name, status').is('archived_at', null).in('status', ['fermenting', 'in-progress', 'testing']).limit(5)
-        ]);
+        let logQuery = supabase
+          .from('activity_log')
+          .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + PAGE_SIZE - 1);
 
+        if (isExecUser) {
+          if (filterEmployee) logQuery = logQuery.eq('employee_id', filterEmployee);
+          if (filterDateFrom) logQuery = logQuery.gte('created_at', filterDateFrom);
+          if (filterDateTo)   logQuery = logQuery.lte('created_at', filterDateTo + 'T23:59:59');
+        } else {
+          logQuery = logQuery.eq('employee_id', employeeProfile?.id);
+        }
+
+        const promises: any[] = [batchesPromise, equipPromise, logQuery];
+        
+        // 2. Prepare exec queries (only on initial load or full refresh, not append)
+        if (isExecUser && !append) {
+          promises.push(
+            supabase
+              .from('activity_log')
+              .select('id, created_at, log_date, start_time, end_time, activity_description, issue_observed, issue_description, batch_id, severity, founder_comment, employee_id, archived_at, employees!activity_log_employee_id_fkey(full_name)')
+              .not('archived_at', 'is', null)
+              .order('archived_at', { ascending: false })
+              .limit(100)
+          );
+
+          promises.push(
+            supabase
+              .from('activity_log')
+              .select('id, created_at, activity_description, issue_description, founder_comment, employee_id, employees!activity_log_employee_id_fkey(full_name), batch_id')
+              .eq('issue_observed', true)
+              .is('archived_at', null)
+              .order('created_at', { ascending: false })
+              .limit(200)
+          );
+
+          const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+          promises.push(supabase.from('employees').select('id, full_name, designation, role').eq('is_active', true).neq('role', 'admin').neq('role', 'ceo').neq('role', 'cto'));
+          promises.push(supabase.from('attendance_log').select('employee_id, check_out_time').eq('date', today));
+          promises.push(supabase.from('tasks').select('id, title, priority, due_date, assigned_user:employees!tasks_assigned_to_fkey(full_name)').neq('status', 'done').neq('status', 'cancelled').lt('due_date', today).order('due_date', { ascending: true }).limit(5));
+          promises.push(supabase.from('tasks').select('id, title, assigned_user:employees!tasks_assigned_to_fkey(full_name)').eq('approval_status', 'pending_review').limit(5));
+        }
+
+        // 3. Execute all queries in parallel
+        if (isExecUser && !append) setIssuesLoading(true);
+        const results = await Promise.all(promises);
         if (!isMounted.current) return;
 
-        const allStaff = staffRes.data || [];
-        setAllEmployees(allStaff);
-        const todayLogs = logsRes.data || [];
-        const overdueTasks = overdueRes.data || [];
-        const pendingApprovals = approvalRes.data || [];
-        const activeExps = expRes.data || [];
+        // 4. Process base results
+        const [{ data: batches }, { data: equip }, { data: logData, error: logError }] = results;
+        if (logError) throw logError;
 
-        const logMap = new Map(todayLogs.map((l: any) => [l.employee_id, l]));
-        const present = allStaff.filter((s: any) => logMap.has(s.id) && !logMap.get(s.id).check_out_time);
-        const checkedOut = allStaff.filter((s: any) => logMap.has(s.id) && logMap.get(s.id).check_out_time);
-        const absent = allStaff.filter((s: any) => !logMap.has(s.id));
-        // Open issues for morning brief — from the dedicated issues query
-        const openIssues = (allIssues || []).filter((a: any) => !a.founder_comment).slice(0, 5);
+        if (batches && !append) setActiveBatches(batches);
+        if (equip && !append) setEquipmentList(equip);
 
-        setBrief({ presentToday: present, absentToday: absent, checkedOutToday: checkedOut, overdueTasks, pendingApprovals, activeExperiments: activeExps, openIssues });
-      }
+        const newLogs = logData || [];
+        setHasMore(newLogs.length === PAGE_SIZE);
+        if (append) {
+          setActivities(prev => [...prev, ...newLogs]);
+          setActivityOffset(prev => prev + newLogs.length);
+        } else {
+          setActivities(newLogs);
+          setActivityOffset(newLogs.length);
+        }
+
+        if (isExecUser && !append) {
+          // 5. Process exec results
+          const archivedData = results[3]?.data || [];
+          const allIssuesData = results[4]?.data || [];
+          const staffData = results[5]?.data || [];
+          const todayLogsData = results[6]?.data || [];
+          const overdueTasksData = results[7]?.data || [];
+          const pendingApprovalsData = results[8]?.data || [];
+
+          setArchivedActivities(archivedData);
+          setIssues(allIssuesData);
+          setIssuesLoading(false);
+          setAllEmployees(staffData);
+          
+          const logMap = new Map(todayLogsData.map((l: any) => [l.employee_id, l]));
+          const present = staffData.filter((s: any) => logMap.has(s.id) && !logMap.get(s.id).check_out_time);
+          const checkedOut = staffData.filter((s: any) => logMap.has(s.id) && logMap.get(s.id).check_out_time);
+          const absent = staffData.filter((s: any) => !logMap.has(s.id));
+          const openIssues = allIssuesData.filter((a: any) => !a.founder_comment).slice(0, 5);
+          
+          const activeExpsData = (batches || activeBatches || []).filter((b: any) => ['fermenting', 'in-progress', 'testing'].includes(b.status)).slice(0, 5);
+
+          setBrief({ 
+            presentToday: present, 
+            absentToday: absent, 
+            checkedOutToday: checkedOut, 
+            overdueTasks: overdueTasksData, 
+            pendingApprovals: pendingApprovalsData, 
+            activeExperiments: activeExpsData, 
+            openIssues 
+          });
+        }
       })(), 20000, 'Activity load timed out');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Activity page fetch error:", err);
-      if (isMounted.current) setError("Failed to load activity data: " + err.message);
+      if (isMounted.current) setError("Failed to load activity data: " + (err.message || 'Unknown error'));
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, [supabase, role, employeeProfile, filterEmployee, filterDateFrom, filterDateTo, activityOffset]);
+  }, [supabase, role, employeeProfile, filterEmployee, filterDateFrom, filterDateTo, activityOffset, activeBatches, equipmentList]);
 
   // High-Level Analytics Processing for CEO Dashboard
   const analyticsData = useMemo(() => {
@@ -328,9 +344,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to save log.');
       toast.success('Activity logged successfully.');
       resetLog(); setLogValue('start_time', data.end_time); setLogValue('end_time', new Date().toTimeString().slice(0, 5));
-      setTab(['admin', 'ceo', 'cto'].includes(role) ? 'brief' : 'feed');
+      setTab('feed');
       fetchData();
-    } catch (err) { 
+    } catch (err: any) { 
       // Rollback optimism
       setActivities(prev => prev.filter(a => a.id !== optimisticLog.id));
       toast.error(err.message);

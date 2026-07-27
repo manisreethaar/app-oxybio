@@ -155,7 +155,7 @@ export default function TasksPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)').order('due_date', { ascending: true });
+      let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)').is('archived_at', null).order('due_date', { ascending: true }).limit(300);
       let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
 
       if (!isAdmin) {
@@ -169,8 +169,7 @@ export default function TasksPage() {
       // A stalled network/DB connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh — bound it like the
       // timeout pattern already used in app/profile/page.js.
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Loading tasks timed out')), 20000));
-      const [empsRes, tasksRes, sopsRes] = await Promise.race([Promise.all([empsPromise, query, sopsPromise]), timeout]);
+      const [empsRes, tasksRes, sopsRes] = await Promise.all([empsPromise, query, sopsPromise]);
       if (tasksRes.error) throw tasksRes.error;
 
       setEmployees(empsRes.data || []);
