@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -16,7 +16,7 @@ const createSchema = z.object({
 
 export async function GET() {
   const supabase = await createClient();
-  const user = getApiUser();
+  const user = await getApiUserOrFallback(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabase

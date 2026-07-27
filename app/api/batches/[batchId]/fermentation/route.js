@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
@@ -19,7 +19,7 @@ function safeUuid(val) {
 
 async function getRequester(supabase) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  if (!user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
 
   const { data: employee } = await supabase
     .from('employees')
@@ -135,7 +135,7 @@ export async function POST(request, { params }) {
   try {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { batchId } = params;
     const body = await request.json();
@@ -307,9 +307,8 @@ export async function POST(request, { params }) {
 export async function GET(request, { params }) {
   try {
     const supabase = createClient();
-    const user = getApiUser();
-    const authError = null;
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { batchId } = params;
 

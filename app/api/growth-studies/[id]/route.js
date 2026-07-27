@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function GET(req, { params }) {
   try {
     const supabase = createClient();
-    const user = getApiUser();
+    const user = await getApiUserOrFallback(supabase);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;

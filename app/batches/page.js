@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
+import { withTimeout, withRetry } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -283,8 +283,10 @@ export default function BatchesPage() {
     if (!isBackground) setLoadingBatches(true);
     try {
       // A stalled Supabase connection otherwise leaves this page spinning
-      // forever with no way out except a manual refresh.
-      await withTimeout((async () => {
+      // forever with no way out except a manual refresh. A single transient
+      // failure (a slow auth round-trip, a momentary connection blip) is
+      // retried once before it's treated as a real failure.
+      await withRetry(() => withTimeout((async () => {
       const [activeRes, completedRes, archivedRes] = await Promise.all([
         supabase
           .from('batches')
@@ -350,13 +352,14 @@ export default function BatchesPage() {
       setActiveBatches(activeWithEp);
       setHistory(completed);
       setArchivedBatches((archivedRes.data || []).map(normaliseBatchForList));
-      })(), 20000, 'Batches load timed out');
+      })(), 20000, 'Batches load timed out'));
     } catch (err) {
       console.error('Fetch batches error:', err);
+      toast.error('Failed to load batches: ' + err.message);
     } finally {
       setLoadingBatches(false);
     }
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const fetchFormulations = useCallback(async () => {
     const { data } = await supabase

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
@@ -8,9 +8,8 @@ export async function GET(request, { params }) {
     const supabase = createClient();
     const { id } = params;
 
-    const user = getApiUser();
-    const authError = null;
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp, error: empError } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
     if (empError || !emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });

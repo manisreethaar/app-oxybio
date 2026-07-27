@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
 
@@ -160,10 +160,9 @@ const data = {
 export async function GET() {
   try {
     const supabase = createClient();
-    const user = getApiUser();
-    const authError = null;
+    const user = await getApiUserOrFallback(supabase);
     
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized to run seed. Please ensure you are logged into the app.' }, { status: 401 });
     }
 
