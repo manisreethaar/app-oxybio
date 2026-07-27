@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
@@ -20,9 +20,8 @@ export async function GET(request) {
   try {
     const supabase = createClient();
     const supabaseAdmin = createAdminClient();
-    const user = getApiUser();
-    const authError = null;
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const admin = await requireAdmin(supabase, user);
     if (!admin) return NextResponse.json({ error: 'Forbidden: Admin access required.' }, { status: 403 });
@@ -64,7 +63,7 @@ export async function PATCH(request) {
     const supabase = createClient();
     const supabaseAdmin = createAdminClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const admin = await requireAdmin(supabase, user);
     if (!admin) return NextResponse.json({ error: 'Forbidden: Admin access required.' }, { status: 403 });

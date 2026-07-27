@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = createClient();
-    const user = getApiUser();
+    const user = await getApiUserOrFallback(supabase);
     if (!user) return NextResponse.json({ error: 'unauth' });
     
     const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
