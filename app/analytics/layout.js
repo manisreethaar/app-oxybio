@@ -24,18 +24,8 @@ export default async function AnalyticsLayout({ children }) {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('employees')
-    .select('role, department')
-    .ilike('email', user.email)
-    .single();
-
-  const isAdmin = ['admin', 'ceo', 'cto'].includes(profile?.role?.toLowerCase());
-  const isRnD = profile?.department === 'RnD';
-
-  if (!isAdmin && !isRnD) {
-    redirect('/dashboard');
-  }
+  // The analytics hub is now accessible to all authenticated employees.
+  // We removed the isAdmin and isRnD checks.
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in pb-32 md:pb-8">
