@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useRouter } from 'next/navigation';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -31,13 +32,13 @@ export default function LoginPage() {
     setMessage(null);
     try {
       if (view === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await withTimeout(supabase.auth.signInWithPassword({ email, password }), 20000, 'Login request timed out');
         if (error) { setError(error.message || 'Unable to sign in. Please try again.'); }
         else { router.push('/dashboard'); }
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await withTimeout(supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
-        });
+        }), 20000, 'Reset request timed out');
         if (error) { setError(error.message || 'Unable to send reset link. Please try again.'); }
         else { setMessage('Password reset link has been sent to your email.'); }
       }
