@@ -29,7 +29,7 @@ export default function MispunchContent() {
     if (!employeeProfile) return;
     setLoading(true);
     try {
-      const results = await Promise.all([
+      const results = await withTimeout(Promise.all([
         employeeProfile.id ? supabase
           .from('attendance_log')
           .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
