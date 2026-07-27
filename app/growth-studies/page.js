@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import Link from 'next/link';
-import { FlaskConical, Plus, CheckCircle2, Activity, Search, ArrowUpDown } from 'lucide-react';
+import { FlaskConical, Plus, CheckCircle2, Activity, Search, ArrowUpDown, PieChart } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -109,12 +109,20 @@ export default function GrowthStudiesPage() {
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Growth Studies</h1>
           <p className="text-slate-500 mt-1 font-medium">Growth curve characterisation & fermentation monitoring.</p>
         </div>
-        <Link
-          href="/growth-studies/new"
-          className="inline-flex items-center px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl shadow-lg shadow-slate-500/20 transition-all text-sm uppercase tracking-widest"
-        >
-          <Plus className="w-4 h-4 mr-2" /> New Study
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/analytics/growth"
+            className="inline-flex items-center px-5 py-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-black rounded-2xl shadow-sm transition-all text-sm uppercase tracking-widest"
+          >
+            <PieChart className="w-4 h-4 mr-2" /> Analytics
+          </Link>
+          <Link
+            href="/growth-studies/new"
+            className="inline-flex items-center px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl shadow-lg shadow-slate-500/20 transition-all text-sm uppercase tracking-widest"
+          >
+            <Plus className="w-4 h-4 mr-2" /> New Study
+          </Link>
+        </div>
       </div>
 
       {/* Summary cards */}
