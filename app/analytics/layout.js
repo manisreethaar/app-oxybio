@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
-import { PieChart, Activity, BarChart2, TrendingUp, Clock } from 'lucide-react';
+import { PieChart, Activity, BarChart2, TrendingUp, Clock, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata = {
@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { name: 'Lab & Growth',   href: '/analytics/lab',        icon: BarChart2 },
   { name: 'Growth Studies', href: '/analytics/growth',     icon: TrendingUp },
   { name: 'Stability',      href: '/analytics/stability',  icon: Clock },
+  { name: 'Advanced Insights', href: '/analytics/insights', icon: Lightbulb },
 ];
 
 export default async function AnalyticsLayout({ children }) {

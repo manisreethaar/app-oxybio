@@ -7,11 +7,11 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Link from 'next/link';
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController, BubbleController
 } from 'chart.js';
-import { Scatter, Line } from 'react-chartjs-2';
+import { Scatter, Line, Bubble } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ScatterController, BubbleController);
 
 const COLORS = [
   '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
@@ -97,40 +97,104 @@ export default function BatchAnalyticsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange, selectedProduct]);
 
-  // Transform data for Multi-Line pH Chart
+  // Transform data for Multi-Line pH Chart with Anomaly Detection and Historical Average
   const phChartData = useMemo(() => {
     const datasets = [];
+    const hourMap = {};
+    const hourCounts = {};
+
+    batches.forEach((b) => {
+      const bReadings = readings
+        .filter(r => r.batch_id === b.id && r.ph != null && r.elapsed_hours != null);
+      bReadings.forEach(r => {
+        const h = Number(r.elapsed_hours);
+        hourMap[h] = (hourMap[h] || 0) + Number(r.ph);
+        hourCounts[h] = (hourCounts[h] || 0) + 1;
+      });
+    });
+
+    const averageData = Object.keys(hourMap).map(h => ({
+      x: Number(h), y: Number((hourMap[h] / hourCounts[h]).toFixed(2))
+    })).sort((a, b) => a.x - b.x);
+
     batches.forEach((b, idx) => {
       const bReadings = readings
         .filter(r => r.batch_id === b.id && r.ph != null && r.elapsed_hours != null)
         .sort((a, c) => a.elapsed_hours - c.elapsed_hours);
+      
       if (bReadings.length > 0) {
+        const pointColors = bReadings.map(r => {
+          const avgForHour = averageData.find(a => a.x === Number(r.elapsed_hours))?.y;
+          if (avgForHour) {
+            const diff = Math.abs(Number(r.ph) - avgForHour) / avgForHour;
+            if (diff > 0.15) return '#ef4444'; // Anomaly
+          }
+          return COLORS[idx % COLORS.length];
+        });
+        
+        const pointRadius = bReadings.map(r => {
+          const avgForHour = averageData.find(a => a.x === Number(r.elapsed_hours))?.y;
+          if (avgForHour) {
+            const diff = Math.abs(Number(r.ph) - avgForHour) / avgForHour;
+            if (diff > 0.15) return 6; // Anomaly larger dot
+          }
+          return 3;
+        });
+
         datasets.push({
           label: b.batch_id,
           data: bReadings.map(r => ({ x: Number(r.elapsed_hours), y: Number(r.ph) })),
           borderColor: COLORS[idx % COLORS.length],
-          backgroundColor: COLORS[idx % COLORS.length],
+          backgroundColor: pointColors,
           borderWidth: 2,
-          pointRadius: 3,
+          pointBackgroundColor: pointColors,
+          pointRadius: pointRadius,
           fill: false,
           tension: 0.2
         });
       }
     });
+
+    if (averageData.length > 0) {
+      datasets.push({
+        label: 'Historical Average',
+        data: averageData,
+        borderColor: '#94a3b8',
+        borderWidth: 3,
+        borderDash: [5, 5],
+        pointRadius: 0,
+        fill: false,
+        tension: 0.2
+      });
+    }
+
     return { datasets };
   }, [batches, readings]);
 
-  // Transform data for Endpoint Scatter (Duration vs Final pH)
-  // Uses batch_flask_endpoints; one point per flask, coloured by sensory_overall
-  const endpointScatterData = useMemo(() => {
+  // Transform data for Endpoint Bubble Chart (Duration vs Final pH vs Temp)
+  const endpointBubbleData = useMemo(() => {
     const passData = [];
     const failData = [];
 
     endpoints.forEach(ep => {
       const b = batches.find(bx => bx.id === ep.batch_id);
       const label = b ? `${b.batch_id} (flask)` : 'Unknown';
+      
+      const bReadings = readings.filter(r => r.batch_id === ep.batch_id && r.incubator_temp_c != null);
+      let avgTemp = 35;
+      if (bReadings.length > 0) {
+        avgTemp = bReadings.reduce((sum, r) => sum + Number(r.incubator_temp_c), 0) / bReadings.length;
+      }
+
       if (ep.total_hours != null && ep.final_ph != null) {
-        const pt = { x: Number(ep.total_hours), y: Number(ep.final_ph), batch: label };
+        const radius = Math.max(4, Math.min(25, (avgTemp - 20) * 0.8));
+        const pt = { 
+          x: Number(ep.total_hours), 
+          y: Number(ep.final_ph), 
+          r: radius, 
+          batch: label,
+          temp: avgTemp.toFixed(1)
+        };
         if (ep.sensory_overall === 'FAIL') failData.push(pt);
         else passData.push(pt);
       }
@@ -141,19 +205,20 @@ export default function BatchAnalyticsPage() {
         {
           label: 'Passed Sensory',
           data: passData,
-          backgroundColor: '#10b981',
-          pointRadius: 6,
+          backgroundColor: 'rgba(16, 185, 129, 0.6)',
+          borderColor: '#10b981',
+          borderWidth: 1,
         },
         {
           label: 'Failed Sensory',
           data: failData,
-          backgroundColor: '#ef4444',
-          pointRadius: 6,
-          pointStyle: 'triangle',
+          backgroundColor: 'rgba(239, 68, 68, 0.6)',
+          borderColor: '#ef4444',
+          borderWidth: 1,
         }
       ]
     };
-  }, [endpoints, batches]);
+  }, [endpoints, batches, readings]);
 
   const handleDownloadReport = async () => {
     if (!reportRef.current) return;
@@ -272,7 +337,7 @@ export default function BatchAnalyticsPage() {
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center">
                 <Layers className="w-4 h-4 mr-2 text-slate-500" />
-                Flask Endpoint — Duration vs pH
+                Sweet Spot Analyzer — 4D View
               </h3>
               <div className="h-80">
                 {endpoints.filter(e => e.total_hours != null && e.final_ph != null).length === 0 ? (
@@ -280,8 +345,8 @@ export default function BatchAnalyticsPage() {
                     No flask endpoint data found. Log endpoints via Batches → Flask → Endpoint.
                   </div>
                 ) : (
-                  <Scatter
-                    data={endpointScatterData}
+                  <Bubble
+                    data={endpointBubbleData}
                     options={{
                       responsive: true, maintainAspectRatio: false,
                       scales: {
@@ -289,7 +354,7 @@ export default function BatchAnalyticsPage() {
                         y: { title: { display: true, text: 'Final pH' } }
                       },
                       plugins: {
-                        tooltip: { callbacks: { label: (ctx) => `${ctx.raw.batch} (${ctx.parsed.x}h, pH ${ctx.parsed.y})` } }
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.raw.batch} (${ctx.parsed.x}h, pH ${ctx.parsed.y}, Avg Temp ${ctx.raw.temp}°C)` } }
                       }
                     }}
                   />
