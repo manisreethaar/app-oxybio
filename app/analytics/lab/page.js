@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
-import { BarChart2, Download, Filter, RefreshCw, FlaskConical } from 'lucide-react';
+import { BarChart2, Download, Filter, RefreshCw, FlaskConical, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement, BarController
 } from 'chart.js';
@@ -186,13 +187,21 @@ export default function LabAnalyticsPage() {
           </select>
         </div>
 
-        <button
-          onClick={handleDownloadReport}
-          className="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl flex items-center hover:bg-slate-700 transition-colors shadow-sm"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export PDF
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/lab-bench"
+            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl flex items-center hover:bg-slate-50 transition-colors text-sm shadow-sm"
+          >
+            <ExternalLink className="w-4 h-4 mr-1.5" /> Open Module
+          </Link>
+          <button
+            onClick={handleDownloadReport}
+            className="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl flex items-center hover:bg-slate-700 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {loading ? (

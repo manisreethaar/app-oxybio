@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Plus, Grid3x3, RefreshCw, FlaskConical, Activity,
   AlertCircle, Clock, ChevronRight, Loader2, ClipboardList,
-  CheckCircle2, Beaker, History
+  CheckCircle2, Beaker, History, PieChart
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/context/AuthContext';
@@ -276,6 +276,12 @@ export default function LabBenchPage() {
           >
             <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
           </button>
+          <Link
+            href="/analytics/lab"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl transition-colors"
+          >
+            <PieChart className="w-4 h-4" /> Analytics
+          </Link>
           <Link
             href="/lab-bench/grid"
             className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl transition-colors"
