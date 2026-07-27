@@ -26,11 +26,12 @@ interface ItemModalProps {
   handleAddVendor: (e: any) => void;
   handleUpdateVendor: (e: any) => void;
   onClose: () => void;
+  inlineContext?: string | null;
 }
 
 export default function ItemVendorModal({
   modalType, vendors, newItem, setNewItem, newVendor, setNewVendor,
-  isSubmitting, handleAddItem, handleUpdateItem, handleAddVendor, handleUpdateVendor, onClose,
+  isSubmitting, handleAddItem, handleUpdateItem, handleAddVendor, handleUpdateVendor, onClose, inlineContext
 }: ItemModalProps) {
 
   // Item Add / Edit
@@ -112,7 +113,7 @@ export default function ItemVendorModal({
         <div className="flex gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
           <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">
-            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_item' ? 'Save Changes' : 'Register Item'}
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_item' ? 'Save Changes' : inlineContext === 'stock' ? 'Save & Continue Receiving' : 'Register Item'}
           </button>
         </div>
       </form>
@@ -163,7 +164,7 @@ export default function ItemVendorModal({
       <div className="flex gap-3 pt-4 border-t border-gray-100">
         <button type="button" onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs hover:bg-gray-200 transition-all">Cancel</button>
         <button type="submit" disabled={isSubmitting} className="flex-2 py-4 px-8 bg-slate-800 text-white font-black rounded-2xl text-xs hover:bg-slate-900 shadow-xl transition-all">
-          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_vendor' ? 'Save Changes' : 'Add Supplier'}
+          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : modalType === 'edit_vendor' ? 'Save Changes' : inlineContext === 'stock' ? 'Save & Continue Receiving' : 'Add Supplier'}
         </button>
       </div>
     </form>

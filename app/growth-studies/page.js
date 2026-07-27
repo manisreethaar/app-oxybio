@@ -195,7 +195,7 @@ export default function GrowthStudiesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {filtered.map(study => {
-            const isolateName = study.cell_bank_strains?.name || study.cell_bank_preparations?.prep_code || '—';
+            const isolateName = study.cell_bank_strains?.name || study.cell_bank_preparations?.prep_code || 'Uninoculated Control';
             const mediaName = study.formulations?.name || '—';
             const tp = study.growth_study_time_points || [];
             const done = tp.filter(t => t.status === 'completed').length;
