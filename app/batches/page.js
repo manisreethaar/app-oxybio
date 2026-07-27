@@ -13,7 +13,7 @@ import {
   FlaskConical, Plus, AlertTriangle, ArrowRight, Loader2, X,
   Clock, Beaker, Activity, Calendar,
   Zap, Search, LayoutGrid, List, Columns,
-  ShieldCheck, Droplets, Filter
+  ShieldCheck, Droplets, Filter, PieChart
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -605,14 +605,22 @@ export default function BatchesPage() {
             GMP-grade fermentation documentation — from flask to disposition.
           </p>
         </div>
-        {canDo('batches', 'create') && (
-          <button
-            onClick={() => { reset(); setBatchError(null); setShowNewBatchModal(true); }}
-            className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider"
+        <div className="flex gap-2">
+          {canDo('batches', 'create') && (
+            <button
+              onClick={() => { reset(); setBatchError(null); setShowNewBatchModal(true); }}
+              className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider"
+            >
+              <Plus className="w-4 h-4 mr-1.5"/> Schedule Batch
+            </button>
+          )}
+          <Link
+            href="/analytics/batches"
+            className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider"
           >
-            <Plus className="w-4 h-4 mr-1.5"/> Schedule Batch
-          </button>
-        )}
+            <PieChart className="w-4 h-4 mr-1.5" /> Analytics
+          </Link>
+        </div>
       </div>
 
       {/* Unified Data Toolbar */}

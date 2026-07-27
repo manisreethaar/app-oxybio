@@ -6,6 +6,7 @@ import { z } from 'zod';
 function deriveInitials(fullName) {
   if (!fullName) return null;
   const words = fullName.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return null;
   if (words.length === 1) return words[0][0].toUpperCase();
   return (words[0][0] + words[words.length - 1][0]).toUpperCase();
 }
@@ -72,8 +73,14 @@ export async function PATCH(request) {
     // Clean up empty strings or undefined for date fields
     if (updateData.date_of_birth === '') updateData.date_of_birth = null;
     if (updateData.joined_date === '') updateData.joined_date = null;
-    // Treat empty-string initials as null (user cleared the field)
-    if (updateData.initials === '') updateData.initials = null;
+    // Safely handle initials
+    if ('initials' in updateData) {
+      if (typeof updateData.initials === 'string') {
+        updateData.initials = updateData.initials.trim();
+        // Treat empty-string initials as null (user cleared the field)
+        if (updateData.initials === '') updateData.initials = null;
+      }
+    }
     // Auto-derive initials from full_name only when truly absent
     if (!updateData.initials && updateData.full_name) {
       updateData.initials = deriveInitials(updateData.full_name);

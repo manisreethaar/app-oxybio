@@ -464,6 +464,7 @@ export default function ProfilePage() {
               />
               <InitialsField
                 value={emp.initials}
+                fullName={emp.full_name}
                 editing={editing}
                 registerProps={register('initials')}
               />
@@ -598,8 +599,12 @@ export default function ProfilePage() {
   );
 }
 
-function InitialsField({ value, editing, registerProps }) {
-  const display = value || '??';
+function derivedInitials(name = '') {
+  return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() || '').filter(Boolean).slice(0, 2).join('');
+}
+
+function InitialsField({ value, fullName, editing, registerProps }) {
+  const display = value || (fullName ? derivedInitials(fullName) : '??');
   const colors = ['bg-slate-600', 'bg-slate-600', 'bg-slate-600', 'bg-amber-600', 'bg-red-600', 'bg-emerald-600'];
   const colorIdx = display.charCodeAt(0) % colors.length;
   const bg = colors[colorIdx];
@@ -628,7 +633,7 @@ function InitialsField({ value, editing, registerProps }) {
             {display}
           </div>
           <span className="text-sm font-bold text-slate-700">
-            {value || <span className="text-slate-400 italic">not set — auto-generated on next save</span>}
+            {value || <span className="text-slate-500">{derivedInitials(fullName) || '??'} <span className="text-slate-400 italic font-normal">(auto-generated)</span></span>}
           </span>
         </div>
       )}
