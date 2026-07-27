@@ -284,7 +284,6 @@ export default function BatchesPage() {
     try {
       // A stalled Supabase connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh. A single transient
-    try {
       const [activeRes, completedRes, archivedRes] = await Promise.all([
         supabase
           .from('batches')
