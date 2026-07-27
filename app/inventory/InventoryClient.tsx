@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Package, AlertTriangle, Search, Plus, Calendar, Truck, Loader2, Filter, X, FileText, Trash2, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon, Boxes, FlaskConical, Beaker, Clock, Ban, Flame, Snowflake, FileCheck2, Mail, Phone, ClipboardList, Workflow, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Package, AlertTriangle, Search, Plus, Calendar, Truck, Loader2, Filter, X, FileText, Trash2, Edit3, QrCode, LayoutGrid, Columns, Table as TableIcon, Boxes, FlaskConical, Beaker, Clock, Ban, Flame, Snowflake, FileCheck2, Mail, Phone, ClipboardList, Workflow, Sparkles, CheckCircle2, Database, ChevronDown } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -46,11 +46,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('stock');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('table');
 
   useEffect(() => {
     const saved = localStorage.getItem('inventory_view_mode');
-    if (saved && ['kanban', 'grid', 'table'].includes(saved)) {
+    if (saved && ['table'].includes(saved)) {
       setViewMode(saved);
     }
   }, []);
@@ -929,7 +929,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   // Legacy alias so filteredStock still compiles
   const stats = stockStats;
 
-  const filteredStock = useMemo(() => filterStock(stock, stockFilter), [stock, stockFilter]);
+  const filteredStock = useMemo(() => {
+    let result = filterStock(stock, stockFilter);
+    if (stockSort === 'expiry') {
+      result = result.sort((a, b) => new Date(a.expiry_date || '2099-12-31').getTime() - new Date(b.expiry_date || '2099-12-31').getTime());
+    } else if (stockSort === 'name') {
+      result = result.sort((a, b) => (a.inventory_items?.name || '').localeCompare(b.inventory_items?.name || ''));
+    } else if (stockSort === 'quantity_asc') {
+      result = result.sort((a, b) => Number(a.current_quantity || 0) - Number(b.current_quantity || 0));
+    } else if (stockSort === 'quantity_desc') {
+      result = result.sort((a, b) => Number(b.current_quantity || 0) - Number(a.current_quantity || 0));
+    } else if (stockSort === 'newest') {
+      result = result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    }
+    return result;
+  }, [stock, stockFilter, stockSort]);
 
   if (authLoading) {
     return (
@@ -1109,30 +1123,41 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         </div>
       )}
 
-      <div className="flex gap-1 bg-slate-100/70 p-1.5 rounded-2xl overflow-x-auto">
-        {[
-          { id: 'stock', label: 'Stock Log', icon: Boxes },
-          { id: 'items', label: 'Item Registry', icon: Package },
-          { id: 'vendors', label: 'Suppliers (AVL)', icon: Truck },
-          { id: 'pr', label: 'Purchase Requests', icon: ClipboardList },
-          { id: 'traceability', label: 'Traceability', icon: Workflow },
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`relative shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              {isActive && (
-                <motion.span layoutId="inventoryTabPill" className="absolute inset-0 bg-white rounded-xl shadow-sm" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
-              )}
-              <Icon className="w-4 h-4 relative z-10" />
-              <span className="relative z-10">{tab.label}</span>
-            </button>
-          );
-        })}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-100/70 p-1.5 rounded-2xl gap-2">
+        <div className="flex gap-1 overflow-x-auto w-full sm:w-auto">
+          {[
+            { id: 'stock', label: 'Stock Log', icon: Boxes },
+            { id: 'pr', label: 'Purchase Requests', icon: ClipboardList },
+            { id: 'traceability', label: 'Traceability', icon: Workflow },
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                {isActive && (
+                  <motion.span layoutId="inventoryTabPill" className="absolute inset-0 bg-white rounded-xl shadow-sm" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+                )}
+                <Icon className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative group w-full sm:w-auto">
+          <button className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-between sm:justify-start gap-2 transition-all ${['items', 'vendors'].includes(activeTab) ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <div className="flex items-center gap-2"><Database className="w-4 h-4" /> Master Data</div>
+            <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:rotate-180 transition-transform" />
+          </button>
+          <div className="absolute right-0 top-full mt-1 w-full sm:w-48 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+            <button onClick={() => setActiveTab('items')} className={`w-full text-left px-4 py-3 text-xs font-bold flex items-center gap-2 rounded-t-xl hover:bg-slate-50 transition-colors ${activeTab === 'items' ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-700'}`}><Package className="w-4 h-4"/> Item Registry</button>
+            <div className="h-px bg-slate-50 mx-2" />
+            <button onClick={() => setActiveTab('vendors')} className={`w-full text-left px-4 py-3 text-xs font-bold flex items-center gap-2 rounded-b-xl hover:bg-slate-50 transition-colors ${activeTab === 'vendors' ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-700'}`}><Truck className="w-4 h-4"/> Suppliers (AVL)</button>
+          </div>
+        </div>
       </div>
 
       <div className="relative flex flex-col sm:flex-row gap-2">
@@ -1149,31 +1174,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto">
-          {activeTab === 'stock' && (
-            <div className="hidden md:flex gap-1 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm mr-1 h-[54px]">
-              {[
-                { id: 'kanban', icon: Columns, label: 'Kanban' },
-                { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
-                { id: 'table',  icon: TableIcon, label: 'Table' },
-              ].map(v => {
-                const Icon = v.icon;
-                return (
-                  <button
-                    key={v.id}
-                    onClick={() => handleViewModeChange(v.id)}
-                    className={`flex items-center justify-center px-4 rounded-xl transition-all h-full ${
-                      viewMode === v.id
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                    }`}
-                    title={v.label}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
           <select
             value={stockSort}
             onChange={(e) => setStockSort(e.target.value)}
@@ -1230,226 +1230,71 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
             </div>
           ) : (
             <>
-              {/* GRID VIEW (LEGACY) */}
-              {viewMode === 'grid' && (
-                <div className="space-y-4">
-                  {Object.entries(
-              filteredStock.reduce((acc: Record<string, any[]>, s: any) => {
-                let cat = s.inventory_items?.category || 'UNCATEGORIZED';
-                if (cat.toUpperCase() === 'RAW MATERIAL' || cat.toUpperCase() === 'RAW MATERIALS') cat = 'RAW MATERIALS';
-                else if (cat.toUpperCase() === 'REAGENTS & STAINS') cat = 'REAGENTS & STAINS';
-                else if (cat.toUpperCase() === 'CHEMICALS & BIOCHEMICALS') cat = 'CHEMICALS & BIOCHEMICALS';
-                else cat = cat.toUpperCase();
-                
-                if (!acc[cat]) acc[cat] = [];
-                acc[cat].push(s);
-                return acc;
-              }, {})
-            ).sort(([a],[b]) => a.localeCompare(b)).map(([category, catStock]) => {
-              const meta = getCategoryMeta(category);
-              const CatIcon = meta.icon;
-              return (
-              <div key={category} className="space-y-4 pb-4">
-                <div className="flex items-center gap-3 px-2">
-                  <div className="h-px flex-1 bg-gray-100"></div>
-                  <h2 className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${meta.chip}`}>
-                    <CatIcon className="w-3.5 h-3.5" /> {category} ({catStock.length})
-                  </h2>
-                  <div className="h-px flex-1 bg-gray-100"></div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
-                {catStock.map((s: any) => {
-                  const risk = getStockRisk(s);
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={() => setSelectedStock(s)}
-                      className={`bg-white rounded-2xl border px-3 py-2.5 relative group overflow-hidden transition-all hover:shadow-md cursor-pointer ${risk.isExpired ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-slate-100 shadow-sm'}`}
-                    >
-                      <div className={`absolute top-0 left-0 w-1 h-full ${risk.isExpired ? 'bg-red-500' : risk.isLow ? 'bg-amber-500' : meta.bar}`}></div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">
-                          {s.location || 'Central Store'}
-                        </span>
-                        {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                          <span className={`flex items-center px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                            <AlertTriangle className="w-2.5 h-2.5 mr-1" /> {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight mb-2 line-clamp-2 group-hover:text-indigo-800 transition-colors">{s.inventory_items?.name}</h3>
-                      
-                      <div className="flex items-center justify-between gap-2 mb-2 mt-1">
-                        <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider shrink min-w-0">
-                          <Truck className="w-3 h-3 mr-1 shrink-0" /> Lot: <span className="text-slate-900 ml-1 truncate" title={s.supplier_batch_number || 'N/A'}>{s.supplier_batch_number || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 ml-1">
-                          <Calendar className="h-3 w-3 mr-1 shrink-0" /> Exp: <span className={`ml-1 ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-50">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Balance</p>
-                          <p className={`text-xs font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                            {s.current_quantity} <span className="text-xs text-gray-500">{s.inventory_items?.unit}</span>
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Vendor</p>
-                          <p className="text-xs font-black text-gray-700 truncate">{s.vendors?.name || 'Local'}</p>
-                        </div>
-                      </div>
-                      {batchUsageMap[s.id]?.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1 pt-2 mt-2 border-t border-gray-50">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Used in:</span>
-                          {batchUsageMap[s.id].map(b => (
-                            <Link
-                              key={b.id}
-                              href={`/batches/${b.id}`}
-                              onClick={e => e.stopPropagation()}
-                              className="px-1.5 py-0.5 bg-slate-50 text-slate-700 text-xs font-black rounded border border-slate-100 hover:bg-slate-100 transition-colors"
-                            >
-                              {b.batch_id}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                </div>
-              </div>
-            );})}
-                </div>
-              )}
-
-              {/* KANBAN VIEW (TRIAGE BOARD) */}
-              {viewMode === 'kanban' && (
-                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-                  {['Healthy', 'Low Stock', 'Expiring Soon / Expired'].map(statusColumn => {
-                    const columnItems = filteredStock.filter(s => {
-                      const risk = getStockRisk(s);
-                      if (statusColumn === 'Healthy') return !risk.isExpired && !risk.isExpiring && !risk.isLow && !risk.isOut;
-                      if (statusColumn === 'Low Stock') return risk.isLow || risk.isOut;
-                      if (statusColumn === 'Expiring Soon / Expired') return risk.isExpired || risk.isExpiring;
-                      return false;
-                    });
-                    
-                    const ColumnIcon = statusColumn === 'Healthy' ? CheckCircle2 : statusColumn === 'Low Stock' ? Boxes : Clock;
-                    return (
-                      <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
-                        <div className={`rounded-t-2xl p-3 border border-b-0 flex flex-col gap-1.5 shrink-0 ${
-                          statusColumn === 'Healthy' ? 'bg-emerald-50 border-emerald-200' :
-                          statusColumn === 'Low Stock' ? 'bg-amber-50 border-amber-200' :
-                          'bg-red-50 border-red-200'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <span className={`flex items-center gap-1.5 font-black truncate uppercase text-sm ${
-                              statusColumn === 'Healthy' ? 'text-emerald-800' : statusColumn === 'Low Stock' ? 'text-amber-800' : 'text-red-800'
-                            }`}><ColumnIcon className="w-4 h-4" />{statusColumn}</span>
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border bg-white shadow-sm ${
-                              statusColumn === 'Healthy' ? 'text-emerald-700' :
-                              statusColumn === 'Low Stock' ? 'text-amber-700' :
-                              'text-red-700'
-                            }`}>{columnItems.length}</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-100/50 rounded-b-2xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
-                          {columnItems.length === 0 ? (
-                            <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn.toLowerCase()} items</div>
-                          ) : columnItems.map(s => {
-                            const risk = getStockRisk(s);
-                            return (
-                              <div key={s.id} onClick={() => setSelectedStock(s)} className={`bg-white p-3 rounded-xl border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${risk.isExpired ? 'border-red-400 bg-red-50/30' : 'border-slate-100'}`}>
-                                <div className="flex justify-between items-start gap-2">
-                                  <h3 className="text-xs font-black text-indigo-700 line-clamp-2">{s.inventory_items?.name}</h3>
+              {/* PREMIUM DATA TABLE VIEW */}
+              {viewMode === 'table' && (
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                      <thead>
+                        <tr className="bg-slate-50/80 backdrop-blur-md border-b border-slate-100/80 sticky top-0 z-10">
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 w-1/4">Item Details</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 w-1/6">Lot & Expiry</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 text-right w-1/6">Balance</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 w-1/6">Supplier & Loc</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 w-1/6">Last Updated (ALCOA)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {filteredStock.map(s => {
+                          const risk = getStockRisk(s);
+                          const lastUpdatedDate = s.updated_at ? new Date(s.updated_at) : new Date(s.created_at);
+                          return (
+                            <tr key={s.id} onClick={() => setSelectedStock(s)} className={`group transition-all duration-300 cursor-pointer ${risk.isExpired ? 'bg-red-50/20 hover:bg-red-50/50' : 'hover:bg-slate-50/80'}`}>
+                              <td className="px-5 py-4">
+                                <div className="text-sm font-black text-slate-800 flex items-center gap-2 group-hover:text-indigo-700 transition-colors">
+                                  {s.inventory_items?.name}
                                   {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                                    <span className={`shrink-0 flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                                      <AlertTriangle className="w-2.5 h-2.5 mr-1" /> {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : risk.isLow ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' : 'bg-orange-100 text-orange-700 ring-1 ring-orange-200'}`}>
+                                      <AlertTriangle className="w-2.5 h-2.5" /> {risk.isOut ? 'Out' : risk.isExpired ? 'Expired' : risk.isLow ? 'Low' : 'Near Exp'}
                                     </span>
                                   )}
                                 </div>
-                                <div className="flex items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider shrink min-w-0">
-                                  <Truck className="w-3 h-3 mr-1 shrink-0" /> Lot: <span className="text-slate-900 ml-1 truncate" title={s.supplier_batch_number || 'N/A'}>{s.supplier_batch_number || 'N/A'}</span>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{s.inventory_items?.category || 'Uncategorized'}</div>
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="text-[13px] font-mono font-bold text-slate-700">{s.supplier_batch_number || 'No Lot #'}</div>
+                                <div className={`text-[11px] font-bold uppercase tracking-wider mt-1 ${risk.isExpired ? 'text-red-600' : 'text-slate-500'}`}>
+                                  Exp: {s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-gray-50">
-                                  <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Balance</p>
-                                    <p className={`text-[10px] font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                                      {s.current_quantity} <span className="text-[9px] text-gray-500">{s.inventory_items?.unit}</span>
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Expiry</p>
-                                    <p className={`text-[10px] font-bold ${risk.isExpired ? 'text-red-600' : 'text-slate-900'}`}>{s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* TABLE VIEW */}
-              {viewMode === 'table' && (
-                <div className="card overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Item Name</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Lot Number</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Expiry Date</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-right">Balance</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Vendor</th>
-                        <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Location</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredStock.map(s => {
-                        const risk = getStockRisk(s);
-                        return (
-                          <tr key={s.id} onClick={() => setSelectedStock(s)} className={`even:bg-slate-50/40 hover:bg-slate-100/70 transition-colors cursor-pointer ${risk.isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : ''}`}>
-                            <td className="px-4 py-3">
-                              <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                {s.inventory_items?.name}
-                                {(risk.isExpired || risk.isExpiring || risk.isLow) && (
-                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${risk.isExpired || risk.isOut ? 'bg-red-100 text-red-700' : risk.isLow ? 'bg-amber-100 text-amber-700' : 'bg-orange-100 text-orange-700'}`}>
-                                    {risk.isOut ? 'Out' : risk.isExpired ? 'Exp' : risk.isLow ? 'Low' : 'Near'}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <span className={`text-base font-black font-mono ${risk.isOut ? 'text-slate-300' : risk.isLow ? 'text-amber-600' : 'text-slate-800'}`}>
+                                  {s.current_quantity}
+                                </span>
+                                <span className="text-[11px] font-bold text-slate-400 ml-1.5">{s.inventory_items?.unit}</span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="text-[13px] font-semibold text-slate-700 truncate">{s.vendors?.name || 'Local / Direct'}</div>
+                                <div className="mt-1">
+                                  <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 ring-1 ring-slate-200/50">
+                                    {s.location || 'Central Store'}
                                   </span>
-                                )}
-                              </div>
-                              <div className="text-[10px] font-bold text-slate-400 uppercase">{s.inventory_items?.category || 'Uncategorized'}</div>
-                            </td>
-                            <td className="px-4 py-3 text-sm font-mono text-slate-600">{s.supplier_batch_number || 'N/A'}</td>
-                            <td className="px-4 py-3 text-sm font-mono">
-                              <span className={risk.isExpired ? 'text-red-600 font-bold' : 'text-slate-600'}>
-                                {s.expiry_date ? new Date(s.expiry_date).toLocaleDateString() : 'N/A'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <span className={`text-sm font-black font-mono ${risk.isOut ? 'text-gray-300' : risk.isLow ? 'text-amber-700' : 'text-slate-800'}`}>
-                                {s.current_quantity}
-                              </span>
-                              <span className="text-[10px] text-gray-500 ml-1">{s.inventory_items?.unit}</span>
-                            </td>
-                            <td className="px-4 py-3 text-sm font-medium text-slate-700">{s.vendors?.name || 'Local'}</td>
-                            <td className="px-4 py-3">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500">
-                                {s.location || 'Central'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="text-[11px] font-black text-slate-700 flex flex-col gap-0.5">
+                                  <span>{lastUpdatedDate.toLocaleDateString()} at {lastUpdatedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                                    By {s.updated_by ? 'Updater' : (s.creator?.initials || s.creator?.full_name || 'System')}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </>
@@ -1922,21 +1767,28 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       const label = m.type === 'Receive' ? 'Stock Input' : m.type === 'Issue' ? 'Stock Issue' : m.type;
                       const isQuantityMovement = m.type === 'Receive' || m.type === 'Issue';
                       return (
-                        <div key={m.id} className="p-3 flex items-center justify-between text-xs">
-                          <div>
-                            <p className="font-black text-slate-800">{label}</p>
-                            <p className="text-slate-400 font-bold mt-0.5">{new Date(m.created_at).toLocaleDateString()}</p>
-                            {m.notes && !isQuantityMovement && <p className="text-slate-400 font-medium mt-0.5 max-w-[220px]">{m.notes}</p>}
-                          </div>
-                          <div className="text-right">
-                            {isQuantityMovement ? (
-                              <p className={`font-black ${m.type === 'Receive' ? 'text-green-600' : 'text-red-600'}`}>
-                                {m.type === 'Receive' ? '+' : '-'}{m.quantity}
+                        <div key={m.id} className="p-4 flex items-center justify-between text-xs group hover:bg-slate-50/50 transition-colors">
+                          <div className="flex-1">
+                            <p className="font-black text-slate-800 text-sm flex items-center gap-2">
+                              {label}
+                              {isQuantityMovement && (
+                                <span className={`font-mono text-[11px] px-1.5 py-0.5 rounded-md border ${m.type === 'Receive' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+                                  {m.type === 'Receive' ? '+' : '-'}{m.quantity} {selectedStock.inventory_items?.unit}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-slate-500 font-bold mt-1 uppercase tracking-wider text-[10px]">{new Date(m.created_at).toLocaleString()}</p>
+                            {m.notes && (
+                              <p className="text-slate-600 font-semibold mt-1.5 max-w-[280px] bg-white border border-slate-100 shadow-sm p-1.5 rounded-lg text-[11px]">
+                                {m.notes}
                               </p>
-                            ) : (
-                              <p className="font-black text-slate-500 uppercase tracking-wider">Event</p>
                             )}
-                            <p className="text-slate-400 font-medium mt-0.5">By {m.issued_by?.email || 'System'}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Action By</span>
+                              <span className="font-black text-indigo-700 mt-0.5">{m.issued_by?.email || 'System'}</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1944,6 +1796,27 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                   </div>
                 )}
               </div>
+              
+              {/* Batch Usage (ALCOA++) */}
+              {batchUsageMap[selectedStock.id]?.length > 0 && (
+                <div className="px-6 pb-6">
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Batches Using this Stock</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {batchUsageMap[selectedStock.id].map(b => (
+                        <Link
+                          key={b.id}
+                          href={`/batches/${b.id}`}
+                          className="px-2.5 py-1.5 bg-white text-indigo-700 text-xs font-black rounded-lg border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex items-center gap-1.5"
+                        >
+                          <Beaker className="w-3.5 h-3.5 text-indigo-400" />
+                          {b.batch_id}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer Actions */}
