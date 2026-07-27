@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { Activity, Download, Filter, RefreshCw, Layers, ExternalLink } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -52,20 +53,20 @@ export default function BatchAnalyticsPage() {
           batchQuery = batchQuery.eq('product_name', selectedProduct);
         }
 
-        const { data: bData, error: bErr } = await batchQuery;
+        const { data: bData, error: bErr } = await withTimeout(batchQuery, 20000, 'Batch query timed out');
         if (bErr) throw bErr;
 
         const batchIds = bData.map(b => b.id);
 
         // Extract unique products for the dropdown (independent of current filter)
         if (products.length === 0) {
-          const { data: allBData } = await supabase.from('batches').select('product_name');
+          const { data: allBData } = await withTimeout(supabase.from('batches').select('product_name'), 20000, 'Products query timed out');
           const uniqueProds = [...new Set((allBData || []).map(b => b.product_name).filter(Boolean))];
           setProducts(uniqueProds);
         }
 
         if (batchIds.length > 0) {
-          const [rRes, eRes] = await Promise.all([
+          const [rRes, eRes] = await withTimeout(Promise.all([
             // pH + temp readings from fermentation log
             supabase.from('batch_fermentation_readings')
               .select('batch_id, elapsed_hours, ph, incubator_temp_c')
@@ -76,7 +77,7 @@ export default function BatchAnalyticsPage() {
             supabase.from('batch_flask_endpoints')
               .select('batch_id, flask_id, total_hours, final_ph, sensory_overall')
               .in('batch_id', batchIds)
-          ]);
+          ]), 20000, 'Batch details load timed out');
           if (rRes.data) setReadings(rRes.data);
           if (eRes.data) setEndpoints(eRes.data);
         } else {

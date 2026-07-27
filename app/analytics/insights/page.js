@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { Activity, CalendarDays, RefreshCw } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend
@@ -20,11 +21,13 @@ export default function InsightsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: bData } = await supabase.from('batches').select('id, batch_id, created_at, status');
-        const { data: eData } = await supabase.from('batch_flask_endpoints').select('batch_id, total_hours, final_ph, sensory_overall');
+        const [bRes, eRes] = await withTimeout(Promise.all([
+          supabase.from('batches').select('id, batch_id, created_at, status'),
+          supabase.from('batch_flask_endpoints').select('batch_id, total_hours, final_ph, sensory_overall')
+        ]), 20000, 'Insights load timed out');
         
-        if (bData) setBatches(bData);
-        if (eData) setEndpoints(eData);
+        if (bRes.data) setBatches(bRes.data);
+        if (eRes.data) setEndpoints(eRes.data);
       } catch (err) {
         console.error(err);
       } finally {

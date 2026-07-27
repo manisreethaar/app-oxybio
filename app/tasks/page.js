@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -169,7 +170,7 @@ export default function TasksPage() {
       // A stalled network/DB connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh — bound it like the
       // timeout pattern already used in app/profile/page.js.
-      const [empsRes, tasksRes, sopsRes] = await Promise.all([empsPromise, query, sopsPromise]);
+      const [empsRes, tasksRes, sopsRes] = await withTimeout(Promise.all([empsPromise, query, sopsPromise]), 20000, 'Tasks load timed out');
       if (tasksRes.error) throw tasksRes.error;
 
       setEmployees(empsRes.data || []);
