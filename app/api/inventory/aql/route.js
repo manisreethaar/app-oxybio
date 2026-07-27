@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ function getAqlSampleSize(lotQty) {
 export async function GET(request) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getApiUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);

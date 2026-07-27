@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
@@ -19,7 +20,8 @@ export async function GET(request) {
   try {
     const supabase = createClient();
     const supabaseAdmin = createAdminClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = getApiUser();
+    const authError = null;
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const admin = await requireAdmin(supabase, user);

@@ -1,12 +1,14 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { getApiUser } from '@/utils/supabase/get-api-user';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
 
 export async function GET() {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = getApiUser();
+    const authError = null;
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('role, email').eq('email', user.email).single();
