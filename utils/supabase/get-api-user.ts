@@ -1,43 +1,29 @@
 import { headers } from 'next/headers';
 
-// Fast alternative to supabase.auth.getUser() for API route GET handlers.
-//
-// middleware.js already validates the JWT via supabase.auth.getUser() once for
-// every request and forwards the verified identity in two trusted headers
-// (x-user-id / x-user-email). Calling supabase.auth.getUser() *again* inside
-// each API route is a redundant network round-trip to Supabase Auth — 200ms on
-// a good day, 3-10 s when the auth service is under any load. That delay is
-// what made every module appear to "infinitely load" on the first navigation.
-//
-// Usage (in an API route GET handler):
-//   const user = getApiUser();
-//   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//   // user.id and user.email are safe to use; middleware validated the JWT.
-//
-// ⚠️  Do NOT use this in POST/PUT/PATCH/DELETE handlers that perform writes —
-// those should keep `supabase.auth.getUser()` for defence-in-depth, or use
-// RLS through the server client. This helper is safe for reads because
-// middleware already guards all protected routes.
-export function getApiUser(): { id: string; email: string } | null {
+export function getApiUser() {
   const h = headers();
   const id = h.get('x-user-id');
   const email = h.get('x-user-email');
-  if (!id || !email) return null;
-  return { id, email };
+  if (!id) return null; // Email might be empty, so don't check !email strictly if it can be empty, but id must exist.
+  return { id, email: email || '' };
 }
 
-// Same as getApiUser(), but falls back to the authoritative
-// supabase.auth.getUser() call when the trusted headers are absent for any
-// reason (e.g. a request path that didn't go through middleware, a proxy/CDN
-// layer stripping custom headers, other middleware ordering changes). Without
-// this fallback, a missing header silently 401s the request, which callers
-// often swallow into an empty list rather than a visible error.
-export async function getApiUserOrFallback(
-  supabase: { auth: { getUser: () => Promise<{ data: { user: { id: string; email?: string } | null } }> } }
-): Promise<{ id: string; email: string } | null> {
+export async function getApiUserOrFallback(supabase) {
   const fast = getApiUser();
   if (fast) return fast;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  return { id: user.id, email: user.email ?? '' };
+  
+  // Fallback with a 4 second timeout to prevent infinite hanging
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 4000));
+  
+  try {
+    const { data: { user } } = await Promise.race([
+      supabase.auth.getUser(),
+      timeout
+    ]);
+    if (!user) return null;
+    return { id: user.id, email: user.email ?? '' };
+  } catch (err) {
+    console.error('getApiUserOrFallback timeout/error:', err);
+    return null;
+  }
 }

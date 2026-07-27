@@ -39,7 +39,8 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    const { error: deleteError } = await supabase.from('documents').delete().eq('id', id);
+    const adminSupabase = (await import('@/utils/supabase/admin')).createAdminClient();
+    const { error: deleteError } = await adminSupabase.from('documents').delete().eq('id', id);
     if (deleteError) throw deleteError;
 
     return NextResponse.json({ success: true });

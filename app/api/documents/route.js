@@ -32,7 +32,8 @@ export async function POST(request) {
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
     // removed docId declaration
-    const { error } = await supabase.from('documents').insert({
+    const adminSupabase = (await import('@/utils/supabase/admin')).createAdminClient();
+    const { error } = await adminSupabase.from('documents').insert({
       ...parsed.data,
       effective_date: new Date().toISOString(),
       uploaded_by: emp.id
