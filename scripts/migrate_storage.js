@@ -2,12 +2,17 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
-// Fill these in before running!
-const CLOUD_URL = 'https://ttikqclvbewkollnjvza.supabase.co';
-const CLOUD_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0aWtxY2x2YmV3a29sbG5qdnphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDAwMTAzMSwiZXhwIjoyMDg5NTc3MDMxfQ.oi3U1uU6X5AjhbPttNPOXc61OqeFsF5XT1WaOHGsNoA'; // Get from .env.local SUPABASE_SERVICE_ROLE_KEY
+// Fill these in via env vars before running — do not hardcode secrets here.
+const CLOUD_URL = process.env.MIGRATE_CLOUD_SUPABASE_URL;
+const CLOUD_SERVICE_KEY = process.env.MIGRATE_CLOUD_SERVICE_ROLE_KEY; // Get from .env.local SUPABASE_SERVICE_ROLE_KEY
 
-const LOCAL_URL = 'https://db.oxygenbioinnovations.com'; // Or whatever Cloudflare tunnel URL you made
-const LOCAL_SERVICE_KEY = 'qU1O23LeQm4wpjTgMZofcKQFvK5uBioO3u1pYVT5'; // The script will output this on the Ubuntu server
+const LOCAL_URL = process.env.MIGRATE_LOCAL_SUPABASE_URL; // Or whatever Cloudflare tunnel URL you made
+const LOCAL_SERVICE_KEY = process.env.MIGRATE_LOCAL_SERVICE_ROLE_KEY; // The script will output this on the Ubuntu server
+
+if (!CLOUD_URL || !CLOUD_SERVICE_KEY || !LOCAL_URL || !LOCAL_SERVICE_KEY) {
+  console.error('Missing one of MIGRATE_CLOUD_SUPABASE_URL, MIGRATE_CLOUD_SERVICE_ROLE_KEY, MIGRATE_LOCAL_SUPABASE_URL, MIGRATE_LOCAL_SERVICE_ROLE_KEY env vars.');
+  process.exit(1);
+}
 
 async function migrateStorage() {
   console.log('Connecting to Supabase...');
