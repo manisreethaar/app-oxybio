@@ -432,7 +432,7 @@ export default function BatchDetailPage() {
         optical_density: quickOd ? parseFloat(quickOd) : null,
         visual_appearance: quickVisual,
         logged_at: new Date().toISOString(),
-        is_ph_alarm: parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6.5,
+        is_ph_alarm: parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6,
         logged_by: employeeProfile?.id,
       });
       if (error) throw error;
@@ -914,7 +914,7 @@ export default function BatchDetailPage() {
                 placeholder="e.g. 4.20"
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
               />
-              {quickPh && (parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6.5) && (
+              {quickPh && (parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6) && (
                 <p className="text-xs text-red-600 font-bold mt-0.5">⚠ pH out of range — alarm will be flagged</p>
               )}
             </div>

@@ -718,7 +718,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     : elapsedHr;
   const isAtTZero = currentReadingElapsed !== null && currentReadingElapsed < 0.5;
   const phNum = parseFloat(pH);
-  const phInAlarmRange = pH && !isAtTZero && (phNum < 3 || phNum > 6.5);
+  const phInAlarmRange = pH && !isAtTZero && (phNum < 3 || phNum > 6);
   const phOutOfTarget = pH && !isAtTZero && !phInAlarmRange && (phNum < 4.2 || phNum > 4.5);
 
   return (
@@ -845,10 +845,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   phInAlarmRange ? 'text-red-600' : phOutOfTarget ? 'text-amber-600' : 'text-slate-400'
                 }`}>
                   {phInAlarmRange
-                    ? '⚠ Outside alarm range (3–6.5) — reading will be flagged'
+                    ? '⚠ Outside alarm range (3–6) — reading will be flagged'
                     : phOutOfTarget
                     ? '◈ Outside target endpoint range (4.2–4.5)'
-                    : 'Target endpoint: 4.2–4.5 · Alarm: <3 or >6.5'}
+                    : 'Target endpoint: 4.2–4.5 · Alarm: <3 or >6'}
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

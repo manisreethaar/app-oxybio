@@ -106,7 +106,7 @@ export default function BatchesPage() {
   const [activeBatches,    setActiveBatches]    = useState([]);
   const [history,          setHistory]          = useState([]);
   const [archivedBatches,  setArchivedBatches]  = useState([]);
-  const [isAlert,          setIsAlert]          = useState(false);
+
   const [loadingBatches,   setLoadingBatches]   = useState(true);
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
   const [formulations,     setFormulations]     = useState([]);
@@ -340,10 +340,6 @@ export default function BatchesPage() {
       }
       const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id] ?? null }));
 
-      // has_alarm is set by DB trigger on reading insert — no need to scan readings
-      const hasAlarm = activeWithEp.some(b => b.has_alarm === true);
-
-      setIsAlert(hasAlarm);
       setActiveBatches(activeWithEp);
       setHistory(completed);
       setArchivedBatches((archivedRes.data || []).map(normaliseBatchForList));
@@ -553,20 +549,6 @@ export default function BatchesPage() {
   return (
     <div className="page-container">
 
-      {/* CCP Alert Banner */}
-      {isAlert && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center gap-3 shadow-sm"
-        >
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"/>
-          <div className="flex items-center text-red-800 text-sm font-bold">
-            <AlertTriangle className="w-4 h-4 mr-2 text-red-600"/>
-            ACTIVE ALARM — Fermentation deviation detected. Review immediately.
-          </div>
-        </motion.div>
-      )}
 
       {/* Header */}
       <MobilePageHeader
