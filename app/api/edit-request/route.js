@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import { notifyDepartmentManagers } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getApiUser } from '@/utils/supabase/get-api-user';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 
 const editRequestSchema = z.object({
   table_name:   z.string().min(1),
@@ -144,9 +144,9 @@ export async function POST(request) {
 // GET — let a user see their own pending requests
 export async function GET(request) {
   try {
-    const user = getApiUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const supabase = createClient();
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });

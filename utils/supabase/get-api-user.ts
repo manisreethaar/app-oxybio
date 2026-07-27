@@ -25,3 +25,19 @@ export function getApiUser(): { id: string; email: string } | null {
   if (!id || !email) return null;
   return { id, email };
 }
+
+// Same as getApiUser(), but falls back to the authoritative
+// supabase.auth.getUser() call when the trusted headers are absent for any
+// reason (e.g. a request path that didn't go through middleware, a proxy/CDN
+// layer stripping custom headers, other middleware ordering changes). Without
+// this fallback, a missing header silently 401s the request, which callers
+// often swallow into an empty list rather than a visible error.
+export async function getApiUserOrFallback(
+  supabase: { auth: { getUser: () => Promise<{ data: { user: { id: string; email?: string } | null } }> } }
+): Promise<{ id: string; email: string } | null> {
+  const fast = getApiUser();
+  if (fast) return fast;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  return { id: user.id, email: user.email ?? '' };
+}

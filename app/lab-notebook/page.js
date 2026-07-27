@@ -98,9 +98,13 @@ export default function DigitalLnbPage() {
         fetch('/api/lab-notebook').then(r => r.json()),
         supabase.from('batches').select('id, batch_id, variant').limit(100)
       ]), 20000, 'Lab notebook load timed out');
-      if (entriesRes.success) setEntries(entriesRes.data || []);
+      if (entriesRes.success) {
+        setEntries(entriesRes.data || []);
+      } else {
+        toast.error(entriesRes.error || 'Failed to load lab notebook entries.');
+      }
       setBatches(batchData || []);
-    } catch (err) { console.error('LNB fetch error:', err); }
+    } catch (err) { console.error('LNB fetch error:', err); toast.error(err.message || 'Failed to load lab notebook entries.'); }
     finally { setLoading(false); }
   }, [supabase]);
 
