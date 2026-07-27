@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import BatchCard from '@/components/ui/BatchCard';
+import BatchTableView from '@/components/ui/BatchTableView';
 import { SkuBadge } from '@/components/ui/BatchBadges';
 
 // ─── Stage Config ────────────────────────────────────────────
@@ -117,9 +118,11 @@ export default function BatchesPage() {
   const [cancelConfirmId,  setCancelConfirmId]  = useState(null);
   const [statusFilter,     setStatusFilter]     = useState('active');
   const [searchTerm,       setSearchTerm]       = useState('');
+  const [stageFilter,      setStageFilter]      = useState('all');
+  const [typeFilter,       setTypeFilter]       = useState('all');
   const [sortOrder,        setSortOrder]        = useState('newest');
   const [pendingIds,       setPendingIds]       = useState(new Set());
-  const [viewMode,         setViewMode]         = useState('kanban');
+  const [viewMode,         setViewMode]         = useState('table');
 
   useEffect(() => {
     const saved = localStorage.getItem('batches_view_mode');
@@ -195,6 +198,8 @@ export default function BatchesPage() {
       onPermanentDelete: isAdmin ? () => handlePermanentDeleteBatch(batch.id) : undefined,
       isAdmin,
       busy: creatingBatch,
+      creator: batch.creator,
+      date: batch.start_time || batch.created_at,
     };
   };
 
@@ -227,6 +232,8 @@ export default function BatchesPage() {
       onArchive: (isAdmin && !isArchivedTab) ? () => { setCancelConfirmId(batch.id); } : undefined,
       onPermanentDelete: isAdmin ? () => handlePermanentDeleteBatch(batch.id) : undefined,
       isAdmin,
+      creator: batch.creator,
+      date: batch.start_time || batch.created_at,
     };
   };
 
@@ -494,16 +501,21 @@ export default function BatchesPage() {
     })();
 
     return list
-      .filter(batch => !q || [
-        batch.batch_id,
-        batch.experiment_type,
-        batch.sku_target,
-        batch.status,
-        batch.current_stage,
-        batch.formulations?.name,
-        batch.formulations?.code,
-        batch.batch_flasks?.map(f => f.flask_label).join(' ')
-      ].some(value => String(value || '').toLowerCase().includes(q)))
+      .filter(batch => {
+        if (stageFilter !== 'all' && batch.current_stage !== stageFilter) return false;
+        if (typeFilter !== 'all' && batch.experiment_type !== typeFilter) return false;
+        if (!q) return true;
+        return [
+          batch.batch_id,
+          batch.experiment_type,
+          batch.sku_target,
+          batch.status,
+          batch.current_stage,
+          batch.formulations?.name,
+          batch.formulations?.code,
+          batch.batch_flasks?.map(f => f.flask_label).join(' ')
+        ].some(value => String(value || '').toLowerCase().includes(q));
+      })
       .sort((a, b) => {
         if (sortOrder === 'oldest') return new Date(a.created_at || a.start_time || 0) - new Date(b.created_at || b.start_time || 0);
         if (sortOrder === 'batch_id') return (a.batch_id || '').localeCompare(b.batch_id || '', undefined, { numeric: true });
@@ -511,7 +523,7 @@ export default function BatchesPage() {
         if (sortOrder === 'stage') return (STAGE_ORDER.indexOf(a.current_stage) - STAGE_ORDER.indexOf(b.current_stage));
         return new Date(b.created_at || b.start_time || 0) - new Date(a.created_at || a.start_time || 0);
       });
-  }, [statusFilter, activeBatches, history, archivedBatches, searchTerm, sortOrder]);
+  }, [statusFilter, activeBatches, history, archivedBatches, searchTerm, sortOrder, stageFilter, typeFilter]);
 
   const isHistoryView = ['released','rejected','archived'].includes(statusFilter);
 
@@ -588,63 +600,97 @@ export default function BatchesPage() {
         )}
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="mobile-scroll-tabs mt-4 md:mt-6">
-        {['active', 'scheduled', 'released', 'rejected', 'archived'].map(f => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`px-3 py-2 rounded-full text-xs font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${statusFilter === f ? 'bg-navy text-white border-navy' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-          >
-            {f}
-            {tabCounts[f] > 0 && (
-              <span className={`text-xs font-black px-1 py-0.5 rounded-full min-w-[16px] text-center ${statusFilter === f ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                {tabCounts[f]}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* Unified Data Toolbar */}
+      <div className="mt-4 md:mt-6 p-3 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col gap-3 z-10 relative">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="mobile-scroll-tabs flex-1">
+            {['active', 'scheduled', 'released', 'rejected', 'archived'].map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all flex items-center gap-1.5 whitespace-nowrap ${statusFilter === f ? 'bg-navy text-white border-navy shadow-sm' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-100'}`}
+              >
+                {f}
+                {tabCounts[f] > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded font-mono text-[10px] ${statusFilter === f ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    {tabCounts[f]}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
 
-      <div className="card p-3 flex flex-col lg:flex-row gap-3 lg:items-center mt-4">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          <input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search batch ID, recipe, SKU, flask..."
-            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-accent"
-          />
+          <div className="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-xl border border-slate-200">
+            {['table', 'grid', 'kanban'].map(mode => {
+              const Icon = mode === 'table' ? List : mode === 'grid' ? LayoutGrid : Columns;
+              if (mode === 'kanban' && isHistoryView) return null;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => handleViewModeChange(mode)}
+                  className={`p-2 rounded-lg flex items-center justify-center transition-all ${viewMode === mode ? 'bg-white shadow-sm text-navy font-bold' : 'text-slate-400 hover:text-slate-600'}`}
+                  title={`${mode.charAt(0).toUpperCase() + mode.slice(1)} View`}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 outline-none">
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="batch_id">Batch ID</option>
-          <option value="recipe">Recipe</option>
-          <option value="stage">Stage</option>
-        </select>
+
+        <div className="flex flex-col md:flex-row gap-2 w-full">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search batches, recipes, flasks..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl outline-none text-sm font-semibold focus:ring-2 focus:ring-navy/20 bg-slate-50 focus:bg-white transition-colors"
+            />
+          </div>
+          <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 md:pb-0">
+            <select
+              value={stageFilter}
+              onChange={e => setStageFilter(e.target.value)}
+              className="border border-slate-200 rounded-xl px-3 py-2 outline-none text-sm font-bold text-slate-700 bg-slate-50 focus:bg-white"
+            >
+              <option value="all">All Stages</option>
+              {STAGE_ORDER.map(s => <option key={s} value={s}>{STAGE_LABELS[s] || s}</option>)}
+            </select>
+            <select
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)}
+              className="border border-slate-200 rounded-xl px-3 py-2 outline-none text-sm font-bold text-slate-700 bg-slate-50 focus:bg-white"
+            >
+              <option value="all">All Types</option>
+              {experimentTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <select
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value)}
+              className="border border-slate-200 rounded-xl px-3 py-2 outline-none text-sm font-bold text-slate-700 bg-slate-50 focus:bg-white"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="batch_id">Batch ID</option>
+              <option value="recipe">Recipe</option>
+              <option value="stage">Stage</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Batch Views — active / scheduled tabs */}
       {!isHistoryView && (
       <section className="mt-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-sm font-bold text-slate-900 flex items-center">
-            <Activity className="w-4 h-4 mr-1.5 text-navy"/>
+            <Activity className="w-4 h-4 mr-1.5 text-slate-400"/>
             {SECTION_LABELS[statusFilter]}
             {displayedBatches.length > 0 && (
               <span className="ml-2 px-2 py-0.5 bg-navy text-white text-xs font-black rounded-full">{displayedBatches.length}</span>
             )}
           </h2>
-
-          {/* View Toggle */}
-          {statusFilter === 'active' && (
-            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-              <button onClick={() => handleViewModeChange('kanban')} className={`p-1.5 rounded-md flex items-center justify-center transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-navy' : 'text-slate-400 hover:text-slate-600'}`} title="Kanban View"><Columns className="w-4 h-4"/></button>
-              <button onClick={() => handleViewModeChange('grid')} className={`p-1.5 rounded-md flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-navy' : 'text-slate-400 hover:text-slate-600'}`} title="Grid View"><LayoutGrid className="w-4 h-4"/></button>
-              <button onClick={() => handleViewModeChange('table')} className={`p-1.5 rounded-md flex items-center justify-center transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-navy' : 'text-slate-400 hover:text-slate-600'}`} title="Table View"><List className="w-4 h-4"/></button>
-            </div>
-          )}
         </div>
 
         {displayedBatches.length === 0 ? (
@@ -671,72 +717,7 @@ export default function BatchesPage() {
 
             {/* TABLE VIEW */}
             {viewMode === 'table' && statusFilter === 'active' && (
-              <div className="card overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-100">
-                    <thead>
-                      <tr className="bg-slate-50/50">
-                        <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Batch ID</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">SKU / Type</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Recipe</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Stage Progress</th>
-                        <th className="px-5 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Hours</th>
-                        <th className="px-5 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-100">
-                      {displayedBatches.map(batch => {
-                        const effectiveStage = getBatchEffectiveStage(batch);
-                        const stageIdx = STAGE_ORDER.indexOf(effectiveStage);
-                        const maxEpHrs = batch._maxEpHrs ?? null;
-                        const hours = maxEpHrs !== null
-                          ? maxEpHrs.toFixed(1)
-                          : batch.start_time
-                            ? ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
-                            : '0.0';
-                        return (
-                          <tr key={batch.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 py-3 text-xs font-mono font-bold text-slate-800">{batch.batch_id}</td>
-                            <td className="px-5 py-3">
-                              <div className="flex gap-1 items-center">
-                                <SkuBadge sku={batch.sku_target} />
-                                <span className="text-[10px] text-slate-500 font-bold border border-slate-200 rounded px-1.5 py-0.5 bg-slate-100">{batch.experiment_type}</span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3 text-xs font-semibold text-slate-700">{batch.formulations?.name || '—'} <span className="text-slate-400 ml-1">v{batch.formulations?.version}</span></td>
-                            <td className="px-5 py-3">
-                              <div className="w-48">
-                                <div className="flex items-center gap-0.5 mb-1.5">
-                                  {STAGE_ORDER.slice(0, PROGRESS_SEGMENTS).map((stage, idx) => (
-                                    <div
-                                      key={stage}
-                                      title={STAGE_LABELS[stage]}
-                                      className={`h-1.5 flex-1 rounded-full transition-all ${
-                                        idx < stageIdx ? 'bg-navy' :
-                                        idx === stageIdx ? 'bg-amber-500 animate-pulse' :
-                                        'bg-slate-100'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{STAGE_LABELS[effectiveStage] || effectiveStage}</p>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3 text-right text-sm font-black text-slate-800 tabular-nums">
-                              {hours}<span className="text-[10px] font-bold text-slate-400">h</span>
-                            </td>
-                            <td className="px-5 py-3 text-right">
-                              <Link href={`/batches/${batch.id}`} className="inline-flex items-center text-[10px] font-bold text-white bg-navy hover:bg-navy-hover px-3 py-1.5 rounded-lg transition-colors">
-                                View <ArrowRight className="w-3 h-3 ml-1"/>
-                              </Link>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <BatchTableView batches={displayedBatches.map(getActiveCardProps)} />
             )}
 
             {/* KANBAN VIEW */}
@@ -809,6 +790,8 @@ export default function BatchesPage() {
             <Beaker className="w-10 h-10 text-slate-200 mx-auto mb-3"/>
             <p className="text-slate-400 font-medium text-sm">No {statusFilter} batches.</p>
           </div>
+        ) : viewMode === 'table' ? (
+          <BatchTableView batches={displayedBatches.map(getTerminalCardProps)} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {displayedBatches.map(batch => <BatchCard key={batch.id} {...getTerminalCardProps(batch)} />)}

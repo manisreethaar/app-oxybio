@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
+import { format } from 'date-fns';
 import { FlaskConical, ArrowRight, Archive, Trash2 } from 'lucide-react';
 import { SkuBadge, ExperimentBadge, StatusBadge } from '@/components/ui/BatchBadges';
+import CreatorBadge from '@/components/ui/CreatorBadge';
 
 // One card shape for every batch status. Active/scheduled batches show a live
 // stage-progress bar; released/rejected/archived batches show a disposition
@@ -34,12 +36,14 @@ export default function BatchCard({
   isAdmin = false,
   busy = false,
   compact = false,
+  creator,
+  date,
 }) {
   return (
     <div
-      className={`card overflow-hidden flex flex-col hover:border-slate-300 transition-all ${compact ? 'min-w-[280px] w-[280px] snap-center shrink-0' : ''} ${hasAlarm ? 'border-red-300 ring-1 ring-red-200' : ''}`}
+      className={`bg-white rounded-2xl border border-slate-200 shadow-card hover:shadow-card-hover overflow-hidden flex flex-col transition-all ${compact ? 'min-w-[280px] w-[280px] snap-center shrink-0' : ''} ${hasAlarm ? 'border-red-300 ring-2 ring-red-200/50' : ''}`}
     >
-      <div className={`px-5 py-4 flex justify-between items-start border-b border-slate-100 bg-slate-50/40 ${compact ? 'px-4 py-3' : ''}`}>
+      <div className={`px-5 py-4 flex justify-between items-start border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white ${compact ? 'px-4 py-3' : ''}`}>
         <div>
           <p className="font-mono text-sm font-black text-slate-900 tracking-wider mb-1.5">{batchId}</p>
           <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
@@ -114,10 +118,24 @@ export default function BatchCard({
         {volumeMl != null && <span className="ml-auto text-[10px] text-slate-400 font-semibold">{volumeMl}ml</span>}
       </div>
 
-      <div className={`px-5 py-1.5 border-t border-slate-50 flex items-center gap-1.5 ${compact ? 'px-4 py-1' : ''}`}>
-        <span className="text-[10px] text-slate-400 font-bold uppercase">Recipe:</span>
-        <span className="text-[10px] font-bold text-slate-700 truncate max-w-[120px]">{recipeName || '—'}</span>
-        {recipeVersion != null && <span className="text-[10px] text-slate-400">v{recipeVersion}</span>}
+      <div className={`px-5 py-2 border-t border-slate-50 flex items-center justify-between gap-1.5 bg-slate-50/30 ${compact ? 'px-4 py-1.5' : ''}`}>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-slate-400 font-bold uppercase">Recipe:</span>
+          <span className="text-[10px] font-bold text-slate-700 truncate max-w-[120px]">{recipeName || '—'}</span>
+          {recipeVersion != null && <span className="text-[10px] text-slate-400">v{recipeVersion}</span>}
+        </div>
+      </div>
+
+      <div className={`px-5 py-2 border-t border-slate-50 flex items-center justify-between gap-1.5 bg-slate-50/50 ${compact ? 'px-4 py-1.5' : ''}`}>
+        <div className="flex items-center gap-2">
+          <CreatorBadge initials={creator?.initials} fullName={creator?.full_name} size="sm" showTooltip={!compact} />
+          <span className="text-[9px] text-slate-500 font-medium tracking-wide hidden sm:inline-block">CREATED BY</span>
+        </div>
+        <div className="text-right flex items-center gap-1">
+          <span className="text-[9px] text-slate-400 font-mono tracking-tighter" title="ISO 8601 Timestamp">
+            {date ? format(new Date(date), 'dd-MMM-yyyy HH:mm') : '—'}
+          </span>
+        </div>
       </div>
 
       {isScheduled ? (

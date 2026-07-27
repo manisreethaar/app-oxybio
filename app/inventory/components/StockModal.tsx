@@ -58,6 +58,7 @@ export default function StockModal({
             <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold disabled:opacity-50"
               value={newStock.item_id} onChange={(e) => setNewStock({...newStock, item_id: e.target.value})} disabled={modalType === 'edit_stock'}>
               <option value="">Select Item...</option>
+              <option value="CREATE_NEW_ITEM" className="font-black text-indigo-600 bg-indigo-50">➕ Register New Item</option>
               {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
             </select>
           </div>
@@ -66,6 +67,7 @@ export default function StockModal({
             <select required className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-4 focus:ring-slate-100 text-sm font-bold"
               value={newStock.vendor_id} onChange={(e) => setNewStock({...newStock, vendor_id: e.target.value})}>
               <option value="">Select Supplier...</option>
+              <option value="CREATE_NEW_VENDOR" className="font-black text-indigo-600 bg-indigo-50">➕ Add New Supplier</option>
               {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
           </div>
