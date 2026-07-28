@@ -234,7 +234,7 @@ export default function TitrationLogPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
-            <Droplets className="w-8 h-8 text-blue-600" />
+            <Droplets className="w-8 h-8 text-slate-600" />
             Titratable Acidity (TA) Lab
           </h1>
           <p className="mt-1 text-slate-500 font-medium">
@@ -243,7 +243,7 @@ export default function TitrationLogPage() {
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm transition-colors"
+          className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm transition-colors"
         >
           <Plus className="w-4 h-4" />
           {showForm ? 'Cancel' : 'Log Titration'}
@@ -251,16 +251,16 @@ export default function TitrationLogPage() {
       </div>
 
       {/* ── Formula Reference Card ──────────────────────────────────────── */}
-      <div className="glass-card rounded-2xl border border-blue-100 bg-blue-50/40 p-4 flex flex-wrap gap-6 items-center">
-        <div className="flex items-center gap-2 text-blue-800">
+      <div className="glass-card rounded-2xl border border-slate-200 bg-slate-50/40 p-4 flex flex-wrap gap-6 items-center">
+        <div className="flex items-center gap-2 text-slate-800">
           <Calculator className="w-5 h-5 shrink-0" />
           <code className="text-sm font-black tracking-tight">
             TA(%) = (V_titrant × N_titrant × Eq_Wt) ÷ (V_sample × 10)
           </code>
         </div>
-        <div className="flex gap-4 text-xs font-semibold text-blue-700 flex-wrap">
+        <div className="flex gap-4 text-xs font-semibold text-slate-700 flex-wrap">
           {Object.entries(ACID_TYPES).map(([name, a]) => (
-            <span key={name} className="px-2 py-1 bg-white/70 rounded-lg border border-blue-200">
+            <span key={name} className="px-2 py-1 bg-white/70 rounded-lg border border-slate-200">
               {name}: Eq.Wt = {a.eq_wt} g/mol
             </span>
           ))}
@@ -271,7 +271,7 @@ export default function TitrationLogPage() {
       {showForm && (
         <div className="glass-card rounded-2xl border border-slate-200/50 bg-white overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-            <FlaskConical className="w-5 h-5 text-blue-600" />
+            <FlaskConical className="w-5 h-5 text-slate-600" />
             <h2 className="text-base font-bold text-slate-900">New Titration Entry</h2>
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -280,7 +280,7 @@ export default function TitrationLogPage() {
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Sample Source</label>
                 <select value={sourceType} onChange={e => { setSourceType(e.target.value); setSourceId(''); setSourceLabel(''); }}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
                   {SOURCE_TYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
@@ -288,7 +288,7 @@ export default function TitrationLogPage() {
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Sample Name <span className="text-red-500">*</span></label>
                 <input value={sampleName} onChange={e => setSampleName(e.target.value)} required
                   placeholder="e.g. Flask A at T+12h, Lot #RM-042..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
               </div>
             </div>
 
@@ -301,7 +301,7 @@ export default function TitrationLogPage() {
                     const b = batches.find(x => x.id === e.target.value);
                     setSourceId(e.target.value);
                     setSourceLabel(b ? `${b.batch_id} — ${b.product_name}` : '');
-                  }} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+                  }} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
                     <option value="">Select batch (optional)...</option>
                     {batchOptions.map(b => <option key={b.id} value={b.id}>{b.batch_id} — {b.product_name}</option>)}
                   </select>
@@ -310,7 +310,7 @@ export default function TitrationLogPage() {
                   <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Elapsed T+ Hours</label>
                   <input type="number" step="0.1" value={elapsedHours} onChange={e => setElapsedHours(e.target.value)}
                     placeholder="e.g. 12.0"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
                 </div>
               </div>
             )}
@@ -321,7 +321,7 @@ export default function TitrationLogPage() {
                   const ex = experiments.find(x => x.id === e.target.value);
                   setSourceId(e.target.value);
                   setSourceLabel(ex ? ex.title : '');
-                }} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+                }} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
                   <option value="">Select experiment (optional)...</option>
                   {experiments.map(ex => <option key={ex.id} value={ex.id}>{ex.title} ({ex.type.toUpperCase()})</option>)}
                 </select>
@@ -332,7 +332,7 @@ export default function TitrationLogPage() {
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Raw Material / Lot Label</label>
                 <input value={sourceLabel} onChange={e => setSourceLabel(e.target.value)}
                   placeholder="e.g. Coconut Milk Lot #RM-042"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
               </div>
             )}
 
@@ -359,7 +359,7 @@ export default function TitrationLogPage() {
             <div>
               <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Titrant Traceability (Auto-Deduct)</label>
               <select value={inventoryItemId} onChange={e => setInventoryItemId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
                 <option value="">Select chemical to deduct (optional)...</option>
                 {inventoryItems.map(item => (
                   <option key={item.id} value={item.id}>{item.name} ({item.category})</option>
@@ -373,22 +373,22 @@ export default function TitrationLogPage() {
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Normality (N)</label>
                 <input type="number" step="0.001" value={normality} onChange={e => setNormality(e.target.value)}
-                  placeholder="0.1" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                  placeholder="0.1" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Sample Vol (mL) <span className="text-red-500">*</span></label>
                 <input type="number" step="0.1" value={sampleVol} onChange={e => setSampleVol(e.target.value)} required
-                  placeholder="9.0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                  placeholder="9.0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Initial Burette (mL)</label>
                 <input type="number" step="0.01" value={initBurette} onChange={e => setInitBurette(e.target.value)}
-                  placeholder="0.00" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                  placeholder="0.00" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Final Burette (mL) <span className="text-red-500">*</span></label>
                 <input type="number" step="0.01" value={finalBurette} onChange={e => setFinalBurette(e.target.value)} required
-                  placeholder="e.g. 7.65" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"/>
+                  placeholder="e.g. 7.65" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
               </div>
             </div>
 
@@ -417,12 +417,12 @@ export default function TitrationLogPage() {
             )}
 
             <input value={sampleDesc} onChange={e => setSampleDesc(e.target.value)} placeholder="Sample description (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none"/>
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
             <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none"/>
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
 
             <button type="submit" disabled={saving || !liveTAStr}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
+              className="w-full py-3 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-sm uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
               <Droplets className="w-4 h-4"/>
               {saving ? 'Saving...' : `Commit — TA = ${liveTAStr || '?'}%`}
             </button>
@@ -452,7 +452,7 @@ export default function TitrationLogPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-black uppercase tracking-wider text-slate-500">Source:</span>
           <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
-            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
             <option value="ALL">All Sources</option>
             {SOURCE_TYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
@@ -460,7 +460,7 @@ export default function TitrationLogPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-black uppercase tracking-wider text-slate-500">Acid:</span>
           <select value={filterAcid} onChange={e => setFilterAcid(e.target.value)}
-            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
             <option value="ALL">All Types</option>
             {Object.keys(ACID_TYPES).map(k => <option key={k} value={k}>{k}</option>)}
           </select>
