@@ -71,6 +71,7 @@ export default function TitrationLogPage() {
   const [logs, setLogs]         = useState([]);
   const [batches, setBatches]   = useState([]);
   const [experiments, setExperiments] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -92,6 +93,7 @@ export default function TitrationLogPage() {
   const [finalBurette, setFinalBurette] = useState('');
   const [elapsedHours, setElapsedHours] = useState('');
   const [notes, setNotes]               = useState('');
+  const [inventoryItemId, setInventoryItemId] = useState('');
 
   // Live TA calculation
   const eqWt       = ACID_TYPES[acidType]?.eq_wt || 90.08;
@@ -134,6 +136,9 @@ export default function TitrationLogPage() {
     supabase.from('bioprocess_experiments').select('id, title, type')
       .order('created_at', { ascending: false }).limit(50)
       .then(({ data }) => setExperiments(data || []));
+    supabase.from('inventory_items').select('id, name, category, unit')
+      .order('name', { ascending: true })
+      .then(({ data }) => setInventoryItems(data || []));
   }, [fetchLogs, supabase]);
 
   // Auto-fill eq_wt when acid type changes
@@ -167,15 +172,26 @@ export default function TitrationLogPage() {
         final_burette_ml: parseFloat(finalBurette),
         elapsed_hours: elapsedHours ? parseFloat(elapsedHours) : null,
         notes: notes || null,
-        logged_by: employeeProfile?.id,
-        sampled_at: new Date().toISOString(),
+        inventory_item_id: inventoryItemId || null,
       };
-      const { error } = await supabase.from('titration_logs').insert(payload);
-      if (error) throw error;
+      
+      const res = await fetch('/api/lab-bench/ta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to log titration');
+      
       toast.success(`TA logged: ${liveTAStr}% (${acidType})`);
+      if (data.deductionLogs?.length) {
+        data.deductionLogs.forEach(msg => toast.info(msg));
+      }
+
       // Reset form
       setSampleName(''); setSampleDesc(''); setFinalBurette(''); setInitBurette('0');
-      setSampleVol('9'); setElapsedHours(''); setNotes(''); setSourceId(''); setSourceLabel('');
+      setSampleVol('9'); setElapsedHours(''); setNotes(''); setSourceId(''); setSourceLabel(''); setInventoryItemId('');
       setShowForm(false);
       fetchLogs();
     } catch (err) {
@@ -337,6 +353,19 @@ export default function TitrationLogPage() {
               <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
                 <Info className="w-3 h-3"/> {cfg.note} | Target: {cfg.target_min}–{cfg.target_max}%
               </p>
+            </div>
+
+            {/* Traceability */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Titrant Traceability (Auto-Deduct)</label>
+              <select value={inventoryItemId} onChange={e => setInventoryItemId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:ring-2 focus:ring-blue-500">
+                <option value="">Select chemical to deduct (optional)...</option>
+                {inventoryItems.map(item => (
+                  <option key={item.id} value={item.id}>{item.name} ({item.category})</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-slate-400 mt-1">Select the item to automatically deduct the used volume from the oldest available lot (FIFO).</p>
             </div>
 
             {/* Titration parameters */}

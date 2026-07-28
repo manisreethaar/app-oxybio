@@ -26,7 +26,7 @@ export default function TraceabilityTab() {
   }, [searchTerm]);
 
   const handleExport = () => {
-    const headers = ['Date', 'Item Name', 'Lot Number', 'Quantity Used', 'Product Name', 'Batch ID', 'Batch Status'];
+    const headers = ['Date', 'Item Name', 'Lot Number', 'Quantity Used', 'Context', 'Details', 'Notes'];
     const csvContent = [
       headers.join(','),
       ...records.map(r => [
@@ -34,9 +34,9 @@ export default function TraceabilityTab() {
         `"${r.item_name}"`,
         `"${r.lot_number}"`,
         r.quantity_used,
-        `"${r.product_name}"`,
-        `"${r.batch_id}"`,
-        r.batch_status
+        `"${r.context}"`,
+        `"${r.context_label}"`,
+        `"${r.notes || ''}"`
       ].join(','))
     ].join('\n');
 
@@ -55,7 +55,7 @@ export default function TraceabilityTab() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-black text-slate-800">Lot Traceability Report</h2>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Raw Material to Final Batch Linkage</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Raw Material to Usage Context Linkage</p>
         </div>
         <button onClick={handleExport} className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 shadow-sm text-sm">
           <Download className="w-4 h-4 mr-2" /> Export CSV
@@ -68,7 +68,7 @@ export default function TraceabilityTab() {
         </div>
         <input
           type="text"
-          placeholder="Search by lot number, item name, or batch ID..."
+          placeholder="Search by lot number, item name, or context label..."
           className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -95,7 +95,7 @@ export default function TraceabilityTab() {
                   <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Date Logged</th>
                   <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Raw Material (Lot)</th>
                   <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Link</th>
-                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Final Product Batch</th>
+                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Usage Context</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -117,11 +117,13 @@ export default function TraceabilityTab() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-black text-slate-800">{r.product_name}</p>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Batch: {r.batch_id}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-black uppercase tracking-wider">
-                        {r.batch_status}
+                      <p className="text-sm font-black text-slate-800">{r.context_label}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black uppercase tracking-wider">
+                        {r.context}
                       </span>
+                      {r.notes && (
+                        <p className="text-[11px] font-semibold text-slate-400 mt-1 italic truncate max-w-[200px]" title={r.notes}>{r.notes}</p>
+                      )}
                     </td>
                   </tr>
                 ))}
