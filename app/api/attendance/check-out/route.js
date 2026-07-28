@@ -80,18 +80,25 @@ export async function POST(request) {
     }
 
     const checkOutTime = new Date();
-    const totalHours = logRow?.check_in_time
-      ? parseFloat(((checkOutTime - new Date(logRow.check_in_time)) / (1000 * 60 * 60)).toFixed(2))
-      : null;
+    // NOTE: total_hours is intentionally NOT set here.
+    // The DB trigger trg_calc_total_hours fires BEFORE UPDATE and computes it
+    // from check_out_time - check_in_time as the single source of truth.
+    // Duplicating the calculation here would introduce floating-point rounding
+    // drift between the JS value (toFixed(2)) and the trigger value (raw epoch).
 
+    // overtime_hours is calculated here because the DB trigger doesn't have
+    // access to the shift schedule — that requires a join to hr_shifts.
     let overtimeHours = 0;
-    if (totalHours && totalHours > shiftHours) {
-        overtimeHours = parseFloat((totalHours - shiftHours).toFixed(2));
+    if (logRow?.check_in_time) {
+        const totalHoursRaw = (checkOutTime - new Date(logRow.check_in_time)) / (1000 * 60 * 60);
+        if (totalHoursRaw > shiftHours) {
+            overtimeHours = parseFloat((totalHoursRaw - shiftHours).toFixed(2));
+        }
     }
 
     const { data, error } = await supabase.from('attendance_log').update({
       check_out_time: checkOutTime.toISOString(),
-      ...(totalHours !== null ? { total_hours: totalHours, overtime_hours: overtimeHours } : {}),
+      overtime_hours: overtimeHours,
     }).eq('id', parsed.data.id).eq('employee_id', emp.id).select().single();
 
     if (error) throw error;

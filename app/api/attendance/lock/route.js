@@ -1,5 +1,6 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -9,7 +10,7 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-    if (!emp || !['admin', 'ceo', 'hr'].includes(emp.role)) {
+    if (!emp || !['admin', 'ceo', 'cto', 'hr'].includes(emp.role)) {
       return NextResponse.json({ error: 'Permission Denied: Managers only' }, { status: 403 });
     }
 
@@ -19,7 +20,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Array of log_ids required' }, { status: 400 });
     }
 
-    const { error } = await supabase.from('attendance_log').update({
+    // Use admin client for the update so that the hr role (which passes the route
+    // guard above) is not blocked by the RLS admin_all_attendance policy which
+    // only grants full access to admin/ceo/cto via the is_admin() function.
+    const supabaseAdmin = createAdminClient();
+    const { error } = await supabaseAdmin.from('attendance_log').update({
       locked: true,
       manager_signoff_by: emp.id,
       manager_signoff_at: new Date().toISOString()
