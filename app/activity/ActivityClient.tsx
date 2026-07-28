@@ -219,9 +219,21 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
         const results = await Promise.all(promises);
         if (!isMounted.current) return;
 
-        // 4. Process base results
-        const [{ data: batches }, { data: equip }, { data: logData, error: logError }] = results;
-        if (logError) throw logError;
+        // 4. Process results
+        let batches = results[0].data;
+        let equip = results[1].data;
+        let logData = results[2].data;
+        
+        let archivedData = [], issuesData = [], empData = [], attData = [], dueTasksData = [], pendingTasksData = [];
+
+        if (isExecUser && !append) {
+          archivedData = results[3]?.data || [];
+          issuesData = results[4]?.data || [];
+          empData = results[5]?.data || [];
+          attData = results[6]?.data || [];
+          dueTasksData = results[7]?.data || [];
+          pendingTasksData = results[8]?.data || [];
+        }
 
         if (batches && !append) setActiveBatches(batches);
         if (equip && !append) setEquipmentList(equip);
