@@ -3,6 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAccess } from '@/lib/access';
+import { sendServerNotification, notifyAdmins } from '@/utils/serverNotify';
+
 const postSchema = z.object({
   action: z.enum(['raise', 'investigate', 'spawn_action']),
   payload: z.any()
@@ -48,7 +50,7 @@ export async function POST(request) {
     if (action === 'raise') {
       const { title, severity, source, description, fmea_severity, fmea_occurrence, fmea_detection } = payload;
       if (!title) return NextResponse.json({ error: 'Title required' }, { status: 400 });
-      
+
       const { data, error } = await supabase.from('deviations').insert({
         title, severity, source, description,
         fmea_severity: fmea_severity || 1,
@@ -56,8 +58,17 @@ export async function POST(request) {
         fmea_detection: fmea_detection || 1,
         reported_by: emp.id, created_by: emp.id, status: 'Open'
       }).select().single();
-      
+
       if (error) throw error;
+
+      // Notify all admins that a new deviation/NCR was raised
+      notifyAdmins(
+        `🚨 New Deviation Raised — ${severity || 'Unknown'} Severity`,
+        `NCR: "${title}" (${source || 'Unknown source'}) reported by ${emp.full_name || 'a team member'}.`,
+        '/compliance',
+        'alert'
+      ).catch(() => {});
+
       return NextResponse.json({ success: true, data });
     }
 
@@ -77,16 +88,16 @@ export async function POST(request) {
         returnData = data;
       }
 
-      await supabase.from('deviations').update({ 
-        status: 'Investigating', 
-        affected_sops: Array.isArray(affected_sops) ? affected_sops : [] 
+      await supabase.from('deviations').update({
+        status: 'Investigating',
+        affected_sops: Array.isArray(affected_sops) ? affected_sops : []
       }).eq('id', deviation_id);
       return NextResponse.json({ success: true, data: returnData });
     }
 
     if (action === 'spawn_action') {
       const { deviation_id, investigation_id, action_type, title, description, assigned_to, due_date } = payload;
-      
+
       const { data: task, error: taskErr } = await supabase.from('tasks').insert({
         title: `[CAPA] ${title}`,
         description,
@@ -112,7 +123,18 @@ export async function POST(request) {
       if (capaErr) throw capaErr;
 
       await supabase.from('deviations').update({ status: 'CAPA Assigned' }).eq('id', deviation_id);
-      
+
+      // Notify the employee who was assigned the CAPA action task
+      if (assigned_to && assigned_to !== emp.id) {
+        sendServerNotification(
+          assigned_to,
+          `🔧 CAPA Action Assigned: ${title}`,
+          `You have been assigned a ${action_type} action as part of a CAPA investigation. Due: ${due_date ? new Date(due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'TBD'}.`,
+          '/compliance',
+          'alert'
+        ).catch(() => {});
+      }
+
       return NextResponse.json({ success: true });
     }
 
@@ -173,6 +195,25 @@ export async function PATCH(request) {
       // Trigger retraining for affected SOPs
       if (data.affected_sops && Array.isArray(data.affected_sops) && data.affected_sops.length > 0) {
         await supabase.from('sop_acknowledgements').delete().in('sop_id', data.affected_sops);
+      }
+
+      // Notify admins and the original reporter that the deviation is closed
+      const closedMsg = `Deviation "${data.title}" has been closed. 30/60/90-day effectiveness checks have been scheduled.`;
+      notifyAdmins(
+        `✅ Deviation Closed — ${data.title}`,
+        closedMsg,
+        '/compliance',
+        'info'
+      ).catch(() => {});
+
+      if (data.reported_by && data.reported_by !== emp.id) {
+        sendServerNotification(
+          data.reported_by,
+          `✅ Your NCR Has Been Closed`,
+          closedMsg,
+          '/compliance',
+          'info'
+        ).catch(() => {});
       }
 
       return NextResponse.json({ success: true, data });

@@ -1,7 +1,8 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { notifyAdmins } from '@/utils/serverNotify';
 
 const ticketSchema = z.object({
   equipment_id: z.string().uuid(),
@@ -56,12 +57,24 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    // Update equipment status to Out of Service if Critical
+    // Update equipment status based on severity
     if (severity === 'Critical') {
       await supabase.from('equipment').update({ status: 'Out of Service' }).eq('id', equipment_id);
     } else {
       await supabase.from('equipment').update({ status: 'Under Maintenance' }).eq('id', equipment_id);
     }
+
+    // Notify admins about the new ticket
+    const notifType = severity === 'Critical' ? 'alert' : 'warning';
+    const notifTitle = severity === 'Critical'
+      ? `🔴 Critical Equipment Failure — Action Required`
+      : `⚠️ Equipment Ticket Raised`;
+    notifyAdmins(
+      notifTitle,
+      `${severity} ticket filed: "${title}". Equipment has been set to ${severity === 'Critical' ? 'Out of Service' : 'Under Maintenance'}.`,
+      '/equipment',
+      notifType
+    ).catch(() => {});
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

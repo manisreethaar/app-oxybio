@@ -13,7 +13,9 @@ export async function POST(request) {
 
     // Get employee id — lookup by email (CEO/CTO may have been manually inserted)
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-    const ALLOWED_ROLES = ['admin', 'ceo', 'cto', 'staff', 'research_fellow', 'scientist', 'intern'];
+    // All roles may log pH readings (batches.log_reading = ALL_ROLES in permissions matrix).
+    // 'research_intern' was previously missing — now included. 'staff' removed (legacy, not in hierarchy).
+    const ALLOWED_ROLES = ['ceo', 'cto', 'admin', 'research_fellow', 'scientist', 'research_intern', 'intern'];
     if (!emp || !ALLOWED_ROLES.includes(emp.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
