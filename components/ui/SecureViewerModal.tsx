@@ -43,24 +43,24 @@ export default function SecureViewerModal({ url, title, onClose }) {
         onContextMenu={(e) => e.preventDefault()} // Block right click
       >
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 bg-gray-50 shrink-0">
+        <div className="flex justify-between items-center px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4 text-emerald-600" />
-            <span className="font-bold text-sm text-gray-800">{title || 'Secure Document Viewer'}</span>
+            <span className="font-bold text-sm text-slate-800">{title || 'Secure Document Viewer'}</span>
             <span className="bg-emerald-100 text-emerald-800 text-xs font-black uppercase px-2 py-0.5 rounded tracking-widest ml-2">Protected Mode</span>
           </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="relative flex-1 bg-gray-100 flex items-center justify-center overflow-hidden">
+        <div className="relative flex-1 bg-slate-100 flex items-center justify-center overflow-hidden">
           
           {/* Dynamic Watermark to deter screenshots */}
           <div className="absolute inset-0 pointer-events-none flex flex-col justify-between overflow-hidden z-50 opacity-10">
             {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="flex justify-between w-full whitespace-nowrap -rotate-12 transform scale-150 py-10 text-gray-900 font-black text-2xl tracking-widest uppercase mix-blend-multiply">
+              <div key={i} className="flex justify-between w-full whitespace-nowrap -rotate-12 transform scale-150 py-10 text-slate-900 font-black text-2xl tracking-widest uppercase mix-blend-multiply">
                 <span>{userEmail} CONFIDENTIAL</span>
                 <span>{userEmail} CONFIDENTIAL</span>
                 <span>{userEmail} CONFIDENTIAL</span>
@@ -73,10 +73,10 @@ export default function SecureViewerModal({ url, title, onClose }) {
 
           {isBlurred && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-md">
-              <div className="text-center p-6 bg-white rounded-2xl shadow-xl border border-gray-200 max-w-sm">
+              <div className="text-center p-6 bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm">
                 <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-                <h3 className="text-lg font-black text-gray-900 mb-1">Window Unfocused</h3>
-                <p className="text-sm text-gray-600 font-medium leading-relaxed">Document view has been suspended to prevent unauthorized capture. Click back here to resume viewing.</p>
+                <h3 className="text-lg font-black text-slate-900 mb-1">Window Unfocused</h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">Document view has been suspended to prevent unauthorized capture. Click back here to resume viewing.</p>
               </div>
             </div>
           )}
@@ -91,7 +91,7 @@ export default function SecureViewerModal({ url, title, onClose }) {
             <img src={url} alt={title} className="max-w-full max-h-full object-contain p-4" draggable="false" />
           ) : (
             <div className="text-center p-8">
-              <p className="text-gray-500">Preview not available for this file type.</p>
+              <p className="text-slate-500">Preview not available for this file type.</p>
             </div>
           )}
         </div>

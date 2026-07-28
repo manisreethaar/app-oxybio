@@ -130,7 +130,7 @@ export default function InsightsPage() {
             <p className="text-sm text-slate-500 mb-6">
               Displays the Pearson correlation between parameters. 
               <span className="text-red-500 font-bold ml-2">+1.0 = Strong Positive</span> | 
-              <span className="text-blue-500 font-bold ml-2">-1.0 = Strong Negative</span>
+              <span className="text-slate-500 font-bold ml-2">-1.0 = Strong Negative</span>
             </p>
             
             <div className="overflow-x-auto">
@@ -148,20 +148,20 @@ export default function InsightsPage() {
                   <tr>
                     <td className="p-3 text-right font-bold text-slate-700">Duration</td>
                     <td className="p-3 bg-slate-100 font-medium text-slate-400">1.00</td>
-                    <td className="p-3 bg-blue-100 text-blue-700 font-bold">-0.64</td>
-                    <td className="p-3 bg-blue-50 text-blue-600 font-bold">-0.32</td>
+                    <td className="p-3 bg-slate-100 text-slate-700 font-bold">-0.64</td>
+                    <td className="p-3 bg-slate-50 text-slate-600 font-bold">-0.32</td>
                     <td className="p-3 bg-red-100 text-red-700 font-bold">0.55</td>
                   </tr>
                   <tr>
                     <td className="p-3 text-right font-bold text-slate-700">Final pH</td>
-                    <td className="p-3 bg-blue-100 text-blue-700 font-bold">-0.64</td>
+                    <td className="p-3 bg-slate-100 text-slate-700 font-bold">-0.64</td>
                     <td className="p-3 bg-slate-100 font-medium text-slate-400">1.00</td>
                     <td className="p-3 bg-red-50 text-red-600 font-bold">0.41</td>
                     <td className="p-3 bg-red-200 text-red-800 font-bold">0.82</td>
                   </tr>
                   <tr>
                     <td className="p-3 text-right font-bold text-slate-700">Avg Temp</td>
-                    <td className="p-3 bg-blue-50 text-blue-600 font-bold">-0.32</td>
+                    <td className="p-3 bg-slate-50 text-slate-600 font-bold">-0.32</td>
                     <td className="p-3 bg-red-50 text-red-600 font-bold">0.41</td>
                     <td className="p-3 bg-slate-100 font-medium text-slate-400">1.00</td>
                     <td className="p-3 bg-red-50 text-red-600 font-bold">0.27</td>

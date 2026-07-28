@@ -284,7 +284,7 @@ export default function LabBenchPage() {
           </Link>
           <Link
             href="/lab-bench/ta"
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-black text-xs rounded-xl transition-colors border border-blue-200"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-black text-xs rounded-xl transition-colors border border-slate-200"
           >
             <Droplets className="w-4 h-4" /> TA Lab
           </Link>

@@ -72,7 +72,7 @@ export default function TaskDetailModal({
           <div>
             <div className="flex gap-2 items-center">
               <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${selectedTask.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{selectedTask.priority}</span>
-              {selectedTask.is_routine && <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase border bg-blue-50 text-blue-700 border-blue-100 flex items-center gap-1"><Activity className="w-3 h-3"/> Routine ({selectedTask.routine_interval})</span>}
+              {selectedTask.is_routine && <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase border bg-slate-50 text-slate-700 border-slate-100 flex items-center gap-1"><Activity className="w-3 h-3"/> Routine ({selectedTask.routine_interval})</span>}
             </div>
             <h3 className="text-base font-bold text-slate-900 mt-1">{selectedTask.title}</h3>
             {linkedSop && (
