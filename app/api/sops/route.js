@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -60,6 +62,37 @@ export async function POST(request) {
       .single();
 
     if (error) throw error;
+
+    // Determine who needs to be notified
+    const supabaseAdmin = createAdminClient();
+    const { data: allEmployees } = await supabaseAdmin.from('employees').select('id, role, department');
+    
+    if (allEmployees) {
+      const targetIds = new Set();
+      for (const e of allEmployees) {
+        if (
+          (target_employees || []).includes(e.id) ||
+          (target_roles || []).includes(e.role) ||
+          (target_departments || []).includes(e.department)
+        ) {
+          targetIds.add(e.id);
+        }
+      }
+
+      if (targetIds.size > 0) {
+        const notifyPromises = Array.from(targetIds).map(userId => 
+          sendServerNotification(
+            userId,
+            `📄 New SOP Available: ${title}`,
+            `Version ${version} of this SOP requires your review and acknowledgement.`,
+            '/sops',
+            'info'
+          )
+        );
+        await Promise.allSettled(notifyPromises);
+      }
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('SOP Create API Error:', error);

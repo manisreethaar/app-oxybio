@@ -60,6 +60,40 @@ export async function POST(request) {
         throw updateErr;
       }
     }
+    // 3. If equipment is now Operational, auto-resolve any open tickets
+    if (status === 'Operational') {
+      const { data: openTickets } = await supabase
+        .from('equipment_tickets')
+        .select('id, title, reported_by')
+        .eq('equipment_id', equipment_id)
+        .eq('status', 'Open');
+        
+      if (openTickets && openTickets.length > 0) {
+        const ticketIds = openTickets.map(t => t.id);
+        
+        await supabase.from('equipment_tickets').update({
+          status: 'Closed',
+          resolved_by: emp.id,
+          resolved_at: new Date().toISOString(),
+          resolution_notes: `Auto-resolved via maintenance log: ${result}`
+        }).in('id', ticketIds);
+
+        // Notify reporters
+        const { sendServerNotification } = require('@/utils/serverNotify');
+        const notifyPromises = openTickets.map(ticket => {
+          if (ticket.reported_by && ticket.reported_by !== emp.id) {
+            return sendServerNotification(
+              ticket.reported_by,
+              `✅ Equipment Ticket Resolved`,
+              `Your ticket "${ticket.title}" has been resolved following maintenance.`,
+              '/equipment',
+              'success'
+            );
+          }
+        });
+        await Promise.allSettled(notifyPromises.filter(Boolean));
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

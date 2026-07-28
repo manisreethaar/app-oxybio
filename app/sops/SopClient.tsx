@@ -9,7 +9,6 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { notifyEmployee } from '@/lib/notifyEmployee';
 import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search, Trash2, Users } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import SecureViewerModal from '@/components/ui/SecureViewerModal';
@@ -138,7 +137,6 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
         setQuizScore(0);
         setUserAnswers([]);
         fetchSOPs(); 
-        notifyEmployee(employeeProfile.id, '📋 SOP Signed', `Acknowledged: "${showAckModal.title}".`, '/sops'); 
       } else {
         toast.error("Failed to sign SOP. Please try again.");
       }

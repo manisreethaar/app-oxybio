@@ -62,6 +62,24 @@ export async function POST(request, { params }) {
       console.error('Task auto-complete error (non-fatal):', taskErr);
     }
 
+    // Fetch SOP title for notification
+    const { data: sop } = await supabase
+      .from('sop_library')
+      .select('title')
+      .eq('id', id)
+      .single();
+
+    if (sop) {
+      const { sendServerNotification } = require('@/utils/serverNotify');
+      await sendServerNotification(
+        employee.id,
+        '📋 SOP Signed',
+        `Acknowledged: "${sop.title}".`,
+        '/sops',
+        'info'
+      ).catch(() => {});
+    }
+
     return NextResponse.json(data[0]);
   } catch (error) {
     console.error('SOP Acknowledge Error:', error);
