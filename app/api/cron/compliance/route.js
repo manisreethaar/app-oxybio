@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import webpush from 'web-push';
+import { notifyAdmins } from '@/utils/serverNotify';
 import { differenceInDays, startOfDay, parseISO } from 'date-fns';
 
 export async function GET(req) {
@@ -62,59 +62,18 @@ export async function GET(req) {
       return NextResponse.json({ success: true, message: 'No alerts needed today.' });
     }
 
-    // 4. Fetch all Admins who have push notifications enabled
-    const { data: admins, error: adminError } = await supabaseAdmin
-      .from('employees')
-      .select('id, push_subscription')
-      .eq('role', 'admin')
-      .not('push_subscription', 'is', null);
-
-    if (adminError) throw adminError;
-    if (!admins || admins.length === 0) {
-      return NextResponse.json({ success: true, message: 'Alerts generated but no admins are subscribed to push.' });
-    }
-
-    // Configure Web Push
-    webpush.setVapidDetails(
-      'mailto:founder@oxybio.in',
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-      process.env.VAPID_PRIVATE_KEY
+    // 4. Send notifications via centralized utility
+    const bodyText = alertsToSend.join('\n');
+    await notifyAdmins(
+      `Compliance Alerts (${alertsToSend.length} items)`,
+      bodyText,
+      '/compliance',
+      'alert'
     );
-
-    let sentCount = 0;
-    let failCount = 0;
-
-    // 5. Dispatch actual push notifications
-    for (const admin of admins) {
-      try {
-        let sub = admin.push_subscription;
-        if (typeof sub === 'string') {
-           sub = JSON.parse(sub);
-        }
-
-        // We could send one combined notification or multiple. Let's combine them so we don't spam the phone.
-        const bodyText = alertsToSend.join('\n');
-        const payload = JSON.stringify({
-          title: `Compliance Alerts (${alertsToSend.length} items)`,
-          body: bodyText,
-          url: '/compliance'
-        });
-
-        await webpush.sendNotification(sub, payload);
-        sentCount++;
-      } catch (err) {
-        console.error(`Failed to send to admin ${admin.id}:`, err.message);
-        failCount++;
-        // If statusCode is 410, it means the subscription expired/unsubscribed. 
-        // We could auto-clean it from DB here, but we will leave it for now.
-      }
-    }
 
     return NextResponse.json({ 
       success: true, 
-      alerts_generated: alertsToSend.length,
-      notifications_sent: sentCount,
-      notifications_failed: failCount
+      alerts_generated: alertsToSend.length
     });
 
   } catch (error) {

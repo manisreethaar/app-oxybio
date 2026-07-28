@@ -224,7 +224,13 @@ export default function TopBar() {
                   <div key={n.id} onClick={() => markAsRead(n.id, n.link || '/notifications')}
                     className={`px-4 py-3 cursor-pointer transition-colors border-b border-slate-50 last:border-0 ${!n.is_read ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}>
                     <div className="flex justify-between items-start gap-2">
-                      <p className={`text-xs leading-snug ${!n.is_read ? 'font-black text-slate-900' : 'font-semibold text-slate-600'}`}>{n.title}</p>
+                      <div className="flex items-center gap-1.5">
+                        {n.type === 'alert' && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+                        {n.type === 'warning' && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                        {n.type === 'success' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                        {n.type === 'info' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                        <p className={`text-xs leading-snug ${!n.is_read ? 'font-black text-slate-900' : 'font-semibold text-slate-600'}`}>{n.title}</p>
+                      </div>
                       {!n.is_read && <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: '#475569' }} />}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>

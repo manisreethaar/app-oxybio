@@ -81,6 +81,15 @@ export async function PATCH(request) {
     const { id, status } = await request.json();
     if (!id || !status) return NextResponse.json({ error: 'Missing id or status' }, { status: 400 });
 
+    // Fetch the original request to notify the requester
+    const { data: original, error: origError } = await supabase
+      .from('purchase_requests')
+      .select('item_name, requested_by')
+      .eq('id', id)
+      .single();
+
+    if (origError) throw origError;
+
     const { data, error } = await supabase
       .from('purchase_requests')
       .update({ status, resolved_at: new Date().toISOString() })
@@ -89,6 +98,18 @@ export async function PATCH(request) {
       .single();
 
     if (error) throw error;
+
+    if (original.requested_by) {
+      const { sendServerNotification } = require('@/utils/serverNotify');
+      await sendServerNotification(
+        original.requested_by,
+        `🛒 Purchase Request Updated`,
+        `Your request for "${original.item_name}" is now marked as: ${status}.`,
+        '/inventory',
+        status === 'Approved' ? 'success' : 'info'
+      ).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
