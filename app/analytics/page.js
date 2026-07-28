@@ -1,5 +1,5 @@
 'use client';
-import { Activity, BarChart2, TrendingUp, Clock } from 'lucide-react';
+import { Activity, BarChart2, TrendingUp, Clock, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 
 const CARDS = [
@@ -34,6 +34,14 @@ const CARDS = [
     iconColor: 'text-blue-600',
     title: 'Stability / Shelf Life',
     desc: 'pH degradation timelines across storage conditions, study status overview, and shelf life log summaries.',
+  },
+  {
+    href: '/analytics/bioprocess',
+    icon: FlaskConical,
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
+    title: 'Bioprocess Analytics',
+    desc: 'Live kinetics — Specific Growth Rate (μ), Biomass Yield (Yx/s), Acid Productivity (Qp), TA Acid Curves, and real-time process flaw detection.',
   },
 ];
 

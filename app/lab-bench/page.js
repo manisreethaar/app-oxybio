@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Plus, Grid3x3, RefreshCw, FlaskConical, Activity,
   AlertCircle, Clock, ChevronRight, Loader2, ClipboardList,
-  CheckCircle2, Beaker, History, PieChart
+  CheckCircle2, Beaker, History, PieChart, Droplets
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/context/AuthContext';
@@ -283,6 +283,12 @@ export default function LabBenchPage() {
             <PieChart className="w-4 h-4" /> Analytics
           </Link>
           <Link
+            href="/lab-bench/ta"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-black text-xs rounded-xl transition-colors border border-blue-200"
+          >
+            <Droplets className="w-4 h-4" /> TA Lab
+          </Link>
+          <Link
             href="/lab-bench/grid"
             className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl transition-colors"
           >
@@ -385,6 +391,8 @@ export default function LabBenchPage() {
               { href: '/batches',             icon: FlaskConical,  label: 'Batches' },
               { href: '/growth-studies',      icon: Activity,      label: 'Growth Studies' },
               { href: '/research/incubation', icon: ClipboardList, label: 'Incubation' },
+              { href: '/lab-bench/ta',        icon: Droplets,      label: 'TA Lab' },
+              { href: '/analytics/bioprocess',icon: Beaker,        label: 'Bioprocess' },
             ].map(({ href, icon: Icon, label }) => (
               <Link key={href} href={href}
                 className="card flex flex-col items-center gap-1.5 py-3 hover:bg-slate-50 transition-colors text-slate-500"
