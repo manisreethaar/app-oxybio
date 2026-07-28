@@ -370,7 +370,7 @@ export default function AttendancePage() {
           photo_url: publicUrl, 
           override: overrideLocation,
           liveness_score: livenessProgress,
-          face_match_score: 95.5 // Simulated backend match score for Gap 2
+          // face_match_score omitted — real biometric matching not yet implemented
         }),
       });
       const apiData = await apiRes.json();
