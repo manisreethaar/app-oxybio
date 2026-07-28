@@ -30,8 +30,8 @@ const CARDS = [
   {
     href: '/analytics/stability',
     icon: Clock,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-slate-50',
+    iconColor: 'text-slate-600',
     title: 'Stability / Shelf Life',
     desc: 'pH degradation timelines across storage conditions, study status overview, and shelf life log summaries.',
   },

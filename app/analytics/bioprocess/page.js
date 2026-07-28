@@ -343,7 +343,7 @@ export default function BioprocessAnalyticsPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {kpiCards.map(k => {
                   const Icon = k.icon;
-                  const colorMap = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', blue: 'bg-blue-50 text-blue-600', red: 'bg-red-50 text-red-600' };
+                  const colorMap = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', blue: 'bg-slate-50 text-slate-600', red: 'bg-red-50 text-red-600' };
                   return (
                     <div key={k.label} className="glass-card rounded-2xl p-5 border border-slate-200/50">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${colorMap[k.color]}`}>
@@ -401,7 +401,7 @@ export default function BioprocessAnalyticsPage() {
           {titrationLogs.length > 0 && (
             <div className="glass-card rounded-2xl border border-slate-200/50 bg-white overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-blue-600"/>
+                <FlaskConical className="w-4 h-4 text-slate-600"/>
                 <h3 className="text-sm font-bold text-slate-900">Dedicated TA Lab Readings Linked to These Batches</h3>
                 <span className="ml-auto text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{titrationLogs.length}</span>
               </div>

@@ -32,9 +32,9 @@ export default function FormulaDiff({ v1, v2 }) {
   const allKeys = Array.from(new Set([...Object.keys(map1), ...Object.keys(map2)]));
 
   return (
-    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Visual Delta: V{v1.version} → V{v2.version}</span>
+    <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+        <span className="text-xs font-black uppercase tracking-widest text-slate-500">Visual Delta: V{v1.version} → V{v2.version}</span>
       </div>
       <div className="p-4 space-y-2">
         {allKeys.map(key => {
@@ -59,7 +59,7 @@ export default function FormulaDiff({ v1, v2 }) {
           const diff = item2.value - item1.value;
           if (diff === 0 || (isNaN(item1.value) && isNaN(item2.value))) {
              return (
-              <div key={key} className="flex items-center gap-3 p-2 bg-gray-50 border border-transparent rounded-lg text-gray-400 text-xs font-medium">
+              <div key={key} className="flex items-center gap-3 p-2 bg-slate-50 border border-transparent rounded-lg text-slate-400 text-xs font-medium">
                 <Equal className="w-3 h-3"/> {item2.original}
               </div>
             );

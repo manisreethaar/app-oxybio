@@ -1090,7 +1090,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory & Supply Chain</h1>
-            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">O2B Global Traceability System</p>
           </div>
         </div>
         <div className="flex gap-3 relative">
@@ -1098,18 +1098,18 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <div className="relative">
             <button
               onClick={() => setShowOptions(v => !v)}
-              className="flex items-center px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-all active:scale-95"
+              className="flex items-center px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-all active:scale-95"
             >
               <Filter className="w-4 h-4 mr-2" /> Options
             </button>
             {showOptions && (
-              <div className="absolute left-0 top-full mt-2 w-52 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 overflow-hidden">
+              <div className="absolute left-0 top-full mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 overflow-hidden">
                 {activeTab === 'stock' && (
                   <>
-                    <p className="px-4 pt-3 pb-1 text-xs font-black text-gray-400 uppercase tracking-widest">Filter Stock</p>
+                    <p className="px-4 pt-3 pb-1 text-xs font-black text-slate-400 uppercase tracking-widest">Filter Stock</p>
                     {[['all','All Stock'],['low','Low Stock Only'],['expiring','Expiring (&lt;30d)'],['expired','Expired']].map(([val, label]) => (
                       <button key={val} onClick={() => { setStockFilter(val as StockFilter); setShowOptions(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 transition-colors ${ stockFilter === val ? 'text-slate-700 bg-slate-50/60' : 'text-gray-700' }`}>
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 transition-colors ${ stockFilter === val ? 'text-slate-700 bg-slate-50/60' : 'text-slate-700' }`}>
                         {label}
                       </button>
                     ))}
@@ -1117,10 +1117,10 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 )}
                 {activeTab === 'items' && (
                   <>
-                    <p className="px-4 pt-3 pb-1 text-xs font-black text-gray-400 uppercase tracking-widest">Sort Registry</p>
+                    <p className="px-4 pt-3 pb-1 text-xs font-black text-slate-400 uppercase tracking-widest">Sort Registry</p>
                     {[['name','Name (Aâ€“Z)'],['newest','Newest First'],['stock','By Min Stock Level']].map(([val, label]) => (
                       <button key={val} onClick={() => { setRegistrySort(val); setShowOptions(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 transition-colors ${ registrySort === val ? 'text-slate-700 bg-slate-50/60' : 'text-gray-700' }`}>
+                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 transition-colors ${ registrySort === val ? 'text-slate-700 bg-slate-50/60' : 'text-slate-700' }`}>
                         {label}
                       </button>
                     ))}
@@ -1128,15 +1128,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 )}
                 {activeTab === 'vendors' && (
                   <>
-                    <p className="px-4 pt-3 pb-1 text-xs font-black text-gray-400 uppercase tracking-widest">Supplier Options</p>
+                    <p className="px-4 pt-3 pb-1 text-xs font-black text-slate-400 uppercase tracking-widest">Supplier Options</p>
                     <button onClick={() => { setRegistrySearch(''); setShowOptions(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 transition-colors">Clear Search</button>
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Clear Search</button>
                     <button onClick={() => { setRegistrySort('name'); setShowOptions(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 transition-colors">Sort Aâ€“Z</button>
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Sort Aâ€“Z</button>
                   </>
                 )}
-                <div className="border-t border-gray-100 mt-1 mb-1" />
-                <button onClick={() => setShowOptions(false)} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-400 hover:bg-gray-50 transition-colors">Close</button>
+                <div className="border-t border-slate-100 mt-1 mb-1" />
+                <button onClick={() => setShowOptions(false)} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-400 hover:bg-slate-50 transition-colors">Close</button>
               </div>
             )}
           </div>
@@ -1211,12 +1211,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       <div className="relative flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1 min-w-0">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+            <Search className="h-5 w-5 text-slate-400" />
           </div>
           <input
             type="text"
             placeholder="Search by item name or lot number..."
-            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
+            className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -1225,7 +1225,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           <select
             value={stockSort}
             onChange={(e) => setStockSort(e.target.value)}
-            className="px-4 py-4 rounded-2xl bg-white border border-gray-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-sm"
+            className="px-4 py-4 rounded-2xl bg-white border border-slate-200 text-xs font-bold focus:ring-4 focus:ring-slate-50 focus:border-slate-500 shadow-sm"
           >
             <option value="expiry">Sort: Nearest Expiry</option>
             <option value="name">Sort: Name (A-Z)</option>
@@ -1372,21 +1372,21 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
           {/* Registry Controls */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search by name, code, or category..."
                 value={registrySearch}
                 onChange={(e) => setRegistrySearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-slate-600 text-sm font-bold"
+                className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-600 text-sm font-bold"
               />
             </div>
             <div className="flex items-center gap-3 w-full md:w-auto">
-              <span className="text-xs font-black uppercase text-gray-400 whitespace-nowrap">Sort By</span>
+              <span className="text-xs font-black uppercase text-slate-400 whitespace-nowrap">Sort By</span>
               <select
                 value={registrySort}
                 onChange={(e) => setRegistrySort(e.target.value)}
-                className="px-4 py-2.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 text-xs font-bold focus:ring-2 focus:ring-slate-600"
+                className="px-4 py-2.5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 text-xs font-bold focus:ring-2 focus:ring-slate-600"
               >
                 <option value="name">Alphabetical (A-Z)</option>
                 <option value="newest">Newest Added</option>
@@ -1405,7 +1405,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     )}
                     <button
                       onClick={() => { setIsSelectMode(false); setSelectedItemIds(new Set()); }}
-                      className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                      className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                     >
                       Cancel
                     </button>
@@ -1413,7 +1413,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 ) : (
                   <button
                     onClick={() => setIsSelectMode(true)}
-                    className="px-4 py-2.5 bg-gray-50 text-gray-500 rounded-2xl text-xs font-black uppercase tracking-widest ring-1 ring-gray-200 hover:bg-red-50 hover:text-red-600 hover:ring-red-200 transition-all"
+                    className="px-4 py-2.5 bg-slate-50 text-slate-500 rounded-2xl text-xs font-black uppercase tracking-widest ring-1 ring-slate-200 hover:bg-red-50 hover:text-red-600 hover:ring-red-200 transition-all"
                   >
                     Select
                   </button>
@@ -1439,11 +1439,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               return (
               <div key={category} className="space-y-4">
                 <div className="flex items-center gap-3 px-2">
-                  <div className="h-px flex-1 bg-gray-100"></div>
+                  <div className="h-px flex-1 bg-slate-100"></div>
                   <h2 className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${meta.chip}`}>
                     <CatIcon className="w-3.5 h-3.5" /> {category} ({catItems.length})
                   </h2>
-                  <div className="h-px flex-1 bg-gray-100"></div>
+                  <div className="h-px flex-1 bg-slate-100"></div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
@@ -1457,9 +1457,9 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     >
                       <div className={`absolute top-0 left-0 w-1 h-full ${meta.bar}`}></div>
                       <div className="flex justify-between items-start mb-2">
-                        <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-gray-100 text-gray-500">{item.sub_category || 'General'}</span>
+                        <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest bg-slate-100 text-slate-500">{item.sub_category || 'General'}</span>
                         {isSelectMode ? (
-                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selectedItemIds.has(item.id) ? 'bg-red-600 border-red-600' : 'border-gray-300 bg-white'}`}>
+                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selectedItemIds.has(item.id) ? 'bg-red-600 border-red-600' : 'border-slate-300 bg-white'}`}>
                             {selectedItemIds.has(item.id) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
                           </div>
                         ) : (
@@ -1471,13 +1471,13 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                               <>
                                 <button
                                   onClick={() => { setNewItem({...item}); setModalType('edit_item'); setIsModalOpen(true); }}
-                                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm">
+                                  className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-slate-200 shadow-sm">
                                   <FileText className="w-3.5 h-3.5" />
                                 </button>
                                 {isAdmin && (
                                   <button
                                     onClick={() => { setDeleteType('item'); setDeletingId(item.id); }}
-                                    className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                                    className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-200 shadow-sm">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
@@ -1507,17 +1507,17 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       </div>
                       
                       <h3 className="text-[13px] sm:text-sm font-black text-indigo-700 leading-tight group-hover:text-indigo-800 transition-colors">{item.name}</h3>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-0.5">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">
                         {item.unit}{(item as any).hazardous && <span className="ml-1 text-orange-500">⚠</span>}
                       </p>
-                      <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between gap-1">
+                      <div className="mt-2 pt-2 border-t border-slate-50 flex items-center justify-between gap-1">
                         <div>
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Stock</p>
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Stock</p>
                           <p className="text-xs font-black text-slate-800">{item.min_stock_level || '0'} {item.unit}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Code</p>
-                          <p className="text-xs font-mono font-bold text-gray-500 truncate max-w-[72px]">{item.item_code || '---'}</p>
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Code</p>
+                          <p className="text-xs font-mono font-bold text-slate-500 truncate max-w-[72px]">{item.item_code || '---'}</p>
                         </div>
                       </div>
                     </div>
@@ -1616,14 +1616,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                  {canEditItems && (
                     <button
                       onClick={() => { setNewVendor({...vendor}); setModalType('edit_vendor'); setIsModalOpen(true); }}
-                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-gray-200 shadow-sm">
+                      className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all border border-slate-200 shadow-sm">
                       <FileText className="w-3.5 h-3.5" />
                     </button>
                  )}
                  {isAdmin && (
                     <button
                       onClick={() => { setDeleteType('vendor'); setDeletingId(vendor.id); }}
-                      className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 shadow-sm">
+                      className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-200 shadow-sm">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                  )}
@@ -1634,15 +1634,15 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-lg font-black text-slate-950 truncate">{vendor.name}</h3>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 truncate">{vendor.contact_person || 'No Contact'}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{vendor.contact_person || 'No Contact'}</p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
-                <p className="text-xs font-bold text-gray-600 flex items-center gap-2"><Mail className="w-3 h-3"/> {vendor.email || 'No email'}</p>
+              <div className="mt-4 pt-4 border-t border-slate-50 space-y-2">
+                <p className="text-xs font-bold text-slate-600 flex items-center gap-2"><Mail className="w-3 h-3"/> {vendor.email || 'No email'}</p>
                 <div className={`px-2 py-1 text-xs font-black uppercase tracking-widest rounded inline-block ${
                   vendor.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
                   vendor.status === 'Conditional' ? 'bg-amber-50 text-amber-700' :
-                  vendor.status === 'Blacklisted' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700'
+                  vendor.status === 'Blacklisted' ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-slate-700'
                 }`}>
                   {vendor.status || 'Approved'} Supplier
                 </div>
@@ -1650,7 +1650,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                 <div className={`ml-1 px-2 py-1 text-xs font-black uppercase tracking-widest rounded inline-block ${
                   vendor.qualification_status === 'Approved' ? 'bg-slate-100 text-slate-900' :
                   vendor.qualification_status === 'Under Review' ? 'bg-amber-50 text-amber-700' :
-                  vendor.qualification_status === 'Suspended' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'
+                  vendor.qualification_status === 'Suspended' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {vendor.qualification_status || 'Unqualified'} (AVL)
                 </div>
@@ -1681,12 +1681,12 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
-            <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gray-50 border-b border-gray-100 flex items-center justify-between shrink-0">
+            <div className="px-5 py-4 sm:px-6 sm:py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div>
                 <h2 className="text-lg font-black tracking-tight text-slate-800">
                   {modalType === 'stock' ? 'Receive Warehouse Shipment' : modalType === 'edit_stock' ? 'Edit Stock Log' : modalType === 'items' ? 'Register Raw Material' : modalType === 'edit_item' ? 'Edit Raw Material' : modalType === 'edit_vendor' ? 'Edit Supplier' : 'Register Approved Supplier'}
                 </h2>
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
                   {modalType === 'stock' ? 'Digital Material Input (DMI)' : modalType === 'items' ? 'BOM Registry updates' : 'Suppliers List update'}
                 </p>
               </div>
@@ -1725,7 +1725,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
           <div className="w-full max-w-xl rounded-none sm:rounded-2xl bg-white h-[100dvh] sm:h-auto sm:max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-5 bg-gray-50 border-b border-gray-100 relative shrink-0">
+            <div className="p-5 bg-slate-50 border-b border-slate-100 relative shrink-0">
               <div className="absolute top-5 right-14 flex items-center gap-2">
                 {canDo('inventory', 'edit') && (
                   <button onClick={() => { 
@@ -1738,27 +1738,27 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                     setModalType('edit_stock');
                     setIsModalOpen(true);
                     setSelectedStock(null);
-                  }} className="p-1.5 rounded-lg bg-white border border-gray-200 text-slate-600 hover:bg-gray-100 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+                  }} className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
                     <Edit3 className="w-4 h-4"/> Edit
                   </button>
                 )}
               </div>
-              <button onClick={() => setSelectedStock(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-200 rounded-lg transition-all"><X className="w-5 h-5"/></button>
+              <button onClick={() => setSelectedStock(null)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-200 rounded-lg transition-all"><X className="w-5 h-5"/></button>
               <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-600">{selectedStock.inventory_items?.category}</span>
               <h2 className="text-xl font-black font-mono tracking-tighter mt-1 text-slate-800">{selectedStock.inventory_items?.name}</h2>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Lot: {selectedStock.supplier_batch_number || 'N/A'}</p>
             </div>
 
             {/* Content Scrollable */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {/* Summary Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-xs font-black uppercase text-gray-400 tracking-widest">Available Balance</p>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Available Balance</p>
                   <p className="text-2xl font-black font-mono text-slate-800 mt-1">{selectedStock.current_quantity} <span className="text-xs">{selectedStock.inventory_items?.unit}</span></p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-xs font-black uppercase text-gray-400 tracking-widest">Expiry Date</p>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Expiry Date</p>
                   <p className={`text-lg font-black mt-1 ${selectedStock.expiry_date && new Date(selectedStock.expiry_date) < new Date() ? 'text-red-600' : 'text-slate-800'}`}>
                     {selectedStock.expiry_date ? new Date(selectedStock.expiry_date).toLocaleDateString() : 'N/A'}
                   </p>
@@ -1884,7 +1884,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
               <div className="flex gap-2 w-full">
                 <button 
                   onClick={() => setShowQR(true)} 
-                  className="flex-1 py-4 bg-gray-100 text-gray-700 font-black rounded-2xl text-xs uppercase tracking-widest shadow-sm hover:bg-gray-200 transition-all text-center flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-slate-100 text-slate-700 font-black rounded-2xl text-xs uppercase tracking-widest shadow-sm hover:bg-slate-200 transition-all text-center flex items-center justify-center gap-2"
                 >
                   <QrCode className="w-4 h-4" /> View QR
                 </button>
@@ -1943,8 +1943,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
               {/* A-46: Quarantine location + A-47: Rejection + A-45: CoA verification */}
               {(selectedStock.status === 'Quarantined' || selectedStock.qc_status === 'Quarantine') && (
-                <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                  <p className="text-xs font-black text-gray-500 uppercase">A-46 Quarantine Location</p>
+                <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-black text-slate-500 uppercase">A-46 Quarantine Location</p>
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       defaultValue={selectedStock.quarantine_location || ''}
@@ -2052,14 +2052,14 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       {pendingSeed && (
         <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
-            <p className="text-sm text-gray-600 mb-6 text-center">
+            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
+            <p className="text-sm text-slate-600 mb-6 text-center">
               This will automatically load 115 standard inventory items and common lab equipment into the system. Perfect for initial setup. Proceed?
             </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setPendingSeed(false)}
-                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition w-full"
+                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
               >
                 Cancel
               </button>

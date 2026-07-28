@@ -180,7 +180,7 @@ export default function StabilityAnalyticsPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Studies', value: kpis.total, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Total Studies', value: kpis.total, icon: Clock, color: 'text-slate-600', bg: 'bg-slate-50' },
               { label: 'Active', value: kpis.active, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
               { label: 'Completed', value: kpis.completed, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
               { label: 'Conditions Tested', value: Object.keys(kpis.conditionCounts).length, icon: TrendingDown, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -199,7 +199,7 @@ export default function StabilityAnalyticsPage() {
             {/* pH Degradation Timeline */}
             <div className="glass-card rounded-2xl p-6 border border-slate-200/50 bg-white">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center">
-                <TrendingDown className="w-4 h-4 mr-2 text-blue-500" />
+                <TrendingDown className="w-4 h-4 mr-2 text-slate-500" />
                 pH Stability Over Days
               </h3>
               <div className="h-72">
@@ -276,7 +276,7 @@ export default function StabilityAnalyticsPage() {
                         <td className="py-2 pr-4">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase ${
                             s.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                            s.status === 'ongoing' ? 'bg-blue-100 text-blue-700' :
+                            s.status === 'ongoing' ? 'bg-slate-100 text-slate-700' :
                             'bg-slate-100 text-slate-600'
                           }`}>{s.status}</span>
                         </td>

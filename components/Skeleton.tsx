@@ -6,7 +6,7 @@ interface SkeletonProps {
 }
 
 export default function Skeleton({ className = '', variant = 'rect', width, height }: SkeletonProps) {
-  const baseStyles = "bg-gray-200 overflow-hidden relative";
+  const baseStyles = "bg-slate-200 overflow-hidden relative";
   const variantStyles = {
     rect: "rounded-lg",
     circle: "rounded-full",

@@ -69,7 +69,7 @@ export default function AuditLogsPage() {
   const formatAction = (action) => {
     const colors = {
       INSERT: 'text-green-600 bg-green-50 border-green-200',
-      UPDATE: 'text-blue-600 bg-blue-50 border-blue-200',
+      UPDATE: 'text-slate-600 bg-slate-50 border-slate-200',
       DELETE: 'text-red-600 bg-red-50 border-red-200',
     };
     const c = colors[action] || 'text-slate-600 bg-slate-50 border-slate-200';

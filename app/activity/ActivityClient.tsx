@@ -632,7 +632,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
                 priorityOnly
                 ? 'bg-navy text-white border-navy shadow-lg'
-                : 'bg-white text-slate-500 border-slate-200 hover:border-navy hover:text-navy text-gray-800'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-navy hover:text-navy text-slate-800'
               }`}
             >
               <Zap className={`w-3.5 h-3.5 ${priorityOnly ? 'animate-pulse' : ''}`}/>
@@ -822,9 +822,9 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <Activity className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Logged Effort (7D)</p>
-                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">
-                          {analyticsData.velocity.reduce((acc,v) => acc + v.hours, 0).toFixed(1)} <span className="text-xs font-bold text-gray-400">HRS</span>
+                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Logged Effort (7D)</p>
+                       <p className="text-2xl font-black text-slate-900 leading-none mt-1">
+                          {analyticsData.velocity.reduce((acc,v) => acc + v.hours, 0).toFixed(1)} <span className="text-xs font-bold text-slate-400">HRS</span>
                        </p>
                     </div>
                  </div>
@@ -836,13 +836,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <AlertTriangle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Deviation Rate</p>
-                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">
+                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Deviation Rate</p>
+                       <p className="text-2xl font-black text-slate-900 leading-none mt-1">
                           {((analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0) / (activities.length || 1)) * 100).toFixed(1)}%
                        </p>
                     </div>
                  </div>
-                 <p className="text-xs font-bold text-gray-400 uppercase">Based on {activities.length} logged entries</p>
+                 <p className="text-xs font-bold text-slate-400 uppercase">Based on {activities.length} logged entries</p>
               </div>
 
               <div className="card p-6">
@@ -851,13 +851,13 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                        <CheckCircle className="w-5 h-5"/>
                     </div>
                     <div>
-                       <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Issues Logged (7D)</p>
-                       <p className="text-2xl font-black text-gray-900 leading-none mt-1">
+                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Issues Logged (7D)</p>
+                       <p className="text-2xl font-black text-slate-900 leading-none mt-1">
                           {analyticsData.velocity.reduce((acc,v) => acc + v.issues, 0)}
                        </p>
                     </div>
                  </div>
-                 <p className="text-xs font-bold text-gray-400 uppercase">Across all team members</p>
+                 <p className="text-xs font-bold text-slate-400 uppercase">Across all team members</p>
               </div>
            </div>
 
@@ -865,7 +865,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Productivity Chart */}
               <div className="card p-6">
-                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-navy"/> Activity Velocity
                  </h3>
                  <div className="h-64 w-full">
@@ -875,15 +875,15 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
               {/* Issue Tracker Heatmap */}
               <div className="card p-6">
-                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500"/> Deviation Heatmap
                  </h3>
                  <div className="h-64 w-full">
                     {analyticsData.issueDistribution.length > 0 ? (
                        <ActivityDeviationChart data={analyticsData.issueDistribution} />
                     ) : (
-                       <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                          <CheckCircle className="w-12 h-12 text-gray-100 mb-2"/>
+                       <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                          <CheckCircle className="w-12 h-12 text-slate-100 mb-2"/>
                           <p className="text-xs font-bold uppercase tracking-widest">No deviations recorded</p>
                        </div>
                     )}
@@ -893,7 +893,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
 
            {/* Recent High Priority Events */}
            <div className="card p-6">
-              <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Critical Review Feed</h3>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Critical Review Feed</h3>
               <div className="space-y-3">
                  {activities.filter(a => a.severity === 'high' || a.issue_observed).slice(0, 3).map(act => (
                     <div key={act.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -902,12 +902,12 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
                              {act.issue_observed ? <AlertTriangle className="w-4 h-4"/> : <Zap className="w-4 h-4"/>}
                           </div>
                           <div>
-                             <p className="text-xs font-bold text-gray-900">{act.employees?.full_name}</p>
-                             <p className="text-xs text-gray-500">{act.activity_description.length > 60 ? act.activity_description.slice(0, 60) + '...' : act.activity_description}</p>
+                             <p className="text-xs font-bold text-slate-900">{act.employees?.full_name}</p>
+                             <p className="text-xs text-slate-500">{act.activity_description.length > 60 ? act.activity_description.slice(0, 60) + '...' : act.activity_description}</p>
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className="text-xs font-black uppercase text-gray-400">{new Date(act.created_at).toLocaleDateString()}</p>
+                          <p className="text-xs font-black uppercase text-slate-400">{new Date(act.created_at).toLocaleDateString()}</p>
                           <button onClick={() => {setTab('feed'); setPriorityOnly(true);}} className="text-xs font-black text-navy uppercase hover:underline">Review</button>
                        </div>
                     </div>

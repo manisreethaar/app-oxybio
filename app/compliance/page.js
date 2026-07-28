@@ -469,16 +469,16 @@ export default function CompliancePage() {
                                   </span>
                                 </div>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-100 px-1.5 py-0.5 rounded">{item.category}</span>
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{item.category}</span>
                                   {item.is_recurring && <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{item.recurrence}</span>}
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-gray-50">
+                                <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-slate-50">
                                   <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Due Date</p>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
                                     <p className={`text-[10px] font-bold ${item.calculated_status === 'overdue' ? 'text-red-600' : 'text-slate-700'}`}>{format(new Date(item.due_date), 'MMM d, yyyy')}</p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Owner</p>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Owner</p>
                                     <p className="text-[10px] font-bold text-slate-700 truncate">{item.employees?.full_name || 'Unassigned'}</p>
                                   </div>
                                 </div>

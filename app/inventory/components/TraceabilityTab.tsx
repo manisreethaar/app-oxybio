@@ -64,18 +64,18 @@ export default function TraceabilityTab() {
 
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
+          <Search className="h-5 w-5 text-slate-400" />
         </div>
         <input
           type="text"
           placeholder="Search by lot number, item name, or context label..."
-          className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
+          className="block w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-4 focus:ring-slate-50 focus:border-slate-500 font-bold transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-slate-600" />
@@ -91,7 +91,7 @@ export default function TraceabilityTab() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-gray-100">
+                <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Date Logged</th>
                   <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">Raw Material (Lot)</th>
                   <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Link</th>
@@ -118,7 +118,7 @@ export default function TraceabilityTab() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-black text-slate-800">{r.context_label}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black uppercase tracking-wider">
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-black uppercase tracking-wider">
                         {r.context}
                       </span>
                       {r.notes && (
