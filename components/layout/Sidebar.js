@@ -8,7 +8,7 @@ import {
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
   Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle,
   Wind, Wifi, ArrowRight, ChevronRight, X, Home, Menu,
-  Bell, Search, PieChart, Shield
+  Bell, Search, PieChart, Shield, Droplets
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
@@ -78,6 +78,7 @@ export default function Sidebar() {
       { name: 'Batches',     href: '/batches',             icon: FlaskConical, show: eCanDo('batches','view') },
       { name: 'Lab Notebook',href: '/lab-notebook',        icon: BookOpen,     show: eCanDo('lab_notebook','view') },
       { name: 'Incubation',  href: '/research/incubation', icon: FlaskConical, show: eCanDo('batches','view') },
+      { name: 'TA Lab',      href: '/lab-bench/ta',        icon: Droplets,     show: eCanDo('batches','view') },
     ]},
     { title: 'R&D Research', items: [
       { name: 'Formulations',href: '/formulations',       icon: Beaker,     show: eCanDo('batches','view') },
