@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createUserClient } from '@/utils/supabase/server';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
+import { isMasterAdmin } from '@/lib/permissions';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +14,22 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req) {
   try {
+    // ── ALOCA++ P0: verify caller identity and role before touching audit data ──
+    const userSupabase = createUserClient();
+    const user = await getApiUserOrFallback(userSupabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: caller } = await userSupabase
+      .from('employees')
+      .select('role')
+      .eq('email', user.email)
+      .single();
+
+    if (!caller || (!['admin', 'ceo'].includes(caller.role) && !isMasterAdmin(user.email))) {
+      return NextResponse.json({ error: 'Forbidden: Admin or CEO role required to archive data' }, { status: 403 });
+    }
+    // ────────────────────────────────────────────────────────────────────────────
+
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceKey) return NextResponse.json({ error: 'Server config error' }, { status: 500 });
 

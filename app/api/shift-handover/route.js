@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
+import { sendServerNotification } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +57,18 @@ export async function POST(request) {
       signed_off_at: new Date().toISOString(),
     }).select().single();
     if (error) throw error;
+
+    // Notify the incoming employee about the shift handover
+    if (body.incoming_employee_id) {
+      sendServerNotification(
+        body.incoming_employee_id,
+        '🔁 Shift Handover Ready',
+        `A shift handover has been logged for you${data.critical_alerts ? ` — Critical alerts: ${String(data.critical_alerts).slice(0, 80)}` : '. Review notes before starting your shift.'}`,
+        '/shift-handover',
+        data.critical_alerts ? 'alert' : 'info'
+      ).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

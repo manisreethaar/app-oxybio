@@ -1,8 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createUserClient } from '@/utils/supabase/server';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
+import { isMasterAdmin } from '@/lib/permissions';
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   try {
+    // ── ALOCA++ P0: verify caller identity and role before destroying employee records ──
+    const userSupabase = createUserClient();
+    const user = await getApiUserOrFallback(userSupabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: caller } = await userSupabase
+      .from('employees')
+      .select('role')
+      .eq('email', user.email)
+      .single();
+
+    if (!caller || (!['admin', 'ceo'].includes(caller.role) && !isMasterAdmin(user.email))) {
+      return NextResponse.json({ error: 'Forbidden: Admin or CEO role required to delete an employee' }, { status: 403 });
+    }
+    // ──────────────────────────────────────────────────────────────────────────────
+
     const { id } = await req.json();
 
     if (!id) {

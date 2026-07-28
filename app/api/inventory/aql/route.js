@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
+import { can, isMasterAdmin } from '@/lib/permissions';
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
@@ -58,8 +59,20 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getApiUserOrFallback(supabase);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // AQL plan creation/update configures QC acceptance criteria — restricted to
+    // Scientist level and above, matching inventory.qc_release in the permissions matrix.
+    const { data: emp } = await supabase
+      .from('employees')
+      .select('id, role')
+      .eq('email', user.email)
+      .single();
+
+    if (!isMasterAdmin(user.email) && !can(emp?.role, 'inventory', 'qc_release')) {
+      return NextResponse.json({ error: 'Permission Denied: Scientist role or above required to configure AQL plans' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { item_id, aql_level, sample_size_pct, accept_number, reject_number, tests_required } = body;
