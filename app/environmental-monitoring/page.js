@@ -99,7 +99,14 @@ export default function EnvironmentalMonitoringPage() {
 
   const handleSubmitLocation = async (e) => {
     e.preventDefault();
-    if (!lName || !lArea || !lMethod) { toast.warn('Name, area and method are required.'); return; }
+    if (!lName || !lArea || !lMethod) {
+      const missing = [];
+      if (!lName) missing.push('Name');
+      if (!lArea) missing.push('Area');
+      if (!lMethod) missing.push('Sampling Method');
+      toast.warn(`Cannot save location. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/environmental-monitoring', {

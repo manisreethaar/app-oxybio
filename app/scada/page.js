@@ -57,7 +57,13 @@ export default function ScadaDashboardPage() {
 
   const handleManualLog = async (e) => {
     e.preventDefault();
-    if (!equipId || !sensorValue) { toast.warn('Equipment and value are required.'); return; }
+    if (!equipId || !sensorValue) {
+      const missing = [];
+      if (!equipId) missing.push('Equipment ID');
+      if (!sensorValue) missing.push('Sensor Value');
+      toast.warn(`Cannot log SCADA reading. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/scada', {

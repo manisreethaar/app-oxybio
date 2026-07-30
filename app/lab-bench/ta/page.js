@@ -149,7 +149,11 @@ export default function TitrationLogPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!sampleName || !finalBurette || !sampleVol) {
-      toast.warn('Sample name, sample volume, and final burette reading are required.');
+      const missing = [];
+      if (!sampleName) missing.push('Sample Name');
+      if (!sampleVol) missing.push('Sample Volume (ml)');
+      if (!finalBurette) missing.push('Final Burette Reading (ml)');
+      toast.warn(`Cannot save TA log. Missing mandatory details: ${missing.join(', ')}.`);
       return;
     }
     if (vTitrant <= 0) {

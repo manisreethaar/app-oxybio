@@ -147,7 +147,13 @@ export default function CompliancePage() {
   }, [employeeProfile]); // eslint-disable-line
 
   const handleSaveComplaint = async () => {
-    if (!complaintForm.customer_name || !complaintForm.complaint_details) { toast.warn('Customer name and details required.'); return; }
+    if (!complaintForm.customer_name || !complaintForm.complaint_details) {
+      const missing = [];
+      if (!complaintForm.customer_name) missing.push('Customer Name');
+      if (!complaintForm.complaint_details) missing.push('Complaint Details');
+      toast.warn(`Cannot save complaint. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSavingComplaint(true);
     try {
       const { error } = await supabase.from('customer_complaints').insert({
@@ -166,7 +172,13 @@ export default function CompliancePage() {
   };
 
   const handleSaveAudit = async () => {
-    if (!auditForm.audit_title || !auditForm.audit_date) { toast.warn('Title and date required.'); return; }
+    if (!auditForm.audit_title || !auditForm.audit_date) {
+      const missing = [];
+      if (!auditForm.audit_title) missing.push('Audit Title');
+      if (!auditForm.audit_date) missing.push('Audit Date');
+      toast.warn(`Cannot save audit. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSavingAudit(true);
     try {
       const { error } = await supabase.from('internal_audits').insert({
@@ -186,7 +198,13 @@ export default function CompliancePage() {
   };
 
   const handleSaveMilestone = async () => {
-    if (!milestoneForm.title || !milestoneForm.deadline) { toast.warn('Title and deadline required.'); return; }
+    if (!milestoneForm.title || !milestoneForm.deadline) {
+      const missing = [];
+      if (!milestoneForm.title) missing.push('Milestone Title');
+      if (!milestoneForm.deadline) missing.push('Deadline');
+      toast.warn(`Cannot save milestone. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSavingMilestone(true);
     try {
       const { error } = await supabase.from('regulatory_milestones').insert({

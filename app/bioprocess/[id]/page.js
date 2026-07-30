@@ -134,7 +134,13 @@ function PredictiveModelsTab({ supabase, toast }) {
   }, [supabase]);
 
   const handleSave = async () => {
-    if (!form.model_name || !form.target_variable) { toast.warn('Model name and target variable required.'); return; }
+    if (!form.model_name || !form.target_variable) {
+      const missing = [];
+      if (!form.model_name) missing.push('Model Name');
+      if (!form.target_variable) missing.push('Target Variable');
+      toast.warn(`Cannot save model. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSaving(true);
     try {
       let weights = {};
@@ -222,7 +228,13 @@ function ScaleDownForm({ experimentId, supabase, toast, batches }) {
   const [saved,         setSaved]         = useState(null);
 
   const handleSave = async () => {
-    if (!prodBatchId || !scalingFactor) { toast.warn('Production batch and scaling factor required.'); return; }
+    if (!prodBatchId || !scalingFactor) {
+      const missing = [];
+      if (!prodBatchId) missing.push('Production Batch');
+      if (!scalingFactor) missing.push('Scaling Factor');
+      toast.warn(`Cannot link scale-up. Missing mandatory details: ${missing.join(', ')}.`);
+      return;
+    }
     setSaving(true);
     try {
       const { data, error } = await supabase.from('scale_down_models').upsert({
