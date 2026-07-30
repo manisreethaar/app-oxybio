@@ -102,7 +102,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
   useEffect(() => { fetchRecord(); }, [fetchRecord]);
 
   const selectedEquip = equipment.find(e => e.id === equipId);
-  const isCalibExpired = selectedEquip?.requires_calibration !== false && selectedEquip?.calibration_due_date ? new Date(selectedEquip.calibration_due_date) < new Date() : false;
+  const isCalibExpired = selectedEquip?.requires_calibration !== false && selectedEquip?.calibration_due_date ? selectedEquip.calibration_due_date < new Date().toLocaleDateString('en-CA') : false;
   const isEquipBad     = selectedEquip && (selectedEquip.status !== 'Operational' || isCalibExpired);
 
   const holdTime = cycleStart && cycleEnd
@@ -263,7 +263,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           <select value={equipId} onChange={e=>setEquipId(e.target.value)} className={`field-input bg-white ${isEquipBad?'border-red-300':''}`}>
             <option value="">Select equipment...</option>
             {equipment.map(e=>(
-              <option key={e.id} value={e.id}>{e.name} — {e.status}{(e.requires_calibration !== false && e.calibration_due_date && new Date(e.calibration_due_date)<new Date())?' ⚠ CALIB EXPIRED':''}</option>
+              <option key={e.id} value={e.id}>{e.name} — {e.status}{(e.requires_calibration !== false && e.calibration_due_date && e.calibration_due_date < new Date().toLocaleDateString('en-CA'))?' ⚠ CALIB EXPIRED':''}</option>
             ))}
           </select>
           {isEquipBad && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Equipment non-compliant — check Equipment module before proceeding.</p>}

@@ -31,7 +31,7 @@ function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
           <option key={e.id} value={e.id}>{e.name}{e.model ? ` (${e.model})` : ''}</option>
         ))}
       </select>
-      {selected?.requires_calibration !== false && selected?.calibration_due_date && new Date(selected.calibration_due_date) < new Date() && (
+      {selected?.requires_calibration !== false && selected?.calibration_due_date && selected.calibration_due_date < new Date().toLocaleDateString('en-CA') && (
         <p className="text-xs text-red-600 font-bold flex items-center gap-1 mt-1">
           <AlertTriangle className="w-3 h-3"/>Calibration overdue — raise a deviation before use.
         </p>
@@ -147,14 +147,24 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
-    if (advance && (!brothBefore || !supernAfter || !ph || !rpm || !duration)) {
-      toast.warn('Please fill all required fields (RPM, duration, weights, pH) to advance.'); return;
+    if (advance) {
+      const missing = [];
+      if (!rpm) missing.push('Speed (RPM)');
+      if (!duration) missing.push('Duration (min)');
+      if (!brothBefore) missing.push('Total Broth Before (g)');
+      if (!supernAfter) missing.push('Supernatant After (g)');
+      if (!ph) missing.push('pH');
+      
+      if (missing.length > 0) {
+        toast.warn(`Cannot advance to Extract Addition. Missing mandatory details: ${missing.join(', ')}.`);
+        return;
+      }
     }
     if (isIntern && advance && !supervisedBy) { toast.warn('Select a supervisor before advancing.'); return; }
 
     const checkEquip = (id) => {
       const e = equipment.find(eq => eq.id === id);
-      return e && e.requires_calibration !== false && e.calibration_due_date && new Date(e.calibration_due_date) < new Date();
+      return e && e.requires_calibration !== false && e.calibration_due_date && e.calibration_due_date < new Date().toLocaleDateString('en-CA');
     };
     if (checkEquip(centEqId) || checkEquip(phEqId) || checkEquip(scaleEqId)) {
       toast.error('Cannot save — One or more selected equipment items have expired calibration.');

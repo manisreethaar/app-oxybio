@@ -95,12 +95,16 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
-    if (advance && (!volAdded || !finalPh)) {
-      toast.warn('Volume added and Final pH are required to advance.'); return;
-    }
-    // G-06: allergen declaration is mandatory before advance
-    if (advance && !noneAllergens && allergens.length === 0) {
-      toast.warn('Allergen declaration is required. Select all applicable allergens or tick "None".'); return;
+    if (advance) {
+      const missing = [];
+      if (!volAdded) missing.push('Volume Added (ml)');
+      if (!finalPh) missing.push('Final pH');
+      if (!noneAllergens && allergens.length === 0) missing.push('Allergen Declaration');
+      
+      if (missing.length > 0) {
+        toast.warn(`Cannot advance to Downstream / QC. Missing mandatory details: ${missing.join(', ')}.`);
+        return;
+      }
     }
     
     setSaving(true);

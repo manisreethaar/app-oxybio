@@ -438,7 +438,7 @@ export default function AdminDashboard({ employeeId }) {
           ) : (
             <div className="space-y-1.5">
               {calibDue.map(eq => {
-                const isOverdue = new Date(eq.calibration_due_date) < new Date();
+                const isOverdue = eq.calibration_due_date < new Date().toLocaleDateString('en-CA');
                 return (
                   <Link key={eq.id} href="/equipment" className={`flex justify-between items-center p-2 rounded-lg border hover:opacity-90 transition-colors ${isOverdue ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
                     <span className={`text-xs font-bold truncate ${isOverdue ? 'text-red-800' : 'text-amber-800'}`}>{eq.name}</span>
