@@ -90,7 +90,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
    const hasIssue = watchLog('issue_observed');
    const selectedEquipmentId = watchLog('equipment_id');
    const selectedEquipment = equipmentList.find(e => e.id === selectedEquipmentId);
-   const isCalOverdue = selectedEquipment && selectedEquipment.requires_calibration !== false && selectedEquipment.calibration_due_date && new Date(selectedEquipment.calibration_due_date) < new Date();
+   const isCalOverdue = selectedEquipment && selectedEquipment.requires_calibration !== false && selectedEquipment.calibration_due_date && selectedEquipment.calibration_due_date < new Date().toLocaleDateString('en-CA');
 
   // Founder Brief State
   const [brief, setBrief] = useState({

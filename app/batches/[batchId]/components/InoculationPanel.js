@@ -143,8 +143,16 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
-    if (advance && !tZero) { toast.warn('T=0 inoculation time is required to advance.'); return; }
-    if (advance && !plannedHr) { toast.warn('Please define a planned fermentation time.'); return; }
+    if (advance) {
+      const missing = [];
+      if (!tZero) missing.push('T=0 inoculation time');
+      if (!plannedHr) missing.push('Planned fermentation time (hr)');
+      
+      if (missing.length > 0) {
+        toast.warn(`Cannot advance to Fermentation. Missing mandatory details: ${missing.join(', ')}.`);
+        return;
+      }
+    }
 
     setSaving(true);
     try {

@@ -310,7 +310,7 @@ export default function EquipmentPage() {
             No equipment matches the current search.
           </div>
         ) : filteredEquipment.map((device) => {
-          const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (new Date(device.calibration_due_date) < new Date());
+          const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (device.calibration_due_date < new Date().toLocaleDateString('en-CA'));
           const isNearDue = device.requires_calibration !== false && device.calibration_due_date && (new Date(device.calibration_due_date) - new Date() < 14 * 24 * 60 * 60 * 1000);
 
           return (
@@ -369,7 +369,7 @@ export default function EquipmentPage() {
                   )}
                   
                   {(() => {
-                    const isPmDue = device.next_pm_date && (new Date(device.next_pm_date) < new Date());
+                    const isPmDue = device.next_pm_date && (device.next_pm_date < new Date().toLocaleDateString('en-CA'));
                     return (
                       <div className={`p-4 rounded-2xl border ${isPmDue ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
                         <div className="flex items-center justify-between mb-2">
@@ -477,8 +477,8 @@ export default function EquipmentPage() {
                   {columnItems.length === 0 ? (
                     <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn.toLowerCase()} assets</div>
                   ) : columnItems.map(device => {
-                    const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (new Date(device.calibration_due_date) < new Date());
-                    const isPmDue = device.next_pm_date && (new Date(device.next_pm_date) < new Date());
+                    const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (device.calibration_due_date < new Date().toLocaleDateString('en-CA'));
+                    const isPmDue = device.next_pm_date && (device.next_pm_date < new Date().toLocaleDateString('en-CA'));
                     
                     return (
                       <div key={device.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer" onClick={() => { setModalMode('edit'); setActiveDevice(device); resetEquip({...device}); setIsModalOpen(true); }}>
@@ -547,8 +547,8 @@ export default function EquipmentPage() {
               {filteredEquipment.length === 0 ? (
                 <tr><td colSpan="6" className="text-center p-8 text-sm font-bold text-slate-400">No equipment matches current search.</td></tr>
               ) : filteredEquipment.map(device => {
-                const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (new Date(device.calibration_due_date) < new Date());
-                const isPmDue = device.next_pm_date && (new Date(device.next_pm_date) < new Date());
+                const isCalibrationDue = device.requires_calibration !== false && device.calibration_due_date && (device.calibration_due_date < new Date().toLocaleDateString('en-CA'));
+                const isPmDue = device.next_pm_date && (device.next_pm_date < new Date().toLocaleDateString('en-CA'));
                 
                 return (
                   <tr key={device.id} className="hover:bg-slate-50/50 transition-colors">
