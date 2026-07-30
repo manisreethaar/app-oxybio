@@ -1,0 +1,260 @@
+{
+  "missingRLS": [
+    "api_keys",
+    "bioprocess_statistics",
+    "capa_actions",
+    "chat_attachments",
+    "chat_retention_policies",
+    "customer_complaints",
+    "deviations",
+    "if",
+    "in",
+    "internal_audits",
+    "investigations",
+    "ip_whitelist",
+    "predictive_models",
+    "rbac_matrix",
+    "scale_down_models",
+    "sop_quiz_results",
+    "sop_quizzes",
+    "sop_targets",
+    "sops",
+    "sso_configurations",
+    "stability_timepoints",
+    "system_logs",
+    "user_preferences"
+  ],
+  "permissivePolicies": [
+    {
+      "policyName": "staff_select_rejection",
+      "tableName": "batch_rejection_record",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "batch_monitoring_v3_migration.sql"
+    },
+    {
+      "policyName": "emp_insert_messages",
+      "tableName": "messages",
+      "toClause": null,
+      "usingClause": null,
+      "file": "messaging_full_setup.sql"
+    },
+    {
+      "policyName": "Auth upload lab-notebook-files",
+      "tableName": "storage",
+      "toClause": null,
+      "usingClause": null,
+      "file": "schema_migration_v2.sql"
+    },
+    {
+      "policyName": "admin_all_inventory ON inventory FOR ALL USING (is_admin());\nCREATE POLICY staff_select_inventory ON inventory FOR SELECT USING (true);\n\nCREATE POLICY admin_all_equipment ON equipment FOR ALL USING (is_admin());\nCREATE POLICY staff_select_equipment",
+      "tableName": "equipment",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "supabase_inventory_migration.sql"
+    },
+    {
+      "policyName": "staff_select_sops ON sop_library FOR SELECT USING (true);\nCREATE POLICY staff_insert_sop_acks ON sop_acknowledgements FOR INSERT WITH CHECK (employee_id = auth_employee_id());\n\nCREATE POLICY staff_select_payslips ON payslips FOR SELECT USING (employee_id = auth_employee_id());\nCREATE POLICY staff_select_notifications ON notifications FOR SELECT USING (employee_id = auth_employee_id());\nCREATE POLICY staff_update_notifications ON notifications FOR UPDATE USING (employee_id = auth_employee_id());\n\n-- 4. Triggers\n\n-- Trigger 1: Auto-set is_deviation = true on ph_readings when ph_value < 4.2 OR ph_value > 4.5\nCREATE OR REPLACE FUNCTION check_ph_deviation() RETURNS TRIGGER AS $$\nBEGIN\n    IF NEW.ph_value < 4.2 OR NEW.ph_value > 4.5 THEN\n        NEW.is_deviation := true;\n    END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER trg_check_ph_deviation\nBEFORE INSERT OR UPDATE ON ph_readings\nFOR EACH ROW EXECUTE FUNCTION check_ph_deviation();\n\n-- Trigger 2: Auto-calculate total_hours in attendance_log when check_out_time is updated\nCREATE OR REPLACE FUNCTION calc_total_hours() RETURNS TRIGGER AS $$\nBEGIN\n    IF NEW.check_out_time IS NOT NULL AND NEW.check_in_time IS NOT NULL THEN\n        NEW.total_hours := EXTRACT(EPOCH FROM (NEW.check_out_time - NEW.check_in_time)) / 3600;\n    END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER trg_calc_total_hours\nBEFORE INSERT OR UPDATE ON attendance_log\nFOR EACH ROW EXECUTE FUNCTION calc_total_hours();\n\n-- Trigger 3: Auto-set status = overdue on compliance_items when due_date passes and status != done\n-- Note: PostgreSQL triggers run",
+      "tableName": "dml",
+      "toClause": null,
+      "usingClause": null,
+      "file": "supabase_schema.sql"
+    },
+    {
+      "policyName": "staff_select_flask_qct  ON batch_flask_qc_tests FOR SELECT USING (true);\nCREATE POLICY staff_insert_flask_qct  ON batch_flask_qc_tests FOR INSERT WITH CHECK (true);\nCREATE POLICY staff_update_flask_qct ",
+      "tableName": "batch_flask_qc_tests",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "batch_monitoring_v4_flask_level.sql"
+    },
+    {
+      "policyName": "admin_all_flask_release     ON batch_flask_release_record FOR ALL    USING (is_admin());\nCREATE POLICY staff_select_flask_release  ON batch_flask_release_record FOR SELECT USING (true);\nCREATE POLICY ceo_insert_flask_release    ON batch_flask_release_record FOR INSERT WITH CHECK (true);\nCREATE POLICY ceo_update_flask_release   ",
+      "tableName": "batch_flask_release_record",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "batch_monitoring_v4_flask_level.sql"
+    },
+    {
+      "policyName": "admin_all_flask_reject     ON batch_flask_rejection_record FOR ALL    USING (is_admin());\nCREATE POLICY staff_select_flask_reject  ON batch_flask_rejection_record FOR SELECT USING (true);\nCREATE POLICY ceo_insert_flask_reject    ON batch_flask_rejection_record FOR INSERT WITH CHECK (true);\nCREATE POLICY ceo_update_flask_reject    ON batch_flask_rejection_record FOR UPDATE USING (true);\n\n\n-- ── PERFORMANCE INDEXES ───────────────────────────────────────\nCREATE INDEX IF NOT EXISTS idx_flask_inocu_flask   ON batch_flask_inoculations  (flask_id);\nCREATE INDEX IF NOT EXISTS idx_flask_inocu_batch   ON batch_flask_inoculations  (batch_id);\nCREATE INDEX IF NOT EXISTS idx_flask_ep_flask       ON batch_flask_endpoints     (flask_id);\nCREATE INDEX IF NOT EXISTS idx_flask_strain_flask   ON batch_flask_straining     (flask_id);\nCREATE INDEX IF NOT EXISTS idx_flask_ext_flask      ON batch_flask_extract_addition (flask_id);\nCREATE INDEX IF NOT EXISTS idx_flask_qcs_flask      ON batch_flask_qc_samples    (flask_id);\nCREATE INDEX IF NOT EXISTS idx_flask_qct_sample     ON batch_flask_qc_tests      (sample_id);\nCREATE INDEX IF NOT EXISTS idx_flask_release_flask  ON batch_flask_release_record (flask_id);\nCREATE INDEX IF NOT EXISTS idx_flask_reject_flask   ON batch_flask_rejection_record (flask_id);\nCREATE INDEX IF NOT EXISTS idx_ferm_readings_batch ",
+      "tableName": "batch_fermentation_readings",
+      "toClause": null,
+      "usingClause": null,
+      "file": "batch_monitoring_v4_flask_level.sql"
+    },
+    {
+      "policyName": "Authenticated users can insert feeds",
+      "tableName": "batch_fermentation_feeds",
+      "toClause": null,
+      "usingClause": null,
+      "file": "fermentation_columns_migration.sql"
+    },
+    {
+      "policyName": "Allow public verify read",
+      "tableName": "employees",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "final_schema_fix.sql"
+    },
+    {
+      "policyName": "Allow read formulations",
+      "tableName": "formulations",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "master_sync.sql"
+    },
+    {
+      "policyName": "Allow read lab_notebook",
+      "tableName": "lab_notebook_entries",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "master_sync.sql"
+    },
+    {
+      "policyName": "Allow read shelf_life",
+      "tableName": "shelf_life_studies",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "master_sync.sql"
+    },
+    {
+      "policyName": "Allow read taste_panels",
+      "tableName": "taste_panels",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "master_sync.sql"
+    },
+    {
+      "policyName": "Anyone can read employee profiles",
+      "tableName": "employees",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "mutation_recovery.sql"
+    },
+    {
+      "policyName": "Anyone can view batches",
+      "tableName": "batches",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "mutation_recovery.sql"
+    },
+    {
+      "policyName": "Anyone can view formulations",
+      "tableName": "formulations",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "mutation_recovery.sql"
+    },
+    {
+      "policyName": "Staff can create formulations",
+      "tableName": "formulations",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "mutation_recovery.sql"
+    },
+    {
+      "policyName": "Allow staff read items",
+      "tableName": "inventory_items",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "remediation_rls.sql"
+    },
+    {
+      "policyName": "Allow staff read vendors",
+      "tableName": "vendors",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "remediation_rls.sql"
+    },
+    {
+      "policyName": "Allow staff update equipment status",
+      "tableName": "equipment",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "remediation_rls.sql"
+    },
+    {
+      "policyName": "Allow staff read equipment",
+      "tableName": "equipment",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "remediation_rls.sql"
+    },
+    {
+      "policyName": "Allow auth insert calibration",
+      "tableName": "calibration_logs",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "remediation_rls.sql"
+    },
+    {
+      "policyName": "Allow auth insert lab logs",
+      "tableName": "lab_logs",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "remediation_rls.sql"
+    },
+    {
+      "policyName": "Allow insert formulations",
+      "tableName": "formulations",
+      "toClause": null,
+      "usingClause": null,
+      "file": "remediation_schema.sql"
+    },
+    {
+      "policyName": "admin_all_sample_incubation ON sample_incubation_records FOR ALL USING (is_admin());\r\n\r\nDROP POLICY IF EXISTS staff_select_sample_incubation ON sample_incubation_records;\r\nCREATE POLICY staff_select_sample_incubation ON sample_incubation_records FOR SELECT USING (true);\r\n\r\nDROP POLICY IF EXISTS staff_insert_sample_incubation ON sample_incubation_records;\r\nCREATE POLICY staff_insert_sample_incubation ON sample_incubation_records FOR INSERT WITH CHECK (true);\r\n\r\nDROP POLICY IF EXISTS staff_update_sample_incubation ON sample_incubation_records;\r\nCREATE POLICY staff_update_sample_incubation",
+      "tableName": "sample_incubation_records",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "20260524000001_sample_incubation.sql"
+    },
+    {
+      "policyName": "staff_select_test_results ON test_results FOR SELECT USING (true);\n\nDROP POLICY IF EXISTS staff_insert_test_results ON test_results;\nCREATE POLICY staff_insert_test_results ON test_results FOR INSERT WITH CHECK (true);\n\nDROP POLICY IF EXISTS staff_update_test_results ON test_results;\nCREATE POLICY staff_update_test_results",
+      "tableName": "test_results",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "20260527000004_lab_bench_foundation.sql"
+    },
+    {
+      "policyName": "notif_own_update",
+      "tableName": "notifications",
+      "toClause": "authenticated in case it was missing\ngrant update on public",
+      "usingClause": null,
+      "file": "20260605000001_fix_notif_update.sql"
+    },
+    {
+      "policyName": "bfqct_read_all",
+      "tableName": "batch_flask_qc_tests",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "20260725000003_rbac_enforcement.sql"
+    },
+    {
+      "policyName": "dev_read_all",
+      "tableName": "deviations",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "20260725000003_rbac_enforcement.sql"
+    },
+    {
+      "policyName": "capa_read_all",
+      "tableName": "capa_actions",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "20260725000003_rbac_enforcement.sql"
+    },
+    {
+      "policyName": "audit_read_all",
+      "tableName": "system_audit_logs",
+      "toClause": null,
+      "usingClause": "true",
+      "file": "20260725000003_rbac_enforcement.sql"
+    },
+    {
+      "policyName": "audit_insert_all",
+      "tableName": "system_audit_logs",
+      "toClause": null,
+      "usingClause": null,
+      "file": "20260725000003_rbac_enforcement.sql"
+    }
+  ]
+}

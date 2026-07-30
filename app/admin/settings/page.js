@@ -2,7 +2,82 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
-import { Plus, Trash2, GripVertical, Save, FlaskConical, Tag } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save, FlaskConical, Tag, Megaphone, Loader2 } from 'lucide-react';
+
+function SystemBroadcastPanel() {
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+
+  const handleBroadcast = async () => {
+    if (!title.trim() || !message.trim()) {
+      toast.warn('Please provide a title and message.');
+      return;
+    }
+    
+    if (!window.confirm('Are you sure you want to broadcast this to ALL users?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, message, type: 'info' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send broadcast');
+      
+      toast.success('Broadcast sent successfully!');
+      setTitle('');
+      setMessage('');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="card p-5 space-y-4 border-emerald-200 bg-emerald-50/30">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+            <Megaphone className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div>
+            <p className="text-sm font-black text-emerald-900">System Broadcast</p>
+            <p className="text-xs text-emerald-700/70">Send an instant notification (and web-push) to all active employees.</p>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <input 
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="Broadcast Title (e.g., New Feature Released)"
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+        />
+        <textarea 
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder="Message content..."
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[80px] resize-y"
+        />
+        <button 
+          onClick={handleBroadcast}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
+          {loading ? 'Sending...' : 'Send Broadcast to All Users'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function OptionsEditor({ title, description, icon: Icon, optionKey, options, onSave, saving }) {
   const [items, setItems] = useState(options);
@@ -157,9 +232,9 @@ export default function BatchSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-black text-slate-900">Batch Settings</h1>
+        <h1 className="text-xl font-black text-slate-900">Admin Settings & Broadcasts</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Manage the dropdown options that appear when creating a new batch. Changes take effect immediately for all users.
+          Manage system configurations, dropdown options, and send announcements to all users.
         </p>
       </div>
 
@@ -176,6 +251,8 @@ export default function BatchSettingsPage() {
         </div>
       ) : (
         <div className="space-y-5">
+          <SystemBroadcastPanel />
+
           <OptionsEditor
             title="Experiment Types"
             description="Shown in the Experiment Type dropdown when creating a new batch."
