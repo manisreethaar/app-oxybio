@@ -26,6 +26,7 @@ export default function NewGrowthStudyPage() {
   const [preps, setPreps] = useState([]);
   const [formulations, setFormulations] = useState([]);
   const [vials, setVials] = useState([]);
+  const [seedPassages, setSeedPassages] = useState([]);
 
   const [form, setForm] = useState({
     name: '',
@@ -35,6 +36,7 @@ export default function NewGrowthStudyPage() {
     isolate_source: 'strain',
     cell_bank_strain_id: '',
     cell_bank_preparation_id: '',
+    seed_passage_id: '',
     formulation_id: '',
     media_name: '',
     vial_id: '',
@@ -64,10 +66,12 @@ export default function NewGrowthStudyPage() {
       supabase.from('cell_bank_strains').select('id, name, accession_number').order('name'),
       supabase.from('cell_bank_preparations').select('id, prep_code, type, passage_number').order('created_at', { ascending: false }),
       supabase.from('formulations').select('id, name, code').eq('status', 'Approved').order('name'),
-    ]), 20000, 'New study form data load timed out').then(([s, p, f]) => {
+      supabase.from('seed_passages').select('id, passage_number, media_name, status, batches(batch_id), growth_studies(study_code)').eq('status', 'in_progress').order('created_at', { ascending: false }),
+    ]), 20000, 'New study form data load timed out').then(([s, p, f, sp]) => {
       setStrains(s.data || []);
       setPreps(p.data || []);
       setFormulations(f.data || []);
+      setSeedPassages(sp.data || []);
     }).catch(err => console.error('New study form load error:', err));
   }, [supabase]);
 
@@ -121,6 +125,7 @@ export default function NewGrowthStudyPage() {
         cell_bank_strain_id: form.isolate_source === 'strain' && form.cell_bank_strain_id ? form.cell_bank_strain_id : null,
         cell_bank_preparation_id: form.isolate_source === 'prep' && form.cell_bank_preparation_id ? form.cell_bank_preparation_id : null,
         vial_id: form.isolate_source === 'prep' && form.vial_id ? form.vial_id : null,
+        seed_passage_id: form.isolate_source === 'seed_passage' && form.seed_passage_id ? form.seed_passage_id : null,
         formulation_id: form.formulation_id || null,
         media_name: !form.formulation_id ? form.media_name || null : null,
         vessel_type: form.vessel_type || null,
@@ -158,7 +163,8 @@ export default function NewGrowthStudyPage() {
 
   const canNext1 = form.name.trim() &&
     (form.isolate_source !== 'strain' || form.cell_bank_strain_id) &&
-    (form.isolate_source !== 'prep' || form.cell_bank_preparation_id);
+    (form.isolate_source !== 'prep' || form.cell_bank_preparation_id) &&
+    (form.isolate_source !== 'seed_passage' || form.seed_passage_id);
 
   const InputCls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent';
   const LabelCls = 'block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5';
@@ -206,10 +212,10 @@ export default function NewGrowthStudyPage() {
             </div>
             <div>
               <label className={LabelCls}>Isolate Source</label>
-              <div className="flex gap-3 mb-3">
-                {[['strain', 'Cell Bank Strain'], ['prep', 'Preparation / Vial'], ['none', 'None (Media Control)']].map(([v, l]) => (
+              <div className="flex gap-3 mb-3 flex-wrap">
+                {[['strain', 'Cell Bank Strain'], ['prep', 'Preparation / Vial'], ['seed_passage', 'Seed Passage'], ['none', 'None (Media Control)']].map(([v, l]) => (
                   <button key={v} type="button" onClick={() => setField('isolate_source', v)}
-                    className={`flex-1 py-2 rounded-xl border text-xs font-black transition-colors ${form.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+                    className={`flex-1 py-2 px-3 rounded-xl border text-xs font-black transition-colors ${form.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
                   >{l}</button>
                 ))}
               </div>
@@ -245,6 +251,15 @@ export default function NewGrowthStudyPage() {
                     </div>
                   )}
                 </>
+              ) : form.isolate_source === 'seed_passage' ? (
+                <select className={InputCls} value={form.seed_passage_id} onChange={e => setField('seed_passage_id', e.target.value)}>
+                  <option value="">Select seed passage…</option>
+                  {seedPassages.map(sp => (
+                    <option key={sp.id} value={sp.id}>
+                      Seed Passage {sp.passage_number} {sp.media_name ? `(${sp.media_name})` : ''} - {sp.status}
+                    </option>
+                  ))}
+                </select>
               ) : (
                 <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium">
                   This study will not be associated with any microbial isolate. Use this for uninoculated media controls, sterility checks, and validation.

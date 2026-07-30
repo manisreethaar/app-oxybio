@@ -19,7 +19,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [batchRes, growthRes, cellBankRes] = await Promise.all([
+    const [batchRes, growthRes, cellBankRes, seedPassagesRes] = await Promise.all([
       // Only batches that have entered fermentation monitoring.
       // media_prep / sterilisation / inoculation are pre-fermentation — flasks not ready for readings.
       // qc_hold is an explicit hold state — excluded.
@@ -66,6 +66,24 @@ export async function GET() {
         .eq('status', 'In Progress')
         .order('created_at', { ascending: false })
         .limit(30),
+
+      // Active seed passages
+      supabase
+        .from('seed_passages')
+        .select(`
+          id,
+          passage_number,
+          status,
+          media_name,
+          start_time,
+          target_batch_id,
+          target_growth_study_id,
+          batches(batch_id),
+          growth_studies(study_code)
+        `)
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
+        .limit(20),
     ]);
 
     // Surface pending time points sorted by hour for each study
@@ -89,6 +107,7 @@ export async function GET() {
       batches,
       growth_studies: growthStudies,
       cell_bank_preparations: cellBankRes.data || [],
+      seed_passages: (seedPassagesRes && seedPassagesRes.data) || [],
     });
   } catch (err) {
     console.error('Lab Bench sources API error:', err);

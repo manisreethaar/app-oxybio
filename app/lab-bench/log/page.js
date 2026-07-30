@@ -66,6 +66,12 @@ function buildSourceLabel(sourceType, batch, study, cellPrep) {
   if (sourceType === 'cell_bank' && cellPrep) {
     return `Cell Bank ${cellPrep.prep_code}`;
   }
+  if (sourceType === 'seed_passage' && seedPrep) {
+    let label = `Seed Passage ${seedPrep.passage_number}`;
+    if (seedPrep.batches) label += ` (Batch ${seedPrep.batches.batch_id})`;
+    if (seedPrep.growth_studies) label += ` (Study ${seedPrep.growth_studies.study_code})`;
+    return label;
+  }
   return null;
 }
 
@@ -77,9 +83,9 @@ function buildTimepointLabel(logHour) {
   return h % 1 === 0 ? `T+${h}h` : `T+${h.toFixed(1)}h`;
 }
 
-function autoSampleLabel(sourceType, batch, study, cellPrep, flaskLabel, logHour) {
-  const src  = buildSourceLabel(sourceType, batch, study, cellPrep)
-    || (sourceType === 'batch' ? 'Batch' : sourceType === 'cell_bank' ? 'Cell Bank' : 'Study');
+function autoSampleLabel(sourceType, batch, study, cellPrep, seedPrep, flaskLabel, logHour) {
+  const src  = buildSourceLabel(sourceType, batch, study, cellPrep, seedPrep)
+    || (sourceType === 'batch' ? 'Batch' : sourceType === 'cell_bank' ? 'Cell Bank' : sourceType === 'seed_passage' ? 'Seed Passage' : 'Study');
   const flask = flaskLabel ? ` · ${flaskLabel}` : '';
   const tp   = buildTimepointLabel(logHour);
   return `${src}${flask}${tp ? ` ${tp}` : ''}`;
@@ -158,7 +164,7 @@ export default function QuickLogPage() {
   const searchParams = useSearchParams();
   const { employeeProfile } = useAuth();
 
-  const [sources, setSources]       = useState({ batches: [], growth_studies: [], cell_bank_preparations: [] });
+  const [sources, setSources]       = useState({ batches: [], growth_studies: [], cell_bank_preparations: [], seed_passages: [] });
   const [sourcesLoading, setSourcesLoading] = useState(true);
 
   const [sourceType, setSourceType] = useState('batch');
@@ -237,6 +243,7 @@ export default function QuickLogPage() {
   );
   const selectedStudy = sources.growth_studies.find(s => s.id === sourceId);
   const selectedCellPrep = sources.cell_bank_preparations?.find(p => p.id === sourceId);
+  const selectedSeedPassage = sources.seed_passages?.find(sp => sp.id === sourceId);
 
   // Auto-suggest hour when selecting a growth study time point
   useEffect(() => {
@@ -251,6 +258,15 @@ export default function QuickLogPage() {
     // We don't have inoculation time in sources, so leave hour for user to enter
     // (could be enhanced later)
   }, [sourceType, selectedBatch]);
+
+  // Auto-suggest elapsed hour for seed passages
+  useEffect(() => {
+    if (sourceType !== 'seed_passage' || !selectedSeedPassage) return;
+    if (selectedSeedPassage.start_time) {
+      const hrs = elapsedHours(selectedSeedPassage.start_time);
+      if (hrs != null) setLogHour(hrs.toFixed(2));
+    }
+  }, [sourceType, selectedSeedPassage]);
 
   // ── Helpers ──────────────────────────────────────────────────
   const updateTest = (type, patch) =>
@@ -339,9 +355,9 @@ export default function QuickLogPage() {
       flask_id:         sourceType === 'batch' ? flaskId : null,
       flask_label:      sourceType === 'batch' ? flaskLabel : null,
       log_hour:         Number(logHour),
-      source_label:          buildSourceLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep),
+      source_label:          buildSourceLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep, selectedSeedPassage),
       timepoint_label:       buildTimepointLabel(logHour),
-      sample_label:          autoSampleLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep, flaskLabel, logHour),
+      sample_label:          autoSampleLabel(sourceType, selectedBatch, selectedStudy, selectedCellPrep, selectedSeedPassage, flaskLabel, logHour),
       collected_at:          new Date(collectedAt).toISOString(),
       notes:                 notes || null,
       tests:                 testPayload,
@@ -451,10 +467,11 @@ export default function QuickLogPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* ── Source Type Selector ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           {[
             { value: 'batch',       label: 'Batch Production', icon: FlaskConical },
             { value: 'growth_study', label: 'Growth Study',    icon: Activity },
+            { value: 'seed_passage', label: 'Seed Passage',    icon: FlaskConical },
             { value: 'cell_bank',   label: 'Cell Bank',        icon: ClipboardList },
           ].map(({ value, label, icon: Icon }) => (
             <button
@@ -480,7 +497,9 @@ export default function QuickLogPage() {
               ? 'Select Batch & Flask'
               : sourceType === 'growth_study'
                 ? 'Select Study & Timepoint'
-                : 'Select Cell Bank Preparation'}
+                : sourceType === 'seed_passage'
+                  ? 'Select Seed Passage'
+                  : 'Select Cell Bank Preparation'}
           </h3>
 
           {sourcesLoading ? (
@@ -590,6 +609,30 @@ export default function QuickLogPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+            </>
+          ) : sourceType === 'seed_passage' ? (
+            <>
+              {sources.seed_passages?.length === 0 ? (
+                <p className="text-slate-400 text-sm font-medium py-2">
+                  No active seed passages.
+                </p>
+              ) : (
+                <div>
+                  <label className={LabelCls}>Seed Passage</label>
+                  <select
+                    className={InputCls}
+                    value={sourceId}
+                    onChange={e => { setSourceId(e.target.value); setTimePointId(''); setLogHour(''); }}
+                  >
+                    <option value="">Select passage...</option>
+                    {sources.seed_passages?.map(sp => (
+                      <option key={sp.id} value={sp.id}>
+                        Seed Passage {sp.passage_number} {sp.batches ? `(Batch ${sp.batches.batch_id})` : sp.growth_studies ? `(Study ${sp.growth_studies.study_code})` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </>
