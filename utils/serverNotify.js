@@ -113,3 +113,82 @@ export async function notifyDepartmentManagers(department, title, message, url =
     await Promise.allSettled(promises);
   }
 }
+
+/**
+ * Broadcasts a notification to all active employees.
+ * Inserts in bulk for efficiency, then fires push notifications asynchronously.
+ */
+export async function broadcastServerNotification(title, message, url = '/notifications', type = 'info') {
+  const supabaseAdmin = createAdminClient();
+
+  // 1. Get all active employees
+  const { data: employees, error: fetchErr } = await supabaseAdmin
+    .from('employees')
+    .select('id, push_subscription')
+    .eq('is_active', true);
+
+  if (fetchErr || !employees || employees.length === 0) {
+    console.error('[serverNotify] Failed to fetch employees for broadcast:', fetchErr);
+    return;
+  }
+
+  // 2. Bulk insert into notifications table
+  const notificationsPayload = employees.map(emp => ({
+    employee_id: emp.id,
+    title,
+    message,
+    type,
+    link: url,
+    is_read: false
+  }));
+
+  const { error: dbInsertError } = await supabaseAdmin
+    .from('notifications')
+    .insert(notificationsPayload);
+
+  if (dbInsertError) {
+    console.error('[serverNotify] Broadcast DB Insert Error:', dbInsertError);
+  }
+
+  // 3. Dispatch web-push notifications for those subscribed
+  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    return;
+  }
+
+  webpush.setVapidDetails(
+    process.env.VAPID_CONTACT_EMAIL || 'mailto:ceo@oxygenbioinnovations.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+
+  const pushPromises = employees.map(async (emp) => {
+    if (!emp.push_subscription) return;
+
+    const sub = typeof emp.push_subscription === 'string'
+      ? JSON.parse(emp.push_subscription)
+      : emp.push_subscription;
+
+    try {
+      await webpush.sendNotification(sub, JSON.stringify({
+        title,
+        body: message,
+        url
+      }));
+    } catch (error) {
+      if (error.statusCode === 410 || error.statusCode === 404) {
+        // Clean up invalid subscription
+        await supabaseAdmin
+          .from('employees')
+          .update({ push_subscription: null })
+          .eq('id', emp.id);
+      } else {
+        console.error('[serverNotify] Push Send Error (Broadcast):', error);
+      }
+    }
+  });
+
+  // We await all settled so that we don't return before starting them,
+  // but since push notifications can take a while for 100s of users, 
+  // doing Promise.allSettled is fine since Next.js serverless functions might terminate if we don't await.
+  await Promise.allSettled(pushPromises);
+}
