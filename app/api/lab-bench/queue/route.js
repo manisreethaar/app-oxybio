@@ -36,7 +36,7 @@ export async function GET() {
     const now = Date.now();
 
     // ── 1. Active batches in fermentation ───────────────────────
-    const [batchRes, studyRes] = await Promise.all([
+    const [batchRes, studyRes, seedPassagesRes] = await Promise.all([
       // Only batches that have actually reached fermentation monitoring.
       // Stages media_prep / sterilisation / inoculation are pre-fermentation — no readings needed.
       // qc_hold is explicitly a hold state — excluded here; qc_hold flasks are also filtered below.
@@ -57,10 +57,18 @@ export async function GET() {
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(20),
+        
+      supabase
+        .from('seed_passages')
+        .select('id, passage_number, start_time, target_batch_id, target_growth_study_id, batches(batch_id), growth_studies(study_code)')
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
+        .limit(20),
     ]);
 
     const batches = batchRes.data || [];
     const studies = studyRes.data || [];
+    const seedPassages = seedPassagesRes.data || [];
 
     // ── 2. Latest fermentation reading per (batch_id, flask_id) ─
     // batch_fermentation_readings.batch_id is a UUID FK to batches.id — use b.id, not b.batch_id
@@ -227,6 +235,45 @@ export async function GET() {
           sort_key:        currentElapsed, // higher elapsed = surfaced first within group
         });
       }
+    }
+
+    // ── Seed Passages ──
+    for (const sp of seedPassages) {
+      if (!sp.start_time) continue;
+      const currentElapsed = (now - new Date(sp.start_time).getTime()) / 3_600_000;
+      const elapsed = parseFloat(currentElapsed.toFixed(1));
+      
+      let urgency, detail;
+      if (currentElapsed > 6) {
+        urgency = 'overdue';
+        detail = `Incubating ${elapsed}h — log OD/pH`;
+      } else if (currentElapsed > 3) {
+        urgency = 'due_soon';
+        detail = `Incubating ${elapsed}h — log OD/pH`;
+      } else {
+        urgency = 'active';
+        detail = `Incubating ${elapsed}h`;
+      }
+      
+      let label = `Seed Passage ${sp.passage_number}`;
+      if (sp.target_batch_id && sp.batches) label += ` (Batch ${sp.batches.batch_id})`;
+      if (sp.target_growth_study_id && sp.growth_studies) label += ` (Study ${sp.growth_studies.study_code})`;
+
+      items.push({
+        id:              `seed_passage::${sp.id}`,
+        type:            'seed_passage',
+        urgency,
+        source_type:     'seed_passage',
+        source_id:       sp.id,
+        source_label:    label,
+        time_point_id:   null,
+        timepoint_label: `T+${elapsed}h elapsed`,
+        sample_types:    ['od', 'ph'],
+        detail,
+        planned_hour:    null,
+        current_elapsed: elapsed,
+        sort_key:        currentElapsed,
+      });
     }
 
     // ── 4. Sort by urgency group then sort_key ───────────────────

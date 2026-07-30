@@ -10,10 +10,11 @@ import { withTimeout } from '@/lib/withTimeout';
 import {
   Clock, AlertCircle, Play, Square, BarChart2,
   FlaskConical, Microscope, X, FileText, Loader2,
-  Package, TestTube2, Pencil, Trash2, Info
+  Package, TestTube2, Pencil, Trash2, Info, Dna
 } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
+import SeedTrainManager from '@/components/SeedTrainManager';
 
 const GrowthCurveChart = dynamic(() => import('@/components/charts/GrowthCurveChart'), { ssr: false });
 
@@ -190,15 +191,16 @@ export default function GrowthStudyDetailPage() {
   };
 
   const openEditModal = async (study) => {
-    const src = study.cell_bank_strain_id ? 'strain' : (study.cell_bank_preparation_id ? 'prep' : 'strain');
     setEditForm({
       name: study.name || '',
       study_type: study.study_type || 'growth_curve',
       objective: study.objective || '',
       notes: study.notes || '',
-      isolate_source: src,
+      status: study.status || '',
+      isolate_source: study.cell_bank_strain_id ? 'strain' : (study.cell_bank_preparation_id ? 'prep' : study.seed_passage_id ? 'seed_passage' : 'none'),
       cell_bank_strain_id: study.cell_bank_strain_id || '',
       cell_bank_preparation_id: study.cell_bank_preparation_id || '',
+      seed_passage_id: study.seed_passage_id || '',
       vial_id: study.vial_id || '',
       formulation_id: study.formulation_id || '',
       media_name: study.media_name || '',
@@ -216,10 +218,11 @@ export default function GrowthStudyDetailPage() {
     setEditModal(true);
     setEditMetaLoading(true);
     const sb = createClient();
-    const [strRes, prRes, fmRes] = await Promise.all([
+    const [strRes, prRes, fmRes, spRes] = await Promise.all([
       sb.from('cell_bank_strains').select('id, name, accession_number').order('name'),
       sb.from('cell_bank_preparations').select('id, prep_code, type, passage_number').order('created_at', { ascending: false }),
       sb.from('formulations').select('id, name, code').eq('status', 'Approved').order('name'),
+      sb.from('seed_passages').select('id, passage_number, media_name').order('created_at', { ascending: false }),
     ]);
     let vials = [];
     if (study.cell_bank_preparation_id) {
@@ -231,7 +234,7 @@ export default function GrowthStudyDetailPage() {
         .order('vial_code');
       vials = v || [];
     }
-    setEditMeta({ strains: strRes.data || [], preps: prRes.data || [], formulations: fmRes.data || [], vials });
+    setEditMeta({ strains: strRes.data || [], preps: prRes.data || [], formulations: fmRes.data || [], vials, seed_passages: spRes.data || [] });
     setEditMetaLoading(false);
   };
 
@@ -253,11 +256,12 @@ export default function GrowthStudyDetailPage() {
     const f = editForm;
     const payload = {
       name: f.name || null,
-      study_type: f.study_type || null,
+      study_type: f.study_type || 'growth_curve',
       objective: f.objective || null,
       notes: f.notes || null,
       cell_bank_strain_id: f.isolate_source === 'strain' && f.cell_bank_strain_id ? f.cell_bank_strain_id : null,
       cell_bank_preparation_id: f.isolate_source === 'prep' && f.cell_bank_preparation_id ? f.cell_bank_preparation_id : null,
+      seed_passage_id: f.isolate_source === 'seed_passage' && f.seed_passage_id ? f.seed_passage_id : null,
       vial_id: f.isolate_source === 'prep' && f.vial_id ? f.vial_id : null,
       formulation_id: f.formulation_id || null,
       media_name: !f.formulation_id ? (f.media_name || null) : null,
@@ -357,7 +361,7 @@ export default function GrowthStudyDetailPage() {
   const isFermentation = study.study_type === 'fermentation';
   const isActive = study.status === 'active';
 
-  const isolateName = study.cell_bank_strains?.name || study.cell_bank_preparations?.prep_code || '—';
+  const isolateName = study.seed_passages ? `Seed Passage ${study.seed_passages.passage_number}` : study.cell_bank_strains?.name || study.cell_bank_preparations?.prep_code || '—';
   const mediaName = study.formulations?.name || study.media_name || '—';
 
   const tpDone = time_points.filter(t => t.status === 'completed').length;
@@ -518,7 +522,6 @@ export default function GrowthStudyDetailPage() {
             { label: 'Study Code',    value: study.study_code || '—', mono: true },
             { label: 'Type',          value: isFermentation ? 'Fermentation' : 'Growth Curve' },
             { label: 'Status',        value: study.status?.charAt(0).toUpperCase() + study.status?.slice(1) },
-            { label: 'Isolate',       value: isolateName },
             { label: 'Media',         value: mediaName },
             { label: 'Vessel',        value: study.vessel_type?.replace(/_/g, ' ') || '—' },
             { label: 'Volume',        value: study.volume_ml ? `${study.volume_ml} mL` : '—' },
@@ -538,6 +541,62 @@ export default function GrowthStudyDetailPage() {
             </div>
           ))}
         </div>
+        {/* Isolate Source Cards */}
+        <div className="grid md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-100">
+          {study.cell_bank_strains && (
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase mb-1">Cell Bank Strain</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Dna className="w-4 h-4 text-slate-500" />
+                <p className="text-sm font-semibold text-slate-800">{study.cell_bank_strains.name}</p>
+              </div>
+            </div>
+          )}
+          {study.cell_bank_preparations && (
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase mb-1">Preparation</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Dna className="w-4 h-4 text-slate-500" />
+                <p className="text-sm font-semibold text-slate-800">{study.cell_bank_preparations.prep_code} ({study.cell_bank_preparations.type})</p>
+              </div>
+            </div>
+          )}
+          {study.cell_bank_vials && (
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase mb-1">Vial Utilised</p>
+              <div className="flex items-start gap-2 mb-2">
+                <FlaskConical className="w-4 h-4 text-slate-500 mt-0.5" />
+                <div>
+                  <p className="text-sm font-black text-slate-800 font-mono">{study.cell_bank_vials.vial_code}</p>
+                  {study.cell_bank_vials.storage_temp && <p className="text-xs text-slate-600 font-medium">{study.cell_bank_vials.storage_temp}</p>}
+                  {study.cell_bank_vials.freezer_id && (
+                    <p className="text-xs text-slate-500">
+                      {study.cell_bank_vials.freezer_id}{study.cell_bank_vials.rack ? ` · Rack ${study.cell_bank_vials.rack}` : ''}{study.cell_bank_vials.position ? ` · Pos ${study.cell_bank_vials.position}` : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {study.seed_passages && (
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase mb-1">Seed Passage Utilised</p>
+              <div className="flex items-start gap-2 mb-2">
+                <FlaskConical className="w-4 h-4 text-slate-500 mt-0.5" />
+                <div>
+                  <p className="text-sm font-black text-slate-800 font-mono">Seed Passage {study.seed_passages.passage_number}</p>
+                  {study.seed_passages.media_name && <p className="text-xs text-slate-600 font-medium">Media: {study.seed_passages.media_name}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+          {!study.cell_bank_strains && !study.cell_bank_preparations && !study.seed_passages && (
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase mb-1">Isolate Source</p>
+              <p className="text-sm font-semibold text-slate-500 italic">No isolate associated.</p>
+            </div>
+          )}
+        </div>
         {study.objective && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Objective</p>
@@ -550,6 +609,11 @@ export default function GrowthStudyDetailPage() {
             <p className="text-xs font-medium text-slate-600">{study.notes}</p>
           </div>
         )}
+      </div>
+
+      {/* Seed Train Manager */}
+      <div className="card p-5 bg-white border border-slate-200">
+        <SeedTrainManager targetType="growth_study" targetId={study.id} onSuccess={load} />
       </div>
 
       {/* Overdue alerts */}
@@ -651,25 +715,6 @@ export default function GrowthStudyDetailPage() {
             >
               <Microscope className="w-3.5 h-3.5" /> Add Plate Observation
             </button>
-          )}
-
-          {/* Vial used */}
-          {study.cell_bank_vials && (
-            <div className="glass-card rounded-2xl p-5">
-              <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
-                <TestTube2 className="w-4 h-4 text-slate-600" /> Vial Used
-              </h3>
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
-                <p className="text-sm font-black text-slate-800 font-mono">{study.cell_bank_vials.vial_code}</p>
-                {study.cell_bank_vials.storage_temp && <p className="text-xs text-slate-600 font-medium">{study.cell_bank_vials.storage_temp}</p>}
-                {study.cell_bank_vials.freezer_id && (
-                  <p className="text-xs text-slate-500 font-medium">
-                    {study.cell_bank_vials.freezer_id}{study.cell_bank_vials.rack ? ` · Rack ${study.cell_bank_vials.rack}` : ''}{study.cell_bank_vials.position ? ` · Pos ${study.cell_bank_vials.position}` : ''}
-                  </p>
-                )}
-                <span className="inline-block text-xs font-black px-1.5 py-0.5 rounded border bg-red-50 text-red-600 border-red-200">Used</span>
-              </div>
-            </div>
           )}
 
           {/* Inventory usage */}
@@ -1370,11 +1415,11 @@ export default function GrowthStudyDetailPage() {
                 {/* ── Isolate ── */}
                 <div className="space-y-3">
                   <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Isolate Source</p>
-                  <div className="flex gap-3">
-                    {[['strain','Cell Bank Strain'],['prep','Preparation / Vial']].map(([v,l]) => (
+                  <div className="flex gap-2">
+                    {[['strain', 'Cell Bank Strain'], ['prep', 'Preparation / Vial'], ['seed_passage', 'Seed Passage'], ['none', 'None (Media Control)']].map(([v, l]) => (
                       <button key={v} type="button"
-                        onClick={() => setEditForm(f => ({ ...f, isolate_source: v, cell_bank_strain_id: '', cell_bank_preparation_id: '', vial_id: '' }))}
-                        className={`flex-1 py-2 rounded-xl border text-xs font-black transition-colors ${editForm.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+                        onClick={() => setEditForm(f => ({ ...f, isolate_source: v, cell_bank_strain_id: '', cell_bank_preparation_id: '', seed_passage_id: '', vial_id: '' }))}
+                        className={`flex-1 py-1.5 px-2 rounded-lg border text-xs font-black transition-colors ${editForm.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
                       >{l}</button>
                     ))}
                   </div>
@@ -1383,7 +1428,7 @@ export default function GrowthStudyDetailPage() {
                       <option value="">Select strain…</option>
                       {editMeta.strains.map(s => <option key={s.id} value={s.id}>{s.name}{s.accession_number ? ` (${s.accession_number})` : ''}</option>)}
                     </select>
-                  ) : (
+                  ) : editForm.isolate_source === 'prep' ? (
                     <>
                       <select className={InputCls} value={editForm.cell_bank_preparation_id}
                         onChange={e => { setEditForm(f => ({ ...f, cell_bank_preparation_id: e.target.value, vial_id: '' })); loadEditVials(e.target.value); }}
@@ -1406,7 +1451,16 @@ export default function GrowthStudyDetailPage() {
                         </div>
                       )}
                     </>
-                  )}
+                  ) : editForm.isolate_source === 'seed_passage' ? (
+                    <select className={InputCls} value={editForm.seed_passage_id} onChange={e => setEditForm(f => ({ ...f, seed_passage_id: e.target.value }))}>
+                      <option value="">Select seed passage…</option>
+                      {editMeta.seed_passages?.map(sp => (
+                        <option key={sp.id} value={sp.id}>
+                          Seed Passage {sp.passage_number} {sp.media_name ? `(${sp.media_name})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
                 </div>
 
                 <hr className="border-slate-100" />

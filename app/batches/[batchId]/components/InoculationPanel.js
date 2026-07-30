@@ -2,12 +2,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
+import SeedTrainManager from '@/app/components/SeedTrainManager';
 import { Droplets, AlertTriangle, Dna, ChevronDown } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
 const TRANSFER_METHODS = ['Pipette', 'Syringe', 'Sterile spoon'];
 const SOURCE_TYPES = [
   { value: 'cell_bank', label: 'Cell Bank Vial' },
+  { value: 'seed_passage', label: 'Seed Passage' },
   { value: 'back_slop', label: 'Back-Slop' },
   { value: 'other',     label: 'External / Other' },
 ];
@@ -29,6 +31,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [vialId,    setVialId]    = useState('');
   const [availVials, setAvailVials] = useState([]);
   const [vialsLoading, setVialsLoading] = useState(false);
+  const [seedPassageId, setSeedPassageId] = useState('');
+  const [availSeedPassages, setAvailSeedPassages] = useState([]);
+  const [seedPassagesLoading, setSeedPassagesLoading] = useState(false);
   const [inVol,     setInVol]     = useState('');
   const [plannedHr, setPlannedHr] = useState('');
   const [tZero,     setTZero]     = useState('');
@@ -59,7 +64,6 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const [capaDevId, setCapaDevId] = useState(null);
   const [raisingCapa, setRaisingCapa] = useState(false);
 
-  // Load available cell bank vials when source type switches to cell_bank
   useEffect(() => {
     if (sourceType !== 'cell_bank') return;
     setVialsLoading(true);
@@ -70,6 +74,16 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
       .finally(() => setVialsLoading(false));
   }, [sourceType]);
 
+  useEffect(() => {
+    if (sourceType !== 'seed_passage') return;
+    setSeedPassagesLoading(true);
+    withTimeout(fetch(`/api/seed-passages?batchId=${batch.batch_id}`), 20000, 'Seed passages load timed out')
+      .then(r => r.json())
+      .then(j => { if (j.success) setAvailSeedPassages(j.data || []); })
+      .catch(() => {})
+      .finally(() => setSeedPassagesLoading(false));
+  }, [sourceType, batch.batch_id]);
+
   const fetchRecord = useCallback(() => {
     if (!activeFlask?.id) return;
     withTimeout(supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(), 20000, 'Inoculation record load timed out')
@@ -78,6 +92,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setSourceType(d.inoculum_source_type || 'other');
           setSource(d.inoculum_source||'');
           setVialId(d.cell_bank_vial_id||'');
+          setSeedPassageId(d.seed_passage_id||'');
           setInVol(d.inoculum_vol_ml||'');
           setPlannedHr(d.planned_fermentation_hrs||'');
           setTZero(toLocalDatetime(d.t_zero_time));
@@ -98,7 +113,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           setBackSlopPct(d.back_slop_ratio_pct||'');
           setCoStarters(d.co_starters||[]);
         } else {
-          setSourceType('other'); setSource(''); setVialId(''); setInVol(''); setPlannedHr('');
+          setSourceType('other'); setSource(''); setVialId(''); setSeedPassageId(''); setInVol(''); setPlannedHr('');
           setTransfer('Pipette'); setLafUsed(false); setContCheck('Clear'); setContNotes('');
           setTZero('');
         }
@@ -109,6 +124,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   useEffect(() => { fetchRecord(); }, [fetchRecord]);
 
   const selectedVial = availVials.find(v => v.id === vialId);
+  const selectedSeedPassage = availSeedPassages.find(sp => sp.id === seedPassageId);
 
   // G-04: auto-raise CAPA when contamination is suspected
   const autoRaiseContaminationCapa = async () => {
@@ -166,8 +182,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
       const { error } = await supabase.from('batch_flask_inoculations').upsert({
         flask_id: activeFlask.id, batch_id: batch.id,
         inoculum_source_type: sourceType,
-        inoculum_source: sourceType === 'cell_bank' ? (selectedVial ? `${selectedVial.vial_code} — ${selectedVial.cell_bank_preparations?.cell_bank_strains?.name || ''}` : null) : (source || null),
+        inoculum_source: sourceType === 'cell_bank' ? (selectedVial ? `${selectedVial.vial_code} — ${selectedVial.cell_bank_preparations?.cell_bank_strains?.name || ''}` : null) : sourceType === 'seed_passage' ? (selectedSeedPassage ? `Seed Passage ${selectedSeedPassage.passage_number}` : null) : (source || null),
         cell_bank_vial_id: sourceType === 'cell_bank' && vialId ? vialId : null,
+        seed_passage_id: sourceType === 'seed_passage' && seedPassageId ? seedPassageId : null,
         inoculum_vol_ml: inVol ? parseFloat(inVol) : null,
         planned_fermentation_hrs: plannedHr ? parseFloat(plannedHr) : null,
         t_zero_time: tZero ? new Date(tZero).toISOString() : null,
@@ -204,8 +221,9 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
       toast.success(advance ? `Trial ${activeFlask.flask_label} Inoculated. T=0 anchored.` : 'Draft saved.');
       syncStageToLNB(supabase, batch.id, 'inoculation', {
         inoculum_source_type: sourceType,
-        inoculum_source: sourceType === 'cell_bank' ? (selectedVial?.vial_code || null) : (source || null),
+        inoculum_source: sourceType === 'cell_bank' ? (selectedVial?.vial_code || null) : sourceType === 'seed_passage' ? (selectedSeedPassage ? `Seed Passage ${selectedSeedPassage.passage_number}` : null) : (source || null),
         cell_bank_vial_id: vialId || null,
+        seed_passage_id: seedPassageId || null,
         strain_name: selectedVial?.cell_bank_preparations?.cell_bank_strains?.name || null,
         inoculum_vol_ml: inVol ? parseFloat(inVol) : null,
         planned_fermentation_hrs: plannedHr ? parseFloat(plannedHr) : null,
@@ -232,6 +250,10 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         <Droplets className="w-5 h-5 text-slate-600"/>
         <div><h2 className="text-base font-bold text-slate-900">Inoculation: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
           <p className="text-xs text-slate-500">Define the independent starter source and timeline for this specific trial.</p></div>
+      </div>
+
+      <div className="card p-5">
+        <SeedTrainManager targetType="batch" targetId={batch.id} onSuccess={fetchRecord} />
       </div>
 
       <div className="card p-5 space-y-4">
@@ -283,8 +305,39 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           </div>
         )}
 
+        {/* Seed Passage picker */}
+        {sourceType === 'seed_passage' && (
+          <div className="space-y-2">
+            <label className="field-label flex items-center gap-1"><FlaskConical className="w-3.5 h-3.5 text-slate-600"/> Seed Passage</label>
+            {seedPassagesLoading ? (
+              <div className="field-input text-slate-400 text-xs">Loading seed passages...</div>
+            ) : availSeedPassages.length === 0 ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-semibold">
+                No seed passages found for this batch.
+              </div>
+            ) : (
+              <select value={seedPassageId} onChange={e => setSeedPassageId(e.target.value)} className="field-input bg-white">
+                <option value="">Select seed passage...</option>
+                {availSeedPassages.map(sp => (
+                  <option key={sp.id} value={sp.id}>
+                    Seed Passage {sp.passage_number} {sp.media_name ? `(${sp.media_name})` : ''} - {sp.status}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedSeedPassage && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                <p className="font-black text-slate-800">Seed Passage {selectedSeedPassage.passage_number}</p>
+                <p className="text-slate-700 font-semibold">Started: {toLocalDatetime(selectedSeedPassage.start_time)}</p>
+                <p className="text-slate-600">Media: {selectedSeedPassage.media_name || 'N/A'} · Vol: {selectedSeedPassage.media_volume_ml || 'N/A'} ml</p>
+                {selectedSeedPassage.inventory && <p className="text-slate-500">From Vial: {selectedSeedPassage.inventory.label}</p>}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Free text for back-slop or other */}
-        {sourceType !== 'cell_bank' && (
+        {sourceType !== 'cell_bank' && sourceType !== 'seed_passage' && (
           <div>
             <label className="field-label">Inoculum Source</label>
             <input value={source} onChange={e=>setSource(e.target.value)} className="field-input"
