@@ -1,0 +1,75 @@
+{
+  "data": [
+    {
+      "id": "b495c4c9-cd83-4558-9886-5ba34902a1e0",
+      "full_name": "ABINAYA S",
+      "is_active": true
+    },
+    {
+      "id": "9f944886-b618-443e-ae09-556afda36245",
+      "full_name": "Sathya S",
+      "is_active": false
+    },
+    {
+      "id": "53b66ce4-2e76-4f29-bab9-9565b14897ab",
+      "full_name": "Nandhitha M",
+      "is_active": false
+    },
+    {
+      "id": "c7584531-b120-4db4-892d-6822d6b80385",
+      "full_name": "Kowsalya M ",
+      "is_active": false
+    },
+    {
+      "id": "41a82b87-9a8d-4f72-8250-6db45d94d4a8",
+      "full_name": "Sithesh M",
+      "is_active": false
+    },
+    {
+      "id": "f7b38211-0180-42f1-bde0-2d6d24374976",
+      "full_name": "Nancy Roselin C",
+      "is_active": false
+    },
+    {
+      "id": "19c5a607-a003-456a-a9b4-551925daad80",
+      "full_name": "Santha Kumari R K",
+      "is_active": true
+    },
+    {
+      "id": "2e14d5dd-b502-4f6b-8fa8-5519a681470a",
+      "full_name": "Manisreethaar Selvaraj",
+      "is_active": true
+    },
+    {
+      "id": "e44833ed-614e-4104-ba65-a288c8d9c538",
+      "full_name": "Anushika P",
+      "is_active": false
+    },
+    {
+      "id": "bc8ba5d0-aa22-4fe7-9c13-20720b7ec44a",
+      "full_name": "Mano M",
+      "is_active": false
+    },
+    {
+      "id": "6fb3af0c-aeac-4c1c-b533-b498f7ba2b65",
+      "full_name": "HARINI S J ",
+      "is_active": true
+    },
+    {
+      "id": "1a6cf92b-bd6e-4c26-9e9b-acbca9d19add",
+      "full_name": "DEVIKA M",
+      "is_active": true
+    },
+    {
+      "id": "b4661203-1609-47bd-a257-f64f3a87f0db",
+      "full_name": "Hariprakash B",
+      "is_active": false
+    },
+    {
+      "id": "6809c63b-ebf2-4908-894e-709c0f9322ca",
+      "full_name": "Libin Raj C",
+      "is_active": true
+    }
+  ],
+  "error": null
+}

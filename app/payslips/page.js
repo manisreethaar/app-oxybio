@@ -701,24 +701,34 @@ export default function PayrollPage() {
             .order('year', { ascending: false })
             .order('created_at', { ascending: false })
         ]);
+        if (empRes.error) {
+           toast.error("Failed to load employees: " + empRes.error.message);
+        }
+        if (slipRes.error) {
+           toast.error("Failed to load payslips: " + slipRes.error.message);
+        }
         setEmployees(empRes.data || []);
         setPayslips(slipRes.data || []);
       } else if (employeeProfile?.id) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('payslips')
           .select('*, employees!payslips_employee_id_fkey(full_name, designation, employee_code)')
           .eq('employee_id', employeeProfile.id)
           .order('year', { ascending: false })
           .order('created_at', { ascending: false });
+        if (error) {
+           toast.error("Failed to load your payslips: " + error.message);
+        }
         setPayslips(data || []);
       }
       })(), 20000, 'Payslips load timed out');
     } catch (err) {
       console.error(err);
+      toast.error("Error loading payroll data: " + err.message);
     } finally {
       setLoadingInit(false);
     }
-  }, [isAdmin, employeeProfile, supabase]);
+  }, [isAdmin, employeeProfile, supabase, toast]);
 
   useEffect(() => {
     if (!authLoading) fetchInitial();

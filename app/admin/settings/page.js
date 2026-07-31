@@ -5,10 +5,59 @@ import { withTimeout } from '@/lib/withTimeout';
 import { Plus, Trash2, GripVertical, Save, FlaskConical, Tag, Megaphone, Loader2 } from 'lucide-react';
 
 function SystemBroadcastPanel() {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState('System Updates');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [commits, setCommits] = useState([]);
   const toast = useToast();
+
+  useEffect(() => {
+    async function fetchCommits() {
+      try {
+        const res = await fetch('https://api.github.com/repos/manisreethaar/app-oxybio/commits?per_page=10');
+        if (!res.ok) throw new Error('Failed to fetch commits');
+        const data = await res.json();
+        
+        // Clean commit messages: remove "feat:", "fix:", "chore:" etc.
+        const parsed = data.map(c => {
+          let msg = c.commit.message.split('\n')[0]; // take first line
+          msg = msg.replace(/^(feat|fix|chore|refactor|docs|style|test)(\(.*?\))?:\s*/i, '');
+          msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+          return {
+            sha: c.sha,
+            message: msg,
+            selected: false,
+            date: new Date(c.commit.author.date).toLocaleString()
+          };
+        });
+        
+        // Filter out auto-generated or unhelpful ones if needed, but let's keep all for now
+        setCommits(parsed);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setFetching(false);
+      }
+    }
+    fetchCommits();
+  }, []);
+
+  const toggleCommit = (sha) => {
+    setCommits(prev => {
+      const updated = prev.map(c => c.sha === sha ? { ...c, selected: !c.selected } : c);
+      
+      // Auto-generate message based on selected
+      const selectedMsgs = updated.filter(c => c.selected).map(c => `• ${c.message}`);
+      if (selectedMsgs.length > 0) {
+        setMessage(`🚀 New System Updates:\n\n${selectedMsgs.join('\n')}`);
+      } else {
+        setMessage('');
+      }
+      
+      return updated;
+    });
+  };
 
   const handleBroadcast = async () => {
     if (!title.trim() || !message.trim()) {
@@ -31,8 +80,9 @@ function SystemBroadcastPanel() {
       if (!res.ok) throw new Error(data.error || 'Failed to send broadcast');
       
       toast.success('Broadcast sent successfully!');
-      setTitle('');
+      setTitle('System Updates');
       setMessage('');
+      setCommits(prev => prev.map(c => ({ ...c, selected: false })));
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -53,27 +103,59 @@ function SystemBroadcastPanel() {
           </div>
         </div>
       </div>
-      <div className="space-y-3">
-        <input 
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="Broadcast Title (e.g., New Feature Released)"
-          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
-        />
-        <textarea 
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-          placeholder="Message content..."
-          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[80px] resize-y"
-        />
-        <button 
-          onClick={handleBroadcast}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
-          {loading ? 'Sending...' : 'Send Broadcast to All Users'}
-        </button>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3 border-r md:border-slate-200 md:pr-4">
+          <p className="text-xs font-black text-slate-500 uppercase">1. Select Recent Updates</p>
+          {fetching ? (
+            <div className="flex items-center gap-2 text-xs text-slate-500 py-4">
+              <Loader2 className="w-4 h-4 animate-spin" /> Fetching latest pushes from GitHub...
+            </div>
+          ) : commits.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">No recent updates found.</p>
+          ) : (
+            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+              {commits.map(c => (
+                <label key={c.sha} className={`flex items-start gap-2 p-2 rounded-xl border cursor-pointer transition-colors ${c.selected ? 'bg-emerald-100/50 border-emerald-300' : 'bg-white border-slate-200 hover:border-emerald-300'}`}>
+                  <input 
+                    type="checkbox" 
+                    className="mt-0.5" 
+                    checked={c.selected}
+                    onChange={() => toggleCommit(c.sha)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 break-words leading-snug">{c.message}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{c.date}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-xs font-black text-slate-500 uppercase">2. Review & Send</p>
+          <input 
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Broadcast Title (e.g., New Feature Released)"
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+          />
+          <textarea 
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            placeholder="Message content..."
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[140px] resize-y font-mono text-slate-700"
+          />
+          <button 
+            onClick={handleBroadcast}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
+            {loading ? 'Sending...' : 'Send Broadcast to All Users'}
+          </button>
+        </div>
       </div>
     </div>
   );

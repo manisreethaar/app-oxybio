@@ -1,21 +1,19 @@
-import { Client } from 'pg';
+import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 async function check() {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL
-  });
-  await client.connect();
-
-  const strains = await client.query(`SELECT id, name FROM cell_bank_strains`);
-  console.log('Strains:', strains.rows);
-
-  const preps = await client.query(`SELECT id, prep_code, type, strain_id FROM cell_bank_preparations WHERE type = 'MCB'`);
-  console.log('MCB Preps:', preps.rows);
-
-  await client.end();
+  const { data: preps, error: err2 } = await supabase
+    .from('cell_bank_preparations')
+    .select('prep_code')
+    .order('prep_code', { ascending: false });
+  console.log('All preps codes:', preps);
 }
 
 check().catch(console.error);
