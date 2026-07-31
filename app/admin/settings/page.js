@@ -19,11 +19,33 @@ function SystemBroadcastPanel() {
         if (!res.ok) throw new Error('Failed to fetch commits');
         const data = await res.json();
         
-        // Clean commit messages: remove "feat:", "fix:", "chore:" etc.
+        // Format commit messages into user-friendly release notes
         const parsed = data.map(c => {
-          let msg = c.commit.message.split('\n')[0]; // take first line
-          msg = msg.replace(/^(feat|fix|chore|refactor|docs|style|test)(\(.*?\))?:\s*/i, '');
-          msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+          let rawMsg = c.commit.message.split('\n')[0]; // take first line
+          let msg = rawMsg;
+          
+          const match = rawMsg.match(/^(feat|fix|chore|refactor|update|docs|style)(\((.*?)\))?:\s*(.*)/i);
+          
+          if (match) {
+            const type = match[1].toLowerCase();
+            const scope = match[3] ? `the ${match[3]} module` : 'the application';
+            let description = match[4];
+            description = description.charAt(0).toLowerCase() + description.slice(1);
+            
+            if (type === 'feat' || type === 'add') {
+              msg = `A new feature has been introduced in ${scope}: ${description}`;
+            } else if (type === 'refactor' || type === 'update') {
+              msg = `The process flow of ${scope} has been changed: ${description}`;
+            } else if (type === 'fix' || type === 'chore') {
+              msg = `An option was changed in ${scope}: ${description}`;
+            } else {
+              msg = `Updates made to ${scope}: ${description}`;
+            }
+          } else {
+             // Fallback if it doesn't match standard conventional commit format
+             msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+          }
+          
           return {
             sha: c.sha,
             message: msg,
