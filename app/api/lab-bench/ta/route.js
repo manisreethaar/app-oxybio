@@ -39,8 +39,10 @@ export async function POST(request) {
       if (logError.code === '42703' && inventory_item_id) { // column does not exist
          ({ data: logData, error: logError } = await supabase.from('titration_logs').insert(payload).select().single());
       }
-      if (logError) throw logError;
-    }
+      if (logError) {
+        console.error('Titration Log Insert Error:', logError);
+        throw logError;
+      }
 
     const deductionLogs = [];
 
@@ -56,7 +58,7 @@ export async function POST(request) {
         .in('status', ['Available', 'In Use'])
         .gt('current_quantity', 0)
         .order('expiry_date', { ascending: true })
-        .order('received_date', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (stockErr) throw stockErr;
 
