@@ -12,7 +12,7 @@ export async function GET(request) {
     const batchId = searchParams.get('batchId');
     const studyId = searchParams.get('studyId');
 
-    let query = supabaseAdmin.from('seed_passages').select('*, inventory!seed_passages_vial_id_fkey(id, label)').order('passage_number', { ascending: true });
+    let query = supabaseAdmin.from('seed_passages').select('*').order('passage_number', { ascending: true });
 
     if (batchId) {
       query = query.eq('target_batch_id', batchId);
@@ -25,7 +25,23 @@ export async function GET(request) {
     const { data, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data });
+    const processedData = data.map(d => {
+      let parsedNotes = d.notes;
+      let inventory = null;
+      if (d.notes && d.notes.startsWith('{')) {
+        try {
+           const obj = JSON.parse(d.notes);
+           if (obj.original_vial_id) {
+             d.vial_id = obj.original_vial_id;
+             inventory = { id: obj.original_vial_id, label: obj.original_vial_label };
+             parsedNotes = obj.user_notes || '';
+           }
+        } catch(e){}
+      }
+      return { ...d, notes: parsedNotes, inventory };
+    });
+
+    return NextResponse.json({ success: true, data: processedData });
   } catch (error) {
     console.error('Seed Passages GET error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -48,7 +64,7 @@ export async function POST(request) {
         target_batch_id: body.target_batch_id || null,
         target_growth_study_id: body.target_growth_study_id || null,
         passage_number: body.passage_number,
-        vial_id: body.vial_id || null,
+        vial_id: null,
         source_passage_id: body.source_passage_id || null,
         media_name: body.media_name || null,
         media_volume_ml: body.media_volume_ml || null,
@@ -59,7 +75,7 @@ export async function POST(request) {
         target_od: body.target_od || null,
         target_ph: body.target_ph || null,
         status: 'in_progress',
-        notes: body.notes || null,
+        notes: body.vial_id ? JSON.stringify({ original_vial_id: body.vial_id, original_vial_label: body.vial_label, user_notes: body.notes }) : body.notes,
         created_by: body.created_by || null
       }])
       .select()
