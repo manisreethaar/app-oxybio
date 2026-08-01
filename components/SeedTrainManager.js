@@ -47,13 +47,18 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
       setPassages(data || []);
       
       // Also fetch available vials for Seed 1
-      const { data: vData } = await supabase
-        .from('inventory')
-        .select('id, label')
-        .eq('status', 'in_stock')
-        .eq('category', 'cell_bank_vial')
-        .order('label');
-      setVials(vData || []);
+      try {
+        const vRes = await fetch('/api/research/cell-bank/vials?status=Available');
+        const vJson = await vRes.json();
+        if (vJson.success) {
+          setVials(vJson.data.map(v => ({ id: v.id, label: v.vial_code })));
+        } else {
+          setVials([]);
+        }
+      } catch (e) {
+        console.error('Failed to load vials:', e);
+        setVials([]);
+      }
     } catch (err) {
       toast.error('Failed to load seed train: ' + err.message);
     } finally {
@@ -101,7 +106,8 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
           target_type: targetType,
           target_batch_id: targetType === 'batch' ? targetId : null,
           target_growth_study_id: targetType === 'growth_study' ? targetId : null,
-          ...form
+          ...form,
+          vial_label: form.vial_id ? vials.find(v => v.id === form.vial_id)?.label : null
         }),
       });
       const data = await res.json();
