@@ -161,9 +161,7 @@ export default function BatchDetailPage() {
     }
   }, [batchId, supabase]);
 
-  // Don't start fetching until auth has finished initializing — avoids
-  // racing with AuthContext for the same Supabase session lock.
-  useEffect(() => { if (!authLoading) fetchAll(); }, [fetchAll, authLoading]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   useEffect(() => {
     if (flasks.length > 0 && !selectedFlaskId) {
@@ -391,7 +389,7 @@ export default function BatchDetailPage() {
     );
   }
 
-  if (authLoading || !batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
+  if (!batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
 
   const currentIdx  = STAGES.findIndex(s => s.id === batch.current_stage);
   const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
