@@ -43,6 +43,7 @@ export async function POST(request) {
         console.error('Titration Log Insert Error:', logError);
         throw logError;
       }
+    }
 
     const deductionLogs = [];
 
