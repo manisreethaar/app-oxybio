@@ -38,7 +38,7 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
         .from('seed_passages')
         .select(`
           *,
-          inventory:vial_id (id, label)
+          cell_bank_vials:vial_id (id, vial_code)
         `)
         .eq(targetType === 'batch' ? 'target_batch_id' : 'target_growth_study_id', targetId)
         .order('passage_number', { ascending: true });
@@ -178,7 +178,7 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
                 <div className="text-xs text-slate-500 space-y-0.5">
                   <p>Started: {toLocalDatetime(p.start_time)}</p>
                   <p>Media: <span className="font-medium text-slate-700">{p.media_name} ({p.media_volume_ml} ml)</span></p>
-                  {p.vial_id && <p>Source Vial: {p.inventory?.label || 'Unknown'}</p>}
+                  {p.vial_id && <p>Source Vial: {p.cell_bank_vials?.vial_code || 'Unknown'}</p>}
                   {p.target_od && <p>Target OD: {p.target_od} | Target pH: {p.target_ph}</p>}
                 </div>
                 {p.status === 'in_progress' && (
