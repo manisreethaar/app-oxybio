@@ -129,10 +129,6 @@ export default function BatchDetailPage() {
       // This page had no try/catch/finally at all — a stalled connection or
       // any error left it stuck on "Loading batch..." forever, on one of
       // the most-visited pages in the app, with no way out but a refresh.
-      // Ensure auth session is resolved before firing massive parallel requests 
-      // to avoid internal lock deadlocks in the Supabase client
-      await supabase.auth.getSession();
-
       // Split into two batches to prevent HTTP/1.1 connection limit stalling (6 concurrent max)
       const [batchRes, flasksRes, transRes] = await withTimeout(Promise.all([
         supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
@@ -165,7 +161,9 @@ export default function BatchDetailPage() {
     }
   }, [batchId, supabase]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Don't start fetching until auth has finished initializing — avoids
+  // racing with AuthContext for the same Supabase session lock.
+  useEffect(() => { if (!authLoading) fetchAll(); }, [fetchAll, authLoading]);
 
   useEffect(() => {
     if (flasks.length > 0 && !selectedFlaskId) {
