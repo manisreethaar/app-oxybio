@@ -1,13 +1,11 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
 import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
 import { FlaskConical, Plus, Loader2, Play, CheckCircle, Clock } from 'lucide-react';
 import { toLocalDatetime, nowDatetimeLocal } from '@/lib/dates';
 
 export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
-  const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
   
   const [passages, setPassages] = useState([]);
@@ -34,17 +32,12 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
   const fetchPassages = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('seed_passages')
-        .select(`
-          *,
-          cell_bank_vials:vial_id (id, vial_code)
-        `)
-        .eq(targetType === 'batch' ? 'target_batch_id' : 'target_growth_study_id', targetId)
-        .order('passage_number', { ascending: true });
-        
-      if (error) throw error;
-      setPassages(data || []);
+      // Use admin API route — anon client is blocked by RLS on seed_passages
+      const param = targetType === 'batch' ? `batchId=${targetId}` : `studyId=${targetId}`;
+      const res = await fetch(`/api/seed-passages?${param}`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to load seed passages');
+      setPassages(json.data || []);
       
       // Fetch available vials via admin API route (bypasses RLS on cell_bank_vials)
       try {
@@ -65,7 +58,7 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
     } finally {
       setLoading(false);
     }
-  }, [supabase, targetType, targetId, toast]);
+  }, [targetType, targetId, toast]);
 
   useEffect(() => {
     fetchPassages();
