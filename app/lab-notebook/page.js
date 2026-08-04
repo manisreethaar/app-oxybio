@@ -121,7 +121,7 @@ export default function DigitalLnbPage() {
     }
   };
 
-  useEffect(() => { fetchData(); fetchPendingIds(); }, [fetchData]);
+  useEffect(() => { if (!authLoading) { fetchData(); fetchPendingIds(); } }, [fetchData, authLoading]);
 
   const handleCreateSubmit = async (data) => {
     setSubmitting(true);
