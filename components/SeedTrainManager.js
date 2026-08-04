@@ -2,11 +2,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { withTimeout } from '@/lib/withTimeout';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { FlaskConical, Plus, Loader2, Play, CheckCircle, Clock } from 'lucide-react';
 import { toLocalDatetime, nowDatetimeLocal } from '@/lib/dates';
 
 export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
   const toast = useToast();
+  const { employeeProfile } = useAuth(); // auto-capture who is entering data
   
   const [passages, setPassages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,9 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
           target_batch_id: targetType === 'batch' ? targetId : null,
           target_growth_study_id: targetType === 'growth_study' ? targetId : null,
           ...form,
-          vial_label: form.vial_id ? vials.find(v => v.id === form.vial_id)?.label : null
+          vial_label: form.vial_id ? vials.find(v => v.id === form.vial_id)?.label : null,
+          // ALCOA++: auto-record who entered this data (no manual selection needed)
+          created_by: employeeProfile?.id || null,
         }),
       });
       const data = await res.json();
@@ -177,6 +181,14 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
                   <p>Media: <span className="font-medium text-slate-700">{p.media_name} ({p.media_volume_ml} ml)</span></p>
                   {p.vial_id && <p>Source Vial: {p.cell_bank_vials?.vial_code || 'Unknown'}</p>}
                   {p.target_od && <p>Target OD: {p.target_od} | Target pH: {p.target_ph}</p>}
+                  {p.employees && (
+                    <p className="flex items-center gap-1.5 mt-1">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 text-white text-[9px] font-black">
+                        {p.employees.initials || p.employees.full_name?.split(' ').map(n => n[0]).join('').slice(0,2)}
+                      </span>
+                      <span className="text-slate-500">Recorded by {p.employees.full_name}</span>
+                    </p>
+                  )}
                 </div>
                 {p.status === 'in_progress' && (
                   <p className="text-xs font-bold text-navy mt-2 flex items-center gap-1">

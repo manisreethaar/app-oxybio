@@ -12,7 +12,7 @@ export async function GET(request) {
     const batchId = searchParams.get('batchId');
     const studyId = searchParams.get('studyId');
 
-    let query = supabaseAdmin.from('seed_passages').select('*, cell_bank_vials(id, vial_code)').order('passage_number', { ascending: true });
+    let query = supabaseAdmin.from('seed_passages').select('*, cell_bank_vials(id, vial_code), employees!seed_passages_created_by_fkey(id, full_name, initials)').order('passage_number', { ascending: true });
 
     if (batchId) {
       query = query.eq('target_batch_id', batchId);
