@@ -126,40 +126,36 @@ export default function BatchDetailPage() {
     if (!batchId) return;
     setLoadError(false);
     try {
-      // This page had no try/catch/finally at all — a stalled connection or
-      // any error left it stuck on "Loading batch..." forever, on one of
-      // the most-visited pages in the app, with no way out but a refresh.
-      // Split into two batches to prevent HTTP/1.1 connection limit stalling (6 concurrent max)
-      const [batchRes, flasksRes, transRes] = await withTimeout(Promise.all([
-        supabase.from('batches').select('*, formulations(id, name, code, version, ingredients, base_volume_ml)').eq('id', batchId).single(),
-        supabase.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
-        supabase.from('stage_transitions').select('*, employees!stage_transitions_changed_by_fkey(full_name)').eq('batch_id', batchId).order('created_at', { ascending: false }),
-      ]), 15000, 'Batch core details load timed out');
+      // Single server-side API call — uses admin client (no RLS), runs all
+      // 7 sub-queries in parallel on the server, and returns in one response.
+      // This eliminates 6 extra client->Supabase round-trips and RLS overhead.
+      const res = await withTimeout(
+        fetch(`/api/batches/${batchId}/details`),
+        20000,
+        'Batch detail load timed out'
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to load batch');
 
-      const [empRes, stockRes, lnbRes, epRes] = await withTimeout(Promise.all([
-        supabase.from('employees').select('id, full_name, role').eq('is_active', true).order('full_name'),
-        supabase.from('inventory_stock').select('*, inventory_items(name, unit, category)').gt('current_quantity', 0).eq('status', 'Available'),
-        supabase.from('lab_notebook_entries').select('id, flask_id').eq('batch_id', batchId),
-        supabase.from('batch_flask_endpoints').select('total_hours, flask_id').eq('batch_id', batchId),
-      ]), 15000, 'Batch supplementary details load timed out');
-      if (batchRes.data)  setBatch(batchRes.data);
-      if (flasksRes.data) setFlasks(flasksRes.data);
-      if (transRes.data)  setTransitions(transRes.data);
-      if (empRes.data)    setEmployees(empRes.data);
-      if (stockRes.data)  setAvailableStock(stockRes.data);
-      const lnbEntries = lnbRes.data || [];
+      setBatch(json.batch);
+      setFlasks(json.flasks);
+      setTransitions(json.transitions);
+      setEmployees(json.employees);
+      setAvailableStock(json.availableStock);
+      const lnbEntries = json.lnbEntries || [];
       setLnbCount(lnbEntries.length);
       setLnbEntryId(lnbEntries[0]?.id || null);
       const byFlask = {};
       lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
       setLnbByFlask(byFlask);
-      if (epRes.data) setFlaskEndpoints(epRes.data);
-      if (batchRes.data?.bmr_url) setBmrUrl(batchRes.data.bmr_url);
+      setFlaskEndpoints(json.flaskEndpoints);
+      if (json.batch?.bmr_url) setBmrUrl(json.batch.bmr_url);
     } catch (err) {
       console.error('Batch detail fetch error:', err);
       setLoadError(true);
     }
-  }, [batchId, supabase]);
+  }, [batchId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
