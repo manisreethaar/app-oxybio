@@ -32,28 +32,31 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
   const fetchPassages = useCallback(async () => {
     setLoading(true);
     try {
-      // Use admin API route — anon client is blocked by RLS on seed_passages
+      // Fetch passages and vials in parallel — independent of each other.
+      // Vials must always load even if passages fetch fails.
       const param = targetType === 'batch' ? `batchId=${targetId}` : `studyId=${targetId}`;
-      const res = await fetch(`/api/seed-passages?${param}`);
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed to load seed passages');
-      setPassages(json.data || []);
-      
-      // Fetch available vials via admin API route (bypasses RLS on cell_bank_vials)
-      try {
-        const vRes = await fetch('/api/seed-train/available-vials');
-        const vJson = await vRes.json();
-        if (vJson.success) {
-          setVials(vJson.data.map(v => ({ id: v.id, label: v.vial_code })));
-        } else {
-          console.error('Vials fetch error:', vJson.error);
-          setVials([]);
-        }
-      } catch (e) {
-        console.error('Failed to load vials:', e);
+      const [passRes, vialRes] = await Promise.all([
+        fetch(`/api/seed-passages?${param}`),
+        fetch('/api/seed-train/available-vials'),
+      ]);
+
+      const passJson = await passRes.json();
+      if (passJson.success) {
+        setPassages(passJson.data || []);
+      } else {
+        console.error('Passages error:', passJson.error);
+        setPassages([]);
+      }
+
+      const vialJson = await vialRes.json();
+      if (vialJson.success && vialJson.data?.length > 0) {
+        setVials(vialJson.data.map(v => ({ id: v.id, label: v.vial_code })));
+      } else {
+        console.error('Vials error or empty:', vialJson.error ?? 'no data');
         setVials([]);
       }
     } catch (err) {
+      console.error('Seed train load error:', err);
       toast.error('Failed to load seed train: ' + err.message);
     } finally {
       setLoading(false);
