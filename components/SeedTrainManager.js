@@ -46,17 +46,14 @@ export default function SeedTrainManager({ targetType, targetId, onSuccess }) {
       if (error) throw error;
       setPassages(data || []);
       
-      // Fetch available vials directly via supabase client (avoids cookie-auth issues on Vercel)
+      // Fetch available vials via admin API route (bypasses RLS on cell_bank_vials)
       try {
-        const { data: vialData, error: vialErr } = await supabase
-          .from('cell_bank_vials')
-          .select('id, vial_code, status, cell_bank_preparations!preparation_id(id, prep_code, cell_bank_strains(name))')
-          .eq('status', 'Available')
-          .order('vial_code', { ascending: true });
-        if (!vialErr && vialData) {
-          setVials(vialData.map(v => ({ id: v.id, label: v.vial_code })));
+        const vRes = await fetch('/api/seed-train/available-vials');
+        const vJson = await vRes.json();
+        if (vJson.success) {
+          setVials(vJson.data.map(v => ({ id: v.id, label: v.vial_code })));
         } else {
-          console.error('Vials fetch error:', vialErr?.message);
+          console.error('Vials fetch error:', vJson.error);
           setVials([]);
         }
       } catch (e) {
