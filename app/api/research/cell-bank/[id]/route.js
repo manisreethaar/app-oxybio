@@ -146,6 +146,13 @@ export async function PATCH(request, { params }) {
         .single();
       if (prepErr || !prep) return NextResponse.json({ success: false, error: 'Preparation not found' }, { status: 404 });
 
+      // Count existing vials for this prep so the new sequence continues correctly
+      const { count: existingCount } = await adminSupabase
+        .from('cell_bank_vials')
+        .select('id', { count: 'exact', head: true })
+        .eq('preparation_id', params.id);
+      const offset = existingCount || 0;
+
       const year = String(new Date().getFullYear()).slice(-2);
       const short = (prep.cell_bank_strains?.strain_short_code || 'XX').toUpperCase();
       const baseCode = `${prep.type}-${year}-${short}`;
@@ -155,7 +162,7 @@ export async function PATCH(request, { params }) {
         const vialExpiry = vial_expiries?.[i] || expires_at || null;
         return {
           preparation_id: params.id,
-          vial_code: `${baseCode}-${String(i + 1).padStart(3, '0')}`,
+          vial_code: `${baseCode}-${String(offset + i + 1).padStart(3, '0')}`,
           storage_temp: storage_temp || '-20degC',
           freezer_id: freezer_id || null,
           rack: rack || null,
@@ -176,8 +183,8 @@ export async function PATCH(request, { params }) {
       }));
       try { await adminSupabase.from('cell_bank_vial_logs').insert(logRows); } catch (_) {}
 
-      // Update prep vial_count
-      await adminSupabase.from('cell_bank_preparations').update({ vial_count: count }).eq('id', params.id);
+      // Update prep vial_count — accumulate rather than overwrite
+      await adminSupabase.from('cell_bank_preparations').update({ vial_count: offset + count }).eq('id', params.id);
       await syncCellBankStepToLNB(
         adminSupabase,
         params.id,
