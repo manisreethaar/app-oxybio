@@ -155,14 +155,31 @@ export async function PATCH(request, { params }) {
 
       const year = String(new Date().getFullYear()).slice(-2);
       const short = (prep.cell_bank_strains?.strain_short_code || 'XX').toUpperCase();
-      const baseCode = `${prep.type}-${year}-${short}`;
+
+      // Determine this prep's chronological rank among same type+strain preps
+      // to derive a letter suffix: 1st→A, 2nd→B, 3rd→C, etc.
+      const { data: priorPreps } = await adminSupabase
+        .from('cell_bank_preparations')
+        .select('id')
+        .eq('strain_id', prep.strain_id)
+        .eq('type', prep.type)
+        .order('created_at', { ascending: true });
+      const rank = (priorPreps || []).findIndex(p => p.id === params.id) + 1 || 1;
+      const rankLetter = (function rankToLetter(n) {
+        let s = '';
+        while (n > 0) { n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); }
+        return s;
+      })(rank);
+
+      // Format: WCB-26-LB-A001  (letter = prep batch, digits = vial within batch)
+      const baseCode = `${prep.type}-${year}-${short}-${rankLetter}`;
 
       const vialRows = Array.from({ length: count }, (_, i) => {
         // vial_expiries is an array of per-vial expiry dates; falls back to global expires_at
         const vialExpiry = vial_expiries?.[i] || expires_at || null;
         return {
           preparation_id: params.id,
-          vial_code: `${baseCode}-${String(offset + i + 1).padStart(3, '0')}`,
+          vial_code: `${baseCode}${String(offset + i + 1).padStart(3, '0')}`,
           storage_temp: storage_temp || '-20degC',
           freezer_id: freezer_id || null,
           rack: rack || null,
