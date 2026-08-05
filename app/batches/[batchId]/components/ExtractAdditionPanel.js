@@ -95,14 +95,14 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   const handleSave = async (advanceTarget = null) => {
     if (!activeFlask) return;
-    if (advanceTarget) {
+    if (advanceTarget === 'qc_hold') {
       const missing = [];
       if (!volAdded) missing.push('Volume Added (ml)');
       if (!finalPh) missing.push('Final pH');
       if (!noneAllergens && allergens.length === 0) missing.push('Allergen Declaration');
       
       if (missing.length > 0) {
-        toast.warn(`Cannot advance to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC'}. Missing mandatory details: ${missing.join(', ')}.`);
+        toast.warn(`Cannot advance directly to QC. Missing mandatory details: ${missing.join(', ')}.`);
         return;
       }
     }
