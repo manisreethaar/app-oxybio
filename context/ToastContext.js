@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { parseErrorMessage } from '@/utils/errorParser';
 
 const ToastContext = createContext(null);
 
@@ -31,7 +32,7 @@ export function ToastProvider({ children }) {
 
   const toast = useMemo(() => ({
     success: (msg) => add(msg, 'success'),
-    error:   (msg) => add(msg, 'error'),
+    error:   (msg) => add(parseErrorMessage(msg), 'error'),
     warn:    (msg) => add(msg, 'warn'),
     info:    (msg) => add(msg, 'info'),
   }), [add]);
