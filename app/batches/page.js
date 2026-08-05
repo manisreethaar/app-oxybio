@@ -27,16 +27,18 @@ import { SkuBadge } from '@/components/ui/BatchBadges';
 
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
-  'media_prep', 'sterilisation', 'inoculation', 'fermentation',
-  'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
+  'media_prep', 'sterilisation', 'inoculation', 'fermentation', 'harvest',
+  'straining', 'extract_addition', 'downstream', 'qc_hold', 'released', 'rejected'
 ];
 const STAGE_LABELS = {
   media_prep:       'Media Prep',
   sterilisation:    'Sterilisation',
   inoculation:      'Inoculation',
   fermentation:     'Fermentation',
+  harvest:          'Harvest',
   straining:        'Straining',
   extract_addition: 'Extract Addition',
+  downstream:       'Downstream',
   qc_hold:          'QC Hold',
   released:         'Released',
   rejected:         'Rejected',
@@ -153,7 +155,7 @@ export default function BatchesPage() {
     if (allRejected) return 'rejected';
     
     const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
-    const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','qc_hold','released'];
+    const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','downstream','qc_hold','released'];
     const maxStage = activeFlasks.reduce((best, f) => {
       const currentStage = normaliseStatus(f.current_stage);
       const r = FLASK_STAGE_RANK.indexOf(currentStage);
@@ -163,7 +165,7 @@ export default function BatchesPage() {
     if (maxStage === 'fermentation') return 'fermenting';
     if (maxStage === 'qc_hold') return 'qc-hold';
     if (maxStage === 'released') return 'released';
-    if (['straining','extract_addition'].includes(maxStage)) return 'processing';
+    if (['straining','extract_addition','downstream'].includes(maxStage)) return 'processing';
     return status;
   };
 

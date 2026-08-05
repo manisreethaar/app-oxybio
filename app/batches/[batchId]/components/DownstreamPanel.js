@@ -16,7 +16,7 @@ const PROCESS_STEPS = [
   { key: 'inspection',    label: 'Visual Inspection' },
 ];
 
-export default function DownstreamPanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved }) {
+export default function DownstreamPanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -62,7 +62,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
   useEffect(() => { loadRecord(); }, [loadRecord]);
 
-  const handleSave = async () => {
+  const handleSave = async (advanceTarget = null) => {
     if (!activeFlask?.id) return;
     setSaving(true);
     try {
@@ -85,9 +85,15 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
         notes: notes || null,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
-      toast.success('Downstream processing record saved.');
-      loadRecord();
-      onDataSaved?.();
+      
+      toast.success(advanceTarget ? `Downstream complete. Advancing to ${advanceTarget === 'qc_hold' ? 'QC Hold' : advanceTarget}.` : 'Downstream processing record saved.');
+      
+      if (advanceTarget && onAdvanceFlaskStage) {
+        await onAdvanceFlaskStage(advanceTarget);
+      } else {
+        loadRecord();
+        onDataSaved?.();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
@@ -173,9 +179,14 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
 
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Downstream notes, deviations, rework..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Downstream Record'}
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+          <button onClick={() => handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Downstream Record'}
+          </button>
+          <button onClick={() => handleSave('qc_hold')} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+            Downstream Complete → QC Hold
+          </button>
+        </div>
       </div>
     </div>
   );

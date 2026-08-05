@@ -235,11 +235,11 @@ export default function BatchDetailPage() {
 
       // Keep batch.current_stage in sync with the most-advanced flask (excluding released/rejected terminal update)
       if (batch?.id && toStage !== 'rejected') {
-        const FLASK_RANKS = ['inoculation','fermentation','straining','extract_addition','qc_hold','released'];
+        const FLASK_RANKS = ['inoculation','fermentation','straining','extract_addition','downstream','qc_hold','released'];
         const newRank  = FLASK_RANKS.indexOf(toStage);
         const batchRank = FLASK_RANKS.indexOf(batch.current_stage);
         if (newRank > batchRank) {
-          // Default covers inoculation, straining, extract_addition
+          // Default covers inoculation, straining, extract_addition, downstream
           let newBatchStatus = 'in-progress';
           if (toStage === 'fermentation') newBatchStatus = 'fermenting';
           else if (toStage === 'qc_hold') newBatchStatus = 'qc-hold';
@@ -392,7 +392,7 @@ export default function BatchDetailPage() {
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   const isPostSterilisation = !isScheduled && (currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting');
 
-  const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','qc_hold','released','rejected'];
+  const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','downstream','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
     if (isScheduled) return 'scheduled';
@@ -407,7 +407,7 @@ export default function BatchDetailPage() {
     if (maxStage === 'fermentation') return 'fermenting';
     if (maxStage === 'qc_hold') return 'qc-hold';
     if (maxStage === 'released') return 'released';
-    if (['straining','extract_addition'].includes(maxStage)) return 'processing';
+    if (['straining','extract_addition','downstream'].includes(maxStage)) return 'processing';
     return batch.status;
   })();
 
