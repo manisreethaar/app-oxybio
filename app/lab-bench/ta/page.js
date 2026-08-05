@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuditReason } from '@/components/useAuditReason';
+import OxygenLoader from '@/components/ui/OxygenLoader';
 
 // ── Acid Type Config ──────────────────────────────────────────────────────────
 const ACID_TYPES = {
@@ -635,8 +636,8 @@ export default function TitrationLogPage() {
             {Object.keys(ACID_TYPES).map(k => <option key={k} value={k}>{k}</option>)}
           </select>
         </div>
-        <button onClick={fetchLogs} className="ml-auto px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-1 transition-colors">
-          <RefreshCw className="w-3.5 h-3.5"/>{loading ? 'Loading...' : 'Refresh'}
+        <button onClick={fetchLogs} disabled={loading} className="ml-auto px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-1 transition-colors disabled:opacity-70">
+          {loading ? <OxygenLoader size="small" text="Loading..." /> : <><RefreshCw className="w-3.5 h-3.5"/>Refresh</>}
         </button>
       </div>
 
@@ -650,9 +651,7 @@ export default function TitrationLogPage() {
           </span>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400">
-            <RefreshCw className="w-6 h-6 animate-spin mr-2"/>Loading...
-          </div>
+          <OxygenLoader className="py-16" text="Loading History..." />
         ) : filteredLogs.length === 0 ? (
           <div className="py-16 text-center text-slate-400">
             <Beaker className="w-10 h-10 mx-auto mb-3 opacity-30"/>
