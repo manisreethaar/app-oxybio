@@ -70,20 +70,24 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
         completed: stepsCompleted[p.key] || false,
         notes: stepNotes[p.key] || null,
       }]));
-      const { error } = await supabase.from('batch_stage_downstream').upsert({
-        batch_id: batch.id,
-        flask_id: activeFlask.id,
-        steps,
-        final_concentration: finalConc || null,
-        moisture_pct: moisturePct ? parseFloat(moisturePct) : null,
-        final_weight_kg: finalWeightKg ? parseFloat(finalWeightKg) : null,
-        temp_range_c: tempRange || null,
-        packaging_type: packagingType || null,
-        fill_weight_g: fillWeightG ? parseFloat(fillWeightG) : null,
-        units_produced: unitsProduced ? parseInt(unitsProduced) : null,
-        operator_id: employeeProfile?.id,
-        notes: notes || null,
-      }, { onConflict: 'flask_id' });
+      const { error } = await withTimeout(
+        supabase.from('batch_stage_downstream').upsert({
+          batch_id: batch.id,
+          flask_id: activeFlask.id,
+          steps,
+          final_concentration: finalConc || null,
+          moisture_pct: moisturePct ? parseFloat(moisturePct) : null,
+          final_weight_kg: finalWeightKg ? parseFloat(finalWeightKg) : null,
+          temp_range_c: tempRange || null,
+          packaging_type: packagingType || null,
+          fill_weight_g: fillWeightG ? parseFloat(fillWeightG) : null,
+          units_produced: unitsProduced ? parseInt(unitsProduced) : null,
+          operator_id: employeeProfile?.id,
+          notes: notes || null,
+        }, { onConflict: 'flask_id' }),
+        15000,
+        'Save request timed out. Please check your internet connection.'
+      );
       if (error) throw error;
       
       toast.success(advanceTarget ? `Downstream complete. Advancing to ${advanceTarget === 'qc_hold' ? 'QC Hold' : advanceTarget}.` : 'Downstream processing record saved.');
