@@ -250,6 +250,8 @@ export default function BatchDetailPage() {
       }
 
       toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
+      setViewingStage(null);
+      setEditingStage(null);
       tickTaskChecklist(fromStage).catch(() => {});
       fetchAll();
     } catch (err) { toast.error(err.message); }
