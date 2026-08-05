@@ -93,16 +93,16 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   useEffect(() => { setRecord(null); fetchRecord(); }, [fetchRecord]);
 
-  const handleSave = async (advance = false) => {
+  const handleSave = async (advanceTarget = null) => {
     if (!activeFlask) return;
-    if (advance) {
+    if (advanceTarget) {
       const missing = [];
       if (!volAdded) missing.push('Volume Added (ml)');
       if (!finalPh) missing.push('Final pH');
       if (!noneAllergens && allergens.length === 0) missing.push('Allergen Declaration');
       
       if (missing.length > 0) {
-        toast.warn(`Cannot advance to Downstream / QC. Missing mandatory details: ${missing.join(', ')}.`);
+        toast.warn(`Cannot advance to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC'}. Missing mandatory details: ${missing.join(', ')}.`);
         return;
       }
     }
@@ -140,9 +140,9 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       const { error } = await supabase.from('batch_flask_extract_addition').upsert(payload, { onConflict: 'flask_id' });
       if (error) throw error;
       
-      toast.success(advance ? `Trial ${activeFlask.flask_label} advanced to QC Hold.` : 'Draft saved.');
-      if (advance && onAdvanceFlaskStage) {
-        await onAdvanceFlaskStage('qc_hold');
+      toast.success(advanceTarget ? `Trial ${activeFlask.flask_label} advanced to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC Hold'}.` : 'Draft saved.');
+      if (advanceTarget && onAdvanceFlaskStage) {
+        await onAdvanceFlaskStage(advanceTarget);
       } else {
         fetchRecord();
         onDataSaved();
@@ -326,12 +326,15 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-            <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+            <button onClick={()=>handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
               {saving?'Saving...':'Save Draft'}
             </button>
-            <button onClick={()=>handleSave(true)} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
-              Trial Integration Complete → QC
+            <button onClick={()=>handleSave('downstream')} disabled={saving||actionLoading} className="py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+              Advance to Downstream
+            </button>
+            <button onClick={()=>handleSave('qc_hold')} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+              Direct to QC Hold
             </button>
           </div>
         </div>
