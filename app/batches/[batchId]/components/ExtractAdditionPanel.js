@@ -95,14 +95,14 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   const handleSave = async (advanceTarget = null) => {
     if (!activeFlask) return;
-    if (advanceTarget === 'qc_hold') {
+    if (advanceTarget) {
       const missing = [];
       if (!volAdded) missing.push('Volume Added (ml)');
       if (!finalPh) missing.push('Final pH');
       if (!noneAllergens && allergens.length === 0) missing.push('Allergen Declaration');
       
       if (missing.length > 0) {
-        toast.warn(`Cannot advance directly to QC. Missing mandatory details: ${missing.join(', ')}.`);
+        toast.warn(`Cannot advance to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC'}. Missing mandatory details: ${missing.join(', ')}.`);
         return;
       }
     }
@@ -137,7 +137,11 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         addition_temp_actual_c:  addTempActual   ? parseFloat(addTempActual)   : null,
       };
 
-      const { error } = await supabase.from('batch_flask_extract_addition').upsert(payload, { onConflict: 'flask_id' });
+      const { error } = await withTimeout(
+        supabase.from('batch_flask_extract_addition').upsert(payload, { onConflict: 'flask_id' }),
+        15000,
+        'Save request timed out. Please check your internet connection.'
+      );
       if (error) throw error;
       
       toast.success(advanceTarget ? `Trial ${activeFlask.flask_label} advanced to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC Hold'}.` : 'Draft saved.');
