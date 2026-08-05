@@ -130,29 +130,41 @@ export async function DELETE(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only supervisors and above may delete lab records (ALOCA++ data integrity)
-    const allowedRoles = ['admin', 'ceo', 'cto', 'supervisor', 'lab_manager', 'qa'];
-    const isPrivileged = allowedRoles.includes(profile.role);
-    if (!isPrivileged) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden: Supervisor or higher role required to delete titration logs.' },
-        { status: 403 }
-      );
+    // Parse request body for audit fields
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Titration log ID is required.' }, { status: 400 });
     }
 
-    // Create a service role client to bypass RLS, since we already explicitly checked roles above.
-    // This fixes the issue where RLS blocked non-admin roles (like qa) from deleting logs.
+    // Create a service role client to bypass RLS, since we handle authorization in the API
     const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
     const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Parse request body for audit fields
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Titration log ID is required.' }, { status: 400 });
+    // Fetch the log to check ownership and record what's being deleted in the audit trail
+    const { data: existingLog } = await supabaseAdmin
+      .from('titration_logs')
+      .select('id, sample_name, acid_type, ta_percent, created_at, logged_by')
+      .eq('id', id)
+      .single();
+
+    if (!existingLog) {
+      return NextResponse.json({ success: false, error: 'Titration log not found.' }, { status: 404 });
+    }
+
+    // Only the creator, or supervisors and above may delete lab records (ALOCA++ data integrity)
+    const allowedRoles = ['admin', 'ceo', 'cto', 'supervisor', 'lab_manager', 'qa'];
+    const isPrivileged = allowedRoles.includes(profile.role);
+    const isCreator = existingLog.logged_by === profile.id;
+    
+    if (!isPrivileged && !isCreator) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: You can only delete your own logs, or you must be a Supervisor/QA to delete others.' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json().catch(() => ({}));
@@ -168,17 +180,6 @@ export async function DELETE(request) {
     // ── ALOCA++ P1: verify e-signature PIN ───────────────────────────────
     if (profile.esig_pin && String(profile.esig_pin) !== String(pin)) {
       return NextResponse.json({ success: false, error: 'Invalid E-Signature PIN. Deletion not authorized.' }, { status: 403 });
-    }
-
-    // Fetch the log to record what's being deleted in the audit trail
-    const { data: existingLog } = await supabaseAdmin
-      .from('titration_logs')
-      .select('id, sample_name, acid_type, ta_percent, created_at')
-      .eq('id', id)
-      .single();
-
-    if (!existingLog) {
-      return NextResponse.json({ success: false, error: 'Titration log not found.' }, { status: 404 });
     }
 
     // Delete the record
