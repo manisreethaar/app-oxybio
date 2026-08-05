@@ -140,6 +140,14 @@ export async function DELETE(request) {
       );
     }
 
+    // Create a service role client to bypass RLS, since we already explicitly checked roles above.
+    // This fixes the issue where RLS blocked non-admin roles (like qa) from deleting logs.
+    const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
     // Parse request body for audit fields
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -163,7 +171,7 @@ export async function DELETE(request) {
     }
 
     // Fetch the log to record what's being deleted in the audit trail
-    const { data: existingLog } = await supabase
+    const { data: existingLog } = await supabaseAdmin
       .from('titration_logs')
       .select('id, sample_name, acid_type, ta_percent, created_at')
       .eq('id', id)
@@ -174,15 +182,18 @@ export async function DELETE(request) {
     }
 
     // Delete the record
-    const { error: deleteError } = await supabase
+    const { error: deleteError, count } = await supabaseAdmin
       .from('titration_logs')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', id);
 
     if (deleteError) throw deleteError;
+    if (count === 0) {
+      return NextResponse.json({ success: false, error: 'Titration log not found or you do not have permission to delete it.' }, { status: 403 });
+    }
 
     // ── ALOCA++ P2: write deletion to activity/audit log ─────────────────
-    await supabase.from('activity_log').insert({
+    await supabaseAdmin.from('activity_log').insert({
       action: 'DELETE',
       table_name: 'titration_logs',
       record_id: id,
