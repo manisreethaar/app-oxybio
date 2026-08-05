@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Edit3, Loader2, X, Trash2, SendHorizonal } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 
 /**
  * Drop-in button that opens an edit modal and submits to /api/edit-request.
@@ -35,6 +36,7 @@ export default function EditRequestButton({
   const [deleteReason, setDeleteReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const toast = useToast();
 
   function openModal(m) {
     setMode(m);
@@ -79,9 +81,11 @@ export default function EditRequestButton({
       if (!res.ok) throw new Error(data.error || 'Request failed');
 
       setOpen(false);
+      toast.success(mode === 'edit' ? 'Edit request submitted successfully.' : 'Archive request submitted successfully.');
       onSuccess?.();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setSubmitting(false);
     }
