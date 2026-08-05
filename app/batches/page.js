@@ -136,17 +136,49 @@ export default function BatchesPage() {
     localStorage.setItem('batches_view_mode', mode);
   };
 
+  const getDerivedBatchStatus = (batch) => {
+    const status = normaliseStatus(batch.status);
+    const stage = normaliseStatus(batch.current_stage);
+    const isTerminal = TERMINAL_STATUSES.includes(status) || TERMINAL_STATUSES.includes(stage);
+    if (isTerminal) return getBatchDisposition(batch);
+    if (isScheduledBatch(batch)) return 'scheduled';
+    
+    const BATCH_ONLY_STAGES = ['media_prep', 'sterilisation'];
+    if (BATCH_ONLY_STAGES.includes(stage)) return status;
+    
+    const flasks = batch.batch_flasks || [];
+    if (flasks.length === 0) return status;
+    
+    const allRejected = flasks.every(f => normaliseStatus(f.status) === 'rejected');
+    if (allRejected) return 'rejected';
+    
+    const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
+    const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','qc_hold','released'];
+    const maxStage = activeFlasks.reduce((best, f) => {
+      const currentStage = normaliseStatus(f.current_stage);
+      const r = FLASK_STAGE_RANK.indexOf(currentStage);
+      return r > FLASK_STAGE_RANK.indexOf(best) ? currentStage : best;
+    }, 'inoculation');
+    
+    if (maxStage === 'fermentation') return 'fermenting';
+    if (maxStage === 'qc_hold') return 'qc-hold';
+    if (maxStage === 'released') return 'released';
+    if (['straining','extract_addition'].includes(maxStage)) return 'processing';
+    return status;
+  };
+
   const getBatchEffectiveStage = (batch) => {
     if (isScheduledBatch(batch)) return null;
-    const batchStageIdx = STAGE_ORDER.indexOf(batch.current_stage);
+    const stage = normaliseStatus(batch.current_stage);
     const BATCH_ONLY_STAGES = ['media_prep', 'sterilisation'];
-    const maxFlaskIdx = BATCH_ONLY_STAGES.includes(batch.current_stage)
-      ? -1
-      : (batch.batch_flasks || [])
-          .filter(f => f.status !== 'rejected')
-          .reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(f.current_stage)), -1);
-    const effectiveIdx = Math.max(batchStageIdx, maxFlaskIdx);
-    return effectiveIdx >= 0 ? STAGE_ORDER[effectiveIdx] : batch.current_stage;
+    if (BATCH_ONLY_STAGES.includes(stage)) return stage;
+    
+    const flasks = batch.batch_flasks || [];
+    const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
+    if (activeFlasks.length === 0) return stage;
+    
+    const maxFlaskIdx = activeFlasks.reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(normaliseStatus(f.current_stage))), -1);
+    return maxFlaskIdx >= 0 ? STAGE_ORDER[maxFlaskIdx] : stage;
   };
 
   // ─── Card view-model builders ──────────────────────────────
@@ -168,10 +200,7 @@ export default function BatchesPage() {
     const derivedStage = effectiveIdx >= 0 ? STAGE_ORDER[effectiveIdx] : batch.current_stage;
     const currentIdx = isScheduled ? -1 : effectiveIdx;
 
-    const isStatusStale = SCHEDULED_STATUSES.includes(normaliseStatus(batch.status)) && effectiveIdx >= 0;
-    const displayStatus = isScheduled ? 'scheduled'
-      : isStatusStale ? (STAGE_LABELS[derivedStage] || 'in progress').toLowerCase()
-      : batch.status;
+    const displayStatus = getDerivedBatchStatus(batch);
 
     return {
       key: batch.id,
