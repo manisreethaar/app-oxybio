@@ -209,7 +209,7 @@ export async function POST(request, { params }) {
       if (saved?.is_ph_alarm || saved?.is_temp_alarm) {
         const batchLabel = data.flask_label ? `${batchId} (${data.flask_label})` : batchId;
         const msgs = [];
-        if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3–6)`);
+        if (saved.is_ph_alarm)   msgs.push(`pH ${data.ph} (outside 3.75–6.5)`);
         if (saved.is_temp_alarm) msgs.push(`Temp ${data.incubator_temp_c}°C (outside 36–38°C)`);
 
         await notifyAdmins(
