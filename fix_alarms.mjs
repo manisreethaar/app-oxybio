@@ -22,7 +22,7 @@ async function fixAlarms() {
   for (const r of readings) {
     if (!r.ph) continue;
     const phNum = parseFloat(r.ph);
-    const newAlarmStatus = phNum < 3 || phNum > 6.5;
+    const newAlarmStatus = phNum < 3.75 || phNum > 6.5;
 
     if (r.is_ph_alarm !== newAlarmStatus) {
       console.log(`Updating reading ID ${r.id} for batch ${r.batch_id} (pH=${r.ph}): alarm ${r.is_ph_alarm} -> ${newAlarmStatus}`);

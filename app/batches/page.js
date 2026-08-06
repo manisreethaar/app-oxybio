@@ -477,6 +477,7 @@ export default function BatchesPage() {
       setShowNewBatchModal(false);
       reset();
       setBatchError(null);
+      setStatusFilter('scheduled');
       fetchBatches();
     } catch (err) {
       setBatchError({ message: err.message, warnings: null });

@@ -434,7 +434,7 @@ export default function BatchDetailPage() {
         optical_density: quickOd ? parseFloat(quickOd) : null,
         visual_appearance: quickVisual,
         logged_at: new Date().toISOString(),
-        is_ph_alarm: parseFloat(quickPh) < 3 || parseFloat(quickPh) > 6,
+        is_ph_alarm: parseFloat(quickPh) < 3.75 || parseFloat(quickPh) > 6.5,
         logged_by: employeeProfile?.id,
       });
       if (error) throw error;
