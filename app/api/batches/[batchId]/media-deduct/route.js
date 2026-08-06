@@ -46,6 +46,49 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Batch not found.' }, { status: 404 });
     }
 
+    // ── 0. Reverse previous deductions to prevent duplicates ─────────────────
+    // If the user clicks 'Complete' multiple times, or edits and re-saves,
+    // we must restore previous stock quantities and clear old ledgers first.
+    const { data: previousUsage } = await db
+      .from('inventory_usage')
+      .select('id, stock_id, quantity_used')
+      .eq('batch_id', batch.id)
+      .eq('stage', 'media_prep');
+
+    if (previousUsage && previousUsage.length > 0) {
+      for (const usage of previousUsage) {
+        if (!usage.stock_id || !usage.quantity_used) continue;
+        
+        // Fetch current stock
+        const { data: stockRow } = await db
+          .from('inventory_stock')
+          .select('current_quantity')
+          .eq('id', usage.stock_id)
+          .single();
+          
+        if (stockRow) {
+          const restoredQty = (parseFloat(stockRow.current_quantity) || 0) + (parseFloat(usage.quantity_used) || 0);
+          await db
+            .from('inventory_stock')
+            .update({ current_quantity: restoredQty, status: 'Available' })
+            .eq('id', usage.stock_id);
+        }
+      }
+      
+      // Delete old usage records
+      await db.from('inventory_usage')
+        .delete()
+        .eq('batch_id', batch.id)
+        .eq('stage', 'media_prep');
+        
+      // Delete old ledger movements
+      await db.from('inventory_movements')
+        .delete()
+        .eq('batch_id', batch.id)
+        .eq('type', 'Batch Deduction')
+        .like('notes', 'Media Prep BOM:%');
+    }
+
     const results  = [];
     const warnings = [];
 
