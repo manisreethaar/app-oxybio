@@ -314,8 +314,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       // "batches has infinite loading."
       const [rRes, iRes, epRes] = await withTimeout(Promise.all([
         supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
-        supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(),
-        supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+        supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
       ]), 20000, 'Fermentation data load timed out');
       if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
       if (rRes.data) setReadings(rRes.data);

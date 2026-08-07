@@ -86,7 +86,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
   const fetchRecord = useCallback(() => {
     if (!activeFlask?.id) return;
-    withTimeout(supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).single(), 20000, 'Inoculation record load timed out')
+    withTimeout(supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 20000, 'Inoculation record load timed out')
       .then(({ data: d }) => {
         if (d) {
           setSourceType(d.inoculum_source_type || 'other');
