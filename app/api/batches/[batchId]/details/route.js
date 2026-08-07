@@ -56,18 +56,25 @@ export async function GET(request, { params }) {
       return NextResponse.json({ success: false, error: batchRes.error.message }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      batch:           batchRes.data,
-      flasks:          flasksRes.data  || [],
-      transitions:     transRes.data   || [],
-      employees:       empRes.data     || [],
-      availableStock:  stockRes.data   || [],
-      lnbEntries:      lnbRes.data     || [],
-      flaskEndpoints:  epRes.data      || [],
-    });
-  } catch (err) {
-    console.error('Batch details API error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: true,
+        batch: batchRes.data,
+        flasks: flasksRes.data || [],
+        transitions: transRes.data || [],
+        employees: empRes.data || [],
+        availableStock: stockRes.data || [],
+        lnbEntries: lnbRes.data || [],
+        flaskEndpoints: epRes.data || []
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0'
+        }
+      }
+    );
+  } catch (error) {
+    console.error('API /details Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
