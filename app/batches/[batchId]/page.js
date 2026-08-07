@@ -130,7 +130,7 @@ export default function BatchDetailPage() {
       // 7 sub-queries in parallel on the server, and returns in one response.
       // This eliminates 6 extra client->Supabase round-trips and RLS overhead.
       const res = await withTimeout(
-        fetch(`/api/batches/${batchId}/details`),
+        fetch(`/api/batches/${batchId}/details`, { cache: 'no-store' }),
         20000,
         'Batch detail load timed out'
       );
