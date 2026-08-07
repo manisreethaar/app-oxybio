@@ -340,21 +340,21 @@ export default function BatchAnalyticsPage() {
     } catch (e) { toast.error('PDF generation failed'); console.error(e); }
   };
 
-  const lineOpts = (xL, yL) => ({
+  const lineOpts = (xL, yL, yOpts = {}) => ({
     responsive:true, maintainAspectRatio:false,
-    scales:{ x:{type:'linear',title:{display:true,text:xL,font:{size:11}}}, y:{title:{display:true,text:yL,font:{size:11}}} },
+    scales:{ x:{type:'linear',title:{display:true,text:xL,font:{size:11}}}, y:{title:{display:true,text:yL,font:{size:11}}, ...yOpts} },
     plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>yL+': '+ctx.parsed.y+' @ '+ctx.parsed.x+'h' } } }
   });
-  const overlayOpts = (xL, yL) => ({
+  const overlayOpts = (xL, yL, yOpts = {}) => ({
     responsive:true, maintainAspectRatio:false,
-    scales:{ x:{type:'linear',title:{display:true,text:xL}}, y:{title:{display:true,text:yL}} },
+    scales:{ x:{type:'linear',title:{display:true,text:xL}}, y:{title:{display:true,text:yL}, ...yOpts} },
     plugins:{ legend:{position:'right',labels:{boxWidth:11,font:{size:10}}}, tooltip:{ callbacks:{ label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' @ '+ctx.parsed.x+'h' } } }
   });
   const dualOpts = {
     responsive:true, maintainAspectRatio:false,
     scales:{
       x: {type:'linear',title:{display:true,text:'Elapsed Hours',font:{size:11}}},
-      y: {type:'linear',position:'left', title:{display:true,text:'pH',   font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},
+      y: {type:'linear',position:'left', title:{display:true,text:'pH',   font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}, suggestedMin: 3, suggestedMax: 7},
       y1:{type:'linear',position:'right',title:{display:true,text:'OD600',font:{size:11}},grid:{drawOnChartArea:false}}
     },
     plugins:{ legend:{display:true,position:'top',labels:{boxWidth:14,font:{size:11}}}, tooltip:{mode:'index',intersect:false} }
@@ -476,10 +476,10 @@ export default function BatchAnalyticsPage() {
                   )}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     <ChartCard title="pH Over Time" subtitle="Fermentation acidification trend" Icon={Droplets}>
-                      <div className="h-60">{singlePhData.datasets[0].data.length===0?<EmptyChart msg="No pH readings."/>:<Line data={singlePhData} options={lineOpts('Elapsed Hours','pH')}/>}</div>
+                      <div className="h-60">{singlePhData.datasets[0].data.length===0?<EmptyChart msg="No pH readings."/>:<Line data={singlePhData} options={lineOpts('Elapsed Hours','pH', { suggestedMin: 3, suggestedMax: 7 })}/>}</div>
                     </ChartCard>
                     <ChartCard title="Incubator Temperature" subtitle="Temperature stability log" Icon={Thermometer}>
-                      <div className="h-60">{singleTempData.datasets[0].data.length===0?<EmptyChart msg="No temperature readings."/>:<Line data={singleTempData} options={lineOpts('Elapsed Hours','Temp (C)')}/>}</div>
+                      <div className="h-60">{singleTempData.datasets[0].data.length===0?<EmptyChart msg="No temperature readings."/>:<Line data={singleTempData} options={lineOpts('Elapsed Hours','Temp (C)', { suggestedMin: 20, suggestedMax: 45 })}/>}</div>
                     </ChartCard>
                   </div>
                   {focusEndpoints.length>0 && (
@@ -651,7 +651,7 @@ export default function BatchAnalyticsPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <ChartCard title="pH Progression Overlay" subtitle="All batches overlaid. Red dots = anomalies over 15% from hist avg. Click chip to isolate." Icon={Activity}>
-                  <div className="h-72">{phChartData.datasets.length===0?<EmptyChart msg="No fermentation data."/>:<Line data={phChartData} options={overlayOpts('Elapsed Hours','pH')}/>}</div>
+                  <div className="h-72">{phChartData.datasets.length===0?<EmptyChart msg="No fermentation data."/>:<Line data={phChartData} options={overlayOpts('Elapsed Hours','pH', { suggestedMin: 3, suggestedMax: 7 })}/>}</div>
                 </ChartCard>
                 <ChartCard title="OD600 Growth Curves Overlay" subtitle="Compare biomass build-up across batches. Steeper curve = faster growth." Icon={TrendingUp}>
                   <div className="h-72">{odOverlayData.datasets.length===0?<EmptyChart msg="No OD readings across batches."/>:<Line data={odOverlayData} options={overlayOpts('Elapsed Hours','OD600')}/>}</div>
