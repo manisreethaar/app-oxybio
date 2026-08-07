@@ -111,7 +111,7 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    // Auto-create incubation record
+    // Auto-create incubation record and update vial status
     if (data) {
       await supabaseAdmin.from('sample_incubation_records').insert({
         sample_name: `Seed Passage ${data.passage_number}${data.media_name ? ` - ${data.media_name}` : ''}`,
@@ -123,6 +123,24 @@ export async function POST(request) {
         status: 'active',
         notes: `Auto-created from Seed Train for passage ${data.passage_number}`,
       }).then(() => {}).catch(e => console.warn('Incubation record insert warning:', e.message));
+
+      if (data.vial_id) {
+        // Mark vial as Used
+        await supabaseAdmin.from('cell_bank_vials').update({
+          status: 'Used',
+          used_in_batch_id: body.target_batch_id || null,
+          used_at: new Date().toISOString()
+        }).eq('id', data.vial_id).catch(() => {});
+
+        // Log vial usage
+        await supabaseAdmin.from('cell_bank_vial_logs').insert({
+          vial_id: data.vial_id,
+          action: 'used_in_batch',
+          batch_id: body.target_batch_id || null,
+          operator_id: body.created_by || null,
+          notes: `Used for Seed Passage ${data.passage_number}`
+        }).catch(() => {});
+      }
     }
 
     return NextResponse.json({ success: true, data });

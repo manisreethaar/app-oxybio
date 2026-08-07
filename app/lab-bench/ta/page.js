@@ -656,7 +656,7 @@ export default function TitrationLogPage() {
           <div className="py-16 text-center text-slate-400">
             <Beaker className="w-10 h-10 mx-auto mb-3 opacity-30"/>
             <p className="font-semibold">No titration entries yet.</p>
-            <p className="text-xs mt-1">Use the "Log Titration" button above to record your first TA measurement.</p>
+            <p className="text-xs mt-1">Use the &quot;Log Titration&quot; button above to record your first TA measurement.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
