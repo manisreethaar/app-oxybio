@@ -239,13 +239,13 @@ export default function BatchDetailPage() {
         const newRank  = FLASK_RANKS.indexOf(toStage);
         const batchRank = FLASK_RANKS.indexOf(batch.current_stage);
         if (newRank > batchRank) {
-          // Default covers inoculation, straining, extract_addition, downstream
-          let newBatchStatus = 'in-progress';
+          let newBatchStatus = 'processing';
           if (toStage === 'fermentation') newBatchStatus = 'fermenting';
           else if (toStage === 'qc_hold') newBatchStatus = 'qc-hold';
-          await supabase.from('batches')
+          const { error: batchErr } = await supabase.from('batches')
             .update({ current_stage: toStage, status: newBatchStatus })
             .eq('id', batch.id);
+          if (batchErr) throw batchErr;
         }
       }
 
