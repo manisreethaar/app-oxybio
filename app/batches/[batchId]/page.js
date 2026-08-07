@@ -788,7 +788,7 @@ export default function BatchDetailPage() {
       </div>
 
       {/* Linked Records — full-width cross-module panel */}
-      <LinkedRecordsPanel batch={batch} supabase={supabase} />
+      <LinkedRecordsPanel batch={batch} />
 
       {/* Transition Modal */}
       {pendingTransition && (

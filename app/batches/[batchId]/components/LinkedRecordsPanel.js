@@ -6,11 +6,6 @@ import {
   Package, Wrench, BookOpen, AlertTriangle, Clock, CheckSquare,
   ChevronRight, Loader, FlaskConical, ExternalLink,
 } from 'lucide-react';
-import {
-  getLinkedInventory, getLinkedEquipment, getLinkedDeviations,
-  getLinkedLabNotebook, getLinkedShelfLife, getLinkedTasks,
-  getLinkedIncubation,
-} from '@/lib/batchLinks';
 
 const SEV = {
   critical: 'bg-red-100 text-red-700',
@@ -294,7 +289,7 @@ function TasksTab({ rows }) {
   );
 }
 
-export default function LinkedRecordsPanel({ batch, supabase }) {
+export default function LinkedRecordsPanel({ batch }) {
   const [activeTab, setActiveTab] = useState('inventory');
   const [all,       setAll]       = useState(null);
   const [loading,   setLoading]   = useState(true);
@@ -303,19 +298,21 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
     let active = true;
     setLoading(true);
     setAll(null);
-    // This section renders on every batch detail page regardless of stage —
-    // no try/catch/timeout before meant a stalled connection left it
-    // spinning forever with no recovery, on every single batch.
-    withTimeout(Promise.all([
-      getLinkedInventory(supabase, batch.id),
-      getLinkedEquipment(supabase, batch.id),
-      getLinkedLabNotebook(supabase, batch.id),
-      getLinkedDeviations(supabase, batch.id),
-      getLinkedShelfLife(supabase, batch.id),
-      getLinkedTasks(supabase, batch.id),
-      getLinkedIncubation(supabase, batch.id),
-    ]), 20000, 'Linked records load timed out').then(([inventory, equipment, notebook, deviations, shelflife, tasks, incubation]) => {
+    // This section renders on every batch detail page regardless of stage.
+    // It used to fire 7 (up to 10, incl. getLinkedTasks' internal chain)
+    // separate client->Supabase queries in parallel on every load; that's
+    // now one server-side call (/api/.../linked-records) that fans the same
+    // queries out on the server instead, so the browser makes one request.
+    withTimeout(
+      fetch(`/api/batches/${batch.id}/linked-records`, { cache: 'no-store' }),
+      20000,
+      'Linked records load timed out'
+    ).then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to load linked records');
       if (!active) return;
+      const { inventory, equipment, notebook, deviations, shelflife, tasks, incubation } = json;
       setAll({ inventory, equipment, notebook, deviations, shelflife, tasks, incubation });
     }).catch(err => {
       console.error('LinkedRecordsPanel fetch error:', err);
@@ -324,7 +321,7 @@ export default function LinkedRecordsPanel({ batch, supabase }) {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [batch.id, supabase]);
+  }, [batch.id]);
 
   const TABS = useMemo(() => [
     { id: 'inventory',  label: 'Inventory Used',   icon: Package,       count: all?.inventory.length,  href: '/inventory'            },
