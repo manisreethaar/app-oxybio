@@ -118,6 +118,7 @@ export default function BatchesPage() {
   const [creatingBatch,    setCreatingBatch]    = useState(false);
   const [batchError,       setBatchError]       = useState(null); // { message, warnings }
   const [cancelConfirmId,  setCancelConfirmId]  = useState(null);
+  const [deleteConfirmId,  setDeleteConfirmId]  = useState(null);
   const [statusFilter,     setStatusFilter]     = useState('active');
   const [searchTerm,       setSearchTerm]       = useState('');
   const [stageFilter,      setStageFilter]      = useState('all');
@@ -226,7 +227,7 @@ export default function BatchesPage() {
       ctaLabel: isScheduled ? 'Start Batch' : (hasAlarm ? '⚠ Review Alarm' : 'Continue Batch'),
       onStart: isScheduled ? () => handleStartBatch(batch.id) : undefined,
       onArchive: isAdmin ? () => { setCancelConfirmId(batch.id); } : undefined,
-      onPermanentDelete: isAdmin ? () => handlePermanentDeleteBatch(batch.id) : undefined,
+      onPermanentDelete: isAdmin ? () => setDeleteConfirmId(batch.id) : undefined,
       isAdmin,
       busy: creatingBatch,
       creator: batch.creator,
@@ -261,7 +262,7 @@ export default function BatchesPage() {
       href: `/batches/${batch.id}`,
       ctaLabel: 'View',
       onArchive: (isAdmin && !isArchivedTab) ? () => { setCancelConfirmId(batch.id); } : undefined,
-      onPermanentDelete: isAdmin ? () => handlePermanentDeleteBatch(batch.id) : undefined,
+      onPermanentDelete: isAdmin ? () => setDeleteConfirmId(batch.id) : undefined,
       isAdmin,
       creator: batch.creator,
       date: batch.start_time || batch.created_at,
@@ -505,13 +506,14 @@ export default function BatchesPage() {
   };
 
   const handlePermanentDeleteBatch = async (id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this batch? This action cannot be undone.')) return;
     try {
       const res  = await fetch(`/api/batches?id=${id}&permanent=true`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      // Optimistically remove from all local lists — no full page reload needed
       setArchivedBatches(prev => prev.filter(b => b.id !== id));
-      fetchBatches(); // Refresh active batches in case it was deleted from there
+      setActiveBatches(prev  => prev.filter(b => b.id !== id));
+      setHistory(prev        => prev.filter(b => b.id !== id));
       toast.success(data.message || 'Batch permanently deleted.');
     } catch (err) {
       toast.error('Failed to permanently delete batch: ' + err.message);
@@ -1090,6 +1092,19 @@ export default function BatchesPage() {
         requireInput
         inputLabel="Reason for Archiving"
         inputPlaceholder="Required..."
+        loadingText="Archiving..."
+      />
+
+      {/* ── Permanent Delete Confirmation ── */}
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => handlePermanentDeleteBatch(deleteConfirmId)}
+        title="Permanently delete this batch?"
+        message="This will remove the batch and all its data permanently. This action cannot be undone."
+        confirmText="Yes, Delete Permanently"
+        variant="danger"
+        loadingText="Deleting..."
       />
     </div>
   );
