@@ -67,7 +67,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     let isCurrent = true;
     let d;
     try {
-      ({ data: d } = await withTimeout(supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batch.id).single(), 20000, 'Media prep data load timed out'));
+      ({ data: d } = await withTimeout(supabase.from('batch_stage_media_prep').select('*').eq('batch_id', batch.id).maybeSingle(), 20000, 'Media prep data load timed out'));
     } catch (err) {
       console.error('MediaPrepPanel fetch error:', err);
       return;

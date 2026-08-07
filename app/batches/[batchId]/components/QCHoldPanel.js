@@ -151,7 +151,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     let isCurrent = true;
     let sData;
     try {
-      ({ data: sData } = await withTimeout(supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).single(), 20000, 'QC sample load timed out'));
+      ({ data: sData } = await withTimeout(supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 20000, 'QC sample load timed out'));
     } catch (err) {
       console.error('QCHoldPanel fetch error:', err);
       return;

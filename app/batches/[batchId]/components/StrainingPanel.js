@@ -97,7 +97,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
     let data, eqData;
     try {
       [{ data }, { data: eqData }] = await withTimeout(Promise.all([
-        supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).single(),
+        supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
         supabase.from('equipment').select('id, name, model, status, requires_calibration, calibration_due_date').order('name'),
       ]), 20000, 'Straining data load timed out');
     } catch (err) {

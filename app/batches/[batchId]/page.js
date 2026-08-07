@@ -235,7 +235,7 @@ export default function BatchDetailPage() {
 
       // Keep batch.current_stage in sync with the most-advanced flask (excluding released/rejected terminal update)
       if (batch?.id && toStage !== 'rejected') {
-        const FLASK_RANKS = ['inoculation','fermentation','straining','extract_addition','downstream','qc_hold','released'];
+        const FLASK_RANKS = ['inoculation','fermentation','harvest','straining','extract_addition','downstream','qc_hold','released'];
         const newRank  = FLASK_RANKS.indexOf(toStage);
         const batchRank = FLASK_RANKS.indexOf(batch.current_stage);
         if (newRank > batchRank) {
@@ -394,7 +394,7 @@ export default function BatchDetailPage() {
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   const isPostSterilisation = !isScheduled && (currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting');
 
-  const FLASK_STAGE_RANK = ['inoculation','fermentation','straining','extract_addition','downstream','qc_hold','released','rejected'];
+  const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','downstream','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
     if (isScheduled) return 'scheduled';

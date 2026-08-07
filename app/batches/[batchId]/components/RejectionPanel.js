@@ -28,8 +28,8 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
     let isCurrent = true;
     try {
       const [{ data }, mediaPrep] = await withTimeout(Promise.all([
-        supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).single(),
-        supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).single(),
+        supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+        supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).maybeSingle(),
       ]), 20000, 'Rejection record load timed out');
       if (!isCurrent) return;
       if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
