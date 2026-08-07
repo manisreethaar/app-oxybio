@@ -8,7 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X, Search, LayoutGrid, List, Columns, Table as TableIcon } from 'lucide-react';
+import { Shield, Settings, Calendar, AlertTriangle, CheckCircle, Plus, Loader2, Save, Wrench, Thermometer, Database, Trash2, X, Search, LayoutGrid, List, Columns, Table as TableIcon, Activity } from 'lucide-react';
 import Link from 'next/link';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 
