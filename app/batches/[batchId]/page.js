@@ -727,14 +727,24 @@ export default function BatchDetailPage() {
                 )}
                 {editingStage === viewingStage && (
                   <button
-                    onClick={() => setEditingStage(null)}
+                    onClick={() => {
+                      if (window.confirm('Have you clicked Save inside the panel? Stop Editing does not save your changes — anything not saved will be lost.')) {
+                        setEditingStage(null);
+                      }
+                    }}
                     className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-black rounded-lg hover:bg-slate-200 transition-colors"
                   >
                     Stop Editing
                   </button>
                 )}
                 <button
-                  onClick={() => { setViewingStage(null); setEditingStage(null); }}
+                  onClick={() => {
+                    if (editingStage === viewingStage && !window.confirm('Have you clicked Save inside the panel? Leaving now discards any unsaved changes.')) {
+                      return;
+                    }
+                    setViewingStage(null);
+                    setEditingStage(null);
+                  }}
                   className="px-3 py-1.5 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover transition-colors"
                 >
                   ← Return to Current Stage

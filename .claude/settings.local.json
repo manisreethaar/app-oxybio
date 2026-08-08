@@ -90,7 +90,8 @@
       "Bash(mkdir -p components/ui)",
       "Bash(cp /root/.claude/uploads/4615df99-4201-5c61-a53d-ff9ecbd1e8ab/5af4a14f-BatchBadges.jsx components/ui/BatchBadges.jsx)",
       "Bash(cp /root/.claude/uploads/4615df99-4201-5c61-a53d-ff9ecbd1e8ab/839aaaa1-BatchCard.jsx components/ui/BatchCard.jsx)",
-      "Bash(cp /root/.claude/uploads/4615df99-4201-5c61-a53d-ff9ecbd1e8ab/e06ff90f-page.js app/batches/page.js)"
+      "Bash(cp /root/.claude/uploads/4615df99-4201-5c61-a53d-ff9ecbd1e8ab/e06ff90f-page.js app/batches/page.js)",
+      "mcp__Claude_Code_Remote__send_later"
     ]
   }
 }
