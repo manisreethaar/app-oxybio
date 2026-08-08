@@ -20,6 +20,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
 
   const [stepsCompleted, setStepsCompleted] = useState({});
   const [stepNotes,      setStepNotes]      = useState({});
@@ -43,6 +44,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
     }
     if (data) {
       setRecord(data);
+      setSaved(true);
       const s = data.steps || {};
       setStepsCompleted(Object.fromEntries(PROCESS_STEPS.map(p => [p.key, s[p.key]?.completed || false])));
       setStepNotes(Object.fromEntries(PROCESS_STEPS.map(p => [p.key, s[p.key]?.notes || ''])));
@@ -89,7 +91,7 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
         'Save request timed out. Please check your internet connection.'
       );
       if (error) throw error;
-      
+      setSaved(true);
       toast.success(advanceTarget ? `Downstream complete. Advancing to ${advanceTarget === 'qc_hold' ? 'QC Hold' : advanceTarget}.` : 'Downstream processing record saved.');
       
       if (advanceTarget && onAdvanceFlaskStage) {
@@ -126,13 +128,13 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
           <div key={step.key} className={`p-3 rounded-xl border transition-all ${stepsCompleted[step.key] ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={stepsCompleted[step.key] || false}
-                onChange={e => setStepsCompleted(prev => ({ ...prev, [step.key]: e.target.checked }))}
+                onChange={e => { setSaved(false); setStepsCompleted(prev => ({ ...prev, [step.key]: e.target.checked })); }}
                 className="w-4 h-4 rounded border-slate-300"/>
               <span className={`text-sm font-bold ${stepsCompleted[step.key] ? 'text-emerald-800' : 'text-slate-700'}`}>{step.label}</span>
               {stepsCompleted[step.key] && <CheckCircle2 className="w-4 h-4 text-emerald-600 ml-auto"/>}
             </label>
             {stepsCompleted[step.key] && (
-              <input value={stepNotes[step.key] || ''} onChange={e => setStepNotes(prev => ({...prev, [step.key]: e.target.value}))}
+              <input value={stepNotes[step.key] || ''} onChange={e => { setSaved(false); setStepNotes(prev => ({...prev, [step.key]: e.target.value})); }}
                 className="mt-2 w-full px-3 py-1.5 border border-emerald-200 rounded-lg text-xs font-semibold outline-none bg-white"
                 placeholder="Notes for this step (optional)"/>
             )}
@@ -146,19 +148,19 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="field-label">Final Concentration</label>
-            <input value={finalConc} onChange={e => setFinalConc(e.target.value)} className="field-input" placeholder="e.g. 10⁹ CFU/g or 1:5 v/v"/>
+            <input value={finalConc} onChange={e => { setSaved(false); setFinalConc(e.target.value); }} className="field-input" placeholder="e.g. 10⁹ CFU/g or 1:5 v/v"/>
           </div>
           <div>
             <label className="field-label">Moisture Content (%)</label>
-            <input type="number" step="0.1" value={moisturePct} onChange={e => setMoisturePct(e.target.value)} className="field-input" placeholder="e.g. 5.2"/>
+            <input type="number" step="0.1" value={moisturePct} onChange={e => { setSaved(false); setMoisturePct(e.target.value); }} className="field-input" placeholder="e.g. 5.2"/>
           </div>
           <div>
             <label className="field-label">Final Weight / Yield (kg)</label>
-            <input type="number" step="0.001" value={finalWeightKg} onChange={e => setFinalWeightKg(e.target.value)} className="field-input" placeholder="e.g. 0.250"/>
+            <input type="number" step="0.001" value={finalWeightKg} onChange={e => { setSaved(false); setFinalWeightKg(e.target.value); }} className="field-input" placeholder="e.g. 0.250"/>
           </div>
           <div>
             <label className="field-label">Processing Temp Range (°C)</label>
-            <input value={tempRange} onChange={e => setTempRange(e.target.value)} className="field-input" placeholder="e.g. 60–80 (inlet/outlet)"/>
+            <input value={tempRange} onChange={e => { setSaved(false); setTempRange(e.target.value); }} className="field-input" placeholder="e.g. 60–80 (inlet/outlet)"/>
           </div>
         </div>
 
@@ -166,29 +168,29 @@ export default function DownstreamPanel({ batch, activeFlask, employeeProfile, r
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="field-label">Packaging Type</label>
-            <select value={packagingType} onChange={e => setPackagingType(e.target.value)} className="field-input bg-white">
+            <select value={packagingType} onChange={e => { setSaved(false); setPackagingType(e.target.value); }} className="field-input bg-white">
               <option value="">Select...</option>
               {PACKAGING_TYPES.map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
           <div>
             <label className="field-label">Fill Weight (g)</label>
-            <input type="number" step="0.1" value={fillWeightG} onChange={e => setFillWeightG(e.target.value)} className="field-input" placeholder="e.g. 250"/>
+            <input type="number" step="0.1" value={fillWeightG} onChange={e => { setSaved(false); setFillWeightG(e.target.value); }} className="field-input" placeholder="e.g. 250"/>
           </div>
           <div>
             <label className="field-label">Units Produced</label>
-            <input type="number" value={unitsProduced} onChange={e => setUnitsProduced(e.target.value)} className="field-input" placeholder="e.g. 24"/>
+            <input type="number" value={unitsProduced} onChange={e => { setSaved(false); setUnitsProduced(e.target.value); }} className="field-input" placeholder="e.g. 24"/>
           </div>
         </div>
 
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Downstream notes, deviations, rework..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea value={notes} onChange={e => { setSaved(false); setNotes(e.target.value); }} rows={2} placeholder="Downstream notes, deviations, rework..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-          <button onClick={() => handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
-            {saving ? 'Saving...' : 'Save Downstream Record'}
+          <button onClick={() => handleSave(null)} disabled={saving} className={`py-2.5 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50 transition-colors ${saved ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'}`}>
+            {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Downstream Record'}
           </button>
           <button onClick={() => handleSave('qc_hold')} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
-            Downstream Complete → QC Hold
+            {(saving || actionLoading) ? 'Completing...' : 'Downstream Complete → QC Hold'}
           </button>
         </div>
       </div>
