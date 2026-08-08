@@ -424,8 +424,13 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                 <button type="button" onClick={async () => {
                   const targetId = batchId || batch?.id;
                   if (!targetId) return;
-                  const res = await fetch('/api/batch-costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_id: targetId, material_costs: matCost, labor_costs: labCost, overhead_costs: ovhCost }) });
-                  if ((await res.json()).success) { setCostSaved(true); }
+                  try {
+                    const res = await fetch('/api/batch-costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_id: targetId, material_costs: matCost, labor_costs: labCost, overhead_costs: ovhCost }) });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save cost.');
+                    setCostSaved(true);
+                    toast.success('Batch cost saved.');
+                  } catch (err) { toast.error(err.message); }
                 }} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider">
                   {costSaved ? '✓ Cost Saved' : 'Save COGS'}
                 </button>
