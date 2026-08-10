@@ -52,7 +52,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const fetchSOPs = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await withTimeout(supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true), 20000, 'SOPs load timed out');
+      const { data, error } = await withTimeout(supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true).limit(500), 20000, 'SOPs load timed out');
       if (error) throw error;
       const mapped = (data || []).map((sop: any) => ({ ...sop, is_acknowledged: (sop.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) }));
       setSops(mapped);
@@ -86,7 +86,21 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
 
     if (!supabase) return;
     const channel = supabase.channel('sops_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sop_library' }, () => fetchSOPs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sop_library' }, async (payload) => {
+         if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+           setSops(prev => prev.filter(s => s.id !== payload.old.id));
+         } else if (payload.new && payload.new.id) {
+           const { data } = await supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('id', payload.new.id).single();
+           if (data) {
+             const mapped = { ...data, is_acknowledged: (data.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) };
+             setSops(prev => {
+                const exists = prev.find(s => s.id === mapped.id);
+                if (exists) return prev.map(s => s.id === mapped.id ? mapped : s);
+                return [mapped, ...prev];
+             });
+           }
+         }
+      })
       .subscribe();
 
     return () => supabase.removeChannel(channel);

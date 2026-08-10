@@ -85,7 +85,7 @@ export default function DocumentsPage() {
       let query = supabase.from('documents').select('*, employees(full_name, initials)');
       if (category !== 'All') { query = query.eq('category', category); }
       if (!['admin', 'ceo', 'cto'].includes(role)) { query = query.or('access_level.eq.all-staff,access_level.is.null'); }
-      const { data, error } = await withTimeout(query.order('created_at', { ascending: false }), 20000, 'Documents load timed out');
+      const { data, error } = await withTimeout(query.order('created_at', { ascending: false }).limit(500), 20000, 'Documents load timed out');
       if (error) throw error;
       setDocuments(data || []);
       setFilteredDocs(data || []);

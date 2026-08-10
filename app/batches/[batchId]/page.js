@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import useSWR from 'swr';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
@@ -125,42 +126,44 @@ export default function BatchDetailPage() {
   const [quickVisual,     setQuickVisual]     = useState('Clear');
   const [quickLogSaving,  setQuickLogSaving]  = useState(false);
 
-  const fetchAll = useCallback(async () => {
-    if (!batchId) return;
-    setLoadError(false);
-    try {
-      // Single server-side API call — uses admin client (no RLS), runs all
-      // 7 sub-queries in parallel on the server, and returns in one response.
-      // This eliminates 6 extra client->Supabase round-trips and RLS overhead.
-      const res = await withTimeout(
-        fetch(`/api/batches/${batchId}/details`, { cache: 'no-store' }),
-        20000,
-        'Batch detail load timed out'
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const { data: detailsData, error: detailsError, mutate: mutateDetails } = useSWR(
+    batchId ? `/api/batches/${batchId}/details` : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Network error');
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to load batch');
+      return json;
+    },
+    { revalidateOnFocus: false, dedupingInterval: 2000 }
+  );
 
-      setBatch(json.batch);
-      setFlasks(json.flasks);
-      setTransitions(json.transitions);
-      setEmployees(json.employees);
-      setAvailableStock(json.availableStock);
-      const lnbEntries = json.lnbEntries || [];
+  useEffect(() => {
+    if (detailsData) {
+      setLoadError(false);
+      setBatch(detailsData.batch);
+      setFlasks(detailsData.flasks);
+      setTransitions(detailsData.transitions);
+      setEmployees(detailsData.employees);
+      setAvailableStock(detailsData.availableStock);
+      const lnbEntries = detailsData.lnbEntries || [];
       setLnbCount(lnbEntries.length);
       setLnbEntryId(lnbEntries[0]?.id || null);
       const byFlask = {};
       lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
       setLnbByFlask(byFlask);
-      setFlaskEndpoints(json.flaskEndpoints);
-      if (json.batch?.bmr_url) setBmrUrl(json.batch.bmr_url);
-    } catch (err) {
-      console.error('Batch detail fetch error:', err);
-      setLoadError(true);
+      setFlaskEndpoints(detailsData.flaskEndpoints);
+      if (detailsData.batch?.bmr_url) setBmrUrl(detailsData.batch.bmr_url);
     }
-  }, [batchId]);
+  }, [detailsData]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    if (detailsError) setLoadError(true);
+  }, [detailsError]);
+
+  const fetchAll = useCallback(() => {
+    mutateDetails();
+  }, [mutateDetails]);
 
   useEffect(() => {
     if (flasks.length > 0 && !selectedFlaskId) {

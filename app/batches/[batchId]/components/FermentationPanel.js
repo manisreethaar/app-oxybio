@@ -251,8 +251,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const foam = watch('foam');
   const appearance = watch('appearance');
   const epPh = watch('epPh');
-  const endpointTime = watch('endpointTime');
-  const editReason = watch('editReason');
+    const editReason = watch('editReason');
 
   const [platingDone, setPlatingDone] = useState(false);
   const [mediaFormulations, setMediaFormulations] = useState([]);
@@ -265,8 +264,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
-  const [epPh,       setEpPh]       = useState('');
-  const [aroma,      setAroma]      = useState('Tangy and clean');
+    const [aroma,      setAroma]      = useState('Tangy and clean');
   const [texture,    setTexture]    = useState('Normal slurry');
   const [sensory,    setSensory]    = useState('PASS');
   const [gramStain,  setGramStain]  = useState('Not done');
@@ -285,8 +283,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   // Admin edit/delete state
   const [editingReading,  setEditingReading]  = useState(null);
   const [editFields,      setEditFields]      = useState({});
-  const [editReason,      setEditReason]      = useState('');
-  const [savingEdit,      setSavingEdit]      = useState(false);
+    const [savingEdit,      setSavingEdit]      = useState(false);
   const [deletingReading, setDeletingReading] = useState(null);
   const [deleteReason,    setDeleteReason]    = useState('');
   const [savingDelete,    setSavingDelete]    = useState(false);
@@ -305,55 +302,49 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     return d.toISOString().slice(0,16);
   };
 
-  const fetchData = useCallback(async () => {
-    if (!activeFlask?.id) return;
-    setLoadingReadings(true);
-    try {
-      // No try/catch/timeout here before meant a stalled connection left
-      // this stuck on "Loading…" forever — fermentation is one of the
-      // longest-running, most-viewed stages, so this was a major source of
-      // "batches has infinite loading."
-      const [rRes, iRes, epRes] = await withTimeout(Promise.all([
-        supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
-        supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-        supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-      ]), 20000, 'Fermentation data load timed out');
-      if (rRes.error) console.error('FermentationPanel: readings query failed', rRes.error);
-      if (rRes.data) setReadings(rRes.data);
-      if (iRes.data) setInocu(iRes.data); else setInocu(null);
-      setEndpoint(epRes.data ?? null);
-    } catch (err) {
-      console.error('FermentationPanel fetch error:', err);
-    } finally {
-      setLoadingReadings(false);
-    }
-  }, [batch.id, activeFlask?.id, supabase]);
-
-  const fetchPendingIds = async () => {
-    const res = await fetch('/api/edit-request');
-    if (res.ok) {
-      const d = await res.json();
-      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
-    }
+  const fetcher = async () => {
+    const [rRes, iRes, epRes, feedRes, pRes] = await Promise.all([
+      supabase.from('batch_fermentation_readings').select('*, logged_by, logger:employees!batch_fermentation_readings_logged_by_fkey(id, full_name, initials)').eq('batch_id', batch.id).eq('flask_id', activeFlask.id).order('logged_at'),
+      supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+      supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
+      supabase.from('batch_fermentation_feeds').select('*, employees(full_name, initials)').eq('flask_id', activeFlask.id).order('logged_at', { ascending: false }),
+      fetch('/api/edit-request').then(r => r.json()).catch(() => ({ data: [] }))
+    ]);
+    return {
+      readings: rRes.data || [],
+      inocu: iRes.data || null,
+      endpoint: epRes.data || null,
+      feeds: feedRes.data || [],
+      pendingIds: new Set((pRes.data || []).filter(r => r.status === 'pending').map(r => r.record_id))
+    };
   };
 
-  const fetchFeeds = useCallback(async () => {
-    if (!activeFlask?.id) return;
-    const { data } = await supabase.from('batch_fermentation_feeds')
-      .select('*, employees(full_name, initials)')
-      .eq('flask_id', activeFlask.id)
-      .order('logged_at', { ascending: false });
-    setFeeds(data || []);
-  }, [activeFlask?.id, supabase]);
+  const { data: swrData, mutate: mutateFermentation } = useSWR(
+    activeFlask?.id ? `fermentation-${activeFlask.id}` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 2000 }
+  );
 
   useEffect(() => {
-    setReadings([]); setInocu(null); setEndpoint(null);
+    if (swrData) {
+      setReadings(swrData.readings);
+      setInocu(swrData.inocu);
+      setEndpoint(swrData.endpoint);
+      setFeeds(swrData.feeds);
+      setPendingIds(swrData.pendingIds);
+      setLoadingReadings(false);
+    }
+  }, [swrData]);
+
+  useEffect(() => {
+    // Reset local state when active flask changes
+    setReadings([]); setInocu(null); setEndpoint(null); setFeeds([]);
     setLoadingReadings(true);
     setExceededNotifSent(false);
-    setTa(''); setEpTa(''); setGramStainImg('');
-    setFeeds([]);
-    fetchData(); fetchPendingIds(); fetchFeeds();
-  }, [fetchData, fetchFeeds]);
+  }, [activeFlask?.id]);
+
+  const fetchData = useCallback(() => { mutateFermentation(); }, [mutateFermentation]);
+  const fetchFeeds = useCallback(() => { mutateFermentation(); }, [mutateFermentation]);
 
   const handleLogFeed = handleSubmit(async (data) => {
     const { feedType, feedVolMl, feedPhBefore, feedPhAfter, feedReason } = data;
@@ -551,7 +542,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   });
 
   const handleEndpoint = handleSubmit(async (data) => {
-    const { epPh, endpointTime } = data;
+    const { epPh } = data; // endpointTime from local state
     if (!epPh || savingEp) return;
     if (!endpointTime) {
       toast.warn('Set the actual fermentation end time before declaring endpoint.');
@@ -582,7 +573,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   });
 
   const executeEndpoint = async (data) => {
-    const { epPh, aroma, texture, sensory, gramStain, gramStainImg, epTa, colourDesc, epNotes, endpointTime } = data;
+    const { epPh, aroma, texture, sensory, gramStain, gramStainImg, epTa, colourDesc, epNotes } = data; // endpointTime from local state
     const finalPh = parseFloat(epPh);
     const totalHours = calculateElapsedHours(tZero, endpointTime);
     setSavingEp(true);

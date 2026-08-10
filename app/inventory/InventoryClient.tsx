@@ -245,19 +245,50 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     };
   }, [employeeProfile, initialStock, fetchData, checkTraining]);
 
-  // Realtime: warehouse_stock changes (receipts, issues, adjustments from other users)
+  // Realtime: inventory_stock and inventory_items changes
   useEffect(() => {
     if (!supabase) return;
     const channel = supabase.channel('inventory_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouse_stock' }, () => {
-        fetchData(page, false);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_stock' }, async (payload) => {
+        if (payload.new && payload.new.id) {
+          const { data } = await supabase
+            .from('inventory_stock')
+            .select('*, inventory_items(name, unit, category, min_stock_level, storage_condition), vendors(name)')
+            .eq('id', payload.new.id)
+            .single();
+          
+          if (data) {
+            setStock(prev => {
+              const exists = prev.find(s => s.id === data.id);
+              if (exists) return prev.map(s => s.id === data.id ? data : s);
+              return [data, ...prev]; 
+            });
+          }
+        } else if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+          setStock(prev => prev.filter(s => s.id !== payload.old.id));
+        }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, () => {
-        fetchData(page, false);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, async (payload) => {
+        if (payload.new && payload.new.id) {
+          const { data } = await supabase
+            .from('inventory_items')
+            .select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)')
+            .eq('id', payload.new.id)
+            .single();
+          
+          if (data) {
+            setItems(prev => {
+              const exists = prev.find(i => i.id === data.id);
+              if (exists) return prev.map(i => i.id === data.id ? data : i);
+              return [data, ...prev];
+            });
+          }
+        } else if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+          setItems(prev => prev.filter(i => i.id !== payload.old.id));
+        }
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   // Registry Grouping & Filtering

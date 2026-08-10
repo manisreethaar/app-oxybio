@@ -128,8 +128,23 @@ export default function TasksPage() {
         schema: 'public',
         table: 'tasks',
         ...(isAdmin ? {} : { filter: `assigned_to=eq.${employeeProfile.id}` })
-      }, () => {
-        fetchTasks();
+      }, async (payload) => {
+        if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+           setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+        } else if (payload.new && payload.new.id) {
+           const { data } = await supabase
+             .from('tasks')
+             .select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)')
+             .eq('id', payload.new.id)
+             .single();
+           if (data) {
+             setTasks(prev => {
+                const exists = prev.find(t => t.id === data.id);
+                if (exists) return prev.map(t => t.id === data.id ? data : t);
+                return [data, ...prev].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+             });
+           }
+        }
       })
       .subscribe();
 
@@ -165,7 +180,7 @@ export default function TasksPage() {
         empsPromise = supabase.from('employees').select('id, full_name, role').eq('is_active', true);
       }
 
-      const sopsPromise = supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title');
+      const sopsPromise = supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title').limit(1000);
 
       // A stalled network/DB connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh — bound it like the
