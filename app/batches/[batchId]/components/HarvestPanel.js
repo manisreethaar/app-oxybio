@@ -107,7 +107,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
       toast.success(advanceTarget ? 'Harvest saved. Advancing to Straining.' : 'Harvest record saved.');
       loadRecord();
       if (advanceTarget && onAdvanceFlaskStage) {
-        await onAdvanceFlaskStage(activeFlask.id, advanceTarget);
+        await onAdvanceFlaskStage(advanceTarget);
       } else {
         onDataSaved?.();
       }

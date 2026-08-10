@@ -148,7 +148,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       
       if (advanceTarget && onAdvanceFlaskStage) {
         toast.success('Extract addition saved. Confirm advance to QC Hold to continue.');
-        await onAdvanceFlaskStage(activeFlask.id, advanceTarget);
+        await onAdvanceFlaskStage(advanceTarget);
       } else {
         toast.success('Draft saved.');
         fetchRecord();
