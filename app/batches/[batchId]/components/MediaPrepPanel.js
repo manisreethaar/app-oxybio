@@ -5,7 +5,7 @@ import { withTimeout } from '@/lib/withTimeout';
 import { Beaker, AlertTriangle, ClipboardList, X } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
-export default function MediaPrepPanel({ batch, employees, availableStock, employeeProfile, role, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
+export default function MediaPrepPanel({ batch, employees, availableStock, employeeProfile, role, supabase, onDataSaved, onAdvanceStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [data,   setData]   = useState(null);
   const [saving, setSaving] = useState(false);
@@ -241,7 +241,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         loadData();
         onDataSaved();
       }
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      if (setGlobalError) setGlobalError(err.message);
+      toast.error(err.message); 
+    }
     finally { setSaving(false); }
   };
 

@@ -101,6 +101,7 @@ export default function BatchDetailPage() {
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
   const [viewingStage,       setViewingStage]       = useState(null);
   const [editingStage,       setEditingStage]       = useState(null);
+  const [globalError,        setGlobalError]        = useState(null);
   const stagePanelRef = useRef(null);
 
   // The Stage Timeline nav sits below the stage panel on mobile (panel first,
@@ -224,26 +225,34 @@ export default function BatchDetailPage() {
 
   const confirmFlaskAdvance = useCallback(async () => {
     if (!pendingFlaskAdvance) return;
+    setGlobalError(null);
     const { flaskId, toStage, fromStage } = pendingFlaskAdvance;
-    setPendingFlaskAdvance(null);
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/batches/${batchId}/flask-stage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage }),
-      });
+      const res = await withTimeout(
+        fetch(`/api/batches/${batchId}/flask-stage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage }),
+        }),
+        15000,
+        'Server took too long to respond. Please try again.'
+      );
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Trial stage transition failed.');
       }
 
+      setPendingFlaskAdvance(null);
       toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
       setViewingStage(null);
       setEditingStage(null);
       tickTaskChecklist(fromStage).catch(() => {});
       fetchAll();
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      setGlobalError(err.message);
+      toast.error(err.message); 
+    }
     finally { setActionLoading(false); }
   }, [pendingFlaskAdvance, batchId, toast, fetchAll, tickTaskChecklist]);
 
@@ -279,7 +288,6 @@ export default function BatchDetailPage() {
   const confirmStageTransition = async () => {
     if (!pendingTransition || actionLoading) return;
     const toStage = pendingTransition;
-    setPendingTransition(null);
     setActionLoading(true);
     try {
       const res = await fetch(`/api/batches/${batchId}/stage`, {
@@ -288,6 +296,7 @@ export default function BatchDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Stage transition failed.'); return; }
+      setPendingTransition(null);
       toast.success(`Advanced to ${toStage.replace(/_/g, ' ')}.`);
       tickTaskChecklist(batch.current_stage).catch(() => {});
       // Notify CEO/CTO when batch reaches QC Hold
@@ -748,6 +757,21 @@ export default function BatchDetailPage() {
             </div>
           )}
 
+          {globalError && (
+            <div className="bg-red-50 text-red-700 border-2 border-red-500 rounded-xl p-4 shadow-sm mb-6 flex flex-col gap-2 relative animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-red-800">Action Failed</h3>
+                  <p className="text-sm font-semibold mt-1">{globalError}</p>
+                </div>
+                <button onClick={() => setGlobalError(null)} className="p-1 hover:bg-red-100 rounded-md transition-colors text-red-500">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {isScheduled ? (
             <div className="card p-8 text-center">
               <Clock className="w-8 h-8 text-navy mx-auto mb-3" />
@@ -776,6 +800,7 @@ export default function BatchDetailPage() {
                 onAdvanceStage={handleDirectTransition}
                 onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
                 actionLoading={actionLoading}
+                setGlobalError={setGlobalError}
                 readOnly={!!viewingStage && editingStage !== viewingStage}
                 batchId={batchId}
               />
@@ -848,8 +873,14 @@ export default function BatchDetailPage() {
               <span className="font-black uppercase">{pendingFlaskAdvance.toStage.replace(/_/g,' ')}</span>
             </p>
             <p className="text-xs text-slate-400 text-center mb-5">This cannot be undone without admin intervention.</p>
+            {globalError && (
+              <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2 mb-4">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {globalError}
+              </div>
+            )}
             <div className="flex gap-3">
-              <button onClick={() => setPendingFlaskAdvance(null)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
+              <button onClick={() => { setPendingFlaskAdvance(null); setGlobalError(null); }} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
               <button onClick={confirmFlaskAdvance} disabled={actionLoading} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
                 {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : `Advance ${pendingFlaskAdvance.flaskLabel}`}
               </button>

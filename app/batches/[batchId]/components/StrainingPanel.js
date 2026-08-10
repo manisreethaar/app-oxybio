@@ -40,7 +40,7 @@ function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
   );
 }
 
-export default function StrainingPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
+export default function StrainingPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [record,     setRecord]     = useState(null);
   const [saving,     setSaving]     = useState(false);
@@ -147,26 +147,33 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
   const handleSave = async (advance = false) => {
     if (!activeFlask) return;
+    if (setGlobalError) setGlobalError(null);
     if (advance) {
       const missing = [];
-      if (!rpm) missing.push('Speed (RPM)');
+      if (!rpm) missing.push(method === 'Centrifugation' ? 'Speed (RPM)' : 'Pressure / Flow');
       if (!duration) missing.push('Duration (min)');
       if (!brothBefore) missing.push('Total Broth Before (g)');
-      if (!supernAfter) missing.push('Supernatant After (g)');
+      if (!supernAfter) missing.push('Supernatant / Filtrate After (g)');
       if (!ph) missing.push('pH');
       
       if (missing.length > 0) {
+        if (setGlobalError) setGlobalError(`Cannot advance to Extract Addition. Missing mandatory details: ${missing.join(', ')}.`);
         toast.warn(`Cannot advance to Extract Addition. Missing mandatory details: ${missing.join(', ')}.`);
         return;
       }
     }
-    if (isIntern && advance && !supervisedBy) { toast.warn('Select a supervisor before advancing.'); return; }
+    if (isIntern && advance && !supervisedBy) { 
+      if (setGlobalError) setGlobalError('Select a supervisor before advancing.'); 
+      toast.warn('Select a supervisor before advancing.'); 
+      return; 
+    }
 
     const checkEquip = (id) => {
       const e = equipment.find(eq => eq.id === id);
       return e && e.requires_calibration !== false && e.calibration_due_date && e.calibration_due_date < new Date().toLocaleDateString('en-CA');
     };
     if (checkEquip(centEqId) || checkEquip(phEqId) || checkEquip(scaleEqId)) {
+      if (setGlobalError) setGlobalError('Cannot save — One or more selected equipment items have expired calibration.');
       toast.error('Cannot save — One or more selected equipment items have expired calibration.');
       return;
     }
@@ -213,7 +220,11 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         pass2_temp_c:                showPass2 && pass2Temp     ? parseFloat(pass2Temp)     : null,
       };
 
-      const { error } = await supabase.from('batch_flask_straining').upsert(payload, { onConflict: 'flask_id' });
+      const { error } = await withTimeout(
+        supabase.from('batch_flask_straining').upsert(payload, { onConflict: 'flask_id' }),
+        15000,
+        'Database save timed out. Please try again.'
+      );
       if (error) throw error;
 
       toast.success(advance ? `Trial ${activeFlask.flask_label} Centrifugation complete.` : 'Draft saved.');
@@ -223,7 +234,10 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         fetchRecord();
         onDataSaved();
       }
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      if (setGlobalError) setGlobalError(err.message);
+      toast.error(err.message); 
+    }
     finally { setSaving(false); }
   };
 
@@ -448,13 +462,21 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <label className="field-label">Notes</label>
           <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input" placeholder="Observed losses, equipment issues, deviations..."/>
         </div>
+        {valError && (
+          <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {valError}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : record ? 'Update Draft' : 'Save Draft'}
           </button>
-          <button onClick={()=>handleSave(true)} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
-            Advance Trial → Extract Addition
-          </button>
+          <div className="relative">
+            <button onClick={()=>handleSave(true)} disabled={saving||actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+              Advance Trial → Extract Addition
+            </button>
+          </div>
         </div>
       </div>
     </div>

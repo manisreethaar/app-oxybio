@@ -200,7 +200,7 @@ function BrixChart({ readings }) {
   );
 }
 
-export default function FermentationPanel({ batch, flasks, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
+export default function FermentationPanel({ batch, flasks, activeFlask, employees, employeeProfile, role, canDo, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [readings,  setReadings]  = useState([]);
   const [inocu,     setInocu]     = useState(null);
@@ -544,7 +544,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       setPlatingIntent(null); setPlatingDone(false); setPlateMedia(''); setPlateDilution(''); setPlateCount('2'); setPlateTemp('37'); setPlateExpectedHours('48');
       setNotes(''); setIsRetro(false); setRetroReason(''); setLoggedAt('');
       fetchData();
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      if (setGlobalError) setGlobalError(err.message);
+    }
     finally { setSaving(false); }
   };
 
@@ -611,7 +613,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
       setEndpointTime('');
       fetchData(); onDataSaved();
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      if (setGlobalError) setGlobalError(err.message);
+      toast.error(err.message); 
+    }
     finally { setSavingEp(false); }
   };
 
@@ -627,7 +632,10 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       toast.success('Endpoint updated.');
       setEditingEndpoint(false);
       fetchData(); onDataSaved();
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      if (setGlobalError) setGlobalError(err.message);
+      toast.error(err.message); 
+    }
     finally { setSavingEpEdit(false); }
   };
 

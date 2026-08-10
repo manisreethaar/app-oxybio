@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
-import { Leaf, CheckCircle2 } from 'lucide-react';
+import { Leaf, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const SPECIES = ['Cordyceps militaris', 'Hericium erinaceus', 'Ganoderma lucidum', 'Inonotus obliquus', 'Tremella fuciformis'];
 const ADD_TEMP = ['Ambient (22-26°C)', 'Chilled (≤8°C)'];
@@ -10,7 +10,7 @@ const ADD_METHOD = ['Aseptic pouring', 'Sterile pipette', 'Peristaltic pump'];
 // G-06: allergen options per FSSAI major allergen list
 const ALLERGEN_OPTIONS = ['Milk / Dairy','Gluten / Wheat','Soy','Tree Nuts','Peanuts','Sesame','Eggs','Fish / Shellfish'];
 
-export default function ExtractAdditionPanel({ batch, activeFlask, employees, availableStock, employeeProfile, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
+export default function ExtractAdditionPanel({ batch, activeFlask, employees, availableStock, employeeProfile, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -95,6 +95,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   const handleSave = async (advanceTarget = null) => {
     if (!activeFlask) return;
+    if (setGlobalError) setGlobalError(null);
     if (advanceTarget) {
       const missing = [];
       if (!volAdded) missing.push('Volume Added (ml)');
@@ -102,6 +103,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       if (!noneAllergens && allergens.length === 0) missing.push('Allergen Declaration');
       
       if (missing.length > 0) {
+        if (setGlobalError) setGlobalError(`Cannot advance to QC Hold. Missing mandatory details: ${missing.join(', ')}.`);
         toast.warn(`Cannot advance to QC Hold. Missing mandatory details: ${missing.join(', ')}.`);
         return;
       }
@@ -152,7 +154,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         fetchRecord();
         onDataSaved();
       }
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      if (setGlobalError) setGlobalError(err.message);
+      toast.error(err.message); 
+    }
     finally { setSaving(false); }
   };
 
@@ -330,6 +335,13 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               </p>
             )}
           </div>
+
+          {valError && (
+            <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2 mt-4">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              {valError}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
             <button onClick={()=>handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
