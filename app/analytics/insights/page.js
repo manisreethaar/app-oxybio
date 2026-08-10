@@ -22,8 +22,8 @@ export default function InsightsPage() {
       setLoading(true);
       try {
         const [bRes, eRes] = await withTimeout(Promise.all([
-          supabase.from('batches').select('id, batch_id, created_at, status'),
-          supabase.from('batch_flask_endpoints').select('batch_id, total_hours, final_ph, sensory_overall')
+          supabase.from('batches').select('id, batch_id, created_at, status').limit(1000),
+          supabase.from('batch_flask_endpoints').select('batch_id, total_hours, final_ph, sensory_overall').limit(5000)
         ]), 20000, 'Insights load timed out');
         
         if (bRes.data) setBatches(bRes.data);

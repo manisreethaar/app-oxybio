@@ -161,12 +161,12 @@ export default function BioprocessAnalyticsPage() {
         else fromDate = new Date(2000, 0, 1);
 
         let bq = supabase.from('batches').select('id, batch_id, product_name, status, created_at')
-          .gte('created_at', fromDate.toISOString());
+          .gte('created_at', fromDate.toISOString()).limit(1000);
         if (selectedProduct !== 'ALL') bq = bq.eq('product_name', selectedProduct);
         const { data: bData } = await withTimeout(bq, 20000, 'Batch query timed out');
 
         if (products.length === 0) {
-          const { data: allB } = await supabase.from('batches').select('product_name');
+          const { data: allB } = await supabase.from('batches').select('product_name').limit(1000);
           setProducts([...new Set((allB || []).map(b => b.product_name).filter(Boolean))]);
         }
 
@@ -176,13 +176,13 @@ export default function BioprocessAnalyticsPage() {
         if (batchIds.length > 0) {
           const [rRes, eRes, tRes] = await withTimeout(Promise.all([
             supabase.from('batch_fermentation_readings')
-              .select('batch_id, elapsed_hours, ph, brix, optical_density, titratable_acidity_pct, incubator_temp_c')
+              .select('batch_id, elapsed_hours, ph, brix, optical_density, titratable_acidity_pct, incubator_temp_c').limit(5000)
               .in('batch_id', batchIds),
             supabase.from('batch_flask_endpoints')
-              .select('batch_id, flask_id, total_hours, final_ph, titratable_acidity_pct, sensory_overall')
+              .select('batch_id, flask_id, total_hours, final_ph, titratable_acidity_pct, sensory_overall').limit(5000)
               .in('batch_id', batchIds),
             supabase.from('titration_logs')
-              .select('*')
+              .select('*').limit(5000)
               .in('source_id', batchIds)
               .eq('source_type', 'batch')
               .order('created_at', { ascending: false }),

@@ -115,18 +115,18 @@ export default function BatchAnalyticsPage() {
         const ids = bData.map(b => b.id);
 
         if (products.length === 0) {
-          const { data: aB } = await withTimeout(supabase.from('batches').select('product_name'), 20000, 'Products timed out');
+          const { data: aB } = await withTimeout(supabase.from('batches').select('product_name').limit(1000), 20000, 'Products timed out');
           setProducts([...new Set((aB || []).map(b => b.product_name).filter(Boolean))]);
         }
 
         if (ids.length > 0) {
           const [rRes, eRes] = await withTimeout(Promise.all([
             supabase.from('batch_fermentation_readings')
-              .select('batch_id,elapsed_hours,ph,incubator_temp_c,optical_density,brix,titratable_acidity_pct,foam_level,plating_result,visual_appearance,notes,logged_at')
+              .select('batch_id,elapsed_hours,ph,incubator_temp_c,optical_density,brix,titratable_acidity_pct,foam_level,plating_result,visual_appearance,notes,logged_at').limit(5000)
               .in('batch_id', ids)
               .order('elapsed_hours', { ascending: true }),
             supabase.from('batch_flask_endpoints')
-              .select('batch_id,flask_id,total_hours,final_ph,sensory_overall,titratable_acidity_pct,aroma,colour_desc,texture,notes')
+              .select('batch_id,flask_id,total_hours,final_ph,sensory_overall,titratable_acidity_pct,aroma,colour_desc,texture,notes').limit(5000)
               .in('batch_id', ids)
           ]), 20000, 'Details timed out');
           if (rRes.data) setReadings(rRes.data);

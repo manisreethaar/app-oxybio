@@ -697,7 +697,7 @@ export default function PayrollPage() {
             .eq('is_active', true)
             .order('full_name'),
           supabase.from('payslips')
-            .select('*, employees!payslips_employee_id_fkey(full_name, designation, employee_code)')
+            .select('*, employees!payslips_employee_id_fkey(full_name, designation, employee_code)').limit(500)
             .order('year', { ascending: false })
             .order('created_at', { ascending: false })
         ]);
@@ -712,7 +712,7 @@ export default function PayrollPage() {
       } else if (employeeProfile?.id) {
         const { data, error } = await supabase
           .from('payslips')
-          .select('*, employees!payslips_employee_id_fkey(full_name, designation, employee_code)')
+          .select('*, employees!payslips_employee_id_fkey(full_name, designation, employee_code)').limit(500)
           .eq('employee_id', employeeProfile.id)
           .order('year', { ascending: false })
           .order('created_at', { ascending: false });

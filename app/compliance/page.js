@@ -97,7 +97,7 @@ export default function CompliancePage() {
     setLoading(true);
     try {
       const fetchPromises = [
-        supabase.from('compliance_items').select('*, employees(full_name)').order('due_date', { ascending: true })
+        supabase.from('compliance_items').select('*, employees(full_name)').order('due_date', { ascending: true }).limit(500)
       ];
       if (['admin', 'ceo', 'cto'].includes(role)) {
         fetchPromises.push(supabase.from('employees').select('id, full_name').eq('is_active', true));
@@ -125,17 +125,17 @@ export default function CompliancePage() {
   };
 
   const fetchComplaints = async () => {
-    const { data } = await supabase.from('customer_complaints').select('*, batches(batch_id)').order('created_at', { ascending: false });
+    const { data } = await supabase.from('customer_complaints').select('*, batches(batch_id)').order('created_at', { ascending: false }).limit(500);
     setComplaints(data || []);
   };
 
   const fetchAudits = async () => {
-    const { data } = await supabase.from('internal_audits').select('*, employees!internal_audits_auditor_id_fkey(full_name, initials)').order('audit_date', { ascending: false });
+    const { data } = await supabase.from('internal_audits').select('*, employees!internal_audits_auditor_id_fkey(full_name, initials)').order('audit_date', { ascending: false }).limit(500);
     setAudits(data || []);
   };
 
   const fetchMilestones = async () => {
-    const { data } = await supabase.from('regulatory_milestones').select('*, creator:employees!regulatory_milestones_created_by_fkey(full_name)').order('deadline', { ascending: true });
+    const { data } = await supabase.from('regulatory_milestones').select('*, creator:employees!regulatory_milestones_created_by_fkey(full_name)').order('deadline', { ascending: true }).limit(500);
     setMilestones(data || []);
   };
 
