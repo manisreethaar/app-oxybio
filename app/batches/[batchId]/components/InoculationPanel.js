@@ -17,7 +17,6 @@ const SOURCE_TYPES = [
 export default function InoculationPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
-  const [valError, setValError] = useState(null);
   const isInternOrRI = ['intern','research_intern'].includes(role);
 
   const toLocalDatetime = (utcStr) => {
@@ -548,12 +547,6 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {valError && (
-            <div className="col-span-1 sm:col-span-2 bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              {valError}
-            </div>
-          )}
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving?'Saving...':'Save Draft'}
           </button>

@@ -386,7 +386,7 @@ export default function TitrationLogPage() {
                     setSourceLabel(b ? `${b.batch_id} — ${b.product_name}` : '');
                   }} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white text-slate-900 focus:ring-2 focus:ring-slate-500">
                     <option value="">Select batch (optional)...</option>
-                    {batchOptions.map(b => <option key={b.id} value={b.id}>{b.batch_id} — {b.product_name}</option>)}
+                    {batches.map(b => <option key={b.id} value={b.id}>{b.batch_id} — {b.product_name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -588,7 +588,7 @@ export default function TitrationLogPage() {
               className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none text-slate-900 focus:ring-2 focus:ring-slate-500"/>
 
             <button type="submit"
-              disabled={saving || !liveTAStr || (enableConcordant && finalBurette2 && !isConcordant)}
+              disabled={saving}
               className="w-full py-3 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-sm uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
               <Droplets className="w-4 h-4"/>
               {saving

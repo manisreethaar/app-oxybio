@@ -462,12 +462,6 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           <label className="field-label">Notes</label>
           <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input" placeholder="Observed losses, equipment issues, deviations..."/>
         </div>
-        {valError && (
-          <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {valError}
-          </div>
-        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : record ? 'Update Draft' : 'Save Draft'}

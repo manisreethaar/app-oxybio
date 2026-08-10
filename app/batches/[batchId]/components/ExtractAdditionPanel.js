@@ -336,13 +336,6 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             )}
           </div>
 
-          {valError && (
-            <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2 mt-4">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              {valError}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
             <button onClick={()=>handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
               {saving?'Saving...':'Save Draft'}
