@@ -105,38 +105,38 @@ export async function POST(request, { params }) {
     }
 
     let finalBatchStage = batch.current_stage;
-    if (to_stage !== 'rejected') {
-      const { data: flasks, error: flasksErr } = await db
-        .from('batch_flasks')
-        .select('current_stage, status')
-        .eq('batch_id', batchId);
-      if (flasksErr) {
-        return NextResponse.json({ success: false, error: flasksErr.message }, { status: 500 });
-      }
+    const { data: flasks, error: flasksErr } = await db
+      .from('batch_flasks')
+      .select('current_stage, status')
+      .eq('batch_id', batchId);
+    if (flasksErr) {
+      return NextResponse.json({ success: false, error: flasksErr.message }, { status: 500 });
+    }
 
-      const activeFlasks = (flasks || []).filter(f => f.status !== 'rejected');
-      if (activeFlasks.length > 0) {
-        const slowestStage = activeFlasks.reduce((slowest, f) => {
-          const stage = visibleWorkflowStage(f.current_stage || 'inoculation');
-          const stageRank = FLASK_STAGE_RANKS.indexOf(stage);
-          const slowestRank = FLASK_STAGE_RANKS.indexOf(slowest);
-          return stageRank >= 0 && stageRank < slowestRank ? stage : slowest;
-        }, 'released');
+    const activeFlasks = (flasks || []).filter(f => f.status !== 'rejected');
+    if (activeFlasks.length > 0) {
+      const slowestStage = activeFlasks.reduce((slowest, f) => {
+        const stage = visibleWorkflowStage(f.current_stage || 'inoculation');
+        const stageRank = FLASK_STAGE_RANKS.indexOf(stage);
+        const slowestRank = FLASK_STAGE_RANKS.indexOf(slowest);
+        return stageRank >= 0 && stageRank < slowestRank ? stage : slowest;
+      }, 'released');
 
-        finalBatchStage = slowestStage;
-        if (slowestStage !== batch.current_stage) {
-          const { error: batchUpdateErr } = await db
-            .from('batches')
-            .update({ current_stage: slowestStage, status: statusForFlaskStage(slowestStage) })
-            .eq('id', batchId);
-          if (batchUpdateErr) {
-            return NextResponse.json({ success: false, error: batchUpdateErr.message }, { status: 500 });
-          }
-        }
-      }
+      finalBatchStage = slowestStage;
+    } else {
+      // All flasks have been rejected
+      finalBatchStage = 'rejected';
     }
 
     if (finalBatchStage !== batch.current_stage) {
+      const { error: batchUpdateErr } = await db
+        .from('batches')
+        .update({ current_stage: finalBatchStage, status: statusForFlaskStage(finalBatchStage) })
+        .eq('id', batchId);
+      if (batchUpdateErr) {
+        return NextResponse.json({ success: false, error: batchUpdateErr.message }, { status: 500 });
+      }
+
       await db.from('stage_transitions').insert({
         batch_id: batchId,
         from_stage: batch.current_stage,
