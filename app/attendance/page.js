@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import { Clock, Download, ArrowRightCircle, ArrowLeftCircle, CheckCircle2, MapPin, Camera, AlertCircle, X, ShieldCheck, BarChart2, TrendingUp, CalendarOff } from 'lucide-react';
 import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
+import { notifyEmployee } from '@/lib/notifyEmployee';
 const AttendanceChart = dynamic(() => import('@/components/charts/AttendanceWeeklyChart'), { ssr: false });
 const MispunchContent = dynamic(() => import('./MispunchContent'), { ssr: false });
 
@@ -379,6 +380,7 @@ export default function AttendancePage() {
       setOverrideLocation(false);
       setCheckInError('');
       toast.success("Successfully checked in.");
+      notifyEmployee(employeeProfile.id, 'Punched In', 'Your check-in has been successfully recorded.', '/attendance');
       fetchAttendanceData();
     } catch (err) {
       setCheckInError(err.message || 'Check-in failed');
@@ -400,6 +402,7 @@ export default function AttendancePage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Check-out failed');
         toast.success("Successfully checked out.");
+        notifyEmployee(employeeProfile.id, 'Punched Out', 'Your check-out has been successfully recorded.', '/attendance');
         await fetchAttendanceData();
       } catch (err) {
         setCheckInError('Check-out failed: ' + err.message);
