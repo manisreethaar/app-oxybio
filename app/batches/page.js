@@ -28,7 +28,7 @@ import { SkuBadge } from '@/components/ui/BatchBadges';
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
   'media_prep', 'sterilisation', 'inoculation', 'fermentation', 'harvest',
-  'straining', 'extract_addition', 'downstream', 'qc_hold', 'released', 'rejected'
+  'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
 ];
 const STAGE_LABELS = {
   media_prep:       'Media Prep',
@@ -38,7 +38,6 @@ const STAGE_LABELS = {
   harvest:          'Harvest',
   straining:        'Straining',
   extract_addition: 'Extract Addition',
-  downstream:       'Downstream',
   qc_hold:          'QC Hold',
   released:         'Released',
   rejected:         'Rejected',
@@ -91,6 +90,10 @@ function isScheduledBatch(batch) {
   return SCHEDULED_STATUSES.includes(normaliseStatus(batch.status)) && !batch.current_stage;
 }
 
+function visibleWorkflowStage(stage) {
+  return normaliseStatus(stage) === 'downstream' ? 'qc_hold' : normaliseStatus(stage);
+}
+
 const batchSchema = z.object({
   formulation_id:    z.string().uuid('Select an approved formulation'),
   experiment_type:   z.string().min(1, 'Select experiment type'),
@@ -141,7 +144,7 @@ export default function BatchesPage() {
 
   const getDerivedBatchStatus = (batch) => {
     const status = normaliseStatus(batch.status);
-    const stage = normaliseStatus(batch.current_stage);
+    const stage = visibleWorkflowStage(batch.current_stage);
     const isTerminal = TERMINAL_STATUSES.includes(status) || TERMINAL_STATUSES.includes(stage);
     if (isTerminal) return getBatchDisposition(batch);
     if (isScheduledBatch(batch)) return 'scheduled';
@@ -156,9 +159,9 @@ export default function BatchesPage() {
     if (allRejected) return 'rejected';
     
     const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
-    const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','downstream','qc_hold','released'];
+    const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released'];
     const maxStage = activeFlasks.reduce((best, f) => {
-      const currentStage = normaliseStatus(f.current_stage);
+      const currentStage = visibleWorkflowStage(f.current_stage);
       const r = FLASK_STAGE_RANK.indexOf(currentStage);
       return r > FLASK_STAGE_RANK.indexOf(best) ? currentStage : best;
     }, 'inoculation');
@@ -166,13 +169,13 @@ export default function BatchesPage() {
     if (maxStage === 'fermentation') return 'fermenting';
     if (maxStage === 'qc_hold') return 'qc-hold';
     if (maxStage === 'released') return 'released';
-    if (['harvest','straining','extract_addition','downstream'].includes(maxStage)) return 'processing';
+    if (['harvest','straining','extract_addition'].includes(maxStage)) return 'processing';
     return status;
   };
 
   const getBatchEffectiveStage = (batch) => {
     if (isScheduledBatch(batch)) return null;
-    const stage = normaliseStatus(batch.current_stage);
+    const stage = visibleWorkflowStage(batch.current_stage);
     const BATCH_ONLY_STAGES = ['media_prep', 'sterilisation'];
     if (BATCH_ONLY_STAGES.includes(stage)) return stage;
     
@@ -180,7 +183,7 @@ export default function BatchesPage() {
     const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
     if (activeFlasks.length === 0) return stage;
     
-    const maxFlaskIdx = activeFlasks.reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(normaliseStatus(f.current_stage))), -1);
+    const maxFlaskIdx = activeFlasks.reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(visibleWorkflowStage(f.current_stage))), -1);
     return maxFlaskIdx >= 0 ? STAGE_ORDER[maxFlaskIdx] : stage;
   };
 

@@ -11,7 +11,6 @@ const FLASK_STAGE_RANKS = [
   'harvest',
   'straining',
   'extract_addition',
-  'downstream',
   'qc_hold',
   'released',
   'rejected',
@@ -33,7 +32,7 @@ function statusForFlaskStage(stage) {
 }
 
 function constraintMessage(stage) {
-  if (['harvest', 'downstream'].includes(stage)) {
+  if (stage === 'harvest') {
     return `Database stage constraint is missing "${stage}". Apply supabase/migrations/20260807000001_fix_batch_flasks_stage_constraint.sql on the live database.`;
   }
   return 'Database rejected this stage transition.';

@@ -11,7 +11,7 @@ import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
   Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
   FileText, Download, Loader, Trash2, ArrowRight, MessageSquare,
-  Package, Layers
+  Package
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -32,7 +32,6 @@ const InoculationPanel = dynamic(() => import('./components/InoculationPanel'), 
 const FermentationPanel = dynamic(() => import('./components/FermentationPanel'), { ssr: false, loading: PanelLoading });
 const StrainingPanel = dynamic(() => import('./components/StrainingPanel'), { ssr: false, loading: PanelLoading });
 const HarvestPanel = dynamic(() => import('./components/HarvestPanel'), { ssr: false, loading: PanelLoading });
-const DownstreamPanel = dynamic(() => import('./components/DownstreamPanel'), { ssr: false, loading: PanelLoading });
 const ExtractAdditionPanel = dynamic(() => import('./components/ExtractAdditionPanel'), { ssr: false, loading: PanelLoading });
 const QCHoldPanel = dynamic(() => import('./components/QCHoldPanel'), { ssr: false, loading: PanelLoading });
 const ReleasePanel = dynamic(() => import('./components/ReleasePanel'), { ssr: false, loading: PanelLoading });
@@ -47,7 +46,6 @@ const STAGES = [
   { id: 'harvest',          label: 'Harvest',          icon: Package,     color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', supplementary: true },
   { id: 'straining',        label: 'Straining',        icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
   { id: 'extract_addition', label: 'Extract Addition', icon: Leaf,        color: 'text-slate-600',bg: 'bg-slate-50', border: 'border-slate-200'},
-  { id: 'downstream',       label: 'Downstream',       icon: Layers,      color: 'text-slate-600', bg: 'bg-slate-50',  border: 'border-slate-200', supplementary: true },
   { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200'   },
   { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
   { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
@@ -57,9 +55,13 @@ const PANEL_MAP = {
   media_prep: MediaPrepPanel, sterilisation: SterilisationPanel,
   inoculation: InoculationPanel, fermentation: FermentationPanel,
   harvest: HarvestPanel, straining: StrainingPanel,
-  extract_addition: ExtractAdditionPanel, downstream: DownstreamPanel,
+  extract_addition: ExtractAdditionPanel,
   qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
+
+function visibleWorkflowStage(stage) {
+  return stage === 'downstream' ? 'qc_hold' : stage;
+}
 
 const STAGE_CHECKLIST_MAP = {
   media_prep:       'Media Preparation',
@@ -376,12 +378,12 @@ export default function BatchDetailPage() {
 
   if (!batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
 
-  const currentIdx  = STAGES.findIndex(s => s.id === batch.current_stage);
+  const currentIdx  = STAGES.findIndex(s => s.id === visibleWorkflowStage(batch.current_stage));
   const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   const isPostSterilisation = !isScheduled && (currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting');
 
-  const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','downstream','qc_hold','released','rejected'];
+  const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
     if (isScheduled) return 'scheduled';
@@ -390,18 +392,18 @@ export default function BatchDetailPage() {
     if (allRejected) return 'rejected';
     const activeFlasks = flasks.filter(f => f.status !== 'rejected');
     const maxStage = activeFlasks.reduce((best, f) => {
-      const r = FLASK_STAGE_RANK.indexOf(f.current_stage);
-      return r > FLASK_STAGE_RANK.indexOf(best) ? f.current_stage : best;
+      const r = FLASK_STAGE_RANK.indexOf(visibleWorkflowStage(f.current_stage));
+      return r > FLASK_STAGE_RANK.indexOf(best) ? visibleWorkflowStage(f.current_stage) : best;
     }, 'inoculation');
     if (maxStage === 'fermentation') return 'fermenting';
     if (maxStage === 'qc_hold') return 'qc-hold';
     if (maxStage === 'released') return 'released';
-    if (['straining','extract_addition','downstream'].includes(maxStage)) return 'processing';
+    if (['harvest','straining','extract_addition'].includes(maxStage)) return 'processing';
     return batch.status;
   })();
 
   const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
-  const activeStage = isScheduled ? null : (isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage);
+  const activeStage = isScheduled ? null : visibleWorkflowStage(isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage);
   const displayStage = viewingStage || activeStage;
   const CurrentPanel = PANEL_MAP[displayStage] || null;
 
@@ -544,7 +546,7 @@ export default function BatchDetailPage() {
                 let done, curr;
                 if (isPostSterilisation) {
                   const flaskStageIdx = selectedFlask
-                    ? STAGES.findIndex(s => s.id === selectedFlask.current_stage)
+                    ? STAGES.findIndex(s => s.id === visibleWorkflowStage(selectedFlask.current_stage))
                     : 2;
                   const effectiveIdx = flaskStageIdx < 2 ? 2 : flaskStageIdx;
                   done = idx < 2 || idx < effectiveIdx;
@@ -603,7 +605,7 @@ export default function BatchDetailPage() {
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <p className={`text-xs font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${f.status==='rejected'?'bg-red-100 text-red-600':selectedFlaskId===f.id?'bg-navy text-white':'bg-slate-200 text-slate-500'}`}>
-                      {f.status==='rejected' ? 'REJECTED' : isScheduled ? 'PLANNED' : ((STAGES.find(s => s.id === f.current_stage)?.label) || f.current_stage || 'INOCULATION').toUpperCase()}
+                      {f.status==='rejected' ? 'REJECTED' : isScheduled ? 'PLANNED' : ((STAGES.find(s => s.id === visibleWorkflowStage(f.current_stage))?.label) || visibleWorkflowStage(f.current_stage) || 'INOCULATION').toUpperCase()}
                     </p>
                     {lnbByFlask[f.id] > 0 && (
                       <span className="text-xs font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 flex items-center gap-0.5">
