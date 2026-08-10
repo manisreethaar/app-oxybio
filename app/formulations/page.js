@@ -90,29 +90,35 @@ export default function FormulationsPage() {
 
     // Subscribe to realtime formulation updates to prevent stale statuses (e.g. Approved vs In Review)
     const channel = supabase.channel('formulations_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'formulations' }, () => {
-        fetchFormulations();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'formulations' }, async (payload) => {
+        if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+          setFormulations(prev => prev.filter(f => f.id !== payload.old.id));
+        } else if (payload.new && payload.new.id) {
+          const { data } = await supabase
+            .from('formulations')
+            .select('*')
+            .eq('id', payload.new.id)
+            .single();
+          if (data) {
+            setFormulations(prev => {
+              const exists = prev.find(f => f.id === data.id);
+              if (exists) return prev.map(f => f.id === data.id ? data : f);
+              return [data, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            });
+          }
+        }
       })
       .subscribe();
 
-    // Fallback: refresh on window focus in case realtime is disconnected or missing table publication
-    const handleFocus = () => fetchFormulations();
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') fetchFormulations();
-    });
-
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('visibilitychange', handleFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchInventoryItems = async () => {
     try {
-      const { data, error } = await supabase.from('inventory_items').select('id, name, unit').order('name');
+      const { data, error } = await supabase.from('inventory_items').select('id, name, unit').order('name').limit(1000);
       if (error) throw error;
       setItems(data || []);
     } catch (err) { 
@@ -144,7 +150,8 @@ export default function FormulationsPage() {
         .select('*')
         .neq('status', 'Archived')
         .is('archived_at', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       

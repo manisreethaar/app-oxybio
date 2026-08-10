@@ -458,7 +458,15 @@ export default function AttendancePage() {
 
   const calculateHours = (inTime, outTime) => {
     if (!inTime) return 0;
-    const end = outTime ? new Date(outTime) : new Date();
+    if (!outTime) {
+      // Only accumulate hours to current time if the shift is from today
+      const isToday = new Date(inTime).toDateString() === new Date().toDateString();
+      if (isToday) {
+        return ((new Date() - new Date(inTime)) / (1000 * 60 * 60)).toFixed(1);
+      }
+      return 0.0; // Missed punch-out on a past day
+    }
+    const end = new Date(outTime);
     const start = new Date(inTime);
     return ((end - start) / (1000 * 60 * 60)).toFixed(1);
   };
