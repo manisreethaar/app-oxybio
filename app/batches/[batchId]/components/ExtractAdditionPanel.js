@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
-import { Leaf, CheckCircle2 } from 'lucide-react';
+import { Leaf, CheckCircle2, RotateCcw } from 'lucide-react';
 
 const SPECIES = ['Cordyceps militaris', 'Hericium erinaceus', 'Ganoderma lucidum', 'Inonotus obliquus', 'Tremella fuciformis'];
 const ADD_TEMP = ['Ambient (22-26°C)', 'Chilled (≤8°C)'];
@@ -153,6 +153,16 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
+  };
+
+  const handleReturnToHarvest = async () => {
+    if (!activeFlask || saving || actionLoading || !onAdvanceFlaskStage) return;
+    setSaving(true);
+    try {
+      await onAdvanceFlaskStage('harvest');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Extract Addition.</div>;
@@ -330,9 +340,12 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-100">
             <button onClick={()=>handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
               {saving?'Saving...':'Save Draft'}
+            </button>
+            <button onClick={handleReturnToHarvest} disabled={saving||actionLoading||activeFlask.current_stage === 'harvest'} className="py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5">
+              <RotateCcw className="w-3.5 h-3.5"/> Return to Harvest
             </button>
             <button onClick={()=>handleSave('downstream')} disabled={saving||actionLoading} className="py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
               Advance to Downstream

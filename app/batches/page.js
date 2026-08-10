@@ -316,7 +316,7 @@ export default function BatchesPage() {
     try {
       // A stalled Supabase connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh. A single transient
-      const [activeRes, completedRes, archivedRes] = await Promise.all([
+      const [activeRes, completedRes, archivedRes] = await withRetry(() => withTimeout(Promise.all([
         supabase
           .from('batches')
           .select(`
@@ -353,7 +353,7 @@ export default function BatchesPage() {
           `)
           .not('archived_at', 'is', null)
           .order('archived_at', { ascending: false }),
-      ]);
+      ]), 20000, 'Batches load timed out'));
 
       // Fetch creator details separately to avoid slow RLS joins
       const allFetched = [...(activeRes.data || []), ...(completedRes.data || []), ...(archivedRes.data || [])];
@@ -361,10 +361,10 @@ export default function BatchesPage() {
       
       let creatorsMap = {};
       if (creatorIds.length > 0) {
-        const { data: creatorData } = await supabase
+        const { data: creatorData } = await withTimeout(supabase
           .from('employees')
           .select('id, full_name, initials')
-          .in('id', creatorIds);
+          .in('id', creatorIds), 12000, 'Batch creator lookup timed out');
         (creatorData || []).forEach(c => { creatorsMap[c.id] = c; });
       }
 
@@ -382,10 +382,10 @@ export default function BatchesPage() {
       // Fetch endpoints separately (nested select requires explicit FK in schema)
       let epMap = {};
       if (active.length > 0) {
-        const { data: epData } = await supabase
+        const { data: epData } = await withTimeout(supabase
           .from('batch_flask_endpoints')
           .select('batch_id, total_hours')
-          .in('batch_id', active.map(b => b.id));
+          .in('batch_id', active.map(b => b.id)), 12000, 'Batch endpoint lookup timed out');
         (epData || []).forEach(ep => {
           if (ep.total_hours != null && (epMap[ep.batch_id] == null || ep.total_hours > epMap[ep.batch_id])) {
             epMap[ep.batch_id] = ep.total_hours;

@@ -31,7 +31,7 @@ export async function GET(request) {
     // Manual lookups — PostgREST FK joins are broken due to stale schema
     // cache (old FK to inventory table still cached). Direct queries are reliable.
     const vialIds = [...new Set(data.map(d => d.vial_id).filter(Boolean))];
-    const empIds  = [...new Set(data.map(d => d.created_by).filter(Boolean))];
+    const empIds = [...new Set(data.map(d => d.created_by).filter(Boolean))];
 
     const [vialsRes, empsRes] = await Promise.all([
       vialIds.length > 0
@@ -43,7 +43,7 @@ export async function GET(request) {
     ]);
 
     const vialMap = Object.fromEntries((vialsRes.data || []).map(v => [v.id, v]));
-    const empMap  = Object.fromEntries((empsRes.data  || []).map(e => [e.id, e]));
+    const empMap = Object.fromEntries((empsRes.data || []).map(e => [e.id, e]));
 
     const processedData = data.map(d => {
       let parsedNotes = d.notes;
@@ -57,7 +57,7 @@ export async function GET(request) {
             vialInfo = { id: obj.original_vial_id, vial_code: obj.original_vial_label };
             parsedNotes = obj.user_notes || '';
           }
-        } catch(e){}
+        } catch (e) { }
       }
 
       return {
@@ -79,7 +79,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    
+
     // Validate target
     if (!body.target_type || !['batch', 'growth_study'].includes(body.target_type)) {
       return NextResponse.json({ success: false, error: 'Valid target_type required' }, { status: 400 });
@@ -122,7 +122,7 @@ export async function POST(request) {
         start_time: data.start_time,
         status: 'active',
         notes: `Auto-created from Seed Train for passage ${data.passage_number}`,
-      }).then(() => {}).catch(e => console.warn('Incubation record insert warning:', e.message));
+      }).then(() => { }).catch(e => console.warn('Incubation record insert warning:', e.message));
 
       if (data.vial_id) {
         // Mark vial as Used
@@ -130,7 +130,7 @@ export async function POST(request) {
           status: 'Used',
           used_in_batch_id: body.target_batch_id || null,
           used_at: new Date().toISOString()
-        }).eq('id', data.vial_id).catch(() => {});
+        }).eq('id', data.vial_id).catch(() => { });
 
         // Log vial usage
         await supabaseAdmin.from('cell_bank_vial_logs').insert({
@@ -139,7 +139,7 @@ export async function POST(request) {
           batch_id: body.target_batch_id || null,
           operator_id: body.created_by || null,
           notes: `Used for Seed Passage ${data.passage_number}`
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
 
