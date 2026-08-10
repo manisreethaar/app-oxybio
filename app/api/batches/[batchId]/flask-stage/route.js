@@ -32,7 +32,7 @@ function statusForFlaskStage(stage) {
 }
 
 function visibleWorkflowStage(stage) {
-  return stage === 'downstream' ? 'qc_hold' : stage;
+  return stage || '';
 }
 
 function constraintMessage(stage) {

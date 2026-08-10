@@ -60,7 +60,7 @@ const PANEL_MAP = {
 };
 
 function visibleWorkflowStage(stage) {
-  return stage === 'downstream' ? 'qc_hold' : stage;
+  return stage || '';
 }
 
 const STAGE_CHECKLIST_MAP = {

@@ -91,7 +91,7 @@ function isScheduledBatch(batch) {
 }
 
 function visibleWorkflowStage(stage) {
-  return normaliseStatus(stage) === 'downstream' ? 'qc_hold' : normaliseStatus(stage);
+  return normaliseStatus(stage);
 }
 
 const batchSchema = z.object({
