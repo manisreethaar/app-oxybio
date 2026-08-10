@@ -8,6 +8,7 @@ import {
   ShieldAlert, Clock, Calendar, AlertCircle,
   CheckCircle2, Send, Loader2, ArrowRight, History, LogOut, XCircle
 } from 'lucide-react';
+import { notifyEmployee } from '@/lib/notifyEmployee';
 
 export default function MispunchContent() {
   const { employeeProfile, isAdmin, loading: authLoading } = useAuth();
@@ -92,6 +93,7 @@ export default function MispunchContent() {
       setFormData({ hours: '', reason: '' });
       fetchData();
       toast.success('Mispunch request submitted for approval!');
+      notifyEmployee(employeeProfile.id, 'Mispunch Requested', 'Your mispunch request has been successfully submitted.', '/mispunch');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -121,6 +123,7 @@ export default function MispunchContent() {
       setSelfReportData({ hours: '', reason: '' });
       fetchData();
       toast.success('Missed checkout reported. Awaiting admin approval.');
+      notifyEmployee(employeeProfile.id, 'Missed Checkout Reported', 'Your missed checkout report has been successfully submitted.', '/mispunch');
     } catch (err) {
       toast.error(err.message);
     } finally {
