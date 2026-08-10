@@ -1286,7 +1286,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         isOpen={eSigModal.isOpen}
         onClose={() => setESigModal({ isOpen: false, targetAction: null })}
         onSuccess={() => {
-          onAdvanceFlaskStage(eSigModal.targetAction);
+          onAdvanceFlaskStage(activeFlask.id, eSigModal.targetAction);
           setESigModal({ isOpen: false, targetAction: null });
         }}
         title={`Authorize Batch ${eSigModal.targetAction === 'released' ? 'Release' : 'Rejection'}`}

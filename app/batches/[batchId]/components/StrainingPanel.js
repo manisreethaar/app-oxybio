@@ -229,7 +229,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
 
       toast.success(advance ? `Trial ${activeFlask.flask_label} Centrifugation complete.` : 'Draft saved.');
       if (advance && onAdvanceFlaskStage) {
-        await onAdvanceFlaskStage('extract_addition');
+        await onAdvanceFlaskStage(activeFlask.id, 'extract_addition');
       } else {
         fetchRecord();
         onDataSaved();

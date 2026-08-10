@@ -235,7 +235,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         contamination_check: contCheck,
       }, activeFlask.flask_label);
       if (advance && onAdvanceFlaskStage) {
-        await onAdvanceFlaskStage('fermentation');
+        await onAdvanceFlaskStage(activeFlask.id, 'fermentation');
       } else {
         fetchRecord();
         onDataSaved();
