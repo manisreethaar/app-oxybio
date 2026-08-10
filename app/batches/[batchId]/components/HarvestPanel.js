@@ -7,7 +7,7 @@ import { Package, AlertTriangle, Thermometer, CheckCircle2 } from 'lucide-react'
 const HARVEST_METHODS = ['Centrifugation', 'Filtration', 'Decantation', 'Gravity settling'];
 const VIABILITY_METHODS = ['Live/Dead staining', 'Methylene Blue', 'Flow Cytometry', 'Plate count', 'Not done'];
 
-export default function HarvestPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved }) {
+export default function HarvestPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading }) {
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -77,7 +77,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
     ? ((parseFloat(wetCellWeight) / (parseFloat(finalCultureVol) * 1000)) * 100).toFixed(1)
     : biomassYieldPct;
 
-  const handleSave = async () => {
+  const handleSave = async (advanceTarget = null) => {
     if (!activeFlask?.id) return;
     setSaving(true);
     try {
@@ -104,9 +104,13 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
       const { error } = await supabase.from('batch_stage_harvest')
         .upsert(payload, { onConflict: 'flask_id' });
       if (error) throw error;
-      toast.success('Harvest record saved.');
+      toast.success(advanceTarget ? 'Harvest saved. Advancing to Straining.' : 'Harvest record saved.');
       loadRecord();
-      onDataSaved?.();
+      if (advanceTarget && onAdvanceFlaskStage) {
+        await onAdvanceFlaskStage(advanceTarget);
+      } else {
+        onDataSaved?.();
+      }
     } catch (err) { toast.error(err.message); }
     finally { setSaving(false); }
   };
@@ -228,9 +232,14 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Harvest observations, anomalies..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
-        <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Harvest Record'}
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button onClick={() => handleSave(null)} disabled={saving} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Harvest Record'}
+          </button>
+          <button onClick={() => handleSave('straining')} disabled={saving || actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+            Save & Advance to Straining
+          </button>
+        </div>
       </div>
     </div>
   );

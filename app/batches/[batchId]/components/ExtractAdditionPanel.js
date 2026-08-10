@@ -144,10 +144,11 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
       );
       if (error) throw error;
       
-      toast.success(advanceTarget ? `Trial ${activeFlask.flask_label} advanced to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC Hold'}.` : 'Draft saved.');
       if (advanceTarget && onAdvanceFlaskStage) {
+        toast.success(`Extract addition saved. Confirm advance to ${advanceTarget === 'downstream' ? 'Downstream' : 'QC Hold'} to continue.`);
         await onAdvanceFlaskStage(advanceTarget);
       } else {
+        toast.success('Draft saved.');
         fetchRecord();
         onDataSaved();
       }

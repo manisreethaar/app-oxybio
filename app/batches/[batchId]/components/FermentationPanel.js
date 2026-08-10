@@ -1403,8 +1403,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 Edit Hours
               </button>
             )}
-            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('straining')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
-              Advance Trial → Straining
+            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('harvest')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+              Advance Trial → Harvest
             </button>
           </div>
         </div>
