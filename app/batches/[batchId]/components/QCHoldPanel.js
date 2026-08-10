@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { Clock, CheckCircle2, XCircle, Plus, Lock, FlaskConical, Trash2, Microscope, ArrowDownToLine } from 'lucide-react';
@@ -94,20 +95,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   // Plating config state
   const [platingEnabled,      setPlatingEnabled]      = useState(false);
-  const [plateMedia,          setPlateMedia]          = useState('');
-  const [plateDilution,       setPlateDilution]       = useState('');
-  const [plateCount,          setPlateCount]          = useState('2');
-  const [plateTemp,           setPlateTemp]           = useState('37');
-  const [plateExpectedHours,  setPlateExpectedHours]  = useState('48');
 
   // External lab result fields
-  const [resultReceivedDate, setResultReceivedDate] = useState('');
-  const [coaUrl,             setCoaUrl]             = useState('');
   const [savingExtResult,    setSavingExtResult]     = useState(false);
 
   // G-08: OOS (Out-of-Spec) investigation modal
   const [oosModal,    setOosModal]    = useState(null); // { testId, testName }
-  const [oosDesc,     setOosDesc]     = useState('');
   const [samplesLoaded, setSamplesLoaded] = useState(false);
   const [rfcConfig, setRfcConfig] = useState({ isOpen: false, payload: null });
   const [raisingOos,  setRaisingOos]  = useState(false);
@@ -119,9 +112,6 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   // G-63: custom test add
   const [showCustomTest,   setShowCustomTest]   = useState(false);
-  const [customTestName,   setCustomTestName]   = useState('');
-  const [customTestSpec,   setCustomTestSpec]   = useState('');
-  const [customTestUnit,   setCustomTestUnit]   = useState('');
   const [savingCustomTest, setSavingCustomTest] = useState(false);
 
   // G-10: re-test tracking
@@ -129,22 +119,27 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   // A-18: Post-packaging QC
   const [showPostPack,    setShowPostPack]    = useState(false);
-  const [ppPackType,      setPpPackType]      = useState('');
-  const [ppPh,            setPpPh]            = useState('');
-  const [ppCfu,           setPpCfu]           = useState('');
   const [savingPostPack,  setSavingPostPack]  = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      samplingDate: new Date().toISOString().slice(0,10),
+      volPerFlask: '', extLab: '', extRef: '', sentDate: '', expectDate: '',
+      resultReceivedDate: '', coaUrl: '', oosDesc: '',
+      customTestName: '', customTestSpec: '', customTestUnit: '',
+      ppPackType: '', ppPh: '', ppCfu: '',
+      plateMedia: '', plateDilution: '', plateCount: '2', plateTemp: '37', plateExpectedHours: '48'
+    }
+  });
+  const { register, handleSubmit, reset, setValue, getValues, watch } = form;
+
 
   // E-Signature Modal
   const [eSigModal, setESigModal] = useState({ isOpen: false, targetAction: null });
 
   // Sample creation form
   const [samplingDate, setSamplingDate] = useState(new Date().toISOString().slice(0,10));
-  const [volPerFlask,  setVolPerFlask]  = useState('');
   const [testingLoc,   setTestingLoc]   = useState('In-house');
-  const [extLab,       setExtLab]       = useState('');
-  const [extRef,       setExtRef]       = useState('');
-  const [sentDate,     setSentDate]     = useState('');
-  const [expectDate,   setExpectDate]   = useState('');
 
   const fetchQcData = useCallback(async () => {
     if (!activeFlask?.id) return;
@@ -402,7 +397,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (field === 'pass_fail' && value === 'Fail') {
       const failedTest = tests.find(t => t.id === testId);
       if (!oosRaised.has(testId)) {
-        setOosDesc('');
+        setValue('oosDesc', '');
         setOosModal({ testId, testName: failedTest?.test_name || 'Test' });
       }
     }
@@ -648,7 +643,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       toast.success('External lab result details saved.');
     } catch (err) { toast.error(err.message); }
     finally { setSavingExtResult(false); }
-  };
+  });
 
   // G-10: create a re-test row linked to the original failed test
   const handleRetest = async (failedTest) => {
@@ -688,7 +683,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         pass_fail: 'Pending',
       });
       if (error) throw error;
-      setCustomTestName(''); setCustomTestSpec(''); setCustomTestUnit('');
+      setValue('customTestName',''); setValue('customTestSpec',''); setValue('customTestUnit','');
       setShowCustomTest(false);
       toast.success(`Custom test "${customTestName}" added.`);
       fetchQcData();
@@ -811,7 +806,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             <p className="text-sm text-slate-700">A formal OOS (Out-of-Spec) investigation record is required for any failed QC test under GMP. This will be raised as a CAPA deviation in the Compliance module.</p>
             <div>
               <label className="field-label">Brief description of the failure (optional)</label>
-              <textarea value={oosDesc} onChange={e=>setOosDesc(e.target.value)} rows={3} placeholder={`e.g. ${oosModal.testName} result exceeded spec — possible cause: ...`}
+              <textarea {...register('oosDesc')} rows={3} placeholder={`e.g. ${oosModal.testName} result exceeded spec — possible cause: ...`}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none resize-none"/>
             </div>
             <div className="flex gap-3">
@@ -836,8 +831,8 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         <div className="card p-5 space-y-4">
           <h3 className="text-sm font-bold text-slate-900">Create QC Sample Record for {activeFlask.flask_label}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label className="field-label">Sampling Date</label><input type="date" value={samplingDate} onChange={e=>setSamplingDate(e.target.value)} className="field-input"/></div>
-            <div><label className="field-label">Sample Volume (ml)</label><input type="number" step="0.1" value={volPerFlask} onChange={e=>setVolPerFlask(e.target.value)} className="field-input" placeholder="10"/></div>
+            <div><label className="field-label">Sampling Date</label><input type="date" {...register('samplingDate')} className="field-input"/></div>
+            <div><label className="field-label">Sample Volume (ml)</label><input type="number" step="0.1" {...register('volPerFlask')} className="field-input" placeholder="10"/></div>
           </div>
           <div>
             <label className="field-label">Testing Location</label>
@@ -852,10 +847,10 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           </div>
           {testingLoc === 'NABL external lab' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><label className="field-label">External Lab Name</label><input value={extLab} onChange={e=>setExtLab(e.target.value)} className="field-input" placeholder="Lab name..."/></div>
-              <div><label className="field-label">Ref Number</label><input value={extRef} onChange={e=>setExtRef(e.target.value)} className="field-input" placeholder="REF-001"/></div>
-              <div><label className="field-label">Date Sent</label><input type="date" value={sentDate} onChange={e=>setSentDate(e.target.value)} className="field-input"/></div>
-              <div><label className="field-label">Expected Date</label><input type="date" value={expectDate} onChange={e=>setExpectDate(e.target.value)} className="field-input"/></div>
+              <div><label className="field-label">External Lab Name</label><input {...register('extLab')} className="field-input" placeholder="Lab name..."/></div>
+              <div><label className="field-label">Ref Number</label><input {...register('extRef')} className="field-input" placeholder="REF-001"/></div>
+              <div><label className="field-label">Date Sent</label><input type="date" {...register('sentDate')} className="field-input"/></div>
+              <div><label className="field-label">Expected Date</label><input type="date" {...register('expectDate')} className="field-input"/></div>
             </div>
           )}
           <button onClick={handleCreateSample} disabled={creating} className="w-full py-3 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
@@ -909,7 +904,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 p-3 bg-white rounded-xl border border-slate-100">
                   <div>
                     <label className="field-label">Media Type (Recipe)</label>
-                    <select value={plateMedia} onChange={e=>handleUpdatePlatingConfig('media_type', e.target.value)} className="field-input text-xs bg-white">
+                    <select {...register('plateMedia')} onBlur={e=>handleUpdatePlatingConfig('media_type', e.target.value)} className="field-input text-xs bg-white">
                       <option value="">Select Recipe...</option>
                       {mediaFormulations.map(f => (
                         <option key={f.name} value={f.name}>{f.name}</option>
@@ -918,7 +913,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </div>
                   <div>
                     <label className="field-label">Dilution Factor</label>
-                    <select value={plateDilution} onChange={e=>handleUpdatePlatingConfig('dilution', e.target.value)} className="field-input text-xs bg-white">
+                    <select {...register('plateDilution')} onBlur={e=>handleUpdatePlatingConfig('dilution', e.target.value)} className="field-input text-xs bg-white">
                       <option value="">Select...</option>
                       <option value="Direct (No dilution)">Direct (No dilution)</option>
                       <option value="10⁻¹">10⁻¹</option>
@@ -935,15 +930,15 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </div>
                   <div>
                     <label className="field-label">No. of Plates</label>
-                    <input type="number" min="1" value={plateCount} onChange={e=>handleUpdatePlatingConfig('plate_count', e.target.value)} className="field-input text-xs" placeholder="2"/>
+                    <input type="number" min="1" {...register('plateCount')} onBlur={e=>handleUpdatePlatingConfig('plate_count', e.target.value)} className="field-input text-xs" placeholder="2"/>
                   </div>
                   <div>
                     <label className="field-label">Incubation Temp (°C)</label>
-                    <input type="number" step="0.1" value={plateTemp} onChange={e=>handleUpdatePlatingConfig('incubation_temp_c', e.target.value)} className="field-input text-xs" placeholder="37"/>
+                    <input type="number" step="0.1" {...register('plateTemp')} onBlur={e=>handleUpdatePlatingConfig('incubation_temp_c', e.target.value)} className="field-input text-xs" placeholder="37"/>
                   </div>
                   <div>
                     <label className="field-label">Expected Duration (hrs)</label>
-                    <input type="number" value={plateExpectedHours} onChange={e=>handleUpdatePlatingConfig('expected_hours', e.target.value)} className="field-input text-xs" placeholder="48"/>
+                    <input type="number" {...register('plateExpectedHours')} onBlur={e=>handleUpdatePlatingConfig('expected_hours', e.target.value)} className="field-input text-xs" placeholder="48"/>
                   </div>
                 </div>
 
@@ -1027,11 +1022,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="field-label">Date Results Received</label>
-                  <input type="date" value={resultReceivedDate} onChange={e=>setResultReceivedDate(e.target.value)} className="field-input"/>
+                  <input type="date" {...register('resultReceivedDate')} className="field-input"/>
                 </div>
                 <div>
                   <label className="field-label">COA / Report URL</label>
-                  <input value={coaUrl} onChange={e=>setCoaUrl(e.target.value)} className="field-input" placeholder="https://..."/>
+                  <input {...register('coaUrl')} className="field-input" placeholder="https://..."/>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -1079,9 +1074,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 <div className="space-y-3">
                   <p className="text-xs font-black text-slate-700">Add Custom Test</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input value={customTestName} onChange={e=>setCustomTestName(e.target.value)} placeholder="Test name (required)" className="field-input text-xs p-2"/>
-                    <input value={customTestSpec} onChange={e=>setCustomTestSpec(e.target.value)} placeholder="Target spec (optional)" className="field-input text-xs p-2"/>
-                    <input value={customTestUnit} onChange={e=>setCustomTestUnit(e.target.value)} placeholder="Unit (optional)" className="field-input text-xs p-2"/>
+                    <input {...register('customTestName')} placeholder="Test name (required)" className="field-input text-xs p-2"/>
+                    <input {...register('customTestSpec')} placeholder="Target spec (optional)" className="field-input text-xs p-2"/>
+                    <input {...register('customTestUnit')} placeholder="Unit (optional)" className="field-input text-xs p-2"/>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleAddCustomTest} disabled={!customTestName.trim()||savingCustomTest} className="px-4 py-2 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50">
@@ -1122,12 +1117,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-500">{t.target_spec}</td>
                       <td className="px-4 py-3">
-                        <input value={t.result_value||''} onChange={e=>handleUpdateTest(t.id,'result_value',e.target.value)}
+                        <input defaultValue={t.result_value||''} onBlur={e=>handleUpdateTest(t.id,'result_value',e.target.value)}
                           className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-navy" placeholder="—"/>
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400">{t.result_unit||'—'}</td>
                       <td className="px-4 py-3">
-                        <input type="datetime-local" value={t.tested_at ? new Date(t.tested_at).toISOString().slice(0,16) : ''} onChange={e=>handleUpdateTest(t.id,'tested_at', new Date(e.target.value).toISOString())}
+                        <input type="datetime-local" defaultValue={t.tested_at ? new Date(t.tested_at).toISOString().slice(0,16) : ''} onBlur={e=>handleUpdateTest(t.id,'tested_at', new Date(e.target.value).toISOString())}
                           className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-navy"/>
                       </td>
                       <td className="px-4 py-3">
@@ -1188,9 +1183,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                 {showPostPack && (
                   <div className="space-y-2 mt-1">
                     <div className="grid grid-cols-3 gap-2">
-                      <div><label className="field-label">Packaging</label><input value={ppPackType} onChange={e=>setPpPackType(e.target.value)} className="field-input text-xs" placeholder="e.g. Glass 200ml"/></div>
-                      <div><label className="field-label">pH</label><input type="number" step="0.01" value={ppPh} onChange={e=>setPpPh(e.target.value)} className="field-input text-xs" placeholder="4.35"/></div>
-                      <div><label className="field-label">CFU/ml</label><input value={ppCfu} onChange={e=>setPpCfu(e.target.value)} className="field-input text-xs" placeholder="≥10⁶"/></div>
+                      <div><label className="field-label">Packaging</label><input {...register('ppPackType')} className="field-input text-xs" placeholder="e.g. Glass 200ml"/></div>
+                      <div><label className="field-label">pH</label><input type="number" step="0.01" {...register('ppPh')} className="field-input text-xs" placeholder="4.35"/></div>
+                      <div><label className="field-label">CFU/ml</label><input {...register('ppCfu')} className="field-input text-xs" placeholder="≥10⁶"/></div>
                     </div>
                     <button disabled={savingPostPack} onClick={async () => {
                       if (!sample) return;

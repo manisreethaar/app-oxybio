@@ -216,11 +216,6 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   // Feed log (pH correction / nutrient addition)
   const [feeds,         setFeeds]         = useState([]);
   const [showFeedForm,  setShowFeedForm]  = useState(false);
-  const [feedType,      setFeedType]      = useState('pH Correction');
-  const [feedVolMl,     setFeedVolMl]     = useState('');
-  const [feedPhBefore,  setFeedPhBefore]  = useState('');
-  const [feedPhAfter,   setFeedPhAfter]   = useState('');
-  const [feedReason,    setFeedReason]    = useState('');
   const [savingFeed,    setSavingFeed]    = useState(false);
 
   // G-31: Incubator equipment list
@@ -264,32 +259,19 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   // Endpoint form
   const [showEndpoint, setShowEndpoint] = useState(false);
-    const [aroma,      setAroma]      = useState('Tangy and clean');
-  const [texture,    setTexture]    = useState('Normal slurry');
-  const [sensory,    setSensory]    = useState('PASS');
-  const [gramStain,  setGramStain]  = useState('Not done');
-  const [gramStainImg, setGramStainImg] = useState('');
   // G-30: TA at endpoint
-  const [epTa,       setEpTa]       = useState('');
-  const [colourDesc, setColourDesc] = useState('');
-  const [epNotes,    setEpNotes]    = useState('');
   const [savingEp,   setSavingEp]   = useState(false);
   const [pendingOOROverride, setPendingOOROverride] = useState(false);
-  const [endpointTime, setEndpointTime] = useState('');
 
   // Pending edit-request tracking
   const [pendingIds, setPendingIds] = useState(new Set());
 
   // Admin edit/delete state
   const [editingReading,  setEditingReading]  = useState(null);
-  const [editFields,      setEditFields]      = useState({});
     const [savingEdit,      setSavingEdit]      = useState(false);
   const [deletingReading, setDeletingReading] = useState(null);
-  const [deleteReason,    setDeleteReason]    = useState('');
   const [savingDelete,    setSavingDelete]    = useState(false);
   const [editingEndpoint, setEditingEndpoint] = useState(false);
-  const [epEditHours,     setEpEditHours]     = useState('');
-  const [epEditPh,        setEpEditPh]        = useState('');
   const [savingEpEdit,    setSavingEpEdit]    = useState(false);
 
   const isAdmin  = ['admin','ceo','cto'].includes(role);
@@ -428,18 +410,18 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   useEffect(() => {
     // Clear endpoint form whenever the active flask changes
-    setEpPh('');
-    setAroma('Tangy and clean');
-    setTexture('Normal slurry');
-    setSensory('PASS');
-    setGramStain('Not done');
-    setGramStainImg('');
-    setEpTa('');
-    setColourDesc('');
-    setEpNotes('');
+    setValue('epPh', '');
+    setValue('aroma', 'Tangy and clean');
+    setValue('texture', 'Normal slurry');
+    setValue('sensory', 'PASS');
+    setValue('gramStain', 'Not done');
+    setValue('gramStainImg', '');
+    setValue('epTa', '');
+    setValue('colourDesc', '');
+    setValue('epNotes', '');
+    setValue('endpointTime', '');
     setShowEndpoint(false);
     setPendingOOROverride(false);
-    setEndpointTime('');
   }, [activeFlask?.id]);
 
   // Elapsed hours from T=0 specific to THIS flask
@@ -542,7 +524,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   });
 
   const handleEndpoint = handleSubmit(async (data) => {
-    const { epPh } = data; // endpointTime from local state
+    const { epPh, endpointTime } = data;
     if (!epPh || savingEp) return;
     if (!endpointTime) {
       toast.warn('Set the actual fermentation end time before declaring endpoint.');
@@ -573,7 +555,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   });
 
   const executeEndpoint = async (data) => {
-    const { epPh, aroma, texture, sensory, gramStain, gramStainImg, epTa, colourDesc, epNotes } = data; // endpointTime from local state
+    const { epPh, aroma, texture, sensory, gramStain, gramStainImg, epTa, colourDesc, epNotes, endpointTime } = data;
     const finalPh = parseFloat(epPh);
     const totalHours = calculateElapsedHours(tZero, endpointTime);
     setSavingEp(true);
@@ -633,14 +615,15 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
   const openEdit = (r) => {
     setEditingReading(r);
-    setEditFields({
-      ph: r.ph ?? '', incubator_temp_c: r.incubator_temp_c ?? '',
-      brix: r.brix ?? '', optical_density: r.optical_density ?? '',
-      foam_level: r.foam_level ?? 'None', visual_appearance: r.visual_appearance ?? 'Normal',
-      notes: r.notes ?? '', logged_at: toLocalDatetime(r.logged_at),
-      is_retrospective: r.is_retrospective ?? false, retro_reason: r.retro_reason ?? '',
-    });
-    setEditReason('');
+    setValue('editFields.ph', r.ph ?? '');
+    setValue('editFields.incubator_temp_c', r.incubator_temp_c ?? '');
+    setValue('editFields.brix', r.brix ?? '');
+    setValue('editFields.optical_density', r.optical_density ?? '');
+    setValue('editFields.foam_level', r.foam_level ?? 'None');
+    setValue('editFields.visual_appearance', r.visual_appearance ?? 'Normal');
+    setValue('editFields.notes', r.notes ?? '');
+    setValue('editFields.logged_at', toLocalDatetime(r.logged_at));
+    setValue('editReason', '');
   };
 
   const handleEditSave = async (e) => {
@@ -680,8 +663,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     finally { setSavingEdit(false); }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteReason.trim()) { toast.warn('A reason for deletion is required.'); return; }
+  const handleDeleteConfirm = handleSubmit(async (data) => {
+    const { deleteReason } = data;
+    if (!deleteReason?.trim()) { toast.warn('A reason for deletion is required.'); return; }
     setSavingDelete(true);
     try {
       const { error } = await supabase.rpc('delete_fermentation_reading', {
@@ -690,12 +674,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (error) throw error;
       setReadings(prev => prev.filter(r => r.id !== deletingReading.id));
       toast.success('Reading deleted.');
-      setDeletingReading(null); setDeleteReason('');
+      setDeletingReading(null); setValue('deleteReason', '');
       await fetchData();
       onDataSaved?.();
     } catch (err) { toast.error(err.message); }
     finally { setSavingDelete(false); }
-  };
+  });
 
   const platingSummary = (reading) => {
     if (reading.sample_incubation_id) {
@@ -801,9 +785,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             <div className="flex items-center gap-2">
               <input
                 type="datetime-local"
-                value={endpointTime}
+                
                 max={toLocalDatetime(new Date().toISOString())}
-                onChange={e => setEndpointTime(e.target.value)}
+                {...register('endpointTime')}
                 className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${endpointTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200'}`}
               />
               {endpointTime && tZero && (
@@ -1199,7 +1183,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                               className="p-1 rounded hover:bg-slate-50 text-slate-500 hover:text-slate-700 transition-colors">
                               <Pencil className="w-3 h-3"/>
                             </button>
-                            <button onClick={() => { setDeletingReading(r); setDeleteReason(''); }} title="Delete reading"
+                            <button onClick={() => { setDeletingReading(r); setValue('deleteReason', ''); }} title="Delete reading"
                               className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
                               <Trash2 className="w-3 h-3"/>
                             </button>
@@ -1255,9 +1239,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <input
                   type="datetime-local"
                   required
-                  value={endpointTime}
+                  
                   max={toLocalDatetime(new Date().toISOString())}
-                  onChange={e => setEndpointTime(e.target.value)}
+                  {...register('endpointTime')}
                   className={`w-full px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy ${!endpointTime ? 'border-amber-400 bg-amber-50' : 'border-slate-200'}`}
                 />
                 {tZero && (() => {
@@ -1454,40 +1438,36 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-400 mb-1">pH <span className="text-red-500">★ CCP</span></label>
-                  <input type="number" step="0.01" min="0" max="14" value={editFields.ph}
-                    onChange={e => setEditFields(f => ({...f, ph: e.target.value}))}
+                  <input type="number" step="0.01" min="0" max="14" {...register('editFields.ph')}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Temp (°C)</label>
-                  <input type="number" step="0.1" value={editFields.incubator_temp_c}
-                    onChange={e => setEditFields(f => ({...f, incubator_temp_c: e.target.value}))}
+                  <input type="number" step="0.1" {...register('editFields.incubator_temp_c')}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Brix (°Bx)</label>
-                  <input type="number" step="0.1" value={editFields.brix}
-                    onChange={e => setEditFields(f => ({...f, brix: e.target.value}))}
+                  <input type="number" step="0.1" {...register('editFields.brix')}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-400 mb-1">OD (600nm)</label>
-                  <input type="number" step="0.001" value={editFields.optical_density}
-                    onChange={e => setEditFields(f => ({...f, optical_density: e.target.value}))}
+                  <input type="number" step="0.001" {...register('editFields.optical_density')}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Foam</label>
-                  <select value={editFields.foam_level} onChange={e => setEditFields(f => ({...f, foam_level: e.target.value}))}
+                  <select {...register('editFields.foam_level')}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {FOAM_OPTS.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Visual Appearance</label>
-                  <select value={editFields.visual_appearance} onChange={e => setEditFields(f => ({...f, visual_appearance: e.target.value}))}
+                  <select {...register('editFields.visual_appearance')}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none bg-white focus:border-navy">
                     {APPEARANCE_OPTS.map(o => <option key={o}>{o}</option>)}
                   </select>
@@ -1505,13 +1485,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               )}
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Reading Timestamp</label>
-                <input type="datetime-local" value={editFields.logged_at}
-                  onChange={e => setEditFields(f => ({...f, logged_at: e.target.value}))}
+                <input type="datetime-local" {...register('editFields.logged_at')}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Notes</label>
-                <input value={editFields.notes} onChange={e => setEditFields(f => ({...f, notes: e.target.value}))}
+                <input {...register('editFields.notes')}
                   placeholder="Notes (optional)" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-navy"/>
               </div>
               <div className="pt-1 border-t border-slate-100">
@@ -1551,9 +1530,9 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm font-semibold outline-none focus:border-red-400"/>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { setDeletingReading(null); setDeleteReason(''); }}
+              <button onClick={() => { setDeletingReading(null); setValue('deleteReason', ''); }}
                 className="flex-1 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
-              <button onClick={handleDeleteConfirm} disabled={savingDelete || !deleteReason.trim()}
+              <button onClick={handleDeleteConfirm} disabled={savingDelete}
                 className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 disabled:opacity-50">
                 {savingDelete ? 'Deleting...' : 'Delete'}
               </button>

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { Beaker, CheckCircle2, AlertTriangle, Wrench } from 'lucide-react';
@@ -45,51 +46,43 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const [record,     setRecord]     = useState(null);
   const [saving,     setSaving]     = useState(false);
   const [equipment,  setEquipment]  = useState([]);
+
+  const form = useForm({
+    defaultValues: {
+      rpm: '', centTemp: '', duration: '',
+      centEqId: '', phEqId: '', scaleEqId: '',
+      brothBefore: '', supernAfter: '', pelletWt: '',
+      colour: 'Reddish-slate', clarity: 'Opaque/turbid', ph: '', notes: '', supervisedBy: '',
+      rotorRadius: '', showPass2: false, pass2Rpm: '', pass2Duration: '', pass2Temp: '',
+      method: 'Centrifugation', turbidityNtu: '', volAfterMl: '',
+      resuspBuffer: '', resuspVol: '', holdTimeBefore: '',
+      washSteps: '', washBuffer: '', washVolMl: '', postCentVia: '', postCentViaMethod: ''
+    }
+  });
+  const { register, handleSubmit, reset, watch, setValue, getValues } = form;
+
+  const method = watch('method');
+  const showPass2 = watch('showPass2');
+  const supervisedBy = watch('supervisedBy');
+  const brothBefore = watch('brothBefore');
+  const supernAfter = watch('supernAfter');
+
+
   const isIntern = ['intern','research_intern'].includes(role);
 
   // Centrifuge parameters
-  const [rpm,           setRpm]           = useState('');
-  const [centTemp,      setCentTemp]      = useState('');
-  const [duration,      setDuration]      = useState('');
   // Equipment links
-  const [centEqId,      setCentEqId]      = useState('');
-  const [phEqId,        setPhEqId]        = useState('');
-  const [scaleEqId,     setScaleEqId]     = useState('');
   // Weight measurements
-  const [brothBefore,   setBrothBefore]   = useState('');
-  const [supernAfter,   setSupernAfter]   = useState('');
-  const [pelletWt,      setPelletWt]      = useState('');
   // Supernatant quality
-  const [colour,        setColour]        = useState('Reddish-slate');
-  const [clarity,       setClarity]       = useState(CLARITY_OPTS[0]);
-  const [ph,            setPh]            = useState('');
-  const [notes,         setNotes]         = useState('');
-  const [supervisedBy,  setSupervisedBy]  = useState('');
   // G-65: rotor radius for RCF
-  const [rotorRadius,    setRotorRadius]    = useState('');
   // G-66: second pass
-  const [showPass2,      setShowPass2]      = useState(false);
-  const [pass2Rpm,       setPass2Rpm]       = useState('');
-  const [pass2Duration,  setPass2Duration]  = useState('');
-  const [pass2Temp,      setPass2Temp]      = useState('');
   // G-67: method selection (default Centrifugation but allow Filtration)
-  const [method,         setMethod]         = useState('Centrifugation');
   // G-68: turbidity NTU
-  const [turbidityNtu,   setTurbidityNtu]   = useState('');
   // G-69: volume after (already in DB as post_straining_vol_ml)
-  const [volAfterMl,     setVolAfterMl]     = useState('');
   // G-70: pellet resuspension
-  const [resuspBuffer,   setResuspBuffer]   = useState('');
-  const [resuspVol,      setResuspVol]      = useState('');
   // A-53: hold time before centrifuge
-  const [holdTimeBefore, setHoldTimeBefore] = useState('');
   // A-29: cell wash step
-  const [washSteps,      setWashSteps]      = useState('');
-  const [washBuffer,     setWashBuffer]     = useState('');
-  const [washVolMl,      setWashVolMl]      = useState('');
   // A-30: post-centrifuge viability
-  const [postCentVia,    setPostCentVia]    = useState('');
-  const [postCentViaMethod, setPostCentViaMethod] = useState('');
 
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
@@ -146,6 +139,8 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
     : null;
 
   const handleSave = async (advance = false) => {
+    const data = getValues();
+    const { rpm, duration, centTemp, centEqId, phEqId, scaleEqId, pelletWt, colour, clarity, ph, notes, rotorRadius, pass2Rpm, pass2Duration, pass2Temp, turbidityNtu, volAfterMl, resuspBuffer, resuspVol, holdTimeBefore, washSteps, washBuffer, washVolMl, postCentVia, postCentViaMethod } = data;
     if (!activeFlask) return;
     if (setGlobalError) setGlobalError(null);
     if (advance) {
@@ -297,21 +292,21 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <label className="field-label">{method==='Centrifugation' ? 'Speed (RPM) *' : 'Pressure / Flow'}</label>
-            <input type="number" value={rpm} onChange={e=>setRpm(e.target.value)} className="field-input" placeholder="e.g. 4000"/>
+            <input type="number" {...register('rpm')} className="field-input" placeholder="e.g. 4000"/>
           </div>
           <div>
             <label className="field-label">Temperature (°C)</label>
-            <input type="number" step="0.1" value={centTemp} onChange={e=>setCentTemp(e.target.value)} className="field-input" placeholder="e.g. 4"/>
+            <input type="number" step="0.1" {...register('centTemp')} className="field-input" placeholder="e.g. 4"/>
           </div>
           <div>
             <label className="field-label">Duration (min) *</label>
-            <input type="number" value={duration} onChange={e=>setDuration(e.target.value)} className="field-input" placeholder="e.g. 15"/>
+            <input type="number" {...register('duration')} className="field-input" placeholder="e.g. 15"/>
           </div>
           {/* G-65: Rotor radius for RCF */}
           {method==='Centrifugation' && (
             <div>
               <label className="field-label">Rotor Radius (cm)</label>
-              <input type="number" step="0.1" value={rotorRadius} onChange={e=>setRotorRadius(e.target.value)} className="field-input" placeholder="e.g. 10.5"/>
+              <input type="number" step="0.1" {...register('rotorRadius')} className="field-input" placeholder="e.g. 10.5"/>
             </div>
           )}
         </div>
@@ -333,9 +328,9 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
           </button>
           {showPass2 && (
             <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div><label className="field-label">Pass 2 RPM</label><input type="number" value={pass2Rpm} onChange={e=>setPass2Rpm(e.target.value)} className="field-input" placeholder="e.g. 6000"/></div>
-              <div><label className="field-label">Pass 2 Duration (min)</label><input type="number" value={pass2Duration} onChange={e=>setPass2Duration(e.target.value)} className="field-input" placeholder="e.g. 10"/></div>
-              <div><label className="field-label">Pass 2 Temp (°C)</label><input type="number" step="0.1" value={pass2Temp} onChange={e=>setPass2Temp(e.target.value)} className="field-input" placeholder="e.g. 4"/></div>
+              <div><label className="field-label">Pass 2 RPM</label><input type="number" {...register('pass2Rpm')} className="field-input" placeholder="e.g. 6000"/></div>
+              <div><label className="field-label">Pass 2 Duration (min)</label><input type="number" {...register('pass2Duration')} className="field-input" placeholder="e.g. 10"/></div>
+              <div><label className="field-label">Pass 2 Temp (°C)</label><input type="number" step="0.1" {...register('pass2Temp')} className="field-input" placeholder="e.g. 4"/></div>
             </div>
           )}
         </div>
@@ -347,15 +342,15 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="field-label">Total Broth Before (g) *</label>
-            <input type="number" step="0.01" value={brothBefore} onChange={e=>setBrothBefore(e.target.value)} className="field-input" placeholder="e.g. 480"/>
+            <input type="number" step="0.01" {...register('brothBefore')} className="field-input" placeholder="e.g. 480"/>
           </div>
           <div>
             <label className="field-label">Supernatant After (g) *</label>
-            <input type="number" step="0.01" value={supernAfter} onChange={e=>setSupernAfter(e.target.value)} className="field-input" placeholder="e.g. 420"/>
+            <input type="number" step="0.01" {...register('supernAfter')} className="field-input" placeholder="e.g. 420"/>
           </div>
           <div>
             <label className="field-label">Pellet After (g)</label>
-            <input type="number" step="0.01" value={pelletWt} onChange={e=>setPelletWt(e.target.value)} className="field-input" placeholder="e.g. 55"/>
+            <input type="number" step="0.01" {...register('pelletWt')} className="field-input" placeholder="e.g. 55"/>
           </div>
         </div>
         {recoveryPct && (
@@ -376,35 +371,35 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="field-label">Colour</label>
-            <input value={colour} onChange={e=>setColour(e.target.value)} className="field-input" placeholder="Reddish-slate"/>
+            <input {...register('colour')} className="field-input" placeholder="Reddish-slate"/>
           </div>
           <div>
             <label className="field-label">Clarity</label>
-            <select value={clarity} onChange={e=>setClarity(e.target.value)} className="field-input bg-white text-xs">
+            <select {...register('clarity')} className="field-input bg-white text-xs">
               {CLARITY_OPTS.map(m=><option key={m}>{m}</option>)}
             </select>
           </div>
           <div>
             <label className="field-label">pH *</label>
-            <input type="number" step="0.01" value={ph} onChange={e=>setPh(e.target.value)} className="field-input" placeholder="4.35"/>
+            <input type="number" step="0.01" {...register('ph')} className="field-input" placeholder="4.35"/>
           </div>
           {/* G-68: Turbidity NTU */}
           <div>
             <label className="field-label">Turbidity (NTU)</label>
-            <input type="number" step="0.1" value={turbidityNtu} onChange={e=>setTurbidityNtu(e.target.value)} className="field-input" placeholder="e.g. 5.2"/>
+            <input type="number" step="0.1" {...register('turbidityNtu')} className="field-input" placeholder="e.g. 5.2"/>
             <p className="text-xs text-slate-400 mt-0.5">Objective clarity measurement</p>
           </div>
         </div>
         {/* G-69: Volume after */}
         <div>
           <label className="field-label">Volume After Separation (ml)</label>
-          <input type="number" step="0.1" value={volAfterMl} onChange={e=>setVolAfterMl(e.target.value)} className="field-input" placeholder="e.g. 400"/>
+          <input type="number" step="0.1" {...register('volAfterMl')} className="field-input" placeholder="e.g. 400"/>
           <p className="text-xs text-slate-400 mt-0.5">Measurable volume of clarified supernatant/filtrate</p>
         </div>
         {/* A-53: Hold time before centrifuge */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
           <label className="block text-xs font-black text-slate-900 mb-1">Hold Time Before Centrifuge (min) <span className="text-slate-400 text-xs">(A-53 — time between fermentation end and centrifuge start)</span></label>
-          <input type="number" step="1" value={holdTimeBefore} onChange={e=>setHoldTimeBefore(e.target.value)} className="field-input" placeholder="e.g. 30"/>
+          <input type="number" step="1" {...register('holdTimeBefore')} className="field-input" placeholder="e.g. 30"/>
           {holdTimeBefore && parseFloat(holdTimeBefore) > 120 && <p className="text-xs text-amber-700 font-bold mt-1">⚠ Hold &gt;2h at room temp — risk of culture quality degradation</p>}
         </div>
 
@@ -412,9 +407,9 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
           <p className="text-xs font-black text-slate-900">Cell Wash Steps <span className="text-slate-400 text-xs">(A-29)</span></p>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="field-label">Number of Washes</label><input type="number" min="0" max="5" value={washSteps} onChange={e=>setWashSteps(e.target.value)} className="field-input" placeholder="0"/></div>
-            <div><label className="field-label">Wash Buffer</label><input value={washBuffer} onChange={e=>setWashBuffer(e.target.value)} className="field-input" placeholder="e.g. 0.9% saline"/></div>
-            <div><label className="field-label">Wash Volume (ml)</label><input type="number" step="0.1" value={washVolMl} onChange={e=>setWashVolMl(e.target.value)} className="field-input" placeholder="e.g. 50"/></div>
+            <div><label className="field-label">Number of Washes</label><input type="number" min="0" max="5" {...register('washSteps')} className="field-input" placeholder="0"/></div>
+            <div><label className="field-label">Wash Buffer</label><input {...register('washBuffer')} className="field-input" placeholder="e.g. 0.9% saline"/></div>
+            <div><label className="field-label">Wash Volume (ml)</label><input type="number" step="0.1" {...register('washVolMl')} className="field-input" placeholder="e.g. 50"/></div>
           </div>
         </div>
 
@@ -422,9 +417,9 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
           <p className="text-xs font-black text-slate-900">Post-Centrifuge Cell Viability <span className="text-slate-400 text-xs">(A-30)</span></p>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="field-label text-slate-800">Viability (%)</label><input type="number" step="0.1" min="0" max="100" value={postCentVia} onChange={e=>setPostCentVia(e.target.value)} className="field-input" placeholder="e.g. 85"/></div>
+            <div><label className="field-label text-slate-800">Viability (%)</label><input type="number" step="0.1" min="0" max="100" {...register('postCentVia')} className="field-input" placeholder="e.g. 85"/></div>
             <div><label className="field-label text-slate-800">Method</label>
-              <select value={postCentViaMethod} onChange={e=>setPostCentViaMethod(e.target.value)} className="field-input bg-white text-xs">
+              <select {...register('postCentViaMethod')} className="field-input bg-white text-xs">
                 {['','Methylene Blue','Live/Dead stain','Plate count','Flow Cytometry'].map(m=><option key={m}>{m}</option>)}
               </select>
             </div>
@@ -437,10 +432,10 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
             <p className="text-xs font-black text-slate-500 uppercase">Pellet Resuspension (if applicable)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className="field-label">Resuspension Buffer</label>
-                <input value={resuspBuffer} onChange={e=>setResuspBuffer(e.target.value)} className="field-input" placeholder="e.g. PBS, distilled water, media"/>
+                <input {...register('resuspBuffer')} className="field-input" placeholder="e.g. PBS, distilled water, media"/>
               </div>
               <div><label className="field-label">Resuspension Volume (ml)</label>
-                <input type="number" step="0.1" value={resuspVol} onChange={e=>setResuspVol(e.target.value)} className="field-input" placeholder="e.g. 50"/>
+                <input type="number" step="0.1" {...register('resuspVol')} className="field-input" placeholder="e.g. 50"/>
               </div>
             </div>
           </div>
@@ -452,7 +447,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         {isIntern && (
           <div>
             <label className="field-label text-red-500">Supervised By (Required for Juniors)</label>
-            <select value={supervisedBy} onChange={e=>setSupervisedBy(e.target.value)} className="field-input bg-white border-red-200">
+            <select {...register('supervisedBy')} className="field-input bg-white border-red-200">
               <option value="">Select supervisor...</option>
               {supervisors.map(s=><option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
@@ -460,7 +455,7 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
         )}
         <div>
           <label className="field-label">Notes</label>
-          <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input" placeholder="Observed losses, equipment issues, deviations..."/>
+          <input {...register('notes')} className="field-input" placeholder="Observed losses, equipment issues, deviations..."/>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
