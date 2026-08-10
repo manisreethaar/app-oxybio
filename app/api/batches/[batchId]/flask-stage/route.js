@@ -31,6 +31,10 @@ function statusForFlaskStage(stage) {
   return 'processing';
 }
 
+function visibleWorkflowStage(stage) {
+  return stage === 'downstream' ? 'qc_hold' : stage;
+}
+
 function constraintMessage(stage) {
   if (stage === 'harvest') {
     return `Database stage constraint is missing "${stage}". Apply supabase/migrations/20260807000001_fix_batch_flasks_stage_constraint.sql on the live database.`;
@@ -101,12 +105,26 @@ export async function POST(request, { params }) {
     }
 
     if (to_stage !== 'rejected') {
-      const newRank = FLASK_STAGE_RANKS.indexOf(to_stage);
-      const batchRank = FLASK_STAGE_RANKS.indexOf(batch.current_stage);
-      if (newRank > batchRank) {
+      const { data: flasks, error: flasksErr } = await db
+        .from('batch_flasks')
+        .select('current_stage, status')
+        .eq('batch_id', batchId);
+      if (flasksErr) {
+        return NextResponse.json({ success: false, error: flasksErr.message }, { status: 500 });
+      }
+
+      const activeFlasks = (flasks || []).filter(f => f.status !== 'rejected');
+      if (activeFlasks.length > 0) {
+        const slowestStage = activeFlasks.reduce((slowest, f) => {
+          const stage = visibleWorkflowStage(f.current_stage || 'inoculation');
+          const stageRank = FLASK_STAGE_RANKS.indexOf(stage);
+          const slowestRank = FLASK_STAGE_RANKS.indexOf(slowest);
+          return stageRank >= 0 && stageRank < slowestRank ? stage : slowest;
+        }, 'released');
+
         const { error: batchUpdateErr } = await db
           .from('batches')
-          .update({ current_stage: to_stage, status: statusForFlaskStage(to_stage) })
+          .update({ current_stage: slowestStage, status: statusForFlaskStage(slowestStage) })
           .eq('id', batchId);
         if (batchUpdateErr) {
           return NextResponse.json({ success: false, error: batchUpdateErr.message }, { status: 500 });

@@ -391,14 +391,14 @@ export default function BatchDetailPage() {
     const allRejected = flasks.every(f => f.status === 'rejected');
     if (allRejected) return 'rejected';
     const activeFlasks = flasks.filter(f => f.status !== 'rejected');
-    const maxStage = activeFlasks.reduce((best, f) => {
+    const slowestStage = activeFlasks.reduce((slowest, f) => {
       const r = FLASK_STAGE_RANK.indexOf(visibleWorkflowStage(f.current_stage));
-      return r > FLASK_STAGE_RANK.indexOf(best) ? visibleWorkflowStage(f.current_stage) : best;
-    }, 'inoculation');
-    if (maxStage === 'fermentation') return 'fermenting';
-    if (maxStage === 'qc_hold') return 'qc-hold';
-    if (maxStage === 'released') return 'released';
-    if (['harvest','straining','extract_addition'].includes(maxStage)) return 'processing';
+      return r >= 0 && r < FLASK_STAGE_RANK.indexOf(slowest) ? visibleWorkflowStage(f.current_stage) : slowest;
+    }, 'released');
+    if (slowestStage === 'fermentation') return 'fermenting';
+    if (slowestStage === 'qc_hold') return 'qc-hold';
+    if (slowestStage === 'released') return 'released';
+    if (['harvest','straining','extract_addition'].includes(slowestStage)) return 'processing';
     return batch.status;
   })();
 

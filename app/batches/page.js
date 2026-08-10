@@ -160,16 +160,16 @@ export default function BatchesPage() {
     
     const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
     const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released'];
-    const maxStage = activeFlasks.reduce((best, f) => {
+    const slowestStage = activeFlasks.reduce((slowest, f) => {
       const currentStage = visibleWorkflowStage(f.current_stage);
       const r = FLASK_STAGE_RANK.indexOf(currentStage);
-      return r > FLASK_STAGE_RANK.indexOf(best) ? currentStage : best;
-    }, 'inoculation');
+      return r >= 0 && r < FLASK_STAGE_RANK.indexOf(slowest) ? currentStage : slowest;
+    }, 'released');
     
-    if (maxStage === 'fermentation') return 'fermenting';
-    if (maxStage === 'qc_hold') return 'qc-hold';
-    if (maxStage === 'released') return 'released';
-    if (['harvest','straining','extract_addition'].includes(maxStage)) return 'processing';
+    if (slowestStage === 'fermentation') return 'fermenting';
+    if (slowestStage === 'qc_hold') return 'qc-hold';
+    if (slowestStage === 'released') return 'released';
+    if (['harvest','straining','extract_addition'].includes(slowestStage)) return 'processing';
     return status;
   };
 
@@ -183,8 +183,11 @@ export default function BatchesPage() {
     const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
     if (activeFlasks.length === 0) return stage;
     
-    const maxFlaskIdx = activeFlasks.reduce((best, f) => Math.max(best, STAGE_ORDER.indexOf(visibleWorkflowStage(f.current_stage))), -1);
-    return maxFlaskIdx >= 0 ? STAGE_ORDER[maxFlaskIdx] : stage;
+    const slowestFlaskIdx = activeFlasks.reduce((best, f) => {
+      const idx = STAGE_ORDER.indexOf(visibleWorkflowStage(f.current_stage));
+      return idx >= 0 ? Math.min(best, idx) : best;
+    }, STAGE_ORDER.length - 1);
+    return slowestFlaskIdx >= 0 ? STAGE_ORDER[slowestFlaskIdx] : stage;
   };
 
   // ─── Card view-model builders ──────────────────────────────
