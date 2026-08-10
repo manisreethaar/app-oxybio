@@ -104,6 +104,7 @@ export async function POST(request, { params }) {
       }, { status: isConstraint ? 409 : 500 });
     }
 
+    let finalBatchStage = batch.current_stage;
     if (to_stage !== 'rejected') {
       const { data: flasks, error: flasksErr } = await db
         .from('batch_flasks')
@@ -122,23 +123,28 @@ export async function POST(request, { params }) {
           return stageRank >= 0 && stageRank < slowestRank ? stage : slowest;
         }, 'released');
 
-        const { error: batchUpdateErr } = await db
-          .from('batches')
-          .update({ current_stage: slowestStage, status: statusForFlaskStage(slowestStage) })
-          .eq('id', batchId);
-        if (batchUpdateErr) {
-          return NextResponse.json({ success: false, error: batchUpdateErr.message }, { status: 500 });
+        finalBatchStage = slowestStage;
+        if (slowestStage !== batch.current_stage) {
+          const { error: batchUpdateErr } = await db
+            .from('batches')
+            .update({ current_stage: slowestStage, status: statusForFlaskStage(slowestStage) })
+            .eq('id', batchId);
+          if (batchUpdateErr) {
+            return NextResponse.json({ success: false, error: batchUpdateErr.message }, { status: 500 });
+          }
         }
       }
     }
 
-    await db.from('stage_transitions').insert({
-      batch_id: batchId,
-      from_stage: currentStage,
-      to_stage,
-      changed_by: emp.id,
-      notes: `Flask ${flask.flask_label || flask_id} stage transition`,
-    });
+    if (finalBatchStage !== batch.current_stage) {
+      await db.from('stage_transitions').insert({
+        batch_id: batchId,
+        from_stage: batch.current_stage,
+        to_stage: finalBatchStage,
+        changed_by: emp.id,
+        notes: `Flask ${flask.flask_label || flask_id} advanced batch to ${finalBatchStage}`,
+      });
+    }
 
     return NextResponse.json({ success: true, new_stage: to_stage });
   } catch (error) {
