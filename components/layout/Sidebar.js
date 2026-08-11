@@ -77,6 +77,7 @@ export default function Sidebar() {
       { name: 'Lab Bench',   href: '/lab-bench',           icon: LayoutGrid,   show: eCanDo('batches','view') },
       { name: 'Batches',     href: '/batches',             icon: FlaskConical, show: eCanDo('batches','view') },
       { name: 'Downstream',  href: '/downstream',          icon: Filter,       show: eCanDo('batches','view') },
+      { name: 'Product Dev', href: '/product-development', icon: Beaker,       show: eCanDo('batches','view') },
       { name: 'Lab Notebook',href: '/lab-notebook',        icon: BookOpen,     show: eCanDo('lab_notebook','view') },
       { name: 'Incubation',  href: '/research/incubation', icon: FlaskConical, show: eCanDo('batches','view') },
       { name: 'TA Lab',      href: '/lab-bench/ta',        icon: Droplets,     show: eCanDo('batches','view') },

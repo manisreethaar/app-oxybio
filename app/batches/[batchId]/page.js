@@ -137,8 +137,13 @@ export default function BatchDetailPage() {
       setLnbByFlask(byFlask);
       setFlaskEndpoints(detailsData.flaskEndpoints);
       if (detailsData.batch?.bmr_url) setBmrUrl(detailsData.batch.bmr_url);
+      
+      const downstreamStages = ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected', 'downstream'];
+      if (downstreamStages.includes(detailsData.batch?.current_stage)) {
+        router.replace(`/downstream/${batchId}`);
+      }
     }
-  }, [detailsData]);
+  }, [detailsData, router, batchId]);
 
   useEffect(() => {
     if (detailsError) setLoadError(true);
