@@ -252,7 +252,7 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-fuchsia-50/60">
           <h3 className="text-sm font-bold text-fuchsia-900">Step 1 — Select Product Stream</h3>
-          <p className="text-xs text-fuchsia-700 mt-0.5">Which product form(s) will be produced from this trial's biomass?</p>
+          <p className="text-xs text-fuchsia-700 mt-0.5">Which product form(s) will be produced from this trial&apos;s biomass?</p>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -404,7 +404,7 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
                         <Plus className="w-3.5 h-3.5"/> Add
                       </button>
                     </div>
-                    {rtdFields.length === 0 && <p className="text-xs text-slate-400 text-center py-3">No ingredients yet. Click "Add" to start building the RTD recipe.</p>}
+                    {rtdFields.length === 0 && <p className="text-xs text-slate-400 text-center py-3">No ingredients yet. Click &quot;Add&quot; to start building the RTD recipe.</p>}
                     <div className="space-y-2">
                       {rtdFields.map((field, idx) => (
                         <div key={field.id} className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl">

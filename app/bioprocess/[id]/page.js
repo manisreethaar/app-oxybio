@@ -1,5 +1,6 @@
 'use client';
-import { useState, useForm, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
