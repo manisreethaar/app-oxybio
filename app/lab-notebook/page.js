@@ -37,6 +37,7 @@ export default function DigitalLnbPage() {
   const [selectedFlaskId,  setSelectedFlaskId]  = useState('');
   const [selectedStage,    setSelectedStage]    = useState('');
   const [searchTerm,       setSearchTerm]       = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [sortOrder,        setSortOrder]        = useState('newest'); // newest, oldest, status
   const [filterGroup,      setFilterGroup]      = useState('all'); // all, cell_bank, fermentation
   const [pendingIds,       setPendingIds]       = useState(new Set());
@@ -84,6 +85,14 @@ export default function DigitalLnbPage() {
     supabase.from('batch_flasks').select('id, flask_label').eq('batch_id', watchedBatchId).order('flask_label')
       .then(({ data }) => setBatchFlasks(data || []));
   }, [watchedBatchId, supabase]);
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (currentTitle && currentTitle.length > 5) {
@@ -189,6 +198,15 @@ export default function DigitalLnbPage() {
     setEsigConfig({ isOpen: false, entryId: null });
     
     setCountersigning(entryId);
+    const previousEntries = [...entries];
+    
+    // Optimistic UI Update
+    setEntries(entries.map(e => 
+      e.id === entryId 
+        ? { ...e, status: 'Countersigned', countersigned_by: employeeProfile.id, countersigned_at: new Date().toISOString() } 
+        : e
+    ));
+
     try {
       const { error } = await supabase.from('lab_notebook_entries').update({
         countersigned_by: employeeProfile.id,
@@ -197,8 +215,11 @@ export default function DigitalLnbPage() {
       }).eq('id', entryId);
       if (error) throw error;
       toast.success('Entry countersigned successfully.');
-      fetchData();
-    } catch (err) { toast.error(err.message); }
+      // fetchData is skipped to preserve the optimistic update
+    } catch (err) { 
+      toast.error(err.message); 
+      setEntries(previousEntries); // Rollback on error
+    }
     finally { setCountersigning(null); }
   };
 
@@ -296,7 +317,7 @@ export default function DigitalLnbPage() {
       {/* ── Entry list (grouped) ── */}
       {(() => {
         // 1. Filter by search
-        const q = searchTerm.toLowerCase();
+        const q = debouncedSearchTerm.toLowerCase();
         const filtered = entries.filter(e =>
           !q ||
           e.title?.toLowerCase().includes(q) ||

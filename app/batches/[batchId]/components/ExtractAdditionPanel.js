@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { Leaf, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -16,40 +17,23 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
   const [saving, setSaving] = useState(false);
 
   // Form State
-  const [species,     setSpecies]     = useState(SPECIES[0]);
-  const [lotId,       setLotId]       = useState('');
-  const [weight,      setWeight]      = useState('');
-  const [water,       setWater]       = useState('');
-  const [exTemp,      setExTemp]      = useState('');
-  const [exTime,      setExTime]      = useState('');
-  const [exRecovered, setExRecovered] = useState('');
-  const [exPh,        setExPh]        = useState('');
-  const [phAdjDone,   setPhAdjDone]   = useState(false);
-  const [phAdjNotes,  setPhAdjNotes]  = useState('');
-  
-  const [volAdded,    setVolAdded]    = useState('');
-  const [addPct,      setAddPct]      = useState('');
-  const [finalPh,     setFinalPh]     = useState('');
-  const [addTemp,     setAddTemp]     = useState(ADD_TEMP[0]);
-  const [addMethod,   setAddMethod]   = useState(ADD_METHOD[0]);
-  const [colBefore,   setColBefore]   = useState('');
-  const [colAfter,    setColAfter]    = useState('');
-  const [lafUsed,        setLafUsed]        = useState(true);
-  const [notes,          setNotes]          = useState('');
-  // A-36, A-54: Bioactive marker content
-  const [polyphenolMgG,  setPolyphenolMgG]  = useState('');
-  const [betaGlucanPct,  setBetaGlucanPct]  = useState('');
-  const [extractBioSpec, setExtractBioSpec] = useState('');
-  // G-36: mixing parameters
-  const [mixingTimeMin,   setMixingTimeMin]   = useState('');
-  const [mixingSpeedRpm,  setMixingSpeedRpm]  = useState('');
-  // G-35: post-mixing checks
-  const [postMixingPh,    setPostMixingPh]    = useState('');
-  const [postMixingBrix,  setPostMixingBrix]  = useState('');
-  // G-37: blend homogeneity
-  const [blendHomogeneity, setBlendHomogeneity] = useState('');
-  // G-38: actual addition temp
-  const [addTempActual,   setAddTempActual]   = useState('');
+  const { register, handleSubmit, setValue, getValues, watch, reset } = useForm({
+    defaultValues: {
+      species: SPECIES[0], lotId: '', weight: '', water: '', exTemp: '', exTime: '',
+      exRecovered: '', exPh: '', phAdjDone: false, phAdjNotes: '', volAdded: '',
+      addPct: '', finalPh: '', addTemp: ADD_TEMP[0], addMethod: ADD_METHOD[0],
+      colBefore: '', colAfter: '', lafUsed: true, notes: '', polyphenolMgG: '',
+      betaGlucanPct: '', extractBioSpec: '', mixingTimeMin: '', mixingSpeedRpm: '',
+      postMixingPh: '', postMixingBrix: '', blendHomogeneity: '', addTempActual: ''
+    }
+  });
+
+  const watchSpecies = watch('species');
+  const watchPhAdjDone = watch('phAdjDone');
+  const watchBlendHomogeneity = watch('blendHomogeneity');
+  const watchAddMethod = watch('addMethod');
+  const watchAddTemp = watch('addTemp');
+
   // G-06: allergen declaration
   const [allergens,   setAllergens]   = useState([]);
   const [noneAllergens, setNoneAllergens] = useState(false);
@@ -69,21 +53,36 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
     if (!isCurrent) return;
     if (data) {
       setRecord(data);
-      setSpecies(data.mushroom_species||SPECIES[0]); setLotId(data.mushroom_lot_id||'');
-      setWeight(data.mushroom_weight_g||''); setWater(data.extraction_water_ml||'');
-      setExTemp(data.extraction_temp_c||''); setExTime(data.extraction_duration_min||'');
-      setExRecovered(data.extract_recovered_ml||''); setExPh(data.extract_ph||'');
-      setPhAdjDone(data.ph_adjustment_done||false); setPhAdjNotes(data.ph_adjustment_notes||'');
-      setVolAdded(data.extract_vol_added_ml||''); setAddPct(data.addition_pct||'');
-      setFinalPh(data.final_product_ph||''); setAddTemp(data.addition_temp||ADD_TEMP[0]);
-      setAddMethod(data.addition_method||ADD_METHOD[0]); setColBefore(data.colour_before||'');
-      setColAfter(data.colour_after||''); setLafUsed(data.laf_used??true); setNotes(data.notes||'');
-      setPolyphenolMgG(data.polyphenol_mg_g||'');
-      setBetaGlucanPct(data.beta_glucan_pct||'');
-      setExtractBioSpec(data.extract_biospec||'');
-      setMixingTimeMin(data.mixing_time_min||''); setMixingSpeedRpm(data.mixing_speed_rpm||'');
-      setPostMixingPh(data.post_mixing_ph_check||''); setPostMixingBrix(data.post_mixing_brix||'');
-      setBlendHomogeneity(data.blend_homogeneity_check||''); setAddTempActual(data.addition_temp_actual_c||'');
+      reset({
+        species: data.mushroom_species||SPECIES[0],
+        lotId: data.mushroom_lot_id||'',
+        weight: data.mushroom_weight_g||'',
+        water: data.extraction_water_ml||'',
+        exTemp: data.extraction_temp_c||'',
+        exTime: data.extraction_duration_min||'',
+        exRecovered: data.extract_recovered_ml||'',
+        exPh: data.extract_ph||'',
+        phAdjDone: data.ph_adjustment_done||false,
+        phAdjNotes: data.ph_adjustment_notes||'',
+        volAdded: data.extract_vol_added_ml||'',
+        addPct: data.addition_pct||'',
+        finalPh: data.final_product_ph||'',
+        addTemp: data.addition_temp||ADD_TEMP[0],
+        addMethod: data.addition_method||ADD_METHOD[0],
+        colBefore: data.colour_before||'',
+        colAfter: data.colour_after||'',
+        lafUsed: data.laf_used??true,
+        notes: data.notes||'',
+        polyphenolMgG: data.polyphenol_mg_g||'',
+        betaGlucanPct: data.beta_glucan_pct||'',
+        extractBioSpec: data.extract_biospec||'',
+        mixingTimeMin: data.mixing_time_min||'',
+        mixingSpeedRpm: data.mixing_speed_rpm||'',
+        postMixingPh: data.post_mixing_ph_check||'',
+        postMixingBrix: data.post_mixing_brix||'',
+        blendHomogeneity: data.blend_homogeneity_check||'',
+        addTempActual: data.addition_temp_actual_c||''
+      });
       const savedAllergens = data.allergen_declaration || [];
       if (savedAllergens.includes('None')) { setNoneAllergens(true); setAllergens([]); }
       else { setAllergens(savedAllergens); setNoneAllergens(false); }
@@ -93,13 +92,13 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
 
   useEffect(() => { setRecord(null); fetchRecord(); }, [fetchRecord]);
 
-  const handleSave = async (advanceTarget = null) => {
+  const onSubmit = async (formData, advanceTarget = null) => {
     if (!activeFlask) return;
     if (setGlobalError) setGlobalError(null);
     if (advanceTarget) {
       const missing = [];
-      if (!volAdded) missing.push('Volume Added (ml)');
-      if (!finalPh) missing.push('Final pH');
+      if (!formData.volAdded) missing.push('Volume Added (ml)');
+      if (!formData.finalPh) missing.push('Final pH');
       if (!noneAllergens && allergens.length === 0) missing.push('Allergen Declaration');
       
       if (missing.length > 0) {
@@ -113,30 +112,30 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
     try {
       const payload = {
         flask_id: activeFlask.id, batch_id: batch.id,
-        mushroom_species: species, mushroom_lot_id: lotId || null,
-        mushroom_weight_g: weight ? parseFloat(weight) : null,
-        extraction_water_ml: water ? parseFloat(water) : null,
-        extraction_temp_c: exTemp ? parseFloat(exTemp) : null,
-        extraction_duration_min: exTime ? parseFloat(exTime) : null,
-        extract_recovered_ml: exRecovered ? parseFloat(exRecovered) : null,
-        extract_ph: exPh ? parseFloat(exPh) : null,
-        ph_adjustment_done: phAdjDone, ph_adjustment_notes: phAdjDone ? phAdjNotes : null,
-        extract_vol_added_ml: volAdded ? parseFloat(volAdded) : null,
-        addition_pct: addPct ? parseFloat(addPct) : null,
-        final_product_ph: finalPh ? parseFloat(finalPh) : null,
-        addition_temp: addTemp, addition_method: addMethod,
-        colour_before: colBefore, colour_after: colAfter,
-        laf_used: lafUsed, notes, operator_id: employeeProfile?.id,
-        polyphenol_mg_g: polyphenolMgG ? parseFloat(polyphenolMgG) : null,
-        beta_glucan_pct: betaGlucanPct ? parseFloat(betaGlucanPct) : null,
-        extract_biospec: extractBioSpec || null,
+        mushroom_species: formData.species, mushroom_lot_id: formData.lotId || null,
+        mushroom_weight_g: formData.weight ? parseFloat(formData.weight) : null,
+        extraction_water_ml: formData.water ? parseFloat(formData.water) : null,
+        extraction_temp_c: formData.exTemp ? parseFloat(formData.exTemp) : null,
+        extraction_duration_min: formData.exTime ? parseFloat(formData.exTime) : null,
+        extract_recovered_ml: formData.exRecovered ? parseFloat(formData.exRecovered) : null,
+        extract_ph: formData.exPh ? parseFloat(formData.exPh) : null,
+        ph_adjustment_done: formData.phAdjDone, ph_adjustment_notes: formData.phAdjDone ? formData.phAdjNotes : null,
+        extract_vol_added_ml: formData.volAdded ? parseFloat(formData.volAdded) : null,
+        addition_pct: formData.addPct ? parseFloat(formData.addPct) : null,
+        final_product_ph: formData.finalPh ? parseFloat(formData.finalPh) : null,
+        addition_temp: formData.addTemp, addition_method: formData.addMethod,
+        colour_before: formData.colBefore, colour_after: formData.colAfter,
+        laf_used: formData.lafUsed, notes: formData.notes, operator_id: employeeProfile?.id,
+        polyphenol_mg_g: formData.polyphenolMgG ? parseFloat(formData.polyphenolMgG) : null,
+        beta_glucan_pct: formData.betaGlucanPct ? parseFloat(formData.betaGlucanPct) : null,
+        extract_biospec: formData.extractBioSpec || null,
         allergen_declaration: noneAllergens ? ['None'] : allergens,
-        mixing_time_min:         mixingTimeMin   ? parseFloat(mixingTimeMin)   : null,
-        mixing_speed_rpm:        mixingSpeedRpm  ? parseFloat(mixingSpeedRpm)  : null,
-        post_mixing_ph_check:    postMixingPh    ? parseFloat(postMixingPh)    : null,
-        post_mixing_brix:        postMixingBrix  ? parseFloat(postMixingBrix)  : null,
-        blend_homogeneity_check: blendHomogeneity || null,
-        addition_temp_actual_c:  addTempActual   ? parseFloat(addTempActual)   : null,
+        mixing_time_min:         formData.mixingTimeMin   ? parseFloat(formData.mixingTimeMin)   : null,
+        mixing_speed_rpm:        formData.mixingSpeedRpm  ? parseFloat(formData.mixingSpeedRpm)  : null,
+        post_mixing_ph_check:    formData.postMixingPh    ? parseFloat(formData.postMixingPh)    : null,
+        post_mixing_brix:        formData.postMixingBrix  ? parseFloat(formData.postMixingBrix)  : null,
+        blend_homogeneity_check: formData.blendHomogeneity || null,
+        addition_temp_actual_c:  formData.addTempActual   ? parseFloat(formData.addTempActual)   : null,
       };
 
       const { error } = await withTimeout(
@@ -186,12 +185,12 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Species</label>
-              <select value={species} onChange={e=>setSpecies(e.target.value)} className="field-input bg-white text-xs">
+              <select {...register('species')} className="field-input bg-white text-xs">
                 {SPECIES.map(m=><option key={m}>{m}</option>)}
               </select>
             </div>
             <div><label className="field-label">Extract Lot</label>
-              <select value={lotId} onChange={e=>setLotId(e.target.value)} className="field-input bg-white text-xs">
+              <select {...register('lotId')} className="field-input bg-white text-xs">
                 <option value="">N/A (Fresh Prep)</option>
                 {mshStock.map(s => {
                   const isExpired = s.expiry_date && new Date(s.expiry_date) < new Date();
@@ -205,30 +204,30 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div><label className="field-label">Weight (g)</label><input type="number" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input p-2" placeholder="e.g. 50"/></div>
-            <div><label className="field-label">Water used (ml)</label><input type="number" value={water} onChange={e=>setWater(e.target.value)} className="field-input p-2" placeholder="e.g. 500"/></div>
-            <div><label className="field-label">Recovered (ml)</label><input type="number" value={exRecovered} onChange={e=>setExRecovered(e.target.value)} className="field-input p-2" placeholder="e.g. 400"/></div>
+            <div><label className="field-label">Weight (g)</label><input type="number" {...register('weight')} className="field-input p-2" placeholder="e.g. 50"/></div>
+            <div><label className="field-label">Water used (ml)</label><input type="number" {...register('water')} className="field-input p-2" placeholder="e.g. 500"/></div>
+            <div><label className="field-label">Recovered (ml)</label><input type="number" {...register('exRecovered')} className="field-input p-2" placeholder="e.g. 400"/></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label className="field-label">Extraction Temp (°C)</label><input type="number" value={exTemp} onChange={e=>setExTemp(e.target.value)} className="field-input p-2" placeholder="e.g. 95"/></div>
-            <div><label className="field-label">Duration (min)</label><input type="number" value={exTime} onChange={e=>setExTime(e.target.value)} className="field-input p-2" placeholder="e.g. 120"/></div>
+            <div><label className="field-label">Extraction Temp (°C)</label><input type="number" {...register('exTemp')} className="field-input p-2" placeholder="e.g. 95"/></div>
+            <div><label className="field-label">Duration (min)</label><input type="number" {...register('exTime')} className="field-input p-2" placeholder="e.g. 120"/></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label className="field-label">Extract initial pH</label><input type="number" step="0.01" value={exPh} onChange={e=>setExPh(e.target.value)} className="field-input p-2" placeholder="e.g. 6.5"/></div>
+            <div><label className="field-label">Extract initial pH</label><input type="number" step="0.01" {...register('exPh')} className="field-input p-2" placeholder="e.g. 6.5"/></div>
           {/* A-36, A-54: Bioactive markers */}
-          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-slate-400 text-xs">A-36</span></label><input type="number" step="0.1" value={polyphenolMgG} onChange={e=>setPolyphenolMgG(e.target.value)} className="field-input p-2" placeholder="e.g. 12.5"/></div>
-          <div><label className="field-label">β-Glucan Content (%) <span className="text-slate-400 text-xs">A-54</span></label><input type="number" step="0.01" value={betaGlucanPct} onChange={e=>setBetaGlucanPct(e.target.value)} className="field-input p-2" placeholder="e.g. 0.35"/></div>
-          <div><label className="field-label">Bioactive Specification</label><input value={extractBioSpec} onChange={e=>setExtractBioSpec(e.target.value)} className="field-input p-2" placeholder="e.g. ≥10mg/g polyphenols"/></div>
+          <div><label className="field-label">Polyphenol Content (mg/g) <span className="text-slate-400 text-xs">A-36</span></label><input type="number" step="0.1" {...register('polyphenolMgG')} className="field-input p-2" placeholder="e.g. 12.5"/></div>
+          <div><label className="field-label">β-Glucan Content (%) <span className="text-slate-400 text-xs">A-54</span></label><input type="number" step="0.01" {...register('betaGlucanPct')} className="field-input p-2" placeholder="e.g. 0.35"/></div>
+          <div><label className="field-label">Bioactive Specification</label><input {...register('extractBioSpec')} className="field-input p-2" placeholder="e.g. ≥10mg/g polyphenols"/></div>
             <div className="flex flex-col justify-center">
               <label className="flex items-center gap-2 cursor-pointer mt-4">
-                <input type="checkbox" checked={phAdjDone} onChange={e=>setPhAdjDone(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <input type="checkbox" {...register('phAdjDone')} className="w-4 h-4 rounded border-slate-300"/>
                 <span className="text-xs font-bold text-slate-700">pH Adjusted before addition?</span>
               </label>
             </div>
           </div>
-          {phAdjDone && (
+          {watchPhAdjDone && (
             <div><label className="field-label">pH Adjustment Notes</label>
-              <input value={phAdjNotes} onChange={e=>setPhAdjNotes(e.target.value)} className="field-input p-2" placeholder="e.g. Added 2 drops 1M Lactic acid to reach 4.5"/>
+              <input {...register('phAdjNotes')} className="field-input p-2" placeholder="e.g. Added 2 drops 1M Lactic acid to reach 4.5"/>
             </div>
           )}
         </div>
@@ -240,34 +239,34 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div><label className="field-label">Integration Vol (ml)<span className="text-red-500">*</span></label><input type="number" value={volAdded} onChange={e=>setVolAdded(e.target.value)} className="field-input p-2" placeholder="e.g. 150"/></div>
-            <div><label className="field-label">Addition %</label><input type="number" value={addPct} onChange={e=>setAddPct(e.target.value)} className="field-input p-2" placeholder="e.g. 10"/></div>
-            <div><label className="field-label">FINAL PRODUCT pH<span className="text-red-500">*</span></label><input type="number" step="0.01" value={finalPh} onChange={e=>setFinalPh(e.target.value)} className="field-input p-2" placeholder="4.35"/></div>
+            <div><label className="field-label">Integration Vol (ml)<span className="text-red-500">*</span></label><input type="number" {...register('volAdded')} className="field-input p-2" placeholder="e.g. 150"/></div>
+            <div><label className="field-label">Addition %</label><input type="number" {...register('addPct')} className="field-input p-2" placeholder="e.g. 10"/></div>
+            <div><label className="field-label">FINAL PRODUCT pH<span className="text-red-500">*</span></label><input type="number" step="0.01" {...register('finalPh')} className="field-input p-2" placeholder="4.35"/></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="field-label">Addition Method</label>
-              <select value={addMethod} onChange={e=>setAddMethod(e.target.value)} className="field-input bg-white text-xs">
+              <select {...register('addMethod')} className="field-input bg-white text-xs">
                 {ADD_METHOD.map(m=><option key={m}>{m}</option>)}
               </select>
             </div>
             <div><label className="field-label">Blended Temp Condition</label>
-              <select value={addTemp} onChange={e=>setAddTemp(e.target.value)} className="field-input bg-white text-xs">
+              <select {...register('addTemp')} className="field-input bg-white text-xs">
                 {ADD_TEMP.map(m=><option key={m}>{m}</option>)}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label className="field-label">Colour Before</label><input value={colBefore} onChange={e=>setColBefore(e.target.value)} className="field-input p-2" placeholder="Yellowish"/></div>
-            <div><label className="field-label">Colour After</label><input value={colAfter} onChange={e=>setColAfter(e.target.value)} className="field-input p-2" placeholder="Amber brown"/></div>
+            <div><label className="field-label">Colour Before</label><input {...register('colBefore')} className="field-input p-2" placeholder="Yellowish"/></div>
+            <div><label className="field-label">Colour After</label><input {...register('colAfter')} className="field-input p-2" placeholder="Amber brown"/></div>
           </div>
           <div className="flex border-t border-slate-100 pt-4 mt-2">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={lafUsed} onChange={e=>setLafUsed(e.target.checked)} className="w-5 h-5 rounded border-slate-300"/>
+              <input type="checkbox" {...register('lafUsed')} className="w-5 h-5 rounded border-slate-300"/>
               <span className="text-sm font-bold text-slate-700">LAF Cabinet / Clean Room used</span>
             </label>
           </div>
           <div><label className="field-label">Notes</label>
-            <input value={notes} onChange={e=>setNotes(e.target.value)} className="field-input p-2" placeholder="Any observed precipitation..."/>
+            <input {...register('notes')} className="field-input p-2" placeholder="Any observed precipitation..."/>
           </div>
 
           {/* G-36: Mixing parameters */}
@@ -275,22 +274,22 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             <p className="text-xs font-black uppercase text-slate-500 tracking-wider">Mixing & Integration Parameters</p>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="field-label">Mixing Time (min)</label>
-                <input type="number" step="0.5" value={mixingTimeMin} onChange={e=>setMixingTimeMin(e.target.value)} className="field-input p-2" placeholder="e.g. 10"/>
+                <input type="number" step="0.5" {...register('mixingTimeMin')} className="field-input p-2" placeholder="e.g. 10"/>
               </div>
               <div><label className="field-label">Mixing Speed (rpm)</label>
-                <input type="number" step="10" value={mixingSpeedRpm} onChange={e=>setMixingSpeedRpm(e.target.value)} className="field-input p-2" placeholder="e.g. 150"/>
+                <input type="number" step="10" {...register('mixingSpeedRpm')} className="field-input p-2" placeholder="e.g. 150"/>
               </div>
             </div>
             {/* G-38: Actual addition temperature */}
             <div><label className="field-label">Actual Addition Temp (°C) <span className="text-slate-400 font-normal text-xs">(measured)</span></label>
-              <input type="number" step="0.1" value={addTempActual} onChange={e=>setAddTempActual(e.target.value)} className="field-input p-2" placeholder="e.g. 24.5"/>
+              <input type="number" step="0.1" {...register('addTempActual')} className="field-input p-2" placeholder="e.g. 24.5"/>
             </div>
             {/* G-37: Blend homogeneity */}
             <div><label className="field-label">Blend Homogeneity Check</label>
               <div className="flex gap-2">
                 {['Homogeneous','Slight separation','Phase separation observed'].map(o=>(
-                  <button key={o} type="button" onClick={()=>setBlendHomogeneity(o)}
-                    className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${blendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
+                  <button key={o} type="button" onClick={()=>setValue('blendHomogeneity', o)}
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${watchBlendHomogeneity===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
                     {o}
                   </button>
                 ))}
@@ -299,10 +298,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
             {/* G-35: Post-mixing QC checks */}
             <div className="grid grid-cols-2 gap-3">
               <div><label className="field-label">Post-mixing pH</label>
-                <input type="number" step="0.01" value={postMixingPh} onChange={e=>setPostMixingPh(e.target.value)} className="field-input p-2" placeholder="e.g. 4.30"/>
+                <input type="number" step="0.01" {...register('postMixingPh')} className="field-input p-2" placeholder="e.g. 4.30"/>
               </div>
               <div><label className="field-label">Post-mixing Brix (°Bx)</label>
-                <input type="number" step="0.1" value={postMixingBrix} onChange={e=>setPostMixingBrix(e.target.value)} className="field-input p-2" placeholder="e.g. 8.5"/>
+                <input type="number" step="0.1" {...register('postMixingBrix')} className="field-input p-2" placeholder="e.g. 8.5"/>
               </div>
             </div>
           </div>
@@ -337,10 +336,10 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-            <button onClick={()=>handleSave(null)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+            <button onClick={handleSubmit((data) => onSubmit(data, null))} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
               {saving?'Saving...':'Save Draft'}
             </button>
-            <button onClick={()=>handleSave('qc_hold')} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+            <button onClick={handleSubmit((data) => onSubmit(data, 'qc_hold'))} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
               Complete Extract Addition → QC Hold
             </button>
           </div>

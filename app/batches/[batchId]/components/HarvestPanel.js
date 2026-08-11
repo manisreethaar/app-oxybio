@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { useData } from '@/lib/hooks/useData';
@@ -20,22 +21,32 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
   });
   const equipment = equipmentData || [];
 
-  const [harvestStart,     setHarvestStart]     = useState('');
-  const [method,           setMethod]           = useState('Centrifugation');
-  const [equipId,          setEquipId]          = useState('');
-  const [finalCultureVol,  setFinalCultureVol]  = useState('');
-  const [harvestTempC,     setHarvestTempC]     = useState('');
-  const [wetCellWeight,    setWetCellWeight]    = useState('');
-  const [volumeRecovered,  setVolumeRecovered]  = useState('');
-  const [biomassYieldPct,  setBiomassYieldPct]  = useState('');
-  const [cellViabilityPct, setCellViabilityPct] = useState('');
-  const [viabilityMethod,  setViabilityMethod]  = useState('Not done');
-  const [coolingTimeMins,  setCoolingTimeMins]  = useState('');
-  const [holdTempC,        setHoldTempC]        = useState('');
-  // A-52: cooling rate tracking
-  const [tempAt30Min,      setTempAt30Min]      = useState('');
-  const [tempAt60Min,      setTempAt60Min]      = useState('');
-  const [notes,            setNotes]            = useState('');
+  const { register, handleSubmit, setValue, getValues, reset, watch } = useForm({
+    defaultValues: {
+      harvestStart: '',
+      method: 'Centrifugation',
+      equipId: '',
+      finalCultureVol: '',
+      harvestTempC: '',
+      wetCellWeight: '',
+      volumeRecovered: '',
+      biomassYieldPct: '',
+      cellViabilityPct: '',
+      viabilityMethod: 'Not done',
+      coolingTimeMins: '',
+      holdTempC: '',
+      tempAt30Min: '',
+      tempAt60Min: '',
+      notes: ''
+    }
+  });
+
+  const watchFinalCultureVol = watch('finalCultureVol');
+  const watchWetCellWeight = watch('wetCellWeight');
+  const watchBiomassYieldPct = watch('biomassYieldPct');
+  const watchHarvestTempC = watch('harvestTempC');
+  const watchCoolingTimeMins = watch('coolingTimeMins');
+  const watchCellViabilityPct = watch('cellViabilityPct');
 
   const toLocal = (iso) => {
     if (!iso) return '';
@@ -59,54 +70,56 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
     }
     if (data) {
       setRecord(data);
-      setHarvestStart(toLocal(data.harvest_start));
-      setMethod(data.method || 'Centrifugation');
-      setEquipId(data.equipment_id || '');
-      setFinalCultureVol(data.final_culture_vol_l || '');
-      setHarvestTempC(data.harvest_temp_c || '');
-      setWetCellWeight(data.wet_cell_weight_g || '');
-      setVolumeRecovered(data.volume_recovered_l || '');
-      setBiomassYieldPct(data.biomass_yield_pct || '');
-      setCellViabilityPct(data.cell_viability_pct || '');
-      setViabilityMethod(data.viability_method || 'Not done');
-      setCoolingTimeMins(data.cooling_time_mins || '');
-      setHoldTempC(data.hold_temp_c || '');
-      setTempAt30Min(data.temp_at_30min || '');
-      setTempAt60Min(data.temp_at_60min || '');
-      setNotes(data.notes || '');
+      reset({
+        harvestStart: toLocal(data.harvest_start),
+        method: data.method || 'Centrifugation',
+        equipId: data.equipment_id || '',
+        finalCultureVol: data.final_culture_vol_l || '',
+        harvestTempC: data.harvest_temp_c || '',
+        wetCellWeight: data.wet_cell_weight_g || '',
+        volumeRecovered: data.volume_recovered_l || '',
+        biomassYieldPct: data.biomass_yield_pct || '',
+        cellViabilityPct: data.cell_viability_pct || '',
+        viabilityMethod: data.viability_method || 'Not done',
+        coolingTimeMins: data.cooling_time_mins || '',
+        holdTempC: data.hold_temp_c || '',
+        tempAt30Min: data.temp_at_30min || '',
+        tempAt60Min: data.temp_at_60min || '',
+        notes: data.notes || ''
+      });
     }
   }, [activeFlask?.id, supabase]);
 
   useEffect(() => { loadRecord(); }, [loadRecord]);
 
   // Auto-calculate biomass yield when both values are entered
-  const autoYield = finalCultureVol && wetCellWeight
-    ? ((parseFloat(wetCellWeight) / (parseFloat(finalCultureVol) * 1000)) * 100).toFixed(1)
-    : biomassYieldPct;
+  const autoYield = watchFinalCultureVol && watchWetCellWeight
+    ? ((parseFloat(watchWetCellWeight) / (parseFloat(watchFinalCultureVol) * 1000)) * 100).toFixed(1)
+    : watchBiomassYieldPct;
 
-  const handleSave = async (advanceTarget = null) => {
+  const onSubmit = async (formData, advanceTarget = null) => {
     if (!activeFlask?.id) return;
     setSaving(true);
     try {
       const payload = {
         batch_id: batch.id,
         flask_id: activeFlask.id,
-        harvest_start: harvestStart ? new Date(harvestStart).toISOString() : null,
-        method,
-        equipment_id: equipId || null,
-        final_culture_vol_l: finalCultureVol ? parseFloat(finalCultureVol) : null,
-        harvest_temp_c: harvestTempC ? parseFloat(harvestTempC) : null,
-        wet_cell_weight_g: wetCellWeight ? parseFloat(wetCellWeight) : null,
-        volume_recovered_l: volumeRecovered ? parseFloat(volumeRecovered) : null,
+        harvest_start: formData.harvestStart ? new Date(formData.harvestStart).toISOString() : null,
+        method: formData.method,
+        equipment_id: formData.equipId || null,
+        final_culture_vol_l: formData.finalCultureVol ? parseFloat(formData.finalCultureVol) : null,
+        harvest_temp_c: formData.harvestTempC ? parseFloat(formData.harvestTempC) : null,
+        wet_cell_weight_g: formData.wetCellWeight ? parseFloat(formData.wetCellWeight) : null,
+        volume_recovered_l: formData.volumeRecovered ? parseFloat(formData.volumeRecovered) : null,
         biomass_yield_pct: autoYield ? parseFloat(autoYield) : null,
-        cell_viability_pct: cellViabilityPct ? parseFloat(cellViabilityPct) : null,
-        viability_method: viabilityMethod,
-        cooling_time_mins: coolingTimeMins ? parseFloat(coolingTimeMins) : null,
-        hold_temp_c: holdTempC ? parseFloat(holdTempC) : null,
-        temp_at_30min: tempAt30Min ? parseFloat(tempAt30Min) : null,
-        temp_at_60min: tempAt60Min ? parseFloat(tempAt60Min) : null,
+        cell_viability_pct: formData.cellViabilityPct ? parseFloat(formData.cellViabilityPct) : null,
+        viability_method: formData.viabilityMethod,
+        cooling_time_mins: formData.coolingTimeMins ? parseFloat(formData.coolingTimeMins) : null,
+        hold_temp_c: formData.holdTempC ? parseFloat(formData.holdTempC) : null,
+        temp_at_30min: formData.tempAt30Min ? parseFloat(formData.tempAt30Min) : null,
+        temp_at_60min: formData.tempAt60Min ? parseFloat(formData.tempAt60Min) : null,
         operator_id: employeeProfile?.id,
-        notes: notes || null,
+        notes: formData.notes || null,
       };
       const { error } = await supabase.from('batch_stage_harvest')
         .upsert(payload, { onConflict: 'flask_id' });
@@ -140,11 +153,11 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="field-label">Harvest Start Time</label>
-            <input type="datetime-local" value={harvestStart} onChange={e => setHarvestStart(e.target.value)} className="field-input"/>
+            <input type="datetime-local" {...register('harvestStart')} className="field-input"/>
           </div>
           <div>
             <label className="field-label">Harvest Method</label>
-            <select value={method} onChange={e => setMethod(e.target.value)} className="field-input bg-white">
+            <select {...register('method')} className="field-input bg-white">
               {HARVEST_METHODS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
@@ -152,7 +165,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
         <div>
           <label className="field-label">Equipment Used</label>
-          <select value={equipId} onChange={e => setEquipId(e.target.value)} className="field-input bg-white">
+          <select {...register('equipId')} className="field-input bg-white">
             <option value="">Select equipment...</option>
             {equipment.map(e => <option key={e.id} value={e.id}>{e.name} ({e.status})</option>)}
           </select>
@@ -164,30 +177,30 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="field-label">Harvest Temp (°C)</label>
-              <input type="number" step="0.1" value={harvestTempC} onChange={e => setHarvestTempC(e.target.value)} className="field-input" placeholder="e.g. 8"/>
-              {harvestTempC && parseFloat(harvestTempC) > 10 && (
+              <input type="number" step="0.1" {...register('harvestTempC')} className="field-input" placeholder="e.g. 8"/>
+              {watchHarvestTempC && parseFloat(watchHarvestTempC) > 10 && (
                 <p className="text-xs text-amber-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Above 10°C — cold chain risk</p>
               )}
             </div>
             <div>
               <label className="field-label">Hold Temp (°C)</label>
-              <input type="number" step="0.1" value={holdTempC} onChange={e => setHoldTempC(e.target.value)} className="field-input" placeholder="2–8"/>
+              <input type="number" step="0.1" {...register('holdTempC')} className="field-input" placeholder="2–8"/>
             </div>
             <div>
               <label className="field-label">Cooling Time (min)</label>
-              <input type="number" value={coolingTimeMins} onChange={e => setCoolingTimeMins(e.target.value)} className="field-input" placeholder="e.g. 90"/>
-              {coolingTimeMins && parseFloat(coolingTimeMins) > 120 && (
+              <input type="number" {...register('coolingTimeMins')} className="field-input" placeholder="e.g. 90"/>
+              {watchCoolingTimeMins && parseFloat(watchCoolingTimeMins) > 120 && (
                 <p className="text-xs text-red-600 font-bold mt-1">Exceeds 2-hour cold-chain target</p>
               )}
             </div>
             {/* A-52: Cooling rate checkpoints */}
             <div>
               <label className="field-label">Temp at 30 min (°C)</label>
-              <input type="number" step="0.1" value={tempAt30Min} onChange={e => setTempAt30Min(e.target.value)} className="field-input" placeholder="e.g. 20"/>
+              <input type="number" step="0.1" {...register('tempAt30Min')} className="field-input" placeholder="e.g. 20"/>
             </div>
             <div>
               <label className="field-label">Temp at 60 min (°C)</label>
-              <input type="number" step="0.1" value={tempAt60Min} onChange={e => setTempAt60Min(e.target.value)} className="field-input" placeholder="e.g. 12"/>
+              <input type="number" step="0.1" {...register('tempAt60Min')} className="field-input" placeholder="e.g. 12"/>
             </div>
           </div>
         </div>
@@ -196,20 +209,20 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="field-label">Final Culture Volume (L)</label>
-            <input type="number" step="0.01" value={finalCultureVol} onChange={e => setFinalCultureVol(e.target.value)} className="field-input" placeholder="e.g. 0.25"/>
+            <input type="number" step="0.01" {...register('finalCultureVol')} className="field-input" placeholder="e.g. 0.25"/>
           </div>
           <div>
             <label className="field-label">Volume Recovered (L)</label>
-            <input type="number" step="0.01" value={volumeRecovered} onChange={e => setVolumeRecovered(e.target.value)} className="field-input" placeholder="e.g. 0.20"/>
+            <input type="number" step="0.01" {...register('volumeRecovered')} className="field-input" placeholder="e.g. 0.20"/>
           </div>
           <div>
             <label className="field-label">Wet Cell Weight (g)</label>
-            <input type="number" step="0.01" value={wetCellWeight} onChange={e => setWetCellWeight(e.target.value)} className="field-input" placeholder="e.g. 15"/>
+            <input type="number" step="0.01" {...register('wetCellWeight')} className="field-input" placeholder="e.g. 15"/>
           </div>
         </div>
 
         {/* Auto-calculated biomass yield */}
-        {(autoYield !== biomassYieldPct || finalCultureVol) && (
+        {(autoYield !== watchBiomassYieldPct || watchFinalCultureVol) && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0"/>
             Biomass Yield: <span className="font-black text-lg ml-1">{autoYield}%</span>
@@ -223,27 +236,27 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label text-slate-800">Viability Method</label>
-              <select value={viabilityMethod} onChange={e => setViabilityMethod(e.target.value)} className="field-input bg-white">
+              <select {...register('viabilityMethod')} className="field-input bg-white">
                 {VIABILITY_METHODS.map(m => <option key={m}>{m}</option>)}
               </select>
             </div>
             <div>
               <label className="field-label text-slate-800">Viability (%)</label>
-              <input type="number" step="0.1" min="0" max="100" value={cellViabilityPct} onChange={e => setCellViabilityPct(e.target.value)} className="field-input" placeholder="e.g. 92.5"/>
-              {cellViabilityPct && parseFloat(cellViabilityPct) < 80 && (
+              <input type="number" step="0.1" min="0" max="100" {...register('cellViabilityPct')} className="field-input" placeholder="e.g. 92.5"/>
+              {watchCellViabilityPct && parseFloat(watchCellViabilityPct) < 80 && (
                 <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Low viability — verify harvest conditions</p>
               )}
             </div>
           </div>
         </div>
 
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Harvest observations, anomalies..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea {...register('notes')} rows={2} placeholder="Harvest observations, anomalies..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button onClick={() => handleSave(null)} disabled={saving} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={handleSubmit((data) => onSubmit(data, null))} disabled={saving} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Harvest Record'}
           </button>
-          <button onClick={() => handleSave('straining')} disabled={saving || actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={handleSubmit((data) => onSubmit(data, 'straining'))} disabled={saving || actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             Save & Advance to Straining
           </button>
         </div>

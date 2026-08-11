@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { XCircle, Lock } from 'lucide-react';
@@ -13,14 +14,18 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
   const [pendingReject, setPendingReject] = useState(false);
   const isCeo    = ['ceo','admin'].includes(role);
 
-  const [reason,          setReason]          = useState('');
-  const [pin,             setPin]             = useState('');
-  const [stage,           setStage]           = useState('');
-  const [disposal,        setDisposal]        = useState('Autoclave + Drain');
-  const [capaReq,         setCapaReq]         = useState(false);
-  const [notes,           setNotes]           = useState('');
-  const [supplierDefect,  setSupplierDefect]  = useState(false);
-  const [implicatedLotId, setImplicatedLotId] = useState('');
+  const { register, handleSubmit, setValue, watch, reset, getValues } = useForm({
+    defaultValues: {
+      reason: '', pin: '', stage: '', disposal: 'Autoclave + Drain',
+      capaReq: false, notes: '', supplierDefect: false, implicatedLotId: ''
+    }
+  });
+
+  const watchSupplierDefect = watch('supplierDefect');
+  const watchCapaReq = watch('capaReq');
+  const watchStage = watch('stage');
+  const watchDisposal = watch('disposal');
+
   const [batchLots,       setBatchLots]       = useState([]);
 
   const fetch = useCallback(async () => {
@@ -32,8 +37,14 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).maybeSingle(),
       ]), 45000, 'Rejection record load timed out');
       if (!isCurrent) return;
-      if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
-      else { setRecord(null); setStage(activeFlask.current_stage || ''); }
+      if (data) {
+        setRecord(data);
+        setValue('supplierDefect', data.supplier_defect||false);
+        setValue('implicatedLotId', data.implicated_lot_id||'');
+      } else {
+        setRecord(null);
+        setValue('stage', activeFlask.current_stage || '');
+      }
       // Build lot list from media prep
       const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
       if (lotIds.length) {
@@ -50,15 +61,15 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
 
   useEffect(() => { setRecord(null); fetch(); }, [fetch]);
 
-  const handleSave = async () => {
+  const handleSave = async (formData) => {
     if (!isCeo) return;
-    if (!reason.trim()) { toast.warn('Rejection reason is required.'); return; }
+    if (!formData.reason.trim()) { toast.warn('Rejection reason is required.'); return; }
     setPendingReject(true);
   };
 
-  const confirmReject = async () => {
+  const confirmReject = async (formData) => {
     if (!activeFlask) return;
-    if (!pin || pin.length < 4) { toast.warn('A valid E-Signature PIN is required.'); return; }
+    if (!formData.pin || formData.pin.length < 4) { toast.warn('A valid E-Signature PIN is required.'); return; }
     setPendingReject(false);
     setSaving(true);
     try {
@@ -66,11 +77,11 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         flask_id: activeFlask.id,
         batch_id: batch.id,
         rejected_by: employeeProfile?.id,
-        rejection_reason: reason, rejection_stage: stage || activeFlask.current_stage,
-        disposal_method: disposal,
-        capa_required: capaReq, notes: notes || null,
-        supplier_defect: supplierDefect,
-        implicated_lot_id: supplierDefect && implicatedLotId ? implicatedLotId : null,
+        rejection_reason: formData.reason, rejection_stage: formData.stage || activeFlask.current_stage,
+        disposal_method: formData.disposal,
+        capa_required: formData.capaReq, notes: formData.notes || null,
+        supplier_defect: formData.supplierDefect,
+        implicated_lot_id: formData.supplierDefect && formData.implicatedLotId ? formData.implicatedLotId : null,
       }, { onConflict: 'flask_id' });
       if (error) throw error;
 
@@ -78,8 +89,8 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         target_table: 'batch_flasks',
         record_id: activeFlask.id,
         payload: { status: 'rejected' },
-        reason_text: reason,
-        esignature_pin: pin
+        reason_text: formData.reason,
+        esignature_pin: formData.pin
       });
       if (rpcError) throw rpcError;
 
@@ -101,8 +112,8 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
             target_table: 'batches',
             record_id: batch.id,
             payload: { status: 'rejected', current_stage: 'rejected' },
-            reason_text: reason,
-            esignature_pin: pin
+            reason_text: formData.reason,
+            esignature_pin: formData.pin
           });
           toast.warn('All trials rejected — batch marked as rejected.');
         }
@@ -111,17 +122,17 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       // Always raise a deviation on flask rejection
       await supabase.from('deviations').insert({
         batch_id:    batch.id,
-        title:       `Flask ${activeFlask.flask_label} rejected — ${reason.substring(0, 80)}`,
-        severity:    supplierDefect ? 'critical' : (capaReq ? 'major' : 'minor'),
+        title:       `Flask ${activeFlask.flask_label} rejected — ${formData.reason.substring(0, 80)}`,
+        severity:    formData.supplierDefect ? 'critical' : (formData.capaReq ? 'major' : 'minor'),
         reported_by: employeeProfile?.id,
         status:      'open',
       }).then(()=>{}).catch(()=>{});
 
-      if (capaReq || supplierDefect) {
+      if (formData.capaReq || formData.supplierDefect) {
         await supabase.from('notifications').insert({
           employee_id: employeeProfile?.id,
           title: `CAPA Required — Trial ${activeFlask.flask_label} rejected`,
-          message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${reason}. A deviation has been raised in the CAPA module.`,
+          message: `Trial ${activeFlask.flask_label} from batch ${batch.batch_id} was rejected. Reason: ${formData.reason}. A deviation has been raised in the CAPA module.`,
           link: '/capa',
         }).then(()=>{}).catch(()=>{});
       }
@@ -176,12 +187,12 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <p className="text-sm font-bold text-slate-900">Complete rejection record for {activeFlask.flask_label}:</p>
               <div>
                 <label className="field-label">Root Cause / Reason <span className="text-red-500">*</span></label>
-                <textarea value={reason} onChange={e=>setReason(e.target.value)} rows={3} required placeholder="Describe the reason for rejection (QC failure, contamination)..."
+                <textarea {...register('reason')} rows={3} required placeholder="Describe the reason for rejection (QC failure, contamination)..."
                   className="w-full px-3 py-2 border-2 border-red-200 rounded-xl text-sm font-semibold outline-none resize-none focus:border-red-400"/>
               </div>
               <div className="grid grid-cols-1 gap-3">
                 <div><label className="field-label">Stage Where Failed</label>
-                  <select value={stage} onChange={e=>setStage(e.target.value)} className="field-input bg-white">
+                  <select {...register('stage')} className="field-input bg-white">
                     {['media_prep','sterilisation','inoculation','fermentation','straining','extract_addition','qc_hold'].map(s=>(
                       <option key={s} value={s}>{s.replace(/_/g,' ')}</option>
                     ))}
@@ -191,21 +202,21 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <div><label className="field-label">Disposal Method</label>
                 <div className="flex flex-wrap gap-2">
                   {DISPOSAL.map(d=>(
-                    <button key={d} type="button" onClick={()=>setDisposal(d)}
-                      className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${disposal===d?'bg-slate-800 text-white border-slate-800':'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}>
+                    <button key={d} type="button" onClick={()=>setValue('disposal', d)}
+                      className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${watchDisposal===d?'bg-slate-800 text-white border-slate-800':'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}>
                       {d}
                     </button>
                   ))}
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <input type="checkbox" id="supplierDefect" checked={supplierDefect} onChange={e=>setSupplierDefect(e.target.checked)} className="w-4 h-4 rounded border-amber-300"/>
+                <input type="checkbox" id="supplierDefect" {...register('supplierDefect')} className="w-4 h-4 rounded border-amber-300"/>
                 <label htmlFor="supplierDefect" className="text-xs font-bold text-amber-800">Supplier / Raw Material Defect — escalates deviation to Critical</label>
               </div>
-              {supplierDefect && batchLots.length > 0 && (
+              {watchSupplierDefect && batchLots.length > 0 && (
                 <div>
                   <label className="field-label">Implicated Lot</label>
-                  <select value={implicatedLotId} onChange={e=>setImplicatedLotId(e.target.value)} className="field-input bg-white">
+                  <select {...register('implicatedLotId')} className="field-input bg-white">
                     <option value="">Select lot...</option>
                     {batchLots.map(l=>(
                       <option key={l.id} value={l.id}>{l.inventory_items?.name} — {l.supplier_batch_number||'No lot#'}</option>
@@ -214,11 +225,11 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
                 </div>
               )}
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <input type="checkbox" id="capaReq" checked={capaReq} onChange={e=>setCapaReq(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <input type="checkbox" id="capaReq" {...register('capaReq')} className="w-4 h-4 rounded border-slate-300"/>
                 <label htmlFor="capaReq" className="text-xs font-bold text-amber-800">Notify CAPA — a deviation is always raised; checking this also sends a CAPA notification</label>
               </div>
-              <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
-              <button onClick={handleSave} disabled={saving||!reason.trim()} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
+              <textarea {...register('notes')} rows={2} placeholder="Additional notes..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+              <button onClick={handleSubmit(handleSave)} disabled={saving} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-50">
                 {saving ? 'Saving...' : `✗ Confirm Rejection of ${activeFlask.flask_label}`}
               </button>
             </>
@@ -236,8 +247,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <input 
                 type="password"
                 maxLength={6}
-                value={pin}
-                onChange={e => setPin(e.target.value)}
+                {...register('pin')}
                 placeholder="••••••"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center tracking-[0.5em] font-mono text-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
               />
@@ -250,7 +260,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
                 Cancel
               </button>
               <button 
-                onClick={confirmReject}
+                onClick={handleSubmit(confirmReject)}
                 className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full"
               >
                 ✗ Confirm Rejection

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { Beaker, AlertTriangle, ClipboardList, X } from 'lucide-react';
@@ -24,44 +25,50 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const targetVol = (batch.planned_volume_ml || 0) * (batch.num_flasks || 1) || baseVol;
   const scaleFactor = targetVol / baseVol;
 
-  const [bomUsage, setBomUsage] = useState({});
+  const { register, handleSubmit, setValue, getValues, watch, reset, control } = useForm({
+    defaultValues: {
+      bomUsage: {},
+      ragiMoist: '',
+      kavuniTemp: '',
+      kavuniMin: '',
+      waterVol: '',
+      totalVol: '',
+      initPH: '',
+      notes: '',
+      supervisedBy: '',
+      particleSize: '',
+      starchGelTemp: '',
+      starchGelConfirm: false,
+      bufferCapacity: '',
+      viscosityCp: '',
+      substratePhotoUrl: '',
+      awValue: '',
+      pretreatSteps: []
+    }
+  });
+
+  const watchBomUsage = watch('bomUsage');
+  const watchRagiMoist = watch('ragiMoist');
+  const watchAwValue = watch('awValue');
+  const watchStarchGelConfirm = watch('starchGelConfirm');
+  const watchPretreatSteps = watch('pretreatSteps');
+  
+  const { fields: pretreatFields, append: appendPretreat, remove: removePretreat } = useFieldArray({
+    control,
+    name: 'pretreatSteps'
+  });
+
   // G-17: BOM report modal
   const [showBomReport, setShowBomReport] = useState(false);
 
-  const [ragiMoist,  setRagiMoist]  = useState('');
-  const [kavuniTemp, setKavuniTemp] = useState('');
-  const [kavuniMin,  setKavuniMin]  = useState('');
-  const [waterVol,   setWaterVol]   = useState('');
-  const [totalVol,   setTotalVol]   = useState('');
-  const [initPH,     setInitPH]     = useState('');
-  const [notes,      setNotes]      = useState('');
-  const [supervisedBy, setSupervisedBy] = useState('');
-  // G-51: particle size
-  const [particleSize, setParticleSize] = useState('');
-  // A-25: starch gelatinization
-  const [starchGelTemp,  setStarchGelTemp]  = useState('');
-  const [starchGelConfirm, setStarchGelConfirm] = useState(false);
-  // A-58: buffer capacity
-  const [bufferCapacity, setBufferCapacity] = useState('');
-  // A-59: viscosity
-  const [viscosityCp,   setViscosityCp]   = useState('');
-  // G-85: substrate photo URL
-  const [substratePhotoUrl, setSubstratePhotoUrl] = useState('');
-  // G-53: water activity
-  const [awValue, setAwValue] = useState('');
-  // G-52: modular pre-treatment steps [{type, target_temp, duration_min, notes}]
-  const [pretreatSteps, setPretreatSteps] = useState([]);
-
   // Initialize BOM usage state from ingredients
   useEffect(() => {
-    setBomUsage(prev => {
-      const next = { ...prev };
-      formulationIngredients.forEach(ing => {
-        if (!next[ing.item_id]) next[ing.item_id] = { lotId: '', usedQty: '' };
-      });
-      return next;
+    const nextBomUsage = { ...getValues('bomUsage') };
+    formulationIngredients.forEach(ing => {
+      if (!nextBomUsage[ing.item_id]) nextBomUsage[ing.item_id] = { lotId: '', usedQty: '' };
     });
-  }, [formulationIngredients]);
+    setValue('bomUsage', nextBomUsage);
+  }, [formulationIngredients, setValue, getValues]);
 
   const loadData = useCallback(async () => {
     let isCurrent = true;
@@ -75,55 +82,62 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     if (!isCurrent) return;
     if (d) {
       setData(d);
-      setRagiMoist(d.ragi_moisture_pass===true?'Pass':d.ragi_moisture_pass===false?'Fail':'');
-      setKavuniTemp(d.kavuni_precook_temp_c||''); setKavuniMin(d.kavuni_precook_min||'');
-      setWaterVol(d.water_volume_ml||''); setTotalVol(d.total_volume_ml||'');
-      setInitPH(d.initial_ph||''); setNotes(d.notes||'');
-      setSupervisedBy(d.supervised_by||'');
-      setParticleSize(d.particle_size_mesh||'');
-      setStarchGelTemp(d.starch_gelat_temp_c||'');
-      setStarchGelConfirm(d.starch_gelat_confirmed||false);
-      setBufferCapacity(d.buffer_capacity_mmol_l||'');
-      setViscosityCp(d.viscosity_cp||'');
-      setSubstratePhotoUrl(d.substrate_photo_url||'');
-      setAwValue(d.aw_value||'');
-      setPretreatSteps(d.pre_treatment_steps||[]);
-
-      // Recover legacy usage state from db if available
-      setBomUsage(prev => {
-        const next = { ...prev };
-        formulationIngredients.forEach(ing => {
-          const nameLower = ing.name?.toLowerCase() || '';
-          if (nameLower.includes('ragi') && d.ragi_lot_id) {
-            next[ing.item_id] = { lotId: d.ragi_lot_id, usedQty: d.ragi_weight_g ? String(d.ragi_weight_g) : '' };
-          }
-          if (nameLower.includes('kavuni') && d.kavuni_lot_id) {
-            next[ing.item_id] = { lotId: d.kavuni_lot_id, usedQty: d.kavuni_weight_g ? String(d.kavuni_weight_g) : '' };
-          }
-        });
-        return next;
+      
+      const nextBomUsage = { ...getValues('bomUsage') };
+      formulationIngredients.forEach(ing => {
+        const nameLower = ing.name?.toLowerCase() || '';
+        if (nameLower.includes('ragi') && d.ragi_lot_id) {
+          nextBomUsage[ing.item_id] = { lotId: d.ragi_lot_id, usedQty: d.ragi_weight_g ? String(d.ragi_weight_g) : '' };
+        }
+        if (nameLower.includes('kavuni') && d.kavuni_lot_id) {
+          nextBomUsage[ing.item_id] = { lotId: d.kavuni_lot_id, usedQty: d.kavuni_weight_g ? String(d.kavuni_weight_g) : '' };
+        }
+      });
+      
+      reset({
+        ragiMoist: d.ragi_moisture_pass===true?'Pass':d.ragi_moisture_pass===false?'Fail':'',
+        kavuniTemp: d.kavuni_precook_temp_c||'',
+        kavuniMin: d.kavuni_precook_min||'',
+        waterVol: d.water_volume_ml||'',
+        totalVol: d.total_volume_ml||'',
+        initPH: d.initial_ph||'',
+        notes: d.notes||'',
+        supervisedBy: d.supervised_by||'',
+        particleSize: d.particle_size_mesh||'',
+        starchGelTemp: d.starch_gelat_temp_c||'',
+        starchGelConfirm: d.starch_gelat_confirmed||false,
+        bufferCapacity: d.buffer_capacity_mmol_l||'',
+        viscosityCp: d.viscosity_cp||'',
+        substratePhotoUrl: d.substrate_photo_url||'',
+        awValue: d.aw_value||'',
+        pretreatSteps: d.pre_treatment_steps||[],
+        bomUsage: nextBomUsage
       });
 
     } else {
+      let initTotalVol = '';
+      let initWaterVol = '';
       if (batch.planned_volume_ml && batch.num_flasks) {
-        setTotalVol(String(batch.planned_volume_ml * batch.num_flasks));
+        initTotalVol = String(batch.planned_volume_ml * batch.num_flasks);
       }
       for (const ing of formulationIngredients) {
         const nameLower = ing.name?.toLowerCase() || '';
         const scaledQty = ((parseFloat(ing.quantity) || 0) * scaleFactor).toFixed(2);
         const displayQty = String(parseFloat(scaledQty));
-        if (nameLower.includes('water')) setWaterVol(displayQty);
+        if (nameLower.includes('water')) initWaterVol = displayQty;
       }
+      setValue('totalVol', initTotalVol);
+      setValue('waterVol', initWaterVol);
     }
     return () => { isCurrent = false; };
   }, [batch.id, supabase]); // eslint-disable-line
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const getUsageFor = (nameSubstring) => {
+  const getUsageFor = (nameSubstring, formData) => {
     const ing = formulationIngredients.find(i => i.name?.toLowerCase().includes(nameSubstring));
     if (!ing) return { lot: '', wt: null };
-    const u = bomUsage[ing.item_id];
+    const u = formData.bomUsage[ing.item_id];
     return { lot: u?.lotId || null, wt: u?.usedQty ? parseFloat(u.usedQty) : null };
   };
 
@@ -132,10 +146,10 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   // Server-side deduction — called once when Media Prep is marked complete.
   // Replaces the old client-side deductLot() which used wrong column names
   // (movement_type / batch_reference don't exist in inventory_movements).
-  const deductAllLots = async () => {
+  const deductAllLots = async (formData) => {
     const entries = formulationIngredients
       .map(ing => {
-        const u = bomUsage[ing.item_id];
+        const u = formData.bomUsage[ing.item_id];
         if (u?.lotId && u?.usedQty && parseFloat(u.usedQty) > 0) {
           return { stock_id: u.lotId, quantity_used: parseFloat(u.usedQty), item_name: ing.name };
         }
@@ -154,59 +168,59 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
     (json.warnings || []).forEach(w => toast.warn(w));
   };
 
-  const handleSave = async (advance = false) => {
-    if (isIntern && !supervisedBy) { toast.warn('Select a supervisor.'); return; }
-    if (ragiMoist === 'Fail') {
+  const onSubmit = async (formData, advance = false) => {
+    if (isIntern && !formData.supervisedBy) { toast.warn('Select a supervisor.'); return; }
+    if (formData.ragiMoist === 'Fail') {
       setPendingOverride(advance);
       return;
     }
-    await executeSave(advance);
+    await executeSave(formData, advance);
   };
 
   const confirmOverride = async () => {
     const advance = pendingOverride;
     setPendingOverride(null);
-    await executeSave(advance);
+    await executeSave(getValues(), advance);
   };
 
-  const executeSave = async (advance = false) => {
+  const executeSave = async (formData, advance = false) => {
     setSaving(true);
     try {
-      const ragiU = getUsageFor('ragi');
-      const kavuniU = getUsageFor('kavuni');
+      const ragiU = getUsageFor('ragi', formData);
+      const kavuniU = getUsageFor('kavuni', formData);
 
       const { error } = await supabase.from('batch_stage_media_prep').upsert({
         batch_id: batch.id,
         ragi_lot_id: ragiU.lot, ragi_weight_g: ragiU.wt,
-        ragi_moisture_pass: ragiMoist === 'Pass' ? true : ragiMoist === 'Fail' ? false : null,
+        ragi_moisture_pass: formData.ragiMoist === 'Pass' ? true : formData.ragiMoist === 'Fail' ? false : null,
         kavuni_lot_id: kavuniU.lot, kavuni_weight_g: kavuniU.wt,
-        kavuni_precook_temp_c: kavuniTemp ? parseFloat(kavuniTemp) : null,
-        kavuni_precook_min: kavuniMin ? parseFloat(kavuniMin) : null,
-        water_volume_ml: waterVol ? parseFloat(waterVol) : null,
-        total_volume_ml: totalVol ? parseFloat(totalVol) : null,
-        initial_ph: initPH ? parseFloat(initPH) : null,
+        kavuni_precook_temp_c: formData.kavuniTemp ? parseFloat(formData.kavuniTemp) : null,
+        kavuni_precook_min: formData.kavuniMin ? parseFloat(formData.kavuniMin) : null,
+        water_volume_ml: formData.waterVol ? parseFloat(formData.waterVol) : null,
+        total_volume_ml: formData.totalVol ? parseFloat(formData.totalVol) : null,
+        initial_ph: formData.initPH ? parseFloat(formData.initPH) : null,
         is_complete: advance, operator_id: employeeProfile?.id,
-        supervised_by: supervisedBy || null, notes: notes || null,
-        particle_size_mesh:  particleSize || null,
-        starch_gelat_temp_c: starchGelTemp ? parseFloat(starchGelTemp) : null,
-        starch_gelat_confirmed: starchGelConfirm,
-        buffer_capacity_mmol_l: bufferCapacity ? parseFloat(bufferCapacity) : null,
-        viscosity_cp: viscosityCp ? parseFloat(viscosityCp) : null,
-        aw_value:            awValue ? parseFloat(awValue) : null,
-        pre_treatment_steps: pretreatSteps,
-        substrate_photo_url: substratePhotoUrl || null,
+        supervised_by: formData.supervisedBy || null, notes: formData.notes || null,
+        particle_size_mesh:  formData.particleSize || null,
+        starch_gelat_temp_c: formData.starchGelTemp ? parseFloat(formData.starchGelTemp) : null,
+        starch_gelat_confirmed: formData.starchGelConfirm,
+        buffer_capacity_mmol_l: formData.bufferCapacity ? parseFloat(formData.bufferCapacity) : null,
+        viscosity_cp: formData.viscosityCp ? parseFloat(formData.viscosityCp) : null,
+        aw_value:            formData.awValue ? parseFloat(formData.awValue) : null,
+        pre_treatment_steps: formData.pretreatSteps,
+        substrate_photo_url: formData.substratePhotoUrl || null,
       }, { onConflict: 'batch_id' });
       if (error) throw error;
 
       if (advance) {
-        await deductAllLots();
+        await deductAllLots(formData);
       }
 
       toast.success(advance ? 'Media Prep complete. BOM Inventory deducted.' : 'Draft saved.');
       // G-50: Notify supervisors if any ingredient >10% deviation
       const deviations = formulationIngredients.filter(ing => {
         const target = ((parseFloat(ing.quantity)||0) * scaleFactor);
-        const actual = parseFloat((bomUsage[ing.item_id]||{}).usedQty);
+        const actual = parseFloat((formData.bomUsage[ing.item_id]||{}).usedQty);
         return !isNaN(actual) && target > 0 && Math.abs((actual-target)/target*100) > 10;
       });
       if (deviations.length > 0 && supervisors.length > 0) {
@@ -226,14 +240,14 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       syncStageToLNB(supabase, batch.id, 'media_prep', {
         ragi_lot_id: ragiU.lot,
         ragi_weight_g: ragiU.wt,
-        ragi_moisture: ragiMoist || null,
+        ragi_moisture: formData.ragiMoist || null,
         kavuni_lot_id: kavuniU.lot,
         kavuni_weight_g: kavuniU.wt,
-        kavuni_precook_temp_c: kavuniTemp ? parseFloat(kavuniTemp) : null,
-        kavuni_precook_min: kavuniMin ? parseFloat(kavuniMin) : null,
-        water_volume_ml: waterVol ? parseFloat(waterVol) : null,
-        total_volume_ml: totalVol ? parseFloat(totalVol) : null,
-        initial_ph: initPH ? parseFloat(initPH) : null,
+        kavuni_precook_temp_c: formData.kavuniTemp ? parseFloat(formData.kavuniTemp) : null,
+        kavuni_precook_min: formData.kavuniMin ? parseFloat(formData.kavuniMin) : null,
+        water_volume_ml: formData.waterVol ? parseFloat(formData.waterVol) : null,
+        total_volume_ml: formData.totalVol ? parseFloat(formData.totalVol) : null,
+        initial_ph: formData.initPH ? parseFloat(formData.initPH) : null,
       });
       if (advance) {
         await onAdvanceStage('sterilisation');
@@ -282,7 +296,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                const scaledQty = ((parseFloat(ing.quantity) || 0) * scaleFactor).toFixed(2);
                // Filter stock: match by exact item_id, OR match by name for legacy compat
                const matchStock = availableStock.filter(s => s.item_id === ing.item_id || s.inventory_items?.id === ing.item_id || (s.inventory_items?.name?.toLowerCase() === ing.name?.toLowerCase()));
-               const usage = bomUsage[ing.item_id] || {lotId:'', usedQty:''};
+               const usage = watchBomUsage?.[ing.item_id] || {lotId:'', usedQty:''};
                const isRagi = ing.name?.toLowerCase().includes('ragi');
                const isKavuni = ing.name?.toLowerCase().includes('kavuni');
 
@@ -298,13 +312,13 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                          <label className="field-label mb-0">Inventory Lot Selection</label>
                          {/* G-18: Clear lot selection */}
                          {usage.lotId && (
-                           <button type="button" onClick={() => setBomUsage(p=>({...p, [ing.item_id]: {lotId:'', usedQty:''}}))}
+                           <button type="button" onClick={() => setValue(`bomUsage.${ing.item_id}`, {lotId:'', usedQty:''})}
                              className="text-xs text-amber-600 font-black uppercase hover:underline flex items-center gap-0.5">
                              <X className="w-2.5 h-2.5"/>Clear Lot
                            </button>
                          )}
                        </div>
-                       <select value={usage.lotId} onChange={e => setBomUsage(p=>({...p, [ing.item_id]: {...p[ing.item_id], lotId: e.target.value}}))} className="field-input">
+                       <select {...register(`bomUsage.${ing.item_id}.lotId`)} className="field-input">
                          <option value="">Select lot...</option>
                          {matchStock.length > 0 && <option disabled>── Matching Lots ──</option>}
                          {matchStock.map(s => {
@@ -320,7 +334,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                      </div>
                      <div>
                        <label className="field-label">Actual Used Qty ({ing.unit})</label>
-                       <input type="number" step="0.01" value={usage.usedQty} onChange={e => setBomUsage(p=>({...p, [ing.item_id]: {...p[ing.item_id], usedQty: e.target.value}}))} className="field-input" placeholder={parseFloat(scaledQty)} />
+                       <input type="number" step="0.01" {...register(`bomUsage.${ing.item_id}.usedQty`)} className="field-input" placeholder={parseFloat(scaledQty)} />
                        {(() => {
                          const target = parseFloat(scaledQty);
                          const actual = parseFloat(usage.usedQty);
@@ -348,20 +362,20 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                         <label className="field-label">Ragi Moisture Check</label>
                         <div className="flex gap-2">
                           {['Pass','Fail'].map(o=>(
-                            <button key={o} type="button" onClick={()=>setRagiMoist(o)}
-                              className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${ragiMoist===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                            <button key={o} type="button" onClick={()=>setValue('ragiMoist', o)}
+                              className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${watchRagiMoist===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
                               {o}
                             </button>
                           ))}
-                          <button type="button" onClick={()=>setRagiMoist('')} className={`px-3 text-xs font-bold rounded-lg border transition-all ${!ragiMoist?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-400 border-slate-200'}`}>N/A</button>
+                          <button type="button" onClick={()=>setValue('ragiMoist', '')} className={`px-3 text-xs font-bold rounded-lg border transition-all ${!watchRagiMoist?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-400 border-slate-200'}`}>N/A</button>
                         </div>
-                        {ragiMoist==='Fail' && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Moisture check failed — log deviation before advancing.</p>}
+                        {watchRagiMoist==='Fail' && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Moisture check failed — log deviation before advancing.</p>}
                      </div>
                    )}
                    {isKavuni && isF2 && (
                      <div className="mt-4 pt-3 border-t border-slate-100/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div><label className="field-label">Pre-cook Temp (°C)</label><input type="number" step="0.1" value={kavuniTemp} onChange={e=>setKavuniTemp(e.target.value)} className="field-input" placeholder="90.0"/></div>
-                        <div><label className="field-label">Pre-cook Duration (min)</label><input type="number" value={kavuniMin} onChange={e=>setKavuniMin(e.target.value)} className="field-input" placeholder="30"/></div>
+                        <div><label className="field-label">Pre-cook Temp (°C)</label><input type="number" step="0.1" {...register('kavuniTemp')} className="field-input" placeholder="90.0"/></div>
+                        <div><label className="field-label">Pre-cook Duration (min)</label><input type="number" {...register('kavuniMin')} className="field-input" placeholder="30"/></div>
                      </div>
                    )}
                  </div>
@@ -375,43 +389,43 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label">Substrate Particle Size / Mesh #</label>
-              <input value={particleSize} onChange={e=>setParticleSize(e.target.value)} className="field-input" placeholder="e.g. 60 mesh / 250 µm"/>
+              <input {...register('particleSize')} className="field-input" placeholder="e.g. 60 mesh / 250 µm"/>
             </div>
             {/* G-53: Water Activity */}
             <div>
               <label className="field-label">Water Activity (aW) <span className="text-slate-400 text-xs">substrate</span></label>
-              <input type="number" step="0.01" min="0" max="1" value={awValue} onChange={e=>setAwValue(e.target.value)} className="field-input" placeholder="0.95"/>
-              {awValue && parseFloat(awValue) > 0.97 && <p className="text-xs text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
+              <input type="number" step="0.01" min="0" max="1" {...register('awValue')} className="field-input" placeholder="0.95"/>
+              {watchAwValue && parseFloat(watchAwValue) > 0.97 && <p className="text-xs text-amber-600 font-bold mt-0.5">⚠ aW &gt;0.97 — microbial risk elevated</p>}
             </div>
             {/* A-25: Starch Gelatinization */}
             <div>
               <label className="field-label">Starch Gelatinization Temp (°C) <span className="text-slate-400 text-xs">A-25</span></label>
-              <input type="number" step="0.1" value={starchGelTemp} onChange={e=>setStarchGelTemp(e.target.value)} className="field-input" placeholder="65–70°C (grain substrates)"/>
+              <input type="number" step="0.1" {...register('starchGelTemp')} className="field-input" placeholder="65–70°C (grain substrates)"/>
             </div>
             <div className="flex flex-col justify-end pb-0.5">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={starchGelConfirm} onChange={e=>setStarchGelConfirm(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <input type="checkbox" {...register('starchGelConfirm')} className="w-4 h-4 rounded border-slate-300"/>
                 <span className="text-xs font-bold text-slate-700">Gelatinization confirmed (iodine test / viscosity change)</span>
               </label>
             </div>
             {/* A-58: Buffer Capacity */}
             <div>
               <label className="field-label">Buffer Capacity (mmol/L) <span className="text-slate-400 text-xs">A-58</span></label>
-              <input type="number" step="0.1" value={bufferCapacity} onChange={e=>setBufferCapacity(e.target.value)} className="field-input" placeholder="e.g. 25"/>
+              <input type="number" step="0.1" {...register('bufferCapacity')} className="field-input" placeholder="e.g. 25"/>
               <p className="text-xs text-slate-400 mt-0.5">Resistance to pH change — affects fermentation rate variability</p>
             </div>
             {/* A-59: Viscosity */}
             <div>
               <label className="field-label">Substrate Viscosity (cP) <span className="text-slate-400 text-xs">A-59</span></label>
-              <input type="number" step="0.1" value={viscosityCp} onChange={e=>setViscosityCp(e.target.value)} className="field-input" placeholder="e.g. 120"/>
+              <input type="number" step="0.1" {...register('viscosityCp')} className="field-input" placeholder="e.g. 120"/>
               <p className="text-xs text-slate-400 mt-0.5">Affects mixing efficiency and mass transfer</p>
             </div>
           </div>
           {/* G-85: Substrate photo URL */}
           <div>
             <label className="field-label">Substrate Photo URL <span className="text-slate-400 text-xs">optional — colour/texture traceability</span></label>
-            <input type="url" value={substratePhotoUrl} onChange={e=>setSubstratePhotoUrl(e.target.value)} className="field-input" placeholder="https://... (link to substrate photo)"/>
-            {substratePhotoUrl && <a href={substratePhotoUrl} target="_blank" rel="noreferrer" className="text-xs text-navy underline font-bold mt-0.5 inline-block">View photo →</a>}
+            <input type="url" {...register('substratePhotoUrl')} className="field-input" placeholder="https://... (link to substrate photo)"/>
+            {watch('substratePhotoUrl') && <a href={watch('substratePhotoUrl')} target="_blank" rel="noreferrer" className="text-xs text-navy underline font-bold mt-0.5 inline-block">View photo →</a>}
           </div>
         </div>
 
@@ -419,56 +433,56 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         <div className="border-t border-slate-100 pt-4 space-y-2">
           <div className="flex items-center justify-between">
             <label className="field-label mb-0">Pre-treatment Steps</label>
-            <button type="button" onClick={()=>setPretreatSteps(p=>[...p,{type:'Heat',target_temp:'',duration_min:'',notes:''}])}
+            <button type="button" onClick={()=>appendPretreat({type:'Heat',target_temp:'',duration_min:'',notes:''})}
               className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-black rounded-lg uppercase hover:bg-slate-100">
               + Add Step
             </button>
           </div>
-          {pretreatSteps.map((step, idx) => (
-            <div key={idx} className="p-3 bg-slate-50/40 border border-slate-100 rounded-xl grid grid-cols-4 gap-2 items-center">
-              <select value={step.type} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,type:e.target.value}:s))} className="field-input text-xs col-span-1 bg-white p-1.5">
+          {pretreatFields.map((step, idx) => (
+            <div key={step.id} className="p-3 bg-slate-50/40 border border-slate-100 rounded-xl grid grid-cols-4 gap-2 items-center">
+              <select {...register(`pretreatSteps.${idx}.type`)} className="field-input text-xs col-span-1 bg-white p-1.5">
                 {['Heat','Steam','Chemical','Enzymatic','Mechanical','Other'].map(t=><option key={t}>{t}</option>)}
               </select>
-              <input type="number" value={step.target_temp} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,target_temp:e.target.value}:s))} placeholder="Temp °C" className="field-input text-xs p-1.5"/>
-              <input type="number" value={step.duration_min} onChange={e=>setPretreatSteps(p=>p.map((s,i)=>i===idx?{...s,duration_min:e.target.value}:s))} placeholder="Min" className="field-input text-xs p-1.5"/>
-              <button type="button" onClick={()=>setPretreatSteps(p=>p.filter((_,i)=>i!==idx))} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
+              <input type="number" {...register(`pretreatSteps.${idx}.target_temp`)} placeholder="Temp °C" className="field-input text-xs p-1.5"/>
+              <input type="number" {...register(`pretreatSteps.${idx}.duration_min`)} placeholder="Min" className="field-input text-xs p-1.5"/>
+              <button type="button" onClick={()=>removePretreat(idx)} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
             </div>
           ))}
-          {pretreatSteps.length === 0 && <p className="text-xs text-slate-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
+          {pretreatFields.length === 0 && <p className="text-xs text-slate-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}
         </div>
 
         <div className="border-t border-slate-100 pt-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="field-label">Added Water Volume (ml)</label>
-              <input type="number" step="1" value={waterVol} onChange={e=>setWaterVol(e.target.value)} className="field-input" placeholder="0"/>
+              <input type="number" step="1" {...register('waterVol')} className="field-input" placeholder="0"/>
             </div>
             <div>
               <label className="field-label">Total Volume Prepared (ml)</label>
-              <input type="number" step="1" value={totalVol} onChange={e=>setTotalVol(e.target.value)} className="field-input" placeholder="250"/>
+              <input type="number" step="1" {...register('totalVol')} className="field-input" placeholder="250"/>
             </div>
           </div>
           <div className="mt-3">
             <label className="field-label">Initial pH of Slurry <span className="text-slate-400">(pre-fermentation)</span></label>
-            <input type="number" step="0.01" value={initPH} onChange={e=>setInitPH(e.target.value)} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-2xl font-black font-mono text-center focus:border-navy outline-none" placeholder="6.00"/>
+            <input type="number" step="0.01" {...register('initPH')} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-2xl font-black font-mono text-center focus:border-navy outline-none" placeholder="6.00"/>
           </div>
         </div>
 
         {isIntern && (
           <div><label className="field-label text-red-500">Supervised By *</label>
-            <select value={supervisedBy} onChange={e=>setSupervisedBy(e.target.value)} className="field-input border-red-200">
+            <select {...register('supervisedBy')} className="field-input border-red-200">
               <option value="">Select supervisor...</option>
               {supervisors.map(s=><option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
           </div>
         )}
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes / observations..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
+        <textarea {...register('notes')} rows={2} placeholder="Notes / observations..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <button onClick={()=>handleSave(false)} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={handleSubmit((data) => onSubmit(data, false))} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
-          <button onClick={()=>handleSave(true)} disabled={saving||actionLoading||ragiMoist==='Fail'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+          <button onClick={handleSubmit((data) => onSubmit(data, true))} disabled={saving||actionLoading||watchRagiMoist==='Fail'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
             Complete → Sterilisation
           </button>
         </div>
@@ -500,7 +514,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                 <tbody>
                   {formulationIngredients.map(ing => {
                     const target = ((parseFloat(ing.quantity)||0) * scaleFactor).toFixed(2);
-                    const usage = bomUsage[ing.item_id] || {};
+                    const usage = watchBomUsage?.[ing.item_id] || {};
                     const actual = parseFloat(usage.usedQty);
                     const dev = (!isNaN(actual) && parseFloat(target)>0) ? ((actual - parseFloat(target)) / parseFloat(target) * 100).toFixed(1) : '—';
                     const devNum = parseFloat(dev);
@@ -519,7 +533,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
               </table>
               {formulationIngredients.some(ing => {
                 const target = ((parseFloat(ing.quantity)||0)*scaleFactor);
-                const actual = parseFloat((bomUsage[ing.item_id]||{}).usedQty);
+                const actual = parseFloat((watchBomUsage?.[ing.item_id]||{}).usedQty);
                 return !isNaN(actual) && target>0 && Math.abs((actual-target)/target*100)>10;
               }) && <p className="text-xs font-bold text-amber-700 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>One or more ingredients deviate &gt;10% from target — log deviation if not already done.</p>}
             </div>

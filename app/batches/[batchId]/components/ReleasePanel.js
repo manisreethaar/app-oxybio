@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { CheckCircle, Lock, AlertTriangle, Loader, FileText, Package } from 'lucide-react';
@@ -14,32 +15,26 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const isCeo = ['ceo','admin','cto','research_fellow'].includes(role);
   const isQaAuthorised = ['ceo','admin','cto'].includes(role); // labelling sign-off requires higher authority
 
-  const [yieldVol, setYieldVol] = useState('');
-  const [bottles,  setBottles]  = useState('');
-  const [botVol,   setBotVol]   = useState('');
-  const [notes,    setNotes]    = useState('');
+  const { register, handleSubmit, setValue, watch, reset, getValues } = useForm({
+    defaultValues: {
+      yieldVol: '', bottles: '', botVol: '', notes: '',
+      formulationId: '', skuName: '', esigInput: '',
+      labelBatchNo: '', labelMfd: '', labelBbd: '',
+      labelVerified: false, packIntegrity: 'Not Checked', fillWeightG: '',
+      matCost: '', labCost: '', ovhCost: ''
+    }
+  });
 
-  // G-16: SKU / formulation linkage
-  const [formulationId, setFormulationId] = useState('');
-  const [skuName,       setSkuName]       = useState('');
-  const [formulations,  setFormulations]  = useState([]);
+  const watchFormulationId = watch('formulationId');
+  const watchEsigInput = watch('esigInput') || '';
+  const watchLabelVerified = watch('labelVerified');
+  const watchPackIntegrity = watch('packIntegrity');
+  const watchYield = watch('yieldVol');
+  const watchMat = watch('matCost');
+  const watchLab = watch('labCost');
+  const watchOvh = watch('ovhCost');
 
-  // G-14: E-signature confirmation
-  const [esigInput, setEsigInput] = useState('');
-  const esigValid = esigInput.trim().toUpperCase() === 'RELEASE';
-
-  // A-17: Labelling verification
-  const [labelBatchNo,    setLabelBatchNo]    = useState('');
-  const [labelMfd,        setLabelMfd]        = useState('');
-  const [labelBbd,        setLabelBbd]        = useState('');
-  const [labelVerified,   setLabelVerified]   = useState(false);
-  const [packIntegrity,   setPackIntegrity]   = useState('Not Checked');
-  const [fillWeightG,     setFillWeightG]     = useState('');
-
-  // A-15: Batch cost inputs
-  const [matCost,  setMatCost]  = useState('');
-  const [labCost,  setLabCost]  = useState('');
-  const [ovhCost,  setOvhCost]  = useState('');
+  const esigValid = watchEsigInput.trim().toUpperCase() === 'RELEASE';
   const [costSaved, setCostSaved] = useState(false);
 
   // G-09/G-13: Release certificate modal
@@ -68,16 +63,19 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
     if (relRes.data) {
       setRecord(relRes.data);
-      setYieldVol(relRes.data.yield_volume_ml || '');
-      setBottles(relRes.data.bottles_produced  || '');
-      setBotVol(relRes.data.bottle_volume_ml   || '');
-      setNotes(relRes.data.release_notes       || '');
-      setFormulationId(relRes.data.formulation_id || '');
-      setSkuName(relRes.data.sku_name || '');
+      reset({
+        yieldVol: relRes.data.yield_volume_ml || '',
+        bottles: relRes.data.bottles_produced  || '',
+        botVol: relRes.data.bottle_volume_ml   || '',
+        notes: relRes.data.release_notes       || '',
+        formulationId: relRes.data.formulation_id || '',
+        skuName: relRes.data.sku_name || '',
+        labelBatchNo: '', labelMfd: '', labelBbd: '',
+        labelVerified: false, packIntegrity: 'Not Checked', fillWeightG: '',
+        matCost: '', labCost: '', ovhCost: '', esigInput: ''
+      });
     } else {
       setRecord(null);
-      setYieldVol(''); setBottles(''); setBotVol(''); setNotes('');
-      setFormulationId(''); setSkuName('');
     }
   }, [activeFlask?.id, activeFlask?.current_stage, supabase]);
 
@@ -92,7 +90,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
       .catch(err => console.error('ReleasePanel formulations fetch error:', err));
   }, [supabase]);
 
-  const handleRelease = async () => {
+  const handleRelease = async (formData) => {
     setReleaseError(null);
     if (!esigValid) { toast.warn('Type RELEASE in the confirmation field to proceed.'); return; }
     setSaving(true);
@@ -105,22 +103,22 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           flask_id:           activeFlask.id,
-          yield_volume_ml:    yieldVol ? parseFloat(yieldVol) : null,
-          bottles_produced:   bottles  ? parseInt(bottles)    : null,
-          bottle_volume_ml:   botVol   ? parseFloat(botVol)   : null,
-          release_notes:      notes || null,
+          yield_volume_ml:    formData.yieldVol ? parseFloat(formData.yieldVol) : null,
+          bottles_produced:   formData.bottles  ? parseInt(formData.bottles)    : null,
+          bottle_volume_ml:   formData.botVol   ? parseFloat(formData.botVol)   : null,
+          release_notes:      formData.notes || null,
           // G-16
-          formulation_id:     formulationId || null,
-          sku_name:           skuName || null,
+          formulation_id:     formData.formulationId || null,
+          sku_name:           formData.skuName || null,
           // G-14: e-sig timestamp
           esig_confirmed_at:  new Date().toISOString(),
           // A-17: labelling
-          label_verified:      labelVerified,
-          label_batch_number:  labelBatchNo || null,
-          label_mfd:           labelMfd || null,
-          label_bbd:           labelBbd || null,
-          pack_integrity_check: packIntegrity,
-          fill_weight_g:       fillWeightG ? parseFloat(fillWeightG) : null,
+          label_verified:      formData.labelVerified,
+          label_batch_number:  formData.labelBatchNo || null,
+          label_mfd:           formData.labelMfd || null,
+          label_bbd:           formData.labelBbd || null,
+          pack_integrity_check: formData.packIntegrity,
+          fill_weight_g:       formData.fillWeightG ? parseFloat(formData.fillWeightG) : null,
         }),
       });
 
@@ -299,12 +297,8 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
               {/* G-16: SKU / Formulation linkage */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="field-label">Product Formulation (SKU)</label>
-                  <select value={formulationId} onChange={e => {
-                    setFormulationId(e.target.value);
-                    const f = formulations.find(f => f.id === e.target.value);
-                    if (f) setSkuName(f.code ? `${f.code} — ${f.name}` : f.name);
-                  }} className="field-input bg-white">
+                  <label className="field-label">Product Formulation (SKU) <span className="text-emerald-600">*</span></label>
+                  <select {...register('formulationId')} className="field-input bg-white" required>
                     <option value="">Select formulation...</option>
                     {formulations.map(f => (
                       <option key={f.id} value={f.id}>{f.code ? `[${f.code}] ` : ''}{f.name}</option>
@@ -312,43 +306,43 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                   </select>
                 </div>
                 <div>
-                  <label className="field-label">SKU / Product Name</label>
-                  <input value={skuName} onChange={e => setSkuName(e.target.value)} className="field-input" placeholder="e.g. OXY-PROB-001 Ragi Probiotic"/>
+                  <label className="field-label">SKU / Product Name <span className="text-emerald-600">*</span></label>
+                  <input {...register('skuName')} className="field-input" placeholder="e.g. OXY-PROB-001 Ragi Probiotic" required/>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="field-label">Yield Vol (ml)</label>
-                  <input type="number" step="1" value={yieldVol} onChange={e => setYieldVol(e.target.value)} className="field-input" placeholder="e.g. 850"/>
+                  <label className="field-label">Yield Vol (ml) <span className="text-emerald-600">*</span></label>
+                  <input type="number" step="1" {...register('yieldVol')} className="field-input" placeholder="e.g. 850" required/>
                 </div>
                 <div>
-                  <label className="field-label">Bottles Made</label>
-                  <input type="number" step="1" value={bottles} onChange={e => setBottles(e.target.value)} className="field-input" placeholder="e.g. 8"/>
+                  <label className="field-label">Bottles Made <span className="text-emerald-600">*</span></label>
+                  <input type="number" step="1" {...register('bottles')} className="field-input" placeholder="e.g. 8" required/>
                 </div>
                 <div>
-                  <label className="field-label">Bottle Vol (ml)</label>
-                  <input type="number" step="1" value={botVol} onChange={e => setBotVol(e.target.value)} className="field-input" placeholder="e.g. 100"/>
+                  <label className="field-label">Bottle Vol (ml) <span className="text-emerald-600">*</span></label>
+                  <input type="number" step="1" {...register('botVol')} className="field-input" placeholder="e.g. 100" required/>
                 </div>
               </div>
 
               <textarea
-                value={notes} onChange={e => setNotes(e.target.value)}
+                {...register('notes')}
                 rows={2} placeholder="Release notes (optional)..."
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none resize-none"
               />
 
               {/* G-64: Yield calculation vs planned */}
-              {yieldVol && batch.planned_volume_ml && (
+              {watchYield && batch.planned_volume_ml && (
                 <div className={`p-3 rounded-xl border text-xs font-semibold ${
-                  (parseFloat(yieldVol) / (batch.planned_volume_ml * (batch.num_flasks||1)) * 100) >= 85
+                  (parseFloat(watchYield) / (batch.planned_volume_ml * (batch.num_flasks||1)) * 100) >= 85
                     ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
                     : 'bg-amber-50 border-amber-200 text-amber-800'
                 }`}>
                   <p className="font-black mb-0.5">Yield Analysis</p>
-                  <p>Planned: <strong>{batch.planned_volume_ml * (batch.num_flasks||1)} ml</strong> · Actual: <strong>{yieldVol} ml</strong></p>
-                  <p>Yield efficiency: <strong>{((parseFloat(yieldVol) / (batch.planned_volume_ml * (batch.num_flasks||1))) * 100).toFixed(1)}%</strong>
-                    {((parseFloat(yieldVol) / (batch.planned_volume_ml * (batch.num_flasks||1))) * 100) < 85 && ' ⚠ Below 85% target'}
+                  <p>Planned: <strong>{batch.planned_volume_ml * (batch.num_flasks||1)} ml</strong> · Actual: <strong>{watchYield} ml</strong></p>
+                  <p>Yield efficiency: <strong>{((parseFloat(watchYield) / (batch.planned_volume_ml * (batch.num_flasks||1))) * 100).toFixed(1)}%</strong>
+                    {((parseFloat(watchYield) / (batch.planned_volume_ml * (batch.num_flasks||1))) * 100) < 85 && ' ⚠ Below 85% target'}
                   </p>
                 </div>
               )}
@@ -375,15 +369,15 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="field-label">Label Batch Number</label>
-                    <input value={labelBatchNo} onChange={e => setLabelBatchNo(e.target.value)} className="field-input" placeholder="As printed on label"/>
+                    <input {...register('labelBatchNo')} className="field-input" placeholder="As printed on label"/>
                   </div>
                   <div>
                     <label className="field-label">MFD on Label</label>
-                    <input type="date" value={labelMfd} onChange={e => setLabelMfd(e.target.value)} className="field-input"/>
+                    <input type="date" {...register('labelMfd')} className="field-input"/>
                   </div>
                   <div>
                     <label className="field-label">BBD on Label</label>
-                    <input type="date" value={labelBbd} onChange={e => setLabelBbd(e.target.value)} className="field-input"/>
+                    <input type="date" {...register('labelBbd')} className="field-input"/>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -391,8 +385,8 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                     <label className="field-label">Pack Integrity</label>
                     <div className="flex gap-2">
                       {['Pass','Fail','Not Checked'].map(o => (
-                        <button key={o} type="button" onClick={() => setPackIntegrity(o)}
-                          className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${packIntegrity===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
+                        <button key={o} type="button" onClick={() => setValue('packIntegrity', o)}
+                          className={`flex-1 py-1.5 text-xs font-black rounded-lg border transition-all ${watchPackIntegrity===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
                           {o}
                         </button>
                       ))}
@@ -400,32 +394,32 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                   </div>
                   <div>
                     <label className="field-label">Fill Weight (g)</label>
-                    <input type="number" step="0.1" value={fillWeightG} onChange={e => setFillWeightG(e.target.value)} className="field-input" placeholder="Target vs actual"/>
+                    <input type="number" step="0.1" {...register('fillWeightG')} className="field-input" placeholder="Target vs actual"/>
                   </div>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={labelVerified} onChange={e => setLabelVerified(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                  <input type="checkbox" {...register('labelVerified')} className="w-4 h-4 rounded border-slate-300"/>
                   <span className="text-xs font-bold text-slate-800">Labelling verified — batch number, MFD, BBD, net weight, and declarations are correct</span>
                 </label>
-                {packIntegrity === 'Fail' && <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>Pack integrity failure — do not release until seal/closure issue is resolved.</p>}
+                {watchPackIntegrity === 'Fail' && <p className="text-xs text-red-700 font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5"/>Pack integrity failure — do not release until seal/closure issue is resolved.</p>}
               </div>
 
               {/* A-15: Batch Cost */}
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-3">
                 <p className="text-xs font-black text-emerald-900 uppercase tracking-wider">Batch Cost (COGS)</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div><label className="field-label">Material Costs (₹)</label><input type="number" step="0.01" value={matCost} onChange={e=>setMatCost(e.target.value)} className="field-input" placeholder="0.00"/></div>
-                  <div><label className="field-label">Labor Costs (₹)</label><input type="number" step="0.01" value={labCost} onChange={e=>setLabCost(e.target.value)} className="field-input" placeholder="0.00"/></div>
-                  <div><label className="field-label">Overhead Costs (₹)</label><input type="number" step="0.01" value={ovhCost} onChange={e=>setOvhCost(e.target.value)} className="field-input" placeholder="0.00"/></div>
+                  <div><label className="field-label">Material Costs (₹)</label><input type="number" step="0.01" {...register('matCost')} className="field-input" placeholder="0.00"/></div>
+                  <div><label className="field-label">Labor Costs (₹)</label><input type="number" step="0.01" {...register('labCost')} className="field-input" placeholder="0.00"/></div>
+                  <div><label className="field-label">Overhead Costs (₹)</label><input type="number" step="0.01" {...register('ovhCost')} className="field-input" placeholder="0.00"/></div>
                 </div>
-                {(matCost || labCost || ovhCost) && (
-                  <p className="text-xs font-black text-emerald-800">Total COGS: ₹{((parseFloat(matCost)||0)+(parseFloat(labCost)||0)+(parseFloat(ovhCost)||0)).toFixed(2)}</p>
+                {(watchMat || watchLab || watchOvh) && (
+                  <p className="text-xs font-black text-emerald-800">Total COGS: ₹{((parseFloat(watchMat)||0)+(parseFloat(watchLab)||0)+(parseFloat(watchOvh)||0)).toFixed(2)}</p>
                 )}
                 <button type="button" onClick={async () => {
                   const targetId = batchId || batch?.id;
                   if (!targetId) return;
                   try {
-                    const res = await fetch('/api/batch-costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_id: targetId, material_costs: matCost, labor_costs: labCost, overhead_costs: ovhCost }) });
+                    const res = await fetch('/api/batch-costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_id: targetId, material_costs: watchMat, labor_costs: watchLab, overhead_costs: watchOvh }) });
                     const data = await res.json();
                     if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save cost.');
                     setCostSaved(true);
@@ -441,7 +435,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
                 <p className="text-xs font-black text-amber-900 uppercase tracking-wider">Electronic Signature Required</p>
                 <p className="text-xs text-amber-700">Type <span className="font-black font-mono bg-amber-100 px-1.5 py-0.5 rounded">RELEASE</span> to confirm your authorised release decision for {activeFlask.flask_label}.</p>
                 <input
-                  value={esigInput} onChange={e => setEsigInput(e.target.value)}
+                  {...register('esigInput')}
                   placeholder="Type RELEASE to confirm"
                   className={`w-full px-4 py-3 border-2 rounded-xl font-black font-mono text-sm outline-none transition-all ${esigValid ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-white text-slate-800'}`}
                 />
@@ -457,7 +451,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
               )}
 
               <button
-                onClick={handleRelease}
+                onClick={handleSubmit(handleRelease)}
                 disabled={saving || !esigValid}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-sm shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
               >
