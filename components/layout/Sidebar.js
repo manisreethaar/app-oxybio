@@ -7,7 +7,7 @@ import {
   BookOpen, Users, LogOut, UserCircle, Contact,
   ShieldAlert, Beaker, Wrench, Package, Microscope, Dna,
   Settings, LayoutGrid, FileCheck, Archive, MessageSquare, HelpCircle,
-  Wind, Wifi, ArrowRight, ChevronRight, X, Home, Menu,
+  Wind, Wifi, ArrowRight, ChevronRight, X, Home, Menu, Filter,
   Bell, Search, PieChart, Shield, Droplets
 } from 'lucide-react';
 import Link from 'next/link';
@@ -76,6 +76,7 @@ export default function Sidebar() {
     { title: 'Lab & Production', items: [
       { name: 'Lab Bench',   href: '/lab-bench',           icon: LayoutGrid,   show: eCanDo('batches','view') },
       { name: 'Batches',     href: '/batches',             icon: FlaskConical, show: eCanDo('batches','view') },
+      { name: 'Downstream',  href: '/downstream',          icon: Filter,       show: eCanDo('batches','view') },
       { name: 'Lab Notebook',href: '/lab-notebook',        icon: BookOpen,     show: eCanDo('lab_notebook','view') },
       { name: 'Incubation',  href: '/research/incubation', icon: FlaskConical, show: eCanDo('batches','view') },
       { name: 'TA Lab',      href: '/lab-bench/ta',        icon: Droplets,     show: eCanDo('batches','view') },

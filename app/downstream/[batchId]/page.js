@@ -27,25 +27,25 @@ const PanelLoading = () => (
   </div>
 );
 
-const MediaPrepPanel = dynamic(() => import('./components/MediaPrepPanel'), { ssr: false, loading: PanelLoading });
-const SterilisationPanel = dynamic(() => import('./components/SterilisationPanel'), { ssr: false, loading: PanelLoading });
-const InoculationPanel = dynamic(() => import('./components/InoculationPanel'), { ssr: false, loading: PanelLoading });
-const FermentationPanel = dynamic(() => import('./components/FermentationPanel'), { ssr: false, loading: PanelLoading });
-const HarvestPanel = dynamic(() => import('./components/HarvestPanel'), { ssr: false, loading: PanelLoading });
-const LinkedRecordsPanel = dynamic(() => import('./components/LinkedRecordsPanel'), { ssr: false });
+const SeparationPanel        = dynamic(() => import('./components/SeparationPanel'),        { ssr: false, loading: PanelLoading });
+const ProductDevelopmentPanel = dynamic(() => import('./components/ProductDevelopmentPanel'), { ssr: false, loading: PanelLoading });
+const QCHoldPanel             = dynamic(() => import('./components/QCHoldPanel'),             { ssr: false, loading: PanelLoading });
+const ReleasePanel            = dynamic(() => import('./components/ReleasePanel'),            { ssr: false, loading: PanelLoading });
+const RejectionPanel          = dynamic(() => import('./components/RejectionPanel'),          { ssr: false, loading: PanelLoading });
+const LinkedRecordsPanel      = dynamic(() => import('./components/LinkedRecordsPanel'),      { ssr: false });
 
 const STAGES = [
-  { id: 'media_prep',       label: 'Media Prep',       icon: Beaker,      color: 'text-slate-600', bg: 'bg-slate-50',  border: 'border-slate-200' },
-  { id: 'sterilisation',    label: 'Sterilisation',    icon: ShieldCheck, color: 'text-slate-600',  bg: 'bg-slate-50',   border: 'border-slate-200'  },
-  { id: 'inoculation',      label: 'Inoculation',      icon: Droplets,    color: 'text-slate-600',   bg: 'bg-slate-50',    border: 'border-slate-200'   },
-  { id: 'fermentation',     label: 'Fermentation',     icon: Activity,    color: 'text-navy',       bg: 'bg-navy/10',    border: 'border-navy/30'    },
-  { id: 'harvest',          label: 'Harvest',          icon: Package,     color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200' },
+  { id: 'straining',        label: 'Separation',       icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
+  { id: 'extract_addition', label: 'Product Dev',      icon: Leaf,        color: 'text-slate-600',bg: 'bg-slate-50', border: 'border-slate-200'},
+  { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200'   },
+  { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
+  { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
 ];
 
 const PANEL_MAP = {
-  media_prep: MediaPrepPanel, sterilisation: SterilisationPanel,
-  inoculation: InoculationPanel, fermentation: FermentationPanel,
-  harvest: HarvestPanel,
+  straining: SeparationPanel,
+  extract_addition: ProductDevelopmentPanel,
+  qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
 
 function visibleWorkflowStage(stage) {
@@ -53,13 +53,14 @@ function visibleWorkflowStage(stage) {
 }
 
 const STAGE_CHECKLIST_MAP = {
-  media_prep:       'Media Preparation',
-  sterilisation:    'Sterilisation',
-  inoculation:      'Inoculation',
-  fermentation:     'fermentation readings',
+  straining:        'Separation',
+  extract_addition: 'Product Development',
+  qc_hold:          'QC Hold',
+  released:         'Release or Reject',
+  rejected:         'Release or Reject',
 };
 
-export default function BatchDetailPage() {
+export default function DownstreamDetailPage() {
   const { batchId }  = useParams();
   const { role, employeeProfile, canDo, loading: authLoading } = useAuth();
   const router = useRouter();

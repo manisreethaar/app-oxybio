@@ -42,7 +42,7 @@ function EquipmentPicker({ label, value, onChange, equipment, placeholder }) {
   );
 }
 
-export default function StrainingPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
+export default function SeparationPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [record,     setRecord]     = useState(null);
   const [saving,     setSaving]     = useState(false);

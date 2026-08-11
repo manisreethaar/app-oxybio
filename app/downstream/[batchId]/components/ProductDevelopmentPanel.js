@@ -11,7 +11,7 @@ const ADD_METHOD = ['Aseptic pouring', 'Sterile pipette', 'Peristaltic pump'];
 // G-06: allergen options per FSSAI major allergen list
 const ALLERGEN_OPTIONS = ['Milk / Dairy','Gluten / Wheat','Soy','Tree Nuts','Peanuts','Sesame','Eggs','Fish / Shellfish'];
 
-export default function ExtractAdditionPanel({ batch, activeFlask, employees, availableStock, employeeProfile, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
+export default function ProductDevelopmentPanel({ batch, activeFlask, employees, availableStock, employeeProfile, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -160,14 +160,14 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
     finally { setSaving(false); }
   };
 
-  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Extract Addition.</div>;
+  if (!activeFlask) return <div className="p-4 text-center text-slate-400">Select a Trial to view Product Development (Extract / RTD).</div>;
 
   return (
     <div className="space-y-5">
       <div className="card p-5 border-l-4 border-l-fuchsia-500">
         <div className="flex items-center gap-2 mb-1">
           <Leaf className="w-5 h-5 text-slate-600"/>
-          <h2 className="text-base font-bold text-slate-900">Extract Addition: <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
+          <h2 className="text-base font-bold text-slate-900">Product Development (Extract / RTD): <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
         </div>
         <p className="text-xs text-slate-500">Log mushroom decoction/extract integration for this specific trial.</p>
         
@@ -340,7 +340,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
               {saving?'Saving...':'Save Draft'}
             </button>
             <button onClick={handleSubmit((data) => onSubmit(data, 'qc_hold'))} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
-              Complete Extract Addition → QC Hold
+              Complete Product Development (Extract / RTD) → QC Hold
             </button>
           </div>
         </div>

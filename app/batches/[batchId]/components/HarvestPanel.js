@@ -124,7 +124,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
       const { error } = await supabase.from('batch_stage_harvest')
         .upsert(payload, { onConflict: 'flask_id' });
       if (error) throw error;
-      toast.success(advanceTarget ? 'Harvest saved. Advancing to Straining.' : 'Harvest record saved.');
+      toast.success(advanceTarget ? 'Harvest complete. Trial sent to Downstream Processing.' : 'Harvest record saved.');
       loadRecord();
       if (advanceTarget && onAdvanceFlaskStage) {
         await onAdvanceFlaskStage(advanceTarget);
@@ -257,7 +257,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
             {saving ? 'Saving...' : 'Save Harvest Record'}
           </button>
           <button onClick={handleSubmit((data) => onSubmit(data, 'straining'))} disabled={saving || actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
-            Save & Advance to Straining
+            Complete Harvest & Send to DSP
           </button>
         </div>
       </div>
