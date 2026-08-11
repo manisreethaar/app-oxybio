@@ -52,9 +52,19 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const fetchSOPs = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await withTimeout(supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true).limit(500), 45000, 'SOPs load timed out');
-      if (error) throw error;
-      const mapped = (data || []).map((sop: any) => ({ ...sop, is_acknowledged: (sop.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) }));
+      const [sopsRes, acksRes] = await Promise.all([
+        withTimeout(supabase.from('sop_library').select('*').eq('is_active', true).limit(500), 45000, 'SOPs load timed out'),
+        employeeProfile?.id ? supabase.from('sop_acknowledgements').select('sop_id').eq('employee_id', employeeProfile.id) : { data: [] }
+      ]);
+      
+      if (sopsRes.error) throw sopsRes.error;
+      
+      const acksSet = new Set((acksRes.data || []).map((a: any) => a.sop_id));
+      
+      const mapped = (sopsRes.data || []).map((sop: any) => ({ 
+        ...sop, 
+        is_acknowledged: acksSet.has(sop.id) 
+      }));
       setSops(mapped);
     } catch (err) { console.error('Fetch SOPs error:', err); }
     finally { setLoading(false); }
@@ -100,10 +110,13 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                 return prev;
              });
            } else {
-             // For INSERTs, query to get joined relational data
-             const { data } = await supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('id', payload.new.id).single();
-             if (data) {
-               const mapped = { ...data, is_acknowledged: (data.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) };
+             // For INSERTs, query to get relational data efficiently
+             const [sopRes, ackRes] = await Promise.all([
+               supabase.from('sop_library').select('*').eq('id', payload.new.id).single(),
+               employeeProfile?.id ? supabase.from('sop_acknowledgements').select('sop_id').eq('sop_id', payload.new.id).eq('employee_id', employeeProfile.id).maybeSingle() : { data: null }
+             ]);
+             if (sopRes.data) {
+               const mapped = { ...sopRes.data, is_acknowledged: !!ackRes.data };
                setSops(prev => {
                   const exists = prev.find(s => s.id === mapped.id);
                   if (exists) return prev.map(s => s.id === mapped.id ? mapped : s);

@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
-import { Package, AlertTriangle, Thermometer, CheckCircle2 } from 'lucide-react';
+import { useData } from '@/lib/hooks/useData';
+import { Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const HARVEST_METHODS = ['Centrifugation', 'Filtration', 'Decantation', 'Gravity settling'];
 const VIABILITY_METHODS = ['Live/Dead staining', 'Methylene Blue', 'Flow Cytometry', 'Plate count', 'Not done'];
@@ -11,7 +12,13 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [equipment, setEquipment] = useState([]);
+
+  const { data: equipmentData } = useData({
+    table: 'equipment',
+    select: 'id, name, status',
+    order: { column: 'name' }
+  });
+  const equipment = equipmentData || [];
 
   const [harvestStart,     setHarvestStart]     = useState('');
   const [method,           setMethod]           = useState('Centrifugation');
@@ -39,17 +46,17 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
   const loadRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
-    let data, eq;
+    let data;
     try {
-      [{ data }, { data: eq }] = await withTimeout(Promise.all([
+      ({ data } = await withTimeout(
         supabase.from('batch_stage_harvest').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-        supabase.from('equipment').select('id, name, status').order('name'),
-      ]), 45000, 'Harvest data load timed out');
+        45000, 
+        'Harvest data load timed out'
+      ));
     } catch (err) {
       console.error('HarvestPanel fetch error:', err);
       return;
     }
-    if (eq) setEquipment(eq);
     if (data) {
       setRecord(data);
       setHarvestStart(toLocal(data.harvest_start));

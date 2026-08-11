@@ -89,64 +89,27 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'Flask not found for this batch.' }, { status: 404 });
     }
 
-    const currentStage = flask.current_stage || from_stage || 'inoculation';
-    const flaskStatus = to_stage === 'rejected' ? 'rejected' : 'active';
-    const { error: updateErr } = await db
-      .from('batch_flasks')
-      .update({ current_stage: to_stage, status: flaskStatus })
-      .eq('id', flask_id);
+    const { data: rpcResult, error: rpcErr } = await db.rpc('advance_flask_stage', {
+      p_flask_id: flask_id,
+      p_batch_id: batchId,
+      p_to_stage: to_stage,
+      p_employee_id: emp.id,
+      p_flask_label: flask.flask_label
+    });
 
-    if (updateErr) {
-      const isConstraint = updateErr.code === '23514' || updateErr.message?.toLowerCase().includes('check constraint');
+    if (rpcErr) {
+      return NextResponse.json({ success: false, error: rpcErr.message }, { status: 500 });
+    }
+
+    if (!rpcResult.success) {
+      const isConstraint = rpcResult.code === '23514' || rpcResult.error?.toLowerCase().includes('constraint');
       return NextResponse.json({
         success: false,
-        error: isConstraint ? constraintMessage(to_stage) : updateErr.message,
+        error: isConstraint ? constraintMessage(to_stage) : rpcResult.error,
       }, { status: isConstraint ? 409 : 500 });
     }
 
-    let finalBatchStage = batch.current_stage;
-    const { data: flasks, error: flasksErr } = await db
-      .from('batch_flasks')
-      .select('current_stage, status')
-      .eq('batch_id', batchId);
-    if (flasksErr) {
-      return NextResponse.json({ success: false, error: flasksErr.message }, { status: 500 });
-    }
-
-    const activeFlasks = (flasks || []).filter(f => f.status !== 'rejected');
-    if (activeFlasks.length > 0) {
-      const slowestStage = activeFlasks.reduce((slowest, f) => {
-        const stage = visibleWorkflowStage(f.current_stage || 'inoculation');
-        const stageRank = FLASK_STAGE_RANKS.indexOf(stage);
-        const slowestRank = FLASK_STAGE_RANKS.indexOf(slowest);
-        return stageRank >= 0 && stageRank < slowestRank ? stage : slowest;
-      }, 'released');
-
-      finalBatchStage = slowestStage;
-    } else {
-      // All flasks have been rejected
-      finalBatchStage = 'rejected';
-    }
-
-    if (finalBatchStage !== batch.current_stage) {
-      const { error: batchUpdateErr } = await db
-        .from('batches')
-        .update({ current_stage: finalBatchStage, status: statusForFlaskStage(finalBatchStage) })
-        .eq('id', batchId);
-      if (batchUpdateErr) {
-        return NextResponse.json({ success: false, error: batchUpdateErr.message }, { status: 500 });
-      }
-
-      await db.from('stage_transitions').insert({
-        batch_id: batchId,
-        from_stage: batch.current_stage,
-        to_stage: finalBatchStage,
-        changed_by: emp.id,
-        notes: `Flask ${flask.flask_label || flask_id} advanced batch to ${finalBatchStage}`,
-      });
-    }
-
-    return NextResponse.json({ success: true, new_stage: to_stage });
+    return NextResponse.json({ success: true, new_stage: rpcResult.new_stage });
   } catch (error) {
     console.error('Flask Stage Transition Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

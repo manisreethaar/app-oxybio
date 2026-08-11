@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
-import { ShieldCheck, AlertTriangle, ExternalLink, FlaskConical } from 'lucide-react';
+import { useData } from '@/lib/hooks/useData';
+import { ShieldCheck, AlertTriangle, ExternalLink, FlaskConical, Play, FileText, CheckCircle2 } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
 
 const METHODS  = ['Autoclave','Pressure Cooker','Dry Heat','Filter','Chemical','Other'];
@@ -19,9 +20,15 @@ function calcF0(tempC, holdMin) {
 
 export default function SterilisationPanel({ batch, employees, employeeProfile, role, availableStock, supabase, onDataSaved, onAdvanceStage, actionLoading }) {
   const toast = useToast();
-  const [equipment, setEquipment] = useState([]);
   const [saving,    setSaving]    = useState(false);
   const isInternOrRI = ['intern','research_intern'].includes(role);
+
+  const { data: equipmentData } = useData({
+    table: 'equipment',
+    select: 'id, name, status, requires_calibration, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url',
+    order: { column: 'name' }
+  });
+  const equipment = equipmentData || [];
 
   const [method,    setMethod]    = useState('Pressure Cooker');
   const [equipId,   setEquipId]   = useState('');
@@ -61,12 +68,13 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
 
   const fetchRecord = useCallback(async () => {
     let isCurrent = true;
-    let dRes, eqRes;
+    let dRes;
     try {
-      [dRes, eqRes] = await withTimeout(Promise.all([
+      dRes = await withTimeout(
         supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).maybeSingle(),
-        supabase.from('equipment').select('id, name, status, requires_calibration, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
-      ]), 45000, 'Sterilisation data load timed out');
+        45000, 
+        'Sterilisation data load timed out'
+      );
     } catch (err) {
       console.error('SterilisationPanel fetch error:', err);
       return;
@@ -95,7 +103,6 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       if (d.cycle2_start) setCycle2Start((() => { const dt = new Date(d.cycle2_start); dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
       if (d.cycle2_end)   setCycle2End  ((() => { const dt = new Date(d.cycle2_end);   dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset()); return dt.toISOString().slice(0,16); })());
     }
-    if (eqRes.data) setEquipment(eqRes.data);
     return () => { isCurrent = false; };
   }, [batch.id, supabase]);
 

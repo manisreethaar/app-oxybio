@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
+import { useData } from '@/lib/hooks/useData';
 import { Activity, Plus, AlertTriangle, CheckCircle2, Clock, Pencil, Trash2, X, Timer, Droplet } from 'lucide-react';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import CreatorBadge from '@/components/ui/CreatorBadge';
@@ -218,8 +219,6 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const [showFeedForm,  setShowFeedForm]  = useState(false);
   const [savingFeed,    setSavingFeed]    = useState(false);
 
-  // G-31: Incubator equipment list
-  const [incubators,    setIncubators]    = useState([]);
   const [incubatorId,   setIncubatorId]   = useState('');
 
   // Form state
@@ -249,7 +248,6 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     const editReason = watch('editReason');
 
   const [platingDone, setPlatingDone] = useState(false);
-  const [mediaFormulations, setMediaFormulations] = useState([]);
 
   // Pending plating banner — set when last reading has unresolved plating
   const [pendingPlatingReading, setPendingPlatingReading] = useState(null);
@@ -367,22 +365,19 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   }, [showComparison, batch?.formulation_id, batch?.id]);
 
   // G-31: Fetch incubator equipment once
-  useEffect(() => {
-    supabase.from('equipment')
-      .select('id, name, status')
-      .ilike('name', '%incubat%')
-      .order('name')
-      .then(({ data }) => setIncubators(data || []));
-  }, [supabase]);
+  const { data: incubatorsData } = useData({
+    table: 'equipment',
+    select: 'id, name, status',
+    order: { column: 'name' }
+  });
+  const incubators = (incubatorsData || []).filter(eq => eq.name.toLowerCase().includes('incubat'));
 
-  useEffect(() => {
-    supabase.from('formulations')
-      .select('name')
-      .eq('category', 'Lab Media')
-      .eq('status', 'Approved')
-      .order('name')
-      .then(({ data }) => setMediaFormulations(data || []));
-  }, [supabase]);
+  const { data: mediaData } = useData({
+    table: 'formulations',
+    select: 'name, status, category',
+    order: { column: 'name' }
+  });
+  const mediaFormulations = (mediaData || []).filter(m => m.category === 'Lab Media' && m.status === 'Approved');
 
   // Restore last supervisor from localStorage for this user
   useEffect(() => {

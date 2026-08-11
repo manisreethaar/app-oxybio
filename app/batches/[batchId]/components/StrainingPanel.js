@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
+import { useData } from '@/lib/hooks/useData';
 import { Beaker, CheckCircle2, AlertTriangle, Wrench } from 'lucide-react';
 
 const CLARITY_OPTS = ['Very clear, transparent', 'Slightly cloudy', 'Moderately turbid', 'Highly turbid / opaque'];
@@ -45,7 +46,13 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const toast = useToast();
   const [record,     setRecord]     = useState(null);
   const [saving,     setSaving]     = useState(false);
-  const [equipment,  setEquipment]  = useState([]);
+  
+  const { data: equipmentData } = useData({
+    table: 'equipment',
+    select: 'id, name, model, status, requires_calibration, calibration_due_date',
+    order: { column: 'name' }
+  });
+  const equipment = equipmentData || [];
 
   const form = useForm({
     defaultValues: {
@@ -87,18 +94,18 @@ export default function StrainingPanel({ batch, activeFlask, employees, employee
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
     let isCurrent = true;
-    let data, eqData;
+    let data;
     try {
-      [{ data }, { data: eqData }] = await withTimeout(Promise.all([
+      ({ data } = await withTimeout(
         supabase.from('batch_flask_straining').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-        supabase.from('equipment').select('id, name, model, status, requires_calibration, calibration_due_date').order('name'),
-      ]), 45000, 'Straining data load timed out');
+        45000, 
+        'Straining data load timed out'
+      ));
     } catch (err) {
       console.error('StrainingPanel fetch error:', err);
       return;
     }
     if (!isCurrent) return;
-    if (eqData) setEquipment(eqData);
     if (data) {
       setRecord(data);
       setRpm(data.centrifuge_rpm ?? '');
