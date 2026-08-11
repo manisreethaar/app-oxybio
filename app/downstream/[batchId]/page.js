@@ -293,7 +293,7 @@ export default function DownstreamDetailPage() {
           employee_id: e.id,
           title: `QC Hold — ${batch.batch_id} ready for review`,
           message: `Batch ${batch.batch_id} has reached QC Hold stage. Review results and make a release decision.`,
-          link: `/batches/${batchId}`,
+          link: `/downstream/${batchId}`,
         }));
         if (notifRows.length > 0) {
           supabase.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
@@ -319,21 +319,6 @@ export default function DownstreamDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchId, bmrLoading]);
 
-  const handleStartBatch = useCallback(async () => {
-    if (actionLoading) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/batches/${batchId}/start`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to start batch');
-      toast.success('Batch started at Media Prep.');
-      fetchAll();
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setActionLoading(false);
-    }
-  }, [actionLoading, batchId, fetchAll, toast]);
 
   const handleCancelBatch = useCallback(async () => {
     setArchiveReason('');
@@ -355,7 +340,7 @@ export default function DownstreamDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast.success(data.message || 'Batch archived.');
-      router.push('/batches');
+      router.push('/downstream');
     } catch (err) {
       toast.error('Failed to archive batch: ' + err.message);
     }
@@ -375,15 +360,14 @@ export default function DownstreamDetailPage() {
   if (!batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
 
   const currentIdx  = STAGES.findIndex(s => s.id === visibleWorkflowStage(batch.current_stage));
-  const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
+  const isScheduled = false; // DSP batches are always active — they were handed off from Harvest
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
-  const isPostSterilisation = !isScheduled && (currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting');
+  const isPostSterilisation = true; // In DSP, all trials are always tracked individually
 
-  const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released','rejected'];
+  const FLASK_STAGE_RANK = ['straining','extract_addition','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
-    if (isScheduled) return 'scheduled';
-    if (!isPostSterilisation || flasks.length === 0) return batch.status;
+    if (flasks.length === 0) return batch.status;
     const allRejected = flasks.every(f => f.status === 'rejected');
     if (allRejected) return 'rejected';
     const activeFlasks = flasks.filter(f => f.status !== 'rejected');
@@ -391,15 +375,14 @@ export default function DownstreamDetailPage() {
       const r = FLASK_STAGE_RANK.indexOf(visibleWorkflowStage(f.current_stage));
       return r >= 0 && r < FLASK_STAGE_RANK.indexOf(slowest) ? visibleWorkflowStage(f.current_stage) : slowest;
     }, 'released');
-    if (slowestStage === 'fermentation') return 'fermenting';
     if (slowestStage === 'qc_hold') return 'qc-hold';
     if (slowestStage === 'released') return 'released';
-    if (['harvest','straining','extract_addition'].includes(slowestStage)) return 'processing';
+    if (['straining','extract_addition'].includes(slowestStage)) return 'processing';
     return batch.status;
   })();
 
-  const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
-  const activeStage = isScheduled ? null : visibleWorkflowStage(isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage);
+  const selectedFlask = flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
+  const activeStage = visibleWorkflowStage(selectedFlask?.current_stage || batch.current_stage);
   const displayStage = viewingStage || activeStage;
   const CurrentPanel = PANEL_MAP[displayStage] || null;
 
@@ -440,8 +423,8 @@ export default function DownstreamDetailPage() {
 
   return (
     <div className="page-container">
-      <Link href="/batches" className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-navy mb-4">
-        <ArrowLeft className="w-3.5 h-3.5 mr-1"/> Back to Registry
+      <Link href="/downstream" className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-navy mb-4">
+        <ArrowLeft className="w-3.5 h-3.5 mr-1"/> Back to Downstream
       </Link>
 
       {lnbCount === 0 && ['qc_hold','straining','extract_addition'].includes(batch.current_stage) && (
@@ -759,20 +742,7 @@ export default function DownstreamDetailPage() {
             </div>
           )}
 
-          {isScheduled ? (
-            <div className="card p-8 text-center">
-              <Clock className="w-8 h-8 text-navy mx-auto mb-3" />
-              <p className="text-sm font-black text-slate-900 uppercase tracking-wider">Batch Scheduled</p>
-              <p className="text-xs text-slate-500 mt-1 mb-5">Start this batch when production begins. The first active stage will be Media Prep.</p>
-              <button
-                onClick={handleStartBatch}
-                disabled={actionLoading}
-                className="inline-flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white text-xs font-black rounded-lg disabled:opacity-60"
-              >
-                {actionLoading ? 'Starting...' : 'Start Batch'} <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </button>
-            </div>
-          ) : CurrentPanel ? (
+          {CurrentPanel ? (
             <div
               key={`${selectedFlaskId ?? 'batch'}-${displayStage}`}
               className={viewingStage && editingStage !== viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}
