@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
@@ -303,10 +303,11 @@ export default function BioprocessDetailPage() {
   const [saving, setSaving] = useState(false);
   const [analysing, setAnalysing] = useState(false);
   const [result, setResult] = useState(null);
-  const [localFactors, setLocalFactors] = useState([]);
-  const [localResponses, setLocalResponses] = useState([]);
-  const [localKinetics, setLocalKinetics] = useState([]);
   const [kineticConfig, setKineticConfig] = useState({});
+  const { register, control, reset, getValues } = useForm({ defaultValues: { factors: [], responses: [], kinetics: [] } });
+  const { fields: factorFields, append: appendFactor, remove: removeFactor, update: updateFactorField } = useFieldArray({ control, name: 'factors' });
+  const { fields: responseFields } = useFieldArray({ control, name: 'responses' });
+  const { fields: kineticFields, append: appendKinetic, remove: removeKinetic } = useFieldArray({ control, name: 'kinetics' });
   const [batches, setBatches] = useState([]);
   const [creatingRSM, setCreatingRSM] = useState(false);
   const [sopBlock, setSopBlock] = useState(null);
@@ -321,9 +322,11 @@ export default function BioprocessDetailPage() {
       setFactors(json.factors);
       setResponses(json.responses);
       setKineticData(json.kineticData);
-      setLocalFactors(json.factors.map(f => ({ ...f })));
-      setLocalResponses(json.responses.map(r => ({ ...r })));
-      setLocalKinetics(json.kineticData.map(d => ({ ...d })));
+      reset({
+        factors: json.factors.map(f => ({ ...f })),
+        responses: json.responses.map(r => ({ ...r })),
+        kinetics: json.kineticData.map(d => ({ ...d }))
+      });
       setKineticConfig(json.experiment.config || {});
       if (json.experiment.analysis_result && Object.keys(json.experiment.analysis_result).length > 0) {
         setResult(json.experiment.analysis_result);
@@ -350,33 +353,22 @@ export default function BioprocessDetailPage() {
   }, [experiment?.type, fetchBatches]);
 
   // ── Factor Helpers ────────────────────────────────────────────────────────
-  const addFactor = () => {
-    const pos = localFactors.length + 1;
+  const handleAddFactor = () => {
+    const current = getValues('factors') || [];
+    const pos = current.length + 1;
     const maxFactors = experiment?.type === 'rsm' ? 3 : 11;
     if (pos > maxFactors) return toast.warn(`Maximum ${maxFactors} factors for ${experiment?.type?.toUpperCase()}`);
-    const code = experiment?.type === 'rsm' ? ['A','B','C'][localFactors.length] : `X${pos}`;
-    setLocalFactors(f => [...f, { code, variable: '', unit: '', low_value: '', center_value: '', high_value: '', position: pos }]);
+    const code = experiment?.type === 'rsm' ? ['A','B','C'][current.length] : `X${pos}`;
+    appendFactor({ code, variable: '', unit: '', low_value: '', center_value: '', high_value: '', position: pos });
   };
 
-  const removeFactor = (idx) => setLocalFactors(f => {
-    const next = f.filter((_, i) => i !== idx).map((x, i) => ({
-      ...x,
-      position: i + 1,
-      code: experiment?.type === 'rsm' ? ['A','B','C'][i] : `X${i+1}`,
-    }));
-    return next;
-  });
-
-  const updateFactor = (idx, field, val) => setLocalFactors(f => f.map((x, i) => i === idx ? { ...x, [field]: val } : x));
-
-  // ── Response Helpers ──────────────────────────────────────────────────────
-  const updateResponse = (runNum, val) => setLocalResponses(r => r.map(x => x.run_number === runNum ? { ...x, response: val === '' ? null : +val } : x));
-  const updateResponseNotes = (runNum, val) => setLocalResponses(r => r.map(x => x.run_number === runNum ? { ...x, notes: val } : x));
-
-  // ── Kinetics Data Helpers ─────────────────────────────────────────────────
-  const addKineticRow = () => setLocalKinetics(k => [...k, { substrate: '', rate: '', time_h: '', biomass: '', product: '' }]);
-  const removeKineticRow = (idx) => setLocalKinetics(k => k.filter((_, i) => i !== idx));
-  const updateKineticRow = (idx, field, val) => setLocalKinetics(k => k.map((x, i) => i === idx ? { ...x, [field]: val === '' ? null : +val } : x));
+  const handleRemoveFactor = (idx) => {
+    removeFactor(idx);
+    const remaining = getValues('factors');
+    remaining.forEach((f, i) => {
+      updateFactorField(i, { ...f, position: i + 1, code: experiment?.type === 'rsm' ? ['A','B','C'][i] : `X${i+1}` });
+    });
+  };
 
   // ── Delete experiment ─────────────────────────────────────────────────────
   const handleDelete = async () => {
@@ -638,7 +630,7 @@ export default function BioprocessDetailPage() {
               Factor Definitions ({localFactors.length}/{experiment.type === 'rsm' ? 3 : 11})
             </h3>
             {(experiment.type === 'pbd' && localFactors.length < 11) || (experiment.type === 'rsm' && localFactors.length < 3) ? (
-              <button onClick={addFactor} className="flex items-center gap-1 text-xs font-bold text-navy bg-navy/10 px-3 py-1.5 rounded-lg hover:bg-navy/20 transition-colors">
+              <button onClick={handleAddFactor} className="flex items-center gap-1 text-xs font-bold text-navy bg-navy/10 px-3 py-1.5 rounded-lg hover:bg-navy/20 transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Add Factor
               </button>
             ) : null}
@@ -822,7 +814,7 @@ export default function BioprocessDetailPage() {
 
           <div className="flex gap-3">
             {!isLinkedToBatch && (
-              <button onClick={addKineticRow} className="flex items-center gap-1.5 text-sm font-semibold text-navy bg-navy/10 px-4 py-2 rounded-xl hover:bg-navy/20 transition-colors">
+              <button onClick={() => appendKinetic({ substrate: '', rate: '', time_h: '', biomass: '', product: '' })} className="flex items-center gap-1.5 text-sm font-semibold text-navy bg-navy/10 px-4 py-2 rounded-xl hover:bg-navy/20 transition-colors">
                 <Plus className="w-4 h-4" /> Add Row
               </button>
             )}

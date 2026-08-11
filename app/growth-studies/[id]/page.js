@@ -112,9 +112,8 @@ export default function GrowthStudyDetailPage() {
   const [startModal, setStartModal] = useState(false);
   const [startInfo, setStartInfo] = useState(null);
   const [startInfoLoading, setStartInfoLoading] = useState(false);
-  const [lotSelections, setLotSelections] = useState({});
   const [startErr, setStartErr] = useState('');
-  const [actualInocTime, setActualInocTime] = useState('');
+  const { register: startReg, handleSubmit: startHandleSubmit, reset: startReset, setValue: startSetValue, getValues: startGetValues } = useForm({ defaultValues: { lotSelections: {}, actualInocTime: '' } });
 
   const load = useCallback(() => {
     withTimeout(fetch(`/api/growth-studies/${id}`), 45000, 'Growth study load timed out')
@@ -164,9 +163,8 @@ export default function GrowthStudyDetailPage() {
   const openStartModal = async () => {
     setStartModal(true);
     setStartInfo(null);
-    setLotSelections({});
     setStartErr('');
-    setActualInocTime(nowDatetimeLocal()); // default to now, user can correct
+    startReset({ lotSelections: {}, actualInocTime: nowDatetimeLocal() }); // default to now, user can correct
     setStartInfoLoading(true);
     const res = await fetch(`/api/growth-studies/${id}/start-info`);
     const json = await res.json();
@@ -178,16 +176,16 @@ export default function GrowthStudyDetailPage() {
     (json.ingredients || []).forEach((ing, i) => {
       if (ing.available_lots?.[0]) defaults[i] = { stock_id: ing.available_lots[0].id, quantity_used: ing.quantity_needed, item_name: ing.name };
     });
-    setLotSelections(defaults);
+    startSetValue('lotSelections', defaults);
   };
 
-  const confirmStart = async () => {
+  const confirmStart = async (data) => {
     setActionLoading(true);
     setStartErr('');
-    const selections = Object.values(lotSelections).filter(s => s.stock_id && s.quantity_used > 0);
+    const selections = Object.values(data.lotSelections || {}).filter(s => s.stock_id && s.quantity_used > 0);
     // Convert local datetime-input value to ISO; fall back to now if blank
-    const inocISO = actualInocTime
-      ? new Date(actualInocTime).toISOString()
+    const inocISO = data.actualInocTime
+      ? new Date(data.actualInocTime).toISOString()
       : new Date().toISOString();
     const res = await fetch(`/api/growth-studies/${id}/status`, {
       method: 'PATCH',
