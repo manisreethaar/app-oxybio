@@ -90,14 +90,26 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
          if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
            setSops(prev => prev.filter(s => s.id !== payload.old.id));
          } else if (payload.new && payload.new.id) {
-           const { data } = await supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('id', payload.new.id).single();
-           if (data) {
-             const mapped = { ...data, is_acknowledged: (data.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) };
+           if (payload.eventType === 'UPDATE') {
              setSops(prev => {
-                const exists = prev.find(s => s.id === mapped.id);
-                if (exists) return prev.map(s => s.id === mapped.id ? mapped : s);
-                return [mapped, ...prev];
+                const exists = prev.find(s => s.id === payload.new.id);
+                if (exists) {
+                  // Merge payload.new into existing state to preserve joined relations without querying DB
+                  return prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s);
+                }
+                return prev;
              });
+           } else {
+             // For INSERTs, query to get joined relational data
+             const { data } = await supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('id', payload.new.id).single();
+             if (data) {
+               const mapped = { ...data, is_acknowledged: (data.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) };
+               setSops(prev => {
+                  const exists = prev.find(s => s.id === mapped.id);
+                  if (exists) return prev.map(s => s.id === mapped.id ? mapped : s);
+                  return [mapped, ...prev];
+               });
+             }
            }
          }
       })
