@@ -316,14 +316,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }
 
       // Pre-fill pH test from the last fermentation reading for this flask
-      const { data: lastReading } = await supabase
-        .from('batch_fermentation_readings')
-        .select('ph')
-        .eq('flask_id', activeFlask.id)
-        .not('ph', 'is', null)
-        .order('logged_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: lastReading } = await withTimeout(supabase.from('batch_fermentation_readings').select('ph').eq('flask_id', activeFlask.id).not('ph', 'is', null).order('logged_at', { ascending: false }).limit(1).maybeSingle(), 10000, 'Fetch pH timed out');
       if (lastReading?.ph) {
         await supabase.from('batch_flask_qc_tests')
           .update({ result_value: String(lastReading.ph) })
@@ -525,23 +518,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         toast.info('All standard tests already exist.');
         return;
       }
-      const { error } = await supabase.from('batch_flask_qc_tests').insert(testRows);
+      const { error } = await withTimeout(supabase.from('batch_flask_qc_tests').insert(testRows), 15000, 'Insert tests timed out');
       if (error) throw error;
 
       // Pre-fill pH from last fermentation reading
-      const { data: lastReading } = await supabase
-        .from('batch_fermentation_readings')
-        .select('ph')
-        .eq('flask_id', activeFlask.id)
-        .not('ph', 'is', null)
-        .order('logged_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: lastReading } = await withTimeout(supabase.from('batch_fermentation_readings').select('ph').eq('flask_id', activeFlask.id).not('ph', 'is', null).order('logged_at', { ascending: false }).limit(1).maybeSingle(), 10000, 'Fetch pH timed out');
       if (lastReading?.ph) {
-        await supabase.from('batch_flask_qc_tests')
-          .update({ result_value: String(lastReading.ph) })
-          .eq('sample_id', sample.id)
-          .ilike('test_name', '%ph%');
+        await withTimeout(supabase.from('batch_flask_qc_tests').update({ result_value: String(lastReading.ph) }).eq('sample_id', sample.id).ilike('test_name', '%ph%'), 10000, 'Update pH timed out');
       }
 
       toast.success('Standard tests regenerated successfully.');

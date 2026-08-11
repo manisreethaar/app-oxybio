@@ -138,10 +138,7 @@ export default function BatchDetailPage() {
       setFlaskEndpoints(detailsData.flaskEndpoints);
       if (detailsData.batch?.bmr_url) setBmrUrl(detailsData.batch.bmr_url);
       
-      const downstreamStages = ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected', 'downstream'];
-      if (downstreamStages.includes(detailsData.batch?.current_stage)) {
-        router.replace(`/downstream/${batchId}`);
-      }
+      
     }
   }, [detailsData, router, batchId]);
 
