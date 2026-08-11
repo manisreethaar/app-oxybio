@@ -697,7 +697,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
     : elapsedHr;
   const isAtTZero = currentReadingElapsed !== null && currentReadingElapsed < 0.5;
   const phNum = parseFloat(pH);
-  const phInAlarmRange = pH && !isAtTZero && (phNum < 3 || phNum > 6);
+  const phInAlarmRange = false;
   const phOutOfTarget = pH && !isAtTZero && !phInAlarmRange && (phNum < 4.2 || phNum > 4.5);
 
   return (

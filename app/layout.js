@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ClientLayout from "@/components/layout/ClientLayout";
+import WebVitals from "@/components/WebVitals";
 import Script from "next/script";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -96,6 +97,7 @@ export default async function RootLayout({ children }) {
           }}
         />
         <AuthProvider initialSession={initialSession} initialProfile={initialProfile}>
+          <WebVitals />
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>
       </body>
