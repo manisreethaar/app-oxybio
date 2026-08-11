@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,9 +33,9 @@ export default function TasksPage() {
   const [sops, setSops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [assigneeFilter, setAssigneeFilter] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  
+  
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [viewMode, setViewMode] = useState('grouped');
 
@@ -57,7 +57,7 @@ export default function TasksPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [checklistBuffer, setChecklistBuffer] = useState([]);
-  const [checklistInput, setChecklistInput] = useState('');
+  
 
   const { register: regTask, handleSubmit: handTask, formState: { errors: taskErrors, isSubmitting: isTaskSubmitting }, reset: resetTask, watch, setValue } = useForm({
     resolver: zodResolver(z.object({
@@ -235,9 +235,10 @@ export default function TasksPage() {
 
 
   const addChecklistItem = () => {
+    const checklistInput = uiGetValues('checklistInput');
     if (!checklistInput.trim()) return;
     setChecklistBuffer(prev => [...prev, { id: Math.random().toString(36).substring(7), text: checklistInput.trim(), done: false }]);
-    setChecklistInput('');
+    uiSetValue('checklistInput', '');
   };
 
   const executeTaskPatch = async (action, taskId, payload = {}) => {
@@ -452,7 +453,7 @@ export default function TasksPage() {
   };
 
   const filteredTasks = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
     return tasks
       .filter(t => {
@@ -474,7 +475,7 @@ export default function TasksPage() {
         if (sortOrder === 'title') return (a.title || '').localeCompare(b.title || '');
         return new Date(a.due_date || 0) - new Date(b.due_date || 0);
       });
-  }, [tasks, statusFilter, assigneeFilter, searchTerm, sortOrder]);
+  }, [tasks, statusFilter, assigneeFilter, deferredSearch, sortOrder]);
   
   const groupedTasks = useMemo(() => {
     const groups = {};
@@ -679,7 +680,7 @@ export default function TasksPage() {
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Steps</label>
               <div className="flex gap-2 mb-2">
-                <input value={checklistInput} onChange={e => setChecklistInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-medium" placeholder="Step title..."/>
+                <input {...uiReg('checklistInput')} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-medium" placeholder="Step title..."/>
                 <button type="button" onClick={addChecklistItem} className="px-3 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200">Add</button>
               </div>
               {checklistBuffer.length > 0 && (
@@ -707,8 +708,7 @@ export default function TasksPage() {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            {...uiReg('searchTerm')}
             placeholder="Search tasks, assignees, status..."
             className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-accent outline-none"
           />
@@ -720,7 +720,7 @@ export default function TasksPage() {
             onClose={() => setFiltersOpen(false)}
             summary="Sort & filter"
           >
-            <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+            <select {...uiReg('sortOrder')} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
               <option value="due_asc">Due Soon</option>
               <option value="due_desc">Due Later</option>
               <option value="priority">Priority</option>
@@ -728,10 +728,10 @@ export default function TasksPage() {
             </select>
             {isAdmin && (
               <>
-                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+                <select {...uiReg('statusFilter')} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
                   <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
                 </select>
-                <select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+                <select {...uiReg('assigneeFilter')} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
                   <option value="All">All Assignees</option>{employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
                 </select>
               </>
@@ -739,7 +739,7 @@ export default function TasksPage() {
           </MobileFilterPanel>
         </div>
         <div className="hidden md:flex flex-wrap gap-2">
-          <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+          <select {...uiReg('sortOrder')} className="px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="due_asc">Due Soon</option>
             <option value="due_desc">Due Later</option>
             <option value="priority">Priority</option>
@@ -747,10 +747,10 @@ export default function TasksPage() {
           </select>
           {isAdmin && (
             <>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+          <select {...uiReg('statusFilter')} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
           </select>
-          <select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+          <select {...uiReg('assigneeFilter')} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
             <option value="All">All Assignees</option>{employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
             </>

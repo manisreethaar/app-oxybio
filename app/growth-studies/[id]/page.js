@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -70,7 +71,7 @@ export default function GrowthStudyDetailPage() {
 
   // Edit modal
   const [editModal, setEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({});
+  const { register: eReg, reset: eReset, handleSubmit: eHandleSubmit, watch: eWatch, setValue: eSetValue } = useForm({});
   const [editSaving, setEditSaving] = useState(false);
   const [editErr, setEditErr] = useState('');
   const [editMeta, setEditMeta] = useState({ strains: [], preps: [], formulations: [], vials: [] });
@@ -84,10 +85,21 @@ export default function GrowthStudyDetailPage() {
   // Modal state
   const [modal, setModal] = useState(null); // null | { type: 'measurement' | 'plate' | 'combined', tp }
   const [modalTab, setModalTab] = useState('measurement'); // 'measurement' | 'plate'
-  const [mForm, setMForm] = useState({});
-  const [pForm, setPForm] = useState({});
-  const [modalErr, setModalErr] = useState('');
-  const [modalSaving, setModalSaving] = useState(false);
+  // Measurement modal form (react-hook-form — uncontrolled, zero re-renders on typing)
+  const { register: mReg, reset: mReset, handleSubmit: mHandleSubmit, getValues: mGetValues } = useForm({ defaultValues: {
+    actual_hour: '', od_value: '', ph_value: '', temperature_actual_c: '',
+    glucose_g_l: '', protein_mg_ml: '', dissolved_oxygen_pct: '',
+    culture_turbidity: '', culture_color: '',
+    acetate_mmol_l: '', propionate_mmol_l: '', butyrate_mmol_l: '',
+    test_temperature_c: '', notes: '', time_point_id: '',
+  }});
+  // Plate obs modal form
+  const { register: pReg, reset: pReset, handleSubmit: pHandleSubmit } = useForm({ defaultValues: {
+    time_point_hours: '', time_point_id: '', observation_type: 'colony_count',
+    result: 'pending', plate_media: '', dilution: '',
+    colony_count: '', plate_count: 1, incubation_temp_c: '', notes: '',
+  }});
+
 
   // Chart config
   const [showLines, setShowLines] = useState(['od', 'ph']);
@@ -191,7 +203,7 @@ export default function GrowthStudyDetailPage() {
   };
 
   const openEditModal = async (study) => {
-    setEditForm({
+    eReset({
       name: study.name || '',
       study_type: study.study_type || 'growth_curve',
       objective: study.objective || '',
@@ -250,10 +262,10 @@ export default function GrowthStudyDetailPage() {
     setEditMeta(m => ({ ...m, vials: data || [] }));
   };
 
-  const saveEdit = async () => {
+  const saveEdit = async (formData) => {
     setEditSaving(true);
     setEditErr('');
-    const f = editForm;
+    const f = formData;
     const payload = {
       name: f.name || null,
       study_type: f.study_type || 'growth_curve',
@@ -300,26 +312,26 @@ export default function GrowthStudyDetailPage() {
   };
 
   const openMeasurementModal = (tp) => {
-    setMForm({ actual_hour: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '' });
-    setPForm({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1 });
+    mReset({ actual_hour: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', od_value: '', ph_value: '', temperature_actual_c: '', glucose_g_l: '', protein_mg_ml: '', dissolved_oxygen_pct: '', culture_turbidity: '', culture_color: '', acetate_mmol_l: '', propionate_mmol_l: '', butyrate_mmol_l: '', test_temperature_c: '', notes: '' });
+    pReset({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1, plate_media: '', dilution: '', colony_count: '', notes: '' });
     setModal({ type: 'combined', tp });
     setModalTab('measurement');
     setModalErr('');
   };
 
   const openPlateModal = (tp) => {
-    setMForm({ actual_hour: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '' });
-    setPForm({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1 });
+    mReset({ actual_hour: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', od_value: '', ph_value: '', temperature_actual_c: '', glucose_g_l: '', protein_mg_ml: '', dissolved_oxygen_pct: '', culture_turbidity: '', culture_color: '', acetate_mmol_l: '', propionate_mmol_l: '', butyrate_mmol_l: '', test_temperature_c: '', notes: '' });
+    pReset({ time_point_hours: tp ? tp.planned_hour : parseFloat(elapsed.toFixed(2)), time_point_id: tp?.id || '', observation_type: 'colony_count', result: 'pending', incubation_temp_c: data?.study?.temperature_c || '', plate_count: 1, plate_media: '', dilution: '', colony_count: '', notes: '' });
     setModal({ type: 'combined', tp });
     setModalTab('plate');
     setModalErr('');
   };
 
-  const saveMeasurement = async () => {
+  const saveMeasurement = async (formData) => {
     setModalSaving(true);
     setModalErr('');
-    const payload = { ...mForm };
-    Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
+    const payload = { ...formData };
+    Object.keys(payload).forEach(k => (payload[k] === '' || payload[k] == null) && delete payload[k]);
     const res = await fetch(`/api/growth-studies/${id}/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -328,16 +340,16 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setModalSaving(false);
     if (!res.ok) { setModalErr(json.error); return; }
-    toast.success("Measurement recorded successfully.");
+    toast.success('Measurement recorded successfully.');
     setModal(null);
     load();
   };
 
-  const savePlate = async () => {
+  const savePlate = async (formData) => {
     setModalSaving(true);
     setModalErr('');
-    const payload = { ...pForm };
-    Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
+    const payload = { ...formData };
+    Object.keys(payload).forEach(k => (payload[k] === '' || payload[k] == null) && delete payload[k]);
     const res = await fetch(`/api/growth-studies/${id}/plate-obs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -346,7 +358,7 @@ export default function GrowthStudyDetailPage() {
     const json = await res.json();
     setModalSaving(false);
     if (!res.ok) { setModalErr(json.error); return; }
-    toast.success("Plate observation recorded successfully.");
+    toast.success('Plate observation recorded successfully.');
     setModal(null);
     load();
   };
@@ -991,19 +1003,19 @@ export default function GrowthStudyDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Actual Hour *</label>
-                      <input className={InputCls} type="number" step="0.1" value={mForm.actual_hour || ''} onChange={e => setMForm(f => ({ ...f, actual_hour: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.1" {...mReg('actual_hour')} />
                     </div>
                     <div>
                       <label className={LabelCls}>OD@{study.od_wavelength || 600}nm</label>
-                      <input className={InputCls} type="number" step="0.001" value={mForm.od_value || ''} onChange={e => setMForm(f => ({ ...f, od_value: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.001" {...mReg('od_value')} />
                     </div>
                     <div>
                       <label className={LabelCls}>pH</label>
-                      <input className={InputCls} type="number" step="0.01" value={mForm.ph_value || ''} onChange={e => setMForm(f => ({ ...f, ph_value: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.01" {...mReg('ph_value')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Temperature (°C)</label>
-                      <input className={InputCls} type="number" step="0.1" value={mForm.temperature_actual_c || ''} onChange={e => setMForm(f => ({ ...f, temperature_actual_c: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.1" {...mReg('temperature_actual_c')} />
                     </div>
                   </div>
                   <details className="group">
@@ -1013,28 +1025,28 @@ export default function GrowthStudyDetailPage() {
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className={LabelCls}>Glucose (g/L) — DNS</label>
-                        <input className={InputCls} type="number" step="0.001" value={mForm.glucose_g_l || ''} onChange={e => setMForm(f => ({ ...f, glucose_g_l: e.target.value }))} />
+                        <input className={InputCls} type="number" step="0.001" {...mReg('glucose_g_l')} />
                       </div>
                       <div>
                         <label className={LabelCls}>Protein (mg/mL)</label>
-                        <input className={InputCls} type="number" step="0.001" value={mForm.protein_mg_ml || ''} onChange={e => setMForm(f => ({ ...f, protein_mg_ml: e.target.value }))} />
+                        <input className={InputCls} type="number" step="0.001" {...mReg('protein_mg_ml')} />
                       </div>
                       {isFermentation && (
                         <div>
                           <label className={LabelCls}>Dissolved O₂ (%)</label>
-                          <input className={InputCls} type="number" step="0.1" value={mForm.dissolved_oxygen_pct || ''} onChange={e => setMForm(f => ({ ...f, dissolved_oxygen_pct: e.target.value }))} />
+                          <input className={InputCls} type="number" step="0.1" {...mReg('dissolved_oxygen_pct')} />
                         </div>
                       )}
                       <div>
                         <label className={LabelCls}>Culture Turbidity</label>
-                        <select className={InputCls} value={mForm.culture_turbidity || ''} onChange={e => setMForm(f => ({ ...f, culture_turbidity: e.target.value }))}>
+                        <select className={InputCls} {...mReg('culture_turbidity')}>
                           <option value="">Select…</option>
                           {TURBIDITY_OPTIONS.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                         </select>
                       </div>
                       <div>
                         <label className={LabelCls}>Culture Color</label>
-                        <input className={InputCls} type="text" placeholder="e.g. pale yellow" value={mForm.culture_color || ''} onChange={e => setMForm(f => ({ ...f, culture_color: e.target.value }))} />
+                        <input className={InputCls} type="text" placeholder="e.g. pale yellow" {...mReg('culture_color')} />
                       </div>
                     </div>
                   </details>
@@ -1043,9 +1055,9 @@ export default function GrowthStudyDetailPage() {
                     <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
                       <p className="text-xs font-black uppercase text-red-800">A-42 VFA Profile (mmol/L)</p>
                       <div className="grid grid-cols-3 gap-2">
-                        <div><label className={LabelCls}>Acetate</label><input className={InputCls} type="number" step="0.01" value={mForm.acetate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, acetate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
-                        <div><label className={LabelCls}>Propionate</label><input className={InputCls} type="number" step="0.01" value={mForm.propionate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, propionate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
-                        <div><label className={LabelCls}>Butyrate</label><input className={InputCls} type="number" step="0.01" value={mForm.butyrate_mmol_l || ''} onChange={e => setMForm(f => ({ ...f, butyrate_mmol_l: e.target.value }))} placeholder="0.0"/></div>
+                        <div><label className={LabelCls}>Acetate</label><input className={InputCls} type="number" step="0.01" {...mReg('acetate_mmol_l')} placeholder="0.0"/></div>
+                        <div><label className={LabelCls}>Propionate</label><input className={InputCls} type="number" step="0.01" {...mReg('propionate_mmol_l')} placeholder="0.0"/></div>
+                        <div><label className={LabelCls}>Butyrate</label><input className={InputCls} type="number" step="0.01" {...mReg('butyrate_mmol_l')} placeholder="0.0"/></div>
                       </div>
                     </div>
                   )}
@@ -1054,13 +1066,13 @@ export default function GrowthStudyDetailPage() {
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                       <p className="text-xs font-black uppercase text-amber-800 mb-2">A-43 Temperature Optima — Test Temp</p>
                       <div><label className={LabelCls}>Test Temperature (°C)</label>
-                        <input className={InputCls} type="number" step="0.5" value={mForm.test_temperature_c || ''} onChange={e => setMForm(f => ({ ...f, test_temperature_c: e.target.value }))} placeholder="e.g. 30, 37, 42"/>
+                        <input className={InputCls} type="number" step="0.5" {...mReg('test_temperature_c')} placeholder="e.g. 30, 37, 42"/>
                       </div>
                     </div>
                   )}
                   <div>
                     <label className={LabelCls}>Notes</label>
-                    <textarea className={InputCls} rows={2} value={mForm.notes || ''} onChange={e => setMForm(f => ({ ...f, notes: e.target.value }))} />
+                    <textarea className={InputCls} rows={2} {...mReg('notes')} />
                   </div>
                 </div>
               )}
@@ -1071,32 +1083,32 @@ export default function GrowthStudyDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Time Point (hr) *</label>
-                      <input className={InputCls} type="number" step="0.1" value={pForm.time_point_hours || ''} onChange={e => setPForm(f => ({ ...f, time_point_hours: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.1" {...pReg('time_point_hours')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Observation Type</label>
-                      <select className={InputCls} value={pForm.observation_type || ''} onChange={e => setPForm(f => ({ ...f, observation_type: e.target.value }))}>
+                      <select className={InputCls} {...pReg('observation_type')}>
                         <option value="colony_count">Colony Count</option>
                         <option value="sterility">Sterility</option>
                       </select>
                     </div>
                     <div>
                       <label className={LabelCls}>Plate Media</label>
-                      <select className={InputCls} value={pForm.plate_media || ''} onChange={e => setPForm(f => ({ ...f, plate_media: e.target.value }))}>
+                      <select className={InputCls} {...pReg('plate_media')}>
                         <option value="">Select…</option>
                         {PLATE_MEDIA_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className={LabelCls}>Dilution</label>
-                      <select className={InputCls} value={pForm.dilution || ''} onChange={e => setPForm(f => ({ ...f, dilution: e.target.value }))}>
+                      <select className={InputCls} {...pReg('dilution')}>
                         <option value="">Select…</option>
                         {DILUTION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className={LabelCls}>Result</label>
-                      <select className={InputCls} value={pForm.result || ''} onChange={e => setPForm(f => ({ ...f, result: e.target.value }))}>
+                      <select className={InputCls} {...pReg('result')}>
                         <option value="pending">Pending</option>
                         <option value="sterile">Sterile</option>
                         <option value="contaminated">Contaminated</option>
@@ -1106,20 +1118,20 @@ export default function GrowthStudyDetailPage() {
                     </div>
                     <div>
                       <label className={LabelCls}>Colony Count</label>
-                      <input className={InputCls} type="number" value={pForm.colony_count || ''} onChange={e => setPForm(f => ({ ...f, colony_count: e.target.value }))} />
+                      <input className={InputCls} type="number" {...pReg('colony_count')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Plate Count</label>
-                      <input className={InputCls} type="number" min="1" value={pForm.plate_count || ''} onChange={e => setPForm(f => ({ ...f, plate_count: e.target.value }))} />
+                      <input className={InputCls} type="number" min="1" {...pReg('plate_count')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Incubation Temp (°C)</label>
-                      <input className={InputCls} type="number" step="0.1" value={pForm.incubation_temp_c || ''} onChange={e => setPForm(f => ({ ...f, incubation_temp_c: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.1" {...pReg('incubation_temp_c')} />
                     </div>
                   </div>
                   <div>
                     <label className={LabelCls}>Notes</label>
-                    <textarea className={InputCls} rows={2} value={pForm.notes || ''} onChange={e => setPForm(f => ({ ...f, notes: e.target.value }))} />
+                    <textarea className={InputCls} rows={2} {...pReg('notes')} />
                   </div>
                 </div>
               )}
@@ -1128,8 +1140,8 @@ export default function GrowthStudyDetailPage() {
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
                 <button
-                  onClick={() => modalTab === 'measurement' ? saveMeasurement() : savePlate()}
-                  disabled={modalSaving || (modalTab === 'measurement' && !mForm.actual_hour) || (modalTab === 'plate' && !pForm.time_point_hours)}
+                  onClick={modalTab === 'measurement' ? mHandleSubmit(saveMeasurement) : pHandleSubmit(savePlate)}
+                  disabled={modalSaving}
                   className="flex-1 py-3 bg-slate-700 text-white font-black rounded-2xl text-sm hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
@@ -1392,21 +1404,21 @@ export default function GrowthStudyDetailPage() {
                   <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Identity</p>
                   <div>
                     <label className={LabelCls}>Study Name *</label>
-                    <input className={InputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                    <input className={InputCls} {...eReg('name')} />
                   </div>
                   <div>
                     <label className={LabelCls}>Study Type</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {STUDY_TYPES.map(v => (
-                        <button key={v} type="button" onClick={() => setEditForm(f => ({ ...f, study_type: v }))}
-                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${editForm.study_type === v ? 'border-slate-500 bg-slate-50 text-slate-700' : 'border-slate-200 bg-white text-slate-500'}`}
+                        <button key={v} type="button" onClick={() => eSetValue('study_type', v)}
+                          className={`py-2.5 rounded-xl border-2 text-xs font-black transition-all ${eWatch('study_type') === v ? 'border-slate-500 bg-slate-50 text-slate-700' : 'border-slate-200 bg-white text-slate-500'}`}
                         >{v.replace(/_/g,' ')}</button>
                       ))}
                     </div>
                   </div>
                   <div>
                     <label className={LabelCls}>Objective</label>
-                    <textarea className={InputCls} rows={2} value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} placeholder="What are you trying to characterise?" />
+                    <textarea className={InputCls} rows={2} {...eReg('objective')} placeholder="What are you trying to characterise?" />
                   </div>
                 </div>
 
@@ -1418,28 +1430,28 @@ export default function GrowthStudyDetailPage() {
                   <div className="flex gap-2">
                     {[['strain', 'Cell Bank Strain'], ['prep', 'Preparation / Vial'], ['seed_passage', 'Seed Passage'], ['none', 'None (Media Control)']].map(([v, l]) => (
                       <button key={v} type="button"
-                        onClick={() => setEditForm(f => ({ ...f, isolate_source: v, cell_bank_strain_id: '', cell_bank_preparation_id: '', seed_passage_id: '', vial_id: '' }))}
-                        className={`flex-1 py-1.5 px-2 rounded-lg border text-xs font-black transition-colors ${editForm.isolate_source === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+                        onClick={() => { eSetValue('isolate_source', v); eSetValue('cell_bank_strain_id', ''); eSetValue('cell_bank_preparation_id', ''); eSetValue('seed_passage_id', ''); eSetValue('vial_id', ''); }}
+                        className={`flex-1 py-1.5 px-2 rounded-lg border text-xs font-black transition-colors ${eWatch('isolate_source') === v ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
                       >{l}</button>
                     ))}
                   </div>
-                  {editForm.isolate_source === 'strain' ? (
-                    <select className={InputCls} value={editForm.cell_bank_strain_id} onChange={e => setEditForm(f => ({ ...f, cell_bank_strain_id: e.target.value }))}>
+                  {eWatch('isolate_source') === 'strain' ? (
+                    <select className={InputCls} {...eReg('cell_bank_strain_id')}>
                       <option value="">Select strain…</option>
                       {editMeta.strains.map(s => <option key={s.id} value={s.id}>{s.name}{s.accession_number ? ` (${s.accession_number})` : ''}</option>)}
                     </select>
-                  ) : editForm.isolate_source === 'prep' ? (
+                  ) : eWatch('isolate_source') === 'prep' ? (
                     <>
-                      <select className={InputCls} value={editForm.cell_bank_preparation_id}
+                      <select className={InputCls} value={eWatch('cell_bank_preparation_id')}
                         onChange={e => { setEditForm(f => ({ ...f, cell_bank_preparation_id: e.target.value, vial_id: '' })); loadEditVials(e.target.value); }}
                       >
                         <option value="">Select preparation…</option>
                         {editMeta.preps.map(p => <option key={p.id} value={p.id}>{p.prep_code} — {p.type}{p.passage_number ? ` P${p.passage_number}` : ''}</option>)}
                       </select>
-                      {editForm.cell_bank_preparation_id && (
+                      {eWatch('cell_bank_preparation_id') && (
                         <div>
                           <label className={LabelCls}>Vial <span className="text-slate-600 normal-case font-medium">(link or change)</span></label>
-                          <select className={InputCls} value={editForm.vial_id} onChange={e => setEditForm(f => ({ ...f, vial_id: e.target.value }))}>
+                          <select className={InputCls} {...eReg('vial_id')}>
                             <option value="">No vial linked</option>
                             {editMeta.vials.map(v => (
                               <option key={v.id} value={v.id}>
@@ -1451,8 +1463,8 @@ export default function GrowthStudyDetailPage() {
                         </div>
                       )}
                     </>
-                  ) : editForm.isolate_source === 'seed_passage' ? (
-                    <select className={InputCls} value={editForm.seed_passage_id} onChange={e => setEditForm(f => ({ ...f, seed_passage_id: e.target.value }))}>
+                  ) : eWatch('isolate_source') === 'seed_passage' ? (
+                    <select className={InputCls} {...eReg('seed_passage_id')}>
                       <option value="">Select seed passage…</option>
                       {editMeta.seed_passages?.map(sp => (
                         <option key={sp.id} value={sp.id}>
@@ -1468,12 +1480,12 @@ export default function GrowthStudyDetailPage() {
                 {/* ── Media ── */}
                 <div className="space-y-3">
                   <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Growth Media</p>
-                  <select className={InputCls} value={editForm.formulation_id} onChange={e => setEditForm(f => ({ ...f, formulation_id: e.target.value, media_name: '' }))}>
+                  <select className={InputCls} {...eReg('formulation_id', { onChange: e => eSetValue('media_name', '') })}>
                     <option value="">Select from Formulation Library…</option>
                     {editMeta.formulations.map(fm => <option key={fm.id} value={fm.id}>{fm.name} ({fm.code})</option>)}
                   </select>
-                  {!editForm.formulation_id && (
-                    <input className={InputCls} value={editForm.media_name} onChange={e => setEditForm(f => ({ ...f, media_name: e.target.value }))} placeholder="Or type media name manually (e.g. MRS Broth)" />
+                  {!eWatch('formulation_id') && (
+                    <input className={InputCls} {...eReg('media_name')} placeholder="Or type media name manually (e.g. MRS Broth)" />
                   )}
                 </div>
 
@@ -1485,43 +1497,43 @@ export default function GrowthStudyDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={LabelCls}>Vessel Type</label>
-                      <select className={InputCls} value={editForm.vessel_type} onChange={e => setEditForm(f => ({ ...f, vessel_type: e.target.value }))}>
+                      <select className={InputCls} {...eReg('vessel_type')}>
                         <option value="">Select…</option>
                         {VESSEL_TYPES.map(v => <option key={v} value={v}>{v.replace(/_/g, ' ')}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className={LabelCls}>Volume (mL)</label>
-                      <input className={InputCls} type="number" value={editForm.volume_ml} onChange={e => setEditForm(f => ({ ...f, volume_ml: e.target.value }))} />
+                      <input className={InputCls} type="number" {...eReg('volume_ml')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Temperature (°C)</label>
-                      <input className={InputCls} type="number" step="0.5" value={editForm.temperature_c} onChange={e => setEditForm(f => ({ ...f, temperature_c: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.5" {...eReg('temperature_c')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Agitation (rpm)</label>
-                      <input className={InputCls} type="number" value={editForm.agitation_rpm} onChange={e => setEditForm(f => ({ ...f, agitation_rpm: e.target.value }))} />
+                      <input className={InputCls} type="number" {...eReg('agitation_rpm')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Inoculum (%v/v)</label>
-                      <input className={InputCls} type="number" step="0.1" value={editForm.inoculum_percentage} onChange={e => setEditForm(f => ({ ...f, inoculum_percentage: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.1" {...eReg('inoculum_percentage')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Inoculum Volume (mL)</label>
-                      <input className={InputCls} type="number" step="0.1" value={editForm.inoculum_volume_ml} onChange={e => setEditForm(f => ({ ...f, inoculum_volume_ml: e.target.value }))} />
+                      <input className={InputCls} type="number" step="0.1" {...eReg('inoculum_volume_ml')} />
                     </div>
                     <div>
                       <label className={LabelCls}>OD Wavelength (nm)</label>
-                      <input className={InputCls} type="number" value={editForm.od_wavelength} onChange={e => setEditForm(f => ({ ...f, od_wavelength: e.target.value }))} />
+                      <input className={InputCls} type="number" {...eReg('od_wavelength')} />
                     </div>
                     <div>
                       <label className={LabelCls}>Planned Duration (h)</label>
-                      <input className={InputCls} type="number" value={editForm.expected_duration_hours} onChange={e => setEditForm(f => ({ ...f, expected_duration_hours: e.target.value }))} />
+                      <input className={InputCls} type="number" {...eReg('expected_duration_hours')} />
                     </div>
                     {/* A-21: Substrate concentration for Monod/Yx/s */}
                     <div>
                       <label className={LabelCls}>Initial Substrate Conc. (g/L)</label>
-                      <input className={InputCls} type="number" step="0.1" value={editForm.substrate_conc_g_l} onChange={e => setEditForm(f => ({ ...f, substrate_conc_g_l: e.target.value }))} placeholder="e.g. 20 (for Monod Yx/s calc)"/>
+                      <input className={InputCls} type="number" step="0.1" {...eReg('substrate_conc_g_l')} placeholder="e.g. 20 (for Monod Yx/s calc)"/>
                     </div>
                   </div>
                 </div>
@@ -1530,14 +1542,14 @@ export default function GrowthStudyDetailPage() {
 
                 <div>
                   <label className={LabelCls}>Notes</label>
-                  <textarea className={InputCls} rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                  <textarea className={InputCls} rows={2} {...eReg('notes')} />
                 </div>
 
                 {editErr && <p className="text-xs text-red-600 font-bold bg-red-50 rounded-xl px-3 py-2">{editErr}</p>}
 
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setEditModal(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-50">Cancel</button>
-                  <button onClick={saveEdit} disabled={editSaving || !editForm.name?.trim()}
+                  <button onClick={eHandleSubmit(saveEdit)} disabled={editSaving || !eWatch('name')?.trim()}
                     className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}

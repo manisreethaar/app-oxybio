@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useForm, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
@@ -122,7 +122,7 @@ function PredictiveModelsTab({ supabase, toast }) {
   const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving,   setSaving]   = useState(false);
-  const [form, setForm] = useState({ model_name: '', version: '1.0', target_variable: '', confidence_interval: '', feature_weights: '{}' });
+  const { register: pmReg, handleSubmit: pmSubmit, getValues: pmGetValues, reset: pmReset } = useForm({ defaultValues: { model_name: '', version: '1.0', target_variable: '', confidence_interval: '', feature_weights: '{}' } });
 
   useEffect(() => {
     withTimeout(
@@ -133,11 +133,11 @@ function PredictiveModelsTab({ supabase, toast }) {
       .catch(() => setLoading(false));
   }, [supabase]);
 
-  const handleSave = async () => {
-    if (!form.model_name || !form.target_variable) {
+  const handleSave = async (form) => {
+    if (!pmGetValues('model_name') || !pmGetValues('target_variable')) {
       const missing = [];
-      if (!form.model_name) missing.push('Model Name');
-      if (!form.target_variable) missing.push('Target Variable');
+      if (!pmGetValues('model_name')) missing.push('Model Name');
+      if (!pmGetValues('target_variable')) missing.push('Target Variable');
       toast.warn(`Cannot save model. Missing mandatory details: ${missing.join(', ')}.`);
       return;
     }
@@ -172,18 +172,18 @@ function PredictiveModelsTab({ supabase, toast }) {
       {showForm && (
         <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="field-label">Model Name</label><input value={form.model_name} onChange={e=>setForm(f=>({...f,model_name:e.target.value}))} className="field-input" placeholder="e.g. pH Endpoint Predictor v1"/></div>
-            <div><label className="field-label">Version</label><input value={form.version} onChange={e=>setForm(f=>({...f,version:e.target.value}))} className="field-input" placeholder="1.0"/></div>
-            <div><label className="field-label">Target Variable</label><input value={form.target_variable} onChange={e=>setForm(f=>({...f,target_variable:e.target.value}))} className="field-input" placeholder="e.g. final_ph, cfu_per_ml, yield_ml"/></div>
-            <div><label className="field-label">Confidence Interval (%)</label><input type="number" step="0.1" value={form.confidence_interval} onChange={e=>setForm(f=>({...f,confidence_interval:e.target.value}))} className="field-input" placeholder="95"/></div>
+            <div><label className="field-label">Model Name</label><input {...pmReg('model_name')} className="field-input" placeholder="e.g. pH Endpoint Predictor v1"/></div>
+            <div><label className="field-label">Version</label><input {...pmReg('version')} className="field-input" placeholder="1.0"/></div>
+            <div><label className="field-label">Target Variable</label><input {...pmReg('target_variable')} className="field-input" placeholder="e.g. final_ph, cfu_per_ml, yield_ml"/></div>
+            <div><label className="field-label">Confidence Interval (%)</label><input type="number" step="0.1" {...pmReg('confidence_interval')} className="field-input" placeholder="95"/></div>
           </div>
           <div><label className="field-label">Feature Weights (JSON)</label>
-            <textarea value={form.feature_weights} onChange={e=>setForm(f=>({...f,feature_weights:e.target.value}))} rows={3}
+            <textarea {...pmReg('feature_weights')} rows={3}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono outline-none resize-none"
               placeholder='{"inoculation_pct": 0.35, "initial_ph": 0.28, "temp_c": 0.22, "brix_0": 0.15}'/>
           </div>
           <div className="flex gap-3">
-            <button onClick={handleSave} disabled={saving} className="px-5 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Saving...':'Register'}</button>
+            <button onClick={pmSubmit(handleSave)} disabled={saving} className="px-5 py-2 bg-navy text-white font-bold rounded-lg text-xs uppercase disabled:opacity-50">{saving?'Saving...':'Register'}</button>
             <button onClick={()=>setShowForm(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Cancel</button>
           </div>
         </div>
@@ -227,7 +227,7 @@ function ScaleDownForm({ experimentId, supabase, toast, batches }) {
   const [saving,        setSaving]        = useState(false);
   const [saved,         setSaved]         = useState(null);
 
-  const handleSave = async () => {
+  const handleSave = async (form) => {
     if (!prodBatchId || !scalingFactor) {
       const missing = [];
       if (!prodBatchId) missing.push('Production Batch');
@@ -279,7 +279,7 @@ function ScaleDownForm({ experimentId, supabase, toast, batches }) {
           ✓ Scale-down model saved — scaling factor {scalingFactor}× · comparability {compScore || '—'}
         </div>
       )}
-      <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+      <button onClick={pmSubmit(handleSave)} disabled={saving} className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
         {saving ? 'Saving...' : 'Save Scale-Down Model'}
       </button>
     </div>
