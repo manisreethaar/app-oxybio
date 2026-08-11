@@ -36,7 +36,7 @@ export default function TasksPage() {
   
   
   
-  const [sortOrder, setSortOrder] = useState('due_asc');
+  
   const [viewMode, setViewMode] = useState('grouped');
 
   useEffect(() => {
@@ -51,6 +51,15 @@ export default function TasksPage() {
     localStorage.setItem('tasks_view_mode', mode);
   };
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const { register: uiReg, watch: uiWatch } = useForm({
+    defaultValues: { searchTerm: '', sortOrder: 'due_date_asc', statusFilter: 'All', assigneeFilter: 'All', checklistInput: '' }
+  });
+  const statusFilter = uiWatch('statusFilter');
+  const assigneeFilter = uiWatch('assigneeFilter');
+  const searchTerm = uiWatch('searchTerm');
+  const sortOrder = uiWatch('sortOrder');
+
 
   const isAdmin = canDo('tasks', 'assign') || isMaster;
   const canApprove = canDo('tasks', 'approve') || isMaster;

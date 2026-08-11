@@ -18,6 +18,7 @@ import ItemVendorModal from './components/ItemVendorModal';
 import PurchaseRequestsTab from './components/PurchaseRequestsTab';
 import TraceabilityTab from './components/TraceabilityTab';
 import { useAuditReason } from '@/components/useAuditReason';
+import { getStockRisk } from './inventoryUtils';
 import {
   filterStock,
   getItemStats,
