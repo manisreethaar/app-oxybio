@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,7 +37,7 @@ export default function DigitalLnbPage() {
   const [selectedFlaskId,  setSelectedFlaskId]  = useState('');
   const [selectedStage,    setSelectedStage]    = useState('');
   const [searchTerm,       setSearchTerm]       = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const debouncedSearchTerm = useDeferredValue(searchTerm);
   const [sortOrder,        setSortOrder]        = useState('newest'); // newest, oldest, status
   const [filterGroup,      setFilterGroup]      = useState('all'); // all, cell_bank, fermentation
   const [pendingIds,       setPendingIds]       = useState(new Set());
@@ -86,13 +86,7 @@ export default function DigitalLnbPage() {
       .then(({ data }) => setBatchFlasks(data || []));
   }, [watchedBatchId, supabase]);
 
-  // Debounce search term
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
+  // Search is deferred via useDeferredValue
 
   useEffect(() => {
     if (currentTitle && currentTitle.length > 5) {
