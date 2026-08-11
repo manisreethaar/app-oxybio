@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { parseErrorMessage } from '@/utils/errorParser';
