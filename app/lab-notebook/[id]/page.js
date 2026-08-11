@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
@@ -36,11 +37,10 @@ export default function LnbEntryPage() {
   const [pendingIds, setPendingIds] = useState(new Set());
 
   // Form mutable states
-  const [title, setTitle] = useState('');
-  const [objective, setObjective] = useState('');
-  const [methodology, setMethodology] = useState('');
-  const [observations, setObservations] = useState('');
-  const [conclusions, setConclusions] = useState('');
+  const { register: formReg, handleSubmit: formHandleSubmit, getValues: formGetValues, setValue: formSetValue, watch: formWatch, reset: formReset, control: formControl } = useForm({
+    defaultValues: { title: '', objective: '', methodology: '', observations: '', conclusions: '' }
+  });
+  const title = formWatch('title');
   const [stageSnapshots, setStageSnapshots] = useState({});
   // Lookup map: formulation UUID → "CODE — Name" for display in snapshots
   const [formulationMap, setFormulationMap] = useState({});
@@ -58,11 +58,13 @@ export default function LnbEntryPage() {
       
       const data = logsRes.data;
       setEntry(data);
-      setTitle(data.title || '');
-      setObjective(data.objective || '');
-      setMethodology(data.methodology || '');
-      setObservations(data.observations || '');
-      setConclusions(data.conclusions || '');
+      formReset({
+        title: data.title || '',
+        objective: data.objective || '',
+        methodology: data.methodology || '',
+        observations: data.observations || '',
+        conclusions: data.conclusions || ''
+      });
       setStageSnapshots(data.stage_snapshots || {});
     } catch (err) {
       console.error(err);
@@ -113,7 +115,7 @@ export default function LnbEntryPage() {
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, objective, methodology, observations, conclusions })
+        body: JSON.stringify(formGetValues())
       });
       if (!res.ok) throw new Error((await res.json()).error);
       await fetchEntry();
@@ -131,7 +133,7 @@ export default function LnbEntryPage() {
     try {
       const res = await fetch(`/api/lab-notebook/${id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, objective, methodology, observations, conclusions, status: 'Submitted' })
+        body: JSON.stringify({ ...formGetValues(), status: 'Submitted' })
       });
       if (!res.ok) throw new Error((await res.json()).error);
       await fetchEntry();
@@ -298,8 +300,8 @@ export default function LnbEntryPage() {
              role={employeeProfile.role}
              onResync={fetchEntry}
            />
-           <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} value={objective} onChange={setObjective} placeholder="State the purpose of this experiment..." />
-           <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} value={methodology} onChange={setMethodology} placeholder={linkedSops.length ? 'Note any deviations from the linked SOP(s), if applicable...' : 'Detail the steps, reagents, and equipment used...'} isLarge />
+           <SectionBox title="Objective" icon={<AlertCircle className="w-4 h-4" />} canEdit={canEdit} name="objective" formReg={formReg} formSetValue={formSetValue} formWatch={formWatch} placeholder="State the purpose of this experiment..." />
+           <SectionBox title="Methodology / Protocols" icon={<BookOpen className="w-4 h-4" />} canEdit={canEdit} name="methodology" formReg={formReg} formSetValue={formSetValue} formWatch={formWatch} placeholder={linkedSops.length ? 'Note any deviations from the linked SOP(s), if applicable...' : 'Detail the steps, reagents, and equipment used...'} isLarge />
            
            <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl bg-white">
              <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
@@ -307,11 +309,17 @@ export default function LnbEntryPage() {
                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Detailed Observations</h3>
              </div>
              <div className="p-4 bg-slate-50/30">
-               <BlockEditor value={observations} onChange={setObservations} canEdit={canEdit} />
+               <Controller
+                  name="observations"
+                  control={formControl}
+                  render={({ field }) => (
+                    <BlockEditor value={field.value} onChange={field.onChange} canEdit={canEdit} />
+                  )}
+                />
              </div>
            </div>
            
-           <SectionBox title="Conclusions" icon={<FileSignature className="w-4 h-4" />} canEdit={canEdit} value={conclusions} onChange={setConclusions} placeholder="Summarize findings and next steps..." />
+           <SectionBox title="Conclusions" icon={<FileSignature className="w-4 h-4" />} canEdit={canEdit} name="conclusions" formReg={formReg} formSetValue={formSetValue} formWatch={formWatch} placeholder="Summarize findings and next steps..." />
         </div>
 
         {/* Sidebar Signatures */}
@@ -496,8 +504,10 @@ function RichToolbar({ taRef, value, onChange }) {
   );
 }
 
-function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarge }) {
+function SectionBox({ title, icon, canEdit, name, formReg, formSetValue, formWatch, placeholder, isLarge }) {
   const taRef = useRef(null);
+  const value = formWatch ? formWatch(name) : '';
+  const onChange = (val) => formSetValue && formSetValue(name, val);
   const html  = value ? markdownToHtml(value) : '';
 
   return (
@@ -510,9 +520,14 @@ function SectionBox({ title, icon, canEdit, value, onChange, placeholder, isLarg
       <div className="p-1">
         {canEdit ? (
           <textarea
-            ref={taRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            {...formReg(name)}
+            ref={(e) => {
+              formReg(name).ref(e);
+              taRef.current = e;
+            }}
+            onChange={(e) => {
+              formReg(name).onChange(e); // allow react-hook-form to see changes
+            }}
             className={`w-full p-4 bg-transparent outline-none resize-none text-sm font-medium text-slate-700 leading-relaxed font-mono ${isLarge ? 'min-h-[14rem]' : 'min-h-[8rem]'}`}
             placeholder={placeholder}
           />
