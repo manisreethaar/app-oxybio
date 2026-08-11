@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
 import { Beaker, FlaskConical, Save, Package, X, Plus } from 'lucide-react';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -36,36 +37,38 @@ export default function ProductDevelopmentDetail() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const { data: bData, error } = await supabase
-      .from('batches')
-      .select('*')
-      .eq('id', batchId)
-      .maybeSingle();
+    try {
+      const { data: bData, error } = await withTimeout(
+        supabase.from('batches').select('*').eq('id', batchId).maybeSingle()
+      );
       
-    if (error || !bData) {
-      toast.error('Failed to load batch');
-      setLoading(false);
-      return;
+      if (error || !bData) {
+        toast.error('Failed to load batch');
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch available inventory stock (where current_quantity > 0)
+      const { data: stockData } = await withTimeout(
+        supabase.from('inventory_stock').select('id, current_quantity, supplier_batch_number, inventory_items(name, unit, category)').gt('current_quantity', 0)
+      );
+      
+      setInventoryStock(stockData || []);
+      
+      setBatch(bData);
+      
+      reset({
+        notes: bData.notes || '',
+        target_volume: bData.planned_volume_ml || '',
+        target_ph: bData.target_ph || '',
+        target_brix: bData.target_brix || '',
+        ingredients: [] 
+      });
+    } catch (err) {
+      toast.error(err.message || 'Request timed out');
     }
-    
-    // Fetch available inventory stock (where current_quantity > 0)
-    const { data: stockData } = await supabase
-      .from('inventory_stock')
-      .select('id, current_quantity, supplier_batch_number, inventory_items(name, unit, category)')
-      .gt('current_quantity', 0);
-      
-    setInventoryStock(stockData || []);
-    
-    setBatch(bData);
-    
-    // In a real app we'd load the formulations / ingredients from a product_dev table
-    // For now, we stub it out or read from a JSON column if we add one.
-    reset({
-      notes: bData.notes || '',
-      target_volume: bData.planned_volume_ml || '',
-    });
     setLoading(false);
-  }, [batchId, supabase, toast, reset]);
+  }, [batchId, supabase, reset, toast]);
 
   useEffect(() => {
     loadData();
@@ -74,11 +77,11 @@ export default function ProductDevelopmentDetail() {
   const onSave = async (formData) => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/product-development/consume`, {
+      const res = await withTimeout(fetch(`/api/product-development/consume`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batchId, formData })
-      });
+      }));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save formulation');
       toast.success('RTD formulation saved and inventory deducted');
