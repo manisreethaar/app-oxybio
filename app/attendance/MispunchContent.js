@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
@@ -19,11 +20,11 @@ export default function MispunchContent() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
   const [selfReportLog, setSelfReportLog] = useState(null);
-  const [formData, setFormData] = useState({ hours: '', reason: '' });
-  const [selfReportData, setSelfReportData] = useState({ hours: '', reason: '' });
   const [adminMispunches, setAdminMispunches] = useState([]);
   const [reviewingLog, setReviewingLog] = useState(null);
-  const [rejectRemark, setRejectRemark] = useState('');
+  const { register: regForm, handleSubmit: submitForm, reset: resetForm } = useForm({ defaultValues: { hours: '', reason: '' } });
+  const { register: regSelf, handleSubmit: submitSelf, reset: resetSelf } = useForm({ defaultValues: { hours: '', reason: '' } });
+  const { register: regAdmin, handleSubmit: submitAdmin, reset: resetAdmin } = useForm({ defaultValues: { rejectRemark: '' } });
   const supabase = useMemo(() => createClient(), []);
 
   const fetchData = async () => {
@@ -71,9 +72,8 @@ export default function MispunchContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeProfile, isAdmin]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedLog || !formData.hours || !formData.reason) return;
+  const handleSubmit = async (data) => {
+    if (!selectedLog || !data.hours || !data.reason) return;
     setSubmitting(true);
     try {
       const res = await fetch('/api/mispunch/request', {
@@ -81,8 +81,8 @@ export default function MispunchContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           logId: selectedLog.id,
-          hours: parseFloat(formData.hours),
-          reason: formData.reason,
+          hours: parseFloat(data.hours),
+          reason: data.reason,
         }),
       });
       if (!res.ok) {
@@ -90,7 +90,7 @@ export default function MispunchContent() {
         throw new Error(errData.error || 'Submission failed');
       }
       setSelectedLog(null);
-      setFormData({ hours: '', reason: '' });
+      resetForm();
       fetchData();
       toast.success('Mispunch request submitted for approval!');
       notifyEmployee(employeeProfile.id, 'Mispunch Requested', 'Your mispunch request has been successfully submitted.', '/mispunch');
@@ -360,7 +360,7 @@ export default function MispunchContent() {
       {selfReportLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <form onSubmit={handleSelfReport}>
+            <form onSubmit={submitSelf(handleSelfReport)}>
               <div className="p-6 border-b border-slate-100 bg-amber-50">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <LogOut className="w-5 h-5 text-amber-500" /> Missed Checkout
@@ -406,7 +406,7 @@ export default function MispunchContent() {
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={submitForm(handleSubmit)}>
               <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                 <h3 className="text-lg font-bold text-slate-900">Mispunch For {new Date(selectedLog.date).toLocaleDateString()}</h3>
                 <p className="text-xs text-slate-500 mt-1">Please provide the actual hours worked and reason.</p>
