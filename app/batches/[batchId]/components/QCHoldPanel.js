@@ -643,7 +643,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       toast.success('External lab result details saved.');
     } catch (err) { toast.error(err.message); }
     finally { setSavingExtResult(false); }
-  });
+  };
 
   // G-10: create a re-test row linked to the original failed test
   const handleRetest = async (failedTest) => {
