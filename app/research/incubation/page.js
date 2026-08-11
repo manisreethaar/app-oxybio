@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useDeferredValue } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
@@ -698,6 +698,7 @@ export default function SampleIncubationPage() {
   const [editData, setEditData]                 = useState(null);
   const [statusFilter, setStatusFilter]         = useState('all');
   const [searchTerm, setSearchTerm]             = useState('');
+  const deferredSearch = useDeferredValue(searchTerm);
   const [deletingId, setDeletingId]             = useState(null);
   const [confirmDeleteId, setConfirmDeleteId]   = useState(null);
   const [expandedSources, setExpandedSources]   = useState(new Set());

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
@@ -70,7 +70,8 @@ export default function FormulationsPage() {
   const [fetchError, setFetchError] = useState(null);
   const [scaleFactors, setScaleFactors] = useState({});
   const [statusFilter, setStatusFilter] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm]       = useState('');
+  const deferredSearch = useDeferredValue(searchTerm);
   const [sortOrder, setSortOrder] = useState('newest');
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -357,7 +358,7 @@ export default function FormulationsPage() {
   const filteredFormulations = formulations.filter(f => {
     const s = f.status === 'active' ? 'Draft' : f.status;
     const matchesStatus = statusFilter === 'All' || s === statusFilter;
-    const q = searchTerm.toLowerCase();
+    const q = deferredSearch.toLowerCase();
     const matchesSearch = !q || (f.name || '').toLowerCase().includes(q) || (f.code || '').toLowerCase().includes(q);
     return matchesStatus && matchesSearch;
   }).sort((a, b) => {

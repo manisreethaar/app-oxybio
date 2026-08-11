@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,6 +26,7 @@ export default function CompliancePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearch = useDeferredValue(searchTerm);
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [activeTab, setActiveTab] = useState('calendar');
@@ -259,7 +260,7 @@ export default function CompliancePage() {
   const onTrack = items.filter(i => i.calculated_status !== 'done' && i.calculated_status !== 'overdue' && differenceInDays(new Date(i.due_date), new Date()) > 30);
   const filteredItems = items
     .filter(item => {
-      const q = searchTerm.trim().toLowerCase();
+      const q = deferredSearch.trim().toLowerCase();
       const matchesStatus = statusFilter === 'All' || item.calculated_status === statusFilter;
       const matchesSearch = !q || [
         item.title, item.category, item.recurrence, item.calculated_status, item.employees?.full_name
