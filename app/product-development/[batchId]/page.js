@@ -17,6 +17,7 @@ export default function ProductDevelopmentDetail() {
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [inventoryStock, setInventoryStock] = useState([]);
   
   const { register, handleSubmit, control, reset, getValues } = useForm({
     defaultValues: {
@@ -47,6 +48,14 @@ export default function ProductDevelopmentDetail() {
       return;
     }
     
+    // Fetch available inventory stock (where current_quantity > 0)
+    const { data: stockData } = await supabase
+      .from('inventory_stock')
+      .select('id, current_quantity, supplier_batch_number, inventory_items(name, unit, category)')
+      .gt('current_quantity', 0);
+      
+    setInventoryStock(stockData || []);
+    
     setBatch(bData);
     
     // In a real app we'd load the formulations / ingredients from a product_dev table
@@ -64,14 +73,20 @@ export default function ProductDevelopmentDetail() {
 
   const onSave = async (formData) => {
     setSaving(true);
-    // Mock save logic for now
-    const { error } = await supabase
-      .from('batches')
-      .update({ notes: formData.notes, planned_volume_ml: formData.target_volume })
-      .eq('id', batchId);
-      
-    if (error) toast.error('Failed to save');
-    else toast.success('Saved successfully');
+    try {
+      const res = await fetch(`/api/product-development/consume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchId, formData })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save formulation');
+      toast.success('RTD formulation saved and inventory deducted');
+      // Reload to get updated quantities
+      loadData();
+    } catch (err) {
+      toast.error(err.message);
+    }
     setSaving(false);
   };
 
@@ -111,28 +126,33 @@ export default function ProductDevelopmentDetail() {
             <div className="pt-4 border-t border-slate-100">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider">Formulation Ingredients</h3>
-                <button type="button" onClick={() => append({ name: '', amount: '', unit: 'g' })} className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                <button type="button" onClick={() => append({ stock_id: '', amount: '', unit: 'g' })} className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Add Ingredient
                 </button>
               </div>
               
               <div className="space-y-3">
                 {fields.length === 0 && <p className="text-sm text-slate-400 italic">No ingredients added yet. Pull pellets or extracts from inventory.</p>}
-                {fields.map((field, idx) => (
+                {fields.map((field, idx) => {
+                  const selectedStockId = watch(`ingredients.${idx}.stock_id`);
+                  const selectedStock = inventoryStock.find(s => s.id === selectedStockId);
+                  return (
                   <div key={field.id} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <input {...register(`ingredients.${idx}.name`)} placeholder="e.g. Pellet Batch A, Milk, Sugar" className="flex-1 px-3 py-1.5 text-sm rounded-md border border-slate-200" />
-                    <input type="number" {...register(`ingredients.${idx}.amount`)} placeholder="Amt" className="w-20 px-3 py-1.5 text-sm rounded-md border border-slate-200" />
-                    <select {...register(`ingredients.${idx}.unit`)} className="w-16 px-2 py-1.5 text-sm rounded-md border border-slate-200">
-                      <option value="g">g</option>
-                      <option value="ml">ml</option>
-                      <option value="kg">kg</option>
-                      <option value="L">L</option>
+                    <select {...register(`ingredients.${idx}.stock_id`)} className="flex-1 px-3 py-1.5 text-sm rounded-md border border-slate-200 bg-white">
+                      <option value="">Select ingredient from inventory...</option>
+                      {inventoryStock.map(stock => (
+                        <option key={stock.id} value={stock.id}>
+                          {stock.inventory_items?.name} (Lot: {stock.supplier_batch_number || stock.id.split('-')[0]}) - {stock.current_quantity} {stock.inventory_items?.unit} available
+                        </option>
+                      ))}
                     </select>
+                    <input type="number" step="0.1" {...register(`ingredients.${idx}.amount`)} placeholder="Amt" className="w-24 px-3 py-1.5 text-sm rounded-md border border-slate-200" />
+                    <div className="w-12 text-xs font-bold text-slate-500 px-1 py-1.5">{selectedStock?.inventory_items?.unit || 'unit'}</div>
                     <button type="button" onClick={() => remove(idx)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                ))}
+                )})}
               </div>
             </div>
 
