@@ -117,7 +117,7 @@ export default function DigitalLnbPage() {
       setBatches(batchData || []);
     } catch (err) { console.error('LNB fetch error:', err); }
     finally { setLoading(false); }
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const fetchPendingIds = async () => {
     const res = await fetch('/api/edit-request');
