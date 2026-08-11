@@ -59,8 +59,8 @@ export default function SecureViewerModal({ url, title, onClose }) {
           
           {/* Dynamic Watermark to deter screenshots */}
           <div className="absolute inset-0 pointer-events-none flex flex-col justify-between overflow-hidden z-50 opacity-10">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="flex justify-between w-full whitespace-nowrap -rotate-12 transform scale-150 py-10 text-slate-900 font-black text-2xl tracking-widest uppercase mix-blend-multiply">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex justify-between w-full whitespace-nowrap -rotate-12 transform scale-150 py-16 text-slate-900 font-black text-2xl tracking-widest uppercase mix-blend-multiply">
                 <span>{userEmail} CONFIDENTIAL</span>
                 <span>{userEmail} CONFIDENTIAL</span>
                 <span>{userEmail} CONFIDENTIAL</span>

@@ -71,12 +71,15 @@ export default function DocumentsPage() {
   }, [authLoading, category]);
 
   useEffect(() => {
-    const query = searchQuery.toLowerCase();
-    const filtered = documents.filter(doc => 
-      doc.title?.toLowerCase().includes(query) || 
-      doc.category?.toLowerCase().includes(query)
-    );
-    setFilteredDocs(filtered);
+    const timer = setTimeout(() => {
+      const query = searchQuery.toLowerCase();
+      const filtered = documents.filter(doc => 
+        doc.title?.toLowerCase().includes(query) || 
+        doc.category?.toLowerCase().includes(query)
+      );
+      setFilteredDocs(filtered);
+    }, 300); // 300ms debounce
+    return () => clearTimeout(timer);
   }, [searchQuery, documents]);
 
   const fetchDocuments = async () => {

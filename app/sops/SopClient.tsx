@@ -95,7 +95,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
                 const exists = prev.find(s => s.id === payload.new.id);
                 if (exists) {
                   // Merge payload.new into existing state to preserve joined relations without querying DB
-                  return prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s);
+                  return prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s).filter(s => s.is_active);
                 }
                 return prev;
              });
