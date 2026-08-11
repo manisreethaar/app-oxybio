@@ -66,7 +66,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
       [dRes, eqRes] = await withTimeout(Promise.all([
         supabase.from('batch_stage_sterilisation').select('*').eq('batch_id', batch.id).maybeSingle(),
         supabase.from('equipment').select('id, name, status, requires_calibration, calibration_due_date, iq_doc_url, oq_doc_url, pq_doc_url').order('name'),
-      ]), 20000, 'Sterilisation data load timed out');
+      ]), 45000, 'Sterilisation data load timed out');
     } catch (err) {
       console.error('SterilisationPanel fetch error:', err);
       return;

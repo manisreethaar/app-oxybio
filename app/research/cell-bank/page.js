@@ -538,7 +538,7 @@ export default function CellBankPage() {
         fetch(`/api/research/cell-bank?view=strains&t=${ts}`),
         fetch(`/api/research/cell-bank?view=preparations&t=${ts}`),
         fetch(`/api/formulations?t=${ts}`),
-      ]), 20000, 'Cell bank load timed out');
+      ]), 45000, 'Cell bank load timed out');
       const [sJson, pJson, fJson] = await Promise.all([sRes.json(), pRes.json(), fRes.json()]);
       
       if (sJson.success) {

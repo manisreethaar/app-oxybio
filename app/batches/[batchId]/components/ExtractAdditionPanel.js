@@ -61,7 +61,7 @@ export default function ExtractAdditionPanel({ batch, activeFlask, employees, av
     let isCurrent = true;
     let data;
     try {
-      ({ data } = await withTimeout(supabase.from('batch_flask_extract_addition').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 20000, 'Extract addition load timed out'));
+      ({ data } = await withTimeout(supabase.from('batch_flask_extract_addition').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 45000, 'Extract addition load timed out'));
     } catch (err) {
       console.error('ExtractAdditionPanel fetch error:', err);
       return;

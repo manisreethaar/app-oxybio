@@ -724,7 +724,7 @@ export default function SampleIncubationPage() {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (searchTerm.trim()) params.set('q', searchTerm.trim());
-      const res  = await withTimeout(fetch(`/api/research/incubation?${params.toString()}`), 20000, 'Incubation samples load timed out');
+      const res  = await withTimeout(fetch(`/api/research/incubation?${params.toString()}`), 45000, 'Incubation samples load timed out');
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to fetch');
       setSamples(json.data || []);

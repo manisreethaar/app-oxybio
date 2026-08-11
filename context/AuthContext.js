@@ -9,6 +9,34 @@ import { can, getPermissionsForRole, isMasterAdmin } from '@/lib/permissions';
 
 const AuthContext = createContext({});
 
+if (typeof window !== 'undefined' && !window.__fetch_patched__) {
+  const originalFetch = window.fetch;
+  window.fetch = async function(...args) {
+     let lastErr;
+     for (let i = 0; i < 3; i++) {
+        try {
+           // If the network request completely fails (e.g., wifi drop, DNS failure) it throws here.
+           // If it returns a 502/504 gateway timeout, we should ALSO retry it.
+           const res = await originalFetch.apply(this, args);
+           if (res.status === 502 || res.status === 504) {
+             throw new Error(`Gateway Timeout: ${res.status}`);
+           }
+           return res;
+        } catch (err) {
+           lastErr = err;
+           // If it's an abort error (like from an AbortController), do not retry
+           if (err.name === 'AbortError') throw err;
+           
+           if (i === 2) throw err;
+           // Exponential backoff: 1000ms, 2000ms
+           await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+        }
+     }
+     throw lastErr;
+  };
+  window.__fetch_patched__ = true;
+}
+
 const PROFILE_SELECT =
   'id,full_name,initials,email,role,department,designation,is_active,photo_url,employee_code,phone,address,blood_group,emergency_contact,emergency_contact_name,joined_date,date_of_birth,casual_leave_balance,medical_leave_balance,earned_leave_balance,custom_permissions,base_salary';
 

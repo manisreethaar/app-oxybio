@@ -160,7 +160,7 @@ export default function ConsumerResearchPage() {
             .eq('status', 'released')
             .limit(100);
         })(),
-      ]), 20000, 'Research load timed out');
+      ]), 45000, 'Research load timed out');
 
       if (!panelRes.ok) throw new Error('Failed to load panels');
       const { data: panelData } = await panelRes.json();

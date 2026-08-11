@@ -67,7 +67,7 @@ export default function ShelfLifePage() {
           .limit(100),
         // A-23: also fetch stability_timepoints (secondary table) and merge into shelf_life_logs
         supabase.from('stability_timepoints').select('*').order('timepoint_days', { ascending: true }).limit(500),
-      ]), 20000, 'Shelf-life load timed out');
+      ]), 45000, 'Shelf-life load timed out');
       if (studyErr) throw studyErr;
       // A-23 reconciliation: convert stability_timepoints to shelf_life_log format and merge
       const tpByStudy = {};

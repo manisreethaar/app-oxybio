@@ -38,7 +38,7 @@ export default function NotificationsPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      await withTimeout(Promise.all([fetchAlerts(), fetchDirectNotifs()]), 20000, 'Notifications load timed out');
+      await withTimeout(Promise.all([fetchAlerts(), fetchDirectNotifs()]), 45000, 'Notifications load timed out');
     } catch (err) {
       console.error('Notifications fetch error:', err);
     } finally {

@@ -45,7 +45,7 @@ export default function MispunchContent() {
           .is('mispunch_status', null)
           .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
         isAdmin ? fetch('/api/mispunch/pending').then(r => r.json()) : Promise.resolve(null)
-      ]), 20000, 'Attendance fetch timed out');
+      ]), 45000, 'Attendance fetch timed out');
 
       const [mispunchRes, openRes, adminRes] = results;
 

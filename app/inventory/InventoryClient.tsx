@@ -162,7 +162,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         stockQuery,
         pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').is('archived_at', null).order('name').limit(1000) : Promise.resolve({ data: null }),
         pageNum === 0 ? supabase.from('vendors').select('*').is('archived_at', null).order('name').limit(500) : Promise.resolve({ data: null })
-      ]), 20000, 'Inventory load timed out');
+      ]), 45000, 'Inventory load timed out');
 
       if (stockRes.error) throw stockRes.error;
 

@@ -207,7 +207,7 @@ export default function FormulationsPage() {
         .select('id, batch_id, status, experiment_type, start_time, current_stage')
         .eq('formulation_id', formulationId)
         .order('created_at', { ascending: false })
-        .limit(10), 20000, 'Batch history load timed out');
+        .limit(10), 45000, 'Batch history load timed out');
       setBatchHistory(prev => ({ ...prev, [formulationId]: data || [] }));
     } catch (err) {
       console.error('Batch history fetch error:', err);

@@ -109,7 +109,7 @@ export default function GridEntryPage() {
   //   ?source_type=growth_study&source_id=uuid
   useEffect(() => {
     setSourcesLoading(true);
-    withTimeout(fetch('/api/lab-bench/sources'), 20000, 'Lab bench sources load timed out')
+    withTimeout(fetch('/api/lab-bench/sources'), 45000, 'Lab bench sources load timed out')
       .then(r => r.json())
       .then(json => {
         if (json.success) {

@@ -103,7 +103,7 @@ export default function CompliancePage() {
         fetchPromises.push(supabase.from('employees').select('id, full_name').eq('is_active', true));
       }
 
-      const results = await withTimeout(Promise.all(fetchPromises), 20000, 'Compliance load timed out');
+      const results = await withTimeout(Promise.all(fetchPromises), 45000, 'Compliance load timed out');
       const compItems = results[0].data || [];
 
       const processedItems = compItems.map(i => {

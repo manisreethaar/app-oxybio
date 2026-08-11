@@ -127,7 +127,7 @@ function PredictiveModelsTab({ supabase, toast }) {
   useEffect(() => {
     withTimeout(
       supabase.from('predictive_models').select('*').order('created_at', { ascending: false }),
-      20000, 'Predictive models load timed out'
+      45000, 'Predictive models load timed out'
     )
       .then(({ data }) => { setModels(data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -313,7 +313,7 @@ export default function BioprocessDetailPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch(`/api/bioprocess/${id}`), 20000, 'Bioprocess experiment load timed out');
+      const res = await withTimeout(fetch(`/api/bioprocess/${id}`), 45000, 'Bioprocess experiment load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setExperiment(json.experiment);

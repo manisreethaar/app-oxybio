@@ -108,7 +108,7 @@ export default function CapaSection() {
         supabase.from('deviations').select('*, reported_by, created_by, reporter:employees!deviations_reported_by_fkey(full_name), creator:employees!deviations_created_by_fkey(id, full_name, initials), batches(id, batch_id)').is('archived_at', null).order('created_at', { ascending: false }).limit(500),
         supabase.from('employees').select('id, full_name').eq('is_active', true),
         supabase.from('sop_library').select('id, title, version').order('title').limit(1000)
-      ]), 20000, 'CAPA load timed out');
+      ]), 45000, 'CAPA load timed out');
       setDeviations(devs || []); setEmployees(emps || []); setSops(sopsData || []);
     } catch (err) { console.error('CAPA fetch error:', err); }
     finally { setLoading(false); }

@@ -52,7 +52,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
   const fetchSOPs = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await withTimeout(supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true).limit(500), 20000, 'SOPs load timed out');
+      const { data, error } = await withTimeout(supabase.from('sop_library').select('*, sop_acknowledgements(employee_id)').eq('is_active', true).limit(500), 45000, 'SOPs load timed out');
       if (error) throw error;
       const mapped = (data || []).map((sop: any) => ({ ...sop, is_acknowledged: (sop.sop_acknowledgements || []).some((ack: any) => ack.employee_id === employeeProfile?.id) }));
       setSops(mapped);

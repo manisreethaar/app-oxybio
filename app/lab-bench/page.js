@@ -218,7 +218,7 @@ export default function LabBenchPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res  = await withTimeout(fetch('/api/lab-bench/queue'), 20000, 'Lab bench load timed out');
+      const res  = await withTimeout(fetch('/api/lab-bench/queue'), 45000, 'Lab bench load timed out');
       const json = await res.json();
       if (json.success) {
         setQueue(json);

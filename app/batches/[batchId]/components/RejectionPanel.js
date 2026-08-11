@@ -30,7 +30,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       const [{ data }, mediaPrep] = await withTimeout(Promise.all([
         supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
         supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).maybeSingle(),
-      ]), 20000, 'Rejection record load timed out');
+      ]), 45000, 'Rejection record load timed out');
       if (!isCurrent) return;
       if (data) { setRecord(data); setSupplierDefect(data.supplier_defect||false); setImplicatedLotId(data.implicated_lot_id||''); }
       else { setRecord(null); setStage(activeFlask.current_stage || ''); }
@@ -39,7 +39,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       if (lotIds.length) {
         const { data: lots } = await withTimeout(supabase.from('inventory_stock')
           .select('id, supplier_batch_number, inventory_items(name)')
-          .in('id', lotIds), 20000, 'Batch lots load timed out');
+          .in('id', lotIds), 45000, 'Batch lots load timed out');
         if (lots) setBatchLots(lots);
       }
     } catch (err) {

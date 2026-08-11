@@ -359,7 +359,7 @@ export default function BatchesPage() {
           `)
           .not('archived_at', 'is', null)
           .order('archived_at', { ascending: false }),
-      ]), 20000, 'Batches load timed out'));
+      ]), 45000, 'Batches load timed out'));
 
       // Fetch creator details separately to avoid slow RLS joins
       const allFetched = [...(activeRes.data || []), ...(completedRes.data || []), ...(archivedRes.data || [])];

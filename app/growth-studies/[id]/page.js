@@ -105,7 +105,7 @@ export default function GrowthStudyDetailPage() {
   const [actualInocTime, setActualInocTime] = useState('');
 
   const load = useCallback(() => {
-    withTimeout(fetch(`/api/growth-studies/${id}`), 20000, 'Growth study load timed out')
+    withTimeout(fetch(`/api/growth-studies/${id}`), 45000, 'Growth study load timed out')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));

@@ -52,7 +52,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
       [relRes, epRes] = await withTimeout(Promise.all([
         supabase.from('batch_flask_release_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
         supabase.from('batch_flask_endpoints').select('*').eq('flask_id', activeFlask.id).maybeSingle()
-      ]), 20000, 'Release record load timed out');
+      ]), 45000, 'Release record load timed out');
     } catch (err) {
       console.error('ReleasePanel fetch error:', err);
       return;
@@ -87,7 +87,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
     withTimeout(supabase.from('formulations')
       .select('id, name, code')
       .eq('status', 'Approved')
-      .order('name'), 20000, 'Formulations load timed out')
+      .order('name'), 45000, 'Formulations load timed out')
       .then(({ data }) => setFormulations(data || []))
       .catch(err => console.error('ReleasePanel formulations fetch error:', err));
   }, [supabase]);

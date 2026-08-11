@@ -46,7 +46,7 @@ export default function GrowthStudiesPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const fetchStudies = () => {
-    withTimeout(fetch('/api/growth-studies'), 20000, 'Growth studies load timed out')
+    withTimeout(fetch('/api/growth-studies'), 45000, 'Growth studies load timed out')
       .then(r => r.json())
       .then(d => { setStudies(d.data || []); setLoading(false); })
       .catch(() => setLoading(false));

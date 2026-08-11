@@ -228,7 +228,7 @@ export default function ApprovalsPage() {
   async function fetchChanges(status) {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch(`/api/admin/pending-changes?status=${status}`), 20000, 'Approvals load timed out');
+      const res = await withTimeout(fetch(`/api/admin/pending-changes?status=${status}`), 45000, 'Approvals load timed out');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setChanges(data.data || []);

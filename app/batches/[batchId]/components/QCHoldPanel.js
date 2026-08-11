@@ -146,7 +146,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     let isCurrent = true;
     let sData;
     try {
-      ({ data: sData } = await withTimeout(supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 20000, 'QC sample load timed out'));
+      ({ data: sData } = await withTimeout(supabase.from('batch_flask_qc_samples').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 45000, 'QC sample load timed out'));
     } catch (err) {
       console.error('QCHoldPanel fetch error:', err);
       return;
@@ -169,7 +169,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       const [tRes, incRes] = await withTimeout(Promise.all([
         supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('test_name'),
         fetch(`/api/research/incubation?qc_sample_id=${sData.id}`).then(r => r.json()),
-      ]), 20000, 'QC tests load timed out');
+      ]), 45000, 'QC tests load timed out');
       if (!isCurrent) return;
 
       let fetchedTests = tRes.data || [];

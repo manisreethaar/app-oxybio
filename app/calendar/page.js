@@ -47,7 +47,7 @@ export default function RegulatoryCalendarPage() {
   const fetchMilestones = async () => {
     setLoading(true);
     try {
-      const { data, error } = await withTimeout(supabase.from('regulatory_milestones').select('*').order('deadline', { ascending: true }), 20000, 'Calendar load timed out');
+      const { data, error } = await withTimeout(supabase.from('regulatory_milestones').select('*').order('deadline', { ascending: true }), 45000, 'Calendar load timed out');
       if (error) throw error;
       setMilestones(data || []);
     } catch (err) { console.error('Fetch milestones error:', err); }

@@ -272,7 +272,7 @@ export default function AttendancePage() {
         const rosterData = await rosterRes.json();
         setTeamToday(rosterData.data || []);
       }
-      })(), 20000, 'Attendance load timed out');
+      })(), 45000, 'Attendance load timed out');
     } catch (err) {
       console.error('Attendance fetch error:', err);
     } finally {

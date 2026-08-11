@@ -37,6 +37,12 @@ export function ToastProvider({ children }) {
     info:    (msg) => add(msg, 'info'),
   }), [add]);
 
+  useEffect(() => {
+    const handleTimeout = (e) => toast.error(e.detail?.message || 'Request timed out due to slow network.');
+    window.addEventListener('oxybio-timeout', handleTimeout);
+    return () => window.removeEventListener('oxybio-timeout', handleTimeout);
+  }, [toast]);
+
   return (
     <ToastContext.Provider value={{ toasts, remove, toast }}>
       {children}

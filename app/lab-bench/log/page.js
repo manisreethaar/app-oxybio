@@ -199,7 +199,7 @@ export default function QuickLogPage() {
   const loadSources = useCallback(async () => {
     setSourcesLoading(true);
     try {
-      const res  = await withTimeout(fetch('/api/lab-bench/sources'), 20000, 'Lab bench sources load timed out');
+      const res  = await withTimeout(fetch('/api/lab-bench/sources'), 45000, 'Lab bench sources load timed out');
       const json = await res.json();
       if (json.success) {
         setSources(json);

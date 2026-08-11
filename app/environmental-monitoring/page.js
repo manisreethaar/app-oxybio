@@ -57,7 +57,7 @@ export default function EnvironmentalMonitoringPage() {
       const [sRes, lRes] = await withTimeout(Promise.all([
         fetch('/api/environmental-monitoring?view=samples').then(r => r.json()),
         fetch('/api/environmental-monitoring?view=locations').then(r => r.json()),
-      ]), 20000, 'Environmental monitoring load timed out');
+      ]), 45000, 'Environmental monitoring load timed out');
       if (sRes.success) setSamples(sRes.data || []);
       if (lRes.success) setLocations(lRes.data || []);
     } catch { /* silent */ }

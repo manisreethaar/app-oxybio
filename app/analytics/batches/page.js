@@ -109,13 +109,13 @@ export default function BatchAnalyticsPage() {
           .gte('created_at', from.toISOString());
         if (selectedProduct !== 'ALL') bq = bq.eq('product_name', selectedProduct);
 
-        const { data: bData, error: bErr } = await withTimeout(bq, 20000, 'Batch query timed out');
+        const { data: bData, error: bErr } = await withTimeout(bq, 45000, 'Batch query timed out');
         if (bErr) throw bErr;
 
         const ids = bData.map(b => b.id);
 
         if (products.length === 0) {
-          const { data: aB } = await withTimeout(supabase.from('batches').select('product_name').limit(1000), 20000, 'Products timed out');
+          const { data: aB } = await withTimeout(supabase.from('batches').select('product_name').limit(1000), 45000, 'Products timed out');
           setProducts([...new Set((aB || []).map(b => b.product_name).filter(Boolean))]);
         }
 
@@ -128,7 +128,7 @@ export default function BatchAnalyticsPage() {
             supabase.from('batch_flask_endpoints')
               .select('batch_id,flask_id,total_hours,final_ph,sensory_overall,titratable_acidity_pct,aroma,colour_desc,texture,notes').limit(5000)
               .in('batch_id', ids)
-          ]), 20000, 'Details timed out');
+          ]), 45000, 'Details timed out');
           if (rRes.data) setReadings(rRes.data);
           if (eRes.data) setEndpoints(eRes.data);
         } else {

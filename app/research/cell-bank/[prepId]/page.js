@@ -958,7 +958,7 @@ export default function CellBankDetailPage() {
         fetch(`/api/research/cell-bank/${prepId}`),
         fetch(`/api/research/cell-bank/vials?preparation_id=${prepId}`),
         fetch('/api/formulations?category=Lab%20Media'),
-      ]), 20000, 'Cell bank preparation load timed out');
+      ]), 45000, 'Cell bank preparation load timed out');
       const [prepJson, vialsJson, mediaJson] = await Promise.all([prepRes.json(), vialsRes.json(), mediaRes.json()]);
       if (!prepJson.success) throw new Error(prepJson.error);
       const fetchedPrep = prepJson.data;

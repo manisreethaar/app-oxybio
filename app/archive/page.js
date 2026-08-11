@@ -214,7 +214,7 @@ export default function ArchivePage() {
     setLoading(true);
     setData([]);
     try {
-      const res = await withTimeout(fetch(`/api/archive?tab=${tabId}`), 20000, 'Archive load timed out');
+      const res = await withTimeout(fetch(`/api/archive?tab=${tabId}`), 45000, 'Archive load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setData(json.data || []);

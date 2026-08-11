@@ -59,7 +59,7 @@ export default function LabAnalyticsPage() {
         }
 
         setSamples(sampleData);
-        })(), 20000, 'Lab analytics load timed out');
+        })(), 45000, 'Lab analytics load timed out');
       } catch (err) {
         toast.error('Failed to load lab analytics');
         console.error(err);

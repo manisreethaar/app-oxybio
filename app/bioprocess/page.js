@@ -63,7 +63,7 @@ export default function BioprocessPage() {
   const fetchExperiments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch('/api/bioprocess'), 20000, 'Bioprocess load timed out');
+      const res = await withTimeout(fetch('/api/bioprocess'), 45000, 'Bioprocess load timed out');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setExperiments(json.data || []);

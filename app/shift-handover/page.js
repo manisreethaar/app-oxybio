@@ -30,7 +30,7 @@ export default function ShiftHandoverPage() {
       const [hRes, eRes] = await withTimeout(Promise.all([
         fetch('/api/shift-handover').then(r => r.json()),
         supabase.from('employees').select('id, full_name, initials, role').eq('is_active', true).order('full_name'),
-      ]), 20000, 'Shift handover load timed out');
+      ]), 45000, 'Shift handover load timed out');
       if (hRes.success) setHandovers(hRes.data || []);
       if (eRes.data) setEmployees(eRes.data);
     } catch (err) {

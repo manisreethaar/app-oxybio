@@ -299,7 +299,7 @@ export default function BatchSettingsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    withTimeout(fetch('/api/admin/batch-options'), 20000, 'Settings load timed out')
+    withTimeout(fetch('/api/admin/batch-options'), 45000, 'Settings load timed out')
       .then(r => r.json())
       .then(json => {
         if (json.success) {

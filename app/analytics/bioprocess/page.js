@@ -163,7 +163,7 @@ export default function BioprocessAnalyticsPage() {
         let bq = supabase.from('batches').select('id, batch_id, product_name, status, created_at')
           .gte('created_at', fromDate.toISOString()).limit(1000);
         if (selectedProduct !== 'ALL') bq = bq.eq('product_name', selectedProduct);
-        const { data: bData } = await withTimeout(bq, 20000, 'Batch query timed out');
+        const { data: bData } = await withTimeout(bq, 45000, 'Batch query timed out');
 
         if (products.length === 0) {
           const { data: allB } = await supabase.from('batches').select('product_name').limit(1000);
@@ -186,7 +186,7 @@ export default function BioprocessAnalyticsPage() {
               .in('source_id', batchIds)
               .eq('source_type', 'batch')
               .order('created_at', { ascending: false }),
-          ]), 20000, 'Analytics load timed out');
+          ]), 45000, 'Analytics load timed out');
           setReadings(rRes.data || []);
           setEndpoints(eRes.data || []);
           setTitrationLogs(tRes.data || []);

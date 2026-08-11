@@ -119,7 +119,7 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
         .from('messages')
         .select('*, sender:employees!messages_sender_id_fkey(full_name)')
         .eq('chat_id', chat.id)
-        .order('created_at', { ascending: true }), 20000, 'Messages load timed out');
+        .order('created_at', { ascending: true }), 45000, 'Messages load timed out');
 
       if (error) throw error;
       setMessages(data || []);

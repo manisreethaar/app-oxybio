@@ -67,7 +67,7 @@ export default function NewGrowthStudyPage() {
       supabase.from('cell_bank_preparations').select('id, prep_code, type, passage_number').order('created_at', { ascending: false }),
       supabase.from('formulations').select('id, name, code').eq('status', 'Approved').order('name'),
       supabase.from('seed_passages').select('id, passage_number, media_name, status, batches(batch_id), growth_studies(study_code)').eq('status', 'in_progress').order('created_at', { ascending: false }),
-    ]), 20000, 'New study form data load timed out').then(([s, p, f, sp]) => {
+    ]), 45000, 'New study form data load timed out').then(([s, p, f, sp]) => {
       setStrains(s.data || []);
       setPreps(p.data || []);
       setFormulations(f.data || []);

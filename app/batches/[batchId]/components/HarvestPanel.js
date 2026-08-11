@@ -44,7 +44,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
       [{ data }, { data: eq }] = await withTimeout(Promise.all([
         supabase.from('batch_stage_harvest').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
         supabase.from('equipment').select('id, name, status').order('name'),
-      ]), 20000, 'Harvest data load timed out');
+      ]), 45000, 'Harvest data load timed out');
     } catch (err) {
       console.error('HarvestPanel fetch error:', err);
       return;

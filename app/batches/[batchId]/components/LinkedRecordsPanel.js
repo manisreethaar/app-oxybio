@@ -305,8 +305,7 @@ export default function LinkedRecordsPanel({ batch }) {
     // queries out on the server instead, so the browser makes one request.
     withTimeout(
       fetch(`/api/batches/${batch.id}/linked-records`, { cache: 'no-store' }),
-      20000,
-      'Linked records load timed out'
+      45000, 'Linked records load timed out'
     ).then(async (res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();

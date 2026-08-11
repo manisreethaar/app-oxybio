@@ -52,7 +52,7 @@ export default function LnbEntryPage() {
   const fetchEntry = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await withTimeout(fetch(`/api/lab-notebook/${id}`), 20000, 'Lab notebook entry load timed out');
+      const res = await withTimeout(fetch(`/api/lab-notebook/${id}`), 45000, 'Lab notebook entry load timed out');
       const logsRes = await res.json();
       if (!logsRes.success) throw new Error(logsRes.error || 'Failed to fetch entry');
       

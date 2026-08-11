@@ -67,7 +67,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   useEffect(() => {
     if (sourceType !== 'cell_bank') return;
     setVialsLoading(true);
-    withTimeout(fetch('/api/research/cell-bank/vials?status=Available'), 20000, 'Available vials load timed out')
+    withTimeout(fetch('/api/research/cell-bank/vials?status=Available'), 45000, 'Available vials load timed out')
       .then(r => r.json())
       .then(j => { if (j.success) setAvailVials(j.data || []); })
       .catch(() => {})
@@ -77,7 +77,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   useEffect(() => {
     if (sourceType !== 'seed_passage') return;
     setSeedPassagesLoading(true);
-    withTimeout(fetch(`/api/seed-passages?batchId=${batch.batch_id}`), 20000, 'Seed passages load timed out')
+    withTimeout(fetch(`/api/seed-passages?batchId=${batch.batch_id}`), 45000, 'Seed passages load timed out')
       .then(r => r.json())
       .then(j => { if (j.success) setAvailSeedPassages(j.data || []); })
       .catch(() => {})
@@ -86,7 +86,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
 
   const fetchRecord = useCallback(() => {
     if (!activeFlask?.id) return;
-    withTimeout(supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 20000, 'Inoculation record load timed out')
+    withTimeout(supabase.from('batch_flask_inoculations').select('*').eq('flask_id', activeFlask.id).maybeSingle(), 45000, 'Inoculation record load timed out')
       .then(({ data: d }) => {
         if (d) {
           setSourceType(d.inoculum_source_type || 'other');

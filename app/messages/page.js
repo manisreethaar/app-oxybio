@@ -122,7 +122,7 @@ export default function MessagesPage() {
         if (!prev) return prev;
         return chatsData?.find(c => c.id === prev.id) || prev;
       });
-      })(), 20000, 'Messages load timed out');
+      })(), 45000, 'Messages load timed out');
     } catch (err) {
       console.error('Error fetching chats:', err);
       toast.error('Failed to load chats');

@@ -210,7 +210,7 @@ export default function StaffDashboard({ employeeProfile }) {
         if (l.leave_type === 'Earned') e += days;
       });
       setLeaveStats({ casual: c, medical: m, earned: e });
-      })(), 20000, 'Dashboard load timed out');
+      })(), 45000, 'Dashboard load timed out');
     } catch (error) {
       console.error('Error fetching staff dashboard:', error);
     } finally {

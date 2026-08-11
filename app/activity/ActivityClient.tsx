@@ -280,7 +280,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
             openIssues 
           });
         }
-      })(), 20000, 'Activity load timed out');
+      })(), 45000, 'Activity load timed out');
     } catch (err: any) {
       console.error("Activity page fetch error:", err);
       if (isMounted.current) setError("Failed to load activity data: " + (err.message || 'Unknown error'));

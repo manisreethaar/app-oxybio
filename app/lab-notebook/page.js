@@ -97,7 +97,7 @@ export default function DigitalLnbPage() {
       const [entriesRes, { data: batchData }] = await withRetry(() => withTimeout(Promise.all([
         fetch('/api/lab-notebook').then(r => r.json()),
         supabase.from('batches').select('id, batch_id, variant').limit(100)
-      ]), 20000, 'Lab notebook load timed out'));
+      ]), 45000, 'Lab notebook load timed out'));
       if (entriesRes.success) {
         setEntries(entriesRes.data || []);
       } else {

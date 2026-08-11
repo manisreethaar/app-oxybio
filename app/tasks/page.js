@@ -197,7 +197,7 @@ export default function TasksPage() {
       // A stalled network/DB connection otherwise leaves this page spinning
       // forever with no way out except a manual refresh — bound it like the
       // timeout pattern already used in app/profile/page.js.
-      const [empsRes, tasksRes, sopsRes] = await withTimeout(Promise.all([empsPromise, query, sopsPromise]), 20000, 'Tasks load timed out');
+      const [empsRes, tasksRes, sopsRes] = await withTimeout(Promise.all([empsPromise, query, sopsPromise]), 45000, 'Tasks load timed out');
       if (tasksRes.error) throw tasksRes.error;
 
       setEmployees(empsRes.data || []);

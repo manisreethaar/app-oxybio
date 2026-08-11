@@ -37,7 +37,7 @@ export default function ScadaDashboardPage() {
       const [sRes, eqRes] = await withTimeout(Promise.all([
         fetch('/api/scada').then(r => r.json()),
         supabase.from('equipment').select('id, name, model, status').order('name'),
-      ]), 20000, 'SCADA load timed out');
+      ]), 45000, 'SCADA load timed out');
       if (sRes.success) setStreams(sRes.data || []);
       if (eqRes.data) setEquipment(eqRes.data);
     } catch (err) {

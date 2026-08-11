@@ -721,7 +721,7 @@ export default function PayrollPage() {
         }
         setPayslips(data || []);
       }
-      })(), 20000, 'Payslips load timed out');
+      })(), 45000, 'Payslips load timed out');
     } catch (err) {
       console.error(err);
       toast.error("Error loading payroll data: " + err.message);

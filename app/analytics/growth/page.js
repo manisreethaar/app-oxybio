@@ -49,7 +49,7 @@ export default function GrowthAnalyticsPage() {
           studyQuery = studyQuery.eq('study_type', selectedStudyType);
         }
 
-        const { data: studyData, error: studyErr } = await withTimeout(studyQuery, 20000, 'Study query timed out');
+        const { data: studyData, error: studyErr } = await withTimeout(studyQuery, 45000, 'Study query timed out');
         if (studyErr) throw studyErr;
 
         const studyIds = (studyData || []).map(s => s.id);
@@ -59,7 +59,7 @@ export default function GrowthAnalyticsPage() {
             .from('growth_measurements')
             .select('study_id, actual_hour, od_value, ph_value, glucose_g_l')
             .in('study_id', studyIds)
-            .order('actual_hour'), 20000, 'Measurements query timed out');
+            .order('actual_hour'), 45000, 'Measurements query timed out');
           setMeasurements(measData || []);
         } else {
           setMeasurements([]);

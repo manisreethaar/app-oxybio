@@ -31,7 +31,7 @@ export default function AuditLogsPage() {
         .select('*, employees(id, first_name, last_name, email, role)')
         .order('changed_at', { ascending: false })
         .limit(500), // cap at 500 for UI performance
-        20000, 'Audit log load timed out');
+        45000, 'Audit log load timed out');
 
       if (data) setLogs(data);
     } catch (err) {

@@ -46,7 +46,7 @@ export default function StabilityAnalyticsPage() {
           .select('id, storage_condition, study_type, status, start_date, created_at, batches(batch_id, product_name), shelf_life_logs(id, day_number, test_data, created_at)')
           .is('archived_at', null)
           .gte('created_at', fromDate.toISOString())
-          .order('created_at', { ascending: false }), 20000, 'Stability studies timed out');
+          .order('created_at', { ascending: false }), 45000, 'Stability studies timed out');
 
         if (error) throw error;
         setStudies(studyData || []);

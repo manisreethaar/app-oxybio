@@ -32,13 +32,13 @@ export default function LoginPage() {
     setMessage(null);
     try {
       if (view === 'login') {
-        const { error } = await withTimeout(supabase.auth.signInWithPassword({ email, password }), 20000, 'Login request timed out');
+        const { error } = await withTimeout(supabase.auth.signInWithPassword({ email, password }), 45000, 'Login request timed out');
         if (error) { setError(error.message || 'Unable to sign in. Please try again.'); }
         else { router.push('/dashboard'); }
       } else {
         const { error } = await withTimeout(supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
-        }), 20000, 'Reset request timed out');
+        }), 45000, 'Reset request timed out');
         if (error) { setError(error.message || 'Unable to send reset link. Please try again.'); }
         else { setMessage('Password reset link has been sent to your email.'); }
       }
