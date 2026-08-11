@@ -14,8 +14,20 @@ export function createClient() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         global: {
-          fetch: (url, init) => {
-            return fetch(url, { ...init, cache: 'no-store' });
+          fetch: async (url, init) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 15000);
+            try {
+              const response = await fetch(url, { ...init, cache: 'no-store', signal: controller.signal });
+              return response;
+            } catch (error) {
+              if (error.name === 'AbortError') {
+                throw new Error('Supabase request timed out after 15 seconds');
+              }
+              throw error;
+            } finally {
+              clearTimeout(id);
+            }
           }
         }
       }

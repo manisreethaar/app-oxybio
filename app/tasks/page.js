@@ -14,6 +14,7 @@ import {
   ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
   LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search, Columns, Table as TableIcon, Layers, Users
 } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { canAssignTo } from '@/lib/permissions';
@@ -530,6 +531,7 @@ export default function TasksPage() {
   if (authLoading || loading) return <div className="p-8 text-center text-slate-400 font-medium">Loading task queue...</div>;
 
   return (
+    <ErrorBoundary>
     <div className="page-container">
       {/* Alerts */}
       <div className="space-y-3">
@@ -1109,5 +1111,6 @@ export default function TasksPage() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

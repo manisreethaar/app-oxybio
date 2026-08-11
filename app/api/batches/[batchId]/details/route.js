@@ -26,30 +26,36 @@ export async function GET(request, { params }) {
         .from('batch_flasks')
         .select('*')
         .eq('batch_id', batchId)
-        .order('flask_label'),
+        .order('flask_label')
+        .limit(100),
       supabase
         .from('stage_transitions')
         .select('*, employees!stage_transitions_changed_by_fkey(full_name)')
         .eq('batch_id', batchId)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .limit(100),
       supabase
         .from('employees')
         .select('id, full_name, role')
         .eq('is_active', true)
-        .order('full_name'),
+        .order('full_name')
+        .limit(500),
       supabase
         .from('inventory_stock')
         .select('*, inventory_items(name, unit, category)')
         .gt('current_quantity', 0)
-        .eq('status', 'Available'),
+        .eq('status', 'Available')
+        .limit(2000),
       supabase
         .from('lab_notebook_entries')
         .select('id, flask_id')
-        .eq('batch_id', batchId),
+        .eq('batch_id', batchId)
+        .limit(1000),
       supabase
         .from('batch_flask_endpoints')
         .select('total_hours, flask_id')
-        .eq('batch_id', batchId),
+        .eq('batch_id', batchId)
+        .limit(100),
     ]);
 
     if (batchRes.error) {

@@ -3,6 +3,8 @@ import { getRequestUser } from '@/utils/supabase/request-user';
 import InventoryClient from './InventoryClient';
 import { redirect } from 'next/navigation';
 
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+
 export const metadata = { title: 'Inventory - OxyOS' };
 
 export default async function InventoryPage({ searchParams }: { searchParams?: { search?: string } }) {
@@ -23,11 +25,13 @@ export default async function InventoryPage({ searchParams }: { searchParams?: {
   ]);
 
   return (
-    <InventoryClient
-      initialStock={stockRes.data || []}
-      initialItems={itemsRes.data || []}
-      initialVendors={vendorsRes.data || []}
-      initialSearch={searchParams?.search || ''}
-    />
+    <ErrorBoundary>
+      <InventoryClient
+        initialStock={stockRes.data || []}
+        initialItems={itemsRes.data || []}
+        initialVendors={vendorsRes.data || []}
+        initialSearch={searchParams?.search || ''}
+      />
+    </ErrorBoundary>
   );
 }

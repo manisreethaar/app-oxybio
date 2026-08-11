@@ -14,8 +14,8 @@ import {
   FileText, Download, Loader, Trash2, ArrowRight, MessageSquare,
   Package
 } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useRouter } from 'next/navigation';
-
 const PanelLoading = () => (
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-4" />
@@ -778,20 +778,22 @@ export default function BatchDetailPage() {
               key={`${selectedFlaskId ?? 'batch'}-${displayStage}`}
               className={viewingStage && editingStage !== viewingStage ? 'pointer-events-none opacity-90 select-none' : ''}
             >
-              <CurrentPanel
-                batch={batch} flasks={flasks}
-                activeFlask={selectedFlask}
-                employees={employees}
-                availableStock={availableStock} role={role} canDo={canDo}
-                employeeProfile={employeeProfile} supabase={supabase}
-                onDataSaved={fetchAll}
-                onAdvanceStage={handleDirectTransition}
-                onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
-                actionLoading={actionLoading}
-                setGlobalError={setGlobalError}
-                readOnly={!!viewingStage && editingStage !== viewingStage}
-                batchId={batchId}
-              />
+              <ErrorBoundary>
+                <CurrentPanel
+                  batch={batch} flasks={flasks}
+                  activeFlask={selectedFlask}
+                  employees={employees}
+                  availableStock={availableStock} role={role} canDo={canDo}
+                  employeeProfile={employeeProfile} supabase={supabase}
+                  onDataSaved={fetchAll}
+                  onAdvanceStage={handleDirectTransition}
+                  onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
+                  actionLoading={actionLoading}
+                  setGlobalError={setGlobalError}
+                  readOnly={!!viewingStage && editingStage !== viewingStage}
+                  batchId={batchId}
+                />
+              </ErrorBoundary>
             </div>
           ) : (
             <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>
