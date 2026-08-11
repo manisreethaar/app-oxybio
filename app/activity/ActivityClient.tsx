@@ -140,7 +140,7 @@ export default function ActivityClient({ initialBatches, initialLogs }: { initia
       return () => { supabase.removeChannel(channel); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile]);
+  }, [employeeProfile, authLoading]);
 
   const fetchData = useCallback(async (append = false) => {
     if (!append) setLoading(true);

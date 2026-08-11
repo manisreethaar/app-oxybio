@@ -332,7 +332,7 @@ export default function BioprocessDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, toast]);
+  }, [id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

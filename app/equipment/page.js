@@ -100,6 +100,7 @@ export default function EquipmentPage() {
 
 
   useEffect(() => {
+    if (authLoading) return;
     fetchEquipment();
 
     const channel = supabase.channel('equipment_realtime')
@@ -109,7 +110,7 @@ export default function EquipmentPage() {
 
     return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading]);
 
   const fetchEquipment = async () => {
     setLoading(true);

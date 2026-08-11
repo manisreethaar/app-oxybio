@@ -88,17 +88,20 @@ export default function ShelfLifePage() {
   }, [supabase]);
 
   const fetchPendingIds = async () => {
-    const res = await fetch('/api/edit-request');
-    if (res.ok) {
-      const d = await res.json();
-      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
-    }
+    try {
+      const res = await withTimeout(fetch('/api/edit-request'), 15000, 'Edit requests load timed out');
+      if (res.ok) {
+        const d = await res.json();
+        setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+      }
+    } catch (err) { console.error('fetchPendingIds error:', err); }
   };
 
   useEffect(() => {
+    if (authLoading) return;
     fetchData();
     fetchPendingIds();
-  }, [fetchData]);
+  }, [fetchData, authLoading]);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   // G-46: study type + ASLT fields (outside RHF to avoid schema complexity)

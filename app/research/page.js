@@ -173,7 +173,7 @@ export default function ConsumerResearchPage() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { if (!authLoading) fetchData(); }, [fetchData, authLoading]);
 
   // -------------------------------------------------------------------------
   // Create session
