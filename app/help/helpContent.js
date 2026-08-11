@@ -137,7 +137,7 @@ Your chosen view is remembered per module the next time you visit.
             tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
             content: `The system now sends automatic reminders so nobody forgets to punch in or out:
 
-- **Checkout Reminder:** Everyone with an open shift (clocked in but not yet clocked out) receives a push/in-app notification at **4:00 PM** reminding them to check out.
+- **Checkout Reminder:** Everyone with an open shift (clocked in but not yet clocked out) receives a push/in-app notification at **9:00 PM** reminding them to check out.
 - **Check-in reminder:** The morning check-in reminder time has also been updated — check the Notifications module for the current schedule.
 
 Tapping either reminder takes you straight to the Attendance page. These are sent automatically — no setup required.`,
@@ -663,7 +663,7 @@ Your chosen view is remembered per module.
             tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
             content: `The system now sends automatic reminders:
 
-- **Checkout Reminder:** Anyone with an open shift (clocked in, not yet out) gets a push/in-app notification at **4:00 PM** reminding them to check out.
+- **Checkout Reminder:** Anyone with an open shift (clocked in, not yet out) gets a push/in-app notification at **9:00 PM** reminding them to check out.
 - **Check-in reminder:** The morning check-in reminder time has also been updated.
 
 Tapping either reminder takes you straight to the Attendance page — no setup required.`,
@@ -1236,7 +1236,7 @@ Your chosen view is remembered the next time you open Tasks.`,
             tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
             content: `You'll now automatically receive:
 
-- A **Checkout Reminder** notification at **4:00 PM** if you're still clocked in and haven't checked out yet
+- A **Checkout Reminder** notification at **9:00 PM** if you're still clocked in and haven't checked out yet
 - A morning check-in reminder (the time has recently been updated)
 
 Tap the notification to go straight to the Attendance page. No setup is needed — these are sent automatically.`,

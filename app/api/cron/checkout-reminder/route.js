@@ -33,7 +33,7 @@ export async function GET(request) {
   try {
     const nowUtc = new Date();
 
-    // Cron fires at 10:30 UTC = 16:00 IST.
+    // Cron fires at 15:30 UTC = 21:00 (9:00 PM) IST.
     // Attendance records are stored using IST dates — must match.
     const todayIst = toISTDateStr(nowUtc);
 
@@ -66,8 +66,8 @@ export async function GET(request) {
     // 3. Insert in-app notifications and send push
     const notifyPromises = employees.map(emp => sendServerNotification(
       emp.id,
-      '⏰ Checkout Reminder',
-      'It is 4:00 PM. Please do not forget to checkout when you are done for the day.',
+      '⏰ Missed Checkout Reminder',
+      'It is 9:00 PM. You haven\'t checked out yet. Please checkout when you are done.',
       '/attendance'
     ));
 
