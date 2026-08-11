@@ -177,7 +177,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       // Auto-heal missing tests if the sample exists but tests were not generated
       if (fetchedTests.length === 0) {
         const testRows = buildStandardTestRows(sData.id, activeFlask.id, fetchedTests);
-        const iRes = await supabase.from('batch_flask_qc_tests').insert(testRows).select();
+        const iRes = await withTimeout(supabase.from('batch_flask_qc_tests').insert(testRows).select(), 15000, 'Insert auto-heal tests timed out');
         if (iRes.error) {
           console.error("Auto-heal QC insert error:", iRes.error);
           toast.error("QC Tests failed to generate: " + iRes.error.message);
@@ -295,7 +295,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       }
       const flaskLabel = activeFlask.flask_label || 'F?';
       const sampleId = `${qcsPrefix}${String(qcsSeq).padStart(3, '0')}-${flaskLabel}`;
-      const { data: sRow, error: sErr } = await supabase.from('batch_flask_qc_samples').insert({
+      const { data: sRow, error: sErr } = await withTimeout(supabase.from('batch_flask_qc_samples').insert({
         flask_id: activeFlask.id, batch_id: batch.id, sample_id: sampleId,
         sampling_date: samplingDate, sampling_operator: employeeProfile?.id,
         volume_ml: volPerFlask ? parseFloat(volPerFlask) : null,
@@ -303,11 +303,11 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         external_lab: testingLoc === 'NABL external lab' ? extLab : null,
         ext_ref_number: testingLoc === 'NABL external lab' ? extRef : null,
         sample_sent_date: sentDate || null, expected_date: expectDate || null,
-      }).select().single();
+      }).select().single(), 15000, 'Create sample timed out');
       if (sErr) throw sErr;
       
       const testRows = buildStandardTestRows(sRow.id, activeFlask.id);
-      const { error: testErr } = await supabase.from('batch_flask_qc_tests').insert(testRows);
+      const { error: testErr } = await withTimeout(supabase.from('batch_flask_qc_tests').insert(testRows), 15000, 'Insert tests timed out');
       if (testErr) {
         console.error('Test creation error:', testErr);
         toast.error('Sample created, but failed to create standard tests: ' + testErr.message);
@@ -318,10 +318,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       // Pre-fill pH test from the last fermentation reading for this flask
       const { data: lastReading } = await withTimeout(supabase.from('batch_fermentation_readings').select('ph').eq('flask_id', activeFlask.id).not('ph', 'is', null).order('logged_at', { ascending: false }).limit(1).maybeSingle(), 10000, 'Fetch pH timed out');
       if (lastReading?.ph) {
-        await supabase.from('batch_flask_qc_tests')
-          .update({ result_value: String(lastReading.ph) })
-          .eq('sample_id', sRow.id)
-          .ilike('test_name', '%ph%');
+        await withTimeout(supabase.from('batch_flask_qc_tests').update({ result_value: String(lastReading.ph) }).eq('sample_id', sRow.id).ilike('test_name', '%ph%'), 15000, 'Update pH timed out');
       }
 
       toast.success(`QC sample ${sampleId} created for ${activeFlask.flask_label}.`);
@@ -363,13 +360,13 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     
     if (reason) {
       // Use RPC to set session variable and perform update in same transaction
-      await supabase.rpc('update_qc_test_with_reason', {
+      await withTimeout(supabase.rpc('update_qc_test_with_reason', {
         test_id: testId,
         payload: updates,
         reason_text: reason
-      });
+      }), 15000, 'RPC call timed out');
     } else {
-      await supabase.from('batch_flask_qc_tests').update(updates).eq('id', testId);
+      await withTimeout(supabase.from('batch_flask_qc_tests').update(updates).eq('id', testId), 15000, 'Update QC test timed out');
     }
     
     toast.success("Test updated successfully.");
@@ -450,7 +447,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     };
 
     setSample(prev => ({ ...prev, plating_config: cfg }));
-    await supabase.from('batch_flask_qc_samples').update({ plating_config: cfg }).eq('id', sample.id);
+    await withTimeout(supabase.from('batch_flask_qc_samples').update({ plating_config: cfg }).eq('id', sample.id), 15000, 'Update plating config timed out');
     toast.success("Plating config updated.");
   };
 
@@ -458,7 +455,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!sample) return;
     const next = !platingEnabled;
     setPlatingEnabled(next);
-    await supabase.from('batch_flask_qc_samples').update({ plating_enabled: next }).eq('id', sample.id);
+    await withTimeout(supabase.from('batch_flask_qc_samples').update({ plating_enabled: next }).eq('id', sample.id), 15000, 'Toggle plating timed out');
     toast.success(next ? "Plating enabled." : "Plating disabled.");
   };
 
@@ -474,10 +471,10 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         incubation_temp_c: plateTemp ? parseFloat(plateTemp) : 37,
         expected_hours: plateExpectedHours ? parseInt(plateExpectedHours) : null,
       };
-      await supabase.from('batch_flask_qc_samples').update({
+      await withTimeout(supabase.from('batch_flask_qc_samples').update({
         plating_enabled: true,
         plating_config: config,
-      }).eq('id', sample.id);
+      }).eq('id', sample.id), 15000, 'Update sample timed out');
 
       const res = await fetch('/api/research/incubation', {
         method: 'POST',
@@ -545,9 +542,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
       if (currentTests.length === 0) {
         const testRows = buildStandardTestRows(sample.id, activeFlask.id, currentTests);
         if (testRows.length > 0) {
-          await supabase.from('batch_flask_qc_tests').insert(testRows);
+          await withTimeout(supabase.from('batch_flask_qc_tests').insert(testRows), 15000, 'Insert tests timed out');
         }
-        const { data: fresh } = await supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sample.id).order('test_name');
+        const { data: fresh } = await withTimeout(supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sample.id).order('test_name'), 15000, 'Fetch fresh QC timed out');
         currentTests = dedupeQcTests(fresh || []);
       }
 
@@ -618,10 +615,10 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!sample) return;
     setSavingExtResult(true);
     try {
-      const { error } = await supabase.from('batch_flask_qc_samples').update({
+      const { error } = await withTimeout(supabase.from('batch_flask_qc_samples').update({
         result_received_date: resultReceivedDate || null,
         coa_url: coaUrl || null,
-      }).eq('id', sample.id);
+      }).eq('id', sample.id), 15000, 'Update sample timed out');
       if (error) throw error;
       toast.success('External lab result details saved.');
     } catch (err) { toast.error(err.message); }
@@ -633,7 +630,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!sample || creatingRetest) return;
     setCreatingRetest(failedTest.id);
     try {
-      const { data, error } = await supabase.from('batch_flask_qc_tests').insert({
+      const { data, error } = await withTimeout(supabase.from('batch_flask_qc_tests').insert({
         sample_id: sample.id,
         flask_id: activeFlask.id,
         test_name: `${failedTest.test_name} (Re-test)`,
@@ -641,7 +638,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         result_unit: failedTest.result_unit,
         pass_fail: 'Pending',
         retest_of: failedTest.id,
-      }).select().single();
+      }).select().single(), 15000, 'Insert manual test timed out');
       if (error) throw error;
       toast.success(`Re-test row created for "${failedTest.test_name}".`);
       fetchQcData();
@@ -657,14 +654,14 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     if (!sample || !customTestName.trim() || savingCustomTest) return;
     setSavingCustomTest(true);
     try {
-      const { error } = await supabase.from('batch_flask_qc_tests').insert({
+      const { error } = await withTimeout(supabase.from('batch_flask_qc_tests').insert({
         sample_id: sample.id,
         flask_id: activeFlask.id,
         test_name: customTestName.trim(),
         target_spec: customTestSpec.trim() || null,
         result_unit: customTestUnit.trim() || null,
         pass_fail: 'Pending',
-      });
+      }), 15000, 'Insert re-test timed out');
       if (error) throw error;
       setValue('customTestName',''); setValue('customTestSpec',''); setValue('customTestUnit','');
       setShowCustomTest(false);
@@ -1173,12 +1170,12 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                     <button disabled={savingPostPack} onClick={async () => {
                       if (!sample) return;
                       setSavingPostPack(true);
-                      await supabase.from('batch_flask_qc_samples').update({
+                      await withTimeout(supabase.from('batch_flask_qc_samples').update({
                         post_packaging_tested: true,
                         post_packaging_ph: ppPh ? parseFloat(ppPh) : null,
                         post_packaging_cfu: ppCfu || null,
                         packaging_type: ppPackType || null,
-                      }).eq('id', sample.id);
+                      }).eq('id', sample.id), 15000, 'Update sample timed out');
                       setSavingPostPack(false);
                       setShowPostPack(false);
                       fetchQcData();
