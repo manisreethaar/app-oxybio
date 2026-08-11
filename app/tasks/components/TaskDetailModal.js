@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import {
   CheckSquare, Timer, Eye, CheckCircle2, Paperclip,
   Trash2, X, Activity, BarChart2, MessageSquare
@@ -25,14 +25,9 @@ export default function TaskDetailModal({
   canApprove,
   timerRunning,
   elapsedSeconds,
-  progressPercentage,
-  setProgressPercentage,
-  progressNote,
-  setProgressNote,
-  completionNote,
-  setCompletionNote,
-  rejectNote,
-  setRejectNote,
+  modalReg,
+  modalHandleSubmit,
+  modalWatch,
   proofFile,
   setProofFile,
   actionLoading,
@@ -53,14 +48,10 @@ export default function TaskDetailModal({
 }) {
   const fileRef = useRef(null);
   const router = useRouter();
-  const [pin, setPin] = useState('');
 
   if (!selectedTask) return null;
 
-  const handleLocalSubmitForReview = (e) => {
-    e.preventDefault();
-    onSubmitForReview(e, pin);
-  };
+
 
   const isAssignee = !selectedTask.assigned_to || String(selectedTask.assigned_to) === String(employeeProfile?.id);
 
@@ -156,9 +147,9 @@ export default function TaskDetailModal({
             <div className="space-y-4 border-y border-slate-100 py-5">
               <div className="flex items-center justify-between mb-1">
                 <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5"/> Work Progress</h4>
-                <span className="text-sm font-black text-navy">{progressPercentage}%</span>
+                <span className="text-sm font-black text-navy">{modalWatch('progressPercentage')}%</span>
               </div>
-              <input type="range" min="0" max="100" value={progressPercentage} onChange={(e) => setProgressPercentage(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-navy" />
+              <input type="range" min="0" max="100" {...modalReg('progressPercentage')} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-navy" />
               <form onSubmit={onUpdateProgress} className="flex gap-2">
                 <input type="text" value={progressNote} onChange={(e) => setProgressNote(e.target.value)} placeholder="What are you working on?..." className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-navy outline-none" />
                 <button type="submit" disabled={actionLoading} className="px-4 bg-navy hover:bg-navy-hover text-white text-xs font-bold rounded-lg shadow-sm transition-all whitespace-nowrap">Log Note</button>
@@ -248,10 +239,10 @@ export default function TaskDetailModal({
           {/* Approve / Reject */}
           {canApprove && selectedTask.approval_status === 'pending_review' && (
             <div className="border-t border-slate-100 pt-4 space-y-2">
-              <textarea value={rejectNote} onChange={e => setRejectNote(e.target.value)} rows="2" placeholder="Rejection notes..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-accent bg-white resize-none"/>
+              <textarea {...modalReg('rejectNote')} rows="2" placeholder="Rejection notes..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-accent bg-white resize-none"/>
               <div className="flex gap-2">
-                <button onClick={() => onApprove(selectedTask.id)} className="flex-1 py-2 bg-emerald-600 text-white font-bold rounded-lg text-xs">Approve</button>
-                <button onClick={() => onReject(selectedTask.id)} disabled={!rejectNote.trim()} className="flex-1 py-2 bg-red-600 text-white font-bold rounded-lg text-xs disabled:opacity-40">Return</button>
+                <button onClick={() => onApprove(selectedTask.id)} type="button" className="flex-1 py-2 bg-emerald-600 text-white font-bold rounded-lg text-xs">Approve</button>
+                <button onClick={modalHandleSubmit(onReject)} disabled={!modalWatch('rejectNote')?.trim()} className="flex-1 py-2 bg-red-600 text-white font-bold rounded-lg text-xs disabled:opacity-40">Return</button>
               </div>
             </div>
           )}

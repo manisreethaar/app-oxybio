@@ -95,8 +95,14 @@ export default function TasksPage() {
 
   useEffect(() => {
     if (selectedTask) {
-      setCompletionNote(''); setProofFile(null); setRejectNote('');
-      setProgressNote(''); setProgressPercentage(selectedTask.progress_percentage || 0);
+      setProofFile(null);
+      modalReset({
+        completionNote: '',
+        rejectNote: '',
+        progressNote: '',
+        progressPercentage: selectedTask.progress_percentage || 0,
+        pin: ''
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTask?.id]);
@@ -447,9 +453,9 @@ export default function TasksPage() {
     if (success) { toast.success("Task approved."); setSelectedTask(null); fetchTasks(); }
   };
 
-  const handleReject = async (taskId) => {
-    const success = await executeTaskPatch('reject', taskId, { reject_note: rejectNote });
-    if (success) { toast.success("Task rejected."); setRejectNote(''); setSelectedTask(null); fetchTasks(); }
+  const handleReject = async (data) => {
+    const success = await executeTaskPatch('reject', selectedTask.id, { reject_note: data.rejectNote });
+    if (success) { toast.success("Task rejected."); modalReset(); setSelectedTask(null); fetchTasks(); }
   };
 
   const filteredTasks = useMemo(() => {
