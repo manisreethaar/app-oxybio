@@ -31,11 +31,18 @@ export async function POST(request) {
     }
 
     // Hierarchical Validation
-    for (const t of tasks) {
-      if (t.assigned_to) {
-        const { data: assignee } = await supabase.from('employees').select('role').eq('id', t.assigned_to).single();
-        if (!canAssignTo(creatorInfo.role, assignee?.role, user.email)) {
-          return NextResponse.json({ error: `Permission Denied: Your role (${creatorInfo.role}) cannot assign tasks to a ${assignee?.role || 'Staff'}.` }, { status: 403 });
+    const assigneeIds = [...new Set(tasks.filter(t => t.assigned_to).map(t => t.assigned_to))];
+    if (assigneeIds.length > 0) {
+      const { data: assignees } = await supabase.from('employees').select('id, role').in('id', assigneeIds);
+      const roleMap = {};
+      if (assignees) assignees.forEach(a => { roleMap[a.id] = a.role; });
+      
+      for (const t of tasks) {
+        if (t.assigned_to) {
+          const assigneeRole = roleMap[t.assigned_to];
+          if (!canAssignTo(creatorInfo.role, assigneeRole, user.email)) {
+            return NextResponse.json({ error: `Permission Denied: Your role (${creatorInfo.role}) cannot assign tasks to a ${assigneeRole || 'Staff'}.` }, { status: 403 });
+          }
         }
       }
     }

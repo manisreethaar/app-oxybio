@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Skeleton from '@/components/Skeleton';
 import ESignatureModal from '@/components/ui/ESignatureModal';
+import { useData } from '@/lib/hooks/useData';
 
 const STAGE_LABELS = {
   media_prep: 'Media Prep', sterilisation: 'Sterilisation', inoculation: 'Inoculation',
@@ -46,8 +47,15 @@ export default function DigitalLnbPage() {
   const [esigConfig, setEsigConfig] = useState({ isOpen: false, entryId: null });
   // G-25: new version prefill
   const [versionSourceEntry, setVersionSourceEntry] = useState(null);
-  // SOP linkage in create form — proper FK array (sop_ids), replaces free-text sop_references
-  const [sops,             setSops]             = useState([]);
+  
+  const { data: sopsData } = useData({
+    table: 'sop_library',
+    select: 'id, title, sop_id',
+    filter: { eq: ['is_active', true] },
+    order: { column: 'title' }
+  });
+  const sops = sopsData || [];
+  
   const [sopIds,           setSopIds]           = useState([]);
   // G-90: sketch/diagram URL
   const [sketchUrl,        setSketchUrl]        = useState('');
@@ -104,13 +112,8 @@ export default function DigitalLnbPage() {
         toast.error(entriesRes.error || 'Failed to load lab notebook entries.');
       }
       setBatches(batchData || []);
-    } catch (err) { console.error('LNB fetch error:', err); toast.error(err.message || 'Failed to load lab notebook entries.'); }
+    } catch (err) { console.error('LNB fetch error:', err); }
     finally { setLoading(false); }
-  }, [supabase, toast]);
-
-  useEffect(() => {
-    supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title')
-      .then(({ data }) => setSops(data || []));
   }, [supabase]);
 
   const fetchPendingIds = async () => {

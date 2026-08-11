@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import FormulaDiff from '@/components/science/FormulaDiff';
 import Skeleton from '@/components/Skeleton';
+import { useData } from '@/lib/hooks/useData';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import EditRequestButton from '@/components/ui/EditRequestButton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,7 +41,13 @@ export default function FormulationsPage() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // id of recipe being actioned
-  const [items, setItems] = useState([]);
+  
+  const { data: inventoryData } = useData({
+    table: 'inventory_items',
+    select: 'id, name, unit',
+    order: { column: 'name' }
+  });
+  const items = inventoryData || [];
   const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
@@ -78,15 +85,20 @@ export default function FormulationsPage() {
   const isApprover = APPROVER_ROLES.includes(role?.toLowerCase());
 
   const fetchPendingIds = async () => {
-    const res = await fetch('/api/edit-request');
-    if (res.ok) {
-      const d = await res.json();
-      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
-    }
+    try {
+      const res = await withTimeout(fetch('/api/edit-request'), 15000, 'Edit requests load timed out');
+      if (res.ok) {
+        const d = await res.json();
+        setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+      }
+    } catch (err) { console.error('fetchPendingIds error:', err); }
   };
 
+  // Run initial fetches once auth is resolved
   useEffect(() => {
-    fetchFormulations(); fetchInventoryItems(); fetchPendingIds();
+    if (authLoading) return;
+    fetchFormulations(); 
+    fetchPendingIds();
 
     // Subscribe to realtime formulation updates to prevent stale statuses (e.g. Approved vs In Review)
     const channel = supabase.channel('formulations_realtime')
@@ -114,17 +126,7 @@ export default function FormulationsPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchInventoryItems = async () => {
-    try {
-      const { data, error } = await supabase.from('inventory_items').select('id, name, unit').order('name').limit(1000);
-      if (error) throw error;
-      setItems(data || []);
-    } catch (err) { 
-      setFetchError("Failed to load ingredients dropdown list.");
-    }
-  };
+  }, [authLoading]);
 
   const addIngredient = () => {
     if (!selectedItem || !selectedQty) return;
@@ -145,15 +147,20 @@ export default function FormulationsPage() {
   const fetchFormulations = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('formulations')
-        .select('*')
-        .neq('status', 'Archived')
-        .is('archived_at', null)
-        .order('created_at', { ascending: false })
-        .limit(100);
+      const res = await withTimeout(
+        supabase
+          .from('formulations')
+          .select('*')
+          .neq('status', 'Archived')
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        45000,
+        'Formulations load timed out'
+      );
 
-      if (error) throw error;
+      if (res.error) throw res.error;
+      const data = res.data;
       
       let fetched = data || [];
       if (fetched.length > 0) {

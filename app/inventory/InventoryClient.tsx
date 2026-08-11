@@ -22,10 +22,10 @@ import {
   filterStock,
   getItemStats,
   getStockFilterLabel,
-  getStockRisk,
   getStockStats,
   type StockFilter,
 } from './inventoryUtils';
+import { useData } from '@/lib/hooks/useData';
 
 // Icon per category, used across the stock grid, kanban board, item registry and
 // section dividers to make categories scannable — kept to the app's existing
@@ -61,9 +61,25 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
     localStorage.setItem('inventory_view_mode', mode);
   };
   const [stock, setStock] = useState(initialStock || []);
-  const [items, setItems] = useState(initialItems || []);
-  const [vendors, setVendors] = useState(initialVendors || []);
   const [loading, setLoading] = useState(false);
+  
+  const { data: itemsData, mutate: mutateItems } = useData({
+    table: 'inventory_items',
+    select: '*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)',
+    filter: { eq: ['archived_at', null] },
+    order: { column: 'name' },
+    options: { fallbackData: initialItems }
+  });
+  const items = itemsData || [];
+
+  const { data: vendorsData, mutate: mutateVendors } = useData({
+    table: 'vendors',
+    select: '*',
+    filter: { eq: ['archived_at', null] },
+    order: { column: 'name' },
+    options: { fallbackData: initialVendors }
+  });
+  const vendors = vendorsData || [];
   const [syncError, setSyncError] = useState('');
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -158,11 +174,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
         stockQuery = stockQuery.or(`supplier_batch_number.ilike.%${searchTerm}%,inventory_items.name.ilike.%${searchTerm}%`);
       }
 
-      const [stockRes, itemsRes, vendorsRes] = await withTimeout(Promise.all([
-        stockQuery,
-        pageNum === 0 ? supabase.from('inventory_items').select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)').is('archived_at', null).order('name').limit(1000) : Promise.resolve({ data: null }),
-        pageNum === 0 ? supabase.from('vendors').select('*').is('archived_at', null).order('name').limit(500) : Promise.resolve({ data: null })
-      ]), 45000, 'Inventory load timed out');
+      const res = await withTimeout(stockQuery, 45000, 'Inventory load timed out');
+      const stockRes = { data: res.data, error: res.error };
 
       if (stockRes.error) throw stockRes.error;
 
@@ -175,11 +188,6 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       }
 
       setHasMore(stockData.length === PAGE_SIZE);
-
-      if (pageNum === 0) {
-        if (itemsRes.data) setItems(itemsRes.data);
-        if (vendorsRes.data) setVendors(vendorsRes.data);
-      }
 
       // Fetch batch usage for loaded stock IDs
       if (stockData.length > 0) {
