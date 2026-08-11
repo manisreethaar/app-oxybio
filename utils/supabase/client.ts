@@ -16,13 +16,15 @@ export function createClient() {
         global: {
           fetch: async (url, init) => {
             const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 15000);
+            const isStorage = typeof url === 'string' && url.includes('/storage/v1/object/');
+            const timeoutMs = isStorage ? 60000 : 15000;
+            const id = setTimeout(() => controller.abort(), timeoutMs);
             try {
               const response = await fetch(url, { ...init, cache: 'no-store', signal: controller.signal });
               return response;
-            } catch (error) {
+            } catch (error: any) {
               if (error.name === 'AbortError') {
-                throw new Error('Supabase request timed out after 15 seconds');
+                throw new Error(`Supabase request timed out after ${timeoutMs / 1000} seconds`);
               }
               throw error;
             } finally {

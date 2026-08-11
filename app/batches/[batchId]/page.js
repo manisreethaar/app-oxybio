@@ -420,7 +420,7 @@ export default function BatchDetailPage() {
         optical_density: quickOd ? parseFloat(quickOd) : null,
         visual_appearance: quickVisual,
         logged_at: new Date().toISOString(),
-        is_ph_alarm: false,
+        is_ph_alarm: parseFloat(quickPh) < 4 || parseFloat(quickPh) > 7,
         logged_by: employeeProfile?.id,
       });
       if (error) throw error;
@@ -794,6 +794,15 @@ export default function BatchDetailPage() {
                   batchId={batchId}
                 />
               </ErrorBoundary>
+            </div>
+          ) : ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(batch.current_stage) ? (
+            <div className="card p-8 text-center bg-slate-50 border-slate-200">
+              <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-black text-slate-700 mb-2">Downstream Stage</h3>
+              <p className="text-sm text-slate-500 mb-6">This batch is currently in <span className="font-bold text-slate-700 uppercase">{batch.current_stage.replace('_', ' ')}</span>. Data collection for this stage is managed in the Downstream module.</p>
+              <Link href={`/downstream/${batch.id}`} className="inline-flex items-center px-6 py-2.5 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover transition-colors shadow-sm">
+                Open in Downstream Module <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
             </div>
           ) : (
             <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>

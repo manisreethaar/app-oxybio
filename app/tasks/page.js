@@ -53,8 +53,8 @@ export default function TasksPage() {
   };
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const { register: uiReg, watch: uiWatch } = useForm({
-    defaultValues: { searchTerm: '', sortOrder: 'due_date_asc', statusFilter: 'All', assigneeFilter: 'All', checklistInput: '' }
+  const { register: uiReg, watch: uiWatch, setValue: uiSetValue, getValues: uiGetValues } = useForm({
+    defaultValues: { searchTerm: '', sortOrder: 'due_asc', statusFilter: 'All', assigneeFilter: 'All', checklistInput: '' }
   });
   const statusFilter = uiWatch('statusFilter');
   const assigneeFilter = uiWatch('assigneeFilter');
