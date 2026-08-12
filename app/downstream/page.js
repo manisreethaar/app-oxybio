@@ -323,7 +323,7 @@ export default function DownstreamPage() {
   const fetchBatches = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoadingBatches(true);
     try {
-      const res = await fetch('/api/batches');
+      const res = await fetch('/api/batches', { cache: 'no-store' });
       const json = await res.json();
       
       if (!res.ok || !json.success) {

@@ -92,7 +92,7 @@ export default function MessagesPage() {
 
   const fetchChats = async () => {
     try {
-      const res = await fetch('/api/messages');
+      const res = await fetch('/api/messages', { cache: 'no-store' });
       const json = await res.json();
       
       if (!res.ok || !json.success) {
