@@ -159,13 +159,18 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
     if (!entries.length) return;
 
-    const res = await window.fetch(`/api/batches/${batch.id}/media-deduct`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ entries, employee_id: employeeProfile?.id }),
-    });
-    const json = await res.json();
-    (json.warnings || []).forEach(w => toast.warn(w));
+    try {
+      const res = await withTimeout(window.fetch(`/api/batches/${batch.id}/media-deduct`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ entries, employee_id: employeeProfile?.id }),
+      }), 30000, 'Inventory deduction timed out');
+      const json = await res.json();
+      (json.warnings || []).forEach(w => toast.warn(w));
+    } catch (err) {
+      console.error('Media deduction error:', err);
+      toast.error('Failed to deduct inventory: ' + err.message);
+    }
   };
 
   const onSubmit = async (formData, advance = false) => {
@@ -189,7 +194,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       const ragiU = getUsageFor('ragi', formData);
       const kavuniU = getUsageFor('kavuni', formData);
 
-      const { error } = await supabase.from('batch_stage_media_prep').upsert({
+      const { error } = await withTimeout(supabase.from('batch_stage_media_prep').upsert({
         batch_id: batch.id,
         ragi_lot_id: ragiU.lot, ragi_weight_g: ragiU.wt,
         ragi_moisture_pass: formData.ragiMoist === 'Pass' ? true : formData.ragiMoist === 'Fail' ? false : null,
@@ -209,7 +214,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         aw_value:            formData.awValue ? parseFloat(formData.awValue) : null,
         pre_treatment_steps: formData.pretreatSteps,
         substrate_photo_url: formData.substratePhotoUrl || null,
-      }, { onConflict: 'batch_id' });
+      }, { onConflict: 'batch_id' }), 30000, 'Save timed out');
       if (error) throw error;
 
       if (advance) {
