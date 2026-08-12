@@ -92,7 +92,6 @@ export default function MessagesPage() {
 
   const fetchChats = async () => {
     try {
-      await withTimeout((async () => {
       // Fetch chats where the user is a member
       const { data: memberData, error: memberErr } = await supabase
         .from('chat_members')
@@ -122,7 +121,6 @@ export default function MessagesPage() {
         if (!prev) return prev;
         return chatsData?.find(c => c.id === prev.id) || prev;
       });
-      })(), 45000, 'Messages load timed out');
     } catch (err) {
       console.error('Error fetching chats:', err);
       toast.error('Failed to load chats');
