@@ -5,6 +5,7 @@ import {
 } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { mutate as mutateSWR } from 'swr';
 import { can, getPermissionsForRole, isMasterAdmin } from '@/lib/permissions';
 
 const AuthContext = createContext({});
@@ -188,6 +189,61 @@ export const AuthProvider = ({ children, initialSession, initialProfile }) => {
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
+
+  // ── Stale-tab recovery ────────────────────────────────────
+  // A tab that sits backgrounded (or frozen/bfcache'd) for a while can come
+  // back with its Supabase client stuck forever awaiting an internal
+  // session/lock promise that never resolves — a known GoTrueClient failure
+  // mode under browser tab throttling. Every .from() query awaits
+  // getSession() first, so once that's wedged, all data fetching on the tab
+  // hangs with no network error for any per-call timeout to catch (the
+  // request never even reaches fetch). This is why timeout/retry patches
+  // scattered across individual components never fixed it — they wrap the
+  // wrong layer. Instead: when the tab becomes visible again after a real
+  // absence (or is restored from bfcache), probe getSession() with a hard
+  // timeout. Healthy → just revalidate SWR data so it isn't stale. Stuck →
+  // the client can't be recovered in place, so reload, which is exactly the
+  // "open a new window" path already known to work.
+  useEffect(() => {
+    let hiddenAt = null;
+    const RELOAD_GUARD_KEY = 'oxyo_stale_reload_at';
+    const HIDDEN_THRESHOLD_MS = 20000;
+    const PROBE_TIMEOUT_MS = 6000;
+    const RELOAD_COOLDOWN_MS = 15000;
+
+    const probe = async () => {
+      try {
+        await Promise.race([
+          supabase.auth.getSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('stuck')), PROBE_TIMEOUT_MS)),
+        ]);
+        mutateSWR(() => true, undefined, { revalidate: true });
+      } catch {
+        const lastReload = Number(sessionStorage.getItem(RELOAD_GUARD_KEY) || 0);
+        if (Date.now() - lastReload > RELOAD_COOLDOWN_MS) {
+          sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now()));
+          window.location.reload();
+        }
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenAt = Date.now();
+      } else if (hiddenAt && Date.now() - hiddenAt > HIDDEN_THRESHOLD_MS) {
+        probe();
+      }
+    };
+
+    const onPageShow = (e) => { if (e.persisted) probe(); };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', onPageShow);
+    };
   }, [supabase]);
 
   // ── Sign out ─────────────────────────────────────────────
