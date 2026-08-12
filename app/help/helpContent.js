@@ -137,7 +137,7 @@ Your chosen view is remembered per module the next time you visit.
             tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
             content: `The system now sends automatic reminders so nobody forgets to punch in or out:
 
-- **Checkout Reminder:** Everyone with an open shift (clocked in but not yet clocked out) receives a push/in-app notification at **9:00 PM** reminding them to check out.
+- **Auto-Checkout Penalty:** Everyone with an open shift (clocked in but not yet clocked out) at **9:00 PM** will be auto-checked out. Their total hours will be reset to **0**, and they will be forced to submit a Mispunch request to claim their hours.
 - **Check-in reminder:** The morning check-in reminder time has also been updated — check the Notifications module for the current schedule.
 
 Tapping either reminder takes you straight to the Attendance page. These are sent automatically — no setup required.`,
@@ -663,7 +663,7 @@ Your chosen view is remembered per module.
             tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
             content: `The system now sends automatic reminders:
 
-- **Checkout Reminder:** Anyone with an open shift (clocked in, not yet out) gets a push/in-app notification at **9:00 PM** reminding them to check out.
+- **Auto-Checkout Penalty:** Anyone with an open shift at **9:00 PM** will be auto-checked out with **0 hours** and forced to submit a Mispunch request.
 - **Check-in reminder:** The morning check-in reminder time has also been updated.
 
 Tapping either reminder takes you straight to the Attendance page — no setup required.`,
@@ -1236,7 +1236,7 @@ Your chosen view is remembered the next time you open Tasks.`,
             tags: ['attendance', 'reminder', 'checkout', 'checkin', 'notification', 'push'],
             content: `You'll now automatically receive:
 
-- A **Checkout Reminder** notification at **9:00 PM** if you're still clocked in and haven't checked out yet
+- An **Auto-Checkout Penalty** notification at **9:00 PM** if you're still clocked in (your hours will be reset to 0, requiring a Mispunch)
 - A morning check-in reminder (the time has recently been updated)
 
 Tap the notification to go straight to the Attendance page. No setup is needed — these are sent automatically.`,
