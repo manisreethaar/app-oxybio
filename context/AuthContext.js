@@ -12,20 +12,30 @@ const AuthContext = createContext({});
 if (typeof window !== 'undefined' && !window.__fetch_patched__) {
   const originalFetch = window.fetch;
   window.fetch = async function(...args) {
+     const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+     const isUpload = url.includes('/storage/v1/object/');
+     
      let lastErr;
      for (let i = 0; i < 3; i++) {
         try {
-           // If the network request completely fails (e.g., wifi drop, DNS failure) it throws here.
-           // If it returns a 502/504 gateway timeout, we should ALSO retry it.
-           const res = await originalFetch.apply(this, args);
+           // Create a clean abort controller to forcibly kill hung connections (e.g. device woke from sleep)
+           // If it's a file upload, allow 2 minutes. Otherwise, 15 seconds.
+           const controller = new AbortController();
+           const timeoutId = setTimeout(() => controller.abort(new Error('Fetch timeout')), isUpload ? 120000 : 15000);
+           
+           // Inject our abort signal into the fetch options
+           const fetchOptions = args[1] || {};
+           const res = await originalFetch(args[0], { ...fetchOptions, signal: controller.signal });
+           clearTimeout(timeoutId);
+
            if (res.status === 502 || res.status === 504) {
              throw new Error(`Gateway Timeout: ${res.status}`);
            }
            return res;
         } catch (err) {
            lastErr = err;
-           // If it's an abort error (like from an AbortController), do not retry
-           if (err.name === 'AbortError') throw err;
+           // If it's an intentional AbortController abort from the app (not our timeout), don't retry
+           if (err.name === 'AbortError' && err.message !== 'Fetch timeout') throw err;
            
            if (i === 2) throw err;
            // Exponential backoff: 1000ms, 2000ms
