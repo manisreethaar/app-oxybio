@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/checkout-reminder",
+      "schedule": "30 14 * * *"
+    },
+    {
       "path": "/api/cron/evening-warning",
       "schedule": "30 15 * * *"
     }
