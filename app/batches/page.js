@@ -323,96 +323,36 @@ export default function BatchesPage() {
   const fetchBatches = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoadingBatches(true);
     try {
-      // A stalled Supabase connection otherwise leaves this page spinning
-      // forever with no way out except a manual refresh. A single transient
-      const [activeRes, completedRes, archivedRes] = await withRetry(() => withTimeout(Promise.all([
-        supabase
-          .from('batches')
-          .select(`
-            id, batch_id, experiment_type, sku_target, status, current_stage,
-            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
-            created_by,
-            formulations(name, code, version),
-            batch_flasks(id, flask_label, status, current_stage)
-          `)
-          .is('archived_at', null)
-          .not('status', 'in', '("released","rejected")')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('batches')
-          .select(`
-            id, batch_id, experiment_type, sku_target, status, current_stage,
-            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
-            created_by,
-            formulations(name, code, version),
-            batch_flasks(id, flask_label, status, current_stage)
-          `)
-          .is('archived_at', null)
-          .in('status', ['released', 'rejected'])
-          .order('created_at', { ascending: false })
-          .limit(20),
-        supabase
-          .from('batches')
-          .select(`
-            id, batch_id, experiment_type, sku_target, status, current_stage,
-            planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
-            created_by,
-            formulations(name, code, version),
-            batch_flasks(id, flask_label, status, current_stage)
-          `)
-          .not('archived_at', 'is', null)
-          .order('archived_at', { ascending: false }),
-      ]), 45000, 'Batches load timed out'));
-
-      // Fetch creator details separately to avoid slow RLS joins
-      const allFetched = [...(activeRes.data || []), ...(completedRes.data || []), ...(archivedRes.data || [])];
-      const creatorIds = Array.from(new Set(allFetched.map(b => b.created_by).filter(Boolean)));
+      const res = await fetch('/api/batches');
+      const json = await res.json();
       
-      let creatorsMap = {};
-      if (creatorIds.length > 0) {
-        const { data: creatorData } = await withTimeout(supabase
-          .from('employees')
-          .select('id, full_name, initials')
-          .in('id', creatorIds), 12000, 'Batch creator lookup timed out');
-        (creatorData || []).forEach(c => { creatorsMap[c.id] = c; });
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to fetch batches');
       }
 
-      // Attach creators
-      const attachCreator = b => ({ ...b, creator: creatorsMap[b.created_by] || null });
+      const { active: fetchedActive, completed: fetchedCompleted, archived: fetchedArchived, endpoints: epMap } = json.data;
 
-      const fetchedActive = (activeRes.data || []).map(attachCreator).map(normaliseBatchForList);
-      const fetchedCompleted = (completedRes.data || []).map(attachCreator).map(normaliseBatchForList);
-      const active = fetchedActive.filter(b => !TERMINAL_STATUSES.includes(b.status));
+      const normalisedActive = fetchedActive.map(normaliseBatchForList);
+      const normalisedCompleted = fetchedCompleted.map(normaliseBatchForList);
+      const active = normalisedActive.filter(b => !TERMINAL_STATUSES.includes(b.status));
+      
       const completedById = new Map();
-      [...fetchedCompleted, ...fetchedActive.filter(b => TERMINAL_STATUSES.includes(b.status))]
+      [...normalisedCompleted, ...normalisedActive.filter(b => TERMINAL_STATUSES.includes(b.status))]
         .forEach(b => completedById.set(b.id, b));
       const completed = Array.from(completedById.values());
 
-      // Fetch endpoints separately (nested select requires explicit FK in schema)
-      let epMap = {};
-      if (active.length > 0) {
-        const { data: epData } = await withTimeout(supabase
-          .from('batch_flask_endpoints')
-          .select('batch_id, total_hours')
-          .in('batch_id', active.map(b => b.id)), 12000, 'Batch endpoint lookup timed out');
-        (epData || []).forEach(ep => {
-          if (ep.total_hours != null && (epMap[ep.batch_id] == null || ep.total_hours > epMap[ep.batch_id])) {
-            epMap[ep.batch_id] = ep.total_hours;
-          }
-        });
-      }
       const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id] ?? null }));
 
       setActiveBatches(activeWithEp);
       setHistory(completed);
-      setArchivedBatches((archivedRes.data || []).map(attachCreator).map(normaliseBatchForList));
+      setArchivedBatches(fetchedArchived.map(normaliseBatchForList));
     } catch (err) {
       console.error('Fetch batches error:', err);
       toast.error('Failed to load batches: ' + err.message);
     } finally {
       setLoadingBatches(false);
     }
-  }, [supabase, toast]);
+  }, [toast]);
 
   const fetchFormulations = useCallback(async () => {
     const { data } = await supabase

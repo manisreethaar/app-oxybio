@@ -298,29 +298,89 @@ export async function GET(request) {
       return NextResponse.json({ batch_id: nextId });
     }
 
-    let query = supabase
-      .from('batches')
-      .select(`
-        id, batch_id, experiment_type, sku_target, status, current_stage,
-        planned_volume_ml, num_flasks, planned_start_date,
-        start_time, created_at, assigned_team, created_by, archived_at, archived_by,
-        formulations(name, code, version),
-        batch_flasks(id, flask_label, flask_full_id, status),
-        batch_fermentation_readings(ph, is_ph_alarm, is_temp_alarm, logged_at)
-      `)
-      .order('created_at', { ascending: false });
+    const [activeRes, completedRes, archivedRes] = await Promise.all([
+      supabase
+        .from('batches')
+        .select(`
+          id, batch_id, experiment_type, sku_target, status, current_stage,
+          planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
+          created_by,
+          formulations(name, code, version),
+          batch_flasks(id, flask_label, status, current_stage)
+        `)
+        .is('archived_at', null)
+        .not('status', 'in', '("released","rejected")')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('batches')
+        .select(`
+          id, batch_id, experiment_type, sku_target, status, current_stage,
+          planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
+          created_by,
+          formulations(name, code, version),
+          batch_flasks(id, flask_label, status, current_stage)
+        `)
+        .is('archived_at', null)
+        .in('status', ['released', 'rejected'])
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase
+        .from('batches')
+        .select(`
+          id, batch_id, experiment_type, sku_target, status, current_stage,
+          planned_volume_ml, num_flasks, planned_start_date, start_time, created_at, assigned_team, has_alarm, archived_at,
+          created_by,
+          formulations(name, code, version),
+          batch_flasks(id, flask_label, status, current_stage)
+        `)
+        .not('archived_at', 'is', null)
+        .order('archived_at', { ascending: false }),
+    ]);
 
-    query = archiveFilter === 'true'
-      ? query.not('archived_at', 'is', null)
-      : query.is('archived_at', null);
+    if (activeRes.error) throw activeRes.error;
+    if (completedRes.error) throw completedRes.error;
+    if (archivedRes.error) throw archivedRes.error;
 
-    if (statusFilter) {
-      query = query.eq('status', statusFilter);
+    const allFetched = [...(activeRes.data || []), ...(completedRes.data || []), ...(archivedRes.data || [])];
+    const creatorIds = Array.from(new Set(allFetched.map(b => b.created_by).filter(Boolean)));
+
+    let creatorsMap = {};
+    if (creatorIds.length > 0) {
+      const { data: creatorData } = await supabase
+        .from('employees')
+        .select('id, full_name, initials')
+        .in('id', creatorIds);
+      (creatorData || []).forEach(c => { creatorsMap[c.id] = c; });
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return NextResponse.json({ success: true, data });
+    const attachCreator = b => ({ ...b, creator: creatorsMap[b.created_by] || null });
+
+    const fetchedActive = (activeRes.data || []).map(attachCreator);
+    const fetchedCompleted = (completedRes.data || []).map(attachCreator);
+    const fetchedArchived = (archivedRes.data || []).map(attachCreator);
+
+    let epMap = {};
+    if (fetchedActive.length > 0) {
+      const { data: epData } = await supabase
+        .from('batch_flask_endpoints')
+        .select('batch_id, total_hours')
+        .in('batch_id', fetchedActive.map(b => b.id));
+      (epData || []).forEach(ep => {
+        if (ep.total_hours != null && (epMap[ep.batch_id] == null || ep.total_hours > epMap[ep.batch_id])) {
+          epMap[ep.batch_id] = ep.total_hours;
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        active: fetchedActive,
+        completed: fetchedCompleted,
+        archived: fetchedArchived,
+        endpoints: epMap,
+      }
+    });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
