@@ -191,7 +191,7 @@ export default function TopBar() {
         {/* Install */}
         {deferredPrompt && (
           <button onClick={handleInstallClick}
-            className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-black text-white transition-all active:scale-95"
+            className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-xl text-xs font-black text-white transition-all active:scale-95"
             style={{ background: 'linear-gradient(135deg, #475569 0%, #94A3B8 100%)' }}>
             <Download className="w-3.5 h-3.5" /> Install
           </button>

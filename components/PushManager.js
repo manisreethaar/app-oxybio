@@ -43,7 +43,7 @@ export default function PushManager() {
               const res = await saveSubscription(sub, reg);
               if (res.success) sessionStorage.setItem(sessionKey, '1');
             }
-          } else if (Notification.permission === 'granted') {
+          } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             // Permission already granted but no active subscription (e.g. after SW update)
             // Auto-resubscribe silently — no banner needed
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -61,7 +61,7 @@ export default function PushManager() {
                 setShowBanner(true);
               }
             }
-          } else if (Notification.permission !== 'denied') {
+          } else if (typeof Notification === 'undefined' || Notification.permission !== 'denied') {
             setShowBanner(true);
           }
         }).catch(err => {
@@ -95,7 +95,7 @@ export default function PushManager() {
         if (existing) await existing.unsubscribe();
       }
       setSubscribed(false);
-      setShowBanner(Notification.permission !== 'denied');
+      setShowBanner(typeof Notification === 'undefined' || Notification.permission !== 'denied');
       return { success: false, error: `HTTP ${res.status}: ${text}` };
     } catch (err) {
       console.error('Failed to save subscription:', err);
