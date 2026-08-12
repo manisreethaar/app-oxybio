@@ -48,8 +48,20 @@ const PANEL_MAP = {
   harvest: HarvestPanel,
 };
 
+// Add normalization for legacy stage names in the database
+function normalizeStage(stage) {
+  if (!stage) return stage;
+  const s = stage.toString().toLowerCase();
+  if (s === 'extraction') return 'extract_addition';
+  if (s === 'qc') return 'qc_hold';
+  if (s === 'downstream') return 'harvest'; // fallback old alias
+  return s;
+}
+
 function visibleWorkflowStage(stage) {
-  return stage || '';
+  const norm = normalizeStage(stage);
+  if (['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(norm)) return 'harvest'; // past the scope of upstream
+  return norm || '';
 }
 
 const STAGE_CHECKLIST_MAP = {
@@ -405,7 +417,7 @@ export default function BatchDetailPage() {
   })();
 
   const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
-  const activeStage = isScheduled ? null : visibleWorkflowStage(isPostSterilisation ? (selectedFlask?.current_stage || 'inoculation') : batch.current_stage);
+  const activeStage = isScheduled ? null : visibleWorkflowStage(isPostSterilisation ? (normalizeStage(selectedFlask?.current_stage) || 'inoculation') : normalizedBatchStage);
   const displayStage = viewingStage || activeStage;
   const CurrentPanel = PANEL_MAP[displayStage] || null;
 
@@ -550,7 +562,7 @@ export default function BatchDetailPage() {
                   const sFlask = flasks.find(f => f.id === selectedFlaskId) || flasks[0];
                   const flaskStageIdx = sFlask ? STAGES.findIndex(s => s.id === visibleWorkflowStage(sFlask.current_stage)) : -1;
                   const eIdx = flaskStageIdx >= 0 ? flaskStageIdx : 
-                    ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(sFlask?.current_stage) ? 99 : 2;
+                    ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(normalizeStage(sFlask?.current_stage)) ? 99 : 2;
                   done = idx < eIdx;
                   curr = idx === eIdx;
                 } else {
@@ -800,11 +812,11 @@ export default function BatchDetailPage() {
                 />
               </ErrorBoundary>
             </div>
-          ) : ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(batch.current_stage) ? (
+          ) : ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(normalizedBatchStage) ? (
             <div className="card p-8 text-center bg-slate-50 border-slate-200">
               <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-black text-slate-700 mb-2">Downstream Stage</h3>
-              <p className="text-sm text-slate-500 mb-6">This batch is currently in <span className="font-bold text-slate-700 uppercase">{batch.current_stage.replace('_', ' ')}</span>. Data collection for this stage is managed in the Downstream module.</p>
+              <p className="text-sm text-slate-500 mb-6">This batch is currently in <span className="font-bold text-slate-700 uppercase">{normalizedBatchStage.replace('_', ' ')}</span>. Data collection for this stage is managed in the Downstream module.</p>
               <Link href={`/downstream/${batch.id}`} className="inline-flex items-center px-6 py-2.5 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover transition-colors shadow-sm">
                 Open in Downstream Module <ArrowRight className="w-4 h-4 ml-2" />
               </Link>

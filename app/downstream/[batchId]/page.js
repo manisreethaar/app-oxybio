@@ -31,26 +31,40 @@ const SeparationPanel        = dynamic(() => import('./components/SeparationPane
 const QCHoldPanel             = dynamic(() => import('./components/QCHoldPanel'),             { ssr: false, loading: PanelLoading });
 const ReleasePanel            = dynamic(() => import('./components/ReleasePanel'),            { ssr: false, loading: PanelLoading });
 const RejectionPanel          = dynamic(() => import('./components/RejectionPanel'),          { ssr: false, loading: PanelLoading });
+const ProductDevelopmentPanel = dynamic(() => import('./components/ProductDevelopmentPanel'), { ssr: false, loading: PanelLoading });
 const LinkedRecordsPanel      = dynamic(() => import('./components/LinkedRecordsPanel'),      { ssr: false });
 
 const STAGES = [
   { id: 'straining',        label: 'Separation',       icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
-  { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200'   },
+  { id: 'extract_addition', label: 'Extract Addition', icon: Droplets,    color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200'   },
+  { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
   { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
   { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
 ];
 
 const PANEL_MAP = {
   straining: SeparationPanel,
+  extract_addition: ProductDevelopmentPanel,
   qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
 
+// Add normalization for legacy stage names in the database
+function normalizeStage(stage) {
+  if (!stage) return stage;
+  const s = stage.toString().toLowerCase();
+  if (s === 'extraction') return 'extract_addition';
+  if (s === 'qc') return 'qc_hold';
+  if (s === 'downstream') return 'harvest'; // fallback old alias
+  return s;
+}
+
 function visibleWorkflowStage(stage) {
-  return stage || '';
+  return normalizeStage(stage) || '';
 }
 
 const STAGE_CHECKLIST_MAP = {
   straining:        'Separation',
+  extract_addition: 'Extract Addition',
   qc_hold:          'QC Hold',
   released:         'Release or Reject',
   rejected:         'Release or Reject',
@@ -745,11 +759,15 @@ export default function DownstreamDetailPage() {
             >
               <ErrorBoundary>
                 <CurrentPanel
-                  batch={batch} flasks={flasks}
+                  batch={{...batch, current_stage: normalizeStage(batch.current_stage)}} 
+                  flasks={flasks.map(f => ({...f, current_stage: normalizeStage(f.current_stage)}))}
                   activeFlask={selectedFlask}
                   employees={employees}
-                  availableStock={availableStock} role={role} canDo={canDo}
-                  employeeProfile={employeeProfile} supabase={supabase}
+                  availableStock={availableStock}
+                  role={role}
+                  canDo={canDo}
+                  employeeProfile={employeeProfile}
+                  supabase={supabase}
                   onDataSaved={fetchAll}
                   onAdvanceStage={handleDirectTransition}
                   onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
@@ -761,7 +779,7 @@ export default function DownstreamDetailPage() {
               </ErrorBoundary>
             </div>
           ) : (
-            <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>
+            <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {normalizeStage(batch.current_stage) || batch.current_stage}</div>
           )}
         </div>
       </div>
