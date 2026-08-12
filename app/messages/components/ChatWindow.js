@@ -115,14 +115,14 @@ export default function ChatWindow({ chat, employeeProfile, onBack, initialPinne
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const { data, error } = await withTimeout(supabase
-        .from('messages')
-        .select('*, sender:employees!messages_sender_id_fkey(full_name)')
-        .eq('chat_id', chat.id)
-        .order('created_at', { ascending: true }), 45000, 'Messages load timed out');
+      const res = await fetch(`/api/messages/${chat.id}`);
+      const json = await res.json();
+      
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to load messages');
+      }
 
-      if (error) throw error;
-      setMessages(data || []);
+      setMessages(json.data || []);
       setTimeout(scrollToBottom, 100);
     } catch (err) {
       console.error('Fetch messages error:', err);

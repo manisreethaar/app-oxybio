@@ -163,7 +163,9 @@ export default function BatchesPage() {
     const slowestStage = activeFlasks.reduce((slowest, f) => {
       const currentStage = visibleWorkflowStage(f.current_stage);
       const r = FLASK_STAGE_RANK.indexOf(currentStage);
-      return r >= 0 && r < FLASK_STAGE_RANK.indexOf(slowest) ? currentStage : slowest;
+      const slowestR = FLASK_STAGE_RANK.indexOf(slowest);
+      if (r < 0) return 'inoculation'; // If no valid stage, it's at the very beginning
+      return r < slowestR ? currentStage : slowest;
     }, 'released');
     
     if (slowestStage === 'fermentation') return 'fermenting';
@@ -185,7 +187,8 @@ export default function BatchesPage() {
     
     const slowestFlaskIdx = activeFlasks.reduce((best, f) => {
       const idx = STAGE_ORDER.indexOf(visibleWorkflowStage(f.current_stage));
-      return idx >= 0 ? Math.min(best, idx) : best;
+      if (idx < 0) return STAGE_ORDER.indexOf('inoculation'); // Fallback to inoculation for empty flask stage
+      return Math.min(best, idx);
     }, STAGE_ORDER.length - 1);
     return slowestFlaskIdx >= 0 ? STAGE_ORDER[slowestFlaskIdx] : stage;
   };

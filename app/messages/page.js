@@ -92,30 +92,15 @@ export default function MessagesPage() {
 
   const fetchChats = async () => {
     try {
-      // Fetch chats where the user is a member
-      const { data: memberData, error: memberErr } = await supabase
-        .from('chat_members')
-        .select('chat_id')
-        .eq('employee_id', employeeProfile.id);
-        
-      if (memberErr) throw memberErr;
-      if (!memberData || memberData.length === 0) {
-        setChats([]);
-        setLoading(false);
-        return;
+      const res = await fetch('/api/messages');
+      const json = await res.json();
+      
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to fetch chats');
       }
-      
-      const chatIds = memberData.map(m => m.chat_id);
-      
-      const { data: chatsData, error: chatsErr } = await supabase
-        .from('chats')
-        .select('*, members:chat_members(employee_id, employees!chat_members_employee_id_fkey(full_name))')
-        .in('id', chatIds)
-        .order('created_at', { ascending: false });
-        
-      if (chatsErr) throw chatsErr;
 
-      setChats(chatsData || []);
+      const chatsData = json.data || [];
+      setChats(chatsData);
       // Keep activeChat in sync with the latest data (e.g. new members added)
       setActiveChat(prev => {
         if (!prev) return prev;

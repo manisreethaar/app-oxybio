@@ -547,12 +547,12 @@ export default function BatchDetailPage() {
               {STAGES.filter(s => !['released','rejected'].includes(s.id)).map((stage, idx) => {
                 let done, curr;
                 if (isPostSterilisation) {
-                  const flaskStageIdx = selectedFlask
-                    ? STAGES.findIndex(s => s.id === visibleWorkflowStage(selectedFlask.current_stage))
-                    : 2;
-                  const effectiveIdx = flaskStageIdx < 2 ? 2 : flaskStageIdx;
-                  done = idx < 2 || idx < effectiveIdx;
-                  curr = idx === effectiveIdx;
+                  const sFlask = flasks.find(f => f.id === selectedFlaskId) || flasks[0];
+                  const flaskStageIdx = sFlask ? STAGES.findIndex(s => s.id === visibleWorkflowStage(sFlask.current_stage)) : -1;
+                  const eIdx = flaskStageIdx >= 0 ? flaskStageIdx : 
+                    ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(sFlask?.current_stage) ? 99 : 2;
+                  done = idx < eIdx;
+                  curr = idx === eIdx;
                 } else {
                   done = idx < currentIdx;
                   curr = idx === currentIdx;
