@@ -59,6 +59,7 @@ export default function TasksPage() {
   const statusFilter = uiWatch('statusFilter');
   const assigneeFilter = uiWatch('assigneeFilter');
   const searchTerm = uiWatch('searchTerm');
+  const deferredSearch = useDeferredValue(searchTerm);
   const sortOrder = uiWatch('sortOrder');
 
 
