@@ -378,7 +378,12 @@ export default function BatchDetailPage() {
   const currentIdx  = STAGES.findIndex(s => s.id === visibleWorkflowStage(batch.current_stage));
   const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
-  const isPostSterilisation = !isScheduled && (currentIdx > 1 || batch.current_stage === 'inoculation' || batch.status === 'fermenting');
+  
+  const POST_STERILISATION_STAGES = [
+    'inoculation', 'fermentation', 'harvest', 
+    'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
+  ];
+  const isPostSterilisation = !isScheduled && POST_STERILISATION_STAGES.includes(batch.current_stage);
 
   const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released','rejected'];
   const derivedStatus = (() => {
