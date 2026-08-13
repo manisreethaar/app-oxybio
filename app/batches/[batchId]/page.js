@@ -386,6 +386,7 @@ export default function BatchDetailPage() {
 
   if (!batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
 
+  const normalizedBatchStage = normalizeStage(batch.current_stage);
   const currentIdx  = STAGES.findIndex(s => s.id === visibleWorkflowStage(batch.current_stage));
   const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
