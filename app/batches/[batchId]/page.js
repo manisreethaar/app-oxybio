@@ -60,7 +60,6 @@ function normalizeStage(stage) {
 
 function visibleWorkflowStage(stage) {
   const norm = normalizeStage(stage);
-  if (['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(norm)) return 'harvest'; // past the scope of upstream
   return norm || '';
 }
 
