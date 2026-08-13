@@ -164,7 +164,7 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
     try {
       const payload = {
         flask_id: activeFlask.id, batch_id: batch.id, operator_id: employeeProfile?.id,
-        // product_stream:          formData.productStream, // MISSING IN DB
+        product_stream:          formData.productStream,
         mushroom_species:         formData.species,
         mushroom_lot_id:          formData.lotId || null,
         mushroom_weight_g:        formData.weight ? parseFloat(formData.weight) : null,
@@ -192,7 +192,6 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
         post_mixing_ph_check:     formData.postMixingPh ? parseFloat(formData.postMixingPh) : null,
         post_mixing_brix:         formData.postMixingBrix ? parseFloat(formData.postMixingBrix) : null,
         blend_homogeneity_check:  formData.blendHomogeneity || null,
-        /* THE FOLLOWING COLUMNS ARE MISSING IN THE DATABASE SCHEMA:
         pellet_wet_wt_g:          formData.pelletWetWtG ? parseFloat(formData.pelletWetWtG) : null,
         pellet_dry_wt_g:          formData.pelletDryWtG ? parseFloat(formData.pelletDryWtG) : null,
         pellet_moisture_pct:      formData.pelletMoistPct ? parseFloat(formData.pelletMoistPct) : null,
@@ -208,9 +207,8 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
         rtd_final_ph:             formData.rtdFinalPh ? parseFloat(formData.rtdFinalPh) : null,
         rtd_final_brix:           formData.rtdFinalBrix ? parseFloat(formData.rtdFinalBrix) : null,
         rtd_ingredients:          formData.rtdIngredients,
-        */
         allergen_declaration:     noneAllergens ? ['None'] : allergens,
-        notes:                    (formData.notes ? formData.notes + '\n\n' : '') + `[Pending DB Migration] Product Stream: ${formData.productStream}, Pellet Wt: ${formData.pelletWetWtG}, Color: ${formData.pelletColour}, RTD: ${formData.rtdEnabled}`,
+        notes:                    formData.notes || null,
       };
       const { error } = await withTimeout(
         supabase.from('batch_flask_extract_addition').upsert(payload, { onConflict: 'flask_id' }),
