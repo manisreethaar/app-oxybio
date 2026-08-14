@@ -135,7 +135,7 @@ export default function BatchesPage() {
   const [searchTerm,       setSearchTerm]       = useState('');
   const [stageFilter,      setStageFilter]      = useState('all');
   const [typeFilter,       setTypeFilter]       = useState('all');
-  const [sortOrder,        setSortOrder]        = useState('newest');
+  const [sortOrder,        setSortOrder]        = useState('batch_id');
   const [pendingIds,       setPendingIds]       = useState(new Set());
   const [viewMode,         setViewMode]         = useState('table');
 
@@ -214,7 +214,7 @@ export default function BatchesPage() {
       : batch.start_time
         ? ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
         : '0.0';
-    const hrsLabel = maxEpHrs !== null ? 'Fermentation' : 'Age';
+    const hrsLabel = maxEpHrs !== null ? 'Fermentation' : 'Batch Age';
 
     const isScheduled = isScheduledBatch(batch);
     const effectiveIdx = STAGE_ORDER.indexOf(getBatchEffectiveStage(batch));
@@ -525,10 +525,11 @@ export default function BatchesPage() {
       })
       .sort((a, b) => {
         if (sortOrder === 'oldest') return new Date(a.created_at || a.start_time || 0) - new Date(b.created_at || b.start_time || 0);
-        if (sortOrder === 'batch_id') return (a.batch_id || '').localeCompare(b.batch_id || '', undefined, { numeric: true });
+        if (sortOrder === 'newest') return new Date(b.created_at || b.start_time || 0) - new Date(a.created_at || a.start_time || 0);
         if (sortOrder === 'recipe') return (a.formulations?.name || '').localeCompare(b.formulations?.name || '');
         if (sortOrder === 'stage') return (STAGE_ORDER.indexOf(a.current_stage) - STAGE_ORDER.indexOf(b.current_stage));
-        return new Date(b.created_at || b.start_time || 0) - new Date(a.created_at || a.start_time || 0);
+        // Default: batch_id — sort numerically by the trailing number e.g. OB-FER-26-011 > OB-FER-26-007
+        return (b.batch_id || '').localeCompare(a.batch_id || '', undefined, { numeric: true });
       });
   }, [statusFilter, activeBatches, history, archivedBatches, searchTerm, sortOrder, stageFilter, typeFilter]);
 
