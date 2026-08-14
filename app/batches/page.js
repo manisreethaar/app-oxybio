@@ -209,18 +209,22 @@ export default function BatchesPage() {
     const hasAlarm = !!batch.has_alarm;
     const flasks = batch.batch_flasks || [];
     const maxEpHrs = batch._maxEpHrs ?? null;
+    const harvestEndTime = batch._harvestEndTime ?? null;
 
-    // Batch Age — always: total hrs from start_time to now
+    // Batch Age:
+    //   • If harvest is declared → FIXED: start_time to harvest end_time (stops growing)
+    //   • If still upstream (media_prep / inoculation / fermentation) → LIVE: start_time to now
     const batchAgeHrs = batch.start_time
-      ? ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
+      ? harvestEndTime
+        ? ((new Date(harvestEndTime) - new Date(batch.start_time)) / 3600000).toFixed(1)
+        : ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
       : null;
 
-    // Fermentation time — only when flask endpoints recorded (inoculation → harvest)
+    // Fermentation time — hours logged on the endpoint declaration (inoculation end → harvest)
     const fermHrs = maxEpHrs !== null ? maxEpHrs.toFixed(1) : null;
 
-    // Primary display: always show batch age. If fermentation time also exists, show it as secondary.
     const hours = batchAgeHrs ?? '0.0';
-    const hrsLabel = 'Batch Age';
+    const hrsLabel = harvestEndTime ? 'Batch Age (Completed)' : 'Batch Age (Running)';
 
     const isScheduled = isScheduledBatch(batch);
     const effectiveIdx = STAGE_ORDER.indexOf(getBatchEffectiveStage(batch));
@@ -358,7 +362,11 @@ export default function BatchesPage() {
         .forEach(b => completedById.set(b.id, b));
       const completed = Array.from(completedById.values());
 
-      const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id] ?? null }));
+      const activeWithEp = active.map(b => ({
+        ...b,
+        _maxEpHrs: epMap[b.id]?.total_hours ?? null,
+        _harvestEndTime: epMap[b.id]?.end_time ?? null,
+      }));
 
       setActiveBatches(activeWithEp);
       setHistory(completed);

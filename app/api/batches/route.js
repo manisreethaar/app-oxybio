@@ -363,11 +363,17 @@ export async function GET(request) {
     if (fetchedActive.length > 0) {
       const { data: epData } = await supabase
         .from('batch_flask_endpoints')
-        .select('batch_id, total_hours')
+        .select('batch_id, total_hours, end_time')
         .in('batch_id', fetchedActive.map(b => b.id));
       (epData || []).forEach(ep => {
-        if (ep.total_hours != null && (epMap[ep.batch_id] == null || ep.total_hours > epMap[ep.batch_id])) {
-          epMap[ep.batch_id] = ep.total_hours;
+        const prev = epMap[ep.batch_id];
+        const prevHrs = prev?.total_hours ?? null;
+        const curHrs = ep.total_hours ?? null;
+        // Keep the flask with the maximum fermentation hours (longest-running flask)
+        if (curHrs != null && (prevHrs == null || curHrs > prevHrs)) {
+          epMap[ep.batch_id] = { total_hours: curHrs, end_time: ep.end_time ?? null };
+        } else if (!prev) {
+          epMap[ep.batch_id] = { total_hours: null, end_time: ep.end_time ?? null };
         }
       });
     }

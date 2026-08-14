@@ -56,7 +56,7 @@ export default function BatchCard({
         <div className="text-right flex flex-col items-end gap-1">
           {hours != null && (
             <>
-              <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Batch Age</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">{hoursLabel}</p>
               <p className="text-lg font-black text-slate-800 tabular-nums">{hours}<span className="text-[10px] font-bold text-slate-400"> hr</span></p>
               {fermHrs != null && (
                 <span className="mt-0.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold whitespace-nowrap">
