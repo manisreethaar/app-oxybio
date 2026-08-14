@@ -211,23 +211,34 @@ export default function BatchesPage() {
     const maxEpHrs = batch._maxEpHrs ?? null;
     const harvestEndTime = batch._harvestEndTime ?? null;
 
+    const isScheduled = isScheduledBatch(batch);
+    const effectiveIdx = STAGE_ORDER.indexOf(getBatchEffectiveStage(batch));
+    const isDownstream = effectiveIdx >= STAGE_ORDER.indexOf('harvest') || TERMINAL_STATUSES.includes(normaliseStatus(batch.status));
+
     // Batch Age:
-    //   • If harvest is declared → FIXED: start_time to harvest end_time (stops growing)
+    //   • If harvest is declared → FIXED: start_time to harvest end_time
+    //   • If downstream but missing end_time (legacy data) → Don't show live timer, show '—'
     //   • If still upstream (media_prep / inoculation / fermentation) → LIVE: start_time to now
-    const batchAgeHrs = batch.start_time
-      ? harvestEndTime
-        ? ((new Date(harvestEndTime) - new Date(batch.start_time)) / 3600000).toFixed(1)
-        : ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
-      : null;
+    let batchAgeHrs = null;
+    let hrsLabel = 'Batch Age';
+
+    if (batch.start_time) {
+      if (harvestEndTime) {
+        batchAgeHrs = ((new Date(harvestEndTime) - new Date(batch.start_time)) / 3600000).toFixed(1);
+        hrsLabel = 'Batch Age (Completed)';
+      } else if (isDownstream) {
+        batchAgeHrs = '—';
+        hrsLabel = 'Batch Age (Completed)';
+      } else {
+        batchAgeHrs = ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1);
+        hrsLabel = 'Batch Age (Running)';
+      }
+    }
 
     // Fermentation time — hours logged on the endpoint declaration (inoculation end → harvest)
     const fermHrs = maxEpHrs !== null ? maxEpHrs.toFixed(1) : null;
-
     const hours = batchAgeHrs ?? '0.0';
-    const hrsLabel = harvestEndTime ? 'Batch Age (Completed)' : 'Batch Age (Running)';
 
-    const isScheduled = isScheduledBatch(batch);
-    const effectiveIdx = STAGE_ORDER.indexOf(getBatchEffectiveStage(batch));
     const derivedStage = effectiveIdx >= 0 ? STAGE_ORDER[effectiveIdx] : batch.current_stage;
     const currentIdx = isScheduled ? -1 : effectiveIdx;
 
