@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
@@ -15,7 +15,12 @@ import {
   Package
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { useRouter } from 'next/navigation';
+import {
+  DOWNSTREAM_STAGE_IDS,
+  normalizeStage,
+  visibleWorkflowStage,
+  isUpstreamStage,
+} from '@/lib/batches/workflowStages';
 const PanelLoading = () => (
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-4" />
@@ -45,20 +50,6 @@ const PANEL_MAP = {
   qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
 
-// Add normalization for legacy stage names in the database
-function normalizeStage(stage) {
-  if (!stage) return stage;
-  const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'straining'; // fallback extraction to straining since it's removed
-  if (s === 'extract_addition') return 'straining';
-  if (s === 'qc') return 'qc_hold';
-  if (s === 'downstream') return 'harvest'; // fallback old alias
-  return s;
-}
-
-function visibleWorkflowStage(stage) {
-  return normalizeStage(stage) || '';
-}
 
 const STAGE_CHECKLIST_MAP = {
   straining:        'Downstream Processing',
@@ -69,6 +60,8 @@ const STAGE_CHECKLIST_MAP = {
 
 export default function DownstreamDetailPage() {
   const { batchId }  = useParams();
+  const searchParams = useSearchParams();
+  const preselectFlaskId = searchParams.get('flask');
   const { role, employeeProfile, canDo, loading: authLoading } = useAuth();
   const router = useRouter();
   const toast        = useToast();
@@ -158,9 +151,10 @@ export default function DownstreamDetailPage() {
 
   useEffect(() => {
     if (flasks.length > 0 && !selectedFlaskId) {
-      setSelectedFlaskId(flasks[0].id);
+      const preselected = preselectFlaskId && flasks.some(f => f.id === preselectFlaskId) ? preselectFlaskId : null;
+      setSelectedFlaskId(preselected || flasks[0].id);
     }
-  }, [flasks, selectedFlaskId]);
+  }, [flasks, selectedFlaskId, preselectFlaskId]);
 
   // Fetch inoculation data for overtime detection when batch is fermenting
   useEffect(() => {
@@ -371,7 +365,7 @@ export default function DownstreamDetailPage() {
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   const isPostSterilisation = true; // In DSP, all trials are always tracked individually
 
-  const FLASK_STAGE_RANK = ['straining','extract_addition','qc_hold','released','rejected'];
+  const FLASK_STAGE_RANK = DOWNSTREAM_STAGE_IDS;
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
     if (flasks.length === 0) return batch.status;
@@ -384,7 +378,7 @@ export default function DownstreamDetailPage() {
     }, 'released');
     if (slowestStage === 'qc_hold') return 'qc-hold';
     if (slowestStage === 'released') return 'released';
-    if (['straining','extract_addition'].includes(slowestStage)) return 'processing';
+    if (slowestStage === 'straining') return 'processing';
     return batch.status;
   })();
 
@@ -434,7 +428,7 @@ export default function DownstreamDetailPage() {
         <ArrowLeft className="w-3.5 h-3.5 mr-1"/> Back to Downstream
       </Link>
 
-      {lnbCount === 0 && ['qc_hold','straining','extract_addition'].includes(batch.current_stage) && (
+      {lnbCount === 0 && ['qc_hold', 'straining'].includes(batch.current_stage) && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 mb-4">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0"/>
           <div className="flex-1">
@@ -774,6 +768,17 @@ export default function DownstreamDetailPage() {
                   batchId={batchId}
                 />
               </ErrorBoundary>
+            </div>
+          ) : displayStage && isUpstreamStage(displayStage) ? (
+            <div className="card p-8 text-center bg-slate-50 border-slate-200">
+              <FlaskConical className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-black text-slate-700 mb-2">Upstream Stage</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                {selectedFlask ? <>Trial <span className="font-bold text-slate-700">{selectedFlask.flask_label}</span> is</> : 'This batch is'} currently in <span className="font-bold text-slate-700 uppercase">{displayStage.replace('_', ' ')}</span>. Data collection for this stage is managed in the Batches module.
+              </p>
+              <Link href={`/batches/${batch.id}${selectedFlask ? `?flask=${selectedFlask.id}` : ''}`} className="inline-flex items-center px-6 py-2.5 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover transition-colors shadow-sm">
+                Open in Batches Module <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
             </div>
           ) : (
             <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {normalizeStage(batch.current_stage) || batch.current_stage}</div>
