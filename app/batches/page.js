@@ -24,24 +24,9 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import BatchCard from '@/components/ui/BatchCard';
 import BatchTableView from '@/components/ui/BatchTableView';
 import { SkuBadge } from '@/components/ui/BatchBadges';
+import { FULL_STAGE_ORDER as STAGE_ORDER, STAGE_LABELS, normalizeStage as canonicalNormalizeStage } from '@/lib/batches/stages';
 
 // ─── Stage Config ────────────────────────────────────────────
-const STAGE_ORDER = [
-  'media_prep', 'sterilisation', 'inoculation', 'fermentation', 'harvest',
-  'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
-];
-const STAGE_LABELS = {
-  media_prep:       'Media Prep',
-  sterilisation:    'Sterilisation',
-  inoculation:      'Inoculation',
-  fermentation:     'Fermentation',
-  harvest:          'Harvest',
-  straining:        'Straining',
-  extract_addition: 'Extract Addition',
-  qc_hold:          'QC Hold',
-  released:         'Released',
-  rejected:         'Rejected',
-};
 // Only the first 7 stages are shown as progress segments — released/rejected
 // are terminal dispositions, not points along the live progress bar.
 const PROGRESS_SEGMENTS = 7;
@@ -90,17 +75,8 @@ function isScheduledBatch(batch) {
   return SCHEDULED_STATUSES.includes(normaliseStatus(batch.status)) && !batch.current_stage;
 }
 
-function normalizeStage(stage) {
-  if (!stage) return stage;
-  const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'extract_addition';
-  if (s === 'qc') return 'qc_hold';
-  if (s === 'downstream') return 'harvest'; // fallback old alias
-  return s;
-}
-
 function visibleWorkflowStage(stage) {
-  return normalizeStage(normaliseStatus(stage));
+  return canonicalNormalizeStage(stage);
 }
 
 const batchSchema = z.object({

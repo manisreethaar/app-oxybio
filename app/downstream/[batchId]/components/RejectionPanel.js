@@ -4,8 +4,13 @@ import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { XCircle, Lock } from 'lucide-react';
+import { BATCH_PARENT_STAGE_ORDER, FLASK_STAGE_ORDER, TERMINAL_STAGES } from '@/lib/batches/stages';
 
 const DISPOSAL = ['Autoclave + Drain', 'Incineration', 'Return for reprocessing', 'Other'];
+const REJECTION_STAGE_OPTIONS = [
+  ...BATCH_PARENT_STAGE_ORDER,
+  ...FLASK_STAGE_ORDER.filter(s => !TERMINAL_STAGES.has(s)),
+];
 
 export default function RejectionPanel({ batch, activeFlask, employeeProfile, role, supabase, onDataSaved }) {
   const toast    = useToast();
@@ -193,7 +198,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <div className="grid grid-cols-1 gap-3">
                 <div><label className="field-label">Stage Where Failed</label>
                   <select {...register('stage')} className="field-input bg-white">
-                    {['media_prep','sterilisation','inoculation','fermentation','straining','extract_addition','qc_hold'].map(s=>(
+                    {REJECTION_STAGE_OPTIONS.map(s=>(
                       <option key={s} value={s}>{s.replace(/_/g,' ')}</option>
                     ))}
                   </select>
