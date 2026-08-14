@@ -4,17 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
 import { canOperateBatch } from '@/lib/batches/stagePolicy';
-
-const FLASK_STAGE_RANKS = [
-  'inoculation',
-  'fermentation',
-  'harvest',
-  'straining',
-  'extract_addition',
-  'qc_hold',
-  'released',
-  'rejected',
-];
+import { FLASK_STAGE_ORDER } from '@/lib/batches/stages';
 
 function adminClient() {
   return createClient(
@@ -29,10 +19,6 @@ function statusForFlaskStage(stage) {
   if (stage === 'released') return 'released';
   if (stage === 'rejected') return 'rejected';
   return 'processing';
-}
-
-function visibleWorkflowStage(stage) {
-  return stage || '';
 }
 
 function constraintMessage(stage) {
@@ -55,7 +41,7 @@ export async function POST(request, { params }) {
     if (!flask_id || !to_stage) {
       return NextResponse.json({ success: false, error: 'Flask and target stage are required.' }, { status: 400 });
     }
-    if (!FLASK_STAGE_RANKS.includes(to_stage)) {
+    if (!FLASK_STAGE_ORDER.includes(to_stage)) {
       return NextResponse.json({ success: false, error: 'Unknown target flask stage.' }, { status: 422 });
     }
 

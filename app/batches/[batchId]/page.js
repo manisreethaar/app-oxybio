@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useRouter } from 'next/navigation';
+import { normalizeStage, visibleWorkflowStage, FLASK_STAGE_ORDER } from '@/lib/batches/stages';
 const PanelLoading = () => (
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-4" />
@@ -47,21 +48,6 @@ const PANEL_MAP = {
   inoculation: InoculationPanel, fermentation: FermentationPanel,
   harvest: HarvestPanel,
 };
-
-// Add normalization for legacy stage names in the database
-function normalizeStage(stage) {
-  if (!stage) return stage;
-  const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'extract_addition';
-  if (s === 'qc') return 'qc_hold';
-  if (s === 'downstream') return 'harvest'; // fallback old alias
-  return s;
-}
-
-function visibleWorkflowStage(stage) {
-  const norm = normalizeStage(stage);
-  return norm || '';
-}
 
 const STAGE_CHECKLIST_MAP = {
   media_prep:       'Media Preparation',
@@ -397,7 +383,6 @@ export default function BatchDetailPage() {
   ];
   const isPostSterilisation = !isScheduled && POST_STERILISATION_STAGES.includes(batch.current_stage);
 
-  const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released','rejected'];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
     if (isScheduled) return 'scheduled';
@@ -406,8 +391,8 @@ export default function BatchDetailPage() {
     if (allRejected) return 'rejected';
     const activeFlasks = flasks.filter(f => f.status !== 'rejected');
     const slowestStage = activeFlasks.reduce((slowest, f) => {
-      const r = FLASK_STAGE_RANK.indexOf(visibleWorkflowStage(f.current_stage));
-      return r >= 0 && r < FLASK_STAGE_RANK.indexOf(slowest) ? visibleWorkflowStage(f.current_stage) : slowest;
+      const r = FLASK_STAGE_ORDER.indexOf(visibleWorkflowStage(f.current_stage));
+      return r >= 0 && r < FLASK_STAGE_ORDER.indexOf(slowest) ? visibleWorkflowStage(f.current_stage) : slowest;
     }, 'released');
     if (slowestStage === 'fermentation') return 'fermenting';
     if (slowestStage === 'qc_hold') return 'qc-hold';

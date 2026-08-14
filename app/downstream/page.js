@@ -24,24 +24,9 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import BatchCard from '@/components/ui/BatchCard';
 import BatchTableView from '@/components/ui/BatchTableView';
 import { SkuBadge } from '@/components/ui/BatchBadges';
+import { FULL_STAGE_ORDER as STAGE_ORDER, STAGE_LABELS, normalizeStage as canonicalNormalizeStage } from '@/lib/batches/stages';
 
 // ─── Stage Config ────────────────────────────────────────────
-const STAGE_ORDER = [
-  'media_prep', 'sterilisation', 'inoculation', 'fermentation', 'harvest',
-  'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
-];
-const STAGE_LABELS = {
-  media_prep:       'Media Prep',
-  sterilisation:    'Sterilisation',
-  inoculation:      'Inoculation',
-  fermentation:     'Fermentation',
-  harvest:          'Harvest',
-  straining:        'Straining',
-  extract_addition: 'Extract Addition',
-  qc_hold:          'QC Hold',
-  released:         'Released',
-  rejected:         'Rejected',
-};
 // Only the first 7 stages are shown as progress segments — released/rejected
 // are terminal dispositions, not points along the live progress bar.
 const PROGRESS_SEGMENTS = 7;
@@ -91,7 +76,7 @@ function isScheduledBatch(batch) {
 }
 
 function visibleWorkflowStage(stage) {
-  return normaliseStatus(stage);
+  return canonicalNormalizeStage(stage);
 }
 
 const batchSchema = z.object({
