@@ -28,7 +28,7 @@ import { SkuBadge } from '@/components/ui/BatchBadges';
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
   'media_prep', 'sterilisation', 'inoculation', 'fermentation', 'harvest',
-  'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
+  'straining', 'qc_hold', 'released', 'rejected'
 ];
 const STAGE_LABELS = {
   media_prep:       'Media Prep',
@@ -36,15 +36,14 @@ const STAGE_LABELS = {
   inoculation:      'Inoculation',
   fermentation:     'Fermentation',
   harvest:          'Harvest',
-  straining:        'Straining',
-  extract_addition: 'Extract Addition',
+  straining:        'Downstream Processing',
   qc_hold:          'QC Hold',
   released:         'Released',
   rejected:         'Rejected',
 };
-// Only the first 7 stages are shown as progress segments — released/rejected
+// Only the first 6 stages are shown as progress segments — released/rejected
 // are terminal dispositions, not points along the live progress bar.
-const PROGRESS_SEGMENTS = 7;
+const PROGRESS_SEGMENTS = 6;
 
 // ─── Validation Schema ───────────────────────────────────────
 const TERMINAL_STATUSES = ['released', 'rejected'];

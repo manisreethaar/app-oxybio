@@ -10,7 +10,6 @@ const FLASK_STAGE_RANKS = [
   'fermentation',
   'harvest',
   'straining',
-  'extract_addition',
   'qc_hold',
   'released',
   'rejected',

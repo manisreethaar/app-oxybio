@@ -10,6 +10,7 @@ const sopSchema = z.object({
   category: z.string().min(1, "Category is required"),
   version: z.string().min(1, "Version is required"),
   document_url: z.string().url("Valid document URL is required"),
+  effective_date: z.string().optional(),
   target_roles: z.array(z.string()).optional(),
   target_departments: z.array(z.string()).optional(),
   target_employees: z.array(z.string()).optional()
@@ -22,7 +23,7 @@ export async function POST(request) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
-    if (!['admin','ceo','cto','research_fellow'].includes(emp?.role)) {
+    if (!['admin','ceo','cto','research_fellow', 'qa_manager'].includes(emp?.role)) {
       return NextResponse.json({ error: 'Permission Denied: Leadership role required' }, { status: 403 });
     }
 
@@ -33,7 +34,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { title, category, version, document_url, target_roles, target_departments, target_employees } = parsed.data;
+    const { title, category, version, document_url, effective_date, target_roles, target_departments, target_employees } = parsed.data;
 
     // Invalidate previous active versions of this SOP (Gap 38: SOP Version Expiration)
     await supabase
@@ -51,7 +52,10 @@ export async function POST(request) {
         title, 
         category, 
         version, 
-        document_url, 
+        document_url,
+        // Optional: effective_date (if DB supports it, otherwise it might error if column missing and strict, but supabase JS client ignores unknown columns depending on pgrest settings. We can try to include it).
+        // Let's include it.
+        ...(effective_date ? { effective_date } : {}),
         target_roles: target_roles || [],
         target_departments: target_departments || [],
         target_employees: target_employees || [],

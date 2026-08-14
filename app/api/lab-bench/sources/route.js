@@ -33,7 +33,7 @@ export async function GET() {
           created_at,
           batch_flasks(id, flask_label, status, current_stage)
         `)
-        .in('current_stage', ['fermentation', 'straining', 'extract_addition'])
+        .in('current_stage', ['fermentation', 'straining'])
         .order('created_at', { ascending: false })
         .limit(30),
 

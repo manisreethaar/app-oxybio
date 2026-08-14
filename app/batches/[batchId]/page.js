@@ -52,7 +52,8 @@ const PANEL_MAP = {
 function normalizeStage(stage) {
   if (!stage) return stage;
   const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'extract_addition';
+  if (s === 'extraction') return 'straining'; // fallback extraction to straining since it's removed
+  if (s === 'extract_addition') return 'straining';
   if (s === 'qc') return 'qc_hold';
   if (s === 'downstream') return 'harvest'; // fallback old alias
   return s;

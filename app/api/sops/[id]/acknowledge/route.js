@@ -14,7 +14,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { signature_text, quiz_score } = await request.json();
+    const { signature_text, quiz_score, pin_verified } = await request.json();
     
     // Removed strict quiz score check as quiz is being disabled
 
@@ -39,14 +39,28 @@ export async function POST(request, { params }) {
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
     const ua = request.headers.get('user-agent') || 'Unknown';
 
-    const { data, error } = await supabase
+    let insertPayload = {
+      sop_id: id,
+      employee_id: employee.id,
+      acknowledged_at: new Date().toISOString(),
+      pin_verified: !!pin_verified
+    };
+
+    let { data, error } = await supabase
       .from('sop_acknowledgements')
-      .insert([{
-        sop_id: id,
-        employee_id: employee.id,
-        acknowledged_at: new Date().toISOString()
-      }])
+      .insert([insertPayload])
       .select();
+
+    if (error && error.message?.includes('pin_verified')) {
+      // Fallback if pin_verified column doesn't exist yet
+      delete insertPayload.pin_verified;
+      const fallbackRes = await supabase
+        .from('sop_acknowledgements')
+        .insert([insertPayload])
+        .select();
+      data = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (error) throw error;
 

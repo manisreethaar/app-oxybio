@@ -31,12 +31,10 @@ const SeparationPanel        = dynamic(() => import('./components/SeparationPane
 const QCHoldPanel             = dynamic(() => import('./components/QCHoldPanel'),             { ssr: false, loading: PanelLoading });
 const ReleasePanel            = dynamic(() => import('./components/ReleasePanel'),            { ssr: false, loading: PanelLoading });
 const RejectionPanel          = dynamic(() => import('./components/RejectionPanel'),          { ssr: false, loading: PanelLoading });
-const ProductDevelopmentPanel = dynamic(() => import('./components/ProductDevelopmentPanel'), { ssr: false, loading: PanelLoading });
 const LinkedRecordsPanel      = dynamic(() => import('./components/LinkedRecordsPanel'),      { ssr: false });
 
 const STAGES = [
-  { id: 'straining',        label: 'Separation',       icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
-  { id: 'extract_addition', label: 'Extract Addition', icon: Droplets,    color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200'   },
+  { id: 'straining',        label: 'Downstream Processing',icon: Filter,      color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
   { id: 'qc_hold',          label: 'QC Hold',          icon: Clock,       color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
   { id: 'released',         label: 'Released',         icon: CheckCircle, color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200'},
   { id: 'rejected',         label: 'Rejected',         icon: XCircle,     color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'    },
@@ -44,7 +42,6 @@ const STAGES = [
 
 const PANEL_MAP = {
   straining: SeparationPanel,
-  extract_addition: ProductDevelopmentPanel,
   qc_hold: QCHoldPanel, released: ReleasePanel, rejected: RejectionPanel,
 };
 
@@ -52,7 +49,8 @@ const PANEL_MAP = {
 function normalizeStage(stage) {
   if (!stage) return stage;
   const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'extract_addition';
+  if (s === 'extraction') return 'straining'; // fallback extraction to straining since it's removed
+  if (s === 'extract_addition') return 'straining';
   if (s === 'qc') return 'qc_hold';
   if (s === 'downstream') return 'harvest'; // fallback old alias
   return s;
@@ -63,8 +61,7 @@ function visibleWorkflowStage(stage) {
 }
 
 const STAGE_CHECKLIST_MAP = {
-  straining:        'Separation',
-  extract_addition: 'Extract Addition',
+  straining:        'Downstream Processing',
   qc_hold:          'QC Hold',
   released:         'Release or Reject',
   rejected:         'Release or Reject',
