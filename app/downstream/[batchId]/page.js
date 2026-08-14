@@ -83,6 +83,7 @@ export default function DownstreamDetailPage() {
   const [archiveReason, setArchiveReason] = useState('');
   const [pendingFlaskReject,  setPendingFlaskReject]  = useState(false);
   const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null);
+  const [flaskAdvanceReason, setFlaskAdvanceReason] = useState('');
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
   const [viewingStage,       setViewingStage]       = useState(null);
   const [editingStage,       setEditingStage]       = useState(null);
@@ -202,26 +203,28 @@ export default function DownstreamDetailPage() {
     await supabase.from('tasks').update({ checklist: updated }).eq('id', task.id).catch(() => {});
   }, [supabase, batchId]);
 
-  const handleFlaskTransition = useCallback((flaskId, toStage) => {
+  const handleFlaskTransition = useCallback((flaskId, toStage, warnings = []) => {
     if (toStage === 'released' && lnbCount === 0) {
       toast.warn('Cannot release — Lab Notebook is empty.');
       return;
     }
     const flask = flasks.find(f => f.id === flaskId);
-    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage, fromStage: flask?.current_stage });
+    setFlaskAdvanceReason('');
+    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage, fromStage: flask?.current_stage, warnings });
   }, [flasks, lnbCount, toast]);
 
   const confirmFlaskAdvance = useCallback(async () => {
     if (!pendingFlaskAdvance) return;
     setGlobalError(null);
-    const { flaskId, toStage, fromStage } = pendingFlaskAdvance;
+    const { flaskId, toStage, fromStage, warnings = [] } = pendingFlaskAdvance;
+    if (warnings.length > 0 && !flaskAdvanceReason.trim()) return;
     setActionLoading(true);
     try {
       const res = await withTimeout(
         fetch(`/api/batches/${batchId}/flask-stage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage }),
+          body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage, override_reason: flaskAdvanceReason.trim() || null }),
         }),
         15000,
         'Server took too long to respond. Please try again.'
@@ -232,17 +235,18 @@ export default function DownstreamDetailPage() {
       }
 
       setPendingFlaskAdvance(null);
+      setFlaskAdvanceReason('');
       toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
       setViewingStage(null);
       setEditingStage(null);
       tickTaskChecklist(fromStage).catch(() => {});
       fetchAll();
-    } catch (err) { 
+    } catch (err) {
       setGlobalError(err.message);
-      toast.error(err.message); 
+      toast.error(err.message);
     }
     finally { setActionLoading(false); }
-  }, [pendingFlaskAdvance, batchId, toast, fetchAll, tickTaskChecklist]);
+  }, [pendingFlaskAdvance, flaskAdvanceReason, batchId, toast, fetchAll, tickTaskChecklist]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
@@ -761,7 +765,7 @@ export default function DownstreamDetailPage() {
                   supabase={supabase}
                   onDataSaved={fetchAll}
                   onAdvanceStage={handleDirectTransition}
-                  onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
+                  onAdvanceFlaskStage={selectedFlask ? (toStage, warnings) => handleFlaskTransition(selectedFlask.id, toStage, warnings) : null}
                   actionLoading={actionLoading}
                   setGlobalError={setGlobalError}
                   readOnly={!!viewingStage && editingStage !== viewingStage}
@@ -848,6 +852,22 @@ export default function DownstreamDetailPage() {
               <span className="font-black uppercase">{pendingFlaskAdvance.toStage.replace(/_/g,' ')}</span>
             </p>
             <p className="text-xs text-slate-400 text-center mb-5">This cannot be undone without admin intervention.</p>
+            {pendingFlaskAdvance.warnings?.length > 0 && (
+              <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-lg p-3 text-xs font-bold mb-3">
+                <p className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 shrink-0" /> Incomplete data:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {pendingFlaskAdvance.warnings.map((w) => <li key={w}>{w}</li>)}
+                </ul>
+                <label className="block mt-2 text-xs font-black text-slate-700 uppercase tracking-wider">Reason to proceed anyway (required)</label>
+                <textarea
+                  value={flaskAdvanceReason}
+                  onChange={(e) => setFlaskAdvanceReason(e.target.value)}
+                  className="field-input mt-1 text-xs"
+                  rows={2}
+                  placeholder="Why is it OK to advance without this data?"
+                />
+              </div>
+            )}
             {globalError && (
               <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2 mb-4">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -856,7 +876,7 @@ export default function DownstreamDetailPage() {
             )}
             <div className="flex gap-3">
               <button onClick={() => { setPendingFlaskAdvance(null); setGlobalError(null); }} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
-              <button onClick={confirmFlaskAdvance} disabled={actionLoading} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
+              <button onClick={confirmFlaskAdvance} disabled={actionLoading || (pendingFlaskAdvance.warnings?.length > 0 && !flaskAdvanceReason.trim())} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
                 {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : `Advance ${pendingFlaskAdvance.flaskLabel}`}
               </button>
             </div>

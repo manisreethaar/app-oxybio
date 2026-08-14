@@ -50,7 +50,7 @@ export async function POST(request, { params }) {
     }
 
     const { batchId } = params;
-    const { flask_id, to_stage, from_stage } = await request.json();
+    const { flask_id, to_stage, from_stage, override_reason } = await request.json();
     if (!flask_id || !to_stage) {
       return NextResponse.json({ success: false, error: 'Flask and target stage are required.' }, { status: 400 });
     }
@@ -93,7 +93,8 @@ export async function POST(request, { params }) {
       p_batch_id: batchId,
       p_to_stage: to_stage,
       p_employee_id: emp.id,
-      p_flask_label: flask.flask_label
+      p_flask_label: flask.flask_label,
+      p_override_reason: override_reason || null,
     });
 
     if (rpcErr) {

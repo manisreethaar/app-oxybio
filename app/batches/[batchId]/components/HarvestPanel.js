@@ -5,6 +5,7 @@ import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { useData } from '@/lib/hooks/useData';
 import { Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { getHarvestWarnings } from '@/lib/batches/stageGates';
 
 const HARVEST_METHODS = ['Centrifugation', 'Filtration', 'Decantation', 'Gravity settling'];
 const VIABILITY_METHODS = ['Live/Dead staining', 'Methylene Blue', 'Flow Cytometry', 'Plate count', 'Not done'];
@@ -127,7 +128,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
       toast.success(advanceTarget ? 'Harvest complete. Trial sent to Downstream Processing.' : 'Harvest record saved.');
       loadRecord();
       if (advanceTarget && onAdvanceFlaskStage) {
-        await onAdvanceFlaskStage(advanceTarget);
+        await onAdvanceFlaskStage(advanceTarget, getHarvestWarnings(formData));
       } else {
         onDataSaved?.();
       }
