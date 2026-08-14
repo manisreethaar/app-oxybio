@@ -209,12 +209,18 @@ export default function BatchesPage() {
     const hasAlarm = !!batch.has_alarm;
     const flasks = batch.batch_flasks || [];
     const maxEpHrs = batch._maxEpHrs ?? null;
-    const hours = maxEpHrs !== null
-      ? maxEpHrs.toFixed(1)
-      : batch.start_time
-        ? ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
-        : '0.0';
-    const hrsLabel = maxEpHrs !== null ? 'Fermentation' : 'Batch Age';
+
+    // Batch Age — always: total hrs from start_time to now
+    const batchAgeHrs = batch.start_time
+      ? ((new Date() - new Date(batch.start_time)) / 3600000).toFixed(1)
+      : null;
+
+    // Fermentation time — only when flask endpoints recorded (inoculation → harvest)
+    const fermHrs = maxEpHrs !== null ? maxEpHrs.toFixed(1) : null;
+
+    // Primary display: always show batch age. If fermentation time also exists, show it as secondary.
+    const hours = batchAgeHrs ?? '0.0';
+    const hrsLabel = 'Batch Age';
 
     const isScheduled = isScheduledBatch(batch);
     const effectiveIdx = STAGE_ORDER.indexOf(getBatchEffectiveStage(batch));
@@ -233,6 +239,7 @@ export default function BatchesPage() {
       hasAlarm,
       hours,
       hoursLabel: hrsLabel,
+      fermHrs,      // fermentation-specific hours (null if not yet in fermentation)
       isScheduled,
       isTerminal: false,
       stageLabel: isScheduled ? 'Scheduled' : (STAGE_LABELS[derivedStage] || derivedStage),
@@ -252,6 +259,7 @@ export default function BatchesPage() {
       date: batch.start_time || batch.created_at,
     };
   };
+
 
   const getTerminalCardProps = (batch) => {
     const dateLabel = batch.start_time ? format(new Date(batch.start_time), 'MMM d, yyyy') : 'No date';

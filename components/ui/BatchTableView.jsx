@@ -76,11 +76,14 @@ export default function BatchTableView({ batches }) {
 
                 {/* Age / Elapsed */}
                 <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-700">
-                  <div className="flex flex-col items-end gap-1">
-                    <span>{b.hours !== null ? `${b.hours}h` : '—'}</span>
-                    <span className="text-xs text-slate-400">
-                      {b.hoursLabel || '—'}
-                    </span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-bold">{b.hours !== null ? `${b.hours}h` : '—'}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{b.hoursLabel || '—'}</span>
+                    {b.fermHrs != null && (
+                      <span className="mt-0.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold">
+                        {b.fermHrs}h Fermentation
+                      </span>
+                    )}
                   </div>
                 </td>
 
