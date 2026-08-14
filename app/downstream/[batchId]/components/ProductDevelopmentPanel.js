@@ -239,9 +239,9 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="card p-5 border-l-4 border-l-fuchsia-500">
+      <div className="card p-5 border-l-4 border-l-navy">
         <div className="flex items-center gap-2 mb-1">
-          <Leaf className="w-5 h-5 text-fuchsia-600"/>
+          <Leaf className="w-5 h-5 text-navy"/>
           <h2 className="text-base font-bold text-slate-900">Product Development — <span className="text-slate-600">{activeFlask.flask_label}</span></h2>
         </div>
         <p className="text-xs text-slate-500">Configure the downstream product stream and log mushroom extract integration.</p>
@@ -250,9 +250,9 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
 
       {/* Step 1: Product Stream */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 bg-fuchsia-50/60">
-          <h3 className="text-sm font-bold text-fuchsia-900">Step 1 — Select Product Stream</h3>
-          <p className="text-xs text-fuchsia-700 mt-0.5">Which product form(s) will be produced from this trial&apos;s biomass?</p>
+        <div className="px-5 py-4 border-b border-slate-100 bg-navy/5">
+          <h3 className="text-sm font-bold text-navy">Step 1 — Select Product Stream</h3>
+          <p className="text-xs text-slate-600 mt-0.5">Which product form(s) will be produced from this trial&apos;s biomass?</p>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -262,10 +262,10 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
               { id: 'both',   Icon: Leaf,         label: 'Both Streams',    desc: 'Split: partial broth + partial pellet' },
             ].map(({ id, Icon, label, desc }) => (
               <button key={id} type="button" onClick={() => setValue('productStream', id)}
-                className={`p-4 rounded-2xl border-2 text-left transition-all ${watchStream === id ? 'bg-fuchsia-600 border-fuchsia-600 text-white shadow-md' : 'bg-white border-slate-200 hover:border-fuchsia-300'}`}>
-                <Icon className={`w-5 h-5 mb-2 ${watchStream === id ? 'text-white' : 'text-fuchsia-500'}`}/>
+                className={`p-4 rounded-2xl border-2 text-left transition-all ${watchStream === id ? 'bg-navy border-navy text-white shadow-md' : 'bg-white border-slate-200 hover:border-navy/40'}`}>
+                <Icon className={`w-5 h-5 mb-2 ${watchStream === id ? 'text-white' : 'text-slate-400'}`}/>
                 <p className={`text-xs font-black ${watchStream === id ? 'text-white' : 'text-slate-900'}`}>{label}</p>
-                <p className={`text-xs mt-0.5 ${watchStream === id ? 'text-fuchsia-100' : 'text-slate-500'}`}>{desc}</p>
+                <p className={`text-xs mt-0.5 ${watchStream === id ? 'text-white/70' : 'text-slate-500'}`}>{desc}</p>
               </button>
             ))}
           </div>
@@ -314,10 +314,10 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
 
       {/* Step 3: Liquid Stream */}
       {(watchStream === 'liquid' || watchStream === 'both') && (
-        <div className="card overflow-hidden border-2 border-blue-200">
-          <div className="px-5 py-4 border-b border-blue-100 bg-blue-50">
-            <div className="flex items-center gap-2"><Droplets className="w-4 h-4 text-blue-600"/><h3 className="text-sm font-bold text-blue-900">Liquid Stream — Broth Integration</h3></div>
-            <p className="text-xs text-blue-700 mt-0.5">Extract addition into the fermented broth.</p>
+        <div className="card overflow-hidden border-2 border-navy/20">
+          <div className="px-5 py-4 border-b border-navy/10 bg-navy/5">
+            <div className="flex items-center gap-2"><Droplets className="w-4 h-4 text-navy"/><h3 className="text-sm font-bold text-navy">Liquid Stream — Broth Integration</h3></div>
+            <p className="text-xs text-slate-600 mt-0.5">Extract addition into the fermented broth.</p>
           </div>
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -466,7 +466,7 @@ export default function ProductDevelopmentPanel({ batch, activeFlask, employees,
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button onClick={handleSubmit(data => onSubmit(data, 'qc_hold'))} disabled={saving || actionLoading}
-            className="py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+            className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
             Complete Product Dev → QC Hold
           </button>
         </div>
