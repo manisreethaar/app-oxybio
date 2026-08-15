@@ -3,7 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { Beaker, ShieldCheck, Droplets, Activity, Plus, Loader, ArrowRight, CheckCircle2, FlaskConical, Link } from 'lucide-react';
-import dayjs from 'dayjs';
+
+const formatTime = (isoString) => {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function ProductionPhasePanel({ batch, employees, employeeProfile, supabase, onComplete }) {
   const toast = useToast();
@@ -234,7 +238,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
               <h3 className="text-sm font-bold text-slate-600 uppercase flex items-center gap-2"><ShieldCheck className="w-4 h-4"/> 2. Sterilisation</h3>
               <div className="h-[68px] flex items-center">
                 {isSterilised ? (
-                  <p className="text-sm font-bold text-emerald-700 flex items-center gap-2"><CheckCircle2 className="w-5 h-5"/> Sterilised at {dayjs(setupData.sterilised_at).format('HH:mm')}</p>
+                  <p className="text-sm font-bold text-emerald-700 flex items-center gap-2"><CheckCircle2 className="w-5 h-5"/> Sterilised at {formatTime(setupData.sterilised_at)}</p>
                 ) : (
                   <button onClick={handleSterilise} disabled={saving || !setupData?.id} className="w-full py-3 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover">Mark Bulk Media Sterilised</button>
                 )}
@@ -305,7 +309,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
                       <div className="space-y-1">
                         {flaskReadings.map(r => (
                           <div key={r.id} className="flex justify-between text-xs py-1 border-b border-slate-200 last:border-0">
-                            <span className="text-slate-500 w-12">{dayjs(r.logged_at).format('HH:mm')}</span>
+                            <span className="text-slate-500 w-12">{formatTime(r.logged_at)}</span>
                             <span className="font-bold w-12">{r.ph ? `pH ${r.ph}` : ''}</span>
                             <span className="font-bold w-16">{r.optical_density ? `OD ${r.optical_density}` : ''}</span>
                             <span className="font-bold text-navy text-right flex-1 truncate">
