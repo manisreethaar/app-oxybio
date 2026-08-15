@@ -563,7 +563,7 @@ const STAGE_META = [
 ];
 
 const FIELD_LABELS = {
-  ragi_lot_id: 'Ragi Lot ID', ragi_weight_g: 'Ragi Weight (g)', ragi_moisture: 'Ragi Moisture Check',
+  ragi_lot_id: 'Ragi Lot ID', ragi_weight_g: 'Ragi Weight (g)',
   kavuni_lot_id: 'Kavuni Lot ID', kavuni_weight_g: 'Kavuni Weight (g)',
   kavuni_precook_temp_c: 'Kavuni Precook Temp (°C)', kavuni_precook_min: 'Precook Time (min)',
   water_volume_ml: 'Water Vol (ml)', total_volume_ml: 'Total Vol (ml)', initial_ph: 'Initial pH',

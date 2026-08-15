@@ -202,6 +202,27 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       }, { onConflict: 'batch_id' }), 30000, 'Save timed out');
       if (error) throw error;
 
+      // Full BOM lot traceability (every ingredient, not just ragi/kavuni) —
+      // re-synced on every save so this always reflects the latest bomUsage.
+      const ingredientRows = formulationIngredients
+        .map(ing => {
+          const u = formData.bomUsage[ing.item_id];
+          if (!u?.lotId) return null;
+          return {
+            batch_id: batch.id,
+            stock_id: u.lotId,
+            item_id: ing.item_id,
+            item_name: ing.name,
+            used_qty: u.usedQty ? parseFloat(u.usedQty) : null,
+            unit: ing.unit || null,
+          };
+        })
+        .filter(Boolean);
+      await supabase.from('batch_media_prep_ingredients').delete().eq('batch_id', batch.id);
+      if (ingredientRows.length > 0) {
+        await supabase.from('batch_media_prep_ingredients').insert(ingredientRows);
+      }
+
       if (advance) {
         await deductAllLots(formData);
       }
@@ -411,13 +432,16 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </button>
           </div>
           {pretreatFields.map((step, idx) => (
-            <div key={step.id} className="p-3 bg-slate-50/40 border border-slate-100 rounded-xl grid grid-cols-4 gap-2 items-center">
-              <select {...register(`pretreatSteps.${idx}.type`)} className="field-input text-xs col-span-1 bg-white p-1.5">
-                {['Heat','Steam','Chemical','Enzymatic','Mechanical','Other'].map(t=><option key={t}>{t}</option>)}
-              </select>
-              <input type="number" {...register(`pretreatSteps.${idx}.target_temp`)} placeholder="Temp °C" className="field-input text-xs p-1.5"/>
-              <input type="number" {...register(`pretreatSteps.${idx}.duration_min`)} placeholder="Min" className="field-input text-xs p-1.5"/>
-              <button type="button" onClick={()=>removePretreat(idx)} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
+            <div key={step.id} className="p-3 bg-slate-50/40 border border-slate-100 rounded-xl space-y-2">
+              <div className="grid grid-cols-4 gap-2 items-center">
+                <select {...register(`pretreatSteps.${idx}.type`)} className="field-input text-xs col-span-1 bg-white p-1.5">
+                  {['Heat','Steam','Chemical','Enzymatic','Mechanical','Other'].map(t=><option key={t}>{t}</option>)}
+                </select>
+                <input type="number" {...register(`pretreatSteps.${idx}.target_temp`)} placeholder="Temp °C" className="field-input text-xs p-1.5"/>
+                <input type="number" {...register(`pretreatSteps.${idx}.duration_min`)} placeholder="Min" className="field-input text-xs p-1.5"/>
+                <button type="button" onClick={()=>removePretreat(idx)} className="text-red-400 hover:text-red-600 text-xs font-black">✕</button>
+              </div>
+              <input {...register(`pretreatSteps.${idx}.notes`)} placeholder="Notes (optional)" className="field-input text-xs p-1.5 w-full"/>
             </div>
           ))}
           {pretreatFields.length === 0 && <p className="text-xs text-slate-400 italic">No additional pre-treatment steps. Click + Add Step to log.</p>}

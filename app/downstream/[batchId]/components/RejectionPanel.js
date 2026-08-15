@@ -32,9 +32,9 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
     if (!activeFlask?.id) return;
     let isCurrent = true;
     try {
-      const [{ data }, mediaPrep] = await withTimeout(Promise.all([
+      const [{ data }, mediaPrepIngredients] = await withTimeout(Promise.all([
         supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-        supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).maybeSingle(),
+        supabase.from('batch_media_prep_ingredients').select('stock_id, item_name').eq('batch_id', batch.id),
       ]), 45000, 'Rejection record load timed out');
       if (!isCurrent) return;
       if (data) {
@@ -45,13 +45,15 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         setRecord(null);
         setValue('stage', activeFlask.current_stage || '');
       }
-      // Build lot list from media prep
-      const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
-      if (lotIds.length) {
+      // Build lot list from every BOM ingredient used in Media Prep (not just
+      // ragi/kavuni — any raw material lot can be implicated in a rejection).
+      const lotRows = (mediaPrepIngredients.data || []).filter(r => r.stock_id);
+      if (lotRows.length) {
         const { data: lots } = await withTimeout(supabase.from('inventory_stock')
-          .select('id, supplier_batch_number, inventory_items(name)')
-          .in('id', lotIds), 45000, 'Batch lots load timed out');
-        if (lots) setBatchLots(lots);
+          .select('id, supplier_batch_number')
+          .in('id', lotRows.map(r => r.stock_id)), 45000, 'Batch lots load timed out');
+        const nameByStockId = Object.fromEntries(lotRows.map(r => [r.stock_id, r.item_name]));
+        if (lots) setBatchLots(lots.map(l => ({ ...l, inventory_items: { name: nameByStockId[l.id] } })));
       }
     } catch (err) {
       console.error('RejectionPanel fetch error:', err);
@@ -73,7 +75,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
     setPendingReject(false);
     setSaving(true);
     try {
-      const { error } = await supabase.from('batch_flask_rejection_record').upsert({
+      const { data: rejectionRow, error } = await supabase.from('batch_flask_rejection_record').upsert({
         flask_id: activeFlask.id,
         batch_id: batch.id,
         rejected_by: employeeProfile?.id,
@@ -82,41 +84,31 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         capa_required: formData.capaReq, notes: formData.notes || null,
         supplier_defect: formData.supplierDefect,
         implicated_lot_id: formData.supplierDefect && formData.implicatedLotId ? formData.implicatedLotId : null,
-      }, { onConflict: 'flask_id' });
+      }, { onConflict: 'flask_id' }).select('id').single();
       if (error) throw error;
 
+      // The flask's status/current_stage were already set to 'rejected' by
+      // advance_flask_stage() when QCHoldPanel triggered the transition —
+      // this panel only records the rejection details. The e-signature PIN
+      // check + audit-reason logging still runs here, scoped to the
+      // rejection record this panel actually owns instead of re-writing
+      // batch_flasks through a second, uncoordinated path.
       const { error: rpcError } = await supabase.rpc('update_record_with_reason', {
-        target_table: 'batch_flasks',
-        record_id: activeFlask.id,
-        payload: { status: 'rejected' },
+        target_table: 'batch_flask_rejection_record',
+        record_id: rejectionRow.id,
+        payload: { rejection_reason: formData.reason },
         reason_text: formData.reason,
         esignature_pin: formData.pin
       });
       if (rpcError) throw rpcError;
 
-      // G-29: Auto-close sibling flasks still in qc_hold (to prevent orphaned quarantine state)
-      const { data: siblings } = await supabase.from('batch_flasks')
-        .select('id, flask_label, current_stage, status')
-        .eq('batch_id', batch.id)
-        .neq('id', activeFlask.id)
-        .eq('current_stage', 'qc_hold')
-        .neq('status', 'released')
-        .neq('status', 'rejected');
-      if (siblings?.length) {
-        // Only auto-close if ALL non-rejected flasks are rejected (full batch rejection scenario)
-        const allFlasks = await supabase.from('batch_flasks').select('id,status').eq('batch_id', batch.id);
-        const remaining = (allFlasks.data||[]).filter(f => f.id !== activeFlask.id && !['released','rejected'].includes(f.status));
-        if (remaining.length === 0) {
-          // All flasks are rejected — update batch status
-          await supabase.rpc('update_record_with_reason', {
-            target_table: 'batches',
-            record_id: batch.id,
-            payload: { status: 'rejected', current_stage: 'rejected' },
-            reason_text: formData.reason,
-            esignature_pin: formData.pin
-          });
-          toast.warn('All trials rejected — batch marked as rejected.');
-        }
+      // G-29: advance_flask_stage() already rolls the batch up to 'rejected'
+      // automatically once every flask is released/rejected — this just
+      // surfaces that as a toast, no separate write needed.
+      const { data: allFlasks } = await supabase.from('batch_flasks').select('id,status').eq('batch_id', batch.id);
+      const remaining = (allFlasks || []).filter(f => f.id !== activeFlask.id && !['released', 'rejected'].includes(f.status));
+      if (remaining.length === 0) {
+        toast.warn('All trials rejected — batch marked as rejected.');
       }
 
       // Always raise a deviation on flask rejection
@@ -193,7 +185,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
               <div className="grid grid-cols-1 gap-3">
                 <div><label className="field-label">Stage Where Failed</label>
                   <select {...register('stage')} className="field-input bg-white">
-                    {['media_prep','sterilisation','inoculation','fermentation','straining','extract_addition','qc_hold'].map(s=>(
+                    {['media_prep','sterilisation','inoculation','fermentation','straining','qc_hold'].map(s=>(
                       <option key={s} value={s}>{s.replace(/_/g,' ')}</option>
                     ))}
                   </select>

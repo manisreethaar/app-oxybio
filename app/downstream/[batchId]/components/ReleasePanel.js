@@ -11,6 +11,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
   const [sensoryData, setSensoryData] = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [releaseError, setReleaseError] = useState(null);
+  const [formulations, setFormulations] = useState([]);
   // A-39: QA Head / admin / ceo can release
   const isCeo = ['ceo','admin','cto','research_fellow'].includes(role);
   const isQaAuthorised = ['ceo','admin','cto'].includes(role); // labelling sign-off requires higher authority

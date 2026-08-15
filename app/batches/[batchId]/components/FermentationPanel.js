@@ -13,6 +13,7 @@ import {
   validateEndpointPayload,
   validateReadingPayload,
 } from '@/lib/fermentation/validation';
+import { getFermentationWarnings } from '@/lib/batches/stageGates';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -247,6 +248,11 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const appearance = watch('appearance');
   const epPh = watch('epPh');
     const editReason = watch('editReason');
+  const pH = watch('pH');
+  const temp = watch('temp');
+  const co2Observed = watch('co2Observed');
+  const endpointTime = watch('endpointTime');
+  const sensory = watch('sensory');
 
   const [platingDone, setPlatingDone] = useState(false);
 
@@ -384,7 +390,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   useEffect(() => {
     if (!employeeProfile?.id || !isIntern) return;
     const stored = localStorage.getItem(`oxybio_last_supervisor_${employeeProfile.id}`);
-    if (stored) setSupervisedBy(stored);
+    if (stored) setValue('supervisedBy', stored);
   }, [employeeProfile?.id, isIntern]);
 
   // Detect pending-plating reading for this flask whenever readings change
@@ -581,7 +587,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       if (!json.success) throw new Error(json.error || 'Failed to declare endpoint');
       
       toast.success(`Endpoint declared for ${activeFlask.flask_label}.`);
-      setEndpointTime('');
+      setValue('endpointTime', '');
       fetchData(); onDataSaved();
     } catch (err) { 
       if (setGlobalError) setGlobalError(err.message);
@@ -625,6 +631,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
   const handleEditSave = async (e) => {
     e.preventDefault();
     if (!editReason.trim()) { toast.warn('A reason for the edit is required.'); return; }
+    const editFields = getValues('editFields') || {};
     setSavingEdit(true);
     try {
       let newElapsedHours = undefined;
@@ -754,12 +761,12 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 if (inocu?.planned_fermentation_hrs && tZero) {
                   const suggested = new Date(tZero.getTime() + inocu.planned_fermentation_hrs * 3600000);
                   const prefill = suggested < new Date() ? suggested : new Date();
-                  setEndpointTime(toLocalDatetime(prefill.toISOString()));
+                  setValue('endpointTime', toLocalDatetime(prefill.toISOString()));
                 } else {
-                  setEndpointTime(toLocalDatetime(new Date().toISOString()));
+                  setValue('endpointTime', toLocalDatetime(new Date().toISOString()));
                 }
               } else {
-                setEndpointTime('');
+                setValue('endpointTime', '');
               }
               setShowEndpoint(s => !s);
             }} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${showEndpoint ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-navy'}`}>
@@ -771,37 +778,6 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         {endpoint && <div className="flex items-center gap-2 mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg"><CheckCircle2 className="w-4 h-4 text-emerald-600"/><span className="text-xs font-bold text-emerald-800">Endpoint declared — Final pH: {endpoint.final_ph} · {endpoint.total_hours?.toFixed(1)}hr total</span></div>}
         {latestAlarm && <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg"><AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5"/><span className="text-xs font-bold text-red-800">⚠ Active alarm — a recent reading for this flask is out of bounds.</span></div>}
         {maxExceeded && !endpoint && <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg"><Clock className="w-4 h-4 text-amber-600 shrink-0"/><span className="text-xs font-bold text-amber-800">Planned fermentation duration exceeded. Time to declare endpoint?</span></div>}
-
-        {/* Fermentation End Time — always visible once T=0 is set, before endpoint is declared */}
-        {false && tZero && !endpoint && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
-              Fermentation End Time <span className="text-slate-400 font-normal normal-case tracking-normal">(fill this when fermentation stops)</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="datetime-local"
-                
-                max={toLocalDatetime(new Date().toISOString())}
-                {...register('endpointTime')}
-                className={`flex-1 px-3 py-2 border-2 rounded-xl text-sm font-semibold outline-none focus:border-navy transition-colors ${endpointTime ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200'}`}
-              />
-              {endpointTime && tZero && (
-                <span className="text-sm font-black text-navy whitespace-nowrap tabular-nums">
-                  {((new Date(endpointTime) - tZero) / 3600000).toFixed(1)} hr
-                </span>
-              )}
-              {endpointTime && (
-                <button onClick={() => setEndpointTime('')} className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors" title="Clear end time">
-                  <X className="w-3.5 h-3.5"/>
-                </button>
-              )}
-            </div>
-            {endpointTime && (
-              <p className="text-xs text-emerald-600 font-bold mt-1">✓ Saved — will auto-fill when you declare endpoint</p>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -859,7 +835,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">CO₂ / Gas Production</label>
                 <div className="flex gap-2">
                   {['Active bubbling','Slow evolution','Trace','None observed'].map(o=>(
-                    <button key={o} type="button" onClick={()=>setCo2Observed(co2Observed===o?'':o)}
+                    <button key={o} type="button" onClick={()=>setValue('co2Observed', co2Observed===o?'':o)}
                       className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${co2Observed===o?'bg-navy text-white border-navy':'bg-white text-slate-400 border-slate-200 hover:border-slate-400'}`}>
                       {o}
                     </button>
@@ -972,7 +948,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="retro" checked={isRetro} onChange={e=>setIsRetro(e.target.checked)} className="w-4 h-4 rounded border-slate-300"/>
+                <input type="checkbox" id="retro" {...register('isRetro')} className="w-4 h-4 rounded border-slate-300"/>
                 <label htmlFor="retro" className="text-xs font-semibold text-slate-600">Retrospective entry</label>
               </div>
               {isRetro && (
@@ -989,7 +965,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                   <select
                     value={supervisedBy}
                     onChange={e => {
-                      setSupervisedBy(e.target.value);
+                      setValue('supervisedBy', e.target.value);
                       // 1A: Persist supervisor choice in localStorage
                       if (e.target.value && employeeProfile?.id) {
                         localStorage.setItem(`oxybio_last_supervisor_${employeeProfile.id}`, e.target.value);
@@ -1281,7 +1257,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[{label:'Sensory Overall',val:sensory,set:setSensory,opts:['PASS','FAIL']}].map(f=>(
+              {[{label:'Sensory Overall',val:sensory,set:(v)=>setValue('sensory', v),opts:['PASS','FAIL']}].map(f=>(
                 <div key={f.label}><label className="block text-xs font-bold uppercase text-slate-400 mb-1">{f.label}</label>
                   <div className="flex gap-2">
                     {f.opts.map(o=><button type="button" key={o} onClick={()=>f.set(o)} className={`flex-1 py-2 text-xs font-black rounded-lg border transition-all ${f.val===o?(o==='PASS'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>{o}</button>)}
@@ -1377,13 +1353,13 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button
-                onClick={() => { setEpEditHours(endpoint.total_hours?.toFixed(2) || ''); setEpEditPh(endpoint.final_ph || ''); setEditingEndpoint(true); }}
+                onClick={() => { setValue('epEditHours', endpoint.total_hours?.toFixed(2) || ''); setValue('epEditPh', endpoint.final_ph || ''); setEditingEndpoint(true); }}
                 className="px-3 py-2 border border-amber-300 bg-amber-50 text-amber-700 text-xs font-black rounded-lg hover:bg-amber-100 transition-colors"
               >
                 Edit Hours
               </button>
             )}
-            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('harvest')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('harvest', getFermentationWarnings(endpoint))} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
               Advance Trial → Harvest
             </button>
           </div>

@@ -1,26 +1,23 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import useSWR from 'swr';
-import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/context/ToastContext';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Clock, Beaker, Droplets,
-  Activity, Filter, ShieldCheck, FlaskConical, XCircle, Leaf, BookOpen,
+  Activity, ShieldCheck, FlaskConical, XCircle, BookOpen,
   FileText, Download, Loader, Trash2, ArrowRight, MessageSquare,
   Package
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import LinkedRecordsPanel from '@/components/batches/LinkedRecordsPanel';
 import {
-  DOWNSTREAM_STAGE_IDS,
   normalizeStage,
   visibleWorkflowStage,
   isDownstreamStage,
 } from '@/lib/batches/workflowStages';
+import { useBatchWorkflow } from '@/lib/batches/useBatchWorkflow';
+
 const PanelLoading = () => (
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-4" />
@@ -37,7 +34,6 @@ const SterilisationPanel = dynamic(() => import('./components/SterilisationPanel
 const InoculationPanel = dynamic(() => import('./components/InoculationPanel'), { ssr: false, loading: PanelLoading });
 const FermentationPanel = dynamic(() => import('./components/FermentationPanel'), { ssr: false, loading: PanelLoading });
 const HarvestPanel = dynamic(() => import('./components/HarvestPanel'), { ssr: false, loading: PanelLoading });
-const LinkedRecordsPanel = dynamic(() => import('./components/LinkedRecordsPanel'), { ssr: false });
 
 const STAGES = [
   { id: 'media_prep',       label: 'Media Prep',       icon: Beaker,      color: 'text-slate-600', bg: 'bg-slate-50',  border: 'border-slate-200' },
@@ -53,7 +49,6 @@ const PANEL_MAP = {
   harvest: HarvestPanel,
 };
 
-
 const STAGE_CHECKLIST_MAP = {
   media_prep:       'Media Preparation',
   sterilisation:    'Sterilisation',
@@ -62,49 +57,23 @@ const STAGE_CHECKLIST_MAP = {
 };
 
 export default function BatchDetailPage() {
-  const { batchId }  = useParams();
-  const searchParams = useSearchParams();
-  const preselectFlaskId = searchParams.get('flask');
-  const { role, employeeProfile, canDo, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const toast        = useToast();
-  const supabase     = useMemo(() => createClient(), []);
-
-  const [batch,          setBatch]          = useState(null);
-  const [flasks,         setFlasks]         = useState([]);
-  const [transitions,    setTransitions]    = useState([]);
-  const [employees,      setEmployees]      = useState([]);
-  const [availableStock, setAvailableStock] = useState([]);
-  const [flaskEndpoints, setFlaskEndpoints] = useState([]);
-  const [lnbCount,       setLnbCount]       = useState(0);
-  const [lnbEntryId,     setLnbEntryId]     = useState(null);
-  const [actionLoading,  setActionLoading]  = useState(false);
-  const [bmrLoading,     setBmrLoading]     = useState(false);
-  const [bmrUrl,         setBmrUrl]         = useState(null);
-  const [pendingTransition, setPendingTransition] = useState(null);
-  const [pendingCancel,     setPendingCancel]     = useState(false);
-  const [archiveReason, setArchiveReason] = useState('');
-  const [pendingFlaskReject,  setPendingFlaskReject]  = useState(false);
-  const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null);
-  const [flaskAdvanceReason, setFlaskAdvanceReason] = useState('');
-  const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
-  const [viewingStage,       setViewingStage]       = useState(null);
-  const [editingStage,       setEditingStage]       = useState(null);
-  const [globalError,        setGlobalError]        = useState(null);
-  const stagePanelRef = useRef(null);
-
-  // The Stage Timeline nav sits below the stage panel on mobile (panel first,
-  // since it's the primary actionable content). Tapping a past stage there
-  // otherwise updates the panel out of view above the user's scroll position —
-  // bring it back into view instead of leaving them looking at a stale spot.
-  useEffect(() => {
-    if (viewingStage) {
-      stagePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [viewingStage]);
-  const [lnbByFlask,         setLnbByFlask]         = useState({});
-  const [flaskInoculations,  setFlaskInoculations]  = useState([]);
-  const [loadError,          setLoadError]          = useState(false);
+  const { batchId } = useParams();
+  const w = useBatchWorkflow({ batchId, module: 'upstream', listHref: '/batches', stageChecklistMap: STAGE_CHECKLIST_MAP });
+  const {
+    role, employeeProfile, canDo, router, toast, supabase, stagePanelRef,
+    batch, flasks, transitions, employees, availableStock, flaskEndpoints,
+    lnbCount, lnbEntryId, lnbByFlask, loadError,
+    overtimeFlasksComputed, isScheduled, isPostSterilisation, isTerminal,
+    derivedStatus, selectedFlask, normalizedBatchStage, displayStage, fermentingFlasks,
+    actionLoading, bmrLoading, bmrUrl,
+    pendingCancel, setPendingCancel, archiveReason, setArchiveReason,
+    pendingFlaskReject, setPendingFlaskReject,
+    pendingFlaskAdvance, setPendingFlaskAdvance, flaskAdvanceReason, setFlaskAdvanceReason,
+    selectedFlaskId, setSelectedFlaskId, viewingStage, setViewingStage, editingStage, setEditingStage,
+    globalError, setGlobalError,
+    fetchAll, handleFlaskTransition, confirmFlaskAdvance, handleDirectTransition,
+    handleExportBMR, handleStartBatch, handleCancelBatch, confirmCancelBatch,
+  } = w;
 
   const [showQuickLog,    setShowQuickLog]    = useState(false);
   const [quickLogFlaskId, setQuickLogFlaskId] = useState('');
@@ -113,263 +82,6 @@ export default function BatchDetailPage() {
   const [quickOd,         setQuickOd]         = useState('');
   const [quickVisual,     setQuickVisual]     = useState('Clear');
   const [quickLogSaving,  setQuickLogSaving]  = useState(false);
-
-  const { data: detailsData, error: detailsError, mutate: mutateDetails } = useSWR(
-    batchId ? `/api/batches/${batchId}/details` : null,
-    async (url) => {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Network error');
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed to load batch');
-      return json;
-    },
-    { revalidateOnFocus: false, dedupingInterval: 2000 }
-  );
-
-  useEffect(() => {
-    if (detailsData) {
-      setLoadError(false);
-      setBatch(detailsData.batch);
-      setFlasks(detailsData.flasks);
-      setTransitions(detailsData.transitions);
-      setEmployees(detailsData.employees);
-      setAvailableStock(detailsData.availableStock);
-      const lnbEntries = detailsData.lnbEntries || [];
-      setLnbCount(lnbEntries.length);
-      setLnbEntryId(lnbEntries[0]?.id || null);
-      const byFlask = {};
-      lnbEntries.forEach(e => { if (e.flask_id) byFlask[e.flask_id] = (byFlask[e.flask_id] || 0) + 1; });
-      setLnbByFlask(byFlask);
-      setFlaskEndpoints(detailsData.flaskEndpoints);
-      if (detailsData.batch?.bmr_url) setBmrUrl(detailsData.batch.bmr_url);
-      
-      
-    }
-  }, [detailsData, router, batchId]);
-
-  useEffect(() => {
-    if (detailsError) setLoadError(true);
-  }, [detailsError]);
-
-  const fetchAll = useCallback(() => {
-    mutateDetails();
-  }, [mutateDetails]);
-
-  useEffect(() => {
-    if (flasks.length > 0 && !selectedFlaskId) {
-      const preselected = preselectFlaskId && flasks.some(f => f.id === preselectFlaskId) ? preselectFlaskId : null;
-      setSelectedFlaskId(preselected || flasks[0].id);
-    }
-  }, [flasks, selectedFlaskId, preselectFlaskId]);
-
-  // Fetch inoculation data for overtime detection when batch is fermenting
-  useEffect(() => {
-    if (!batch || !batchId) return;
-    const fermentingFlasks = flasks.filter(f => f.current_stage === 'fermentation' && f.status !== 'rejected');
-    if (fermentingFlasks.length === 0) {
-      setFlaskInoculations([]);
-      return;
-    }
-    supabase
-      .from('batch_flask_inoculations')
-      .select('flask_id, t_zero_time, planned_fermentation_hrs')
-      .eq('batch_id', batchId)
-      .then(({ data }) => {
-        setFlaskInoculations(data || []);
-      });
-  }, [flasks, batch, batchId, supabase]);
-
-  // Compute overtime flasks from inoculation data
-  const overtimeFlasksComputed = useMemo(() => {
-    if (!flaskInoculations.length) return [];
-    const now = Date.now();
-    const overtime = [];
-    for (const inoc of flaskInoculations) {
-      if (!inoc.t_zero_time || !inoc.planned_fermentation_hrs) continue;
-      const hoursElapsed = (now - new Date(inoc.t_zero_time)) / 3600000;
-      if (hoursElapsed > inoc.planned_fermentation_hrs) {
-        const flask = flasks.find(f => f.id === inoc.flask_id);
-        if (flask && flask.status !== 'rejected' && flask.current_stage === 'fermentation') {
-          overtime.push({ ...flask, label: flask.flask_label, hoursElapsed, plannedHrs: inoc.planned_fermentation_hrs });
-        }
-      }
-    }
-    return overtime;
-  }, [flaskInoculations, flasks]);
-
-  const tickTaskChecklist = useCallback(async (completedStage) => {
-    const keyword = STAGE_CHECKLIST_MAP[completedStage];
-    if (!keyword) return;
-    const { data: task } = await supabase.from('tasks').select('id, checklist').eq('batch_id', batchId).maybeSingle();
-    if (!task?.checklist?.length) return;
-    const updated = task.checklist.map(item =>
-      item.text?.toLowerCase().includes(keyword.toLowerCase()) ? { ...item, done: true } : item
-    );
-    await supabase.from('tasks').update({ checklist: updated }).eq('id', task.id).catch(() => {});
-  }, [supabase, batchId]);
-
-  const handleFlaskTransition = useCallback((flaskId, toStage, warnings = []) => {
-    if (toStage === 'released' && lnbCount === 0) {
-      toast.warn('Cannot release — Lab Notebook is empty.');
-      return;
-    }
-    const flask = flasks.find(f => f.id === flaskId);
-    setFlaskAdvanceReason('');
-    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage, fromStage: flask?.current_stage, warnings });
-  }, [flasks, lnbCount, toast]);
-
-  const confirmFlaskAdvance = useCallback(async () => {
-    if (!pendingFlaskAdvance) return;
-    setGlobalError(null);
-    const { flaskId, toStage, fromStage, warnings = [] } = pendingFlaskAdvance;
-    if (warnings.length > 0 && !flaskAdvanceReason.trim()) return;
-    setActionLoading(true);
-    try {
-      const res = await withTimeout(
-        fetch(`/api/batches/${batchId}/flask-stage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage, override_reason: flaskAdvanceReason.trim() || null }),
-        }),
-        15000,
-        'Server took too long to respond. Please try again.'
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Trial stage transition failed.');
-      }
-
-      setPendingFlaskAdvance(null);
-      setFlaskAdvanceReason('');
-      toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
-      setViewingStage(null);
-      setEditingStage(null);
-      tickTaskChecklist(fromStage).catch(() => {});
-      fetchAll();
-    } catch (err) {
-      setGlobalError(err.message);
-      toast.error(err.message);
-    }
-    finally { setActionLoading(false); }
-  }, [pendingFlaskAdvance, flaskAdvanceReason, batchId, toast, fetchAll, tickTaskChecklist]);
-
-  const handleStageTransition = useCallback(async (toStage) => {
-    if (actionLoading) return;
-    if (toStage === 'released' && lnbCount === 0) {
-      toast.warn('Cannot release — Lab Notebook is empty.');
-      return;
-    }
-    setPendingTransition(toStage);
-  }, [actionLoading, lnbCount, toast]);
-
-  const handleDirectTransition = useCallback(async (toStage) => {
-    if (actionLoading) return;
-    if (toStage === 'released' && lnbCount === 0) {
-      toast.warn('Cannot release — Lab Notebook is empty.');
-      return;
-    }
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/batches/${batchId}/stage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from_stage: batch?.current_stage, to_stage: toStage }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Stage transition failed.'); return; }
-      toast.success(`Advanced to ${toStage.replace(/_/g, ' ')}.`);
-      fetchAll();
-    } catch (err) { toast.error(err.message); }
-    finally       { setActionLoading(false); }
-  }, [actionLoading, lnbCount, batchId, batch, toast, fetchAll]);
-
-  const confirmStageTransition = async () => {
-    if (!pendingTransition || actionLoading) return;
-    const toStage = pendingTransition;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/batches/${batchId}/stage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from_stage: batch.current_stage, to_stage: toStage }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Stage transition failed.'); return; }
-      setPendingTransition(null);
-      toast.success(`Advanced to ${toStage.replace(/_/g, ' ')}.`);
-      tickTaskChecklist(batch.current_stage).catch(() => {});
-      // Notify CEO/CTO when batch reaches QC Hold
-      if (toStage === 'qc_hold') {
-        const ceoCtoCandidates = employees.filter(e => ['ceo','cto','admin'].includes(e.role));
-        const notifRows = ceoCtoCandidates.map(e => ({
-          employee_id: e.id,
-          title: `QC Hold — ${batch.batch_id} ready for review`,
-          message: `Batch ${batch.batch_id} has reached QC Hold stage. Review results and make a release decision.`,
-          link: `/batches/${batchId}`,
-        }));
-        if (notifRows.length > 0) {
-          supabase.from('notifications').insert(notifRows).then(()=>{}).catch(()=>{});
-        }
-      }
-      fetchAll();
-    } catch (err) { toast.error(err.message); }
-    finally       { setActionLoading(false); }
-  };
-
-  const handleExportBMR = useCallback(async () => {
-    if (bmrLoading) return;
-    setBmrLoading(true);
-    try {
-      const res  = await fetch(`/api/batches/${batchId}/bmr`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setBmrUrl(data.signed_url);
-      toast.success('BMR generated and saved to Document Vault.');
-      if (data.signed_url) window.open(data.signed_url, '_blank');
-    } catch (err) { toast.error('BMR generation failed: ' + err.message); }
-    finally      { setBmrLoading(false); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchId, bmrLoading]);
-
-  const handleStartBatch = useCallback(async () => {
-    if (actionLoading) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/batches/${batchId}/start`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to start batch');
-      toast.success('Batch started at Media Prep.');
-      fetchAll();
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setActionLoading(false);
-    }
-  }, [actionLoading, batchId, fetchAll, toast]);
-
-  const handleCancelBatch = useCallback(async () => {
-    setArchiveReason('');
-    setPendingCancel(true);
-  }, []);
-
-  const confirmCancelBatch = async () => {
-    if (!archiveReason.trim()) {
-      toast.error('Please provide a reason for archiving.');
-      return;
-    }
-    setPendingCancel(false);
-    try {
-      const res  = await fetch(`/api/batches?id=${batchId}`, { 
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ archive_reason: archiveReason })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      toast.success(data.message || 'Batch archived.');
-      router.push('/batches');
-    } catch (err) {
-      toast.error('Failed to archive batch: ' + err.message);
-    }
-  };
 
   if (loadError && !batch) {
     return (
@@ -384,48 +96,13 @@ export default function BatchDetailPage() {
 
   if (!batch) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
 
-  const normalizedBatchStage = normalizeStage(batch.current_stage);
-  const currentIdx  = STAGES.findIndex(s => s.id === visibleWorkflowStage(batch.current_stage));
-  const isScheduled = ['planned', 'scheduled'].includes(batch.status) && !batch.current_stage;
-  const isTerminal  = ['released', 'rejected'].includes(batch.status);
-  
-  const POST_STERILISATION_STAGES = [
-    'inoculation', 'fermentation', 'harvest',
-    ...DOWNSTREAM_STAGE_IDS,
-  ];
-  const isPostSterilisation = !isScheduled && POST_STERILISATION_STAGES.includes(batch.current_stage);
-
-  const FLASK_STAGE_RANK = ['inoculation', 'fermentation', 'harvest', ...DOWNSTREAM_STAGE_IDS];
-  const derivedStatus = (() => {
-    if (isTerminal) return batch.status;
-    if (isScheduled) return 'scheduled';
-    if (!isPostSterilisation || flasks.length === 0) return batch.status;
-    const allRejected = flasks.every(f => f.status === 'rejected');
-    if (allRejected) return 'rejected';
-    const activeFlasks = flasks.filter(f => f.status !== 'rejected');
-    const slowestStage = activeFlasks.reduce((slowest, f) => {
-      const r = FLASK_STAGE_RANK.indexOf(visibleWorkflowStage(f.current_stage));
-      return r >= 0 && r < FLASK_STAGE_RANK.indexOf(slowest) ? visibleWorkflowStage(f.current_stage) : slowest;
-    }, 'released');
-    if (slowestStage === 'fermentation') return 'fermenting';
-    if (slowestStage === 'qc_hold') return 'qc-hold';
-    if (slowestStage === 'released') return 'released';
-    if (['harvest', 'straining'].includes(slowestStage)) return 'processing';
-    return batch.status;
-  })();
-
-  const selectedFlask = isPostSterilisation && flasks.length > 0 ? flasks.find(f => f.id === selectedFlaskId) || flasks[0] : null;
-  const activeStage = isScheduled ? null : visibleWorkflowStage(isPostSterilisation ? (normalizeStage(selectedFlask?.current_stage) || 'inoculation') : normalizedBatchStage);
-  const displayStage = viewingStage || activeStage;
+  const currentIdx = STAGES.findIndex(s => s.id === visibleWorkflowStage(batch.current_stage));
   const CurrentPanel = PANEL_MAP[displayStage] || null;
-
-  const fermentingFlasks = flasks.filter(f => f.current_stage === 'fermentation' && f.status === 'active');
 
   const handleQuickLogSubmit = async () => {
     if (!quickPh) return;
     setQuickLogSaving(true);
     try {
-      const elapsed = null;
       const { error } = await supabase.from('batch_fermentation_readings').insert({
         batch_id: batch.id,
         flask_id: quickLogFlaskId,
@@ -559,7 +236,7 @@ export default function BatchDetailPage() {
                 if (isPostSterilisation) {
                   const sFlask = flasks.find(f => f.id === selectedFlaskId) || flasks[0];
                   const flaskStageIdx = sFlask ? STAGES.findIndex(s => s.id === visibleWorkflowStage(sFlask.current_stage)) : -1;
-                  const eIdx = flaskStageIdx >= 0 ? flaskStageIdx : 
+                  const eIdx = flaskStageIdx >= 0 ? flaskStageIdx :
                     isDownstreamStage(sFlask?.current_stage) ? 99 : 2;
                   done = idx < eIdx;
                   curr = idx === eIdx;
@@ -795,7 +472,8 @@ export default function BatchDetailPage() {
             >
               <ErrorBoundary>
                 <CurrentPanel
-                  batch={batch} flasks={flasks}
+                  batch={{ ...batch, current_stage: normalizeStage(batch.current_stage) }}
+                  flasks={flasks.map(f => ({ ...f, current_stage: normalizeStage(f.current_stage) }))}
                   activeFlask={selectedFlask}
                   employees={employees}
                   availableStock={availableStock} role={role} canDo={canDo}
@@ -829,31 +507,6 @@ export default function BatchDetailPage() {
 
       {/* Linked Records — full-width cross-module panel */}
       <LinkedRecordsPanel batch={batch} />
-
-      {/* Transition Modal */}
-      {pendingTransition && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Advance Stage</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">Are you sure you want to advance this batch to <strong className="uppercase">{pendingTransition.replace(/_/g, ' ')}</strong>?</p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setPendingTransition(null)}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmStageTransition}
-                className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition w-full inline-flex items-center justify-center gap-2"
-                disabled={actionLoading}
-              >
-                {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : 'Advance Stage'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Archive Modal */}
       {pendingCancel && (
