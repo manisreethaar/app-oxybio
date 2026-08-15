@@ -379,6 +379,12 @@ CREATE TABLE IF NOT EXISTS public."batch_flasks" (
   "updated_by" uuid
 );
 
+-- Confirmed missing on the live project and directly on the hot path of
+-- every advance_flask_stage() call, which scans by batch_id and by
+-- (batch_id, current_stage) on every flask-level transition.
+CREATE INDEX IF NOT EXISTS idx_batch_flasks_batch_id ON public.batch_flasks (batch_id);
+CREATE INDEX IF NOT EXISTS idx_batch_flasks_batch_id_current_stage ON public.batch_flasks (batch_id, current_stage);
+
 CREATE TABLE IF NOT EXISTS public."batch_number_sequences" (
 
   "year" integer NOT NULL,
@@ -1761,6 +1767,10 @@ CREATE TABLE IF NOT EXISTS public."stage_transitions" (
   "updated_by" uuid
 );
 
+-- Confirmed missing on the live project — every batch/flask stage-history
+-- lookup filters by batch_id.
+CREATE INDEX IF NOT EXISTS idx_stage_transitions_batch_id ON public.stage_transitions (batch_id);
+
 CREATE TABLE IF NOT EXISTS public."stock_qc_releases" (
 
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -1895,6 +1905,17 @@ CREATE TABLE IF NOT EXISTS public."vendors" (
   "updated_by" uuid
 );
 
+-- batch_flask_extract_addition is recreated here even though it was later
+-- dropped for good in 20260814000003_downstream_revamp.sql (extract/pellet/
+-- RTD data now lives on the expanded batch_flask_straining table) — several
+-- real historical migrations between here and that drop (e.g.
+-- 20260407000002_security_lint_fixes.sql) operate on this table directly
+-- with no existence guard, so a from-scratch replay needs it to exist at
+-- this point to stay consistent with production's actual migration history.
+-- IMPORTANT: this baseline file must never be run directly against the live
+-- production database (only against a from-scratch CI/preview replay) —
+-- production already dropped this table for real, and re-running this
+-- CREATE TABLE IF NOT EXISTS there would resurrect it.
 CREATE TABLE IF NOT EXISTS public."batch_flask_extract_addition" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "flask_id" uuid NOT NULL,
@@ -1970,8 +1991,13 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY['activity_log', 'api_keys', 'app_settings', 'attendance_log', 'batch_costs', 'batch_fermentation_feeds', 'batch_fermentation_reading_audit', 'batch_fermentation_readings', 'batch_flask_endpoints', 'batch_flask_inoculations', 'batch_flask_qc_samples', 'batch_flask_rejection_record', 'batch_flask_straining', 'batch_flasks', 'batch_number_sequences', 'batch_qc_holds', 'batch_stage_downstream', 'batch_stage_harvest', 'batch_stage_media_prep', 'batch_stage_sterilisation', 'batches', 'bioprocess_statistics', 'calibration_logs', 'capa_actions', 'chat_attachments', 'chat_logs', 'chat_members', 'chat_retention_policies', 'chats', 'compliance_items', 'customer_complaints', 'deviations', 'documents', 'employees', 'equipment', 'equipment_tickets', 'formulations', 'formulations_latest', 'growth_measurements', 'growth_plate_observations', 'growth_studies', 'growth_study_time_points', 'hr_delegations', 'hr_expenses', 'hr_holidays', 'hr_shifts', 'hr_tax_profiles', 'internal_audits', 'inventory', 'inventory_alerts', 'inventory_dashboard', 'inventory_items', 'inventory_movements', 'inventory_stock', 'inventory_stock_consumables', 'inventory_usage', 'investigations', 'ip_whitelist', 'lab_logs', 'lab_notebook_entries', 'leave_applications', 'leave_encashments', 'lookup_categories', 'lot_number_sequences', 'messages', 'notifications', 'payslips', 'pending_changes', 'ph_readings', 'predictive_models', 'purchase_requests', 'rbac_matrix', 'reading_audit_log', 'regulatory_milestones', 'scada_streams', 'scale_down_models', 'shelf_life_studies', 'shift_handovers', 'sop_acknowledgements', 'sop_library', 'sop_quiz_results', 'sop_quizzes', 'sop_targets', 'sops', 'sso_configurations', 'stability_timepoints', 'stage_transitions', 'stock_qc_releases', 'system_config', 'system_logs', 'tasks', 'taste_panels', 'user_preferences', 'vendors', 'batch_flask_extract_addition', 'batch_flask_qc_tests', 'batch_flask_release_record'] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+    -- Skip if this table already has ANY policy (not just one literally named
+    -- baseline_auth_all) — production tables already carry named single-permissive
+    -- policies (e.g. batches_auth_all) from 20260407000003_performance_lint_fixes.sql,
+    -- and without this check baseline would stack a redundant second policy on top
+    -- of them if it's ever applied to production after that migration.
     IF NOT EXISTS (
-      SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = t AND policyname = 'baseline_auth_all'
+      SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = t
     ) THEN
       EXECUTE format(
         'CREATE POLICY baseline_auth_all ON public.%I FOR ALL USING (auth.role() = ''authenticated'') WITH CHECK (auth.role() = ''authenticated'')',
