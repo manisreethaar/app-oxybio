@@ -33,7 +33,6 @@ async function gateMediaPrepToSterilisation(supabase, batchId) {
     .eq('batch_id', batchId)
     .single();
   if (!data?.is_complete) return 'Media Prep is not marked complete. Save and mark complete before advancing.';
-  if (data.ragi_moisture_pass === false) return 'Ragi moisture check FAILED. Resolve deviation before sterilising.';
   return null;
 }
 

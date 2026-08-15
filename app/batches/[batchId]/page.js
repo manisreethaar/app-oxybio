@@ -822,7 +822,7 @@ export default function BatchDetailPage() {
               </Link>
             </div>
           ) : (
-            <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {batch.current_stage}</div>
+            <div className="card p-8 text-center text-slate-400 text-sm">Unknown stage: {displayStage}</div>
           )}
         </div>
       </div>
