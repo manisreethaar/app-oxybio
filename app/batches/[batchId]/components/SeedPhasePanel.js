@@ -103,11 +103,31 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
         inoculum_source_details: formData.inoculumDetails || null
       };
       
-      const { error } = data?.id 
+      const { error } = data?.id
         ? await supabase.from('batch_seed_trains').update(payload).eq('id', data.id)
         : await supabase.from('batch_seed_trains').insert(payload);
-        
+
       if (error) throw error;
+
+      // Mark the vial consumed — same convention as seed-passages/growth-studies
+      // (app/api/seed-passages/route.js). Only fires once per newly-selected
+      // vial, not on every re-save, and is non-fatal to the main setup save.
+      if (payload.cell_bank_vial_id && payload.cell_bank_vial_id !== data?.cell_bank_vial_id) {
+        await supabase.from('cell_bank_vials').update({
+          status: 'Used',
+          used_in_batch_id: batch.id,
+          used_at: new Date().toISOString()
+        }).eq('id', payload.cell_bank_vial_id).then(() => {}).catch(e => console.warn('Vial status update warning:', e.message));
+
+        await supabase.from('cell_bank_vial_logs').insert({
+          vial_id: payload.cell_bank_vial_id,
+          action: 'used_in_batch',
+          batch_id: batch.id,
+          operator_id: employeeProfile?.id || null,
+          notes: `Used for ${stageType.replace('_', ' ').toUpperCase()}`
+        }).then(() => {}).catch(e => console.warn('Vial log insert warning:', e.message));
+      }
+
       toast.success('Phase setup saved.');
       fetchData();
     } catch (err) {
