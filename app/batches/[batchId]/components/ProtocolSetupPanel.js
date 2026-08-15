@@ -34,12 +34,14 @@ export default function ProtocolSetupPanel({ batch, supabase, onComplete }) {
         status: 'active'
       }).select().maybeSingle();
       
+      if (seedErr) throw new Error('Failed to initiate Seed 1: ' + seedErr.message);
+      
       const { error } = await supabase.from('batches').update({ 
         protocol_sop_id: sopId, 
         current_stage: 'seed_1' 
       }).eq('id', batch.id);
       
-      if (error) throw error;
+      if (error) throw new Error('Failed to update batch stage: ' + error.message);
       toast.success('Protocol linked! Seed 1 phase initiated.');
       onComplete();
     } catch (err) {
