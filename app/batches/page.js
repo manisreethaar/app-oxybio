@@ -41,6 +41,12 @@ const STAGE_LABELS = {
   qc_hold:          'QC Hold',
   released:         'Released',
   rejected:         'Rejected',
+  // Seed Train (Protocol -> Seed 1/2/3 -> Production) — see
+  // lib/batches/workflowStages.js:SEED_TRAIN_STAGE_IDS.
+  seed_1:           'Seed 1',
+  seed_2:           'Seed 2',
+  seed_3:           'Seed 3',
+  production:       'Production',
 };
 // Only the first 6 stages are shown as progress segments — released/rejected
 // are terminal dispositions, not points along the live progress bar.
@@ -257,7 +263,7 @@ export default function BatchesPage() {
       fermHrs,      // fermentation-specific hours (null if not yet in fermentation)
       isScheduled,
       isTerminal: false,
-      stageLabel: isScheduled ? 'Scheduled' : (STAGE_LABELS[derivedStage] || derivedStage),
+      stageLabel: isScheduled ? 'Scheduled' : (STAGE_LABELS[derivedStage] || derivedStage || 'Protocol'),
       stageProgress: { currentIdx, total: PROGRESS_SEGMENTS },
       flasks: flasks.map(f => ({ id: f.id, label: f.flask_label, status: f.status })),
       recipeName: batch.formulations?.name,
@@ -514,7 +520,7 @@ export default function BatchesPage() {
       const res = await fetch(`/api/batches/${id}/start`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start batch');
-      toast.success('Batch started at Media Prep.');
+      toast.success('Batch started — set up the protocol to begin the Seed Train.');
       fetchBatches();
       setStatusFilter('active');
     } catch (err) {
