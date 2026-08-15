@@ -10,7 +10,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const toast = useToast();
   const [data,   setData]   = useState(null);
   const [saving, setSaving] = useState(false);
-  const [pendingOverride, setPendingOverride] = useState(null);
   const isIntern = ['intern','research_intern'].includes(role);
   const isF2 = batch.experiment_type === 'F2';
 
@@ -28,7 +27,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   const { register, handleSubmit, setValue, getValues, watch, reset, control } = useForm({
     defaultValues: {
       bomUsage: {},
-      ragiMoist: '',
       kavuniTemp: '',
       kavuniMin: '',
       waterVol: '',
@@ -48,7 +46,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
   });
 
   const watchBomUsage = watch('bomUsage');
-  const watchRagiMoist = watch('ragiMoist');
   const watchAwValue = watch('awValue');
   const watchStarchGelConfirm = watch('starchGelConfirm');
   const watchPretreatSteps = watch('pretreatSteps');
@@ -95,7 +92,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       });
       
       reset({
-        ragiMoist: d.ragi_moisture_pass===true?'Pass':d.ragi_moisture_pass===false?'Fail':'',
         kavuniTemp: d.kavuni_precook_temp_c||'',
         kavuniMin: d.kavuni_precook_min||'',
         waterVol: d.water_volume_ml||'',
@@ -175,17 +171,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
   const onSubmit = async (formData, advance = false) => {
     if (isIntern && !formData.supervisedBy) { toast.warn('Select a supervisor.'); return; }
-    if (formData.ragiMoist === 'Fail') {
-      setPendingOverride(advance);
-      return;
-    }
     await executeSave(formData, advance);
-  };
-
-  const confirmOverride = async () => {
-    const advance = pendingOverride;
-    setPendingOverride(null);
-    await executeSave(getValues(), advance);
   };
 
   const executeSave = async (formData, advance = false) => {
@@ -197,7 +183,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       const { error } = await withTimeout(supabase.from('batch_stage_media_prep').upsert({
         batch_id: batch.id,
         ragi_lot_id: ragiU.lot, ragi_weight_g: ragiU.wt,
-        ragi_moisture_pass: formData.ragiMoist === 'Pass' ? true : formData.ragiMoist === 'Fail' ? false : null,
         kavuni_lot_id: kavuniU.lot, kavuni_weight_g: kavuniU.wt,
         kavuni_precook_temp_c: formData.kavuniTemp ? parseFloat(formData.kavuniTemp) : null,
         kavuni_precook_min: formData.kavuniMin ? parseFloat(formData.kavuniMin) : null,
@@ -245,7 +230,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
       syncStageToLNB(supabase, batch.id, 'media_prep', {
         ragi_lot_id: ragiU.lot,
         ragi_weight_g: ragiU.wt,
-        ragi_moisture: formData.ragiMoist || null,
         kavuni_lot_id: kavuniU.lot,
         kavuni_weight_g: kavuniU.wt,
         kavuni_precook_temp_c: formData.kavuniTemp ? parseFloat(formData.kavuniTemp) : null,
@@ -302,7 +286,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                // Filter stock: match by exact item_id, OR match by name for legacy compat
                const matchStock = availableStock.filter(s => s.item_id === ing.item_id || s.inventory_items?.id === ing.item_id || (s.inventory_items?.name?.toLowerCase() === ing.name?.toLowerCase()));
                const usage = watchBomUsage?.[ing.item_id] || {lotId:'', usedQty:''};
-               const isRagi = ing.name?.toLowerCase().includes('ragi');
                const isKavuni = ing.name?.toLowerCase().includes('kavuni');
 
                return (
@@ -361,22 +344,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                      </div>
                    </div>
                    
-                   {/* Specific Process Parameters tied to Ingredients */}
-                   {isRagi && (
-                     <div className="mt-4 pt-3 border-t border-slate-100/50">
-                        <label className="field-label">Ragi Moisture Check</label>
-                        <div className="flex gap-2">
-                          {['Pass','Fail'].map(o=>(
-                            <button key={o} type="button" onClick={()=>setValue('ragiMoist', o)}
-                              className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all ${watchRagiMoist===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-                              {o}
-                            </button>
-                          ))}
-                          <button type="button" onClick={()=>setValue('ragiMoist', '')} className={`px-3 text-xs font-bold rounded-lg border transition-all ${!watchRagiMoist?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-400 border-slate-200'}`}>N/A</button>
-                        </div>
-                        {watchRagiMoist==='Fail' && <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Moisture check failed — log deviation before advancing.</p>}
-                     </div>
-                   )}
                    {isKavuni && isF2 && (
                      <div className="mt-4 pt-3 border-t border-slate-100/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div><label className="field-label">Pre-cook Temp (°C)</label><input type="number" step="0.1" {...register('kavuniTemp')} className="field-input" placeholder="90.0"/></div>
@@ -487,7 +454,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
           <button onClick={handleSubmit((data) => onSubmit(data, false))} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
-          <button onClick={handleSubmit((data) => onSubmit(data, true))} disabled={saving||actionLoading||watchRagiMoist==='Fail'} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+          <button onClick={handleSubmit((data) => onSubmit(data, true))} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
             Complete → Sterilisation
           </button>
         </div>
@@ -546,28 +513,6 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
         </div>
       )}
 
-      {pendingOverride !== null && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Safety Override</h3>
-            <p className="text-sm text-slate-600 mb-6 text-center">Ragi moisture check failed. Please ensure you log a Process Deviation before continuing. Proceed anyway?</p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setPendingOverride(null)}
-                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmOverride}
-                className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition w-full"
-              >
-                ⚠ Proceed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
