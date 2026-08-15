@@ -155,17 +155,30 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
     if (!entries.length) return;
 
+    // withTimeout() is a pass-through (see lib/withTimeout.js) — it does not
+    // actually enforce a limit. Every other write in this file goes through
+    // the Supabase browser client, which has its own 15s AbortController
+    // wrapper (utils/supabase/client.ts), so it can't hang forever. This is
+    // a plain fetch() to a Next.js API route with no such wrapper, so a slow
+    // or stuck server response left the Save button showing "Saving..."
+    // indefinitely with no error. Guard it with a real timeout instead.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-      const res = await withTimeout(window.fetch(`/api/batches/${batch.id}/media-deduct`, {
+      const res = await window.fetch(`/api/batches/${batch.id}/media-deduct`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ entries, employee_id: employeeProfile?.id }),
-      }), 30000, 'Inventory deduction timed out');
+        signal:  controller.signal,
+      });
       const json = await res.json();
       (json.warnings || []).forEach(w => toast.warn(w));
     } catch (err) {
       console.error('Media deduction error:', err);
-      toast.error('Failed to deduct inventory: ' + err.message);
+      const message = err.name === 'AbortError' ? 'Inventory deduction timed out after 30 seconds.' : err.message;
+      toast.error('Failed to deduct inventory: ' + message);
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
