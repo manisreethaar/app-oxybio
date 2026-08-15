@@ -3,12 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { Beaker, ShieldCheck, Droplets, Activity, Plus, Loader, ArrowRight, CheckCircle2 } from 'lucide-react';
-
-const formatDateTime = (isoString) => {
-  if (!isoString) return '';
-  const d = new Date(isoString);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(',', '');
-};
+import dayjs from 'dayjs';
 
 const INOCULUM_TYPES = ['glycerol', 'curd', 'rice_water', 'natural', 'previous_seed'];
 
@@ -243,7 +238,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
             {isSterilised && <CheckCircle2 className="w-5 h-5 text-emerald-500"/>}
           </div>
           {isSterilised ? (
-            <p className="text-xs font-bold text-emerald-700">Sterilised at {formatDateTime(data.sterilised_at)}</p>
+            <p className="text-xs font-bold text-emerald-700">Sterilised at {dayjs(data.sterilised_at).format('DD MMM HH:mm')}</p>
           ) : (
             <button onClick={() => handleAction('sterilise')} disabled={saving || !data?.id} className="w-full py-2 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover">Mark as Sterilised</button>
           )}
@@ -258,7 +253,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
             {isInoculated && <CheckCircle2 className="w-5 h-5 text-emerald-500"/>}
           </div>
           {isInoculated ? (
-            <p className="text-xs font-bold text-emerald-700">Inoculated at {formatDateTime(data.inoculated_at)}</p>
+            <p className="text-xs font-bold text-emerald-700">Inoculated at {dayjs(data.inoculated_at).format('DD MMM HH:mm')}</p>
           ) : (
             <button onClick={() => handleAction('inoculate')} disabled={saving || !isSterilised} className="w-full py-2 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover disabled:opacity-50">Mark as Inoculated</button>
           )}
@@ -294,7 +289,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
                  <tbody className="divide-y divide-slate-100">
                    {readings.map(r => (
                      <tr key={r.id} className="hover:bg-slate-50/50">
-                       <td className="px-4 py-3 text-slate-500 font-medium">{formatDateTime(r.logged_at)}</td>
+                       <td className="px-4 py-3 text-slate-500 font-medium">{dayjs(r.logged_at).format('DD MMM HH:mm')}</td>
                        <td className="px-4 py-3 font-bold">{r.ph || '-'}</td>
                        <td className="px-4 py-3 font-bold">{r.optical_density || '-'}</td>
                        <td className="px-4 py-3">
