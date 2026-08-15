@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
-import { Plus, Beaker, Package, Search, X } from 'lucide-react';
+import { Plus, Beaker, FlaskConical, Package, Search, X } from 'lucide-react';
 import MobilePageHeader from '@/components/ui/MobilePageHeader';
 import { format } from 'date-fns';
 
@@ -72,6 +72,14 @@ export default function ProductDevelopmentDashboard() {
       <MobilePageHeader title="Product Development" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        {/* Mode switcher */}
+        <div className="flex gap-2">
+          <span className="px-4 py-2 rounded-xl text-sm font-bold bg-navy text-white shadow-sm">Batch-Linked</span>
+          <Link href="/product-development/experiments" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+            <FlaskConical className="w-4 h-4" /> Standalone R&amp;D
+          </Link>
+        </div>
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
