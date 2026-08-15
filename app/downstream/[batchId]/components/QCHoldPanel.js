@@ -133,6 +133,9 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     }
   });
   const { register, handleSubmit, reset, setValue, getValues, watch } = form;
+  const coaUrl = watch('coaUrl');
+  const resultReceivedDate = watch('resultReceivedDate');
+  const customTestName = watch('customTestName');
 
 
   // E-Signature Modal
@@ -156,16 +159,16 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     try {
     if (sData) {
       setSample(sData);
-      setResultReceivedDate(sData.result_received_date || '');
-      setCoaUrl(sData.coa_url || '');
+      setValue('resultReceivedDate', sData.result_received_date || '');
+      setValue('coaUrl', sData.coa_url || '');
       if (sData.plating_enabled) {
         setPlatingEnabled(true);
         const cfg = sData.plating_config || {};
-        if (cfg.media_type)       setPlateMedia(cfg.media_type);
-        if (cfg.dilution)         setPlateDilution(cfg.dilution);
-        if (cfg.plate_count)      setPlateCount(String(cfg.plate_count));
-        if (cfg.incubation_temp_c) setPlateTemp(String(cfg.incubation_temp_c));
-        if (cfg.expected_hours)   setPlateExpectedHours(String(cfg.expected_hours));
+        if (cfg.media_type)       setValue('plateMedia', cfg.media_type);
+        if (cfg.dilution)         setValue('plateDilution', cfg.dilution);
+        if (cfg.plate_count)      setValue('plateCount', String(cfg.plate_count));
+        if (cfg.incubation_temp_c) setValue('plateTemp', String(cfg.incubation_temp_c));
+        if (cfg.expected_hours)   setValue('plateExpectedHours', String(cfg.expected_hours));
       }
       const [tRes, incRes] = await withTimeout(Promise.all([
         supabase.from('batch_flask_qc_tests').select('*').eq('sample_id', sData.id).order('test_name'),
@@ -273,6 +276,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   const handleCreateSample = async () => {
     if (!activeFlask) return;
+    const { volPerFlask, extLab, extRef, sentDate, expectDate } = getValues();
     setCreating(true);
     try {
       // Generate sequential QC Sample ID: OB-QCS-YY-NNN-FN
@@ -396,6 +400,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   const handleRaiseOos = async () => {
     if (!oosModal) return;
+    const oosDesc = getValues('oosDesc');
     setRaisingOos(true);
     try {
       const res = await fetch('/api/capa', {
@@ -428,13 +433,6 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
   const handleUpdatePlatingConfig = async (field, value) => {
     if (!sample) return;
-    
-    // Update local state
-    if (field === 'media_type') setPlateMedia(value);
-    if (field === 'dilution') setPlateDilution(value);
-    if (field === 'plate_count') setPlateCount(value);
-    if (field === 'incubation_temp_c') setPlateTemp(value);
-    if (field === 'expected_hours') setPlateExpectedHours(value);
 
     // Save to DB
     let parsedVal = value || null;
@@ -653,6 +651,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
   // G-63: Add a custom (non-standard) QC test
   const handleAddCustomTest = async () => {
     if (!sample || !customTestName.trim() || savingCustomTest) return;
+    const { customTestSpec, customTestUnit } = getValues();
     setSavingCustomTest(true);
     try {
       const { error } = await withTimeout(supabase.from('batch_flask_qc_tests').insert({
@@ -1170,6 +1169,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                     </div>
                     <button disabled={savingPostPack} onClick={async () => {
                       if (!sample) return;
+                      const { ppPh, ppCfu, ppPackType } = getValues();
                       setSavingPostPack(true);
                       await withTimeout(supabase.from('batch_flask_qc_samples').update({
                         post_packaging_tested: true,
