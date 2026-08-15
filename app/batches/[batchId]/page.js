@@ -50,12 +50,16 @@ export default function BatchDetailsPage({ params: { batchId } }) {
       if (flErr) throw flErr;
       setBatch(b);
       setFlasks(fl || []);
+      // Invalidate Next.js's client Router Cache (next.config.mjs sets a
+      // 30s staleTimes.dynamic window) so navigating back to the Batches
+      // list right after a stage change doesn't reuse a stale cached row.
+      router.refresh();
     } catch (err) {
       toast.error('Failed to load batch: ' + err.message);
     } finally {
       setLoading(false);
     }
-  }, [batchId, toast]);
+  }, [batchId, toast, router]);
 
   useEffect(() => {
     fetchBatchData();
