@@ -13,6 +13,7 @@ import {
   validateEndpointPayload,
   validateReadingPayload,
 } from '@/lib/fermentation/validation';
+import { getFermentationWarnings } from '@/lib/batches/stageGates';
 
 const FLASK_COLORS = ['#1e3a5f', '#d97706', '#7c3aed', '#059669'];
 const FOAM_OPTS = ['None','Slight','Moderate','Heavy'];
@@ -1358,7 +1359,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 Edit Hours
               </button>
             )}
-            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('harvest')} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
+            <button disabled={actionLoading} onClick={() => onAdvanceFlaskStage('harvest', getFermentationWarnings(endpoint))} className="px-5 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-50">
               Advance Trial → Harvest
             </button>
           </div>

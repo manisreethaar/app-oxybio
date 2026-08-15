@@ -6,6 +6,7 @@ import { withTimeout } from '@/lib/withTimeout';
 import SeedTrainManager from '@/components/SeedTrainManager';
 import { Droplets, AlertTriangle, Dna, ChevronDown, FlaskConical } from 'lucide-react';
 import { syncStageToLNB } from '@/lib/lnbSync';
+import { getInoculationWarnings } from '@/lib/batches/stageGates';
 
 const TRANSFER_METHODS = ['Pipette', 'Syringe', 'Sterile spoon'];
 const SOURCE_TYPES = [
@@ -181,17 +182,6 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
   const onSubmit = async (formData, advance = false) => {
     if (!activeFlask) return;
     if (setGlobalError) setGlobalError(null);
-    if (advance) {
-      const missing = [];
-      if (!formData.tZero) missing.push('T=0 inoculation time');
-      if (!formData.plannedHr) missing.push('Planned fermentation time (hr)');
-      
-      if (missing.length > 0) {
-        if (setGlobalError) setGlobalError(`Cannot advance to Fermentation. Missing mandatory details: ${missing.join(', ')}.`);
-        toast.warn(`Cannot advance to Fermentation. Missing mandatory details: ${missing.join(', ')}.`);
-        return;
-      }
-    }
 
     setSaving(true);
     try {
@@ -256,7 +246,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
         contamination_check: formData.contCheck,
       }, activeFlask.flask_label);
       if (advance && onAdvanceFlaskStage) {
-        await onAdvanceFlaskStage('fermentation');
+        await onAdvanceFlaskStage('fermentation', getInoculationWarnings(formData));
       } else {
         fetchRecord();
         onDataSaved();
@@ -571,8 +561,8 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           <button onClick={handleSubmit((data) => onSubmit(data, false))} disabled={saving} className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving?'Saving...':'Save Draft'}
           </button>
-          <button onClick={handleSubmit((data) => onSubmit(data, true))} disabled={saving||actionLoading||!watchTZero} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
-            Set T=0 → Fermentation
+          <button onClick={handleSubmit((data) => onSubmit(data, true))} disabled={saving||actionLoading} className="py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm disabled:opacity-40">
+            {watchTZero ? 'Set T=0 → Fermentation' : 'Advance → Fermentation (T=0 not set)'}
           </button>
         </div>
       </div>

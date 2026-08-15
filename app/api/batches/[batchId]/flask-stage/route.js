@@ -4,34 +4,13 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { isMasterAdmin } from '@/lib/permissions';
 import { canOperateBatch } from '@/lib/batches/stagePolicy';
-
-const FLASK_STAGE_RANKS = [
-  'inoculation',
-  'fermentation',
-  'harvest',
-  'straining',
-  'qc_hold',
-  'released',
-  'rejected',
-];
+import { ALL_STAGE_IDS, isLegalTransition } from '@/lib/batches/workflowStages';
 
 function adminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
-}
-
-function statusForFlaskStage(stage) {
-  if (stage === 'fermentation') return 'fermenting';
-  if (stage === 'qc_hold') return 'qc-hold';
-  if (stage === 'released') return 'released';
-  if (stage === 'rejected') return 'rejected';
-  return 'processing';
-}
-
-function visibleWorkflowStage(stage) {
-  return stage || '';
 }
 
 function constraintMessage(stage) {
@@ -54,7 +33,7 @@ export async function POST(request, { params }) {
     if (!flask_id || !to_stage) {
       return NextResponse.json({ success: false, error: 'Flask and target stage are required.' }, { status: 400 });
     }
-    if (!FLASK_STAGE_RANKS.includes(to_stage)) {
+    if (!ALL_STAGE_IDS.includes(to_stage)) {
       return NextResponse.json({ success: false, error: 'Unknown target flask stage.' }, { status: 422 });
     }
 
@@ -86,6 +65,25 @@ export async function POST(request, { params }) {
       .single();
     if (flaskErr || !flask) {
       return NextResponse.json({ success: false, error: 'Flask not found for this batch.' }, { status: 404 });
+    }
+
+    if (!isLegalTransition(flask.current_stage, to_stage)) {
+      return NextResponse.json({
+        success: false,
+        error: `Cannot advance ${flask.flask_label} from ${flask.current_stage} to ${to_stage} — not a legal next stage.`,
+      }, { status: 422 });
+    }
+
+    // Server-side mirror of the client's "Lab Notebook must not be empty"
+    // release gate — the client-only check is trivially bypassed by a direct API call.
+    if (to_stage === 'released') {
+      const { count: lnbCount } = await db
+        .from('lab_notebook_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('batch_id', batchId);
+      if (!lnbCount) {
+        return NextResponse.json({ success: false, error: 'Cannot release — Lab Notebook is empty.' }, { status: 422 });
+      }
     }
 
     const { data: rpcResult, error: rpcErr } = await db.rpc('advance_flask_stage', {
