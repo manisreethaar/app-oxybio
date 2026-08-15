@@ -73,7 +73,7 @@ export default function RndExperimentDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <FlaskConical className="w-8 h-8 text-indigo-600" />
+              <FlaskConical className="w-8 h-8 text-navy" />
               <div>
                 <h1 className="text-xl font-black text-navy">{experiment.experiment_id}</h1>
                 <p className="text-sm font-bold text-slate-500">{experiment.title}</p>
@@ -145,7 +145,7 @@ export default function RndExperimentDetailPage() {
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-navy/30 outline-none"
                 placeholder="Rationale for approval/rejection..."
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

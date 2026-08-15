@@ -54,7 +54,7 @@ export default function RndExperimentsListPage() {
 
         {/* Mode switcher */}
         <div className="flex gap-2">
-          <Link href="/product-development" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+          <Link href="/product-development" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:border-navy/50 hover:text-navy transition-colors flex items-center gap-1.5">
             <Beaker className="w-4 h-4" /> Batch-Linked
           </Link>
           <span className="px-4 py-2 rounded-xl text-sm font-bold bg-navy text-white shadow-sm flex items-center gap-1.5">
@@ -65,7 +65,7 @@ export default function RndExperimentsListPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl font-black text-navy flex items-center gap-3">
-              <FlaskConical className="w-8 h-8 text-indigo-600" />
+              <FlaskConical className="w-8 h-8 text-navy" />
               R&amp;D Experiments
             </h1>
             <p className="text-slate-500 font-medium mt-1">
@@ -81,13 +81,13 @@ export default function RndExperimentsListPage() {
                 placeholder="Search experiments..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy/30 outline-none"
               />
             </div>
             {canCreate && (
               <Link
                 href="/product-development/experiments/new"
-                className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-colors whitespace-nowrap"
+                className="flex items-center justify-center gap-2 bg-navy text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-navy/20 hover:bg-navy-hover transition-colors whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Experiment</span>
@@ -97,7 +97,7 @@ export default function RndExperimentsListPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>
+          <div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-4 border-navy border-t-transparent rounded-full" /></div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
             <FlaskConical className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -113,10 +113,10 @@ export default function RndExperimentsListPage() {
               const BadgeIcon = badge.icon;
               return (
                 <Link key={e.id} href={`/product-development/experiments/${e.id}`}>
-                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group flex flex-col h-full">
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-navy/50 transition-all cursor-pointer group flex flex-col h-full">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-black text-navy group-hover:text-indigo-600 transition-colors">{e.experiment_id}</h3>
+                        <h3 className="text-lg font-black text-navy group-hover:text-navy transition-colors">{e.experiment_id}</h3>
                         <p className="text-xs font-bold text-slate-400 mt-1">{format(new Date(e.created_at), 'MMM d, yyyy')}</p>
                       </div>
                       <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 ${badge.className}`}>
@@ -125,7 +125,7 @@ export default function RndExperimentsListPage() {
                     </div>
                     <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
                       <span className="text-sm font-bold text-slate-600 truncate">{e.title}</span>
-                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0 ml-2">View →</span>
+                      <span className="text-xs font-bold text-navy bg-navy/5 px-2 py-1 rounded-lg shrink-0 ml-2">View →</span>
                     </div>
                   </div>
                 </Link>

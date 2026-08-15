@@ -118,7 +118,7 @@ export default function ProductDevelopmentDetail() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center gap-3 mb-6">
-            <Beaker className="w-8 h-8 text-indigo-600" />
+            <Beaker className="w-8 h-8 text-navy" />
             <div>
               <h1 className="text-xl font-black text-navy">{batch.batch_id}</h1>
               <p className="text-sm font-bold text-slate-400">Product Development Workflow</p>
@@ -135,15 +135,15 @@ export default function ProductDevelopmentDetail() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Target Volume (ml)</label>
-                <input type="number" disabled={!canEdit} {...register('target_volume')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50" />
+                <input type="number" disabled={!canEdit} {...register('target_volume')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-navy/30 outline-none disabled:bg-slate-50" />
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Target pH</label>
-                <input type="number" step="0.1" disabled={!canEdit} {...register('target_ph')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50" />
+                <input type="number" step="0.1" disabled={!canEdit} {...register('target_ph')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-navy/30 outline-none disabled:bg-slate-50" />
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Target Brix</label>
-                <input type="number" step="0.1" disabled={!canEdit} {...register('target_brix')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50" />
+                <input type="number" step="0.1" disabled={!canEdit} {...register('target_brix')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-navy/30 outline-none disabled:bg-slate-50" />
               </div>
             </div>
 
@@ -151,7 +151,7 @@ export default function ProductDevelopmentDetail() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider">Formulation Ingredients</h3>
                 {canEdit && (
-                  <button type="button" onClick={() => append({ stock_id: '', amount: '', unit: 'g' })} className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                  <button type="button" onClick={() => append({ stock_id: '', amount: '', unit: 'g' })} className="text-xs font-bold text-navy bg-navy/5 hover:bg-navy/10 px-3 py-1.5 rounded-lg flex items-center gap-1">
                     <Plus className="w-3 h-3" /> Add Ingredient
                   </button>
                 )}
@@ -186,7 +186,7 @@ export default function ProductDevelopmentDetail() {
 
             <div className="pt-4 border-t border-slate-100">
               <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Process Notes</label>
-              <textarea disabled={!canEdit} {...register('notes')} rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50" placeholder="Mixing instructions, observations..." />
+              <textarea disabled={!canEdit} {...register('notes')} rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-navy/30 outline-none disabled:bg-slate-50" placeholder="Mixing instructions, observations..." />
             </div>
 
             {canEdit && (
@@ -195,7 +195,7 @@ export default function ProductDevelopmentDetail() {
                   type="button"
                   onClick={handleSubmit(onSave)}
                   disabled={saving}
-                  className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex items-center gap-2 bg-navy text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-navy/10 hover:bg-navy-hover disabled:opacity-50"
                 >
                   {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
                   Save Product Formulation

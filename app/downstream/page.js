@@ -341,7 +341,7 @@ export default function DownstreamPage() {
         .forEach(b => completedById.set(b.id, b));
       const completed = Array.from(completedById.values());
 
-      const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id] ?? null }));
+      const activeWithEp = active.map(b => ({ ...b, _maxEpHrs: epMap[b.id]?.total_hours ?? null }));
 
       setActiveBatches(activeWithEp);
       setHistory(completed);
