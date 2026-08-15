@@ -11,30 +11,45 @@ import dayjs from 'dayjs';
 import ProtocolSetupPanel from './components/ProtocolSetupPanel';
 import SeedPhasePanel from './components/SeedPhasePanel';
 import ProductionPhasePanel from './components/ProductionPhasePanel';
+import LinkedRecordsPanel from '@/components/batches/LinkedRecordsPanel';
 import { SEED_TRAIN_STAGE_IDS } from '@/lib/batches/workflowStages';
 
 export default function BatchDetailsPage({ params: { batchId } }) {
-  const { employeeProfile, employees } = useAuth();
+  const { employeeProfile, employees, role } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
 
   const [batch, setBatch] = useState(null);
+  const [flasks, setFlasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // advance_flask_stage() rolls batches.current_stage up to whichever flask
+  // is least-progressed (inoculation/fermentation/... — never 'production'),
+  // so the raw column can't be used alone to decide whether we're still in
+  // Seed Train setup or already flask-tracked. The existence of flasks is
+  // the reliable signal once Production Explosion has run.
   const fetchBatchData = useCallback(async () => {
     try {
-      const { data: b, error } = await supabase
-        .from('batches')
-        .select(`
-          *,
-          formulations ( name, version )
-        `)
-        .eq('id', batchId)
-        .maybeSingle();
+      const [{ data: b, error }, { data: fl, error: flErr }] = await Promise.all([
+        supabase
+          .from('batches')
+          .select(`
+            *,
+            formulations ( name, version )
+          `)
+          .eq('id', batchId)
+          .maybeSingle(),
+        supabase
+          .from('batch_flasks')
+          .select('id, current_stage, status')
+          .eq('batch_id', batchId),
+      ]);
 
       if (error) throw error;
+      if (flErr) throw flErr;
       setBatch(b);
+      setFlasks(fl || []);
     } catch (err) {
       toast.error('Failed to load batch: ' + err.message);
     } finally {
@@ -49,9 +64,16 @@ export default function BatchDetailsPage({ params: { batchId } }) {
   if (loading) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
   if (!batch) return <div className="p-8 text-center text-red-500 font-bold">Batch not found.</div>;
 
-  // Derive active phase
-  let activePhase = batch.current_stage;
-  if (!activePhase || !SEED_TRAIN_STAGE_IDS.includes(activePhase)) {
+  // Derive active phase. Flasks existing is the reliable signal that we're
+  // past Seed Train setup — batch.current_stage rolls up to flask-level
+  // values (inoculation, fermentation, ...) once flasks start advancing,
+  // so it can't be trusted alone once Production Explosion has run.
+  let activePhase;
+  if (flasks.length > 0) {
+    activePhase = 'production';
+  } else if (['seed_1', 'seed_2', 'seed_3'].includes(batch.current_stage)) {
+    activePhase = batch.current_stage;
+  } else {
     activePhase = 'protocol';
   }
 
@@ -131,12 +153,13 @@ export default function BatchDetailsPage({ params: { batchId } }) {
             onComplete={fetchBatchData} 
           />
         ) : activePhase === 'production' ? (
-          <ProductionPhasePanel 
+          <ProductionPhasePanel
             key={activePhase}
-            batch={batch} 
+            batch={batch}
             employees={employees}
             employeeProfile={employeeProfile}
-            supabase={supabase} 
+            role={role}
+            supabase={supabase}
             onComplete={fetchBatchData}
           />
         ) : (
@@ -146,11 +169,13 @@ export default function BatchDetailsPage({ params: { batchId } }) {
             stageType={activePhase} 
             employees={employees}
             employeeProfile={employeeProfile}
-            supabase={supabase} 
+            supabase={supabase}
             onComplete={fetchBatchData}
           />
         )}
       </div>
+
+      <LinkedRecordsPanel batch={batch} />
 
     </div>
   );

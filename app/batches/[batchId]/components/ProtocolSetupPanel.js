@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { FileText, ArrowRight, Loader } from 'lucide-react';
 
 export default function ProtocolSetupPanel({ batch, supabase, onComplete }) {
+  const { employeeProfile } = useAuth();
   const [sopId, setSopId] = useState(batch.protocol_sop_id || '');
   const [sops, setSops] = useState([]);
   const [loadingSops, setLoadingSops] = useState(true);
@@ -28,22 +30,24 @@ export default function ProtocolSetupPanel({ batch, supabase, onComplete }) {
     if (!sopId) {
       if (!confirm('No protocol selected. Are you sure you want to start the seed train without linking an SOP?')) return;
     }
+    if (!employeeProfile?.id) return toast.error('Employee profile not loaded yet.');
     setSaving(true);
     try {
-      const { error: seedErr } = await supabase.from('batch_seed_trains').insert({
-        batch_id: batch.id,
-        stage_type: 'seed_1',
-        status: 'active'
-      }).select().maybeSingle();
-      
-      if (seedErr) throw new Error('Failed to initiate Seed 1: ' + seedErr.message);
-      
-      const { error } = await supabase.from('batches').update({ 
-        protocol_sop_id: sopId, 
-        current_stage: 'seed_1' 
-      }).eq('id', batch.id);
-      
-      if (error) throw new Error('Failed to update batch stage: ' + error.message);
+      if (sopId) {
+        const { error: sopErr } = await supabase.from('batches')
+          .update({ protocol_sop_id: sopId })
+          .eq('id', batch.id);
+        if (sopErr) throw new Error('Failed to link protocol: ' + sopErr.message);
+      }
+
+      const { data, error } = await supabase.rpc('advance_seed_train_stage', {
+        p_batch_id: batch.id,
+        p_to_stage: 'seed_1',
+        p_employee_id: employeeProfile.id
+      });
+      if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error);
+
       toast.success('Protocol linked! Seed 1 phase initiated.');
       onComplete();
     } catch (err) {

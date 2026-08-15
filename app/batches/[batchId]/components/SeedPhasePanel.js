@@ -167,15 +167,18 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
   
   const handleTransfer = async (nextStage) => {
     if (!confirm(`Are you sure you want to transfer this to ${nextStage.replace('_', ' ').toUpperCase()}?`)) return;
+    if (!employeeProfile?.id) return toast.warn('Employee profile not loaded yet.');
     setSaving(true);
     try {
-      const { error: e1 } = await supabase.from('batch_seed_trains').insert({ batch_id: batch.id, stage_type: nextStage, status: 'active' });
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from('batch_seed_trains').update({ status: 'completed' }).eq('id', data.id);
-      if (e2) throw e2;
-      const { error: e3 } = await supabase.from('batches').update({ current_stage: nextStage }).eq('id', batch.id);
-      if (e3) throw e3;
-      
+      const { data: result, error } = await supabase.rpc('advance_seed_train_stage', {
+        p_batch_id: batch.id,
+        p_to_stage: nextStage,
+        p_employee_id: employeeProfile.id,
+        p_current_seed_train_id: data.id
+      });
+      if (error) throw error;
+      if (result && result.success === false) throw new Error(result.error);
+
       toast.success(`Transferred to ${nextStage.replace('_', ' ').toUpperCase()}`);
       onComplete();
     } catch (err) {
@@ -333,16 +336,9 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
                  Transfer to Seed 3
                </button>
              )}
-             {stageType !== 'production' && (
-               <button onClick={() => handleTransfer('production')} className="px-5 py-2.5 bg-navy text-white hover:bg-navy-hover text-xs font-black rounded-xl uppercase tracking-wider flex items-center gap-2 ml-auto shadow-sm">
-                 Transfer to Production <ArrowRight className="w-4 h-4"/>
-               </button>
-             )}
-             {stageType === 'production' && (
-               <button onClick={() => handleTransfer('straining')} className="px-5 py-2.5 bg-amber-600 text-white hover:bg-amber-700 text-xs font-black rounded-xl uppercase tracking-wider flex items-center gap-2 ml-auto shadow-sm">
-                 Harvest (To Downstream) <ArrowRight className="w-4 h-4"/>
-               </button>
-             )}
+             <button onClick={() => handleTransfer('production')} className="px-5 py-2.5 bg-navy text-white hover:bg-navy-hover text-xs font-black rounded-xl uppercase tracking-wider flex items-center gap-2 ml-auto shadow-sm">
+               Transfer to Production <ArrowRight className="w-4 h-4"/>
+             </button>
            </div>
         </div>
       )}
