@@ -39,7 +39,7 @@ export async function GET(request, { params }) {
     const [
       batchRes, flasksRes, mediaPrepRes, sterilRes,
       inocuRes, ferReadRes, ferEpRes, harvestRes, strainRes, extractRes,
-      qcSampleRes, rejectionRes, inventoryUsageRes, incubationRes
+      qcSampleRes, rejectionRes, inventoryUsageRes, incubationRes, seedTrainRes
     ] = await Promise.all([
       db.from('batches').select('*, formulations(name, code, version, base_volume_ml)').eq('id', batchId).single(),
       db.from('batch_flasks').select('*').eq('batch_id', batchId).order('flask_label'),
@@ -57,6 +57,11 @@ export async function GET(request, { params }) {
         .select('*, inventory_stock(supplier_batch_number, expiry_date, inventory_items(name, unit))')
         .eq('batch_id', batchId),
       db.from('sample_incubation_records').select('*').eq('batch_id', batchId).order('start_time'),
+      // Seed Train (Protocol -> Seed 1/2/3 -> Production) — batches created
+      // through the post-58b7ecc flow record media/sterilisation/inoculation
+      // here instead of batch_stage_media_prep/batch_stage_sterilisation,
+      // which those batches never populate.
+      db.from('batch_seed_trains').select('*, formulations(name, version)').eq('batch_id', batchId).order('created_at'),
     ]);
 
     if (!batchRes.data) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
@@ -111,6 +116,7 @@ export async function GET(request, { params }) {
       flaskRejections:   rejectionRes.data  || [],
       sampleIncubations: incubationRes.data  || [],
       inventoryUsage:    inventoryUsageRes.data || [],
+      seedTrains:        seedTrainRes.data    || [],
       auditLogs:         auditLogs,
       generatedBy:       emp.full_name,
       generatedAt:       new Date().toISOString(),

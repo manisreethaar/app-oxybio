@@ -2,10 +2,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
-import { Beaker, ShieldCheck, Droplets, Activity, Plus, Loader, ArrowRight, CheckCircle2, FlaskConical, Link } from 'lucide-react';
+import { Beaker, ShieldCheck, Droplets, Activity, Plus, Loader, ArrowRight, CheckCircle2, FlaskConical, Link, Package } from 'lucide-react';
 import dayjs from 'dayjs';
+import HarvestPanel from './HarvestPanel';
+import { calculateConcentration } from '@/lib/batches/standardCurve';
 
-export default function ProductionPhasePanel({ batch, employees, employeeProfile, supabase, onComplete }) {
+export default function ProductionPhasePanel({ batch, employees, employeeProfile, role, supabase, onComplete }) {
   const toast = useToast();
   
   const [setupData, setSetupData] = useState(null);
@@ -19,6 +21,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
   
   const [selectedFlaskId, setSelectedFlaskId] = useState(null);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [harvestFlaskId, setHarvestFlaskId] = useState(null);
   
   // Log Modal State
   const [logPh, setLogPh] = useState('');
@@ -119,20 +122,38 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
       const flaskPayloads = Array.from({ length: num }).map((_, i) => ({
         batch_id: batch.id,
         flask_label: `F${i + 1}`,
-        current_stage: 'fermentation',
+        current_stage: 'inoculation',
         status: 'active'
       }));
-      
-      const { error: fErr } = await supabase.from('batch_flasks').insert(flaskPayloads);
+
+      const { data: newFlasks, error: fErr } = await supabase.from('batch_flasks').insert(flaskPayloads).select();
       if (fErr) throw fErr;
-      
-      await supabase.from('batch_seed_trains').update({ 
-        inoculated_at: new Date().toISOString(), 
-        inoculum_source_type: 'previous_seed', 
-        inoculum_source_details: formData.seedInoculum 
+
+      await supabase.from('batch_seed_trains').update({
+        inoculated_at: new Date().toISOString(),
+        inoculum_source_type: 'previous_seed',
+        inoculum_source_details: formData.seedInoculum
       }).eq('id', setupData.id);
-      
-      toast.success(`${num} Production Flasks generated & inoculated!`);
+
+      // Every flask starts at 'inoculation' (a DB-legal flask stage) then
+      // advances to 'fermentation' through the validated, audited API route
+      // — preserves the "flasks show as Incubating immediately" UX while
+      // making the transition legal and traceable.
+      const advanceResults = await Promise.all(
+        (newFlasks || []).map(f =>
+          fetch(`/api/batches/${batch.id}/flask-stage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ flask_id: f.id, from_stage: 'inoculation', to_stage: 'fermentation' })
+          }).then(r => r.json()).then(j => ({ label: f.flask_label, ...j }))
+        )
+      );
+      const failed = advanceResults.filter(r => !r.success);
+      if (failed.length > 0) {
+        toast.error(`${num - failed.length}/${num} flasks inoculated. Failed to start fermentation for: ${failed.map(f => f.label).join(', ')} — ${failed[0].error}`);
+      } else {
+        toast.success(`${num} Production Flasks generated & inoculated!`);
+      }
       fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -147,13 +168,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
     try {
       let concentration = null;
       if (logAnthroneOd && activeCurve) {
-        // Equation: y = mx + c  =>  x = (y - c) / m
-        // Wait, standard curves are usually OD = slope * concentration + intercept
-        // Concentration = (OD - intercept) / slope
-        const od = parseFloat(logAnthroneOd);
-        const m = parseFloat(activeCurve.slope);
-        const c = parseFloat(activeCurve.y_intercept);
-        if (m !== 0) anthroneConc = (od - c) / m;
+        concentration = calculateConcentration({ od: logAnthroneOd, slope: activeCurve.slope, intercept: activeCurve.y_intercept });
       }
 
       const { error } = await supabase.from('batch_fermentation_readings').insert({
@@ -163,7 +178,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
         optical_density: logOd ? parseFloat(logOd) : null,
         is_blank: logIsBlank,
         anthrone_od: logAnthroneOd ? parseFloat(logAnthroneOd) : null,
-        anthrone_conc: anthroneConc,
+        anthrone_conc: concentration,
         standard_curve_id: activeCurve?.id || null,
         gram_staining: logGramStaining || null,
         microscopic_test: logMicroscopic || null,
@@ -184,19 +199,49 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
     }
   };
 
-  const handleHarvest = async (flaskId, currentLabel) => {
-    if (!confirm(`Are you sure you want to harvest ${currentLabel} and send it to Downstream?`)) return;
+  // Harvest is two real stage hops, not one: fermentation -> harvest (flip
+  // the stage, then capture CCP data) -> straining (hand off to Downstream).
+  // 'straining' is not a legal target directly from 'fermentation'.
+  const handleStartHarvest = async (flaskId, currentLabel) => {
+    if (!confirm(`Start harvesting ${currentLabel}? This will move it out of fermentation.`)) return;
     setSaving(true);
     try {
-      const { data, error } = await supabase.rpc('advance_flask_stage', {
-        p_flask_id: flaskId,
-        p_batch_id: batch.id,
-        p_to_stage: 'straining',
-        p_employee_id: employeeProfile.id
+      const res = await fetch(`/api/batches/${batch.id}/flask-stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flask_id: flaskId, from_stage: 'fermentation', to_stage: 'harvest' })
       });
-      if (error) throw error;
-      if (data && data.success === false) throw new Error(data.error);
-      toast.success(`${currentLabel} Harvested!`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      toast.success(`${currentLabel} moved to Harvest — record CCP data to send it to Downstream.`);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Passed to HarvestPanel as onAdvanceFlaskStage — called once harvest CCP
+  // data (wet cell weight, viability, cooling curve) has been saved.
+  const handleAdvanceToDownstream = async (targetStage, warnings) => {
+    if (warnings?.length && !confirm(`${warnings.join(', ')}. Send to Downstream anyway?`)) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/batches/${batch.id}/flask-stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flask_id: harvestFlaskId,
+          from_stage: 'harvest',
+          to_stage: targetStage,
+          override_reason: warnings?.length ? warnings.join('; ') : undefined
+        })
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      toast.success('Harvest complete — sent to Downstream Processing.');
+      setHarvestFlaskId(null);
       fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -288,20 +333,28 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {flasks.map(f => {
               const flaskReadings = readings.filter(r => r.flask_id === f.id);
-              const isHarvested = f.current_stage !== 'fermentation' && f.current_stage !== 'inoculation';
-              
+              const isFermenting = f.current_stage === 'fermentation';
+              const isAtHarvest = f.current_stage === 'harvest';
+              const isSentToDownstream = !isFermenting && !isAtHarvest && f.current_stage !== 'inoculation';
+
               return (
-                <div key={f.id} className={`card border-2 p-5 ${isHarvested ? 'border-amber-200 bg-amber-50/30' : 'border-navy/10 hover:border-navy/30'}`}>
+                <div key={f.id} className={`card border-2 p-5 ${isSentToDownstream ? 'border-amber-200 bg-amber-50/30' : 'border-navy/10 hover:border-navy/30'}`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-black text-slate-800">{f.flask_label}</h3>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        {isHarvested ? <span className="text-amber-600">Harvested to Downstream</span> : 'Incubating'}
+                        {isSentToDownstream ? <span className="text-amber-600">Sent to Downstream</span> :
+                         isAtHarvest ? <span className="text-orange-600">Harvest Pending Record</span> : 'Incubating'}
                       </p>
                     </div>
-                    {!isHarvested && (
-                       <button onClick={() => handleHarvest(f.id, f.flask_label)} disabled={saving} className="px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-black rounded hover:bg-amber-200">
+                    {isFermenting && (
+                       <button onClick={() => handleStartHarvest(f.id, f.flask_label)} disabled={saving} className="px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-black rounded hover:bg-amber-200">
                          Harvest
+                       </button>
+                    )}
+                    {isAtHarvest && (
+                       <button onClick={() => setHarvestFlaskId(f.id)} disabled={saving} className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-black rounded hover:bg-orange-200 flex items-center gap-1">
+                         <Package className="w-3 h-3"/> Complete Harvest Record
                        </button>
                     )}
                   </div>
@@ -330,7 +383,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
                   </div>
                   
                   {/* Flask Actions */}
-                  {!isHarvested && (
+                  {isFermenting && (
                     <div className="mt-4 flex gap-2">
                       <button onClick={() => { setSelectedFlaskId(f.id); setShowLogModal(true); }} className="flex-1 py-2 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover flex items-center justify-center gap-1">
                         <Plus className="w-3 h-3"/> Sample
@@ -343,6 +396,30 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Harvest Record Modal — reuses the existing HarvestPanel (CCP data:
+          cold chain, wet cell weight, viability) rather than rebuilding it. */}
+      {harvestFlaskId && (
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-black text-slate-900">Harvest Record</h3>
+              <button onClick={() => setHarvestFlaskId(null)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">Close</button>
+            </div>
+            <HarvestPanel
+              batch={batch}
+              activeFlask={flasks.find(f => f.id === harvestFlaskId)}
+              employees={employees}
+              employeeProfile={employeeProfile}
+              role={role}
+              supabase={supabase}
+              onDataSaved={fetchData}
+              onAdvanceFlaskStage={handleAdvanceToDownstream}
+              actionLoading={saving}
+            />
           </div>
         </div>
       )}
