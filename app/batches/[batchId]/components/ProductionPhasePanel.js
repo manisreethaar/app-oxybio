@@ -25,6 +25,9 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
   const [logOd, setLogOd] = useState('');
   const [logAnthroneOd, setLogAnthroneOd] = useState('');
   const [logIsBlank, setLogIsBlank] = useState(false);
+  const [logGramStaining, setLogGramStaining] = useState('');
+  const [logMicroscopic, setLogMicroscopic] = useState('');
+  const [logDilution, setLogDilution] = useState('');
 
   const form = useForm({
     defaultValues: {
@@ -150,19 +153,21 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
         const od = parseFloat(logAnthroneOd);
         const m = parseFloat(activeCurve.slope);
         const c = parseFloat(activeCurve.y_intercept);
-        if (m !== 0) concentration = (od - c) / m;
+        if (m !== 0) anthroneConc = (od - c) / m;
       }
 
       const { error } = await supabase.from('batch_fermentation_readings').insert({
         batch_id: batch.id,
-        seed_train_id: setupData.id,
         flask_id: selectedFlaskId,
         ph: logPh ? parseFloat(logPh) : null,
         optical_density: logOd ? parseFloat(logOd) : null,
-        anthrone_od: logAnthroneOd ? parseFloat(logAnthroneOd) : null,
-        anthrone_concentration: concentration,
-        standard_curve_id: activeCurve?.id || null,
         is_blank: logIsBlank,
+        anthrone_od: logAnthroneOd ? parseFloat(logAnthroneOd) : null,
+        anthrone_conc: anthroneConc,
+        standard_curve_id: activeCurve?.id || null,
+        gram_staining: logGramStaining || null,
+        microscopic_test: logMicroscopic || null,
+        dilution_factor: logDilution ? parseFloat(logDilution) : null,
         logged_at: new Date().toISOString(),
         logged_by: employeeProfile?.id
       });
@@ -170,6 +175,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
       toast.success('Reading logged successfully!');
       setShowLogModal(false);
       setLogPh(''); setLogOd(''); setLogAnthroneOd(''); setLogIsBlank(false);
+      setLogGramStaining(''); setLogMicroscopic(''); setLogDilution('');
       fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -308,8 +314,10 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
                             <span className="text-slate-500 w-12">{dayjs(r.logged_at).format('HH:mm')}</span>
                             <span className="font-bold w-12">{r.ph ? `pH ${r.ph}` : ''}</span>
                             <span className="font-bold w-16">{r.optical_density ? `OD ${r.optical_density}` : ''}</span>
+                            <span className="font-bold w-16">{r.dilution_factor ? `1:${r.dilution_factor}` : ''}</span>
+                            <span className="text-slate-600 w-24 truncate" title={r.microscopic_test || r.gram_staining || ''}>{r.gram_staining ? r.gram_staining.split(' ')[1] || r.gram_staining : (r.microscopic_test ? 'Notes' : '')}</span>
                             <span className="font-bold text-navy text-right flex-1 truncate">
-                              {r.anthrone_concentration ? `${r.anthrone_concentration.toFixed(2)} ug/ml` : ''}
+                              {r.anthrone_conc ? `${r.anthrone_conc.toFixed(2)} ug/ml` : ''}
                               {r.is_blank && <span className="text-amber-600"> (BLANK)</span>}
                             </span>
                           </div>
@@ -356,9 +364,26 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
                   <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">OD 600nm</label>
                   <input type="number" step="0.01" value={logOd} onChange={e=>setLogOd(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Dilution Factor (e.g. 10)</label>
+                  <input type="number" step="1" value={logDilution} onChange={e=>setLogDilution(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Gram Staining</label>
+                  <select value={logGramStaining} onChange={e=>setLogGramStaining(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                    <option value="">-- Optional --</option>
+                    <option value="Gram Positive">Gram Positive</option>
+                    <option value="Gram Negative">Gram Negative</option>
+                    <option value="Mixed">Mixed</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Microscopic Test Notes</label>
+                  <input type="text" value={logMicroscopic} onChange={e=>setLogMicroscopic(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Contamination check..." />
+                </div>
               </div>
               
-              <div className="pt-4 border-t border-slate-100">
+              <div className="pt-4 border-t border-slate-100 mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Anthrone OD</label>
                   {activeCurve ? (
@@ -370,7 +395,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
                 <input type="number" step="0.01" value={logAnthroneOd} onChange={e=>setLogAnthroneOd(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 border rounded-lg" />
               </div>
 
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none pt-2">
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none pt-4">
                 <input type="checkbox" checked={logIsBlank} onChange={e=>setLogIsBlank(e.target.checked)} className="w-4 h-4 text-navy rounded border-slate-300" />
                 This is a BLANK flask reading
               </label>
@@ -378,7 +403,7 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
             
             <div className="flex gap-3">
               <button onClick={() => setShowLogModal(false)} className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold">Cancel</button>
-              <button onClick={submitReading} disabled={saving || (!logPh && !logOd && !logAnthroneOd)} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold disabled:opacity-50">Save Reading</button>
+              <button onClick={submitReading} disabled={saving || (!logPh && !logOd && !logAnthroneOd && !logGramStaining && !logMicroscopic)} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold disabled:opacity-50">Save Reading</button>
             </div>
           </div>
         </div>

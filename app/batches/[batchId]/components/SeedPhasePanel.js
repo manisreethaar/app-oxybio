@@ -24,6 +24,9 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
   const [logPh, setLogPh] = useState('');
   const [logOd, setLogOd] = useState('');
   const [logIsBlank, setLogIsBlank] = useState(false);
+  const [logGramStaining, setLogGramStaining] = useState('');
+  const [logMicroscopic, setLogMicroscopic] = useState('');
+  const [logDilution, setLogDilution] = useState('');
 
   const form = useForm({
     defaultValues: {
@@ -143,6 +146,9 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
         ph: logPh ? parseFloat(logPh) : null,
         optical_density: logOd ? parseFloat(logOd) : null,
         is_blank: logIsBlank,
+        gram_staining: logGramStaining || null,
+        microscopic_test: logMicroscopic || null,
+        dilution_factor: logDilution ? parseFloat(logDilution) : null,
         logged_at: new Date().toISOString(),
         logged_by: employeeProfile?.id
       });
@@ -150,6 +156,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
       toast.success('Reading logged.');
       setShowLogModal(false);
       setLogPh(''); setLogOd(''); setLogIsBlank(false);
+      setLogGramStaining(''); setLogMicroscopic(''); setLogDilution('');
       fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -283,7 +290,9 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
                      <th className="px-4 py-3">Time</th>
                      <th className="px-4 py-3">pH</th>
                      <th className="px-4 py-3">OD 600nm</th>
-                     <th className="px-4 py-3">Type</th>
+                     <th className="px-4 py-3">Dilution</th>
+                     <th className="px-4 py-3">Gram / Microscopic</th>
+                     <th className="px-4 py-3">Status</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
@@ -292,6 +301,11 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
                        <td className="px-4 py-3 text-slate-500 font-medium">{dayjs(r.logged_at).format('DD MMM HH:mm')}</td>
                        <td className="px-4 py-3 font-bold">{r.ph || '-'}</td>
                        <td className="px-4 py-3 font-bold">{r.optical_density || '-'}</td>
+                       <td className="px-4 py-3 text-slate-600">{r.dilution_factor ? `1:${r.dilution_factor}` : '-'}</td>
+                       <td className="px-4 py-3">
+                         <div className="text-xs font-semibold text-slate-700">{r.gram_staining || '-'}</div>
+                         <div className="text-xs text-slate-500">{r.microscopic_test || ''}</div>
+                       </td>
                        <td className="px-4 py-3">
                          {r.is_blank ? <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">BLANK</span> : <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-bold">SAMPLE</span>}
                        </td>
@@ -336,7 +350,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-black text-slate-900 mb-4">Log Sample</h3>
             
-            <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">pH</label>
                 <input type="number" step="0.01" value={logPh} onChange={e=>setLogPh(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
@@ -345,7 +359,24 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
                 <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">OD 600nm</label>
                 <input type="number" step="0.01" value={logOd} onChange={e=>setLogOd(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
               </div>
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Dilution Factor (e.g. 100)</label>
+                <input type="number" step="1" value={logDilution} onChange={e=>setLogDilution(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Gram Staining</label>
+                <select value={logGramStaining} onChange={e=>setLogGramStaining(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  <option value="">-- Optional --</option>
+                  <option value="Gram Positive">Gram Positive</option>
+                  <option value="Gram Negative">Gram Negative</option>
+                  <option value="Mixed">Mixed</option>
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Microscopic Test Notes</label>
+                <input type="text" value={logMicroscopic} onChange={e=>setLogMicroscopic(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Clear, normal morphology..." />
+              </div>
+              <label className="col-span-2 flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none">
                 <input type="checkbox" checked={logIsBlank} onChange={e=>setLogIsBlank(e.target.checked)} className="w-4 h-4 text-navy rounded border-slate-300" />
                 This is a BLANK flask reading
               </label>
@@ -353,7 +384,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
             
             <div className="flex gap-3">
               <button onClick={() => setShowLogModal(false)} className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold">Cancel</button>
-              <button onClick={submitReading} disabled={saving || (!logPh && !logOd)} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold disabled:opacity-50">Save Reading</button>
+              <button onClick={submitReading} disabled={saving || (!logPh && !logOd && !logGramStaining && !logMicroscopic)} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold disabled:opacity-50">Save Reading</button>
             </div>
           </div>
         </div>
