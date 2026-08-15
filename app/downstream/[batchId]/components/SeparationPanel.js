@@ -175,7 +175,7 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
       <div className="card p-5 space-y-4">
         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Drying & Total Yield</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div><label className="field-label">Total Wt (Straining + Centrifuge) (g)</label><input type="number" step="0.1" {...register('total_weight_obtained_g')} className="field-input"/></div>
+          <div><label className="field-label">Total Wt Obtained (g)</label><input type="number" step="0.1" {...register('total_weight_obtained_g')} className="field-input"/></div>
           <div><label className="field-label">Drying Temp (°C)</label><input type="number" step="0.1" {...register('drying_temp_c')} className="field-input"/></div>
           <div><label className="field-label">Drying Duration (hrs)</label><input type="number" step="0.1" {...register('drying_duration_hrs')} className="field-input"/></div>
           <div><label className="field-label">Dry Pellet Wt (g)</label><input type="number" step="0.1" {...register('dry_pellet_wt_g')} className="field-input"/></div>

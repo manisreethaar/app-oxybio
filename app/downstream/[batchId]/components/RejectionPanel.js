@@ -32,9 +32,9 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
     if (!activeFlask?.id) return;
     let isCurrent = true;
     try {
-      const [{ data }, mediaPrep] = await withTimeout(Promise.all([
+      const [{ data }, mediaPrepIngredients] = await withTimeout(Promise.all([
         supabase.from('batch_flask_rejection_record').select('*').eq('flask_id', activeFlask.id).maybeSingle(),
-        supabase.from('batch_stage_media_prep').select('ragi_lot_id, kavuni_lot_id').eq('batch_id', batch.id).maybeSingle(),
+        supabase.from('batch_media_prep_ingredients').select('stock_id, item_name').eq('batch_id', batch.id),
       ]), 45000, 'Rejection record load timed out');
       if (!isCurrent) return;
       if (data) {
@@ -45,13 +45,15 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
         setRecord(null);
         setValue('stage', activeFlask.current_stage || '');
       }
-      // Build lot list from media prep
-      const lotIds = [mediaPrep.data?.ragi_lot_id, mediaPrep.data?.kavuni_lot_id].filter(Boolean);
-      if (lotIds.length) {
+      // Build lot list from every BOM ingredient used in Media Prep (not just
+      // ragi/kavuni — any raw material lot can be implicated in a rejection).
+      const lotRows = (mediaPrepIngredients.data || []).filter(r => r.stock_id);
+      if (lotRows.length) {
         const { data: lots } = await withTimeout(supabase.from('inventory_stock')
-          .select('id, supplier_batch_number, inventory_items(name)')
-          .in('id', lotIds), 45000, 'Batch lots load timed out');
-        if (lots) setBatchLots(lots);
+          .select('id, supplier_batch_number')
+          .in('id', lotRows.map(r => r.stock_id)), 45000, 'Batch lots load timed out');
+        const nameByStockId = Object.fromEntries(lotRows.map(r => [r.stock_id, r.item_name]));
+        if (lots) setBatchLots(lots.map(l => ({ ...l, inventory_items: { name: nameByStockId[l.id] } })));
       }
     } catch (err) {
       console.error('RejectionPanel fetch error:', err);

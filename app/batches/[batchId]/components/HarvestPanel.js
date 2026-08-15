@@ -44,7 +44,6 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
   const watchFinalCultureVol = watch('finalCultureVol');
   const watchWetCellWeight = watch('wetCellWeight');
-  const watchBiomassYieldPct = watch('biomassYieldPct');
   const watchHarvestTempC = watch('harvestTempC');
   const watchCoolingTimeMins = watch('coolingTimeMins');
   const watchCellViabilityPct = watch('cellViabilityPct');
@@ -93,10 +92,11 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
 
   useEffect(() => { loadRecord(); }, [loadRecord]);
 
-  // Auto-calculate biomass yield when both values are entered
+  // Fully derived from wet cell weight + final culture volume — there is no
+  // manual-entry input for this field, it can only ever be auto-calculated.
   const autoYield = watchFinalCultureVol && watchWetCellWeight
     ? ((parseFloat(watchWetCellWeight) / (parseFloat(watchFinalCultureVol) * 1000)) * 100).toFixed(1)
-    : watchBiomassYieldPct;
+    : null;
 
   const onSubmit = async (formData, advanceTarget = null) => {
     if (!activeFlask?.id) return;
@@ -223,7 +223,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         </div>
 
         {/* Auto-calculated biomass yield */}
-        {(autoYield !== watchBiomassYieldPct || watchFinalCultureVol) && (
+        {autoYield && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0"/>
             Biomass Yield: <span className="font-black text-lg ml-1">{autoYield}%</span>
