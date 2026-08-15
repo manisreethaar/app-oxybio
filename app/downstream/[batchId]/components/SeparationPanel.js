@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import { withTimeout } from '@/lib/withTimeout';
 import { Filter, CheckCircle2 } from 'lucide-react';
+import { getStrainingWarnings } from '@/lib/batches/stageGates';
 
 export default function SeparationPanel({ batch, activeFlask, employees, employeeProfile, role, supabase, onDataSaved, onAdvanceFlaskStage, actionLoading, setGlobalError }) {
   const toast = useToast();
@@ -111,7 +112,7 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
       toast.success(advance ? `Trial ${activeFlask.flask_label} Downstream complete.` : 'Draft saved.');
       if (advance && onAdvanceFlaskStage) {
         // Now it goes directly to qc_hold
-        await onAdvanceFlaskStage('qc_hold');
+        await onAdvanceFlaskStage('qc_hold', getStrainingWarnings(data));
       } else {
         fetchRecord();
         onDataSaved();

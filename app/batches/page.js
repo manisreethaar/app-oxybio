@@ -24,6 +24,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import BatchCard from '@/components/ui/BatchCard';
 import BatchTableView from '@/components/ui/BatchTableView';
 import { SkuBadge } from '@/components/ui/BatchBadges';
+import { DOWNSTREAM_STAGE_IDS } from '@/lib/batches/workflowStages';
 
 // ─── Stage Config ────────────────────────────────────────────
 const STAGE_ORDER = [
@@ -92,7 +93,7 @@ function isScheduledBatch(batch) {
 function normalizeStage(stage) {
   if (!stage) return stage;
   const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'extract_addition';
+  if (s === 'extraction' || s === 'extract_addition') return 'straining';
   if (s === 'qc') return 'qc_hold';
   if (s === 'downstream') return 'harvest'; // fallback old alias
   return s;
@@ -167,7 +168,7 @@ export default function BatchesPage() {
     if (allRejected) return 'rejected';
     
     const activeFlasks = flasks.filter(f => normaliseStatus(f.status) !== 'rejected');
-    const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released'];
+    const FLASK_STAGE_RANK = ['inoculation', 'fermentation', 'harvest', ...DOWNSTREAM_STAGE_IDS];
     const slowestStage = activeFlasks.reduce((slowest, f) => {
       const currentStage = visibleWorkflowStage(f.current_stage);
       const r = FLASK_STAGE_RANK.indexOf(currentStage);
@@ -179,7 +180,7 @@ export default function BatchesPage() {
     if (slowestStage === 'fermentation') return 'fermenting';
     if (slowestStage === 'qc_hold') return 'qc-hold';
     if (slowestStage === 'released') return 'released';
-    if (['harvest','straining','extract_addition'].includes(slowestStage)) return 'processing';
+    if (['harvest', 'straining'].includes(slowestStage)) return 'processing';
     return status;
   };
 
@@ -774,10 +775,10 @@ export default function BatchesPage() {
                   { id: 'qc_hold', label: 'QC Hold', icon: Clock, color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' }
                 ].map(col => {
                   // Filter batches that belong to this column
-                  // "Processing" groups straining and extract_addition
+                  // "Processing" groups straining (and legacy extract_addition rows, normalized above)
                   const colBatches = displayedBatches.filter(b => {
                     const stage = getBatchEffectiveStage(b);
-                    if (col.id === 'straining') return stage === 'straining' || stage === 'extract_addition';
+                    if (col.id === 'straining') return stage === 'straining';
                     return stage === col.id;
                   });
 

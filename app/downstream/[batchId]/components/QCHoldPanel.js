@@ -8,6 +8,7 @@ import { syncStageToLNB } from '@/lib/lnbSync';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import ESignatureModal from '@/components/ui/ESignatureModal';
 import ReasonModal from '@/components/ui/ReasonModal';
+import { getQcReleaseWarnings } from '@/lib/batches/stageGates';
 
 const DEFAULT_TESTS = [
   { test_name: 'pH — Final product',               target_spec: '4.2–4.6',                    result_unit: 'pH units' },
@@ -1261,7 +1262,8 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
         isOpen={eSigModal.isOpen}
         onClose={() => setESigModal({ isOpen: false, targetAction: null })}
         onSuccess={() => {
-          onAdvanceFlaskStage(eSigModal.targetAction);
+          const warnings = eSigModal.targetAction === 'released' ? getQcReleaseWarnings({ anyFail, failCount }) : [];
+          onAdvanceFlaskStage(eSigModal.targetAction, warnings);
           setESigModal({ isOpen: false, targetAction: null });
         }}
         title={`Authorize Batch ${eSigModal.targetAction === 'released' ? 'Release' : 'Rejection'}`}

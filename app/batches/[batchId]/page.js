@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
@@ -15,7 +15,12 @@ import {
   Package
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { useRouter } from 'next/navigation';
+import {
+  DOWNSTREAM_STAGE_IDS,
+  normalizeStage,
+  visibleWorkflowStage,
+  isDownstreamStage,
+} from '@/lib/batches/workflowStages';
 const PanelLoading = () => (
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mb-4" />
@@ -48,21 +53,6 @@ const PANEL_MAP = {
   harvest: HarvestPanel,
 };
 
-// Add normalization for legacy stage names in the database
-function normalizeStage(stage) {
-  if (!stage) return stage;
-  const s = stage.toString().toLowerCase();
-  if (s === 'extraction') return 'straining'; // fallback extraction to straining since it's removed
-  if (s === 'extract_addition') return 'straining';
-  if (s === 'qc') return 'qc_hold';
-  if (s === 'downstream') return 'harvest'; // fallback old alias
-  return s;
-}
-
-function visibleWorkflowStage(stage) {
-  const norm = normalizeStage(stage);
-  return norm || '';
-}
 
 const STAGE_CHECKLIST_MAP = {
   media_prep:       'Media Preparation',
@@ -73,6 +63,8 @@ const STAGE_CHECKLIST_MAP = {
 
 export default function BatchDetailPage() {
   const { batchId }  = useParams();
+  const searchParams = useSearchParams();
+  const preselectFlaskId = searchParams.get('flask');
   const { role, employeeProfile, canDo, loading: authLoading } = useAuth();
   const router = useRouter();
   const toast        = useToast();
@@ -94,6 +86,7 @@ export default function BatchDetailPage() {
   const [archiveReason, setArchiveReason] = useState('');
   const [pendingFlaskReject,  setPendingFlaskReject]  = useState(false);
   const [pendingFlaskAdvance, setPendingFlaskAdvance] = useState(null);
+  const [flaskAdvanceReason, setFlaskAdvanceReason] = useState('');
   const [selectedFlaskId,    setSelectedFlaskId]    = useState(null);
   const [viewingStage,       setViewingStage]       = useState(null);
   const [editingStage,       setEditingStage]       = useState(null);
@@ -164,9 +157,10 @@ export default function BatchDetailPage() {
 
   useEffect(() => {
     if (flasks.length > 0 && !selectedFlaskId) {
-      setSelectedFlaskId(flasks[0].id);
+      const preselected = preselectFlaskId && flasks.some(f => f.id === preselectFlaskId) ? preselectFlaskId : null;
+      setSelectedFlaskId(preselected || flasks[0].id);
     }
-  }, [flasks, selectedFlaskId]);
+  }, [flasks, selectedFlaskId, preselectFlaskId]);
 
   // Fetch inoculation data for overtime detection when batch is fermenting
   useEffect(() => {
@@ -214,26 +208,28 @@ export default function BatchDetailPage() {
     await supabase.from('tasks').update({ checklist: updated }).eq('id', task.id).catch(() => {});
   }, [supabase, batchId]);
 
-  const handleFlaskTransition = useCallback((flaskId, toStage) => {
+  const handleFlaskTransition = useCallback((flaskId, toStage, warnings = []) => {
     if (toStage === 'released' && lnbCount === 0) {
       toast.warn('Cannot release — Lab Notebook is empty.');
       return;
     }
     const flask = flasks.find(f => f.id === flaskId);
-    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage, fromStage: flask?.current_stage });
+    setFlaskAdvanceReason('');
+    setPendingFlaskAdvance({ flaskId, flaskLabel: flask?.flask_label || flaskId, toStage, fromStage: flask?.current_stage, warnings });
   }, [flasks, lnbCount, toast]);
 
   const confirmFlaskAdvance = useCallback(async () => {
     if (!pendingFlaskAdvance) return;
     setGlobalError(null);
-    const { flaskId, toStage, fromStage } = pendingFlaskAdvance;
+    const { flaskId, toStage, fromStage, warnings = [] } = pendingFlaskAdvance;
+    if (warnings.length > 0 && !flaskAdvanceReason.trim()) return;
     setActionLoading(true);
     try {
       const res = await withTimeout(
         fetch(`/api/batches/${batchId}/flask-stage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage }),
+          body: JSON.stringify({ flask_id: flaskId, from_stage: fromStage, to_stage: toStage, override_reason: flaskAdvanceReason.trim() || null }),
         }),
         15000,
         'Server took too long to respond. Please try again.'
@@ -244,17 +240,18 @@ export default function BatchDetailPage() {
       }
 
       setPendingFlaskAdvance(null);
+      setFlaskAdvanceReason('');
       toast.success(`Trial advanced to ${toStage.replace(/_/g, ' ')}.`);
       setViewingStage(null);
       setEditingStage(null);
       tickTaskChecklist(fromStage).catch(() => {});
       fetchAll();
-    } catch (err) { 
+    } catch (err) {
       setGlobalError(err.message);
-      toast.error(err.message); 
+      toast.error(err.message);
     }
     finally { setActionLoading(false); }
-  }, [pendingFlaskAdvance, batchId, toast, fetchAll, tickTaskChecklist]);
+  }, [pendingFlaskAdvance, flaskAdvanceReason, batchId, toast, fetchAll, tickTaskChecklist]);
 
   const handleStageTransition = useCallback(async (toStage) => {
     if (actionLoading) return;
@@ -393,12 +390,12 @@ export default function BatchDetailPage() {
   const isTerminal  = ['released', 'rejected'].includes(batch.status);
   
   const POST_STERILISATION_STAGES = [
-    'inoculation', 'fermentation', 'harvest', 
-    'straining', 'extract_addition', 'qc_hold', 'released', 'rejected'
+    'inoculation', 'fermentation', 'harvest',
+    ...DOWNSTREAM_STAGE_IDS,
   ];
   const isPostSterilisation = !isScheduled && POST_STERILISATION_STAGES.includes(batch.current_stage);
 
-  const FLASK_STAGE_RANK = ['inoculation','fermentation','harvest','straining','extract_addition','qc_hold','released','rejected'];
+  const FLASK_STAGE_RANK = ['inoculation', 'fermentation', 'harvest', ...DOWNSTREAM_STAGE_IDS];
   const derivedStatus = (() => {
     if (isTerminal) return batch.status;
     if (isScheduled) return 'scheduled';
@@ -413,7 +410,7 @@ export default function BatchDetailPage() {
     if (slowestStage === 'fermentation') return 'fermenting';
     if (slowestStage === 'qc_hold') return 'qc-hold';
     if (slowestStage === 'released') return 'released';
-    if (['harvest','straining','extract_addition'].includes(slowestStage)) return 'processing';
+    if (['harvest', 'straining'].includes(slowestStage)) return 'processing';
     return batch.status;
   })();
 
@@ -463,7 +460,7 @@ export default function BatchDetailPage() {
         <ArrowLeft className="w-3.5 h-3.5 mr-1"/> Back to Registry
       </Link>
 
-      {lnbCount === 0 && ['qc_hold','straining','extract_addition'].includes(batch.current_stage) && (
+      {lnbCount === 0 && ['qc_hold', 'straining'].includes(batch.current_stage) && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 mb-4">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0"/>
           <div className="flex-1">
@@ -563,7 +560,7 @@ export default function BatchDetailPage() {
                   const sFlask = flasks.find(f => f.id === selectedFlaskId) || flasks[0];
                   const flaskStageIdx = sFlask ? STAGES.findIndex(s => s.id === visibleWorkflowStage(sFlask.current_stage)) : -1;
                   const eIdx = flaskStageIdx >= 0 ? flaskStageIdx : 
-                    ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(normalizeStage(sFlask?.current_stage)) ? 99 : 2;
+                    isDownstreamStage(sFlask?.current_stage) ? 99 : 2;
                   done = idx < eIdx;
                   curr = idx === eIdx;
                 } else {
@@ -805,7 +802,7 @@ export default function BatchDetailPage() {
                   employeeProfile={employeeProfile} supabase={supabase}
                   onDataSaved={fetchAll}
                   onAdvanceStage={handleDirectTransition}
-                  onAdvanceFlaskStage={selectedFlask ? (toStage) => handleFlaskTransition(selectedFlask.id, toStage) : null}
+                  onAdvanceFlaskStage={selectedFlask ? (toStage, warnings) => handleFlaskTransition(selectedFlask.id, toStage, warnings) : null}
                   actionLoading={actionLoading}
                   setGlobalError={setGlobalError}
                   readOnly={!!viewingStage && editingStage !== viewingStage}
@@ -813,12 +810,14 @@ export default function BatchDetailPage() {
                 />
               </ErrorBoundary>
             </div>
-          ) : ['straining', 'extract_addition', 'qc_hold', 'released', 'rejected'].includes(normalizedBatchStage) ? (
+          ) : displayStage && isDownstreamStage(displayStage) ? (
             <div className="card p-8 text-center bg-slate-50 border-slate-200">
               <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-black text-slate-700 mb-2">Downstream Stage</h3>
-              <p className="text-sm text-slate-500 mb-6">This batch is currently in <span className="font-bold text-slate-700 uppercase">{normalizedBatchStage.replace('_', ' ')}</span>. Data collection for this stage is managed in the Downstream module.</p>
-              <Link href={`/downstream/${batch.id}`} className="inline-flex items-center px-6 py-2.5 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover transition-colors shadow-sm">
+              <p className="text-sm text-slate-500 mb-6">
+                {selectedFlask ? <>Trial <span className="font-bold text-slate-700">{selectedFlask.flask_label}</span> is</> : 'This batch is'} currently in <span className="font-bold text-slate-700 uppercase">{displayStage.replace('_', ' ')}</span>. Data collection for this stage is managed in the Downstream module.
+              </p>
+              <Link href={`/downstream/${batch.id}${selectedFlask ? `?flask=${selectedFlask.id}` : ''}`} className="inline-flex items-center px-6 py-2.5 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover transition-colors shadow-sm">
                 Open in Downstream Module <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </div>
@@ -890,6 +889,22 @@ export default function BatchDetailPage() {
               <span className="font-black uppercase">{pendingFlaskAdvance.toStage.replace(/_/g,' ')}</span>
             </p>
             <p className="text-xs text-slate-400 text-center mb-5">This cannot be undone without admin intervention.</p>
+            {pendingFlaskAdvance.warnings?.length > 0 && (
+              <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-lg p-3 text-xs font-bold mb-3">
+                <p className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 shrink-0" /> Incomplete data:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {pendingFlaskAdvance.warnings.map((w) => <li key={w}>{w}</li>)}
+                </ul>
+                <label className="block mt-2 text-xs font-black text-slate-700 uppercase tracking-wider">Reason to proceed anyway (required)</label>
+                <textarea
+                  value={flaskAdvanceReason}
+                  onChange={(e) => setFlaskAdvanceReason(e.target.value)}
+                  className="field-input mt-1 text-xs"
+                  rows={2}
+                  placeholder="Why is it OK to advance without this data?"
+                />
+              </div>
+            )}
             {globalError && (
               <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold flex items-center gap-2 mb-4">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -898,7 +913,7 @@ export default function BatchDetailPage() {
             )}
             <div className="flex gap-3">
               <button onClick={() => { setPendingFlaskAdvance(null); setGlobalError(null); }} className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
-              <button onClick={confirmFlaskAdvance} disabled={actionLoading} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
+              <button onClick={confirmFlaskAdvance} disabled={actionLoading || (pendingFlaskAdvance.warnings?.length > 0 && !flaskAdvanceReason.trim())} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:bg-navy-hover transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
                 {actionLoading ? <Loader className="w-4 h-4 animate-spin"/> : `Advance ${pendingFlaskAdvance.flaskLabel}`}
               </button>
             </div>
