@@ -391,11 +391,14 @@ export default function BatchesPage() {
   }, [toast]);
 
   const fetchFormulations = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('formulations')
       .select('id, name, code, version, status')
-      .eq('status', 'Approved')
+      .ilike('status', 'approved')
+      .is('archived_at', null)
       .order('name');
+      
+    if (error) console.error("fetchFormulations error:", error);
     if (data) setFormulations(data);
   }, [supabase]);
 
