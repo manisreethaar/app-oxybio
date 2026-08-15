@@ -25,7 +25,9 @@ export default function ProtocolSetupPanel({ batch, supabase, onComplete }) {
   }, [supabase, toast]);
 
   const handleSave = async () => {
-    if (!sopId) return toast.warn('Please select a protocol document.');
+    if (!sopId) {
+      if (!confirm('No protocol selected. Are you sure you want to start the seed train without linking an SOP?')) return;
+    }
     setSaving(true);
     try {
       const { error: seedErr } = await supabase.from('batch_seed_trains').insert({
@@ -78,7 +80,7 @@ export default function ProtocolSetupPanel({ batch, supabase, onComplete }) {
        
        <button 
          onClick={handleSave} 
-         disabled={saving || !sopId} 
+         disabled={saving} 
          className="w-full py-3 bg-navy text-white font-black rounded-xl hover:bg-navy-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
        >
          {saving ? <Loader className="w-5 h-5 animate-spin"/> : <>Confirm & Start Seed Train <ArrowRight className="w-5 h-5"/></>}

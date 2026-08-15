@@ -169,9 +169,12 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
     if (!confirm(`Are you sure you want to transfer this to ${nextStage.replace('_', ' ').toUpperCase()}?`)) return;
     setSaving(true);
     try {
-      await supabase.from('batch_seed_trains').insert({ batch_id: batch.id, stage_type: nextStage, status: 'active' });
-      await supabase.from('batch_seed_trains').update({ status: 'completed' }).eq('id', data.id);
-      await supabase.from('batches').update({ current_stage: nextStage }).eq('id', batch.id);
+      const { error: e1 } = await supabase.from('batch_seed_trains').insert({ batch_id: batch.id, stage_type: nextStage, status: 'active' });
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from('batch_seed_trains').update({ status: 'completed' }).eq('id', data.id);
+      if (e2) throw e2;
+      const { error: e3 } = await supabase.from('batches').update({ current_stage: nextStage }).eq('id', batch.id);
+      if (e3) throw e3;
       
       toast.success(`Transferred to ${nextStage.replace('_', ' ').toUpperCase()}`);
       onComplete();

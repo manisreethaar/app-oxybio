@@ -23,7 +23,7 @@ export async function GET(request) {
     const supabase = createClient();
     const { searchParams } = new URL(request.url);
     const includeArchived = searchParams.get('include_archived') === 'true';
-    let q = supabase.from('equipment').select('*, calibration_logs(*)').order('name');
+    let q = supabase.from('equipment').select('*').order('name');
     if (!includeArchived) q = q.is('archived_at', null);
     const { data, error } = await q;
 

@@ -334,7 +334,8 @@ export async function GET(request) {
           batch_flasks(id, flask_label, status, current_stage)
         `)
         .not('archived_at', 'is', null)
-        .order('archived_at', { ascending: false }),
+        .order('archived_at', { ascending: false })
+        .limit(30),
     ]);
 
     if (activeRes.error) throw activeRes.error;

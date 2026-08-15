@@ -188,13 +188,14 @@ export default function ProductionPhasePanel({ batch, employees, employeeProfile
     if (!confirm(`Are you sure you want to harvest ${currentLabel} and send it to Downstream?`)) return;
     setSaving(true);
     try {
-      const { error } = await supabase.rpc('advance_flask_stage', {
+      const { data, error } = await supabase.rpc('advance_flask_stage', {
         p_flask_id: flaskId,
         p_batch_id: batch.id,
         p_to_stage: 'straining',
         p_employee_id: employeeProfile.id
       });
       if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error);
       toast.success(`${currentLabel} Harvested!`);
       fetchData();
     } catch (err) {
