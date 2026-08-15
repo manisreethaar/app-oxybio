@@ -45,7 +45,11 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
     try {
       // Fetch Dropdowns
       const { data: f } = await supabase.from('formulations').select('id, name, version').is('archived_at', null).order('name');
-      const { data: v } = await supabase.from('cell_bank_vials').select('id, vial_label').order('vial_label');
+      // cell_bank_vials has no vial_label column — it's vial_code. This
+      // query previously errored silently on the unknown column, which
+      // left the dropdown permanently empty. Also only offer vials that
+      // haven't already been consumed.
+      const { data: v } = await supabase.from('cell_bank_vials').select('id, vial_code').eq('status', 'Available').order('vial_code');
       setFormulations(f || []);
       setVials(v || []);
 
@@ -225,7 +229,7 @@ export default function SeedPhasePanel({ batch, stageType, employees, employeePr
               <label className="block text-xs font-bold text-slate-500 mb-1">Select Cell Bank Vial</label>
               <select {...register('cellBankVialId')} className="w-full px-3 py-2 border rounded-lg text-sm">
                 <option value="">-- Select Vial --</option>
-                {vials.map(v => <option key={v.id} value={v.id}>{v.vial_label}</option>)}
+                {vials.map(v => <option key={v.id} value={v.id}>{v.vial_code}</option>)}
               </select>
             </div>
           )}

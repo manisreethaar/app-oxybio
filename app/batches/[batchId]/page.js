@@ -64,12 +64,15 @@ export default function BatchDetailsPage({ params: { batchId } }) {
   if (loading) return <div className="p-8 text-center text-slate-400 animate-pulse">Loading batch...</div>;
   if (!batch) return <div className="p-8 text-center text-red-500 font-bold">Batch not found.</div>;
 
-  // Derive active phase. Flasks existing is the reliable signal that we're
-  // past Seed Train setup — batch.current_stage rolls up to flask-level
-  // values (inoculation, fermentation, ...) once flasks start advancing,
-  // so it can't be trusted alone once Production Explosion has run.
+  // Derive active phase. batch.current_stage === 'production' covers the
+  // window right after "Transfer to Production" (no flasks yet — that's
+  // the Production Explosion Setup screen). flasks.length > 0 covers
+  // everything after that: advance_flask_stage() rolls batches.current_stage
+  // up to flask-level values (inoculation, fermentation, ...) once flasks
+  // start advancing, so current_stage alone can't be trusted once flasks
+  // exist — both checks are needed, not just one.
   let activePhase;
-  if (flasks.length > 0) {
+  if (flasks.length > 0 || batch.current_stage === 'production') {
     activePhase = 'production';
   } else if (['seed_1', 'seed_2', 'seed_3'].includes(batch.current_stage)) {
     activePhase = batch.current_stage;
