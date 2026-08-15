@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -122,6 +122,7 @@ const batchSchema = z.object({
 export default function BatchesPage() {
   const { employeeProfile, role, isAdmin, canDo, loading: authLoading } = useAuth();
   const toast = useToast();
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
   const [activeBatches,    setActiveBatches]    = useState([]);
@@ -522,6 +523,11 @@ export default function BatchesPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to start batch');
       toast.success('Batch started — set up the protocol to begin the Seed Train.');
       fetchBatches();
+      // Invalidate Next.js's client Router Cache (next.config.mjs sets a
+      // 30s staleTimes.dynamic window) — without this, navigating into the
+      // batch we just started can reuse a cached pre-start render instead
+      // of picking up the new status/stage.
+      router.refresh();
       setStatusFilter('active');
     } catch (err) {
       toast.error(err.message);
