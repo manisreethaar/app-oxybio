@@ -1,73 +1,74 @@
-import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+import { createClient as createAnonClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { isMasterAdmin } from '@/lib/permissions';
+import { canOperateBatch } from '@/lib/batches/stagePolicy';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 export async function POST(request) {
   try {
-    const { batchId, formData } = await request.json();
-    if (!batchId || !formData) return NextResponse.json({ error: 'Missing data' }, { status: 400 });
-
-    const ingredients = formData.ingredients || [];
-    
-    // Deduct each ingredient from inventory_stock
-    for (const ing of ingredients) {
-      if (!ing.stock_id || !ing.amount) continue;
-      
-      const { data: stock, error: fetchErr } = await supabase
-        .from('inventory_stock')
-        .select('current_quantity')
-        .eq('id', ing.stock_id)
-        .single();
-        
-      if (fetchErr || !stock) throw new Error(`Stock not found for ${ing.stock_id}`);
-      
-      const amountToDeduct = parseFloat(ing.amount);
-      if (isNaN(amountToDeduct) || amountToDeduct <= 0) continue;
-      
-      if (stock.current_quantity < amountToDeduct) {
-        throw new Error(`Insufficient stock for ingredient ID ${ing.stock_id}. Has ${stock.current_quantity}, requested ${amountToDeduct}`);
-      }
-      
-      const { error: updErr } = await supabase
-        .from('inventory_stock')
-        .update({ current_quantity: stock.current_quantity - amountToDeduct })
-        .eq('id', ing.stock_id);
-        
-      if (updErr) throw new Error(`Failed to deduct stock for ${ing.stock_id}`);
+    const authClient = createAnonClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Update batch notes with formulation record
-    const { data: batch, error: bErr } = await supabase.from('batches').select('notes').eq('id', batchId).single();
-    if (bErr) throw new Error('Batch not found');
+    const { batchId, formData } = await request.json();
+    if (!batchId || !formData) {
+      return NextResponse.json({ success: false, error: 'Missing data' }, { status: 400 });
+    }
 
-    const formulationRecord = `
-[RTD Formulation Log - ${new Date().toISOString()}]
-Target Volume: ${formData.target_volume} ml
-Target pH: ${formData.target_ph}
-Target Brix: ${formData.target_brix}
-Ingredients Consumed:
-${ingredients.map(i => `- Stock ID: ${i.stock_id}, Amount: ${i.amount}`).join('\n')}
-Process Notes: ${formData.notes}
-----------------------------------------`;
+    const db = adminClient();
+    const { data: emp } = await db.from('employees').select('id, role').eq('email', user.email).single();
+    if (!emp) {
+      return NextResponse.json({ success: false, error: 'Employee profile not found.' }, { status: 404 });
+    }
 
-    const newNotes = batch.notes ? `${batch.notes}\n${formulationRecord}` : formulationRecord;
-
-    const { error: updBatchErr } = await supabase
+    const { data: batch, error: batchErr } = await db
       .from('batches')
-      .update({
-        notes: newNotes,
-        planned_volume_ml: formData.target_volume
-      })
-      .eq('id', batchId);
+      .select('id, assigned_team, created_by')
+      .eq('id', batchId)
+      .single();
+    if (batchErr || !batch) {
+      return NextResponse.json({ success: false, error: 'Batch not found.' }, { status: 404 });
+    }
 
-    if (updBatchErr) throw new Error('Failed to update batch');
+    const access = canOperateBatch({ batch, employee: emp, isMaster: isMasterAdmin(user.email) });
+    if (!access.allowed) {
+      return NextResponse.json({ success: false, error: access.error }, { status: 403 });
+    }
 
-    return NextResponse.json({ success: true });
+    const ingredients = (formData.ingredients || [])
+      .filter((ing) => ing.stock_id && ing.amount)
+      .map((ing) => ({ stock_id: ing.stock_id, amount: ing.amount }));
+
+    const { data: rpcResult, error: rpcErr } = await db.rpc('record_product_development_formulation', {
+      p_batch_id: batchId,
+      p_employee_id: emp.id,
+      p_target_volume_ml: formData.target_volume || null,
+      p_target_ph: formData.target_ph || null,
+      p_target_brix: formData.target_brix || null,
+      p_notes: formData.notes || null,
+      p_ingredients: ingredients,
+    });
+
+    if (rpcErr) {
+      return NextResponse.json({ success: false, error: rpcErr.message }, { status: 500 });
+    }
+    if (!rpcResult.success) {
+      return NextResponse.json({ success: false, error: rpcResult.error }, { status: 409 });
+    }
+
+    return NextResponse.json({ success: true, formulation_id: rpcResult.formulation_id });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Product Development Consume Error:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

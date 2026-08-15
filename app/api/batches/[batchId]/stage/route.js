@@ -29,7 +29,7 @@ function adminClient() {
 async function gateMediaPrepToSterilisation(supabase, batchId) {
   const { data } = await supabase
     .from('batch_stage_media_prep')
-    .select('is_complete, ragi_moisture_pass')
+    .select('is_complete')
     .eq('batch_id', batchId)
     .single();
   if (!data?.is_complete) return 'Media Prep is not marked complete. Save and mark complete before advancing.';

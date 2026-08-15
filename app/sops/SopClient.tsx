@@ -8,7 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search, Trash2, Users, Download, UploadCloud, FileText, Calendar, ShieldCheck, Check } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, ExternalLink, Mail, X, Search, Trash2, Users, Download, UploadCloud, FileText, Calendar, ShieldCheck, Check, Lock } from 'lucide-react';
 import Skeleton from '@/components/Skeleton';
 import SecureViewerModal from '@/components/ui/SecureViewerModal';
 import ESignatureModal from '@/components/ui/ESignatureModal';
@@ -344,7 +344,7 @@ export default function SopClient({ initialSops }: { initialSops: any[] }) {
           </div>
           <div className="divide-y divide-slate-100">
             {filteredSops.length === 0 ? (
-              <div className="p-8 text-center text-sm font-bold text-slate-400">You haven't completed any training yet.</div>
+              <div className="p-8 text-center text-sm font-bold text-slate-400">You haven&apos;t completed any training yet.</div>
             ) : filteredSops.map((sop: any) => (
               <div key={sop.id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50 transition-colors">
                 <div>

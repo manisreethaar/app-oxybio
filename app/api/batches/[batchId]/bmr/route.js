@@ -38,7 +38,7 @@ export async function GET(request, { params }) {
     // 3. Fetch ALL stage data in parallel (service role — no RLS blocking)
     const [
       batchRes, flasksRes, mediaPrepRes, sterilRes,
-      inocuRes, ferReadRes, ferEpRes, strainRes, extractRes,
+      inocuRes, ferReadRes, ferEpRes, harvestRes, strainRes, extractRes,
       qcSampleRes, rejectionRes, inventoryUsageRes, incubationRes
     ] = await Promise.all([
       db.from('batches').select('*, formulations(name, code, version, base_volume_ml)').eq('id', batchId).single(),
@@ -48,6 +48,7 @@ export async function GET(request, { params }) {
       db.from('batch_flask_inoculations').select('*').eq('batch_id', batchId),
       db.from('batch_fermentation_readings').select('*').eq('batch_id', batchId).order('logged_at'),
       db.from('batch_flask_endpoints').select('*').eq('batch_id', batchId),
+      db.from('batch_stage_harvest').select('*').eq('batch_id', batchId),
       db.from('batch_flask_straining').select('*').eq('batch_id', batchId),
       db.from('batch_flask_extract_addition').select('*').eq('batch_id', batchId),
       db.from('batch_flask_qc_samples').select('*').eq('batch_id', batchId),
@@ -101,6 +102,7 @@ export async function GET(request, { params }) {
       flaskInoculations: inocuRes.data      || [],
       flaskReadings:     ferReadRes.data    || [],
       flaskEndpoints:    ferEpRes.data      || [],
+      flaskHarvest:      harvestRes.data    || [],
       flaskStraining:    strainRes.data     || [],
       flaskExtracts:     extractRes.data    || [],
       flaskQCSamples:    qcSampleRes.data   || [],
