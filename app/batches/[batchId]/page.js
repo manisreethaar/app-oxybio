@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { ArrowLeft, RefreshCw, Beaker, FileText, CheckCircle2 } from 'lucide-react';
@@ -17,6 +17,7 @@ export default function BatchDetailsPage({ params: { batchId } }) {
   const { employeeProfile, employees } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const supabase = useMemo(() => createClient(), []);
 
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
