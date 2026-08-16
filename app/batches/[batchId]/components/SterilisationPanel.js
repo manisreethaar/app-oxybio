@@ -197,7 +197,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           calibration_date: new Date().toISOString().slice(0, 10),
           result: `Used in batch ${batch.batch_id}`,
           status: 'Operational',
-          performed_by: employeeProfile?.id || null,
+          logged_by: employeeProfile?.id || null,
         }).then(() => {}).catch(() => {});
       }
 
