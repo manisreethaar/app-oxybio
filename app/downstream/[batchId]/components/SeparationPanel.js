@@ -173,188 +173,162 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
         )}
       </div>
 
+
       <div className="card p-5 space-y-4">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Freezing & Thawing</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">1. Freezing & Thawing</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="field-label">Freezing Time (hrs)</label><input type="number" step="0.1" {...register('freezing_time_hrs')} className="field-input" placeholder="e.g. 24"/></div>
-          <div><label className="field-label">Thawing Time (hrs)</label><input type="number" step="0.1" {...register('thawing_time_hrs')} className="field-input" placeholder="e.g. 12"/></div>
-        </div>
-      </div>
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
-          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs mr-2">1</span>
-          Freezing & Thawing
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Freezer Equipment</label>
-            <select {...register('freezer_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+          <div className="sm:col-span-2">
+            <label className="field-label">Freezer Equipment</label>
+            <select {...register('freezer_equipment_id')} disabled={isLocked} className="field-input bg-white disabled:bg-slate-50">
               <option value="">Select Freezer...</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Freezing Start</label>
-              <input type="datetime-local" {...register('freezing_start_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Freezing End</label>
-              <input type="datetime-local" {...register('freezing_end_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
-            </div>
+          <div>
+            <label className="field-label">Freezing Start</label>
+            <input type="datetime-local" {...register('freezing_start_time')} disabled={isLocked} className="field-input disabled:bg-slate-50" />
           </div>
-          <div className="grid grid-cols-2 gap-2 md:col-span-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Thawing Start</label>
-              <input type="datetime-local" {...register('thawing_start_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Thawing End</label>
-              <input type="datetime-local" {...register('thawing_end_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
-            </div>
+          <div>
+            <label className="field-label">Freezing End</label>
+            <input type="datetime-local" {...register('freezing_end_time')} disabled={isLocked} className="field-input disabled:bg-slate-50" />
+          </div>
+          <div>
+            <label className="field-label">Thawing Start</label>
+            <input type="datetime-local" {...register('thawing_start_time')} disabled={isLocked} className="field-input disabled:bg-slate-50" />
+          </div>
+          <div>
+            <label className="field-label">Thawing End</label>
+            <input type="datetime-local" {...register('thawing_end_time')} disabled={isLocked} className="field-input disabled:bg-slate-50" />
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
-          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs mr-2">2</span>
-          Filtration
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-4">
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Filtration Equipment</label>
-            <select {...register('filtration_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+      <div className="card p-5 space-y-4">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">2. Filtration</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-3">
+            <label className="field-label">Filtration Equipment</label>
+            <select {...register('filtration_equipment_id')} disabled={isLocked} className="field-input bg-white disabled:bg-slate-50">
               <option value="">Select Filter...</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Pre-Filtration Vol (mL)</label>
-            <input type="number" step="any" {...register('pre_filtration_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 1000" />
+            <label className="field-label">Pre-Filtration Vol (mL)</label>
+            <input type="number" step="any" {...register('pre_filtration_vol_ml')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 1000" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Post-Filtration Vol (mL)</label>
-            <input type="number" step="any" {...register('post_filtration_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 850" />
+            <label className="field-label">Post-Filtration Vol (mL)</label>
+            <input type="number" step="any" {...register('post_filtration_vol_ml')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 850" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Solid Weight Obtained (g)</label>
-            <input type="number" step="any" {...register('filtration_solid_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 15.5" />
+            <label className="field-label">Solid Weight Obtained (g)</label>
+            <input type="number" step="any" {...register('filtration_solid_wt_g')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 15.5" />
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
-          <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs mr-2">3</span>
-          Centrifugation
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="md:col-span-2 lg:col-span-3">
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Centrifuge Equipment</label>
-            <select {...register('centrifuge_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+      <div className="card p-5 space-y-4">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">3. Centrifugation</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-3">
+            <label className="field-label">Centrifuge Equipment</label>
+            <select {...register('centrifuge_equipment_id')} disabled={isLocked} className="field-input bg-white disabled:bg-slate-50">
               <option value="">Select Centrifuge...</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Speed (RPM)</label>
-            <input type="number" step="any" {...register('centrifuge_rpm')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 4000" />
+            <label className="field-label">Speed (RPM)</label>
+            <input type="number" step="any" {...register('centrifuge_rpm')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 4000" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Duration (min)</label>
-            <input type="number" step="any" {...register('centrifuge_duration_min')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 30" />
+            <label className="field-label">Duration (min)</label>
+            <input type="number" step="any" {...register('centrifuge_duration_min')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 30" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Pre-Centrifuge Vol (mL)</label>
-            <input type="number" step="any" {...register('centrifuge_pre_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 850" />
+            <label className="field-label">Pre-Centrifuge Vol (mL)</label>
+            <input type="number" step="any" {...register('centrifuge_pre_vol_ml')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 850" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Post-Centrifuge Vol (mL)</label>
-            <input type="number" step="any" {...register('centrifuge_post_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 800" />
+            <label className="field-label">Post-Centrifuge Vol (mL)</label>
+            <input type="number" step="any" {...register('centrifuge_post_vol_ml')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 800" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Pellet Weight (g)</label>
-            <input type="number" step="any" {...register('centrifuge_pellet_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 45.2" />
+            <label className="field-label">Pellet Weight (g)</label>
+            <input type="number" step="any" {...register('centrifuge_pellet_wt_g')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 45.2" />
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
-          <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs mr-2">4</span>
-          Drying
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-4">
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Dryer/Oven Equipment</label>
-            <select {...register('dryer_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+      <div className="card p-5 space-y-4">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">4. Drying</p>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="sm:col-span-4">
+            <label className="field-label">Dryer/Oven Equipment</label>
+            <select {...register('dryer_equipment_id')} disabled={isLocked} className="field-input bg-white disabled:bg-slate-50">
               <option value="">Select Dryer...</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Temperature (°C)</label>
-            <input type="number" step="any" {...register('drying_temp_c')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 60" />
-          </div>
-          <div className="grid grid-cols-2 gap-2 lg:col-span-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Drying Start</label>
-              <input type="datetime-local" {...register('drying_start_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Drying End</label>
-              <input type="datetime-local" {...register('drying_end_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
-            </div>
+            <label className="field-label">Temperature (°C)</label>
+            <input type="number" step="any" {...register('drying_temp_c')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 60" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Wet Pellet Wt (g)</label>
-            <input type="number" step="any" {...register('wet_pellet_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 50" />
+            <label className="field-label">Drying Start</label>
+            <input type="datetime-local" {...register('drying_start_time')} disabled={isLocked} className="field-input disabled:bg-slate-50" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Dry Pellet Wt (g)</label>
-            <input type="number" step="any" {...register('dry_pellet_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 12" />
+            <label className="field-label">Drying End</label>
+            <input type="datetime-local" {...register('drying_end_time')} disabled={isLocked} className="field-input disabled:bg-slate-50" />
+          </div>
+          <div></div>
+          <div>
+            <label className="field-label">Wet Pellet Wt (g)</label>
+            <input type="number" step="any" {...register('wet_pellet_wt_g')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 50" />
+          </div>
+          <div>
+            <label className="field-label">Dry Pellet Wt (g)</label>
+            <input type="number" step="any" {...register('dry_pellet_wt_g')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 12" />
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
-          <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs mr-2">5</span>
-          Yield & Storage
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <label className="block text-xs font-bold text-slate-600 mb-1">Total Pellet Wt Obtained (g)</label>
-            <div className="text-2xl font-black text-navy">{totalPelletWeight} <span className="text-sm font-normal text-slate-400">g</span></div>
+      <div className="card p-5 space-y-4">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">5. Yield & Storage</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <label className="field-label">Total Pellet Wt (g)</label>
+            <div className="text-2xl font-black text-navy mt-1">{totalPelletWeight} <span className="text-sm font-normal text-slate-400">g</span></div>
             <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Derived (Filtration + Centrifuge)</p>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <label className="block text-xs font-bold text-slate-600 mb-1">Final Broth Vol (mL)</label>
-            <input type="number" step="any" {...register('final_broth_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 800" />
+          <div>
+            <label className="field-label">Final Broth Vol (mL)</label>
+            <input type="number" step="any" {...register('final_broth_vol_ml')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. 800" />
           </div>
           
-          <div className="space-y-3">
-            <h5 className="text-xs font-bold text-slate-700 border-b pb-1">Broth Storage</h5>
+          <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <h5 className="text-xs font-bold text-slate-700">Broth Storage</h5>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Equipment</label>
-              <select {...register('broth_storage_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+              <label className="field-label">Equipment</label>
+              <select {...register('broth_storage_equipment_id')} disabled={isLocked} className="field-input bg-white disabled:bg-slate-50">
                 <option value="">Select Equipment...</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Location Details</label>
-              <input type="text" {...register('broth_storage_location')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. Rack A, Shelf 2" />
+              <label className="field-label">Location Details</label>
+              <input type="text" {...register('broth_storage_location')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. Rack A, Shelf 2" />
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h5 className="text-xs font-bold text-slate-700 border-b pb-1">Pellet Storage</h5>
+          <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <h5 className="text-xs font-bold text-slate-700">Pellet Storage</h5>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Equipment</label>
-              <select {...register('pellet_storage_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+              <label className="field-label">Equipment</label>
+              <select {...register('pellet_storage_equipment_id')} disabled={isLocked} className="field-input bg-white disabled:bg-slate-50">
                 <option value="">Select Equipment...</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Location Details</label>
-              <input type="text" {...register('pellet_storage_location')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. Rack B, Shelf 1" />
+              <label className="field-label">Location Details</label>
+              <input type="text" {...register('pellet_storage_location')} disabled={isLocked} className="field-input disabled:bg-slate-50" placeholder="e.g. Rack B, Shelf 1" />
             </div>
           </div>
         </div>
