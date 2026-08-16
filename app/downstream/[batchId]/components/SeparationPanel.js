@@ -13,19 +13,29 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
   
   const form = useForm({
     defaultValues: {
-      freezing_time_hrs: '', thawing_time_hrs: '',
-      pre_straining_vol_ml: '', post_straining_vol_ml: '',
-      broth_wt_before_g: '', straining_wt_after_g: '',
-      straining_pellet_wet_wt_g: '', straining_sup_collected_ml: '',
-      centrifuge_duration_min: '', centrifuge_spins_count: '',
-      centrifuge_broth_obtained_ml: '', centrifuge_pellet_wet_wt_g: '',
-      total_weight_obtained_g: '',
-      drying_temp_c: '', drying_duration_hrs: '', dry_pellet_wt_g: '',
-      storage_broth_details: '', storage_pellet_details: '',
+      freezing_start_time: '', freezing_end_time: '', freezer_equipment_id: '',
+      thawing_start_time: '', thawing_end_time: '',
+      filtration_equipment_id: '', pre_filtration_vol_ml: '', post_filtration_vol_ml: '', filtration_solid_wt_g: '',
+      centrifuge_equipment_id: '', centrifuge_rpm: '', centrifuge_duration_min: '',
+      centrifuge_pre_vol_ml: '', centrifuge_post_vol_ml: '', centrifuge_pellet_wt_g: '',
+      total_pellet_wt_g: '', final_broth_vol_ml: '',
+      broth_storage_equipment_id: '', pellet_storage_equipment_id: '',
+      broth_storage_location: '', pellet_storage_location: '',
+      dryer_equipment_id: '', drying_temp_c: '', drying_start_time: '', drying_end_time: '',
+      wet_pellet_wt_g: '', dry_pellet_wt_g: '',
       notes: ''
     }
   });
-  const { register, handleSubmit, reset, getValues } = form;
+  const { register, handleSubmit, reset, getValues, control } = form;
+
+  const filterWeight = useWatch({ control, name: 'filtration_solid_wt_g' });
+  const centrifugeWeight = useWatch({ control, name: 'centrifuge_pellet_wt_g' });
+
+  const totalPelletWeight = useMemo(() => {
+    const f = parseFloat(filterWeight) || 0;
+    const c = parseFloat(centrifugeWeight) || 0;
+    return (f + c).toFixed(2);
+  }, [filterWeight, centrifugeWeight]);
 
   const fetchRecord = useCallback(async () => {
     if (!activeFlask?.id) return;
@@ -45,24 +55,33 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
     if (data) {
       setRecord(data);
       reset({
-        freezing_time_hrs: data.freezing_time_hrs ?? '',
-        thawing_time_hrs: data.thawing_time_hrs ?? '',
-        pre_straining_vol_ml: data.pre_straining_vol_ml ?? '',
-        post_straining_vol_ml: data.post_straining_vol_ml ?? '',
-        broth_wt_before_g: data.broth_wt_before_g ?? '',
-        straining_wt_after_g: data.straining_wt_after_g ?? '',
-        straining_pellet_wet_wt_g: data.straining_pellet_wet_wt_g ?? '',
-        straining_sup_collected_ml: data.straining_sup_collected_ml ?? '',
+        freezing_start_time: data.freezing_start_time ? new Date(data.freezing_start_time).toISOString().slice(0, 16) : '',
+        freezing_end_time: data.freezing_end_time ? new Date(data.freezing_end_time).toISOString().slice(0, 16) : '',
+        freezer_equipment_id: data.freezer_equipment_id ?? '',
+        thawing_start_time: data.thawing_start_time ? new Date(data.thawing_start_time).toISOString().slice(0, 16) : '',
+        thawing_end_time: data.thawing_end_time ? new Date(data.thawing_end_time).toISOString().slice(0, 16) : '',
+        filtration_equipment_id: data.filtration_equipment_id ?? '',
+        pre_filtration_vol_ml: data.pre_filtration_vol_ml ?? '',
+        post_filtration_vol_ml: data.post_filtration_vol_ml ?? '',
+        filtration_solid_wt_g: data.filtration_solid_wt_g ?? '',
+        centrifuge_equipment_id: data.centrifuge_equipment_id ?? '',
+        centrifuge_rpm: data.centrifuge_rpm ?? '',
         centrifuge_duration_min: data.centrifuge_duration_min ?? '',
-        centrifuge_spins_count: data.centrifuge_spins_count ?? '',
-        centrifuge_broth_obtained_ml: data.centrifuge_broth_obtained_ml ?? '',
-        centrifuge_pellet_wet_wt_g: data.centrifuge_pellet_wet_wt_g ?? '',
-        total_weight_obtained_g: data.total_weight_obtained_g ?? '',
+        centrifuge_pre_vol_ml: data.centrifuge_pre_vol_ml ?? '',
+        centrifuge_post_vol_ml: data.centrifuge_post_vol_ml ?? '',
+        centrifuge_pellet_wt_g: data.centrifuge_pellet_wt_g ?? '',
+        total_pellet_wt_g: data.total_pellet_wt_g ?? '',
+        final_broth_vol_ml: data.final_broth_vol_ml ?? '',
+        broth_storage_equipment_id: data.broth_storage_equipment_id ?? '',
+        pellet_storage_equipment_id: data.pellet_storage_equipment_id ?? '',
+        broth_storage_location: data.broth_storage_location ?? '',
+        pellet_storage_location: data.pellet_storage_location ?? '',
+        dryer_equipment_id: data.dryer_equipment_id ?? '',
         drying_temp_c: data.drying_temp_c ?? '',
-        drying_duration_hrs: data.drying_duration_hrs ?? '',
+        drying_start_time: data.drying_start_time ? new Date(data.drying_start_time).toISOString().slice(0, 16) : '',
+        drying_end_time: data.drying_end_time ? new Date(data.drying_end_time).toISOString().slice(0, 16) : '',
+        wet_pellet_wt_g: data.wet_pellet_wt_g ?? '',
         dry_pellet_wt_g: data.dry_pellet_wt_g ?? '',
-        storage_broth_details: data.storage_broth_details ?? '',
-        storage_pellet_details: data.storage_pellet_details ?? '',
         notes: data.notes ?? ''
       });
     } else { setRecord(null); reset(); }
@@ -80,34 +99,46 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
     try {
       const payload = {
         flask_id: activeFlask.id, batch_id: batch.id,
-        freezing_time_hrs: data.freezing_time_hrs ? parseFloat(data.freezing_time_hrs) : null,
-        thawing_time_hrs: data.thawing_time_hrs ? parseFloat(data.thawing_time_hrs) : null,
-        pre_straining_vol_ml: data.pre_straining_vol_ml ? parseFloat(data.pre_straining_vol_ml) : null,
-        post_straining_vol_ml: data.post_straining_vol_ml ? parseFloat(data.post_straining_vol_ml) : null,
-        broth_wt_before_g: data.broth_wt_before_g ? parseFloat(data.broth_wt_before_g) : null,
-        straining_wt_after_g: data.straining_wt_after_g ? parseFloat(data.straining_wt_after_g) : null,
-        straining_pellet_wet_wt_g: data.straining_pellet_wet_wt_g ? parseFloat(data.straining_pellet_wet_wt_g) : null,
-        straining_sup_collected_ml: data.straining_sup_collected_ml ? parseFloat(data.straining_sup_collected_ml) : null,
+        freezing_start_time: data.freezing_start_time ? new Date(data.freezing_start_time).toISOString() : null,
+        freezing_end_time: data.freezing_end_time ? new Date(data.freezing_end_time).toISOString() : null,
+        freezer_equipment_id: data.freezer_equipment_id || null,
+        thawing_start_time: data.thawing_start_time ? new Date(data.thawing_start_time).toISOString() : null,
+        thawing_end_time: data.thawing_end_time ? new Date(data.thawing_end_time).toISOString() : null,
+        filtration_equipment_id: data.filtration_equipment_id || null,
+        pre_filtration_vol_ml: data.pre_filtration_vol_ml ? parseFloat(data.pre_filtration_vol_ml) : null,
+        post_filtration_vol_ml: data.post_filtration_vol_ml ? parseFloat(data.post_filtration_vol_ml) : null,
+        filtration_solid_wt_g: data.filtration_solid_wt_g ? parseFloat(data.filtration_solid_wt_g) : null,
+        centrifuge_equipment_id: data.centrifuge_equipment_id || null,
+        centrifuge_rpm: data.centrifuge_rpm ? parseFloat(data.centrifuge_rpm) : null,
         centrifuge_duration_min: data.centrifuge_duration_min ? parseFloat(data.centrifuge_duration_min) : null,
-        centrifuge_spins_count: data.centrifuge_spins_count ? parseInt(data.centrifuge_spins_count) : null,
-        centrifuge_broth_obtained_ml: data.centrifuge_broth_obtained_ml ? parseFloat(data.centrifuge_broth_obtained_ml) : null,
-        centrifuge_pellet_wet_wt_g: data.centrifuge_pellet_wet_wt_g ? parseFloat(data.centrifuge_pellet_wet_wt_g) : null,
-        total_weight_obtained_g: data.total_weight_obtained_g ? parseFloat(data.total_weight_obtained_g) : null,
+        centrifuge_pre_vol_ml: data.centrifuge_pre_vol_ml ? parseFloat(data.centrifuge_pre_vol_ml) : null,
+        centrifuge_post_vol_ml: data.centrifuge_post_vol_ml ? parseFloat(data.centrifuge_post_vol_ml) : null,
+        centrifuge_pellet_wt_g: data.centrifuge_pellet_wt_g ? parseFloat(data.centrifuge_pellet_wt_g) : null,
+        
+        // Tier-1: Mathematically derived total
+        total_pellet_wt_g: ((parseFloat(data.filtration_solid_wt_g) || 0) + (parseFloat(data.centrifuge_pellet_wt_g) || 0)) || null,
+        
+        final_broth_vol_ml: data.final_broth_vol_ml ? parseFloat(data.final_broth_vol_ml) : null,
+        broth_storage_equipment_id: data.broth_storage_equipment_id || null,
+        pellet_storage_equipment_id: data.pellet_storage_equipment_id || null,
+        broth_storage_location: data.broth_storage_location || null,
+        pellet_storage_location: data.pellet_storage_location || null,
+        dryer_equipment_id: data.dryer_equipment_id || null,
         drying_temp_c: data.drying_temp_c ? parseFloat(data.drying_temp_c) : null,
-        drying_duration_hrs: data.drying_duration_hrs ? parseFloat(data.drying_duration_hrs) : null,
+        drying_start_time: data.drying_start_time ? new Date(data.drying_start_time).toISOString() : null,
+        drying_end_time: data.drying_end_time ? new Date(data.drying_end_time).toISOString() : null,
+        wet_pellet_wt_g: data.wet_pellet_wt_g ? parseFloat(data.wet_pellet_wt_g) : null,
         dry_pellet_wt_g: data.dry_pellet_wt_g ? parseFloat(data.dry_pellet_wt_g) : null,
-        storage_broth_details: data.storage_broth_details || null,
-        storage_pellet_details: data.storage_pellet_details || null,
         notes: data.notes || null,
         operator_id: employeeProfile?.id,
       };
 
-      const { error } = await withTimeout(
-        supabase.from('batch_flask_straining').upsert(payload, { onConflict: 'flask_id' }),
-        15000,
-        'Database save timed out. Please try again.'
-      );
-      if (error) throw error;
+      const res = await fetch('/api/downstream/separation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
 
       toast.success(advance ? `Trial ${activeFlask.flask_label} Downstream complete.` : 'Draft saved.');
       if (advance && onAdvanceFlaskStage) {
@@ -149,45 +180,187 @@ export default function SeparationPanel({ batch, activeFlask, employees, employe
           <div><label className="field-label">Thawing Time (hrs)</label><input type="number" step="0.1" {...register('thawing_time_hrs')} className="field-input" placeholder="e.g. 12"/></div>
         </div>
       </div>
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
+        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
+          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs mr-2">1</span>
+          Freezing & Thawing
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Freezer Equipment</label>
+            <select {...register('freezer_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+              <option value="">Select Freezer...</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Freezing Start</label>
+              <input type="datetime-local" {...register('freezing_start_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Freezing End</label>
+              <input type="datetime-local" {...register('freezing_end_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 md:col-span-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Thawing Start</label>
+              <input type="datetime-local" {...register('thawing_start_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Thawing End</label>
+              <input type="datetime-local" {...register('thawing_end_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div className="card p-5 space-y-4">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Straining Details</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div><label className="field-label">Volume Before (ml)</label><input type="number" step="0.1" {...register('pre_straining_vol_ml')} className="field-input"/></div>
-          <div><label className="field-label">Volume After (ml)</label><input type="number" step="0.1" {...register('post_straining_vol_ml')} className="field-input"/></div>
-          <div><label className="field-label">Weight Before (g)</label><input type="number" step="0.1" {...register('broth_wt_before_g')} className="field-input"/></div>
-          <div><label className="field-label">Weight After (g)</label><input type="number" step="0.1" {...register('straining_wt_after_g')} className="field-input"/></div>
-          <div><label className="field-label">Pellet Wet Weight (g)</label><input type="number" step="0.1" {...register('straining_pellet_wet_wt_g')} className="field-input"/></div>
-          <div><label className="field-label">Supernatant Collected (ml)</label><input type="number" step="0.1" {...register('straining_sup_collected_ml')} className="field-input"/></div>
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
+        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
+          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs mr-2">2</span>
+          Filtration
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-4">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Filtration Equipment</label>
+            <select {...register('filtration_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+              <option value="">Select Filter...</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Pre-Filtration Vol (mL)</label>
+            <input type="number" step="any" {...register('pre_filtration_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 1000" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Post-Filtration Vol (mL)</label>
+            <input type="number" step="any" {...register('post_filtration_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 850" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Solid Weight Obtained (g)</label>
+            <input type="number" step="any" {...register('filtration_solid_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 15.5" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
+        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
+          <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs mr-2">3</span>
+          Centrifugation
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="md:col-span-2 lg:col-span-3">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Centrifuge Equipment</label>
+            <select {...register('centrifuge_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+              <option value="">Select Centrifuge...</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Speed (RPM)</label>
+            <input type="number" step="any" {...register('centrifuge_rpm')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 4000" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Duration (min)</label>
+            <input type="number" step="any" {...register('centrifuge_duration_min')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 30" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Pre-Centrifuge Vol (mL)</label>
+            <input type="number" step="any" {...register('centrifuge_pre_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 850" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Post-Centrifuge Vol (mL)</label>
+            <input type="number" step="any" {...register('centrifuge_post_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 800" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Pellet Weight (g)</label>
+            <input type="number" step="any" {...register('centrifuge_pellet_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 45.2" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
+        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
+          <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs mr-2">4</span>
+          Drying
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-4">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Dryer/Oven Equipment</label>
+            <select {...register('dryer_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+              <option value="">Select Dryer...</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Temperature (°C)</label>
+            <input type="number" step="any" {...register('drying_temp_c')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 60" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 lg:col-span-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Drying Start</label>
+              <input type="datetime-local" {...register('drying_start_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Drying End</label>
+              <input type="datetime-local" {...register('drying_end_time')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Wet Pellet Wt (g)</label>
+            <input type="number" step="any" {...register('wet_pellet_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 50" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Dry Pellet Wt (g)</label>
+            <input type="number" step="any" {...register('dry_pellet_wt_g')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 12" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
+        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center border-b pb-2">
+          <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs mr-2">5</span>
+          Yield & Storage
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <label className="block text-xs font-bold text-slate-600 mb-1">Total Pellet Wt Obtained (g)</label>
+            <div className="text-2xl font-black text-navy">{totalPelletWeight} <span className="text-sm font-normal text-slate-400">g</span></div>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Derived (Filtration + Centrifuge)</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <label className="block text-xs font-bold text-slate-600 mb-1">Final Broth Vol (mL)</label>
+            <input type="number" step="any" {...register('final_broth_vol_ml')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. 800" />
+          </div>
+          
+          <div className="space-y-3">
+            <h5 className="text-xs font-bold text-slate-700 border-b pb-1">Broth Storage</h5>
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Equipment</label>
+              <select {...register('broth_storage_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+                <option value="">Select Equipment...</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Location Details</label>
+              <input type="text" {...register('broth_storage_location')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. Rack A, Shelf 2" />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h5 className="text-xs font-bold text-slate-700 border-b pb-1">Pellet Storage</h5>
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Equipment</label>
+              <select {...register('pellet_storage_equipment_id')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 bg-white shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50">
+                <option value="">Select Equipment...</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Location Details</label>
+              <input type="text" {...register('pellet_storage_location')} disabled={isLocked} className="w-full text-sm rounded-lg border-slate-200 shadow-sm focus:border-navy focus:ring-navy disabled:bg-slate-50" placeholder="e.g. Rack B, Shelf 1" />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="card p-5 space-y-4">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Centrifuge Details</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div><label className="field-label">Duration (min)</label><input type="number" step="0.1" {...register('centrifuge_duration_min')} className="field-input"/></div>
-          <div><label className="field-label">No. of Spins</label><input type="number" {...register('centrifuge_spins_count')} className="field-input"/></div>
-          <div><label className="field-label">Broth Obtained (ml)</label><input type="number" step="0.1" {...register('centrifuge_broth_obtained_ml')} className="field-input"/></div>
-          <div><label className="field-label">Wet Pellet Wt (g)</label><input type="number" step="0.1" {...register('centrifuge_pellet_wet_wt_g')} className="field-input"/></div>
-        </div>
-      </div>
-
-      <div className="card p-5 space-y-4">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Drying & Total Yield</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div><label className="field-label">Total Wt Obtained (g)</label><input type="number" step="0.1" {...register('total_weight_obtained_g')} className="field-input"/></div>
-          <div><label className="field-label">Drying Temp (°C)</label><input type="number" step="0.1" {...register('drying_temp_c')} className="field-input"/></div>
-          <div><label className="field-label">Drying Duration (hrs)</label><input type="number" step="0.1" {...register('drying_duration_hrs')} className="field-input"/></div>
-          <div><label className="field-label">Dry Pellet Wt (g)</label><input type="number" step="0.1" {...register('dry_pellet_wt_g')} className="field-input"/></div>
-        </div>
-      </div>
-
-      <div className="card p-5 space-y-4">
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Storage & Notes</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="field-label">Storage Details (Broth)</label><textarea {...register('storage_broth_details')} className="field-input" rows={2}/></div>
-          <div><label className="field-label">Storage Details (Pellet)</label><textarea {...register('storage_pellet_details')} className="field-input" rows={2}/></div>
-        </div>
         <div>
           <label className="field-label">Additional Notes</label>
           <textarea {...register('notes')} className="field-input" rows={2}/>

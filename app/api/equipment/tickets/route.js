@@ -38,7 +38,7 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    const { data: emp } = await supabase.from('employees').select('id, role, full_name').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Permission Denied' }, { status: 403 });
 
     const body = await request.json();
@@ -51,7 +51,16 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from('equipment_tickets')
-      .insert({ equipment_id, title, description: description || null, severity, reported_by: emp.id })
+      .insert({
+        equipment_id,
+        title,
+        description: description || null,
+        severity,
+        reported_by: emp.id,
+        logged_at: new Date().toISOString(),
+        logged_by_name: emp.full_name,
+        logged_by_role: emp.role
+      })
       .select()
       .single();
 

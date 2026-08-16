@@ -19,7 +19,7 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: emp } = await supabase.from('employees').select('id, role').eq('email', user.email).single();
+    const { data: emp } = await supabase.from('employees').select('id, role, full_name').eq('email', user.email).single();
     if (!emp) {
       return NextResponse.json({ error: 'Permission Denied: Valid employee record required' }, { status: 403 });
     }
@@ -40,7 +40,10 @@ export async function POST(request) {
       log_type,
       result,
       buffer_values_used: buffer_values_used || null,
-      logged_by: emp.id
+      logged_by: emp.id,
+      logged_at: new Date().toISOString(),
+      logged_by_name: emp.full_name,
+      logged_by_role: emp.role
     });
     if (logErr) throw logErr;
 

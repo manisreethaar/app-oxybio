@@ -8,7 +8,10 @@ const postSchema = z.object({
   category: z.string().min(1, 'Category required'),
   version: z.string().min(1, 'Version required'),
   file_url: z.string().min(1, 'File URL required'),
-  access_level: z.enum(['all-staff', 'management-only', 'admin-only'])
+  access_level: z.enum(['all-staff', 'management-only', 'admin-only']),
+  status: z.enum(['pending_review', 'approved', 'rejected']).optional(),
+  approved_by: z.string().uuid().optional(),
+  approved_at: z.string().optional()
 });
 
 export async function POST(request) {
