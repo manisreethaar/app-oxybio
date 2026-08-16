@@ -98,11 +98,17 @@ export default function SeedPhasePanel({
         inoculum_source_details: inoculumDetails || null,
       };
 
-      const { error } = data?.id
-        ? await supabase.from('batch_seed_trains').update(payload).eq('id', data.id)
-        : await supabase.from('batch_seed_trains').insert(payload).select().single();
-
-      if (error) throw error;
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_setup',
+          payload: data?.id ? { ...payload, id: data.id } : payload
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to save setup');
       toast.success('Media setup saved.');
       onDataChange?.();
     } catch (err) {
@@ -133,8 +139,18 @@ export default function SeedPhasePanel({
         sterilization_temp_c: parseFloat(sterilizerTemp),
         sterilization_duration_mins: parseInt(sterilizerDuration)
       };
-      const { error } = await supabase.from('batch_seed_trains').update(updates).eq('id', data.id);
-      if (error) throw error;
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sterilise',
+          id: data.id,
+          updates
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to sterilize');
 
       // 2. Call inventory auto-debit RPC
       const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_auto_debit_media_inventory', {
@@ -163,10 +179,6 @@ export default function SeedPhasePanel({
     
     setSaving(true);
     try {
-      await supabase.from('batch_seed_trains').update({
-        inoculated_at: new Date().toISOString()
-      }).eq('id', data.id);
-
       // Bug 5 fix: use user-defined flask prefix, fallback to stage prefix
       const stagePrefix = stageType === 'seed_1' ? 'S1' : stageType === 'seed_2' ? 'S2' : 'S3';
       const labelBase = flaskPrefix.trim() || stagePrefix;
@@ -182,9 +194,20 @@ export default function SeedPhasePanel({
         incubation_agitation_rpm: parseInt(incubationRpm),
         inoculated_at: new Date().toISOString()
       }));
-      
-      const { error: fErr } = await supabase.from('batch_flasks').insert(flaskPayloads);
-      if (fErr) throw fErr;
+
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'inoculate',
+          id: data.id,
+          updates: { inoculated_at: new Date().toISOString() },
+          flaskPayloads
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to generate flasks');
       
       toast.success(`${numFlasks} Seed Flask(s) generated & inoculated!`);
       onDataChange?.();

@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useState } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { FileText, ArrowRight, Loader } from 'lucide-react';
 
 // sops — pre-loaded from server, no useEffect needed
 export default function ProtocolSetupPanel({ batch, sops = [], onComplete }) {
-  const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
 
   const [sopId, setSopId] = useState(batch.protocol_sop_id || '');
@@ -19,29 +17,15 @@ export default function ProtocolSetupPanel({ batch, sops = [], onComplete }) {
     }
     setSaving(true);
     try {
-      // Check if seed_1 record already exists (idempotent)
-      const { data: existing } = await supabase
-        .from('batch_seed_trains')
-        .select('id')
-        .eq('batch_id', batch.id)
-        .eq('stage_type', 'seed_1')
-        .maybeSingle();
+      // 1. Link SOP and start seed_1 via server API (admin client bypasses RLS)
+      const res = await fetch(`/api/batches/${batch.id}/protocol`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sop_id: sopId || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start seed train');
 
-      if (!existing) {
-        const { error: seedErr } = await supabase.from('batch_seed_trains').insert({
-          batch_id: batch.id,
-          stage_type: 'seed_1',
-          status: 'active',
-        });
-        if (seedErr) throw new Error('Failed to initiate Seed 1: ' + seedErr.message);
-      }
-
-      const { error } = await supabase.from('batches').update({
-        protocol_sop_id: sopId || null,
-        current_stage: 'seed_1',
-      }).eq('id', batch.id);
-
-      if (error) throw new Error('Failed to update batch stage: ' + error.message);
       toast.success('Protocol linked! Seed 1 phase initiated.');
       onComplete?.();
     } catch (err) {
@@ -58,7 +42,7 @@ export default function ProtocolSetupPanel({ batch, sops = [], onComplete }) {
           <FileText className="w-8 h-8"/>
         </div>
       </div>
-      <h2 className="text-xl font-black text-slate-800 text-center mb-2">Protocol & Setup</h2>
+      <h2 className="text-xl font-black text-slate-800 text-center mb-2">Protocol &amp; Setup</h2>
       <p className="text-sm text-slate-500 text-center mb-8">
         Before starting the seed train, link the verified protocol document (SOP or Batch Record Template) for this batch.
       </p>
@@ -83,9 +67,12 @@ export default function ProtocolSetupPanel({ batch, sops = [], onComplete }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full py-3 bg-navy text-white font-black rounded-xl hover:bg-navy-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+        className="w-full py-3 bg-navy text-white font-black rounded-xl hover:bg-navy-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-60"
       >
-        {saving ? <Loader className="w-5 h-5 animate-spin"/> : <>Confirm & Start Seed Train <ArrowRight className="w-5 h-5"/></>}
+        {saving
+          ? <><Loader className="w-5 h-5 animate-spin"/> Starting seed train...</>
+          : <>Confirm &amp; Start Seed Train <ArrowRight className="w-5 h-5"/></>
+        }
       </button>
     </div>
   );
