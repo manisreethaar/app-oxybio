@@ -9,7 +9,7 @@ export default function TraceabilityTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const toast = useToast();
 
-  const fetchRecords = async (query = '') => {
+  const fetchRecords = useCallback(async (query = '') => {
     setLoading(true);
     try {
       const res = await fetch(`/api/inventory/traceability?q=${encodeURIComponent(query)}`);
@@ -18,12 +18,12 @@ export default function TraceabilityTab() {
       else toast.error(json.error || 'Failed to load records');
     } catch (e) { toast.error('Network error'); }
     setLoading(false);
-  };
+  }, [toast]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchRecords(searchTerm), 300);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, fetchRecords]);
 
   const handleExport = () => {
     const headers = ['Date', 'Item Name', 'Lot Number', 'Quantity Used', 'Context', 'Details', 'Notes'];
@@ -100,7 +100,7 @@ export default function TraceabilityTab() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {records.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr key={r.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4">
                       <p className="text-sm font-bold text-slate-700">{new Date(r.date).toLocaleDateString()}</p>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(r.date).toLocaleTimeString()}</p>

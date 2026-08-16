@@ -46,43 +46,35 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState('stock');
-  const [viewMode, setViewMode] = useState('table');
-  const [inlineContext, setInlineContext] = useState<string | null>(null);
+  const router = useRouter();
 
-  useEffect(() => {
-    const saved = localStorage.getItem('inventory_view_mode');
-    if (saved && ['table'].includes(saved)) {
-      setViewMode(saved);
-    }
-  }, []);
+  const [activeTab, setActiveTab] = useState('stock');
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('inventory_view_mode') || 'stock';
+    return 'stock';
+  });
+  const [inlineContext, setInlineContext] = useState<string | null>(null);
 
   const handleViewModeChange = (mode: string) => {
     setViewMode(mode);
     localStorage.setItem('inventory_view_mode', mode);
   };
-  const [stock, setStock] = useState(initialStock || []);
-  const [loading, setLoading] = useState(false);
   
-  const { data: itemsData, mutate: mutateItems } = useData({
-    table: 'inventory_items',
-    select: '*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)',
-    filter: { eq: ['archived_at', null] },
-    order: { column: 'name' },
-    options: { fallbackData: initialItems }
-  });
-  const items = itemsData || [];
+  const [stock, setStock] = useState(initialStock || []);
+  const [items, setItems] = useState(initialItems || []);
+  const [vendors, setVendors] = useState(initialVendors || []);
+  
+  useInventoryRealtime();
 
-  const { data: vendorsData, mutate: mutateVendors } = useData({
-    table: 'vendors',
-    select: '*',
-    filter: { eq: ['archived_at', null] },
-    order: { column: 'name' },
-    options: { fallbackData: initialVendors }
-  });
-  const vendors = vendorsData || [];
+  useEffect(() => {
+    setStock(initialStock || []);
+    setItems(initialItems || []);
+    setVendors(initialVendors || []);
+  }, [initialStock, initialItems, initialVendors]);
+
+  const [loading, setLoading] = useState(false);
   const [syncError, setSyncError] = useState('');
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -132,15 +124,11 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
-  // Pagination state
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 25;
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
-
-
-  const checkTraining = useCallback(async (signal) => {
+  const checkTraining = useCallback(async (signal: AbortSignal) => {
     if (role === 'admin') {
       setTrainingStatus({ isTrained: true });
       return;
@@ -150,101 +138,23 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       const res = await fetch(`/api/training/check?employeeId=${employeeProfile.id}&category=Sanitation`, { signal });
       const data = await res.json();
       setTrainingStatus(data);
-    } catch (err) {
+    } catch (err: any) {
       if (err.name !== 'AbortError') console.error("Training check failed:", err);
     } finally {
       setCheckingTraining(false);
     }
   }, [role, employeeProfile]);
 
-  const fetchData = useCallback(async (pageNum = 0, append = false, signal = null) => {
-    if (!append) setLoading(true);
-    setSyncError('');
-    try {
-      const start = pageNum * PAGE_SIZE;
-      const end = start + PAGE_SIZE - 1;
-
-      let stockQuery = supabase
-        .from('inventory_stock')
-        .select('*, inventory_items(name, unit, category, min_stock_level, storage_condition), vendors(name)')
-        .order('expiry_date', { ascending: true })
-        .range(start, end);
-
-      // Search by lot number OR item name (via the joined relation)
-      if (searchTerm) {
-        stockQuery = stockQuery.or(`supplier_batch_number.ilike.%${searchTerm}%,inventory_items.name.ilike.%${searchTerm}%`);
-      }
-
-      const res = await withTimeout(stockQuery, 45000, 'Inventory load timed out');
-      const stockRes = { data: res.data, error: res.error };
-
-      if (stockRes.error) throw stockRes.error;
-
-      const stockData = stockRes.data || [];
-
-      if (append) {
-        setStock(prev => [...prev, ...stockData]);
-      } else {
-        setStock(stockData);
-      }
-
-      setHasMore(stockData.length === PAGE_SIZE);
-
-      // Fetch batch usage for loaded stock IDs
-      if (stockData.length > 0) {
-        const stockIds = stockData.map((s: any) => s.id);
-        const { data: usageData } = await supabase
-          .from('inventory_usage')
-          .select('stock_id, batches(id, batch_id)')
-          .in('stock_id', stockIds);
-        if (usageData) {
-          const map: Record<string, Array<{id: string, batch_id: string}>> = {};
-          usageData.forEach((u: any) => {
-            if (!u.batches) return;
-            if (!map[u.stock_id]) map[u.stock_id] = [];
-            const already = map[u.stock_id].find(b => b.id === u.batches.id);
-            if (!already) map[u.stock_id].push({ id: u.batches.id, batch_id: u.batches.batch_id });
-          });
-          setBatchUsageMap(prev => append ? { ...prev, ...map } : map);
-        }
-      }
-    } catch (err) {
-      console.error("Data synchronization failed:", err);
-      if (!(err instanceof DOMException && err.name === 'AbortError')) {
-        setSyncError('Inventory data could not be refreshed. Check the connection and try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, PAGE_SIZE, searchTerm]);
-
-  // Load more pages (pagination - was missing, caused production crash)
-  const loadMore = useCallback(() => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchData(nextPage, true);
-  }, [page, fetchData]);
-
-
   useEffect(() => {
     let mounted = true;
     const controller = new AbortController();
 
-    const loadAll = async () => {
-      try {
-        await fetchData(0, false, controller.signal);
-      } catch (err) {
-        if (err.name !== 'AbortError') console.error("Inventory fetch failed:", err);
-      }
-    };
-
     if (employeeProfile) {
-      if (!initialStock || initialStock.length === 0) {
-        loadAll();
-      }
       checkTraining(controller.signal);
       fetch('/api/edit-request').then(r => r.ok ? r.json() : null).then(d => {
-        if (d?.data) setPendingIds(new Set(d.data.filter((r: any) => r.status === 'pending').map((r: any) => r.record_id)));
+        if (d?.data && mounted) {
+          setPendingIds(new Set(d.data.filter((r: any) => r.status === 'pending').map((r: any) => r.record_id)));
+        }
       });
     }
 
@@ -252,53 +162,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       mounted = false;
       controller.abort();
     };
-  }, [employeeProfile, initialStock, fetchData, checkTraining]);
-
-  // Realtime: inventory_stock and inventory_items changes
-  useEffect(() => {
-    if (!supabase) return;
-    const channel = supabase.channel('inventory_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_stock' }, async (payload) => {
-        if (payload.new && payload.new.id) {
-          const { data } = await supabase
-            .from('inventory_stock')
-            .select('*, inventory_items(name, unit, category, min_stock_level, storage_condition), vendors(name)')
-            .eq('id', payload.new.id)
-            .single();
-          
-          if (data) {
-            setStock(prev => {
-              const exists = prev.find(s => s.id === data.id);
-              if (exists) return prev.map(s => s.id === data.id ? data : s);
-              return [data, ...prev]; 
-            });
-          }
-        } else if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
-          setStock(prev => prev.filter(s => s.id !== payload.old.id));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, async (payload) => {
-        if (payload.new && payload.new.id) {
-          const { data } = await supabase
-            .from('inventory_items')
-            .select('*, created_by, creator:employees!inventory_items_created_by_fkey(id, full_name, initials)')
-            .eq('id', payload.new.id)
-            .single();
-          
-          if (data) {
-            setItems(prev => {
-              const exists = prev.find(i => i.id === data.id);
-              if (exists) return prev.map(i => i.id === data.id ? data : i);
-              return [data, ...prev];
-            });
-          }
-        } else if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
-          setItems(prev => prev.filter(i => i.id !== payload.old.id));
-        }
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [supabase]);
+  }, [employeeProfile, checkTraining]);
 
   // Registry Grouping & Filtering
   const filteredRegistry = useMemo(() => {
@@ -1571,7 +1435,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -1602,7 +1466,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Confirmation Modal */}
       {deletingId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -1719,7 +1583,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Unified Modal Shell */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-50 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] md:animate-in fade-in zoom-in duration-200">
             <div className="px-5 py-4 sm:px-6 sm:py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div>
@@ -1762,7 +1626,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
       {/* Stock Item Detail Modal (Section 2.4) */}
       {selectedStock && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4">
           <div className="w-full max-w-xl rounded-none sm:rounded-2xl bg-white h-[100dvh] sm:h-auto sm:max-h-[90vh] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="p-5 bg-slate-50 border-b border-slate-100 relative shrink-0">
@@ -1855,7 +1719,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
                       const label = m.type === 'Receive' ? 'Stock Input' : m.type === 'Issue' ? 'Stock Issue' : m.type;
                       const isQuantityMovement = m.type === 'Receive' || m.type === 'Issue';
                       return (
-                        <div key={m.id} className="p-4 flex items-center justify-between text-xs group hover:bg-slate-50/50 transition-colors">
+                        <div key={m.id} className="p-4 flex items-center justify-between text-xs group hover:bg-slate-50 transition-colors">
                           <div className="flex-1">
                             <p className="font-black text-slate-800 text-sm flex items-center gap-2">
                               {label}
@@ -2073,7 +1937,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* QR Code Modal */}
       {showQR && selectedStock && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[1200] flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowQR(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
               <X className="w-5 h-5" />
@@ -2090,7 +1954,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
 
       {/* Auto-Load Modal */}
       {pendingSeed && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Auto-Load Inventory Catalog</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">

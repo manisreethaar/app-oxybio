@@ -14,7 +14,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
     item_name: '', requested_quantity: '', unit: '', reason: '', urgency: 'Normal'
   });
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/inventory/purchase-request');
@@ -23,9 +23,9 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
       else toast.error(json.error || 'Failed to load requests');
     } catch (e) { toast.error('Network error'); }
     setLoading(false);
-  };
+  }, [toast]);
 
-  useEffect(() => { fetchRequests(); }, []);
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,7 +122,7 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="font-black text-slate-800">New Purchase Request</h3>
