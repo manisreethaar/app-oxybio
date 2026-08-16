@@ -124,8 +124,29 @@ export default function SeedPhasePanel({
     }
   };
 
+  // ALOCA++ — Validate before saving
+  const validateReading = () => {
+    // A (Attributable): operator must be identified
+    if (!employeeProfile?.id) return 'You must be logged in as an employee to log a reading.';
+    // C+ (Complete): at least one scientific value required
+    if (!logPh && !logOd && !logGramStaining && !logMicroscopic) return 'Enter at least one measurement (pH, OD, Gram Staining, or Microscopic note).';
+    // A (Accurate): range checks
+    if (logPh) {
+      const ph = parseFloat(logPh);
+      if (isNaN(ph) || ph < 0 || ph > 14) return 'pH must be between 0.0 and 14.0.';
+    }
+    if (logOd) {
+      const od = parseFloat(logOd);
+      if (isNaN(od) || od < 0 || od > 10) return 'OD 600nm must be between 0.0 and 10.0.';
+      if (od > 2.0 && !logDilution) return 'OD > 2.0 detected — dilution factor is required for accuracy.';
+    }
+    if (logDilution && parseFloat(logDilution) <= 0) return 'Dilution factor must be a positive number.';
+    return null;
+  };
+
   const submitReading = async () => {
-    if (!logPh && !logOd && !logGramStaining && !logMicroscopic) return;
+    const validationError = validateReading();
+    if (validationError) { toast.error(validationError); return; }
     setSaving(true);
     try {
       const { error } = await supabase.from('batch_fermentation_readings').insert({
@@ -137,15 +158,18 @@ export default function SeedPhasePanel({
         gram_staining: logGramStaining || null,
         microscopic_test: logMicroscopic || null,
         dilution_factor: logDilution ? parseFloat(logDilution) : null,
-        logged_at: new Date().toISOString(),
-        logged_by: employeeProfile?.id,
+        // C (Contemporaneous): logged_at NOT sent — DB sets it with DEFAULT now()
+        logged_by: employeeProfile.id,
+        // A (Attributable): snapshot name/role so record survives employee deactivation
+        logged_by_name: employeeProfile.full_name || null,
+        logged_by_role: employeeProfile.role || null,
       });
       if (error) throw error;
-      toast.success('Reading logged.');
+      toast.success('Reading logged. ✓ ALOCA++ compliant.');
       setShowLogModal(false);
       setLogPh(''); setLogOd(''); setLogIsBlank(false);
       setLogGramStaining(''); setLogMicroscopic(''); setLogDilution('');
-      onDataChange?.(); // background refresh — table updates without full reload
+      onDataChange?.();
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -297,7 +321,11 @@ export default function SeedPhasePanel({
                 <tbody className="divide-y divide-slate-100">
                   {readings.map(r => (
                     <tr key={r.id} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 text-slate-500 font-medium">{dayjs(r.logged_at).format('DD MMM HH:mm')}</td>
+                      <td className="px-4 py-3 text-slate-500 font-medium">
+                        <div>{dayjs(r.logged_at).format('DD MMM HH:mm')}</div>
+                        {/* A (Attributable): show operator */}
+                        {r.logged_by_name && <div className="text-[10px] text-slate-400 font-semibold">{r.logged_by_name} · {r.logged_by_role}</div>}
+                      </td>
                       <td className="px-4 py-3 font-bold">{r.ph ?? '-'}</td>
                       <td className="px-4 py-3 font-bold">{r.optical_density ?? '-'}</td>
                       <td className="px-4 py-3 text-slate-600">{r.dilution_factor ? `1:${r.dilution_factor}` : '-'}</td>
@@ -306,9 +334,11 @@ export default function SeedPhasePanel({
                         <div className="text-xs text-slate-500">{r.microscopic_test || ''}</div>
                       </td>
                       <td className="px-4 py-3">
-                        {r.is_blank
-                          ? <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">BLANK</span>
-                          : <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-bold">SAMPLE</span>
+                        {r.is_superseded
+                          ? <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded font-bold line-through">SUPERSEDED</span>
+                          : r.is_blank
+                            ? <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">BLANK</span>
+                            : <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-bold">SAMPLE</span>
                         }
                       </td>
                     </tr>
@@ -347,43 +377,95 @@ export default function SeedPhasePanel({
       {/* Log Modal */}
       {showLogModal && (
         <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-base font-black text-slate-900 mb-4">Log Sample Reading</h3>
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">pH</label>
-                <input type="number" step="0.01" value={logPh} onChange={e => setLogPh(e.target.value)} className="w-full px-3 py-2 border rounded-lg"/>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl animate-in zoom-in-95 duration-200">
+            {/* ALOCA++ header badge */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-black text-slate-900">Log Sample Reading</h3>
+              <span className="text-[10px] font-black tracking-widest bg-navy/10 text-navy px-2 py-1 rounded-full">ALOCA++</span>
+            </div>
+
+            {/* A (Attributable): show current operator */}
+            <div className="flex items-center gap-2 mb-5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="w-7 h-7 rounded-full bg-navy/10 text-navy flex items-center justify-center text-xs font-black">
+                {employeeProfile?.full_name?.[0] || '?'}
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">OD 600nm</label>
-                <input type="number" step="0.01" value={logOd} onChange={e => setLogOd(e.target.value)} className="w-full px-3 py-2 border rounded-lg"/>
+                <p className="text-xs font-black text-slate-800">{employeeProfile?.full_name || 'Unknown Operator'}</p>
+                <p className="text-[10px] text-slate-500 font-semibold">{employeeProfile?.role || 'No role'} · Logging now</p>
+              </div>
+              {!employeeProfile?.id && (
+                <span className="ml-auto text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded">NOT IDENTIFIED</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* A (Accurate): range hints on every field */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">pH <span className="normal-case font-normal text-slate-400">(0–14)</span></label>
+                <input
+                  type="number" step="0.01" min="0" max="14"
+                  value={logPh} onChange={e => setLogPh(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-lg ${logPh && (parseFloat(logPh) < 0 || parseFloat(logPh) > 14) ? 'border-red-400 bg-red-50' : ''}`}
+                  placeholder="e.g. 6.8"
+                />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Dilution Factor</label>
-                <input type="number" step="1" value={logDilution} onChange={e => setLogDilution(e.target.value)} className="w-full px-3 py-2 border rounded-lg"/>
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">OD 600nm <span className="normal-case font-normal text-slate-400">(0–10)</span></label>
+                <input
+                  type="number" step="0.001" min="0" max="10"
+                  value={logOd} onChange={e => setLogOd(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-lg ${logOd && parseFloat(logOd) > 2 ? 'border-amber-400 bg-amber-50' : ''}`}
+                  placeholder="e.g. 0.8"
+                />
+                {logOd && parseFloat(logOd) > 2 && (
+                  <p className="text-[10px] text-amber-600 font-bold mt-0.5">⚠ OD &gt;2 — dilution required for accuracy</p>
+                )}
               </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Dilution Factor <span className="normal-case font-normal text-slate-400">(e.g. 10, 100)</span></label>
+                <input type="number" step="1" min="1" value={logDilution} onChange={e => setLogDilution(e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g. 100"/>
+              </div>
+              {/* C+ (Consistent): controlled vocabulary — dropdown only */}
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Gram Staining</label>
                 <select value={logGramStaining} onChange={e => setLogGramStaining(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
-                  <option value="">-- Optional --</option>
-                  <option value="Gram Positive">Gram Positive</option>
-                  <option value="Gram Negative">Gram Negative</option>
-                  <option value="Mixed">Mixed</option>
+                  <option value="">-- Not Done --</option>
+                  <option value="Gram Positive">Gram Positive (+)</option>
+                  <option value="Gram Negative">Gram Negative (−)</option>
+                  <option value="Mixed">Mixed Culture</option>
+                  <option value="Inconclusive">Inconclusive</option>
                 </select>
               </div>
+              {/* C+ (Consistent): structured microscopic test options */}
               <div className="col-span-2">
-                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Microscopic Notes</label>
-                <input type="text" value={logMicroscopic} onChange={e => setLogMicroscopic(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Clear, normal morphology..."/>
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Microscopic Observation</label>
+                <select value={logMicroscopic} onChange={e => setLogMicroscopic(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  <option value="">-- Select Observation --</option>
+                  <option value="Normal morphology, no contamination">Normal morphology, no contamination</option>
+                  <option value="Normal morphology, minor debris">Normal morphology, minor debris</option>
+                  <option value="Contamination suspected — mixed morphology">Contamination suspected — mixed morphology</option>
+                  <option value="Contamination confirmed — abort recommended">Contamination confirmed — abort recommended</option>
+                  <option value="Low cell density">Low cell density</option>
+                  <option value="Good cell density">Good cell density</option>
+                  <option value="High cell density — ready for transfer">High cell density — ready for transfer</option>
+                  <option value="Sporulation observed">Sporulation observed</option>
+                </select>
               </div>
               <label className="col-span-2 flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none">
                 <input type="checkbox" checked={logIsBlank} onChange={e => setLogIsBlank(e.target.checked)} className="w-4 h-4 text-navy rounded border-slate-300"/>
-                This is a BLANK flask reading
+                This is a BLANK (control) reading
               </label>
             </div>
+
+            {/* C (Contemporaneous) notice */}
+            <div className="text-[10px] text-slate-400 mb-4 flex items-center gap-1">
+              <span className="font-black text-navy">C:</span> Timestamp will be recorded automatically by the server at the moment of save.
+            </div>
+
             <div className="flex gap-3">
               <button onClick={() => setShowLogModal(false)} className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold">Cancel</button>
-              <button onClick={submitReading} disabled={saving || (!logPh && !logOd && !logGramStaining && !logMicroscopic)} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Reading'}
+              <button onClick={submitReading} disabled={saving || !employeeProfile?.id} className="flex-1 py-2 bg-navy text-white rounded-lg text-sm font-bold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save & Lock Record'}
               </button>
             </div>
           </div>
