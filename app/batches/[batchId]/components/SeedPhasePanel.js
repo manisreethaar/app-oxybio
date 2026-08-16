@@ -146,23 +146,17 @@ export default function SeedPhasePanel({
         body: JSON.stringify({
           action: 'sterilise',
           id: data.id,
-          updates
+          updates,
+          employeeId: employeeProfile.id
         })
       });
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || 'Failed to sterilize');
 
-      // 2. Call inventory auto-debit RPC
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_auto_debit_media_inventory', {
-        p_seed_train_id: data.id,
-        p_employee_id: employeeProfile.id
-      });
-      
-      if (rpcErr) throw rpcErr;
-      if (rpcData?.success) {
+      if (resData.rpcData?.success) {
         toast.success('Media Sterilised & Inventory Auto-Debited!');
       } else {
-        toast.error('Sterilised, but inventory deduction failed: ' + (rpcData?.error || 'Unknown error'));
+        toast.error('Sterilised, but inventory deduction failed: ' + (resData.rpcData?.error || 'Unknown error'));
       }
       
       onDataChange?.();
@@ -201,6 +195,7 @@ export default function SeedPhasePanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'inoculate',
+          batchId: batch.id,
           id: data.id,
           updates: { inoculated_at: new Date().toISOString() },
           flaskPayloads

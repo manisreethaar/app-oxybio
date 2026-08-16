@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 import { createClient as createAnonClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
@@ -31,17 +31,33 @@ export async function POST(request, { params }) {
     }
     
     if (action === 'sterilise') {
-      const { id, updates } = body;
+      const { id, updates, employeeId } = body;
       const { error } = await db.from('batch_seed_trains').update(updates).eq('id', id);
       if (error) throw error;
-      return NextResponse.json({ success: true });
+      
+      // Call inventory auto-debit RPC with admin client to bypass RLS
+      const { data: rpcData, error: rpcErr } = await db.rpc('rpc_auto_debit_media_inventory', {
+        p_seed_train_id: id,
+        p_employee_id: employeeId
+      });
+      
+      if (rpcErr) throw rpcErr;
+      
+      return NextResponse.json({ success: true, rpcData });
     }
     
     if (action === 'inoculate') {
-      const { id, updates, flaskPayloads } = body;
+      const { id, updates, flaskPayloads, batchId } = body;
       const { error: err1 } = await db.from('batch_seed_trains').update(updates).eq('id', id);
       if (err1) throw err1;
-      const { error: err2 } = await db.from('batch_flasks').insert(flaskPayloads);
+      
+      // Ensure flask_full_id is present
+      const enhancedFlaskPayloads = flaskPayloads.map(f => ({
+        ...f,
+        flask_full_id: f.flask_full_id || `${batchId}-${f.flask_label}`
+      }));
+      
+      const { error: err2 } = await db.from('batch_flasks').insert(enhancedFlaskPayloads);
       if (err2) throw err2;
       return NextResponse.json({ success: true });
     }

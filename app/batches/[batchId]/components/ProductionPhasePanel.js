@@ -70,10 +70,17 @@ export default function ProductionPhasePanel({
         media_volume_ml: mediaVolumeMl ? parseFloat(mediaVolumeMl) : null,
         status: 'active',
       };
-      const { error } = setupData?.id
-        ? await supabase.from('batch_seed_trains').update(payload).eq('id', setupData.id)
-        : await supabase.from('batch_seed_trains').insert(payload);
-      if (error) throw error;
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_setup',
+          payload: setupData?.id ? { ...payload, id: setupData.id } : payload
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to save setup');
       toast.success('Production setup saved.');
       onDataChange?.();
     } catch (err) {
@@ -99,20 +106,24 @@ export default function ProductionPhasePanel({
         sterilization_duration_mins: parseInt(sterilizerDuration)
       };
 
-      const { error } = await supabase.from('batch_seed_trains').update(updates).eq('id', setupData.id);
-      if (error) throw error;
-
-      // Auto-debit
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_auto_debit_media_inventory', {
-        p_seed_train_id: setupData.id,
-        p_employee_id: employeeProfile.id
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sterilise',
+          id: setupData.id,
+          updates,
+          employeeId: employeeProfile.id
+        })
       });
-      
-      if (rpcErr) throw rpcErr;
-      if (rpcData?.success) {
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to sterilize');
+
+      if (resData.rpcData?.success) {
         toast.success('Media Sterilised & Inventory Auto-Debited!');
       } else {
-        toast.error('Sterilised, but inventory deduction failed: ' + (rpcData?.error || 'Unknown error'));
+        toast.error('Sterilised, but inventory deduction failed: ' + (resData.rpcData?.error || 'Unknown error'));
       }
 
       onDataChange?.();
@@ -140,14 +151,24 @@ export default function ProductionPhasePanel({
         incubation_agitation_rpm: parseInt(incubationRpm),
         inoculated_at: new Date().toISOString()
       }));
-      const { error: fErr } = await supabase.from('batch_flasks').insert(flaskPayloads);
-      if (fErr) throw fErr;
-
-      await supabase.from('batch_seed_trains').update({
-        inoculated_at: new Date().toISOString(),
-        inoculum_source_type: 'previous_seed',
-        inoculum_source_details: seedInoculum,
-      }).eq('id', setupData.id);
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'inoculate',
+          batchId: batch.id,
+          id: setupData.id,
+          updates: {
+            inoculated_at: new Date().toISOString(),
+            inoculum_source_type: 'previous_seed',
+            inoculum_source_details: seedInoculum,
+          },
+          flaskPayloads
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to generate flasks');
 
       toast.success(`${numFlasks} Production Flask(s) generated & inoculated!`);
       onDataChange?.();
