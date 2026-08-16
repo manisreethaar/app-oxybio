@@ -434,24 +434,6 @@ export default function FormulationsClient({ initialFormulations = [], initialIt
                       </div>
                     </div>
 
-                    {batchCounts[f.id] > 0 && (
-                      <div className="mb-2">
-                        <button
-                          onClick={() => {
-                            const isExpanding = expandedBatchHistory !== f.id;
-                            setExpandedBatchHistory(isExpanding ? f.id : null);
-                            if (isExpanding && !batchHistory[f.id]) {
-                              fetchBatchHistory(f.id);
-                            }
-                          }}
-                          className="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-100 px-2 py-0.5 rounded-full hover:bg-slate-100 transition-colors"
-                        >
-                          <FlaskConical className="w-2.5 h-2.5"/>
-                          {batchCounts[f.id]} Batch{batchCounts[f.id] !== 1 ? 'es' : ''} {'>'}
-                        </button>
-                      </div>
-                    )}
-
                     <h3 className="text-lg font-bold text-slate-900 mb-0.5">{f.name}</h3>
                     <p className="text-xs font-bold text-navy mb-3 font-mono">{f.code}</p>
 
@@ -530,6 +512,23 @@ export default function FormulationsClient({ initialFormulations = [], initialIt
                           <Plus className="w-3.5 h-3.5"/> Revision
                         </button>
                       </div>
+
+                      {batchCounts[f.id] > 0 && (
+                        <button
+                          onClick={() => {
+                            const isExpanding = expandedBatchHistory !== f.id;
+                            setExpandedBatchHistory(isExpanding ? f.id : null);
+                            if (isExpanding && !batchHistory[f.id]) {
+                              fetchBatchHistory(f.id);
+                            }
+                          }}
+                          className="w-full py-2 rounded-lg text-xs font-black bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <FlaskConical className="w-3.5 h-3.5"/>
+                          View {batchCounts[f.id]} Production Batch{batchCounts[f.id] !== 1 ? 'es' : ''}
+                        </button>
+                      )}
+
 
                       {/* ??"?????"??? APPROVAL WORKFLOW BUTTONS ??"?????"??? */}
 

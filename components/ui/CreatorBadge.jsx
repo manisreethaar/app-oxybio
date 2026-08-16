@@ -34,9 +34,9 @@ export default function CreatorBadge({ initials, fullName, size = 'sm', showTool
         {display}
       </span>
       {fullName && showTooltip && (
-        <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-slate-800 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+        <span className="pointer-events-none absolute top-full left-0 mt-1.5 px-2 py-1 bg-slate-800 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
           {fullName}
-          <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-slate-800" />
+          <span className="absolute bottom-full left-2 border-4 border-transparent border-b-slate-800" />
         </span>
       )}
     </span>
