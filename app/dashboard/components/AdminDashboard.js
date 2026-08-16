@@ -15,27 +15,39 @@ import MyPendingActionsWidget from './MyPendingActionsWidget';
 const ProductionYieldChart = dynamic(() => import('@/components/charts/ProductionYieldChart'), { ssr: false });
 const StorageWidget = dynamic(() => import('@/components/StorageWidget'), { ssr: false });
 
-export default function AdminDashboard({ employeeId }) {
+export default function AdminDashboard({ employeeId, initialData }) {
   const toast = useToast();
-  const [stats, setStats] = useState({ batches: 0, leaves: 0, tasks: 0, compliance: 0, mispunches: 0 });
-  const [alerts, setAlerts] = useState([]);
-  const [activeBatches, setActiveBatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showConfig, setShowConfig] = useState(false);
-  const [thresholds, setThresholds] = useState({ minPh: 4.0, maxPh: 7.8, tempMax: 35 });
-  const [chartData, setChartData] = useState([]);
-  const [attendanceStats, setAttendanceStats] = useState({ checkedIn: 0, currentlyInLab: 0, total: 0 });
-  const [pendingMispunches, setPendingMispunches] = useState([]);
-  const [reviewingMispunch, setReviewingMispunch] = useState(null);
-  const [rejectRemark, setRejectRemark] = useState('');
+  const [stats, setStats] = useState(initialData ? {
+    batches:    initialData.stats?.activeBatches      || 0,
+    leaves:     initialData.stats?.pendingLeaves      || 0,
+    tasks:      initialData.stats?.urgentTasks        || 0,
+    compliance: initialData.stats?.upcomingCompliance || 0,
+    mispunches: initialData.mispunches?.length        || 0,
+  } : { batches: 0, leaves: 0, tasks: 0, compliance: 0, mispunches: 0 });
+  const [alerts, setAlerts] = useState(initialData?.stats?.unacknowledgedDeviations > 0
+    ? [{ type: 'deviation', count: initialData.stats.unacknowledgedDeviations, message: 'Unacknowledged pH deviations need attention', link: '/compliance' }]
+    : []);
+  const [activeBatches,    setActiveBatches]    = useState(initialData?.activeBatches    || []);
+  const [loading,          setLoading]          = useState(!initialData);
+  const [showConfig,       setShowConfig]       = useState(false);
+  const [thresholds,       setThresholds]       = useState({ minPh: 4.0, maxPh: 7.8, tempMax: 35 });
+  const [chartData,        setChartData]        = useState(initialData?.chartData        || []);
+  const [attendanceStats,  setAttendanceStats]  = useState(initialData ? {
+    checkedIn:        initialData.stats?.checkedInToday || 0,
+    currentlyInLab:   initialData.stats?.currentlyInLab || 0,
+    total:            initialData.stats?.totalEmployees  || 0,
+  } : { checkedIn: 0, currentlyInLab: 0, total: 0 });
+  const [pendingMispunches,   setPendingMispunches]   = useState(initialData?.mispunches    || []);
+  const [reviewingMispunch,   setReviewingMispunch]   = useState(null);
+  const [rejectRemark,        setRejectRemark]        = useState('');
   const [pendingQuickApprove, setPendingQuickApprove] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [lowStock, setLowStock] = useState([]);
-  const [calibDue, setCalibDue] = useState([]);
-  const [openCapa, setOpenCapa] = useState([]);
-  const [qcHoldBatches, setQcHoldBatches] = useState([]);
-  const [qcHoldDismissed, setQcHoldDismissed] = useState(false);
-  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [actionLoading,       setActionLoading]       = useState(false);
+  const [lowStock,            setLowStock]            = useState(initialData?.lowStock      || []);
+  const [calibDue,            setCalibDue]            = useState(initialData?.calibDue      || []);
+  const [openCapa,            setOpenCapa]            = useState(initialData?.openCapa      || []);
+  const [qcHoldBatches,       setQcHoldBatches]       = useState(initialData?.qcHoldBatches || []);
+  const [qcHoldDismissed,     setQcHoldDismissed]     = useState(false);
+  const [pendingLeaves,       setPendingLeaves]       = useState(initialData?.leaves        || []);
   const supabase = useMemo(() => createClient(), []);
 
   const fetchThresholds = async () => {
@@ -128,15 +140,20 @@ export default function AdminDashboard({ employeeId }) {
   }, [supabase]);
 
   useEffect(() => {
-    fetchDashboardData(true);
-    fetchThresholds();
-    fetchOperationalAlerts();
+    // Skip first fetch if SSR already delivered data — just set up realtime
+    if (!initialData) {
+      fetchDashboardData(true);
+      fetchThresholds();
+      fetchOperationalAlerts();
+    } else {
+      fetchThresholds();
+    }
 
     // Realtime: re-fetch KPIs when batches, tasks, or leaves change
     const channel = supabase
       .channel('admin-dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' },         () => fetchDashboardData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' },           () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' },            () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' },              () => fetchDashboardData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_applications' }, () => { fetchDashboardData(); fetchOperationalAlerts(); })
       .subscribe();
 

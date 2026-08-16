@@ -1,4 +1,3 @@
-'use client';
 import { Activity, BarChart2, TrendingUp, Clock, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 

@@ -65,7 +65,7 @@ function LeaveBar({ label, used, total, color }) {
   );
 }
 
-export default function StaffDashboard({ employeeProfile }) {
+export default function StaffDashboard({ employeeProfile, initialData }) {
   const employeeId = employeeProfile?.id;
   const empRole = employeeProfile?.role?.toLowerCase() || '';
   const isClOnly = CL_ONLY_ROLES.includes(empRole);
@@ -80,16 +80,18 @@ export default function StaffDashboard({ employeeProfile }) {
     earned:  isClOnly ? 0               : (employeeProfile?.earned_leave_balance  ?? 15),
   };
 
-  const [tasks,                setTasks]                = useState([]);
-  const [activeBatches,        setActiveBatches]        = useState([]);
-  const [activeFermentations,  setActiveFermentations]  = useState([]);
+  const [tasks,                setTasks]                = useState(initialData?.tasks               || []);
+  const [activeBatches,        setActiveBatches]        = useState(initialData?.activeBatches       || []);
+  const [activeFermentations,  setActiveFermentations]  = useState(initialData?.activeFermentations || []);
   const [leaveStats,           setLeaveStats]           = useState({ casual: 0, medical: 0, earned: 0 });
-  const [recentActivity,       setRecentActivity]       = useState([]);
-  const [unreadCount,          setUnreadCount]          = useState(0);
-  const [loading,              setLoading]              = useState(true);
+  const [recentActivity,       setRecentActivity]       = useState(initialData?.recentActivity      || []);
+  const [unreadCount,          setUnreadCount]          = useState(initialData?.unreadCount         || 0);
+  const [loading,              setLoading]              = useState(!initialData);
   const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => { fetchStaffData(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!initialData) fetchStaffData(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchStaffData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
