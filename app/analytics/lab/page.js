@@ -69,7 +69,7 @@ export default function LabAnalyticsPage() {
     };
 
     fetchAnalytics();
-  }, [dateRange, supabase]);
+  }, [dateRange, supabase, toast]);
 
   // Transform OD Data (Line Chart)
   const odChartData = useMemo(() => {
