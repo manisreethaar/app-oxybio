@@ -1,20 +1,24 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const dotenv = require('dotenv');
+require('dotenv').config({ path: '.env.local' });
 
-dotenv.config({ path: '.env.local' });
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-async function test() {
-  const { data: emps, error: err1 } = await supabase.from('employees').select('id, email, full_name').limit(1);
-  console.log('Employees:', emps, err1);
-
-  const { data: notifs, error: err2 } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(2);
-  console.log('Notifications:', notifs, err2);
+async function run() {
+  const tables = ['batch_seed_trains', 'batch_flasks', 'batch_fermentation_readings', 'inventory_stock', 'inventory_transactions'];
+  for (const t of tables) {
+    const { data, error } = await supabase.from(t).select('*').limit(1);
+    console.log(`--- ${t} ---`);
+    if (error) console.error(error.message);
+    else if (data.length > 0) console.log(Object.keys(data[0]));
+    else {
+      // no data, insert a dummy record and rollback (or just check error) to get columns
+      const { error: insertError } = await supabase.from(t).insert({}).select('*');
+      if (insertError) {
+         // This might fail due to null constraints, but the error message often contains column hints or we can just try another way.
+         console.log(insertError.message || insertError);
+      }
+    }
+  }
 }
 
-test();
+run();

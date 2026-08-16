@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { useForm } from 'react-hook-form';
 import { useToast } from '@/context/ToastContext';
 import {
   Beaker, ShieldCheck, Droplets, Activity, Plus, ArrowRight,
@@ -19,31 +18,38 @@ export default function ProductionPhasePanel({
   employees,
   employeeProfile,
   standardCurve,
-  onTransfer,     // called when all flasks are harvested (batch done)
-  onDataChange,   // called after any mutation → triggers server refresh
+  onTransfer,
+  onDataChange,
 }) {
   const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
 
-  // Extract production seed train from props
-  const setupData = useMemo(
-    () => seedTrains.find(s => s.stage_type === 'production') || null,
-    [seedTrains]
-  );
+  const setupData = useMemo(() => seedTrains.find(s => s.stage_type === 'production') || null, [seedTrains]);
+  const stageFlasks = useMemo(() => flasks.filter(f => f.seed_train_id === setupData?.id), [flasks, setupData]);
 
   // Local state
   const [formulationId, setFormulationId] = useState(setupData?.formulation_id || '');
+  const [mediaVolumeMl, setMediaVolumeMl] = useState(setupData?.media_volume_ml || '');
   const [numFlasks, setNumFlasks] = useState(1);
   const [seedInoculum, setSeedInoculum] = useState(setupData?.inoculum_source_details || 'seed_1');
+
+  // Sterilization fields
+  const [sterilizerId, setSterilizerId] = useState(setupData?.sterilizer_equipment_id || '');
+  const [sterilizerTemp, setSterilizerTemp] = useState(setupData?.sterilization_temp_c || 121);
+  const [sterilizerDuration, setSterilizerDuration] = useState(setupData?.sterilization_duration_mins || 20);
+
+  // Incubation fields
+  const [incubatorId, setIncubatorId] = useState('');
+  const [incubationTemp, setIncubationTemp] = useState(37);
+  const [incubationRpm, setIncubationRpm] = useState(200);
 
   const [saving, setSaving] = useState(false);
   const [selectedFlaskId, setSelectedFlaskId] = useState(null);
   const [showLogModal, setShowLogModal] = useState(false);
 
-  // Optimistic sterilisation state
-  const [optimisticSterilised, setOptimisticSterilised] = useState(null);
-  const isSterilised = optimisticSterilised ?? setupData?.is_sterilised ?? false;
-  const isInoculated = !!setupData?.inoculated_at;
+  // Derived
+  const isSterilised = setupData?.is_sterilised ?? false;
+  const isInoculated = stageFlasks.length > 0;
 
   // Log modal state
   const [logPh, setLogPh] = useState('');
@@ -61,6 +67,7 @@ export default function ProductionPhasePanel({
         batch_id: batch.id,
         stage_type: 'production',
         formulation_id: formulationId || null,
+        media_volume_ml: mediaVolumeMl ? parseFloat(mediaVolumeMl) : null,
         status: 'active',
       };
       const { error } = setupData?.id
@@ -78,17 +85,38 @@ export default function ProductionPhasePanel({
 
   const handleSterilise = async () => {
     if (!setupData?.id) return toast.warn('Save setup first.');
-    setOptimisticSterilised(true); // instant UI
+    if (!sterilizerId || !sterilizerTemp || !sterilizerDuration) {
+      return toast.warn('Enter all sterilization equipment parameters.');
+    }
+
     setSaving(true);
     try {
-      const { error } = await supabase.from('batch_seed_trains')
-        .update({ is_sterilised: true, sterilised_at: new Date().toISOString() })
-        .eq('id', setupData.id);
+      const updates = {
+        is_sterilised: true,
+        sterilised_at: new Date().toISOString(),
+        sterilizer_equipment_id: sterilizerId,
+        sterilization_temp_c: parseFloat(sterilizerTemp),
+        sterilization_duration_mins: parseInt(sterilizerDuration)
+      };
+
+      const { error } = await supabase.from('batch_seed_trains').update(updates).eq('id', setupData.id);
       if (error) throw error;
-      toast.success('Bulk media sterilised!');
+
+      // Auto-debit
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_auto_debit_media_inventory', {
+        p_seed_train_id: setupData.id,
+        p_employee_id: employeeProfile.id
+      });
+      
+      if (rpcErr) throw rpcErr;
+      if (rpcData?.success) {
+        toast.success('Media Sterilised & Inventory Auto-Debited!');
+      } else {
+        toast.error('Sterilised, but inventory deduction failed: ' + (rpcData?.error || 'Unknown error'));
+      }
+
       onDataChange?.();
     } catch (err) {
-      setOptimisticSterilised(null);
       toast.error(err.message);
     } finally {
       setSaving(false);
@@ -97,14 +125,20 @@ export default function ProductionPhasePanel({
 
   const handleInoculateExplosion = async () => {
     if (!isSterilised) return toast.warn('Must sterilise bulk media first!');
+    if (!incubatorId) return toast.warn('Enter Incubator Equipment ID.');
+
     setSaving(true);
     try {
-      // Create N flasks
       const flaskPayloads = Array.from({ length: numFlasks }).map((_, i) => ({
         batch_id: batch.id,
-        flask_label: `F${i + 1}`,
+        seed_train_id: setupData.id,
+        flask_label: `Prod-F${i + 1}`,
         current_stage: 'fermentation',
         status: 'active',
+        incubator_equipment_id: incubatorId,
+        incubation_temp_c: parseFloat(incubationTemp),
+        incubation_agitation_rpm: parseInt(incubationRpm),
+        inoculated_at: new Date().toISOString()
       }));
       const { error: fErr } = await supabase.from('batch_flasks').insert(flaskPayloads);
       if (fErr) throw fErr;
@@ -115,7 +149,7 @@ export default function ProductionPhasePanel({
         inoculum_source_details: seedInoculum,
       }).eq('id', setupData.id);
 
-      toast.success(`${numFlasks} Production Flask${numFlasks > 1 ? 's' : ''} generated & inoculated!`);
+      toast.success(`${numFlasks} Production Flask(s) generated & inoculated!`);
       onDataChange?.();
     } catch (err) {
       toast.error(err.message);
@@ -138,6 +172,7 @@ export default function ProductionPhasePanel({
 
       const { error } = await supabase.from('batch_fermentation_readings').insert({
         batch_id: batch.id,
+        seed_train_id: setupData.id,
         flask_id: selectedFlaskId,
         ph: logPh ? parseFloat(logPh) : null,
         optical_density: logOd ? parseFloat(logOd) : null,
@@ -148,8 +183,9 @@ export default function ProductionPhasePanel({
         gram_staining: logGramStaining || null,
         microscopic_test: logMicroscopic || null,
         dilution_factor: logDilution ? parseFloat(logDilution) : null,
-        logged_at: new Date().toISOString(),
         logged_by: employeeProfile?.id,
+        logged_by_name: employeeProfile?.full_name || null,
+        logged_by_role: employeeProfile?.role || null,
       });
       if (error) throw error;
       toast.success('Reading logged!');
@@ -185,18 +221,29 @@ export default function ProductionPhasePanel({
     }
   };
 
-  const completedFlasks = flasks.filter(f => f.current_stage !== 'fermentation' && f.current_stage !== 'inoculation');
-  const allHarvested = flasks.length > 0 && completedFlasks.length === flasks.length;
+  const completedFlasks = stageFlasks.filter(f => f.current_stage !== 'fermentation' && f.current_stage !== 'inoculation');
+  const allHarvested = stageFlasks.length > 0 && completedFlasks.length === stageFlasks.length;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-
-      {/* ── SECTION A: BULK SETUP (only shown before explosion) ── */}
+      
+      {/* ── SECTION A: BULK SETUP ── */}
       {!isInoculated && (
         <div className="card p-6 border-2 border-navy shadow-sm">
-          <h2 className="text-lg font-black text-navy uppercase tracking-widest mb-6 flex items-center gap-2">
-            <FlaskConical className="w-5 h-5"/> Production Explosion Setup
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-black text-navy uppercase tracking-widest flex items-center gap-2">
+              <FlaskConical className="w-5 h-5"/> Production Explosion Setup
+            </h2>
+            {setupData?.inventory_deduction_status && (
+              <span className={`text-xs font-black px-2 py-1 rounded ${
+                setupData.inventory_deduction_status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                setupData.inventory_deduction_status === 'failed' ? 'bg-red-100 text-red-700' :
+                'bg-slate-100 text-slate-600'
+              }`}>
+                Inventory: {setupData.inventory_deduction_status.toUpperCase()}
+              </span>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Step 1: Media */}
@@ -204,15 +251,21 @@ export default function ProductionPhasePanel({
               <h3 className="text-sm font-bold text-slate-600 uppercase flex items-center gap-2">
                 <Beaker className="w-4 h-4"/> 1. Bulk Media
               </h3>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Production Formulation</label>
-                <select value={formulationId} onChange={e => setFormulationId(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="">-- Inherit from Batch --</option>
-                  {formulations.map(f => <option key={f.id} value={f.id}>{f.name} v{f.version}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Production Formulation</label>
+                  <select value={formulationId} onChange={e => setFormulationId(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+                    <option value="">-- Inherit from Batch --</option>
+                    {formulations.map(f => <option key={f.id} value={f.id}>{f.name} v{f.version}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Total Volume (ml)</label>
+                  <input type="number" value={mediaVolumeMl} onChange={e => setMediaVolumeMl(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. 50000"/>
+                </div>
               </div>
               <button onClick={handleSaveSetup} disabled={saving} className="w-full py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 disabled:opacity-50">
-                Save Formulation
+                Save Formulation & Volume
               </button>
             </div>
 
@@ -221,15 +274,30 @@ export default function ProductionPhasePanel({
               <h3 className="text-sm font-bold text-slate-600 uppercase flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4"/> 2. Sterilisation
               </h3>
-              <div className="h-[68px] flex items-center">
+              
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500">Autoclave ID</label>
+                  <input type="text" value={sterilizerId} onChange={e => setSterilizerId(e.target.value)} disabled={isSterilised} className="w-full px-2 py-1.5 border rounded-lg text-xs"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500">Temp (°C)</label>
+                  <input type="number" value={sterilizerTemp} onChange={e => setSterilizerTemp(e.target.value)} disabled={isSterilised} className="w-full px-2 py-1.5 border rounded-lg text-xs"/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500">Mins</label>
+                  <input type="number" value={sterilizerDuration} onChange={e => setSterilizerDuration(e.target.value)} disabled={isSterilised} className="w-full px-2 py-1.5 border rounded-lg text-xs"/>
+                </div>
+              </div>
+
+              <div className="h-10 flex items-center">
                 {isSterilised ? (
-                  <p className="text-sm font-bold text-emerald-700 flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5"/>
-                    Sterilised at {setupData?.sterilised_at ? dayjs(setupData.sterilised_at).format('HH:mm') : '--'}
+                  <p className="text-xs font-bold text-emerald-700 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4"/> Sterilised {setupData?.sterilised_at ? dayjs(setupData.sterilised_at).format('HH:mm') : ''}
                   </p>
                 ) : (
-                  <button onClick={handleSterilise} disabled={saving || !setupData?.id} className="w-full py-3 bg-navy text-white text-sm font-black rounded-xl hover:bg-navy-hover disabled:opacity-50">
-                    Mark Bulk Media Sterilised
+                  <button onClick={handleSterilise} disabled={saving || !setupData?.id} className="w-full py-2 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover disabled:opacity-50">
+                    Sterilise & Debit Inventory
                   </button>
                 )}
               </div>
@@ -240,31 +308,41 @@ export default function ProductionPhasePanel({
               <h3 className="text-sm font-bold text-slate-600 uppercase flex items-center gap-2 mb-4">
                 <Droplets className="w-4 h-4"/> 3. Inoculation Explosion
               </h3>
-              <div className="flex flex-col sm:flex-row items-end gap-4">
-                <div className="flex-1">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+                <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Inoculum Seed Source</label>
-                  <select value={seedInoculum} onChange={e => setSeedInoculum(e.target.value)} className="w-full px-3 py-3 border rounded-xl text-sm">
+                  <select value={seedInoculum} onChange={e => setSeedInoculum(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
                     <option value="seed_1">Seed 1</option>
                     <option value="seed_2">Seed 2</option>
                     <option value="seed_3">Seed 3</option>
                   </select>
                 </div>
-                <div className="w-32">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Total Flasks (N)</label>
-                  <input
-                    type="number" min="1" value={numFlasks}
-                    onChange={e => setNumFlasks(parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-3 border rounded-xl text-sm font-black text-center"
-                  />
+                
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Incubator ID</label>
+                  <input type="text" value={incubatorId} onChange={e => setIncubatorId(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm"/>
                 </div>
-                <button
-                  onClick={handleInoculateExplosion}
-                  disabled={saving || !isSterilised}
-                  className="py-3 px-8 bg-emerald-600 text-white text-sm font-black rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  Inoculate {numFlasks} Flask{numFlasks > 1 ? 's' : ''} <ArrowRight className="w-4 h-4"/>
-                </button>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Temp / RPM</label>
+                  <div className="flex gap-1">
+                    <input type="number" value={incubationTemp} onChange={e => setIncubationTemp(e.target.value)} className="w-full px-2 py-2 border rounded-lg text-xs" title="Temp"/>
+                    <input type="number" value={incubationRpm} onChange={e => setIncubationRpm(e.target.value)} className="w-full px-2 py-2 border rounded-lg text-xs" title="RPM"/>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Total Flasks (N)</label>
+                  <input type="number" min="1" value={numFlasks} onChange={e => setNumFlasks(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg text-sm font-black text-center"/>
+                </div>
               </div>
+              
+              <button
+                onClick={handleInoculateExplosion}
+                disabled={saving || !isSterilised}
+                className="w-full mt-4 py-3 bg-emerald-600 text-white text-sm font-black rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex justify-center items-center gap-2"
+              >
+                Inoculate {numFlasks} Flask(s) & Start Incubation <ArrowRight className="w-4 h-4"/>
+              </button>
             </div>
           </div>
         </div>
@@ -278,12 +356,12 @@ export default function ProductionPhasePanel({
               <Activity className="w-5 h-5"/> Production Flasks Dashboard
             </h2>
             <div className="text-xs font-bold text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
-              {completedFlasks.length}/{flasks.length} Harvested
+              {completedFlasks.length}/{stageFlasks.length} Harvested
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {flasks.map(f => {
+            {stageFlasks.map(f => {
               const flaskReadings = fermentationReadings.filter(r => r.flask_id === f.id);
               const isHarvested = f.current_stage !== 'fermentation' && f.current_stage !== 'inoculation';
               return (
@@ -291,11 +369,8 @@ export default function ProductionPhasePanel({
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-black text-slate-800">{f.flask_label}</h3>
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        {isHarvested
-                          ? <span className="text-amber-600">Harvested → Downstream</span>
-                          : <span className="text-emerald-600">Incubating</span>
-                        }
+                      <p className="text-[10px] font-bold text-slate-500 mt-1">
+                        Incubator: {f.incubator_equipment_id} • {f.incubation_temp_c}°C • {f.incubation_agitation_rpm} RPM
                       </p>
                     </div>
                     {!isHarvested && (
@@ -309,13 +384,12 @@ export default function ProductionPhasePanel({
                     {flaskReadings.length > 0 ? (
                       <div className="space-y-1">
                         {flaskReadings.map(r => (
-                          <div key={r.id} className="flex justify-between text-xs py-1 border-b border-slate-200 last:border-0">
+                          <div key={r.id} className="flex justify-between text-xs py-1.5 border-b border-slate-200 last:border-0">
                             <span className="text-slate-500 w-12">{dayjs(r.logged_at).format('HH:mm')}</span>
-                            <span className="font-bold w-14">{r.ph ? `pH ${r.ph}` : ''}</span>
-                            <span className="font-bold w-16">{r.optical_density ? `OD ${r.optical_density}` : ''}</span>
+                            <span className="font-bold w-12">{r.ph ? `pH ${r.ph}` : ''}</span>
+                            <span className="font-bold w-14">{r.optical_density ? `OD ${r.optical_density}` : ''}</span>
                             <span className="font-bold text-navy text-right flex-1 truncate">
                               {r.anthrone_conc ? `${parseFloat(r.anthrone_conc).toFixed(2)} µg/ml` : ''}
-                              {r.is_blank && <span className="text-amber-600"> (BLANK)</span>}
                             </span>
                           </div>
                         ))}
@@ -330,9 +404,6 @@ export default function ProductionPhasePanel({
                       <button onClick={() => { setSelectedFlaskId(f.id); setShowLogModal(true); }} className="flex-1 py-2 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover flex items-center justify-center gap-1">
                         <Plus className="w-3 h-3"/> Sample
                       </button>
-                      <button className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-black rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1">
-                        <Link className="w-3 h-3"/> Link Plate
-                      </button>
                     </div>
                   )}
                 </div>
@@ -340,7 +411,6 @@ export default function ProductionPhasePanel({
             })}
           </div>
 
-          {/* All harvested — show completion */}
           {allHarvested && (
             <div className="card p-6 border-2 border-emerald-500 bg-emerald-50/40 text-center">
               <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3"/>

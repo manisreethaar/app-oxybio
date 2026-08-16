@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -10,24 +10,7 @@ import dayjs from 'dayjs';
 import ProtocolSetupPanel from './components/ProtocolSetupPanel';
 import SeedPhasePanel from './components/SeedPhasePanel';
 import ProductionPhasePanel from './components/ProductionPhasePanel';
-
-const STEPPER_STAGES = [
-  { id: 'protocol',    label: 'Protocol' },
-  { id: 'seed_1',     label: 'Seed 1' },
-  { id: 'seed_2',     label: 'Seed 2' },
-  { id: 'seed_3',     label: 'Seed 3' },
-  { id: 'production', label: 'Production' },
-];
-
-const SEED_STAGE_IDS = STEPPER_STAGES.map(s => s.id);
-
-// Strict next-stage map — each stage has exactly ONE valid next stage
-const NEXT_STAGE = {
-  protocol:   'seed_1',
-  seed_1:     'seed_2',
-  seed_2:     'seed_3',
-  seed_3:     'production',
-};
+import useBatchRealtime from './useBatchRealtime';
 
 export default function BatchDetailsClient({ batchId, initialData }) {
   const { employeeProfile } = useAuth();
@@ -38,37 +21,97 @@ export default function BatchDetailsClient({ batchId, initialData }) {
   // All state is derived from initialData — panels read from this
   const [data, setData] = useState(initialData);
 
-  // After a mutation, trigger a server-side revalidation and update local state
+  // Keep local state in sync with initialData when it changes (after server reval)
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
   const refresh = useCallback(() => {
     startTransition(() => {
-      router.refresh(); // re-runs the server component, gets fresh data
+      router.refresh();
     });
   }, [router]);
 
-  // Called by panels after a successful stage transition
-  // Immediately updates the local stage (optimistic) then refreshes from server
-  const handleStageTransition = useCallback(async (currentStage) => {
-    const nextStage = NEXT_STAGE[currentStage];
-    if (!nextStage) return;
+  // Realtime WebSocket payload handler
+  const handleRealtimePayload = useCallback((payload) => {
+    console.log('[Realtime Received]', payload);
+    const { table, eventType, new: newRow } = payload;
+    
+    // We only handle INSERT and UPDATE for patching (DELETE is rare for these logs, handled by refresh)
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      setData(prev => {
+        const nextState = { ...prev };
+        if (table === 'batches') {
+          nextState.batch = { ...prev.batch, ...newRow };
+        } else if (table === 'batch_seed_trains') {
+          const exists = prev.seedTrains.some(s => s.id === newRow.id);
+          nextState.seedTrains = exists 
+            ? prev.seedTrains.map(s => s.id === newRow.id ? { ...s, ...newRow } : s)
+            : [...prev.seedTrains, newRow];
+        } else if (table === 'batch_flasks') {
+          const exists = prev.flasks.some(f => f.id === newRow.id);
+          nextState.flasks = exists
+            ? prev.flasks.map(f => f.id === newRow.id ? { ...f, ...newRow } : f)
+            : [...prev.flasks, newRow];
+        } else if (table === 'batch_fermentation_readings') {
+          const exists = prev.fermentationReadings.some(r => r.id === newRow.id);
+          nextState.fermentationReadings = exists
+            ? prev.fermentationReadings.map(r => r.id === newRow.id ? { ...r, ...newRow } : r)
+            : [...prev.fermentationReadings, newRow];
+        }
+        return nextState;
+      });
+    }
+    
+    // Always trigger a silent server revalidation for absolute deep consistency (foreign keys etc)
+    refresh();
+  }, [refresh]);
 
+  // Subscribe to Realtime
+  useBatchRealtime(batchId, handleRealtimePayload);
+
+  // Called by panels after a successful stage transition
+  const handleStageTransition = useCallback(async (nextStage) => {
     // Optimistic update — UI switches instantly
     setData(prev => ({
       ...prev,
       batch: { ...prev.batch, current_stage: nextStage }
     }));
-
-    // Sync in background
     refresh();
   }, [refresh]);
 
-  // Called after any mutation that doesn't change stage (save, log reading, etc.)
   const handleDataChange = useCallback(() => {
     refresh();
   }, [refresh]);
 
   const batch = data.batch;
-  const activePhase = SEED_STAGE_IDS.includes(batch.current_stage) ? batch.current_stage : 'protocol';
-  const phaseIndex = STEPPER_STAGES.findIndex(s => s.id === activePhase);
+  const activePhase = batch.current_stage || 'protocol';
+
+  // Build dynamic stepper based on what seed trains actually exist
+  // Everyone gets Protocol and Seed 1. Seed 2 and 3 only show up if instantiated. Everyone gets Production.
+  const seedTrains = data.seedTrains || [];
+  
+  const stepperStages = [{ id: 'protocol', label: 'Protocol' }];
+  
+  // Always show Seed 1 if past protocol
+  if (seedTrains.some(s => s.stage_type === 'seed_1') || activePhase !== 'protocol') {
+    stepperStages.push({ id: 'seed_1', label: 'Seed 1' });
+  }
+  
+  if (seedTrains.some(s => s.stage_type === 'seed_2') || activePhase === 'seed_2') {
+    stepperStages.push({ id: 'seed_2', label: 'Seed 2' });
+  }
+  
+  if (seedTrains.some(s => s.stage_type === 'seed_3') || activePhase === 'seed_3') {
+    stepperStages.push({ id: 'seed_3', label: 'Seed 3' });
+  }
+  
+  // Production is always the end goal
+  if (activePhase !== 'protocol') {
+    stepperStages.push({ id: 'production', label: 'Production' });
+  }
+
+  const phaseIndex = stepperStages.findIndex(s => s.id === activePhase);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20 fade-in">
@@ -105,12 +148,12 @@ export default function BatchDetailsClient({ batchId, initialData }) {
         </div>
       </div>
 
-      {/* ── SEED TRAIN STEPPER ── */}
+      {/* ── DYNAMIC STEPPER ── */}
       <div className="card p-4 overflow-x-auto shadow-sm">
         <div className="flex items-center min-w-max px-2">
-          {STEPPER_STAGES.map((stage, idx) => {
+          {stepperStages.map((stage, idx) => {
             const isCurrent = stage.id === activePhase;
-            const isPast = idx < phaseIndex;
+            const isPast = phaseIndex !== -1 && idx < phaseIndex;
             return (
               <div key={stage.id} className="flex items-center">
                 <div className={`flex flex-col items-center gap-2 ${isCurrent ? 'opacity-100' : isPast ? 'opacity-80' : 'opacity-40'}`}>
@@ -125,7 +168,7 @@ export default function BatchDetailsClient({ batchId, initialData }) {
                     {stage.label}
                   </span>
                 </div>
-                {idx < STEPPER_STAGES.length - 1 && (
+                {idx < stepperStages.length - 1 && (
                   <div className={`w-12 sm:w-20 h-0.5 mx-2 transition-colors duration-500 ${isPast || isCurrent ? 'bg-emerald-500' : 'bg-slate-200'}`}/>
                 )}
               </div>
@@ -134,14 +177,14 @@ export default function BatchDetailsClient({ batchId, initialData }) {
         </div>
       </div>
 
-      {/* ── MAIN CONTENT — keyed so panels fully remount on stage change ── */}
+      {/* ── MAIN CONTENT ── */}
       <div className="mt-2">
         {activePhase === 'protocol' ? (
           <ProtocolSetupPanel
             key="protocol"
             batch={batch}
             sops={data.sops}
-            onComplete={() => handleStageTransition('protocol')}
+            onComplete={() => handleStageTransition('seed_1')}
           />
         ) : activePhase === 'production' ? (
           <ProductionPhasePanel
@@ -164,11 +207,12 @@ export default function BatchDetailsClient({ batchId, initialData }) {
             stageType={activePhase}
             seedTrains={data.seedTrains}
             fermentationReadings={data.fermentationReadings}
+            flasks={data.flasks}
             formulations={data.formulations}
             vials={data.vials}
             employees={data.employees}
             employeeProfile={employeeProfile}
-            onTransfer={() => handleStageTransition(activePhase)}
+            onTransfer={handleStageTransition}
             onDataChange={handleDataChange}
           />
         )}
