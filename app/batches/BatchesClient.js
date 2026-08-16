@@ -131,7 +131,7 @@ export default function BatchesClient({ initialActive = [], initialCompleted = [
 
   const [loadingBatches,   setLoadingBatches]   = useState(true);
   const [showNewBatchModal, setShowNewBatchModal] = useState(false);
-  const [formulations,     setFormulations]     = useState([]);
+  const [formulations,     setFormulations]     = useState(initialFormulations);
   const [experimentTypes,  setExperimentTypes]  = useState([]);
   const [skuTargets,       setSkuTargets]       = useState([]);
   const [creatingBatch,    setCreatingBatch]    = useState(false);

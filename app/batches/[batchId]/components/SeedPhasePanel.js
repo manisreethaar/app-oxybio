@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
-import { Beaker, ShieldCheck, Droplets, Activity, Plus, ArrowRight, CheckCircle2, AlertTriangle, FlaskConical, Link } from 'lucide-react';
+import { Beaker, ShieldCheck, Droplets, Activity, Plus, ArrowRight, CheckCircle2, AlertTriangle, FlaskConical, Calendar } from 'lucide-react';
 import dayjs from 'dayjs';
 
 const INOCULUM_TYPES = ['glycerol', 'curd', 'rice_water', 'natural', 'previous_seed'];
@@ -39,12 +39,32 @@ export default function SeedPhasePanel({
   const [sterilizerId, setSterilizerId] = useState(data?.sterilizer_equipment_id || '');
   const [sterilizerTemp, setSterilizerTemp] = useState(data?.sterilization_temp_c || 121);
   const [sterilizerDuration, setSterilizerDuration] = useState(data?.sterilization_duration_mins || 20);
+  // Bug 4 fix: datetime for sterilization
+  const toLocalDatetime = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  };
+  const [sterilizationDateTime, setSterilizationDateTime] = useState(
+    data?.sterilised_at ? toLocalDatetime(data.sterilised_at) : toLocalDatetime(new Date().toISOString())
+  );
   
   // Inoculation explosion fields
+  const [flaskPrefix, setFlaskPrefix] = useState(''); // Bug 5: custom flask label prefix
   const [numFlasks, setNumFlasks] = useState(1);
   const [incubatorId, setIncubatorId] = useState('');
   const [incubationTemp, setIncubationTemp] = useState(37);
   const [incubationRpm, setIncubationRpm] = useState(200);
+
+  // Bug 5: fetch equipment list
+  const [equipment, setEquipment] = useState([]);
+  useEffect(() => {
+    const sb = createClient();
+    sb.from('equipment').select('id, name, status').order('name').then(({ data: eq }) => {
+      if (eq) setEquipment(eq.filter(e => e.name.toLowerCase().includes('incubat') || e.name.toLowerCase().includes('shaker')));
+    });
+  }, []);
 
   // States
   const [saving, setSaving] = useState(false);
@@ -80,7 +100,7 @@ export default function SeedPhasePanel({
 
       const { error } = data?.id
         ? await supabase.from('batch_seed_trains').update(payload).eq('id', data.id)
-        : await supabase.from('batch_seed_trains').insert(payload);
+        : await supabase.from('batch_seed_trains').insert(payload).select().single();
 
       if (error) throw error;
       toast.success('Media setup saved.');
@@ -88,6 +108,7 @@ export default function SeedPhasePanel({
     } catch (err) {
       toast.error(err.message);
     } finally {
+      // Bug 3 fix: always reset saving AFTER notifying parent
       setSaving(false);
     }
   };
@@ -100,10 +121,14 @@ export default function SeedPhasePanel({
     
     setSaving(true);
     try {
-      // 1. Mark as sterilized
+      // Bug 4 fix: use user-specified datetime instead of always now()
+      const sterilisedAt = sterilizationDateTime
+        ? new Date(sterilizationDateTime).toISOString()
+        : new Date().toISOString();
+
       const updates = {
         is_sterilised: true,
-        sterilised_at: new Date().toISOString(),
+        sterilised_at: sterilisedAt,
         sterilizer_equipment_id: sterilizerId,
         sterilization_temp_c: parseFloat(sterilizerTemp),
         sterilization_duration_mins: parseInt(sterilizerDuration)
@@ -134,20 +159,22 @@ export default function SeedPhasePanel({
 
   const handleInoculateExplosion = async () => {
     if (!isSterilised) return toast.warn('Must sterilise bulk media first!');
-    if (!incubatorId) return toast.warn('Enter Incubator Equipment ID.');
+    if (!incubatorId) return toast.warn('Select an Incubator from the list.');
     
     setSaving(true);
     try {
-      // 1. Update seed train inoc timestamp
       await supabase.from('batch_seed_trains').update({
         inoculated_at: new Date().toISOString()
       }).eq('id', data.id);
 
-      // 2. Create N flasks linked to this seed_train
+      // Bug 5 fix: use user-defined flask prefix, fallback to stage prefix
+      const stagePrefix = stageType === 'seed_1' ? 'S1' : stageType === 'seed_2' ? 'S2' : 'S3';
+      const labelBase = flaskPrefix.trim() || stagePrefix;
+
       const flaskPayloads = Array.from({ length: numFlasks }).map((_, i) => ({
         batch_id: batch.id,
         seed_train_id: data.id,
-        flask_label: `${stageType === 'seed_1' ? 'S1' : stageType === 'seed_2' ? 'S2' : 'S3'}-F${i + 1}`,
+        flask_label: `${labelBase}-F${i + 1}`,
         current_stage: 'fermentation',
         status: 'active',
         incubator_equipment_id: incubatorId,
@@ -321,9 +348,24 @@ export default function SeedPhasePanel({
             </div>
           </div>
 
+          {/* Sterilization Date/Time — Bug 4 fix */}
+          <div className="pt-2">
+            <label className="block text-xs font-bold text-slate-500 mb-1">
+              <Calendar className="w-3 h-3 inline mr-1" />Sterilization Date &amp; Time
+            </label>
+            <input
+              type="datetime-local"
+              value={sterilizationDateTime}
+              onChange={e => setSterilizationDateTime(e.target.value)}
+              disabled={isSterilised}
+              className="w-full px-3 py-2 border rounded-lg text-sm disabled:bg-slate-50 disabled:text-slate-400"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Defaults to now. Adjust if recording retroactively.</p>
+          </div>
+
           {!isSterilised && (
              <button onClick={handleSterilise} disabled={saving || !data?.id} className="py-2 px-6 bg-navy text-white text-xs font-black rounded-lg hover:bg-navy-hover disabled:opacity-50">
-               Run Sterilization & Deduct Inventory
+               {saving ? 'Processing...' : 'Run Sterilization & Deduct Inventory'}
              </button>
           )}
         </div>
@@ -335,10 +377,42 @@ export default function SeedPhasePanel({
           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-4">
             <Droplets className="w-4 h-4 text-navy"/> Inoculation Explosion (Generate Flasks)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Incubator Eq ID</label>
-              <input type="text" value={incubatorId} onChange={e => setIncubatorId(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm"/>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end mb-4">
+            {/* Bug 5: custom flask label prefix */}
+            <div className="md:col-span-2 lg:col-span-4">
+              <label className="block text-xs font-bold text-slate-500 mb-1">Flask Label Prefix (optional)</label>
+              <input
+                type="text"
+                value={flaskPrefix}
+                onChange={e => setFlaskPrefix(e.target.value)}
+                placeholder={`e.g. RKU-S1 → generates RKU-S1-F1, RKU-S1-F2…`}
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Leave blank to use default ({stageType === 'seed_1' ? 'S1' : stageType === 'seed_2' ? 'S2' : 'S3'}-F1, -F2…)</p>
+            </div>
+            <div className="md:col-span-2">
+              {/* Bug 5: equipment dropdown instead of freetext */}
+              <label className="block text-xs font-bold text-slate-500 mb-1">Incubator / Shaker</label>
+              {equipment.length > 0 ? (
+                <select
+                  value={incubatorId}
+                  onChange={e => setIncubatorId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                >
+                  <option value="">-- Select Equipment --</option>
+                  {equipment.map(eq => (
+                    <option key={eq.id} value={eq.id}>{eq.name} ({eq.status})</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={incubatorId}
+                  onChange={e => setIncubatorId(e.target.value)}
+                  placeholder="Incubator ID or name"
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">Temp Setpoint (°C)</label>
