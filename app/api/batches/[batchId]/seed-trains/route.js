@@ -62,6 +62,26 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: true });
     }
     
+    if (action === 'transfer_stage') {
+      const { currentStageId, targetStage, batchId } = body;
+      
+      // Complete current stage
+      const { error: err1 } = await db.from('batch_seed_trains').update({ status: 'completed' }).eq('id', currentStageId);
+      if (err1) throw err1;
+      
+      // Create next stage if it's a seed stage
+      if (targetStage !== 'production') {
+        const { error: err2 } = await db.from('batch_seed_trains').insert({ batch_id: batchId, stage_type: targetStage, status: 'active' });
+        if (err2) throw err2;
+      }
+      
+      // Update batch's current stage
+      const { error: err3 } = await db.from('batches').update({ current_stage: targetStage }).eq('id', batchId);
+      if (err3) throw err3;
+      
+      return NextResponse.json({ success: true });
+    }
+    
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error) {
     console.error('Seed Train API Error:', error);
