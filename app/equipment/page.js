@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import EquipmentClient from './EquipmentClient';
 import { redirect } from 'next/navigation';
+import { getRequestUser } from '@/utils/supabase/request-user';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,8 +10,8 @@ export default async function EquipmentPage() {
   const supabase = createClient();
   
   // 1. Auth check
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  const user = getRequestUser();
+  if (!user) {
     redirect('/login');
   }
 
