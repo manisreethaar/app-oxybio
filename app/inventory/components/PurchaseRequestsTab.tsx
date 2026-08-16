@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, CheckCircle, XCircle, Clock, AlertTriangle, Plus } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
-export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolean }) {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function PurchaseRequestsTab({ canApprove, initialRequests }: { canApprove: boolean, initialRequests: any[] }) {
+  const [requests, setRequests] = useState(initialRequests || []);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -24,8 +24,6 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
     } catch (e) { toast.error('Network error'); }
     setLoading(false);
   }, [toast]);
-
-  useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,11 +84,11 @@ export default function PurchaseRequestsTab({ canApprove }: { canApprove: boolea
             </div>
             
             <div className="flex flex-col items-end gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
-                r.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
-                r.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                r.status === 'Fulfilled' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' :
-                'bg-amber-100 text-amber-800'
+              <span className={`px-3 py-1 rounded-full text-xs font-black uppercase border ${
+                r.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                r.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                r.status === 'Fulfilled' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' :
+                'bg-amber-50 text-amber-700 border-amber-200'
               }`}>
                 {r.status}
               </span>

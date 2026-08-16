@@ -1,0 +1,1117 @@
+'use client';
+import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+import { createClient } from '@/utils/supabase/client';
+import { withTimeout } from '@/lib/withTimeout';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
+import {
+  CheckSquare, Clock, AlertTriangle, Plus, CheckCircle2,
+  ChevronDown, ChevronUp, Timer, Paperclip, ThumbsUp,
+  ThumbsDown, X, ListChecks, PlayCircle, Loader2, FileCheck, Trash2,
+  LayoutGrid, List, Activity, Eye, BarChart2, FlaskConical, Search, Columns, Table as TableIcon, Layers, Users
+} from 'lucide-react';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { canAssignTo } from '@/lib/permissions';
+import { differenceInDays } from 'date-fns';
+import TaskDetailModal from './components/TaskDetailModal';
+import { formatMinutes } from './components/utils';
+import MobilePageHeader from '@/components/ui/MobilePageHeader';
+import MobileFilterPanel from '@/components/ui/MobileFilterPanel';
+import CreatorBadge from '@/components/ui/CreatorBadge';
+
+export default function TasksClient({ initialTasks = [], initialEmployees = [], initialSops = [], initialCapaTaskBatchMap = {}, initialPendingIds = [] }) {
+  const { role, canDo, isAdmin: isMaster, employeeProfile, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const toast = useToast();
+  const [tasks, setTasks] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [sops, setSops] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  
+  
+  
+  
+  const [viewMode, setViewMode] = useState('grouped');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('tasks_view_mode');
+    if (saved && ['kanban', 'grid', 'table', 'grouped'].includes(saved)) {
+      setViewMode(saved);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('tasks_view_mode', mode);
+  };
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const { register: uiReg, watch: uiWatch, setValue: uiSetValue, getValues: uiGetValues } = useForm({
+    defaultValues: { searchTerm: '', sortOrder: 'due_asc', statusFilter: 'All', assigneeFilter: 'All', checklistInput: '' }
+  });
+  const statusFilter = uiWatch('statusFilter');
+  const assigneeFilter = uiWatch('assigneeFilter');
+  const searchTerm = uiWatch('searchTerm');
+  const deferredSearch = useDeferredValue(searchTerm);
+  const sortOrder = uiWatch('sortOrder');
+
+
+  const isAdmin = canDo('tasks', 'assign') || isMaster;
+  const canApprove = canDo('tasks', 'approve') || isMaster;
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [checklistBuffer, setChecklistBuffer] = useState([]);
+  
+
+  const { register: regTask, handleSubmit: handTask, formState: { errors: taskErrors, isSubmitting: isTaskSubmitting }, reset: resetTask, watch, setValue } = useForm({
+    resolver: zodResolver(z.object({
+      title: z.string().min(1, 'Title required'),
+      description: z.string().optional(),
+      assigned_user_ids: z.array(z.string()),
+      due_date: z.string().min(1, 'Date required'),
+      priority: z.enum(['low', 'medium', 'high', 'urgent']),
+      sop_id: z.string().optional(),
+      is_team_task: z.boolean().default(false),
+      is_routine: z.boolean().default(false),
+      routine_interval: z.string().optional()
+    })),
+    defaultValues: { title: '', description: '', assigned_user_ids: [], due_date: '', priority: 'medium', sop_id: '', is_team_task: false, is_routine: false, routine_interval: '' }
+  });
+  const watchedAssignees = watch('assigned_user_ids') || [];
+  const isTeamTask = watch('is_team_task');
+
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [completionNote, setCompletionNote] = useState('');
+  const [proofFile, setProofFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0); 
+  const timerRef = useRef(null);
+  const fileRef = useRef(null);
+  const [rejectNote, setRejectNote] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [progressNote, setProgressNote] = useState('');
+  const [progressPercentage, setProgressPercentage] = useState(0);
+  const [pendingDeleteTask, setPendingDeleteTask] = useState(null);
+  const [capaTaskBatchMap, setCapaTaskBatchMap] = useState(initialCapaTaskBatchMap);
+  const [pendingIds, setPendingIds] = useState(new Set(initialPendingIds));
+
+  useEffect(() => {
+    if (selectedTask) {
+      setProofFile(null);
+      modalReset({
+        completionNote: '',
+        rejectNote: '',
+        progressNote: '',
+        progressPercentage: selectedTask.progress_percentage || 0,
+        pin: ''
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTask?.id]);
+
+  const supabase = useMemo(() => createClient(), []);
+
+
+  const fetchPendingIds = async () => {
+    const res = await fetch('/api/edit-request');
+    if (res.ok) {
+      const d = await res.json();
+      setPendingIds(new Set((d.data || []).filter(r => r.status === 'pending').map(r => r.record_id)));
+    }
+  };
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!employeeProfile) {
+      router.push('/dashboard');
+      return;
+    }
+    fetchTasks();
+    fetchPendingIds();
+
+    // Subscribe to live task changes \u2014 catches admin assignments, peer updates, approvals
+    const channel = supabase.channel('tasks_realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'tasks',
+        ...(isAdmin ? {} : { filter: `assigned_to=eq.${employeeProfile.id}` })
+      }, async (payload) => {
+        if (payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+           setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+        } else if (payload.new && payload.new.id) {
+           if (payload.eventType === 'UPDATE') {
+             setTasks(prev => {
+                const exists = prev.find(t => t.id === payload.new.id);
+                if (exists) {
+                  // Merge payload.new into existing state to preserve joined relations without querying DB
+                  return prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t);
+                }
+                return prev;
+             });
+           } else {
+             // For INSERTs, we must query to get the joined relational data (assigned_user, etc.)
+             const { data } = await supabase
+               .from('tasks')
+               .select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)')
+               .eq('id', payload.new.id)
+               .single();
+             if (data) {
+               setTasks(prev => {
+                  const exists = prev.find(t => t.id === data.id);
+                  if (exists) return prev.map(t => t.id === data.id ? data : t);
+                  return [data, ...prev].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+               });
+             }
+           }
+        }
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employeeProfile, authLoading, router]);
+
+  useEffect(() => {
+    let interval;
+    if (timerRunning && selectedTask?.time_started_at) {
+      interval = setInterval(() => {
+        const start = new Date(selectedTask.time_started_at).getTime();
+        const now = new Date().getTime();
+        setElapsedSeconds(Math.floor((now - start) / 1000));
+      }, 1000);
+    } else { 
+      // If timer isn't running, elapsed seconds is 0, but we show logged_minutes
+      setElapsedSeconds(0); 
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning, selectedTask?.time_started_at, selectedTask?.id]);
+
+  const fetchTasks = async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      let query = supabase.from('tasks').select('*, assigned_user:employees!tasks_assigned_to_fkey(full_name, initials), creator:employees!tasks_assigned_by_fkey(full_name)').is('archived_at', null).order('due_date', { ascending: true }).limit(300);
+      let empsPromise = Promise.resolve({ data: [{ id: employeeProfile.id, full_name: employeeProfile.full_name }] });
+
+      if (!isAdmin) {
+        query = query.or(`assigned_to.eq.${employeeProfile.id},assigned_to.is.null`);
+      } else {
+        empsPromise = supabase.from('employees').select('id, full_name, role').eq('is_active', true);
+      }
+
+      const sopsPromise = supabase.from('sop_library').select('id, title, sop_id').eq('is_active', true).order('title').limit(1000);
+
+      // A stalled network/DB connection otherwise leaves this page spinning
+      // forever with no way out except a manual refresh — bound it like the
+      // timeout pattern already used in app/profile/page.js.
+      const [empsRes, tasksRes, sopsRes] = await withTimeout(Promise.all([empsPromise, query, sopsPromise]), 45000, 'Tasks load timed out');
+      if (tasksRes.error) throw tasksRes.error;
+
+      setEmployees(empsRes.data || []);
+      setTasks(tasksRes.data || []);
+      setSops(sopsRes.data || []);
+      if (selectedTask) {
+        const updated = tasksRes.data?.find(t => t.id === selectedTask.id);
+        if (updated) { setSelectedTask(updated); setTimerRunning(!!updated.time_started_at); }
+      }
+
+      // Resolve CAPA > batch links for tasks created from CAPA actions
+      const allTasks = tasksRes.data || [];
+      const capaTaskIds = allTasks.filter(t => t.title?.startsWith('[CAPA]')).map(t => t.id);
+      if (capaTaskIds.length > 0) {
+        try {
+          const { data: capaLinks } = await supabase.from('capa_actions').select('task_id, investigation_id').in('task_id', capaTaskIds);
+          const invIds = [...new Set((capaLinks || []).map(c => c.investigation_id).filter(Boolean))];
+          if (invIds.length > 0) {
+            const { data: devData } = await supabase.from('deviations').select('id, batches(id, batch_id)').in('id', invIds);
+            const map = {};
+            (capaLinks || []).forEach(ca => {
+              const dev = (devData || []).find(d => d.id === ca.investigation_id);
+              if (dev?.batches) map[ca.task_id] = dev.batches;
+            });
+            setCapaTaskBatchMap(map);
+          }
+        } catch(e) { /* silent - cross-module linking is best-effort */ }
+      }
+    } catch (err) {
+      console.error('Fetch tasks error:', err);
+      setLoadError(true);
+    }
+    finally { setLoading(false); }
+  };
+
+
+  const addChecklistItem = () => {
+    const checklistInput = uiGetValues('checklistInput');
+    if (!checklistInput.trim()) return;
+    setChecklistBuffer(prev => [...prev, { id: Math.random().toString(36).substring(7), text: checklistInput.trim(), done: false }]);
+    uiSetValue('checklistInput', '');
+  };
+
+  const executeTaskPatch = async (action, taskId, payload = {}) => {
+    try {
+      const res = await fetch('/api/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, task_id: taskId, payload }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to update task');
+      return true;
+    } catch(err) { toast.error(err.message); return false; }
+  };
+
+  const handleCreateTask = async (data) => {
+    if (actionLoading) return;
+    const isEdit = !!editingTaskId;
+    const isAdmin = canDo('tasks', 'assign') || isMaster;
+    
+    let assignees = isAdmin ? data.assigned_user_ids : [employeeProfile.id];
+    if (data.is_team_task) {
+      assignees = [null]; // One unassigned task for the whole team
+    } else if (isAdmin && assignees.length === 0 && !isEdit) { 
+      toast.warn('Select at least one assignee or mark as a Team Task.'); return; 
+    }
+
+    setActionLoading(true);
+
+    try {
+      if (isEdit) {
+        // Handle Single Task Edit
+        const res = await fetch('/api/tasks', { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ 
+            id: editingTaskId,
+            title: data.title, 
+            description: data.description, 
+            assigned_to: assignees[0], // Edit currently supports 1-to-1
+            due_date: data.due_date, 
+            priority: data.priority, 
+            checklist: checklistBuffer,
+            is_routine: data.is_routine,
+            routine_interval: data.is_routine ? data.routine_interval : null
+          }) 
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to update task');
+      } else {
+        // Handle New Task Creation (Batch Support)
+        const insertPayload = assignees.map(uid => ({
+          title: data.title, description: data.description, assigned_to: uid,
+          due_date: data.due_date, priority: data.priority, checklist: checklistBuffer,
+          sop_id: data.sop_id || null,
+          is_personal_reminder: !isAdmin,
+          is_routine: data.is_routine,
+          routine_interval: data.is_routine ? data.routine_interval : null
+        }));
+        const res = await fetch('/api/tasks', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(insertPayload) 
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to create tasks');
+        
+        if (isAdmin) {
+          assignees.filter(uid => !!uid).forEach(uid => { 
+            fetch('/api/push/send', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ assigned_to: uid, title: "New Task: " + data.priority.toUpperCase(), body: data.title, url: "/tasks" }) 
+            }).catch(() => {}); 
+          });
+        }
+      }
+      
+      toast.success(isEdit ? "Task updated successfully." : "Task created successfully.");
+      setShowCreate(false); setEditingTaskId(null); resetTask(); setChecklistBuffer([]); fetchTasks();
+    } catch(err) { toast.error(err.message); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTaskId(task.id);
+    resetTask({
+      title: task.title,
+      description: task.description || '',
+      assigned_user_ids: [task.assigned_to],
+      due_date: task.due_date ? task.due_date.split('T')[0] : '',
+      priority: task.priority || 'medium',
+      is_routine: task.is_routine || false,
+      routine_interval: task.routine_interval || ''
+    });
+    setChecklistBuffer(task.checklist || []);
+    setShowCreate(true);
+    setSelectedTask(null);
+  };
+
+  const handleDeleteTask = (taskId) => {
+    setPendingDeleteTask(taskId);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!pendingDeleteTask) return;
+    const taskId = pendingDeleteTask;
+    setPendingDeleteTask(null);
+    try {
+      const res = await fetch(`/api/tasks?id=${taskId}&permanent=true`, { method: 'DELETE' });
+      const result = await res.json();
+      if (res.ok) { 
+        if (selectedTask?.id === taskId) setSelectedTask(null); 
+        fetchTasks();
+        toast.success('Task deleted.');
+      }
+      else toast.error(result?.error || 'Delete failed. You may not have permission.');
+    } catch (err) { toast.error('Error: ' + err.message); }
+  };
+
+  const handleAcknowledge = async (taskId) => {
+    if (actionLoading) return; setActionLoading(true);
+    const success = await executeTaskPatch('acknowledge_task', taskId);
+    if (success) { 
+      if (selectedTask?.id === taskId) setSelectedTask(t => ({ ...t, is_acknowledged: true })); 
+      fetchTasks(); 
+    }
+    setActionLoading(false);
+  };
+
+  const handleUpdateProgress = async (e) => {
+    e.preventDefault(); if (actionLoading || !selectedTask) return;
+    setActionLoading(true);
+    const success = await executeTaskPatch('update_progress', selectedTask.id, { 
+      percentage: progressPercentage, 
+      note: progressNote || 'Progress update' 
+    });
+    if (success) { 
+      // Auto-trigger "Submit for Review" if 100%
+      if (progressPercentage === 100) { 
+        // We just let the user see it's at 100%, and the submit form is already visible if in-progress
+      }
+      setProgressNote('');
+      fetchTasks(); 
+      toast.success("Progress updated.");
+    }
+    setActionLoading(false);
+  };
+
+  const handleStartTimer = async (task) => {
+    if (actionLoading) return; setActionLoading(true);
+    const success = await executeTaskPatch('start_timer', task.id);
+    if (success) { 
+      setSelectedTask(t => ({ ...t, time_started_at: new Date().toISOString(), status: 'in-progress', is_acknowledged: true })); 
+      setTimerRunning(true); 
+      fetchTasks(); 
+    }
+    setActionLoading(false);
+  };
+
+  const handlePauseTimer = async () => {
+    if (!selectedTask?.time_started_at || actionLoading) return;
+    setActionLoading(true);
+    const sessionSeconds = Math.floor((new Date().getTime() - new Date(selectedTask.time_started_at).getTime()) / 1000);
+    const newMins = Math.floor(sessionSeconds / 60);
+
+    const success = await executeTaskPatch('pause_timer', selectedTask.id, { logged_minutes: (selectedTask.logged_minutes || 0) + newMins });
+    if (success) { setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); }
+    setActionLoading(false);
+  };
+
+  const handleCloseModal = async () => {
+    if (timerRunning) await handlePauseTimer();
+    setSelectedTask(null); setElapsedSeconds(0); setTimerRunning(false);
+  };
+
+  const toggleChecklistItem = async (task, index) => {
+    const updated = [...(task.checklist || [])]; updated[index].done = !updated[index].done;
+    const success = await executeTaskPatch('update_checklist', task.id, { checklist: updated });
+    if (success) { if (selectedTask?.id === task.id) setSelectedTask(t => ({ ...t, checklist: updated })); fetchTasks(); }
+  };
+
+  const handleSubmitForReview = async (e, submittedPin = '') => {
+    e.preventDefault(); if (actionLoading) return;
+    setActionLoading(true); setUploading(true);
+    let proofUrl = null;
+
+    try {
+      if (proofFile) {
+        const formData = new FormData(); formData.append('file', proofFile);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData }); 
+        if (!res.ok) { toast.error("Failed to upload proof"); return; }
+        proofUrl = (await res.json()).url;
+      }
+      let finalMins = (selectedTask.logged_minutes || 0);
+      if (timerRunning && selectedTask?.time_started_at) {
+        finalMins += Math.floor((new Date().getTime() - new Date(selectedTask.time_started_at).getTime()) / 60000);
+      }
+
+      const success = await executeTaskPatch('submit_review', selectedTask.id, {
+        completion_note: completionNote, proof_url: proofUrl, logged_minutes: finalMins, is_personal_reminder: selectedTask.is_personal_reminder, pin: submittedPin
+      });
+
+      if (success) { 
+        toast.success("Task submitted for review.");
+        setSelectedTask(null); setCompletionNote(''); setProofFile(null); setTimerRunning(false); setElapsedSeconds(0); fetchTasks(); 
+      }
+    } finally { setUploading(false); setActionLoading(false); }
+  };
+
+  const handleApprove = async (taskId) => {
+    const success = await executeTaskPatch('approve', taskId);
+    if (success) { toast.success("Task approved."); setSelectedTask(null); fetchTasks(); }
+  };
+
+  const handleReject = async (data) => {
+    const success = await executeTaskPatch('reject', selectedTask.id, { reject_note: data.rejectNote });
+    if (success) { toast.success("Task rejected."); modalReset(); setSelectedTask(null); fetchTasks(); }
+  };
+
+  const filteredTasks = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
+    return tasks
+      .filter(t => {
+        const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
+        const matchesAssignee = assigneeFilter === 'All' || t.assigned_to === assigneeFilter;
+        const matchesSearch = !q || [
+          t.title,
+          t.description,
+          t.priority,
+          t.status,
+          t.assigned_user?.full_name,
+          t.creator?.full_name
+        ].some(value => String(value || '').toLowerCase().includes(q));
+        return matchesStatus && matchesAssignee && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'due_desc') return new Date(b.due_date || 0) - new Date(a.due_date || 0);
+        if (sortOrder === 'priority') return (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
+        if (sortOrder === 'title') return (a.title || '').localeCompare(b.title || '');
+        return new Date(a.due_date || 0) - new Date(b.due_date || 0);
+      });
+  }, [tasks, statusFilter, assigneeFilter, deferredSearch, sortOrder]);
+  
+  const groupedTasks = useMemo(() => {
+    const groups = {};
+    filteredTasks.forEach(task => {
+      const key = `${task.title.trim().toLowerCase()}|${(task.description || '').trim().toLowerCase()}`;
+      if (!groups[key]) {
+        groups[key] = {
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          due_date: task.due_date,
+          assignees: [],
+          completedCount: 0,
+          pendingReviewCount: 0,
+          unacknowledgedCount: 0,
+          totalCount: 0,
+          checklist: task.checklist,
+          status: 'open'
+        };
+      }
+      groups[key].assignees.push(task);
+      groups[key].totalCount++;
+      if (task.status === 'done') groups[key].completedCount++;
+      if (task.approval_status === 'pending_review') groups[key].pendingReviewCount++;
+      if (!task.is_acknowledged && task.status !== 'done') groups[key].unacknowledgedCount++;
+      
+      // Inherit urgent priority if any subtask is urgent
+      if (task.priority === 'urgent') groups[key].priority = 'urgent';
+    });
+    return Object.values(groups).sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+  }, [filteredTasks]);
+
+  const overdueCount = tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled' && t.due_date && differenceInDays(new Date(t.due_date), new Date()) < 0).length;
+  const pendingApprovals = tasks.filter(t => t.approval_status === 'pending_review').length;
+
+  if (authLoading || loading) return <div className="p-8 text-center text-slate-400 font-medium">Loading task queue...</div>;
+
+  return (
+    <ErrorBoundary>
+    <div className="page-container">
+      {/* Alerts */}
+      <div className="space-y-3">
+        {loadError && (
+          <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center justify-between text-red-800 shadow-sm text-sm gap-3">
+            <span className="font-bold">Couldn&apos;t load tasks. Your connection may be slow or unavailable.</span>
+            <button onClick={fetchTasks} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shrink-0">Retry</button>
+          </div>
+        )}
+        {overdueCount > 0 && (
+          <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center text-red-800 shadow-sm text-sm">
+            <AlertTriangle className="w-5 h-5 mr-3 shrink-0 text-red-600" />
+            <span className="font-bold">{overdueCount} overdue task{overdueCount > 1 ? 's' : ''} need attention.</span>
+          </div>
+        )}
+        {canApprove && pendingApprovals > 0 && (
+          <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-center text-amber-800 shadow-sm text-sm">
+            <FileCheck className="w-5 h-5 mr-3 shrink-0 text-amber-600" />
+            <span className="font-bold">{pendingApprovals} task{pendingApprovals > 1 ? 's' : ''} pending your review.</span>
+          </div>
+        )}
+      </div>
+
+      <MobilePageHeader
+        icon={CheckSquare}
+        title="Tasks"
+        subtitle="Prioritize work, reviews, and personal reminders from one mobile queue."
+        stats={[
+          { label: 'Open', value: tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled').length },
+          { label: 'Overdue', value: overdueCount },
+          { label: 'Review', value: pendingApprovals },
+        ]}
+        action={
+          <button onClick={() => setShowCreate(!showCreate)} className="w-10 h-10 rounded-2xl bg-navy text-white flex items-center justify-center shadow-sm" aria-label={isAdmin ? 'Assign task' : 'Add reminder'}>
+            <Plus className="w-5 h-5" />
+          </button>
+        }
+      />
+
+      <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Task Operations</h1>
+          <p className="text-sm text-slate-500 mt-1">Assign, track, and complete Node operations.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg mr-2">
+            {[
+              { id: 'kanban', icon: Columns, label: 'Kanban' },
+              { id: 'grouped', icon: Layers, label: 'Grouped' },
+              { id: 'grid',   icon: LayoutGrid, label: 'Grid' },
+              { id: 'table',  icon: TableIcon, label: 'Table' },
+            ].map(v => {
+              const Icon = v.icon;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => handleViewModeChange(v.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    viewMode === v.id
+                      ? 'bg-white text-navy shadow-sm border border-slate-200'
+                      : 'text-slate-500 hover:bg-slate-200 border border-transparent'
+                  }`}
+                  title={v.label}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">{v.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button onClick={() => setShowCreate(!showCreate)} className="flex items-center px-4 py-2 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg transition-colors shadow-sm text-xs uppercase tracking-wider">
+            <Plus className="w-4 h-4 mr-1.5" /> {isAdmin ? 'Assign Task' : 'Add Reminder'}
+          </button>
+        </div>
+      </div>
+
+      {showCreate && (
+        <div className="fixed inset-0 z-[160] bg-slate-50/10 backdrop-blur-sm md:static md:bg-transparent md: flex items-end md:block" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }}>
+        <form onClick={e => e.stopPropagation()} onSubmit={handTask(handleCreateTask)} className="card p-4 md:p-6 animate-in fade-in duration-200 md:rounded-2xl w-full max-h-[90vh] overflow-y-auto md:max-h-none">
+          <h2 className="text-base font-bold text-slate-900 mb-6 flex items-center gap-1.5">
+            <ListChecks className="w-5 h-5 text-navy"/> {editingTaskId ? 'Edit Task Details' : (isAdmin ? 'Create & Assign Task' : 'Set Personal Reminder')}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Task Title *</label>
+              <input type="text" {...regTask('title')} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-semibold" placeholder="Title..."/>
+              {taskErrors.title && <p className="text-red-500 text-xs mt-1">{taskErrors.title.message}</p>}
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+              <textarea {...regTask('description')} rows="2" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Instructions..."/>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Assign To *</label>
+                {isAdmin && (
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-navy">
+                    <input type="checkbox" {...regTask('is_team_task')} className="rounded text-navy focus:ring-navy" />
+                    Team Task (Unassigned)
+                  </label>
+                )}
+              </div>
+              {isAdmin ? (
+                isTeamTask ? (
+                  <div className="bg-slate-100 border border-slate-200 rounded-lg p-3 text-xs font-bold text-slate-500 text-center">
+                    This task will be available to all active staff members.
+                  </div>
+                ) : (
+                  <div className="max-h-28 overflow-y-auto bg-slate-50 border border-slate-100 rounded-lg p-2 space-y-1">
+                    {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).map(e => (
+                      <label key={e.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors text-xs font-semibold text-slate-700">
+                        <input type="checkbox" checked={watchedAssignees.includes(e.id)} onChange={(ev) => { const ids = ev.target.checked ? [...watchedAssignees, e.id] : watchedAssignees.filter(id => id !== e.id); setValue('assigned_user_ids', ids); }} className="rounded text-navy focus:ring-navy flex-shrink-0" />
+                        {e.full_name} <span className="text-xs text-slate-400 ml-auto uppercase opacity-60 font-black">{e.role}</span>
+                      </label>
+                    ))}
+                    {employees.filter(e => canAssignTo(role, e.role, employeeProfile?.email)).length === 0 && (
+                      <p className="text-xs text-slate-400 p-2 italic text-center">No authorized colleagues below your role.</p>
+                    )}
+                  </div>
+                )
+              ) : <div className="bg-slate-100 px-3 py-2 rounded-lg text-xs font-bold text-slate-600">Self</div>}
+              {!isTeamTask && taskErrors.assigned_user_ids && <p className="text-red-500 text-xs mt-1">{taskErrors.assigned_user_ids.message}</p>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Due Date *</label>
+                <input type="date" {...regTask('due_date')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none"/>
+                {taskErrors.due_date && <p className="text-red-500 text-xs mt-1">{taskErrors.due_date.message}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Priority</label>
+                <select {...regTask('priority')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
+                  <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
+                </select>
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Requires SOP</label>
+              <select {...regTask('sop_id')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
+                <option value="">No SOP required</option>
+                {sops.map(s => <option key={s.id} value={s.id}>{s.sop_id ? `${s.sop_id} — ` : ''}{s.title}</option>)}
+              </select>
+              <p className="text-xs text-slate-400 mt-1">The assignee must e-sign this SOP before they can start the task.</p>
+            </div>
+            <div className="md:col-span-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
+                <input type="checkbox" {...regTask('is_routine')} className="rounded text-navy focus:ring-navy w-4 h-4" />
+                This is a Routine Task
+              </label>
+              {watch('is_routine') && (
+                <div className="mt-3">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Recurrence Interval</label>
+                  <select {...regTask('routine_interval')} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none">
+                    <option value="">Select interval...</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly (Every 7 Days)</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Steps</label>
+              <div className="flex gap-2 mb-2">
+                <input {...uiReg('checklistInput')} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none font-medium" placeholder="Step title..."/>
+                <button type="button" onClick={addChecklistItem} className="px-3 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200">Add</button>
+              </div>
+              {checklistBuffer.length > 0 && (
+                <ul className="space-y-1">
+                  {checklistBuffer.map((item, i) => (
+                    <li key={item.id || i} className="flex items-center gap-2 text-xs bg-slate-50 px-2 py-1.5 rounded border border-slate-100">
+                      <span className="w-3.5 h-3.5 rounded border border-slate-300 inline-block shrink-0"></span>
+                      <span className="flex-1 text-slate-700 font-medium">{item.text}</span>
+                      <button type="button" onClick={() => setChecklistBuffer(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500"><X className="w-3 h-3"/></button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button type="button" onClick={() => { setShowCreate(false); setEditingTaskId(null); setChecklistBuffer([]); resetTask(); }} className="px-4 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">Cancel</button>
+            <button type="submit" disabled={isTaskSubmitting || actionLoading} className="px-4 py-2 text-xs font-bold text-white bg-navy rounded-lg hover:bg-navy-hover shadow-sm disabled:opacity-60">{isTaskSubmitting || actionLoading ? 'Saving...' : (editingTaskId ? 'Save Changes' : 'Create')}</button>
+          </div>
+        </form>
+        </div>
+      )}
+
+      <div className="card p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            {...uiReg('searchTerm')}
+            placeholder="Search tasks, assignees, status..."
+            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-accent outline-none"
+          />
+        </div>
+        <div className="md:hidden">
+          <MobileFilterPanel
+            open={filtersOpen}
+            onOpen={() => setFiltersOpen(true)}
+            onClose={() => setFiltersOpen(false)}
+            summary="Sort & filter"
+          >
+            <select {...uiReg('sortOrder')} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+              <option value="due_asc">Due Soon</option>
+              <option value="due_desc">Due Later</option>
+              <option value="priority">Priority</option>
+              <option value="title">Title A-Z</option>
+            </select>
+            {isAdmin && (
+              <>
+                <select {...uiReg('statusFilter')} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+                  <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
+                </select>
+                <select {...uiReg('assigneeFilter')} className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+                  <option value="All">All Assignees</option>{employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                </select>
+              </>
+            )}
+          </MobileFilterPanel>
+        </div>
+        <div className="hidden md:flex flex-wrap gap-2">
+          <select {...uiReg('sortOrder')} className="px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+            <option value="due_asc">Due Soon</option>
+            <option value="due_desc">Due Later</option>
+            <option value="priority">Priority</option>
+            <option value="title">Title A-Z</option>
+          </select>
+          {isAdmin && (
+            <>
+          <select {...uiReg('statusFilter')} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+            <option value="All">All Statuses</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="done">Done</option>
+          </select>
+          <select {...uiReg('assigneeFilter')} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold text-slate-600 focus:ring-2 focus:ring-accent outline-none">
+            <option value="All">All Assignees</option>{employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+          </select>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* VIEWS */}
+
+      {/* GROUPED VIEW */}
+      {viewMode === 'grouped' && (
+        <>
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 font-medium text-sm">No tasks assigned.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+              {groupedTasks.map(group => {
+                const isOverdue = group.status !== 'done' && group.due_date && differenceInDays(new Date(group.due_date), new Date()) < 0;
+                const progress = Math.round((group.completedCount / group.totalCount) * 100);
+            
+            return (
+              <div key={group.id} onClick={() => setSelectedTask(group.assignees[0])} className={`card p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+                <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${progress === 100 ? 'bg-emerald-500' : group.priority === 'urgent' ? 'bg-red-500' : group.priority === 'high' ? 'bg-amber-500' : 'bg-slate-400'}`}></div>
+                <div className="flex justify-between items-start mb-2 pl-1">
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${group.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700'}`}>{group.priority}</span>
+                  <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase bg-slate-100 text-slate-600">{group.completedCount}/{group.totalCount} Done</span>
+                </div>
+                <h3 className="text-sm font-bold mb-1 pl-1 text-slate-900">{group.title}</h3>
+                <p className="text-xs text-slate-500 mb-3 pl-1 line-clamp-1">{group.description}</p>
+                
+                <div className="pl-1 mb-4">
+                  <div className="flex justify-between text-xs font-black text-slate-400 uppercase mb-1">
+                    <span>Overall Progress</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div className={`h-full transition-all duration-500 ${progress === 100 ? 'bg-emerald-500' : 'bg-navy'}`} style={{ width: `${progress}%` }}></div>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
+                  <div className="flex -space-x-1.5">
+                    {group.assignees.slice(0, 3).map((a, i) => (
+                      <div key={i} className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-xs text-slate-800 font-black shadow-sm" title={a.assigned_user?.full_name || 'Team Task'}>
+                        {a.assigned_user ? a.assigned_user.full_name?.[0] : <Users className="w-3 h-3 text-slate-500" />}
+                      </div>
+                    ))}
+                    {group.totalCount > 3 && <div className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-black">+ {group.totalCount - 3}</div>}
+                  </div>
+                  <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{group.due_date ? new Date(group.due_date).toLocaleDateString() : '\u2014'}</span>
+                </div>
+                <div className="mt-3 flex flex-col gap-1">
+                  {group.pendingReviewCount > 0 && <div className="px-1.5 py-0.5 rounded text-xs font-black uppercase border border-amber-100 bg-amber-50 text-amber-700 text-center animate-pulse">{group.pendingReviewCount} Pending Review</div>}
+                  {group.unacknowledgedCount > 0 && <div className="px-1.5 py-0.5 rounded text-xs font-black uppercase border border-amber-200 bg-amber-50 text-amber-700 text-center">{group.unacknowledgedCount} Not Yet Seen</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+          )}
+        </>
+      )}
+
+      {/* GRID VIEW */}
+      {viewMode === 'grid' && (
+        <>
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 font-medium text-sm">No tasks assigned.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+              {filteredTasks.map(task => {
+                const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && differenceInDays(new Date(task.due_date), new Date()) < 0;
+                const checklistTotal = task.checklist?.length || 0;
+                const checklistDone = task.checklist?.filter(c => c.done).length || 0;
+            const checklistPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+            const displayPct = task.progress_percentage > 0 ? task.progress_percentage : checklistPct;
+            const approvalBadge = { 'pending_review': { label: 'Review', cls: 'bg-amber-50 text-amber-700 border-amber-100' }, 'approved': { label: 'Approved OK', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' }, 'rejected': { label: 'Returned', cls: 'bg-red-50 text-red-700 border-red-100' } }[task.approval_status];
+
+            return (
+              <div key={task.id} onClick={() => setSelectedTask(task)} className={`card p-4 md:p-5 flex flex-col cursor-pointer hover:border-slate-300 transition-colors relative overflow-hidden ${isOverdue ? 'border-red-200 bg-red-50/10' : ''}`}>
+                <div className={`absolute top-0 left-0 w-1 p-0.5 h-full ${task.status === 'done' ? 'bg-emerald-500' : task.priority === 'urgent' ? 'bg-red-500' : task.priority === 'high' ? 'bg-amber-500' : task.priority === 'medium' ? 'bg-slate-400' : 'bg-slate-300'}`}></div>
+                <div className="flex justify-between items-start mb-2 pl-1">
+                  <div className="flex gap-1.5 items-center">
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-700 border-slate-50'}`}>{task.priority}</span>
+                    {task.is_acknowledged
+                      ? <Eye className="w-3 h-3 text-emerald-500" title={`Acknowledged: ${task.acknowledged_at ? new Date(task.acknowledged_at).toLocaleString() : ''}`} />
+                      : String(task.assigned_to) === String(employeeProfile?.id) && (
+                          <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 animate-pulse">Unread</span>
+                        )
+                    }
+                  </div>
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase ${task.status === 'done' ? 'bg-emerald-50 text-emerald-700' : task.status === 'in-progress' ? 'bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-600'}`}>{task.status}</span>
+                </div>
+                <h3 className={`text-sm font-bold mb-1 pl-1 ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{task.title}</h3>
+                {capaTaskBatchMap[task.id] && (
+                  <Link href={`/batches/${capaTaskBatchMap[task.id].id}`} onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-100 px-1.5 py-0.5 rounded-full hover:bg-slate-100 transition-colors mb-1">
+                    <FlaskConical className="w-2.5 h-2.5"/> CAPA: {capaTaskBatchMap[task.id].batch_id}
+                  </Link>
+                )}
+
+                <div className="pl-1 mb-2">
+                  <div className="flex justify-between text-xs font-black text-slate-400 uppercase mb-0.5">
+                    <span>Progress</span>
+                    <span>{displayPct}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1">
+                    <div className={`h-1 rounded-full ${displayPct === 100 ? 'bg-emerald-500' : 'bg-navy'}`} style={{ width: `${displayPct}%` }}></div>
+                  </div>
+                </div>
+
+                {/* Unacknowledged banner for the assignee */}
+                {!task.is_acknowledged && String(task.assigned_to) === String(employeeProfile?.id) && task.status !== 'done' && (
+                  <div
+                    className="mt-1 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-2"
+                    onClick={e => { e.stopPropagation(); handleAcknowledge(task.id); }}
+                  >
+                    <span className="text-xs font-bold text-amber-700">???? Tap to acknowledge this task</span>
+                    <button className="px-2 py-1 bg-amber-500 text-white text-xs font-black uppercase rounded-md hover:bg-amber-600 transition-colors whitespace-nowrap">Acknowledge</button>
+                  </div>
+                )}
+
+                <div className="mt-auto pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    {task.assigned_to ? (
+                        <>
+                          <CreatorBadge initials={task.assigned_user?.initials} fullName={task.assigned_user?.full_name} />
+                          <span>{task.assigned_user?.full_name || 'Unknown User'}</span>
+                        </>
+                    ) : (
+                      <>
+                        <div className="w-5 h-5 rounded-full bg-navy text-white flex items-center justify-center text-[10px] font-black"><Users className="w-3 h-3"/></div>
+                        <span className="text-navy font-bold">Team Task</span>
+                      </>
+                    )}
+                  </div>
+                  <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}><Clock className="w-3 h-3"/>{task.due_date ? new Date(task.due_date).toLocaleDateString() : '\u2014'}</span>
+                </div>
+                {approvalBadge && <div className={`mt-2 px-1.5 py-0.5 rounded text-xs font-black uppercase border text-center ${approvalBadge.cls}`}>{approvalBadge.label}</div>}
+                {task.status !== 'done' && task.status !== 'cancelled' && (
+                  <div className="mt-2 text-center text-xs text-slate-300 font-semibold">Tap to view &amp; update {`>`}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+          )}
+        </>
+      )}
+
+      {/* KANBAN VIEW */}
+      {viewMode === 'kanban' && (
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+          {['open', 'in-progress', 'done'].map(statusColumn => {
+            const columnItems = filteredTasks.filter(t => t.status === statusColumn);
+            
+            return (
+              <div key={statusColumn} className="w-80 shrink-0 snap-start flex flex-col max-h-[calc(100vh-200px)]">
+                <div className="bg-slate-200/50 rounded-t-xl p-3 border border-b-0 border-slate-200 flex flex-col gap-1.5 shrink-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-900 truncate uppercase">{statusColumn.replace('-', ' ')}</span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                      statusColumn === 'done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                      statusColumn === 'in-progress' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}>{columnItems.length}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-100/50 rounded-b-xl border border-t-0 border-slate-200 p-2 flex-1 overflow-y-auto space-y-3">
+                  {columnItems.length === 0 ? (
+                    <div className="text-center p-4 text-xs font-bold text-slate-400">No {statusColumn} tasks</div>
+                  ) : columnItems.map(task => {
+                    const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && (new Date(task.due_date) < new Date(new Date().setHours(0,0,0,0)));
+                    
+                    return (
+                      <div key={task.id} className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer ${isOverdue ? 'border-red-200 bg-red-50/10' : 'border-slate-200'}`} onClick={() => setSelectedTask(task)}>
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className={`text-xs font-black line-clamp-2 ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.title}</h3>
+                          <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' : task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>{task.priority}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mt-1 pt-2 border-t border-slate-50">
+                          <div className="flex items-center gap-1.5 text-xs">
+                             <div className="w-5 h-5 rounded-full border border-white bg-slate-100 flex items-center justify-center text-[10px] text-slate-800 font-black shadow-sm" title={task.assigned_to ? task.assigned_user?.full_name : 'Team Task'}>
+                                {task.assigned_to ? (task.assigned_user?.full_name?.[0] || '?') : <Users className="w-3 h-3 text-slate-500" />}
+                             </div>
+                             <span className="text-slate-500 font-semibold truncate max-w-[100px]">{task.assigned_to ? (task.assigned_user?.full_name?.split(' ')[0] || 'Unknown') : 'Team Task'}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold flex items-center gap-1 ${isOverdue ? 'text-red-600' : 'text-slate-400'}`}>
+                            <Clock className="w-3 h-3"/>
+                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
+                          </span>
+                        </div>
+                        
+                        {task.approval_status === 'pending_review' && (
+                           <div className="mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase border border-amber-100 bg-amber-50 text-amber-700 text-center">Review Pending</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TABLE VIEW */}
+      {viewMode === 'table' && (
+        <div className="card overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Task Title</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Assignee</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Priority</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">Due Date</th>
+                <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500 text-center">Progress</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredTasks.length === 0 ? (
+                <tr><td colSpan="6" className="text-center p-8 text-sm font-bold text-slate-400">No tasks match current search.</td></tr>
+              ) : filteredTasks.map(task => {
+                const isOverdue = task.status !== 'done' && task.status !== 'cancelled' && task.due_date && (new Date(task.due_date) < new Date(new Date().setHours(0,0,0,0)));
+                const checklistTotal = task.checklist?.length || 0;
+                const checklistDone = task.checklist?.filter(c => c.done).length || 0;
+                const checklistPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+                const displayPct = task.progress_percentage > 0 ? task.progress_percentage : checklistPct;
+                
+                return (
+                  <tr key={task.id} onClick={() => setSelectedTask(task)} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="px-4 py-2">
+                      <div className={`text-sm font-semibold ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.title}</div>
+                      {task.approval_status === 'pending_review' && <span className="text-[10px] font-bold text-amber-600 uppercase">Review Pending</span>}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-black text-slate-600 shadow-sm">
+                          {task.assigned_to ? (task.assigned_user?.full_name?.[0] || '?') : <Users className="w-3.5 h-3.5 text-slate-500" />}
+                        </div>
+                        <span className="text-sm font-medium text-slate-600">{task.assigned_to ? (task.assigned_user?.full_name || 'Unknown User') : 'Team Task'}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                        task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-100' :
+                        task.priority === 'high' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        'bg-slate-50 text-slate-600 border-slate-100'
+                      }`}>{task.priority}</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                        task.status === 'done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        task.status === 'in-progress' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                        'bg-slate-50 text-slate-600 border-slate-200'
+                      }`}>{task.status.replace('-', ' ')}</span>
+                    </td>
+                    <td className="px-4 py-2 text-sm font-mono">
+                      <span className={isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}>
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 w-32">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div className={`h-full rounded-full ${displayPct === 100 ? 'bg-emerald-500' : 'bg-navy'}`} style={{ width: `${displayPct}%` }}></div>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-500 w-6 text-right">{displayPct}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <TaskDetailModal
+        selectedTask={selectedTask}
+        linkedSop={sops.find(s => s.id === selectedTask?.sop_id)}
+        groupedTasks={groupedTasks}
+        employeeProfile={employeeProfile}
+        isMaster={isMaster}
+        canApprove={canApprove}
+        timerRunning={timerRunning}
+        elapsedSeconds={elapsedSeconds}
+        progressPercentage={progressPercentage}
+        setProgressPercentage={setProgressPercentage}
+        progressNote={progressNote}
+        setProgressNote={setProgressNote}
+        completionNote={completionNote}
+        setCompletionNote={setCompletionNote}
+        rejectNote={rejectNote}
+        setRejectNote={setRejectNote}
+        proofFile={proofFile}
+        setProofFile={setProofFile}
+        actionLoading={actionLoading}
+        uploading={uploading}
+        onClose={handleCloseModal}
+        onAcknowledge={handleAcknowledge}
+        onStartTimer={handleStartTimer}
+        onPauseTimer={handlePauseTimer}
+        onUpdateProgress={handleUpdateProgress}
+        onSubmitForReview={handleSubmitForReview}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onEditTask={handleEditTask}
+        onDeleteTask={handleDeleteTask}
+        onToggleChecklist={toggleChecklistItem}
+        pendingIds={pendingIds}
+        onSuccess={() => { fetchTasks(); fetchPendingIds(); }}
+      />
+
+
+      {/* Delete Task Modal */}
+      {pendingDeleteTask && (
+        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Delete Task</h3>
+            <p className="text-sm text-slate-600 mb-6 text-center">
+              Are you sure you want to permanently delete this task? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setPendingDeleteTask(null)}
+                className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition w-full"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteTask}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition w-full"
+              >
+                Delete Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+    </ErrorBoundary>
+  );
+}

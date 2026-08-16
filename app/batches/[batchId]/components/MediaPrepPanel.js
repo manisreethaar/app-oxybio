@@ -379,7 +379,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                    </div>
                    
                    {isKavuni && isF2 && (
-                     <div className="mt-4 pt-3 border-t border-slate-100/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                     <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div><label className="field-label">Pre-cook Temp (°C)</label><input type="number" step="0.1" {...register('kavuniTemp')} className="field-input" placeholder="90.0"/></div>
                         <div><label className="field-label">Pre-cook Duration (min)</label><input type="number" {...register('kavuniMin')} className="field-input" placeholder="30"/></div>
                      </div>

@@ -365,7 +365,7 @@ export default function ProductionPhasePanel({
               const flaskReadings = fermentationReadings.filter(r => r.flask_id === f.id);
               const isHarvested = f.current_stage !== 'fermentation' && f.current_stage !== 'inoculation';
               return (
-                <div key={f.id} className={`card border-2 p-5 transition-all ${isHarvested ? 'border-amber-200 bg-amber-50/30' : 'border-navy/10 hover:border-navy/30'}`}>
+                <div key={f.id} className={`card border-2 p-5 transition-all ${isHarvested ? 'border-amber-200 bg-amber-50' : 'border-slate-100 hover:border-slate-300'}`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-black text-slate-800">{f.flask_label}</h3>
@@ -412,7 +412,7 @@ export default function ProductionPhasePanel({
           </div>
 
           {allHarvested && (
-            <div className="card p-6 border-2 border-emerald-500 bg-emerald-50/40 text-center">
+            <div className="card p-6 border-2 border-emerald-500 bg-emerald-50 text-center">
               <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3"/>
               <h3 className="text-lg font-black text-emerald-800 mb-1">All Flasks Harvested!</h3>
               <p className="text-sm text-emerald-700">This batch has been fully transferred to Downstream processing.</p>

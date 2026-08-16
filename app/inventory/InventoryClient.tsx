@@ -19,6 +19,7 @@ import ItemVendorModal from './components/ItemVendorModal';
 import PurchaseRequestsTab from './components/PurchaseRequestsTab';
 import TraceabilityTab from './components/TraceabilityTab';
 import { useAuditReason } from '@/components/useAuditReason';
+import { useInventoryRealtime } from './useInventoryRealtime';
 import { getStockRisk } from './inventoryUtils';
 import {
   filterStock,
@@ -42,7 +43,7 @@ function getCategoryMeta(category?: string) {
   return CATEGORY_META[(category || '').toUpperCase()] || DEFAULT_CATEGORY_META;
 }
 
-export default function InventoryClient({ initialStock, initialItems, initialVendors, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialSearch?: string }) {
+export default function InventoryClient({ initialStock, initialItems, initialVendors, initialPurchaseRequests, initialTraceability, initialSearch = '' }: { initialStock: any[], initialItems: any[], initialVendors: any[], initialPurchaseRequests: any[], initialTraceability: any[], initialSearch?: string }) {
   const { requestReason, modal: auditModal } = useAuditReason();
   const { user, role, isAdmin, canDo, employeeProfile, loading: authLoading } = useAuth() as any;
   const canEditItems = ['admin', 'ceo', 'cto', 'research_fellow', 'scientist'].includes(role) || isAdmin;
@@ -1610,18 +1611,8 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
       )}
 
       {/* Purchase Requests Tab */}
-      {activeTab === 'pr' && (
-        <div className="mt-6">
-          <PurchaseRequestsTab canApprove={canEditItems} />
-        </div>
-      )}
-
-      {/* Traceability Tab */}
-      {activeTab === 'traceability' && (
-        <div className="mt-6">
-          <TraceabilityTab />
-        </div>
-      )}
+      {activeTab === 'purchase_requests' && <PurchaseRequestsTab canApprove={canDo('approve_purchase_requests')} initialRequests={initialPurchaseRequests} />}
+      {activeTab === 'traceability' && <TraceabilityTab initialRecords={initialTraceability} />}
 
       {/* Unified Modal Shell */}
       {isModalOpen && (

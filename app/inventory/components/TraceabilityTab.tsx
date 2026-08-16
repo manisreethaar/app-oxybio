@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link2, Search, ArrowRight, Loader2, Download } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
-export default function TraceabilityTab() {
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function TraceabilityTab({ initialRecords }: { initialRecords: any[] }) {
+  const [records, setRecords] = useState(initialRecords || []);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const toast = useToast();
 
@@ -21,9 +21,12 @@ export default function TraceabilityTab() {
   }, [toast]);
 
   useEffect(() => {
+    // Skip initial fetch if there's no search term and we already have records from SSR
+    if (!searchTerm && records.length > 0 && records === initialRecords) return;
+    
     const timer = setTimeout(() => fetchRecords(searchTerm), 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, fetchRecords]);
+  }, [searchTerm, fetchRecords, records, initialRecords]);
 
   const handleExport = () => {
     const headers = ['Date', 'Item Name', 'Lot Number', 'Quantity Used', 'Context', 'Details', 'Notes'];
@@ -107,7 +110,7 @@ export default function TraceabilityTab() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-black text-slate-900">{r.item_name}</p>
-                      <p className="text-xs font-bold text-slate-700/70 uppercase tracking-widest mt-0.5">Lot: {r.lot_number}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Lot: {r.lot_number}</p>
                       <p className="text-xs font-semibold text-slate-500 mt-1">Used: {r.quantity_used}</p>
                     </td>
                     <td className="px-6 py-4 text-center">

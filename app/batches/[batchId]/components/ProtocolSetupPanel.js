@@ -52,9 +52,9 @@ export default function ProtocolSetupPanel({ batch, sops = [], onComplete }) {
   };
 
   return (
-    <div className="card p-8 max-w-2xl mx-auto mt-8 border-navy/20 shadow-sm">
+    <div className="card p-8 max-w-2xl mx-auto mt-8 border-slate-200 shadow-sm">
       <div className="flex justify-center mb-6">
-        <div className="w-16 h-16 bg-navy/10 text-navy rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center">
           <FileText className="w-8 h-8"/>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default function ProtocolSetupPanel({ batch, sops = [], onComplete }) {
         <select
           value={sopId}
           onChange={e => setSopId(e.target.value)}
-          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:border-navy focus:ring-2 focus:ring-navy/20 outline-none transition-all"
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none transition-all"
         >
           <option value="">-- Select a Document --</option>
           {sops.map(sop => (

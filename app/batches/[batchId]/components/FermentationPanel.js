@@ -744,7 +744,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             <Activity className="w-5 h-5 text-navy"/>
             <h2 className="text-base font-bold text-slate-900">Fermentation: <span className="text-navy">{activeFlask.flask_label}</span></h2>
             {tZero && (
-              <span className="px-2 py-0.5 bg-navy/5 border border-navy/20 rounded text-xs font-black text-navy">
+              <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 rounded text-xs font-black text-slate-700">
                 {endpoint
                   ? `${endpoint.total_hours?.toFixed(1)}hr Total`
                   : `${elapsedHr?.toFixed(1)}hr Elapsed`}
@@ -792,8 +792,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1">pH Value <span className="text-red-500">★ CCP</span></label>
                 <input type="number" step="0.01" min="0" max="14" required {...register('pH')}
                   className={`w-full px-4 py-3 border-2 rounded-xl text-3xl font-black font-mono tracking-tighter text-slate-800 focus:border-navy outline-none text-center transition-colors ${
-                    phInAlarmRange ? 'border-red-400 bg-red-50/30' :
-                    phOutOfTarget  ? 'border-amber-400 bg-amber-50/20' :
+                    phInAlarmRange ? 'border-red-400 bg-red-50' :
+                    phOutOfTarget  ? 'border-amber-400 bg-amber-50' :
                     'border-slate-200'
                   }`} placeholder="0.00"/>
                 {/* 3B: Inline target range hint */}
@@ -1097,8 +1097,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
             {/* G-34: Sampling plan indicator */}
             {inocu?.sampling_plan_hrs?.length > 0 && (
-              <div className="p-3 bg-navy/5 rounded-xl border border-navy/10">
-                <p className="text-xs font-black uppercase text-navy/70 mb-1.5">Sampling Schedule</p>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-black uppercase text-slate-500 mb-1.5">Sampling Schedule</p>
                 <div className="flex flex-wrap gap-1.5">
                   {inocu.sampling_plan_hrs.map(hr => {
                     const logged = readings.filter(r => r.flask_id === activeFlask?.id)
@@ -1192,8 +1192,8 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Endpoint Declaration ── */}
       {!endpoint && showEndpoint && (
-        <div className="card overflow-hidden border-2 border-navy/20">
-          <div className="px-5 py-4 border-b border-slate-100 bg-navy/5 flex items-center gap-2">
+        <div className="card overflow-hidden border-2 border-slate-200">
+          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-navy"/>
             <h3 className="text-sm font-bold text-slate-900">Declare Endpoint for {activeFlask.flask_label}</h3>
           </div>

@@ -1,188 +1,54 @@
-'use client';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/context/ToastContext';
-import { MessageSquare, Users, Search, Plus } from 'lucide-react';
-import MobilePageHeader from '@/components/ui/MobilePageHeader';
-import ChatSidebar from './components/ChatSidebar';
-import ChatWindow from './components/ChatWindow';
-import CreateGroupModal from './components/CreateGroupModal';
+import { createClient } from '@/utils/supabase/server';
+import { getRequestUser } from '@/utils/supabase/request-user';
+import MessagesClient from './MessagesClient';
+import { redirect } from 'next/navigation';
 
-export default function MessagesPage() {
-  const { employeeProfile, isAdmin, loading: authLoading } = useAuth();
-  const toast = useToast();
-  const supabase = useMemo(() => createClient(), []);
-  
-  const [chats, setChats] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [initialPinnedItem, setInitialPinnedItem] = useState(null);
-  const [unreadCounts, setUnreadCounts] = useState({});
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
+export const metadata = { title: 'Messages - OxyOS' };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const pinType = params.get('pin_type');
-      const pinId = params.get('pin_id');
-      const pinTitle = params.get('pin_title');
-      if (pinType && pinId) {
-        setInitialPinnedItem({ type: pinType, id: pinId, title: pinTitle || 'Pinned Item' });
-      }
-    }
-  }, []);
-  
-  // Real-time subscription to chats
-  useEffect(() => {
-    if (!employeeProfile) return;
-    fetchChats();
-    
-    const channel = supabase.channel('chats_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
-        fetchChats();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        fetchUnreadCounts();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_members', filter: `employee_id=eq.${employeeProfile.id}` }, () => {
-        fetchChats();
-      })
-      .subscribe();
-      
-    return () => supabase.removeChannel(channel);
-  }, [employeeProfile]);
+export default async function MessagesPage() {
+  const supabase = createClient();
+  const user = getRequestUser();
+  if (!user) redirect('/login');
 
-  useEffect(() => {
-    if (!employeeProfile) return;
-    fetchUnreadCounts();
+  const { data: employeeData } = await supabase.from('employees').select('id, employee_code, role, is_admin').eq('id', user.id).single();
+  if (!employeeData) redirect('/login');
 
-    const presenceChannel = supabase.channel('messaging_online_status', {
-      config: { presence: { key: employeeProfile.id } }
-    });
+  // Fetch chats
+  const { data: memberData } = await supabase.from('chat_members').select('chat_id').eq('employee_id', employeeData.id);
+  const chatIds = (memberData || []).map(m => m.chat_id);
 
-    presenceChannel
-      .on('presence', { event: 'sync' }, () => {
-        const state = presenceChannel.presenceState();
-        const onlineIds = new Set(Object.keys(state));
-        setOnlineUsers(onlineIds);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({ user_id: employeeProfile.id, online_at: new Date().toISOString() });
-        }
+  let chatsWithLastMessage = [];
+  if (chatIds.length > 0) {
+    const { data: chatsData } = await supabase
+      .from('chats')
+      .select('*, members:chat_members(employee_id, employees!chat_members_employee_id_fkey(full_name))')
+      .in('id', chatIds)
+      .order('created_at', { ascending: false });
+
+    if (chatsData) {
+      const latestMessages = await Promise.all(
+        chatIds.map(async (chatId) => {
+          const { data } = await supabase.from('messages').select('id, content, created_at, sender_id').eq('chat_id', chatId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+          return { chatId, message: data };
+        })
+      );
+
+      chatsWithLastMessage = chatsData.map(chat => {
+        const lm = latestMessages.find(m => m.chatId === chat.id);
+        return {
+          ...chat,
+          messages: lm && lm.message ? [lm.message] : []
+        };
       });
-
-    return () => supabase.removeChannel(presenceChannel);
-  }, [employeeProfile]);
-
-  const fetchUnreadCounts = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_unread_message_counts');
-      if (error) throw error;
-      const countsMap = {};
-      data?.forEach(row => { countsMap[row.chat_id] = parseInt(row.unread_count); });
-      setUnreadCounts(countsMap);
-    } catch (err) {
-      console.error('Failed to fetch unread counts', err);
     }
-  };
+  }
 
-  const fetchChats = async () => {
-    try {
-      const res = await fetch('/api/messages', { cache: 'no-store' });
-      const json = await res.json();
-      
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to fetch chats');
-      }
+  // Fetch unread counts
+  let unreadCounts = {};
+  const { data: countsData } = await supabase.rpc('get_unread_message_counts');
+  if (countsData) {
+    countsData.forEach(row => { unreadCounts[row.chat_id] = parseInt(row.unread_count); });
+  }
 
-      const chatsData = json.data || [];
-      setChats(chatsData);
-      // Keep activeChat in sync with the latest data (e.g. new members added)
-      setActiveChat(prev => {
-        if (!prev) return prev;
-        return chatsData?.find(c => c.id === prev.id) || prev;
-      });
-    } catch (err) {
-      console.error('Error fetching chats:', err);
-      toast.error('Failed to load chats');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectChat = (chat) => {
-    setActiveChat(chat);
-  };
-
-  if (authLoading) return <div className="p-8 text-center text-slate-400 font-medium">Loading messages...</div>;
-
-  return (
-    <div className="page-container h-[calc(100vh-6rem)] flex flex-col md:overflow-hidden">
-      <MobilePageHeader
-        icon={MessageSquare}
-        title="Messages"
-        subtitle="Team communication and discussions."
-        action={
-          <button onClick={() => setShowCreateGroup(true)} className="w-10 h-10 rounded-2xl bg-navy text-white flex items-center justify-center shadow-sm" aria-label="New Chat">
-            <Plus className="w-5 h-5" />
-          </button>
-        }
-      />
-
-      <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shrink-0">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Messages</h1>
-          <p className="text-sm text-slate-500 mt-1">Discuss tasks, batches, and chat with team members.</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm min-h-0">
-        <div className={`w-full md:w-80 lg:w-96 border-r border-slate-100 flex-shrink-0 flex flex-col ${activeChat ? 'hidden md:flex' : 'flex'}`}>
-          <ChatSidebar 
-            chats={chats} 
-            activeChat={activeChat} 
-            onSelectChat={handleSelectChat}
-            onCreateGroup={() => setShowCreateGroup(true)}
-            employeeProfile={employeeProfile}
-            isAdmin={isAdmin}
-            loading={loading}
-            unreadCounts={unreadCounts}
-            onlineUsers={onlineUsers}
-          />
-        </div>
-        
-        <div className={`flex-1 flex flex-col min-w-0 bg-slate-50/30 ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
-          {activeChat ? (
-            <ChatWindow 
-              chat={activeChat} 
-              employeeProfile={employeeProfile} 
-              onBack={() => setActiveChat(null)}
-              initialPinnedItem={initialPinnedItem}
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-              <MessageSquare className="w-12 h-12 mb-3 opacity-20" />
-              <p className="font-semibold text-sm">Select a chat to start messaging</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showCreateGroup && (
-        <CreateGroupModal 
-          onClose={() => setShowCreateGroup(false)} 
-          onSuccess={(newChat) => {
-            fetchChats();
-            setActiveChat(newChat);
-            setShowCreateGroup(false);
-          }}
-          isAdmin={isAdmin}
-        />
-      )}
-    </div>
-  );
+  return <MessagesClient initialChats={chatsWithLastMessage} initialUnreadCounts={unreadCounts} />;
 }

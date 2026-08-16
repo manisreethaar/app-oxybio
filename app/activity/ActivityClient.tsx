@@ -23,19 +23,19 @@ import dynamic from 'next/dynamic';
 const ActivityVelocityChart = dynamic(() => import('@/components/charts/ActivityAnalyticsCharts').then(m => ({ default: m.ActivityVelocityChart })), { ssr: false });
 const ActivityDeviationChart = dynamic(() => import('@/components/charts/ActivityAnalyticsCharts').then(m => ({ default: m.ActivityDeviationChart })), { ssr: false });
 
-export default function ActivityClient({ initialBatches, initialLogs }: { initialBatches: any[], initialLogs: any[] }) {
+export default function ActivityClient({ initialBatches = [], initialEquipment = [], initialLogs = [], initialArchived = [], initialIssues = [], initialEmployees = [], initialAttendance = [], initialDueTasks = [], initialPendingTasks = [] }: any) {
   const { employeeProfile, role, canDo, loading: authLoading } = useAuth() as any;
   const toast = useToast();
-  const [activities, setActivities] = useState<any[]>(initialLogs || []);
-  const [archivedActivities, setArchivedActivities] = useState<any[]>([]);
-  const [issues, setIssues] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>(initialLogs);
+  const [archivedActivities, setArchivedActivities] = useState<any[]>(initialArchived);
+  const [issues, setIssues] = useState<any[]>(initialIssues);
   const [issuesLoading, setIssuesLoading] = useState(false);
-  const [activeBatches, setActiveBatches] = useState(initialBatches || []);
+  const [activeBatches, setActiveBatches] = useState(initialBatches);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('feed'); 
   const [priorityOnly, setPriorityOnly] = useState(false);
-  const [equipmentList, setEquipmentList] = useState<any[]>([]);
-  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [equipmentList, setEquipmentList] = useState<any[]>(initialEquipment);
+  const [allEmployees, setAllEmployees] = useState<any[]>(initialEmployees);
   const [filterEmployee, setFilterEmployee] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
