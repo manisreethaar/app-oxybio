@@ -230,7 +230,7 @@ export default function RejectionPanel({ batch, activeFlask, employeeProfile, ro
       )}
 
       {pendingReject && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Trial Rejection</h3>
             <p className="text-sm text-slate-600 mb-6 text-center">Confirm rejection of {activeFlask.flask_label}? This act is permanent.</p>

@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen, Trash2 } from 'lucide-react';
+import { FileText, Download, AlertTriangle, Plus, Search, Archive, BookOpen, Trash2, CheckCircle } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import CreatorBadge from '@/components/ui/CreatorBadge';
 import SecureViewerModal from '@/components/ui/SecureViewerModal';
@@ -309,7 +309,7 @@ export default function DocumentsClient({ initialDocuments = [], currentUserRole
       {activeTab === 'sops' && <SopClient initialSops={[]} />}
 
       {showUploadModal && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="max-h-[90vh] flex flex-col overflow-y-auto bg-white rounded-2xl max-w-md w-full p-5 md:p-8 relative shadow-2xl">
             <button onClick={() => setShowUploadModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">×</button>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Upload Document to Vault</h2>

@@ -595,7 +595,7 @@ export default function ConsumerResearchPage() {
               )}
 
               {/* Radar chart */}
-              <div className="h-44 w-full mb-4 bg-slate-50/50 rounded-xl p-2 border border-slate-100">
+              <div className="h-44 w-full mb-4 bg-slate-50 rounded-xl p-2 border border-slate-100">
                 <ResearchRadarChart session={s}/>
               </div>
 
@@ -675,7 +675,7 @@ export default function ConsumerResearchPage() {
       {/* Score Logging Modal                                                  */}
       {/* ------------------------------------------------------------------ */}
       {activeSession && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-none sm:rounded-2xl w-full max-w-xl shadow-xl relative animate-in fade-in zoom-in duration-200">
             <button
               onClick={closeScoreModal}
@@ -794,7 +794,7 @@ export default function ConsumerResearchPage() {
       {/* New Panel Modal                                                      */}
       {/* ------------------------------------------------------------------ */}
       {showNew && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="flex flex-col bg-white rounded-none sm:rounded-2xl w-full max-w-lg shadow-xl relative animate-in fade-in zoom-in duration-200 overflow-hidden h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => { setShowNew(false); reset(); }}

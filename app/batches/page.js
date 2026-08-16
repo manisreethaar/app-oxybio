@@ -800,7 +800,7 @@ export default function BatchesPage() {
                   const ColIcon = col.icon;
 
                   return (
-                    <div key={col.id} className={`min-w-[300px] w-[300px] flex-shrink-0 flex flex-col bg-slate-50/50 rounded-2xl border ${col.border} p-2 h-[calc(100vh-280px)] min-h-[500px]`}>
+                    <div key={col.id} className={`min-w-[300px] w-[300px] flex-shrink-0 flex flex-col bg-slate-50 rounded-2xl border ${col.border} p-2 h-[calc(100vh-280px)] min-h-[500px]`}>
                       <div className="flex items-center justify-between px-3 py-2 mb-2 border-b border-slate-200/60 pb-3">
                         <div className="flex items-center gap-2">
                           <div className={`w-6 h-6 rounded-md flex items-center justify-center ${col.bg}`}>
@@ -861,7 +861,7 @@ export default function BatchesPage() {
       {/* ── New Batch Modal ──────────────────────────────────── */}
       <AnimatePresence>
         {showNewBatchModal && (
-          <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm flex justify-center items-end md:items-center z-50 p-0 md:p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex justify-center items-end md:items-center z-50 p-0 md:p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.98, y: 28 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -869,7 +869,7 @@ export default function BatchesPage() {
               className="bg-white md:rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden md:my-4 flex flex-col"
             >
               {/* Modal Header */}
-              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div>
                   <h2 className="text-base font-bold text-slate-900 tracking-tight">Schedule Production Batch</h2>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">

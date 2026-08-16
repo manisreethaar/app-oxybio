@@ -683,7 +683,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
     <div className="space-y-5">
       {/* G-09: Certificate of Analysis (COA) Print Modal */}
       {showCoa && sample && (
-        <div className="fixed inset-0 z-50 bg-slate-50/10 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4 print:shadow-none print:rounded-none print:my-0">
             {/* Print-only: hide controls */}
             <div className="flex items-center justify-between p-5 border-b border-slate-100 print:hidden">
@@ -735,7 +735,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </thead>
                   <tbody>
                     {tests.filter(t => !t.retest_of).map(t => (
-                      <tr key={t.id} className={t.pass_fail === 'Fail' ? 'bg-red-50' : t.pass_fail === 'Pass' ? 'bg-emerald-50/50' : ''}>
+                      <tr key={t.id} className={t.pass_fail === 'Fail' ? 'bg-red-50' : t.pass_fail === 'Pass' ? 'bg-emerald-50' : ''}>
                         <td className="border border-slate-200 px-3 py-1.5 font-semibold text-slate-800">{t.test_name}</td>
                         <td className="border border-slate-200 px-3 py-1.5 text-slate-600">{t.target_spec || '—'}</td>
                         <td className="border border-slate-200 px-3 py-1.5 font-bold text-slate-900">{t.result_value || '—'}</td>
@@ -772,7 +772,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
 
       {/* G-08: OOS Investigation Modal */}
       {oosModal && (
-        <div className="fixed inset-0 z-50 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
@@ -862,7 +862,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
           </div>
 
           {/* Plating & Incubation section */}
-          <div className="card p-4 border border-slate-100 bg-slate-50/20">
+          <div className="card p-4 border border-slate-100 bg-slate-50">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -1077,7 +1077,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
             <div className="card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-100">
-                  <thead><tr className="bg-slate-50/50">
+                  <thead><tr className="bg-slate-50">
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-400 uppercase w-48">Test</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-400 uppercase">Target Spec</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-400 uppercase w-28">Result</th>
@@ -1087,7 +1087,7 @@ export default function QCHoldPanel({ batch, activeFlask, employees, employeePro
                   </tr></thead>
                   <tbody className="divide-y divide-gray-50">
                     {tests.map(t => (
-                    <tr key={t.id} className={t.pass_fail==='Fail'?'bg-red-50':t.pass_fail==='Pass'?'bg-emerald-50/50':'hover:bg-slate-50/30'}>
+                    <tr key={t.id} className={t.pass_fail==='Fail'?'bg-red-50':t.pass_fail==='Pass'?'bg-emerald-50':'hover:bg-slate-50'}>
                       <td className="px-4 py-3 text-xs font-bold text-slate-800">
                         {t.test_name}
                         {/* G-08: OOS badge */}

@@ -153,7 +153,7 @@ export default function ReleasePanel({ batch, activeFlask, employeeProfile, role
 
       {/* G-13: Release Certificate Print Modal */}
       {showCert && record && (
-        <div className="fixed inset-0 z-50 bg-slate-50/10 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4">
             <div className="flex items-center justify-between p-5 border-b border-slate-100 print:hidden">
               <h3 className="text-base font-black text-slate-900">Batch Release Certificate — Preview</h3>
