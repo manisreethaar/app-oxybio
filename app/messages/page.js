@@ -10,8 +10,8 @@ export default async function MessagesPage() {
   const user = getRequestUser();
   if (!user) redirect('/login');
 
-  const { data: employeeData } = await supabase.from('employees').select('id, employee_code, role, is_admin').eq('id', user.id).single();
-  if (!employeeData) redirect('/login');
+  const { data: employeeData, error: empErr } = await supabase.from('employees').select('id, employee_code, role').eq('id', user.id).single();
+  if (empErr || !employeeData) redirect('/login');
 
   // Fetch chats
   const { data: memberData } = await supabase.from('chat_members').select('chat_id').eq('employee_id', employeeData.id);

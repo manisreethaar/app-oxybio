@@ -15,12 +15,12 @@ export default function MessagesClient({ initialChats = [], initialUnreadCounts 
   const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
   
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useState(initialChats || []);
   const [activeChat, setActiveChat] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [initialPinnedItem, setInitialPinnedItem] = useState(null);
-  const [unreadCounts, setUnreadCounts] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState(initialUnreadCounts || {});
   const [onlineUsers, setOnlineUsers] = useState(new Set());
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function MessagesClient({ initialChats = [], initialUnreadCounts 
         fetchChats();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        fetchUnreadCounts();
+        // fetchUnreadCounts(); // disabled for SSR pattern without API routes
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_members', filter: `employee_id=eq.${employeeProfile.id}` }, () => {
         fetchChats();
@@ -57,7 +57,6 @@ export default function MessagesClient({ initialChats = [], initialUnreadCounts 
 
   useEffect(() => {
     if (!employeeProfile) return;
-    fetchUnreadCounts();
 
     const presenceChannel = supabase.channel('messaging_online_status', {
       config: { presence: { key: employeeProfile.id } }

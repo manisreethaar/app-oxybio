@@ -29,10 +29,10 @@ export default function TasksClient({ initialTasks = [], initialEmployees = [], 
   const { role, canDo, isAdmin: isMaster, employeeProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const [tasks, setTasks] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [sops, setSops] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState(initialTasks || []);
+  const [employees, setEmployees] = useState(initialEmployees || []);
+  const [sops, setSops] = useState(initialSops || []);
+  const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   
   
