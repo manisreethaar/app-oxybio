@@ -265,19 +265,26 @@ export default function SeedPhasePanel({
     if (!confirm(`Proceed to ${targetStage.replace('_', ' ').toUpperCase()}?`)) return;
     setSaving(true);
     try {
-      await supabase.from('batch_seed_trains').update({ status: 'completed' }).eq('id', data.id);
-      
-      if (targetStage !== 'production') {
-        await supabase.from('batch_seed_trains').insert({ batch_id: batch.id, stage_type: targetStage, status: 'active' });
-      }
-      
-      const { error: bErr } = await supabase.from('batches').update({ current_stage: targetStage }).eq('id', batch.id);
-      if (bErr) throw bErr;
+      // Route through server API
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'transfer_stage',
+          currentStageId: data.id,
+          targetStage: targetStage,
+          batchId: batch.id
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to transfer stage');
       
       toast.success(`Moved to ${targetStage.toUpperCase()}`);
       onTransfer(targetStage);
+      setShowNextStageModal(false);
     } catch (err) {
       toast.error('Transfer failed: ' + err.message);
+    } finally {
       setSaving(false);
     }
   };
@@ -472,7 +479,7 @@ export default function SeedPhasePanel({
                     <div>
                       <h3 className="text-xl font-black text-slate-800">{f.flask_label}</h3>
                       <p className="text-[10px] font-bold text-slate-500 mt-1">
-                        Incubator: {f.incubator_equipment_id} • {f.incubation_temp_c}°C • {f.incubation_agitation_rpm} RPM
+                        Incubator: {equipment.find(eq => eq.id === f.incubator_equipment_id)?.name || f.incubator_equipment_id} • {f.incubation_temp_c}°C • {f.incubation_agitation_rpm} RPM
                       </p>
                     </div>
                     <button onClick={() => { setSelectedFlaskId(f.id); setShowLogModal(true); }} className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-black rounded-lg hover:bg-slate-200 flex items-center gap-1">

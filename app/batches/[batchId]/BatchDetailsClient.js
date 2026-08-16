@@ -163,7 +163,7 @@ export default function BatchDetailsClient({ batchId, initialData }) {
             </div>
             {batch.planned_volume_ml && (
               <div className="text-right pl-3 border-l border-slate-200">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Volume</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest" title="Target Overall Batch Volume">Batch Volume</p>
                 <p className="font-black text-sm text-slate-800">{batch.planned_volume_ml} mL</p>
               </div>
             )}

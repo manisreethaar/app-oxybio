@@ -391,7 +391,7 @@ export default function ProductionPhasePanel({
                     <div>
                       <h3 className="text-xl font-black text-slate-800">{f.flask_label}</h3>
                       <p className="text-[10px] font-bold text-slate-500 mt-1">
-                        Incubator: {f.incubator_equipment_id} • {f.incubation_temp_c}°C • {f.incubation_agitation_rpm} RPM
+                        Incubator: {equipment.find(eq => eq.id === f.incubator_equipment_id)?.name || f.incubator_equipment_id} • {f.incubation_temp_c}°C • {f.incubation_agitation_rpm} RPM
                       </p>
                     </div>
                     {!isHarvested && (
