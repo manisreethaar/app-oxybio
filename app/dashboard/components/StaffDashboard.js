@@ -237,6 +237,11 @@ export default function StaffDashboard({ employeeProfile }) {
     inoculation:   'Monitor Inoculation Progress',
     sterilisation: 'Verify Sterilisation Completion',
     qc_hold:       'Await QC Release Decision',
+    // Seed Train batch-level stages (lib/batches/workflowStages.js:SEED_TRAIN_STAGE_IDS)
+    seed_1:        'Progress Seed 1 to Seed 2/3 or Production',
+    seed_2:        'Progress Seed 2 to Seed 3 or Production',
+    seed_3:        'Transfer Seed 3 to Production',
+    production:    'Run Production Explosion & Monitor Flasks',
   };
 
   return (

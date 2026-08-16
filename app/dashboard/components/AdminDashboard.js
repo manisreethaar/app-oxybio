@@ -292,9 +292,13 @@ export default function AdminDashboard({ employeeId }) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {(() => {
-                const BATCH_STAGES = ['media_prep','sterilisation','inoculation','fermentation','qc_hold','released'];
-                const STAGE_LABEL  = { media_prep:'Media Prep', sterilisation:'Sterilisation', inoculation:'Inoculation', fermentation:'Fermentation', qc_hold:'QC Hold', released:'Released' };
-                const STAGE_COLOR  = { media_prep:'bg-slate-100 text-slate-700', sterilisation:'bg-slate-100 text-slate-700', inoculation:'bg-slate-100 text-slate-700', fermentation:'bg-slate-100 text-slate-700', qc_hold:'bg-red-100 text-red-700', released:'bg-emerald-100 text-emerald-700' };
+                // seed_1/2/3/production are the Seed Train's batch-level stages
+                // (lib/batches/workflowStages.js:SEED_TRAIN_STAGE_IDS) — without
+                // them a Seed-Train batch always showed 0% progress and its raw
+                // stage id instead of a label.
+                const BATCH_STAGES = ['media_prep','sterilisation','seed_1','seed_2','seed_3','production','inoculation','fermentation','qc_hold','released'];
+                const STAGE_LABEL  = { media_prep:'Media Prep', sterilisation:'Sterilisation', seed_1:'Seed 1', seed_2:'Seed 2', seed_3:'Seed 3', production:'Production', inoculation:'Inoculation', fermentation:'Fermentation', qc_hold:'QC Hold', released:'Released' };
+                const STAGE_COLOR  = { media_prep:'bg-slate-100 text-slate-700', sterilisation:'bg-slate-100 text-slate-700', seed_1:'bg-slate-100 text-slate-700', seed_2:'bg-slate-100 text-slate-700', seed_3:'bg-slate-100 text-slate-700', production:'bg-slate-100 text-slate-700', inoculation:'bg-slate-100 text-slate-700', fermentation:'bg-slate-100 text-slate-700', qc_hold:'bg-red-100 text-red-700', released:'bg-emerald-100 text-emerald-700' };
                 return activeBatches.map(batch => {
                   const stageIdx = BATCH_STAGES.indexOf(batch.current_stage);
                   const progress = stageIdx >= 0 ? Math.round(((stageIdx + 1) / BATCH_STAGES.length) * 100) : 0;

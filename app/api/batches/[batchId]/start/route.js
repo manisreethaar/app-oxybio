@@ -50,13 +50,20 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: startCheck.error }, { status: 400 });
     }
 
-    // Transition the batch from planned/scheduled → media_prep
+    // Activate the batch. current_stage is intentionally left null here —
+    // the live pipeline is Protocol/SOP -> Seed 1/2/3 -> Production
+    // (app/batches/[batchId]/page.js), and its own advance_seed_train_stage
+    // RPC is what actually sets current_stage to 'seed_1' once a protocol
+    // is linked. Writing 'media_prep' here (the old pre-revamp pipeline's
+    // first stage) put the batch in a stage the current UI doesn't
+    // recognize — every batch "started" this way landed back on the
+    // Protocol & Setup screen with no way to tell it had already run this
+    // step, and status/current_stage disagreed with what was on screen.
     const now = new Date().toISOString();
     const { data, error } = await db
       .from('batches')
       .update({
         status:        'in-progress',
-        current_stage: 'media_prep',
         start_time:    now
       })
       .eq('id', batchId)
@@ -65,13 +72,15 @@ export async function POST(request, { params }) {
 
     if (error) throw error;
 
-    // Log the initial stage transition
+    // Log activation. to_stage has a NOT NULL constraint but no CHECK, so
+    // 'protocol' (a UI-only pseudo-stage, never written to
+    // batches.current_stage) is a safe, meaningful audit label here.
     await db.from('stage_transitions').insert({
       batch_id:   batchId,
       from_stage: 'planned',
-      to_stage:   'media_prep',
+      to_stage:   'protocol',
       changed_by: emp.id,
-      notes:      'Initial Batch Activation'
+      notes:      'Initial Batch Activation — awaiting protocol setup'
     });
 
     return NextResponse.json({ success: true, data });
