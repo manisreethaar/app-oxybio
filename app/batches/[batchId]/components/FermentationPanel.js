@@ -784,7 +784,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
         {/* ── Reading Log Form ── */}
         {!endpoint && tZero && (
           <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">Log Reading for {activeFlask.flask_label}</h3>
             </div>
             <form onSubmit={handleLogReading} className="p-5 space-y-3">
@@ -881,7 +881,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </div>
 
               {/* 1A: Plate this sample? — Yes / No / Later */}
-              <div className="bg-slate-50/50 border border-slate-100 p-3 rounded-xl space-y-3">
+              <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800">Plate this sample?</span>
                   <div className="flex gap-1.5">
@@ -987,7 +987,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
         {/* ── Chart + Reading Table (Shows All Flasks' graph context) ── */}
         <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Trial Trends</h3>
             {batch?.formulation_id && (
               <button onClick={() => setShowComparison(v => !v)}
@@ -1115,7 +1115,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
           </div>
           <div className="border-t border-slate-100 overflow-x-auto">
             <table className="w-full min-w-[480px] divide-y divide-gray-100">
-              <thead><tr className="bg-slate-50/50">
+              <thead><tr className="bg-slate-50">
                 <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">Flask</th>
                 <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">T+hr</th>
                 <th className="px-3 py-2 text-left text-xs font-bold text-slate-400 uppercase">pH</th>
@@ -1125,7 +1125,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {[...readings].filter(r => r.flask_id === activeFlask.id).reverse().map(r => (
-                  <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-slate-50/30'}>
+                  <tr key={r.id} className={r.is_ph_alarm ? 'bg-red-50' : 'hover:bg-slate-50'}>
                     <td className="px-3 py-2 whitespace-nowrap">
                       <p className="text-xs font-black text-navy">{r.flask_label}</p>
                       <div className="flex gap-1 mt-0.5 flex-wrap">
@@ -1260,7 +1260,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
               {[{label:'Sensory Overall',val:sensory,set:(v)=>setValue('sensory', v),opts:['PASS','FAIL']}].map(f=>(
                 <div key={f.label}><label className="block text-xs font-bold uppercase text-slate-400 mb-1">{f.label}</label>
                   <div className="flex gap-2">
-                    {f.opts.map(o=><button type="button" key={o} onClick={()=>f.set(o)} className={`flex-1 py-2 text-xs font-black rounded-lg border transition-all ${f.val===o?(o==='PASS'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>{o}</button>)}
+                    {f.opts.map(o=><button type="button" key={o} onClick={()=>f.set(o)} className={`flex-1 py-2 text-xs font-black rounded-lg border transition-all ${f.val===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>{o}</button>)}
                   </div>
                 </div>
               ))}
@@ -1283,7 +1283,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
       {/* Feed / pH Correction Log */}
       {tZero && (
         <div className="card overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Droplet className="w-4 h-4 text-slate-600"/>
               <h3 className="text-sm font-bold text-slate-900">Feed / pH Correction Log</h3>
@@ -1296,7 +1296,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
             )}
           </div>
           {showFeedForm && (
-            <div className="p-4 border-b border-slate-100 bg-slate-50/30 space-y-3">
+            <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="field-label">Type</label>
@@ -1368,7 +1368,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Admin Edit Endpoint Modal */}
       {editingEndpoint && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-amber-700 mb-1 flex items-center gap-2">
               <Pencil className="w-4 h-4"/> Correct Endpoint Record
@@ -1400,7 +1400,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Admin Edit Reading Modal ── */}
       {editingReading && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-md shadow-xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900">Edit Reading — {editingReading.flask_label} T+{editingReading.elapsed_hours?.toFixed(1)}h</h3>
@@ -1446,7 +1446,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
                 </div>
               </div>
               {(editingReading.sample_incubation_id || editingReading.plating_result) && (
-                <div className="rounded-lg border border-slate-100 bg-slate-50/40 px-3 py-2">
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
                   <p className="text-xs font-black uppercase tracking-wider text-slate-700">Plating</p>
                   <p className="mt-0.5 text-xs text-slate-800">
                     {editingReading.sample_incubation_id
@@ -1486,7 +1486,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* ── Admin Delete Reading Modal ── */}
       {deletingReading && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-base font-bold text-red-600 mb-2 flex items-center gap-2">
               <Trash2 className="w-4 h-4"/> Delete Reading
@@ -1515,7 +1515,7 @@ export default function FermentationPanel({ batch, flasks, activeFlask, employee
 
       {/* Out of Range Override Modal */}
       {pendingOOROverride && (
-        <div className="fixed inset-0 bg-slate-50/10 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-xl w-full max-w-sm shadow-xl p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-amber-600 mb-2 text-center flex items-center justify-center gap-2">
               <AlertTriangle className="w-5 h-5"/> pH Alert

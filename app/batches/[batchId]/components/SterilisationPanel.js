@@ -304,7 +304,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           <div className="flex gap-2">
             {TAPE_RES.map(o=>(
               <button key={o} type="button" onClick={()=>setValue('tape', o)}
-                className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${watchTape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${watchTape===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-navy'}`}>
                 {o === 'Positive' ? '✓ Positive (colour change)' : '✗ Negative (no change)'}
               </button>
             ))}
@@ -328,7 +328,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
                 <div className="flex gap-2">
                   {BI_RESULTS.map(o=>(
                     <button key={o} type="button" onClick={()=>setValue('biResult', o)}
-                      className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${watchBiResult===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
+                      className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${watchBiResult===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-navy'}`}>
                       {o}
                     </button>
                   ))}
@@ -366,7 +366,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
             <div className="flex gap-2">
               {['Pass','Fail','N/A'].map(o=>(
                 <button key={o} type="button" onClick={()=>setValue('condensateCheck', watchCondensateCheck===o?'':o)}
-                  className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${watchCondensateCheck===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200'}`}>
+                  className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${watchCondensateCheck===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-navy'}`}>
                   {o}
                 </button>
               ))}
@@ -402,7 +402,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
                 <div className="flex gap-2">
                   {TAPE_RES.map(o=>(
                     <button key={o} type="button" onClick={()=>setValue('cycle2Tape', o)}
-                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${watchCycle2Tape===o?(o==='Positive'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200'}`}>
+                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all ${watchCycle2Tape===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-navy'}`}>
                       {o}
                     </button>
                   ))}
@@ -420,7 +420,7 @@ export default function SterilisationPanel({ batch, employees, employeeProfile, 
           <div className="flex gap-3">
             {['Pass','Fail','Pending'].map(o=>(
               <button key={o} type="button" onClick={()=>setValue('passFail', o)}
-                className={`flex-1 py-3 text-sm font-black rounded-xl border-2 transition-all ${watchPassFail===o?(o==='Pass'?'bg-emerald-600 text-white border-emerald-600':o==='Fail'?'bg-red-600 text-white border-red-600':'bg-slate-500 text-white border-slate-500'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                className={`flex-1 py-3 text-sm font-black rounded-xl border-2 transition-all ${watchPassFail===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-navy'}`}>
                 {o}
               </button>
             ))}

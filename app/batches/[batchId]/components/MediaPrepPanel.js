@@ -323,7 +323,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
                const isKavuni = ing.name?.toLowerCase().includes('kavuni');
 
                return (
-                 <div key={ing.item_id} className="p-4 border border-slate-100 bg-slate-50/20 rounded-xl">
+                 <div key={ing.item_id} className="p-4 border border-slate-100 bg-slate-50 rounded-xl">
                    <div className="flex justify-between items-center mb-3">
                      <span className="font-bold text-sm text-slate-900">{ing.name}</span>
                      <span className="text-xs font-black text-slate-600 bg-slate-100 px-2 py-1 rounded">Target: {parseFloat(scaledQty)} {ing.unit}</span>
@@ -445,7 +445,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
             </button>
           </div>
           {pretreatFields.map((step, idx) => (
-            <div key={step.id} className="p-3 bg-slate-50/40 border border-slate-100 rounded-xl space-y-2">
+            <div key={step.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
               <div className="grid grid-cols-4 gap-2 items-center">
                 <select {...register(`pretreatSteps.${idx}.type`)} className="field-input text-xs col-span-1 bg-white p-1.5">
                   {['Heat','Steam','Chemical','Enzymatic','Mechanical','Other'].map(t=><option key={t}>{t}</option>)}
@@ -499,7 +499,7 @@ export default function MediaPrepPanel({ batch, employees, availableStock, emplo
 
       {/* G-17: BOM Batch Traceability Report */}
       {showBomReport && (
-        <div className="fixed inset-0 z-50 bg-slate-50/10 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <div className="flex items-center gap-2">

@@ -420,7 +420,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
             </button>
           </div>
           {coStarterFields.map((cs, idx) => (
-            <div key={cs.id} className="p-3 bg-slate-50/30 border border-slate-100 rounded-xl grid grid-cols-3 gap-2">
+            <div key={cs.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl grid grid-cols-3 gap-2">
               <input {...register(`coStarters.${idx}.source`)} placeholder="e.g. Saccharomyces cerevisiae" className="field-input text-xs col-span-2 p-1.5"/>
               <input type="number" {...register(`coStarters.${idx}.vol_ml`)} placeholder="ml" className="field-input text-xs p-1.5"/>
               <button type="button" onClick={()=>removeCoStarter(idx)} className="col-span-3 text-right text-xs text-red-400 hover:text-red-600 font-black">✕ Remove</button>
@@ -541,7 +541,7 @@ export default function InoculationPanel({ batch, activeFlask, employees, employ
           <div className="flex gap-2 mb-2">
             {['Clear','Suspected'].map(o=>(
               <button key={o} type="button" onClick={()=>setValue('contCheck', o)}
-                className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${watchContCheck===o?(o==='Clear'?'bg-emerald-600 text-white border-emerald-600':'bg-red-600 text-white border-red-600'):'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                className={`flex-1 py-2 text-xs font-black rounded-xl border transition-all ${watchContCheck===o?'bg-navy text-white border-navy':'bg-white text-slate-500 border-slate-200 hover:border-navy'}`}>
                 {o}
               </button>
             ))}
