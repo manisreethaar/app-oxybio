@@ -1,251 +1,107 @@
-'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { withTimeout } from '@/lib/withTimeout';
-import { useAuth } from '@/context/AuthContext';
-import { BellRing, CheckSquare, AlertTriangle, FileWarning, Bell, ChevronRight, Check } from 'lucide-react';
-import Link from 'next/link';
-import { differenceInDays, formatDistanceToNow } from 'date-fns';
-import PushNotificationToggle from '@/components/ui/PushNotificationToggle';
+import { createClient } from '@/utils/supabase/server';
+import { getRequestUser } from '@/utils/supabase/request-user';
+import { redirect } from 'next/navigation';
+import { differenceInDays } from 'date-fns';
+import NotificationsClient from './NotificationsClient';
 
-export default function NotificationsPage() {
-  const { employeeProfile, role } = useAuth();
-  const [alerts, setAlerts] = useState([]);
-  const [directNotifs, setDirectNotifs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const supabase = useMemo(() => createClient(), []);
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Notifications - OxyOS' };
 
-  useEffect(() => {
-    if (!employeeProfile) return;
-    fetchAll();
+export default async function NotificationsPage() {
+  const supabase = createClient();
+  const user = getRequestUser();
+  if (!user) redirect('/login');
 
-    // Realtime — new notifications appear instantly without refresh
-    const channel = supabase
-      .channel(`notif-page-${employeeProfile.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `employee_id=eq.${employeeProfile.id}` },
-        (payload) => {
-          setDirectNotifs(prev => [payload.new, ...prev]);
-        }
-      )
-      .subscribe();
+  // Fetch employee profile for role check
+  const { data: emp } = await supabase
+    .from('employees')
+    .select('id, role')
+    .eq('id', user.id)
+    .single();
 
-    return () => { supabase.removeChannel(channel); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeProfile?.id]);
+  if (!emp) redirect('/login');
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      await withTimeout(Promise.all([fetchAlerts(), fetchDirectNotifs()]), 45000, 'Notifications load timed out');
-    } catch (err) {
-      console.error('Notifications fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isExec = ['admin', 'ceo', 'cto'].includes(emp.role);
 
-  // ── System alerts: overdue tasks + compliance ──────────────
-  const fetchAlerts = async () => {
-    const notifications = [];
-    const tasksPromise = supabase
+  // Pre-fetch all data in parallel
+  const [tasksRes, complianceRes, directNotifsRes] = await Promise.all([
+    supabase
       .from('tasks')
       .select('id, title, priority, due_date')
-      .eq('assigned_to', employeeProfile.id)
+      .eq('assigned_to', emp.id)
       .eq('status', 'open')
       .order('due_date', { ascending: true })
-      .limit(50);
+      .limit(50),
 
-    const compliancePromise = ['admin', 'ceo', 'cto'].includes(role)
-      ? supabase.from('compliance_items').select('id, title, due_date').neq('status', 'done').order('due_date', { ascending: true }).limit(50)
-      : Promise.resolve({ data: null });
+    isExec
+      ? supabase
+          .from('compliance_items')
+          .select('id, title, due_date')
+          .neq('status', 'done')
+          .order('due_date', { ascending: true })
+          .limit(50)
+      : Promise.resolve({ data: null }),
 
-    const [tasksRes, complianceRes] = await Promise.all([tasksPromise, compliancePromise]);
-
-    if (tasksRes.data) {
-      tasksRes.data.forEach(t => {
-        const isOverdue = t.due_date && differenceInDays(new Date(t.due_date), new Date()) < 0;
-        notifications.push({
-          id: `task-${t.id}`,
-          type: 'task',
-          title: t.title,
-          priority: t.priority,
-          isOverdue,
-          url: '/tasks',
-          icon: isOverdue ? AlertTriangle : CheckSquare,
-          color: isOverdue ? 'text-red-600 bg-red-50 border-red-200' : 'text-slate-600 bg-slate-50 border-slate-200'
-        });
-      });
-    }
-
-    if (['admin', 'ceo', 'cto'].includes(role) && complianceRes.data) {
-      complianceRes.data.forEach(c => {
-        const isOverdue = c.due_date && differenceInDays(new Date(c.due_date), new Date()) < 0;
-        if (isOverdue) {
-          notifications.push({
-            id: `comp-${c.id}`,
-            type: 'compliance',
-            title: c.title,
-            priority: 'urgent',
-            isOverdue: true,
-            url: '/compliance',
-            icon: FileWarning,
-            color: 'text-amber-600 bg-amber-50 border-amber-200'
-          });
-        }
-      });
-    }
-
-    notifications.sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
-      if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
-      if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
-      return 0;
-    });
-
-    setAlerts(notifications);
-  };
-
-  // ── Direct notifications from the notifications table ──────
-  const fetchDirectNotifs = async () => {
-    const { data, error } = await supabase
+    supabase
       .from('notifications')
       .select('id, title, message, is_read, link, created_at')
-      .eq('employee_id', employeeProfile.id)
+      .eq('employee_id', emp.id)
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(30),
+  ]);
 
-    if (!error && data) setDirectNotifs(data);
-  };
+  // Build alerts array server-side (same logic as before, now pre-computed)
+  const alerts = [];
+  const today = new Date();
 
-  const markRead = async (id) => {
-    setDirectNotifs(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-  };
+  if (tasksRes.data) {
+    tasksRes.data.forEach(t => {
+      const isOverdue = t.due_date && differenceInDays(new Date(t.due_date), today) < 0;
+      alerts.push({
+        id: `task-${t.id}`,
+        type: 'task',
+        title: t.title,
+        priority: t.priority,
+        isOverdue,
+        url: '/tasks',
+        iconType: isOverdue ? 'AlertTriangle' : 'CheckSquare',
+        color: isOverdue ? 'text-red-600 bg-red-50 border-red-200' : 'text-slate-600 bg-slate-50 border-slate-200',
+      });
+    });
+  }
 
-  const markAllRead = async () => {
-    const unread = directNotifs.filter(n => !n.is_read).map(n => n.id);
-    if (!unread.length) return;
-    setDirectNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
-    await supabase.from('notifications').update({ is_read: true }).in('id', unread);
-  };
+  if (isExec && complianceRes.data) {
+    complianceRes.data.forEach(c => {
+      const isOverdue = c.due_date && differenceInDays(new Date(c.due_date), today) < 0;
+      if (isOverdue) {
+        alerts.push({
+          id: `comp-${c.id}`,
+          type: 'compliance',
+          title: c.title,
+          priority: 'urgent',
+          isOverdue: true,
+          url: '/compliance',
+          iconType: 'FileWarning',
+          color: 'text-amber-600 bg-amber-50 border-amber-200',
+        });
+      }
+    });
+  }
 
-  const unreadCount = directNotifs.filter(n => !n.is_read).length;
+  alerts.sort((a, b) => {
+    if (a.isOverdue && !b.isOverdue) return -1;
+    if (!a.isOverdue && b.isOverdue) return 1;
+    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+    if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
+    return 0;
+  });
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-24">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Activity & Alerts</h1>
-          <p className="text-slate-500 mt-1 font-medium">Pending tasks, system warnings, and direct notifications.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <PushNotificationToggle />
-          {unreadCount > 0 && (
-            <button onClick={markAllRead} className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors">
-              <Check className="w-4 h-4" /> Mark all read ({unreadCount})
-            </button>
-          )}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-600 rounded-full animate-spin"/>
-        </div>
-      ) : (
-        <>
-          {/* ── Direct Notifications from DB ── */}
-          {directNotifs.length > 0 && (
-            <section>
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 px-1">Direct Notifications</h2>
-              <div className="space-y-2">
-                {directNotifs.map(notif => (
-                  <div
-                    key={notif.id}
-                    onClick={() => markRead(notif.id)}
-                    className={`rounded-2xl p-4 flex items-start gap-4 border cursor-pointer transition-all hover:shadow-sm ${notif.is_read ? 'bg-white border-slate-100 opacity-70' : 'bg-slate-50/60 border-slate-200 shadow-sm'}`}
-                  >
-                    <div className={`p-2 rounded-xl border shrink-0 mt-0.5 ${notif.is_read ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                      <Bell className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        {!notif.is_read && <span className="w-2 h-2 bg-slate-500 rounded-full shrink-0"/>}
-                        <h3 className="text-sm font-bold text-slate-800 truncate">{notif.title}</h3>
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">{notif.message}</p>
-                      <p className="text-xs text-slate-400 mt-1 font-medium">
-                        {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                    {notif.link && (
-                      <Link href={notif.link} onClick={e => e.stopPropagation()} className="text-slate-600 hover:text-slate-800 shrink-0 mt-1">
-                        <ChevronRight className="w-5 h-5" />
-                      </Link>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* ── System Alerts (tasks + compliance) ── */}
-          {alerts.length > 0 && (
-            <section>
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 px-1">System Alerts</h2>
-              <div className="space-y-3">
-                {alerts.map(alert => {
-                  const Icon = alert.icon;
-                  return (
-                    <Link href={alert.url} key={alert.id} className="block w-full glass-card rounded-2xl p-5 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all outline-none focus:ring-2 focus:ring-slate-500">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl border ${alert.color}`}>
-                          <Icon className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded border ${alert.isOverdue ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                              {alert.isOverdue ? 'Overdue' : 'Pending'}
-                            </span>
-                            {alert.priority && (
-                              <span className={`text-xs font-black uppercase tracking-widest ${alert.priority === 'urgent' ? 'text-red-600' : 'text-slate-400'}`}>
-                                {alert.priority} Priority
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-base font-black text-slate-800 leading-tight">{alert.title}</h3>
-                          <p className="text-xs font-medium text-slate-500 mt-1 capitalize">{alert.type} Action Required</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ── Empty state ── */}
-          {directNotifs.length === 0 && alerts.length === 0 && (
-            <div className="glass-card rounded-[2rem] p-12 text-center flex flex-col items-center justify-center min-h-[50vh]">
-              <div className="w-24 h-24 bg-slate-50 rounded-full flex flex-col items-center justify-center mb-6 border border-slate-100 shadow-sm relative text-slate-600">
-                <BellRing className="w-10 h-10 mb-1" />
-                <span className="absolute top-4 right-4 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
-              </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">You&apos;re All Caught Up</h2>
-              <p className="text-slate-500 font-medium max-w-sm mb-8 leading-relaxed">
-                No pending tasks, direct messages, or critical system alerts.
-              </p>
-              <div className="flex items-center gap-2 text-sm font-bold text-slate-400 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100">
-                <CheckSquare className="w-4 h-4" /> System monitoring active
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <NotificationsClient
+      initialAlerts={alerts}
+      initialDirectNotifs={directNotifsRes.data || []}
+      employeeId={emp.id}
+      role={emp.role}
+    />
   );
 }
