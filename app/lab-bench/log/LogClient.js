@@ -36,12 +36,16 @@ function defaultTests() {
     od: {
       active: true, skipped: false, skip_reason: '',
       numeric_value: '',
-      detail: { wavelength: 600, culture_turbidity: '', culture_color: '' },
+      detail: { wavelength: 600, culture_turbidity: '', culture_color: '', dilution_factor: '' },
     },
     sterility: {
       active: true, skipped: false, skip_reason: '',
       text_value: '',   // 'Pass' | 'Fail' | 'Pending'
       detail: {},
+    },
+    microscopy: {
+      active: false, skipped: false, skip_reason: '',
+      detail: { gram_staining: '', microscopic_test: '' },
     },
     plate_analysis: {
       active: false, skipped: false, skip_reason: '',
@@ -318,6 +322,14 @@ export default function QuickLogPage() {
         skipped: tests.sterility.skipped,
         skip_reason: tests.sterility.skip_reason || null,
         detail: tests.sterility.detail,
+      });
+    }
+    if (tests.microscopy && (!tests.microscopy.skipped || tests.microscopy.active)) {
+      testPayload.push({
+        test_type: 'microscopy',
+        skipped: tests.microscopy.skipped,
+        skip_reason: tests.microscopy.skip_reason || null,
+        detail: tests.microscopy.detail,
       });
     }
     // Plate analysis: only include if toggled active or explicitly skipped
@@ -755,6 +767,16 @@ export default function QuickLogPage() {
                 />
               </div>
               <div>
+                <label className={LabelCls}>Dilution Factor</label>
+                <input
+                  className={InputCls}
+                  type="number" step="0.1" min="1"
+                  placeholder="e.g. 10 (for 10x)"
+                  value={tests.od.detail.dilution_factor}
+                  onChange={e => updateTestDetail('od', { dilution_factor: e.target.value ? Number(e.target.value) : '' })}
+                />
+              </div>
+              <div>
                 <label className={LabelCls}>Turbidity</label>
                 <select
                   className={InputCls}
@@ -778,6 +800,45 @@ export default function QuickLogPage() {
               </div>
             </div>
           </TestCard>
+
+          {/* Microscopy */}
+          {tests.microscopy && (
+            <TestCard
+              title="Microscopy & Staining"
+              icon={ClipboardList}
+              color="bg-slate-500"
+              skipped={tests.microscopy.skipped}
+              skip_reason={tests.microscopy.skip_reason}
+              onSkipToggle={() => updateTest('microscopy', { skipped: !tests.microscopy.skipped, skip_reason: '', active: !tests.microscopy.skipped })}
+              onSkipReasonChange={v => updateTest('microscopy', { skip_reason: v })}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={LabelCls}>Gram Staining</label>
+                  <select
+                    className={InputCls}
+                    value={tests.microscopy.detail.gram_staining}
+                    onChange={e => updateTestDetail('microscopy', { gram_staining: e.target.value })}
+                  >
+                    <option value="">— optional —</option>
+                    <option value="positive">Gram Positive</option>
+                    <option value="negative">Gram Negative</option>
+                    <option value="variable">Gram Variable</option>
+                    <option value="none">No cells visible</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={LabelCls}>Microscopic Observation</label>
+                  <input
+                    className={InputCls}
+                    type="text" placeholder="e.g. rods, cocci, motility..."
+                    value={tests.microscopy.detail.microscopic_test}
+                    onChange={e => updateTestDetail('microscopy', { microscopic_test: e.target.value })}
+                  />
+                </div>
+              </div>
+            </TestCard>
+          )}
 
           {/* Sterility */}
           <TestCard
