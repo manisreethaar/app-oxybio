@@ -1,6 +1,7 @@
 // @ts-nocheck
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
@@ -123,7 +124,52 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 25;
+
   const supabase = useMemo(() => createClient(), []);
+
+  // fetchData: used after mutations (stock issue, item add, delete, etc.)
+  // SSR provides initial data; this is only called post-mutation to sync state
+  const fetchData = useCallback(async (pageNum = 0, append = false) => {
+    if (!append) setLoading(true);
+    setSyncError('');
+    try {
+      const start = pageNum * PAGE_SIZE;
+      const end = start + PAGE_SIZE - 1;
+      let stockQuery = supabase
+        .from('inventory_stock')
+        .select('*, inventory_items(name, unit, category, min_stock_level, storage_condition), vendors(name)')
+        .order('expiry_date', { ascending: true })
+        .range(start, end);
+      if (searchTerm) {
+        stockQuery = stockQuery.or(`supplier_batch_number.ilike.%${searchTerm}%,inventory_items.name.ilike.%${searchTerm}%`);
+      }
+      const res = await withTimeout(stockQuery, 45000, 'Inventory load timed out');
+      if (res.error) throw res.error;
+      const stockData = res.data || [];
+      if (append) {
+        setStock(prev => [...prev, ...stockData]);
+      } else {
+        setStock(stockData);
+      }
+      setHasMore(stockData.length === PAGE_SIZE);
+    } catch (err: any) {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        setSyncError('Inventory data could not be refreshed. Check connection and try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase, searchTerm]);
+
+  const loadMore = useCallback(() => {
+    const next = page + 1;
+    setPage(next);
+    fetchData(next, true);
+  }, [page, fetchData]);
   const checkTraining = useCallback(async (signal: AbortSignal) => {
     if (role === 'admin') {
       setTrainingStatus({ isTrained: true });
