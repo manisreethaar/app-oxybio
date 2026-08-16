@@ -485,10 +485,22 @@ function ReplicateGroupTile({ records, onEdit, onDelete, canDelete, deletingId, 
             </span>
           ))}
         </div>
-        {first.employees && (
-          <CreatorBadge initials={first.employees.initials} fullName={first.employees.full_name} />
-        )}
+        <div className="flex items-center gap-1.5">
+          {first.updater ? (
+            <div className="flex flex-col items-end">
+              <CreatorBadge initials={first.updater.initials} fullName={first.updater.full_name} />
+              <span className="text-[9px] text-slate-400 font-medium">Edited</span>
+            </div>
+          ) : first.employees ? (
+            <CreatorBadge initials={first.employees.initials} fullName={first.employees.full_name} />
+          ) : null}
+        </div>
       </div>
+      {first.reason_for_change && (
+        <div className="mt-1 text-[10px] text-red-500 font-medium bg-red-50/50 p-1 rounded">
+          Edit: {first.reason_for_change}
+        </div>
+      )}
 
       {/* Expanded detail -- show first record's charts */}
       {expanded && (
@@ -591,13 +603,18 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
         </p>
       )}
 
-      {/* Sterility chip + creator */}
+      {/* Sterility chip + creator/updater */}
       <div className="flex items-center justify-between">
         <span className={`text-xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${sterileChip(record.sterility_status || 'Pending')}`}>
           {record.sterility_status || 'Pending'}
         </span>
         <div className="flex items-center gap-1.5">
-          {record.employees ? (
+          {record.updater ? (
+            <div className="flex flex-col items-end">
+              <CreatorBadge initials={record.updater.initials} fullName={record.updater.full_name} />
+              <span className="text-[9px] text-slate-400 font-medium">Edited</span>
+            </div>
+          ) : record.employees ? (
             <CreatorBadge initials={record.employees.initials} fullName={record.employees.full_name} />
           ) : record.logged_by ? null : (
             <span className="text-xs text-slate-300 font-mono">auto</span>
@@ -609,6 +626,11 @@ function SinglePlateTile({ record, onEdit, onDelete, canDelete, deletingId, setC
           )}
         </div>
       </div>
+      {record.reason_for_change && (
+        <div className="mt-1 text-[10px] text-red-500 font-medium bg-red-50/50 p-1 rounded">
+          Edit: {record.reason_for_change}
+        </div>
+      )}
 
       {/* Results */}
       {(record.colony_count != null || record.cfu_per_ml != null) && (
@@ -964,7 +986,7 @@ export default function SampleIncubationPage() {
                 {/* Source (batch) header */}
                 <button
                   onClick={() => toggleSource(src.key)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-slate-50/70 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${src.key === '__other__' ? 'bg-slate-100' : 'bg-navy/10'}`}>
@@ -1071,7 +1093,7 @@ export default function SampleIncubationPage() {
                           {/* Timepoint row */}
                           <button
                             onClick={() => toggleTimepoint(tpFullKey)}
-                            className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50/50 transition-colors text-left"
+                            className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors text-left"
                           >
                             <div className="flex items-center gap-3 flex-wrap">
                               <div className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
@@ -1260,7 +1282,7 @@ export default function SampleIncubationPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {samples.map(r => (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-2 text-sm font-semibold text-slate-700">
                         {r.source_label || r.batches?.batch_id || 'Other'}
                       </td>

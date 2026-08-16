@@ -86,7 +86,7 @@ export async function GET(request) {
 
     let query = supabase
       .from('sample_incubation_records')
-      .select('*, employees(full_name, initials), batches(batch_id, status), batch_flasks(flask_label), batch_flask_qc_samples(sample_id), samples(sample_label, source_type, source_label, log_hour, timepoint_label, flask_label)')
+      .select('*, employees!logged_by(full_name, initials), updater:employees!updated_by(full_name, initials), batches(batch_id, status), batch_flasks(flask_label), batch_flask_qc_samples(sample_id), samples(sample_label, source_type, source_label, log_hour, timepoint_label, flask_label)')
       .order('created_at', { ascending: false });
 
     if (status === 'ongoing') query = query.is('end_time', null);
@@ -284,14 +284,22 @@ export async function PUT(request) {
     const parsed = parsePayload(rest);
     if (parsed.error) return parsed.error;
 
-    const { id, ...updates } = parsed.data;
+    const { id, editReason, ...updates } = parsed.data;
     if (!id) {
       return NextResponse.json({ success: false, error: 'Missing record id' }, { status: 400 });
+    }
+    if (!editReason) {
+      return NextResponse.json({ success: false, error: 'Reason for change is required for ALOCA compliance' }, { status: 400 });
     }
 
     const { data, error } = await supabase
       .from('sample_incubation_records')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+        updated_by: access.employee.id,
+        reason_for_change: editReason
+      })
       .eq('id', id)
       .select()
       .single();

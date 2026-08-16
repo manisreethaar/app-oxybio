@@ -198,6 +198,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       media_lot:        initialData.media_lot        || '',
       plate_image_url:  initialData.plate_image_url  || '',
       is_duplicate:     initialData.is_duplicate     || false,
+      editReason:       ''
     } : {
       incubation_date:   new Date().toISOString().split('T')[0],
       sample_category:   'Fermentation IPC',
@@ -214,6 +215,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
       media_lot:         '',
       plate_image_url:   '',
       is_duplicate:      false,
+      editReason:        ''
     },
   });
 
@@ -332,6 +334,7 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
         plate_image_url:        data.plate_image_url || null,
         is_duplicate:           data.is_duplicate || false,
         observation,
+        editReason:             data.editReason || undefined
       };
 
       if (initialData?.id) { payload.id = initialData.id; }
@@ -594,6 +597,14 @@ export default function IncubationFormModal({ onClose, onSuccess, initialData = 
                       <input type="checkbox" id="is_dup" {...register('is_duplicate')} className="w-4 h-4 rounded border-slate-300"/>
                       <label htmlFor="is_dup" className="text-xs font-bold text-slate-700">Mark as Duplicate Plate (triplicate / QC check)</label>
                     </div>
+
+                    {initialData && (
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className={labelCls}>Reason for Change (ALOCA) <span className="text-red-500">*</span></label>
+                        <input type="text" {...register('editReason')} placeholder="e.g. Correcting typos in count" className={`${inputCls} border-red-200 focus:ring-red-100 bg-red-50`} />
+                        {errors.editReason && <p className="text-red-500 text-[10px] mt-1">{errors.editReason.message}</p>}
+                      </div>
+                    )}
 
                     {/* CFU/mL preview */}
                     {cfuPreview !== null && (

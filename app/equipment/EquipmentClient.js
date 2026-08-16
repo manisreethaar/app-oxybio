@@ -539,7 +539,7 @@ export default function EquipmentClient({ initialEquipment = [], initialSterilDa
                 const isPmDue = device.next_pm_date && (device.next_pm_date < new Date().toLocaleDateString('en-CA'));
                 
                 return (
-                  <tr key={device.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={device.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-2">
                       <div className="text-sm font-semibold text-indigo-700">{device.name}</div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase">{device.model || 'Standard Unit'}</div>
@@ -590,7 +590,7 @@ export default function EquipmentClient({ initialEquipment = [], initialSterilDa
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50 backdrop-blur-sm">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{modalMode === 'edit' ? 'Edit Laboratory Asset' : 'Register Laboratory Asset'}</h2>
@@ -686,7 +686,7 @@ export default function EquipmentClient({ initialEquipment = [], initialSterilDa
       )}
 
       {isMaintenanceOpen && activeDevice && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50 backdrop-blur-sm">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-slate-800 text-white">
               <h2 className="text-xl font-black tracking-tight">{activeDevice.name}</h2>
@@ -747,7 +747,7 @@ export default function EquipmentClient({ initialEquipment = [], initialSterilDa
 
       {/* Confirmation Modal */}
       {isTicketOpen && activeDevice && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50 backdrop-blur-sm">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="px-8 py-6 bg-red-600 text-white flex items-center gap-4">
               <AlertTriangle className="w-8 h-8 text-red-200" />
@@ -791,7 +791,7 @@ export default function EquipmentClient({ initialEquipment = [], initialSterilDa
       )}
 
       {deletingId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 backdrop-blur-sm">
           <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2.5rem] p-6 md:p-5 md:p-8 max-w-md w-full shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" />
@@ -821,7 +821,7 @@ export default function EquipmentClient({ initialEquipment = [], initialSterilDa
 
       {/* History Modal */}
       {historyDevice && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50/10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-50 backdrop-blur-sm">
           <div className="h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl">
             <div className="px-8 py-6 bg-slate-800 text-white flex items-center justify-between">
               <div className="flex items-center gap-4">
