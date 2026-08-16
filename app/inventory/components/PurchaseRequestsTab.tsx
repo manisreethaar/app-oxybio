@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, CheckCircle, XCircle, Clock, AlertTriangle, Plus } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 

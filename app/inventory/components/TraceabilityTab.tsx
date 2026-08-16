@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link2, Search, ArrowRight, Loader2, Download } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
