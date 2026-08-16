@@ -119,11 +119,7 @@ export default function InventoryClient({ initialStock, initialItems, initialVen
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
   // Multi-select state
-
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
-
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
