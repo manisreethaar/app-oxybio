@@ -82,6 +82,15 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: true });
     }
     
+    if (action === 'log_reading') {
+      const { readingPayload } = body;
+      
+      const { error: err1 } = await db.from('batch_fermentation_readings').insert(readingPayload);
+      if (err1) throw err1;
+      
+      return NextResponse.json({ success: true });
+    }
+    
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error) {
     console.error('Seed Train API Error:', error);

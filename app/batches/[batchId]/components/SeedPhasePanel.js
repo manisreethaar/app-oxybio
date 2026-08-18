@@ -234,21 +234,30 @@ export default function SeedPhasePanel({
     if (err) { toast.error(err); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from('batch_fermentation_readings').insert({
-        batch_id: batch.id,
-        seed_train_id: data.id,
-        flask_id: selectedFlaskId,
-        ph: logPh ? parseFloat(logPh) : null,
-        optical_density: logOd ? parseFloat(logOd) : null,
-        is_blank: logIsBlank,
-        gram_staining: logGramStaining || null,
-        microscopic_test: logMicroscopic || null,
-        dilution_factor: logDilution ? parseFloat(logDilution) : null,
-        logged_by: employeeProfile.id,
-        logged_by_name: employeeProfile.full_name || null,
-        logged_by_role: employeeProfile.role || null,
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'log_reading',
+          readingPayload: {
+            batch_id: batch.id,
+            seed_train_id: data.id,
+            flask_id: selectedFlaskId,
+            ph: logPh ? parseFloat(logPh) : null,
+            optical_density: logOd ? parseFloat(logOd) : null,
+            is_blank: logIsBlank,
+            gram_staining: logGramStaining || null,
+            microscopic_test: logMicroscopic || null,
+            dilution_factor: logDilution ? parseFloat(logDilution) : null,
+            logged_by: employeeProfile.id,
+            logged_by_name: employeeProfile.full_name || null,
+            logged_by_role: employeeProfile.role || null,
+          }
+        })
       });
-      if (error) throw error;
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to log reading');
+      
       toast.success('Reading logged. ✓ ALOCA++');
       setShowLogModal(false);
       setLogPh(''); setLogOd(''); setLogIsBlank(false);

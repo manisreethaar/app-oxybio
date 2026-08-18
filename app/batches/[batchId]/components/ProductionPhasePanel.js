@@ -191,25 +191,34 @@ export default function ProductionPhasePanel({
         if (m !== 0) anthroneConc = (od - c) / m;
       }
 
-      const { error } = await supabase.from('batch_fermentation_readings').insert({
-        batch_id: batch.id,
-        seed_train_id: setupData.id,
-        flask_id: selectedFlaskId,
-        ph: logPh ? parseFloat(logPh) : null,
-        optical_density: logOd ? parseFloat(logOd) : null,
-        is_blank: logIsBlank,
-        anthrone_od: logAnthroneOd ? parseFloat(logAnthroneOd) : null,
-        anthrone_conc: anthroneConc,
-        standard_curve_id: standardCurve?.id || null,
-        gram_staining: logGramStaining || null,
-        microscopic_test: logMicroscopic || null,
-        dilution_factor: logDilution ? parseFloat(logDilution) : null,
-        logged_by: employeeProfile?.id,
-        logged_by_name: employeeProfile?.full_name || null,
-        logged_by_role: employeeProfile?.role || null,
+      const res = await fetch(`/api/batches/${batch.id}/seed-trains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'log_reading',
+          readingPayload: {
+            batch_id: batch.id,
+            seed_train_id: setupData.id,
+            flask_id: selectedFlaskId,
+            ph: logPh ? parseFloat(logPh) : null,
+            optical_density: logOd ? parseFloat(logOd) : null,
+            is_blank: logIsBlank,
+            anthrone_od: logAnthroneOd ? parseFloat(logAnthroneOd) : null,
+            anthrone_conc: anthroneConc,
+            standard_curve_id: standardCurve?.id || null,
+            gram_staining: logGramStaining || null,
+            microscopic_test: logMicroscopic || null,
+            dilution_factor: logDilution ? parseFloat(logDilution) : null,
+            logged_by: employeeProfile?.id,
+            logged_by_name: employeeProfile?.full_name || null,
+            logged_by_role: employeeProfile?.role || null,
+          }
+        })
       });
-      if (error) throw error;
-      toast.success('Reading logged!');
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to log reading');
+      
+      toast.success('Production reading logged. ✓ ALOCA++');
       setShowLogModal(false);
       setLogPh(''); setLogOd(''); setLogAnthroneOd(''); setLogIsBlank(false);
       setLogGramStaining(''); setLogMicroscopic(''); setLogDilution('');
