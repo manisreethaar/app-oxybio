@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -23,6 +23,13 @@ export default function ProductionPhasePanel({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
+
+  const [equipment, setEquipment] = useState([]);
+  useEffect(() => {
+    supabase.from('equipment').select('id, name, status').order('name').then(({ data: eq }) => {
+      setEquipment(eq || []);
+    });
+  }, [supabase]);
 
   const setupData = useMemo(() => seedTrains.find(s => s.stage_type === 'production') || null, [seedTrains]);
   const stageFlasks = useMemo(() => flasks.filter(f => f.seed_train_id === setupData?.id), [flasks, setupData]);
