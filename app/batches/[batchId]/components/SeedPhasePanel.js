@@ -3,8 +3,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/context/ToastContext';
-import { Beaker, ShieldCheck, Droplets, Activity, Plus, ArrowRight, CheckCircle2, AlertTriangle, FlaskConical, Calendar } from 'lucide-react';
+import { Beaker, ShieldCheck, Droplets, Activity, Plus, ArrowRight, CheckCircle2, AlertTriangle, FlaskConical, Calendar, ListFilter } from 'lucide-react';
 import dayjs from 'dayjs';
+import BulkLogModal from './BulkLogModal';
 
 const INOCULUM_TYPES = ['glycerol', 'curd', 'rice_water', 'natural', 'previous_seed'];
 
@@ -83,6 +84,9 @@ export default function SeedPhasePanel({
   const [logGramStaining, setLogGramStaining] = useState('');
   const [logMicroscopic, setLogMicroscopic] = useState('');
   const [logDilution, setLogDilution] = useState('');
+  const [logElapsedHours, setLogElapsedHours] = useState('');
+
+  const [showBulkLogModal, setShowBulkLogModal] = useState(false);
 
   const handleSaveSetup = async () => {
     setSaving(true);
@@ -243,6 +247,7 @@ export default function SeedPhasePanel({
             batch_id: batch.id,
             seed_train_id: data.id,
             flask_id: selectedFlaskId,
+            elapsed_hours: logElapsedHours ? parseFloat(logElapsedHours) : null,
             ph: logPh ? parseFloat(logPh) : null,
             optical_density: logOd ? parseFloat(logOd) : null,
             is_blank: logIsBlank,
@@ -260,7 +265,7 @@ export default function SeedPhasePanel({
       
       toast.success('Reading logged. ✓ ALOCA++');
       setShowLogModal(false);
-      setLogPh(''); setLogOd(''); setLogIsBlank(false);
+      setLogElapsedHours(''); setLogPh(''); setLogOd(''); setLogIsBlank(false);
       setLogGramStaining(''); setLogMicroscopic(''); setLogDilution('');
       onDataChange?.();
     } catch (err) {
@@ -369,8 +374,13 @@ export default function SeedPhasePanel({
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Autoclave / Equipment ID</label>
-              <input type="text" value={sterilizerId} onChange={e => setSterilizerId(e.target.value)} disabled={isSterilised} className="w-full px-3 py-2 border rounded-lg text-sm"/>
+              <label className="block text-xs font-bold text-slate-500 mb-1">Sterilizer ID</label>
+              <select value={sterilizerId} onChange={e => setSterilizerId(e.target.value)} disabled={isSterilised} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                <option value="">-- Select Sterilizer --</option>
+                {equipment.filter(eq => eq.status === 'Operational' && (eq.name.toLowerCase().includes('autoclave') || eq.name.toLowerCase().includes('sterilizer'))).map(eq => (
+                  <option key={eq.id} value={eq.id}>{eq.name} ({eq.status})</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">Temperature (°C)</label>
@@ -470,13 +480,28 @@ export default function SeedPhasePanel({
       {/* 4. Flask Dashboard & Sampling */}
       {isInoculated && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-navy uppercase tracking-widest flex items-center gap-2">
-              <Activity className="w-5 h-5"/> {stageType.replace('_', ' ').toUpperCase()} FLASKS
-            </h2>
-            <div className="text-xs font-bold text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
-              {stageFlasks.length} Flasks Active
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center">
+                <FlaskConical className="w-5 h-5 text-navy"/>
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-navy uppercase tracking-tight">Flasks Dashboard</h2>
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>
+                    {stageFlasks.length} Active
+                  </span>
+                </div>
+              </div>
             </div>
+            
+            {stageFlasks.length > 0 && (
+              <button onClick={() => setShowBulkLogModal(true)} className="flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-lg text-sm font-bold shadow-sm hover:bg-navy-hover transition-colors">
+                <ListFilter className="w-4 h-4"/>
+                Bulk Log Samples
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -502,7 +527,11 @@ export default function SeedPhasePanel({
                         {fReadings.map(r => (
                           <div key={r.id} className="flex justify-between text-xs py-1.5 border-b border-slate-200 last:border-0">
                             <span className="text-slate-500 w-16">
-                              {dayjs(r.logged_at).format('HH:mm')}
+                              {r.elapsed_hours != null ? (
+                                <span className="text-navy font-black text-sm">{r.elapsed_hours}h</span>
+                              ) : (
+                                dayjs(r.logged_at).format('HH:mm')
+                              )}
                               <div className="text-[9px] text-slate-400 font-bold">{r.logged_by_name?.split(' ')[0]}</div>
                             </span>
                             <span className="font-bold w-12">{r.ph ? `pH ${r.ph}` : ''}</span>
@@ -586,6 +615,10 @@ export default function SeedPhasePanel({
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-navy mb-1">Elapsed Hours</label>
+                <input type="number" step="0.5" placeholder="e.g. 24" value={logElapsedHours} onChange={e=>setLogElapsedHours(e.target.value)} className="w-full px-3 py-2 border border-navy/30 rounded-lg bg-navy/5"/>
+              </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">pH</label>
                 <input type="number" step="0.01" value={logPh} onChange={e=>setLogPh(e.target.value)} className="w-full px-3 py-2 border rounded-lg"/>
@@ -627,6 +660,22 @@ export default function SeedPhasePanel({
           </div>
         </div>
       )}
+
+      {showBulkLogModal && (
+        <BulkLogModal
+          flasks={stageFlasks}
+          batchId={batch.id}
+          stageId={data.id}
+          stageType={stageType}
+          employeeProfile={employeeProfile}
+          onClose={() => setShowBulkLogModal(false)}
+          onSave={() => {
+            setShowBulkLogModal(false);
+            onDataChange?.();
+          }}
+        />
+      )}
+
     </div>
   );
 }

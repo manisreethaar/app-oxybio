@@ -91,6 +91,18 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: true });
     }
     
+    if (action === 'bulk_log_readings') {
+      const { payloads } = body;
+      if (!Array.isArray(payloads) || payloads.length === 0) {
+        return NextResponse.json({ error: 'No data to log' }, { status: 400 });
+      }
+      
+      const { error: err1 } = await db.from('batch_fermentation_readings').insert(payloads);
+      if (err1) throw err1;
+      
+      return NextResponse.json({ success: true, count: payloads.length });
+    }
+    
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error) {
     console.error('Seed Train API Error:', error);
