@@ -242,13 +242,13 @@ export default function ProductionPhasePanel({
   };
 
   const handleHarvest = async (flaskId, flaskLabel) => {
-    if (!confirm(`Harvest ${flaskLabel} and send to Downstream? This cannot be undone.`)) return;
+    if (!confirm(`Harvest ${flaskLabel}? This will mark it ready for batch harvest.`)) return;
     setSaving(true);
     try {
       const { data: rpcData, error } = await supabase.rpc('advance_flask_stage', {
         p_flask_id: flaskId,
         p_batch_id: batch.id,
-        p_to_stage: 'straining',
+        p_to_stage: 'harvest',
         p_employee_id: employeeProfile?.id,
       });
       if (error) throw error;
@@ -488,7 +488,17 @@ export default function ProductionPhasePanel({
             <div className="card p-6 border-2 border-emerald-500 bg-emerald-50 text-center">
               <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3"/>
               <h3 className="text-lg font-black text-emerald-800 mb-1">All Flasks Harvested!</h3>
-              <p className="text-sm text-emerald-700">This batch has been fully transferred to Downstream processing.</p>
+              <p className="text-sm text-emerald-700 mb-4">This production phase is complete.</p>
+              <button
+                onClick={() => {
+                  setSaving(true);
+                  onTransfer?.();
+                }}
+                disabled={saving}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition-all shadow-sm shadow-emerald-200 disabled:opacity-50"
+              >
+                Complete Production & Proceed to Harvest →
+              </button>
             </div>
           )}
         </div>

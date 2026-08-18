@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import ProtocolSetupPanel from './components/ProtocolSetupPanel';
 import SeedPhasePanel from './components/SeedPhasePanel';
 import ProductionPhasePanel from './components/ProductionPhasePanel';
+import HarvestPanel from './components/HarvestPanel';
 import useBatchRealtime from './useBatchRealtime';
 
 export default function BatchDetailsClient({ batchId, initialData }) {
@@ -87,6 +88,14 @@ export default function BatchDetailsClient({ batchId, initialData }) {
   const batch = data.batch;
   const activePhase = batch.current_stage || 'protocol';
 
+  // Decouple viewed stage from active stage for navigation
+  const [viewedStage, setViewedStage] = useState(activePhase);
+
+  // Auto-jump to the active phase when it changes
+  useEffect(() => {
+    setViewedStage(activePhase);
+  }, [activePhase]);
+
   // Build dynamic stepper based on what seed trains actually exist
   // Everyone gets Protocol and Seed 1. Seed 2 and 3 only show up if instantiated. Everyone gets Production.
   const seedTrains = data.seedTrains || [];
@@ -110,8 +119,13 @@ export default function BatchDetailsClient({ batchId, initialData }) {
   if (activePhase !== 'protocol') {
     stepperStages.push({ id: 'production', label: 'Production' });
   }
+  
+  if (activePhase === 'harvest' || activePhase === 'downstream') {
+    stepperStages.push({ id: 'harvest', label: 'Harvest' });
+  }
 
-  const phaseIndex = stepperStages.findIndex(s => s.id === activePhase);
+  // A stage is "past" if its index is less than the activePhase index (not viewedStage)
+  const activePhaseIndex = stepperStages.findIndex(s => s.id === activePhase);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20 fade-in">
@@ -175,19 +189,27 @@ export default function BatchDetailsClient({ batchId, initialData }) {
       <div className="card p-4 overflow-x-auto shadow-sm">
         <div className="flex items-center min-w-max px-2">
           {stepperStages.map((stage, idx) => {
-            const isCurrent = stage.id === activePhase;
-            const isPast = phaseIndex !== -1 && idx < phaseIndex;
+            const isCurrentActive = stage.id === activePhase;
+            const isCurrentlyViewed = stage.id === viewedStage;
+            const isPast = activePhaseIndex !== -1 && idx < activePhaseIndex;
+            const isFuture = activePhaseIndex !== -1 && idx > activePhaseIndex;
+            
             return (
               <div key={stage.id} className="flex items-center">
-                <div className={`flex flex-col items-center gap-2 ${isCurrent ? 'opacity-100' : isPast ? 'opacity-80' : 'opacity-40'}`}>
+                <div 
+                  className={`flex flex-col items-center gap-2 ${isCurrentlyViewed ? 'opacity-100' : isPast ? 'opacity-80' : 'opacity-40'} ${!isFuture ? 'cursor-pointer hover:opacity-100' : ''}`}
+                  onClick={() => {
+                    if (!isFuture) setViewedStage(stage.id);
+                  }}
+                >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                    isCurrent ? 'bg-navy border-navy text-white ring-4 ring-navy/10' :
+                    isCurrentlyViewed ? 'bg-navy border-navy text-white ring-4 ring-navy/10' :
                     isPast    ? 'bg-emerald-50 border-emerald-500 text-emerald-600' :
                                 'bg-slate-50 border-slate-200 text-slate-400'
                   }`}>
-                    {isPast ? <CheckCircle2 className="w-5 h-5"/> : <span className="font-black text-sm">{idx + 1}</span>}
+                    {isPast && !isCurrentlyViewed ? <CheckCircle2 className="w-5 h-5"/> : <span className="font-black text-sm">{idx + 1}</span>}
                   </div>
-                  <span className={`text-xs font-black uppercase tracking-wider ${isCurrent ? 'text-navy' : isPast ? 'text-emerald-700' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-black uppercase tracking-wider ${isCurrentlyViewed ? 'text-navy' : isPast ? 'text-emerald-700' : 'text-slate-400'}`}>
                     {stage.label}
                   </span>
                 </div>
@@ -202,14 +224,14 @@ export default function BatchDetailsClient({ batchId, initialData }) {
 
       {/* ── MAIN CONTENT ── */}
       <div className="mt-2">
-        {activePhase === 'protocol' ? (
+        {viewedStage === 'protocol' ? (
           <ProtocolSetupPanel
             key="protocol"
             batch={batch}
             sops={data.sops}
             onComplete={() => handleStageTransition('seed_1')}
           />
-        ) : activePhase === 'production' ? (
+        ) : viewedStage === 'production' ? (
           <ProductionPhasePanel
             key="production"
             batch={batch}
@@ -220,14 +242,30 @@ export default function BatchDetailsClient({ batchId, initialData }) {
             employees={data.employees}
             employeeProfile={employeeProfile}
             standardCurve={data.standardCurve}
-            onTransfer={() => handleStageTransition('production')}
+            onTransfer={() => handleStageTransition('harvest')}
             onDataChange={handleDataChange}
+          />
+        ) : viewedStage === 'harvest' ? (
+          <HarvestPanel
+            key="harvest"
+            batch={batch}
+            activeFlask={data.flasks.find(f => f.current_stage === 'harvest' || f.current_stage === 'straining') || data.flasks[0]}
+            employees={data.employees}
+            employeeProfile={employeeProfile}
+            role={employeeProfile?.role}
+            supabase={supabase}
+            onDataSaved={handleDataChange}
+            onAdvanceFlaskStage={async (targetStage, warnings) => {
+              if (warnings?.length) toast.warn(warnings[0]);
+              // the panel internally updates flask stage. Here we just advance the batch.
+              await handleStageTransition('downstream');
+            }}
           />
         ) : (
           <SeedPhasePanel
-            key={activePhase}
+            key={viewedStage}
             batch={batch}
-            stageType={activePhase}
+            stageType={viewedStage}
             seedTrains={data.seedTrains}
             fermentationReadings={data.fermentationReadings}
             flasks={data.flasks}
