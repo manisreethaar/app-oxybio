@@ -6,6 +6,7 @@ import { withTimeout } from '@/lib/withTimeout';
 import { useData } from '@/lib/hooks/useData';
 import { Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { getHarvestWarnings } from '@/lib/batches/stageGates';
+import SupervisorSignOffModal from './SupervisorSignOffModal';
 
 const HARVEST_METHODS = ['Centrifugation', 'Filtration', 'Decantation', 'Gravity settling'];
 const VIABILITY_METHODS = ['Live/Dead staining', 'Methylene Blue', 'Flow Cytometry', 'Plate count', 'Not done'];
@@ -14,6 +15,8 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
   const toast = useToast();
   const [record, setRecord] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [signOffOpen, setSignOffOpen] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState(null);
 
   const { data: equipmentData } = useData({
     table: 'equipment',
@@ -98,7 +101,12 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
     ? ((parseFloat(watchWetCellWeight) / (parseFloat(watchFinalCultureVol) * 1000)) * 100).toFixed(1)
     : null;
 
-  const onSubmit = async (formData, advanceTarget = null) => {
+  const handleCompleteHarvestClick = (formData) => {
+    setPendingSubmitData(formData);
+    setSignOffOpen(true);
+  };
+
+  const onSubmit = async (formData, advanceTarget = null, supervisorId = null) => {
     if (!activeFlask?.id) return;
     setSaving(true);
     try {
@@ -120,6 +128,7 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
         temp_at_30min: formData.tempAt30Min ? parseFloat(formData.tempAt30Min) : null,
         temp_at_60min: formData.tempAt60Min ? parseFloat(formData.tempAt60Min) : null,
         operator_id: employeeProfile?.id,
+        supervised_by: supervisorId,
         notes: formData.notes || null,
       };
       const { error } = await supabase.from('batch_stage_harvest')
@@ -257,11 +266,24 @@ export default function HarvestPanel({ batch, activeFlask, employees, employeePr
           <button onClick={handleSubmit((data) => onSubmit(data, null))} disabled={saving} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Harvest Record'}
           </button>
-          <button onClick={handleSubmit((data) => onSubmit(data, 'straining'))} disabled={saving || actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
+          <button onClick={handleSubmit(handleCompleteHarvestClick)} disabled={saving || actionLoading} className="w-full py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50">
             Complete Harvest & Send to DSP
           </button>
         </div>
       </div>
+
+      <SupervisorSignOffModal
+        isOpen={signOffOpen}
+        onClose={() => { setSignOffOpen(false); setPendingSubmitData(null); }}
+        onSuccess={(supervisorId) => {
+          setSignOffOpen(false);
+          onSubmit(pendingSubmitData, 'straining', supervisorId);
+        }}
+        actionName={`Complete Harvest for ${activeFlask.flask_label}`}
+        employees={employees}
+        currentEmployeeId={employeeProfile?.id}
+        supabase={supabase}
+      />
     </div>
   );
 }

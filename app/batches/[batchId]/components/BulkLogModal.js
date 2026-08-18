@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useToast } from '@/context/ToastContext';
 import { X, CheckCircle2 } from 'lucide-react';
+import RetrospectiveToggle from './RetrospectiveToggle';
 
 export default function BulkLogModal({
   flasks,
@@ -16,6 +17,11 @@ export default function BulkLogModal({
 }) {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
+
+  // Retrospective state
+  const [isRetrospective, setIsRetrospective] = useState(false);
+  const [loggedAt, setLoggedAt] = useState('');
+  const [retroReason, setRetroReason] = useState('');
 
   // Initialize a row of state for each flask
   const [readings, setReadings] = useState(
@@ -63,6 +69,11 @@ export default function BulkLogModal({
       return;
     }
 
+    if (isRetrospective && (!loggedAt || !retroReason.trim())) {
+      toast.error('Please provide both the actual time and a reason for retrospective logging.');
+      return;
+    }
+
     // Build the payload
     const payloads = [];
     
@@ -96,6 +107,9 @@ export default function BulkLogModal({
           logged_by: employeeProfile.id,
           logged_by_name: employeeProfile.full_name || null,
           logged_by_role: employeeProfile.role || null,
+          is_retrospective: isRetrospective,
+          retro_reason: isRetrospective ? retroReason : null,
+          logged_at: isRetrospective ? new Date(loggedAt).toISOString() : undefined,
         });
       }
     }
@@ -144,6 +158,14 @@ export default function BulkLogModal({
 
         {/* Content - Scrollable Table */}
         <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+          <RetrospectiveToggle 
+            isRetrospective={isRetrospective}
+            setIsRetrospective={setIsRetrospective}
+            loggedAt={loggedAt}
+            setLoggedAt={setLoggedAt}
+            retroReason={retroReason}
+            setRetroReason={setRetroReason}
+          />
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
