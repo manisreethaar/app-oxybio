@@ -742,7 +742,7 @@ export default function AttendanceClient({
                         </div>
                       ) : (
                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 font-black flex items-center justify-center text-lg border-2 border-white shadow-md">
-                          {emp.full_name.substring(0, 2).toUpperCase()}
+                          {(emp.full_name || '??').substring(0, 2).toUpperCase()}
                         </div>
                       )}
                       {status === 'active' && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-slate-500 border-2 border-white rounded-full animate-pulse"></div>}
