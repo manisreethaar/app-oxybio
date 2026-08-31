@@ -56,7 +56,7 @@ async function downloadPayslipPDF(slip) {
       slip.total_working_days ?? '—',
       slip.present_days ?? '—',
       slip.approved_leave_days ?? '—',
-      slip.lop_days ?? '—',
+      (slip.override_lop_days ?? slip.lop_days) ?? '—',
       slip.total_hours_worked ? `${slip.total_hours_worked}h` : '—',
     ]],
     headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 8 },
@@ -581,7 +581,7 @@ function PayslipPanel({
         <div className="flex gap-2">
           {existingSlip && (
             <button
-              onClick={() => { setIsEditing(false); setPfDed(existingSlip.pf_deduction ?? 0); setEsiDed(existingSlip.esi_deduction ?? 0); setLopOverride(existingSlip.lop_days ?? summary?.lop_days ?? 0); setAdminNotes(existingSlip.admin_notes ?? ''); }}
+              onClick={() => { setIsEditing(false); setPfDed(existingSlip.pf_deduction ?? 0); setEsiDed(existingSlip.esi_deduction ?? 0); setLopOverride(existingSlip.override_lop_days ?? existingSlip.lop_days ?? summary?.lop_days ?? 0); setAdminNotes(existingSlip.admin_notes ?? ''); }}
               className="flex-1 py-3 bg-slate-100 text-slate-600 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
             >
               Cancel
@@ -831,7 +831,7 @@ export default function PayrollPage() {
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-500 font-mono">{slip.total_working_days ?? '—'}</td>
                       <td className="px-5 py-4 text-sm font-black">
-                        <span className={slip.lop_days > 0 ? 'text-red-500' : 'text-emerald-600'}>{slip.lop_days ?? '—'}</span>
+                        <span className={(slip.override_lop_days ?? slip.lop_days) > 0 ? 'text-red-500' : 'text-emerald-600'}>{(slip.override_lop_days ?? slip.lop_days) ?? '—'}</span>
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-500">₹{Number(slip.gross_salary || 0).toLocaleString('en-IN')}</td>
                       <td className="px-5 py-4 text-sm font-black text-emerald-700">₹{Number(slip.net_salary || 0).toLocaleString('en-IN')}</td>

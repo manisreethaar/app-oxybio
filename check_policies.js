@@ -1,9 +1,9 @@
-const fs = require('fs');
-const env = fs.readFileSync('.env.local', 'utf8');
-const match = env.match(/DATABASE_URL=\"?(postgresql:[^\"]+)\"?/);
-if (match) {
-  const { execSync } = require('child_process');
-  console.log(execSync(`psql "${match[1]}" -c "SELECT tablename, policyname, roles, cmd, qual, with_check FROM pg_policies WHERE schemaname = 'public';" -t`).toString());
-} else {
-  console.log('No DATABASE_URL found');
+﻿const { Client } = require('pg');
+const client = new Client({ connectionString: 'postgresql://postgres:6txNTjJvatLJHEey@db.eofhppcmdhhfrptbxmxd.supabase.co:5432/postgres' });
+async function run() {
+  await client.connect();
+  const res = await client.query("SELECT tablename, cmd, roles, qual, with_check FROM pg_policies WHERE tablename IN ('batch_seed_trains', 'batches', 'batch_flasks', 'batch_fermentation_readings')");
+  console.log(JSON.stringify(res.rows, null, 2));
+  await client.end();
 }
+run();

@@ -1,11 +1,13 @@
-require('dotenv').config({ path: '.env.local' });
-const { createClient } = require('@supabase/supabase-js');
-
-async function testApi() {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-  
-  // Create a mock user request if we were testing through Next.js, but since it's a Next.js route, 
-  // we would need an authenticated user session cookie to hit it, which we don't easily have.
-  console.log('Cannot easily hit Next API without session cookie.');
+﻿async function run() {
+  try {
+    const res = await fetch('http://localhost:3000/api/batches/d7eeb5aa-5cb9-4581-a98e-57238c2471b6/seed-trains', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'test' })
+    });
+    console.log(res.status, await res.text());
+  } catch (e) {
+    console.log(e);
+  }
 }
-testApi();
+run();
